@@ -76,6 +76,10 @@ If the work changes UI and no guideline/brief exists, create a blocker/follow-up
 
 6. **Package/release when relevant**
    - For release tasks, verify signing expectations, versionCode/versionName, minification/proguard/R8, Play policy-sensitive permissions, crash/analytics setup, and artifact location.
+   - Before any Play Store/internal testing/publishing handoff, install and QA the release candidate on an Android emulator. This is mandatory even when unit, lint, assemble, or connected tests pass.
+   - Emulator QA must cover the app launch, primary CUJ, changed screens/flows, navigation/back behavior, loading/empty/error states, permissions, and any release-sensitive paths affected by the work.
+   - Capture emulator evidence: device/API level, build variant/artifact, commands used, pass/fail result, and screenshots/video for changed UI or failures.
+   - Do not approve publishing if emulator QA is unavailable, skipped, or failing. Create a blocking QA/release issue with exact emulator setup/run commands and hand it to `qa`, `play-store-publisher`, or `play-store-cli` as appropriate.
    - Do not invent signing credentials. If missing, create a DevOps/release blocker.
 
 ## Android Task Template
@@ -90,6 +94,7 @@ Android task — <feature/fix>
 - States to implement:
 - Tests/checks required:
 - Device/emulator requirement:
+- Pre-publish emulator QA: <required for any publishing/release handoff; emulator/API/build variant/CUJ evidence expected>
 - Acceptance evidence:
 ```
 
@@ -102,6 +107,7 @@ Android implementation report — <feature/fix>
 - Files changed:
 - Tests/builds run:
 - UI/device evidence:
+- Pre-publish emulator QA: <not applicable | pass with emulator/API/build/artifact evidence | blocked with issue link>
 - Known gaps/follow-ups:
 - Release/package notes if relevant:
 ```
@@ -115,6 +121,7 @@ Android implementation report — <feature/fix>
 5. **Treating Compose previews as tests.** Previews help inspection but do not replace unit/UI/instrumentation tests or manual smoke for critical flows.
 6. **Skipping permission/privacy review.** New permissions, background work, location/media/files/notifications, and analytics need product/devops awareness.
 7. **Assuming emulator availability.** Detect it; if unavailable, run non-device checks and create a QA/device follow-up with exact commands.
+8. **Publishing without emulator QA.** A signed artifact or passing CI is not enough. Any Play Store/internal testing/publishing handoff must be blocked until the app has been installed and smoke-tested on an Android emulator with evidence.
 
 ## Verification Checklist
 
@@ -125,5 +132,7 @@ Android implementation report — <feature/fix>
 - [ ] Accessibility and Android resource conventions were considered.
 - [ ] Relevant Gradle test/build/lint commands were run or blockers documented.
 - [ ] UI-bearing work has emulator/device/preview/screenshot evidence or a follow-up QA task.
+- [ ] Before any publishing/internal testing/release handoff, the Android app was installed and QA-smoked on an emulator, with device/API/build/artifact evidence and screenshots/video where useful.
+- [ ] Publishing is blocked if emulator QA is unavailable, skipped, or failing; a blocking QA/release issue exists with exact follow-up commands.
 - [ ] Release-sensitive work checks signing/versioning/minification/policy constraints.
 - [ ] Follow-up bugs/tasks exist for gaps discovered during implementation or verification.

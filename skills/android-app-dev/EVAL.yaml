@@ -6,6 +6,7 @@ expectations:
   - "maps PRD acceptance criteria and UI states to Android implementation tasks"
   - "mentions relevant Android checks such as Gradle tests lint assemble or connected tests"
   - "requires emulator device preview screenshot or QA follow-up evidence for UI-bearing work"
+  - "blocks Play Store internal testing publishing or release handoff until the Android app is installed and QA-smoked on an emulator with device API build artifact and pass fail evidence"
   - "considers Android accessibility lifecycle resources and release constraints when relevant"
 setupCommands: []
 teardownCommands: []
