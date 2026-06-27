@@ -13,7 +13,7 @@ Client asks NED to build a new Android app with onboarding, a dashboard, and a f
 - Require the later tech spec and implementation tasks to cite the UI guideline or feature UI brief.
 - Still include the periodic product checkup once the project is deployed/user-facing, covering CI status, system health, user traffic, and feedback channels.
 - If no status-report email recipient/cadence is provided, proactively ask which email should receive reports and how often to send them.
-- When email reporting is configured, require an executive-summary report under two pages with top-line metrics, how the product is doing, key problems resolved, key problems being resolved, decisions needed, and evidence links.
+- When email reporting is configured, require a concise HTML executive-summary report with inline styles, focused on product performance rather than project-detail overload: improving/holding/regressing state, top-line product metrics, wins, risks, customer signal, next actions, one crisp decision ask at most, and evidence links.
 
 ## Scenario: React Native app planning
 

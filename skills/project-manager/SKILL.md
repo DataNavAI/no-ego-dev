@@ -179,36 +179,60 @@ Service status — <project> — <date/time + timezone>
 
 ### Email status report format
 
-Periodic email reports are executive summaries, not raw logs. Keep each email short enough to fit within two pages (roughly 900 words or less; shorter is better). Use this shape:
+Periodic email reports are HTML executive summaries, not raw logs or project diaries. Optimize for a busy product owner who wants to understand product performance in under two minutes. Keep the report condensed: aim for 300-600 words, never more than two pages, and link to evidence instead of pasting logs.
 
-```text
-Subject: <Project> status report — <date range>
+The email must be product-performance first. Lead with whether the product is improving, holding steady, or regressing based on user/revenue/activation/retention/feedback signals. Devops details belong only where they explain product impact, risk, cost, or delivery confidence.
 
-Executive summary
-- <2-4 bullets: overall product health, whether the product is improving/holding/regressing, biggest risk, and what is being done next>
+Use a simple HTML body with clear visual hierarchy, short paragraphs, metric cards, and compact lists. Avoid dense tables, long incident timelines, raw logs, and more than 3-5 bullets per section. Use inline styles because many email clients strip external CSS.
 
-Top-line metrics
-- Overall status: <healthy | watch | degraded | blocked>
-- Product performance: <active users/sessions/signups/conversion/retention/revenue or best available proxy, with trend>
-- Reliability: <uptime/error rate/latency/job health or best available proxy>
-- Delivery: <CI/deployment/release status>
-- Cost: <current run-rate/anomaly/missing visibility>
+Required shape:
 
-How the product is doing
-- <traffic, activation, retention, funnel, revenue, feedback, adoption, and notable changes>
+```html
+Subject: <Project> product performance — <date range>
+Preheader: <one-sentence state of the product and biggest next action>
 
-Top key problems
-- Resolved: <highest-impact problems fixed during the period, issue links, evidence>
-- Being resolved: <active blockers/regressions/opportunities, owner, severity, ETA/next step>
+<div style="font-family: Arial, sans-serif; color:#111827; line-height:1.45; max-width:720px;">
+  <h1 style="margin:0 0 8px; font-size:22px;">Product performance: <Project></h1>
+  <p style="margin:0 0 16px; color:#6b7280;">Reporting period: <date range> • Overall: <healthy | watch | degraded | blocked></p>
 
-Decisions or help needed
-- <none or explicit ask>
+  <section style="padding:14px 16px; border-radius:12px; background:#f9fafb; border:1px solid #e5e7eb; margin-bottom:16px;">
+    <h2 style="margin:0 0 8px; font-size:16px;">Executive summary</h2>
+    <p style="margin:0;"><strong><improving | holding | regressing>:</strong> <2-3 sentences covering product performance, biggest risk/opportunity, and what happens next.></p>
+  </section>
 
-Evidence
-- <dashboard/log/workflow/billing/issue links; no excessive raw output>
+  <section style="margin-bottom:16px;">
+    <h2 style="font-size:16px; margin:0 0 8px;">Top-line product metrics</h2>
+    <div style="display:block;">
+      <p style="margin:6px 0;"><strong>Users / traffic:</strong> <value + trend or missing instrumentation></p>
+      <p style="margin:6px 0;"><strong>Activation / conversion:</strong> <value + trend or best available proxy></p>
+      <p style="margin:6px 0;"><strong>Retention / engagement:</strong> <value + trend or best available proxy></p>
+      <p style="margin:6px 0;"><strong>Revenue / cost:</strong> <revenue, spend, run-rate, anomaly, or missing visibility></p>
+    </div>
+  </section>
+
+  <section style="margin-bottom:16px;">
+    <h2 style="font-size:16px; margin:0 0 8px;">What changed</h2>
+    <ul style="margin:0; padding-left:20px;">
+      <li><strong>Wins:</strong> <1-2 highest-impact improvements/resolved product problems.></li>
+      <li><strong>Risks:</strong> <1-2 active blockers, regressions, or weak signals affecting performance.></li>
+      <li><strong>Customer signal:</strong> <main feedback theme and channels checked.></li>
+    </ul>
+  </section>
+
+  <section style="margin-bottom:16px;">
+    <h2 style="font-size:16px; margin:0 0 8px;">Next actions</h2>
+    <ol style="margin:0; padding-left:20px;">
+      <li><strong><owner>:</strong> <highest-leverage action, ETA/status, issue link if available></li>
+      <li><strong><owner>:</strong> <second action only if important></li>
+      <li><strong>Decision needed:</strong> <none, or one crisp ask with default recommendation></li>
+    </ol>
+  </section>
+
+  <p style="font-size:13px; color:#6b7280; margin-top:20px;">Evidence: <a href="<dashboard>">dashboard</a> · <a href="<issues>">issues</a> · <a href="<deploy/logs>">deploy/logs</a> · <a href="<billing>">billing</a></p>
+</div>
 ```
 
-If instrumentation is missing, say `missing instrumentation` in the relevant metric line and create/follow up on the setup issue. Do not pad the email with speculation.
+If instrumentation is missing, say `missing instrumentation` in the relevant metric line, state the user impact in plain language, and create/follow up on the setup issue. Do not pad the email with speculation.
 
 ### Follow-up rules
 
@@ -217,7 +241,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - Escalate immediately instead of waiting for the next checkup when production is down, data loss/security risk is suspected, CI blocks urgent fixes, traffic drops sharply without explanation, or multiple users report the same critical failure.
 - Keep the checkup prompt self-contained: project name, repo path/URL, deployment environment, dashboards/analytics sources, support/feedback channels, devops runbook, billing/cost sources, issue tracker, in-chat report destination, email recipient/cadence/timezone when configured, and cadence.
 - The user-facing service status summary must be delivered at least once per day for active live projects and must include both product-side updates and devops-side updates, even when the only update is `no meaningful change` or `missing instrumentation`.
-- The email status report must include an executive summary, top-line metrics, how well the product is doing, top key problems already resolved, and top key problems currently being resolved. It must stay under two pages and link to evidence rather than dumping logs.
+- The email status report must be a condensed HTML executive summary focused on product performance. It must lead with whether the product is improving, holding, or regressing; summarize top-line product metrics; identify wins, risks, customer signal, and next actions; stay readable in under two minutes; and link to evidence rather than dumping logs.
 
 ## Workflow
 
@@ -252,8 +276,9 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Service status checks pull product-side updates and devops-side updates, including CI status, system health, hosting cost, user traffic, and feedback from all known channels.
 - [ ] The user receives a service status summary at least once per day for active live projects unless they explicitly choose a different cadence.
 - [ ] Live projects have `status_report_email`, `status_report_cadence`, and timezone recorded, or the user was proactively asked for the missing email/cadence and a follow-up task exists.
-- [ ] Periodic email reports are scheduled when configured, sent through the available email integration, and include executive summary, top-line metrics, product performance, resolved problems, active problems, decisions needed, and evidence links.
-- [ ] Email reports stay under two pages and avoid raw log dumps.
+- [ ] Periodic email reports are scheduled when configured, sent through the available email integration, and use concise HTML formatting with inline styles suitable for email clients.
+- [ ] Email reports read like executive summaries: product-performance first, clear improving/holding/regressing state, top-line product metrics, wins/risks/customer signal, next actions, one crisp decision ask at most, and evidence links.
+- [ ] Email reports are mentally lightweight: readable in under two minutes, ideally 300-600 words, under two pages, and free of raw log dumps or dense project-detail overload.
 - [ ] Missing CI, health, analytics, or feedback instrumentation becomes explicit follow-up work instead of an assumed healthy status.
 - [ ] Progress updates were sent at phase start, phase completion, before subagent batches, and after subagent results.
 - [ ] Completed tasks have evidence.
