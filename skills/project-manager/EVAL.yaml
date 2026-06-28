@@ -24,6 +24,11 @@ expectations:
   - "email status reports read like condensed executive summaries focused on product performance improving holding or regressing top-line product metrics wins risks customer signal next actions and evidence links"
   - "email status reports are mentally lightweight readable in under two minutes ideally 300 to 600 words under two pages and avoid raw log dumps or dense project-detail overload"
   - "creates follow-up issues for missing instrumentation missing cost visibility or unhealthy product/devops signals"
+  - "creates a fresh checkout worktree or branch for docs non-code and code repository artifact changes"
+  - "commits completed repository artifact changes and preserves commit branch or PR evidence"
+  - "cleans up temporary checkouts worktrees after merge apply or handoff"
+  - "keeps repo markdown or a documented knowledge repo as the canonical source for durable implementation and agent-facing project docs unless there is an explicit Google Docs collaboration reason"
+  - "when Google Docs is used records a repo stub/link and sync rule so it does not become an invisible second source of truth"
 setupCommands: []
 teardownCommands: []
 parameters:

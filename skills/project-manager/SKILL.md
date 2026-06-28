@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.0
+version: 0.5.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -45,6 +45,47 @@ Progress update — Phase <N>: <phase name>
 - In progress / next: <next concrete task or subagent batch>
 - Blockers / decisions needed: <none or explicit ask>
 ```
+
+## Workspace and Documentation Source-of-Truth Rules
+
+Treat documentation, planning, prompt, copy, process, and configuration changes with the same isolation discipline as code changes. “Non-code” does not mean “safe to edit in-place.”
+
+For every project task that changes repository artifacts — including docs, PRDs, runbooks, issue templates, skill files, marketing copy, configuration examples, or planning files:
+
+1. Create a fresh checkout/worktree/branch before editing. Do not work directly in the user’s active checkout unless they explicitly instruct you to do so for that task.
+2. Record the checkout path and branch in the task/progress update before execution begins.
+3. Keep changes scoped to the task. Do not mix unrelated docs, code, config, or cleanup in the same branch/commit.
+4. Run the lightest meaningful verification for the artifact type:
+   - Markdown/docs: render/lint when tooling exists; otherwise inspect the diff for broken links, paths, headings, and stale references.
+   - Skills/profile docs: validate required files and update eval expectations when behavior changes.
+   - Config examples/templates: parse or dry-run if tooling exists.
+5. Commit completed work with a concise `docs:`, `chore:`, `fix:`, or `feat:` subject as appropriate.
+6. Preserve the commit hash/branch/PR link as completion evidence.
+7. After the work is merged, applied, or otherwise handed off, clean up the temporary checkout/worktree and confirm no uncommitted changes remain.
+
+Default checkout pattern when the repo uses git:
+
+```bash
+git worktree add -b <type>/<short-task-name> /tmp/<repo>-<short-task-name> HEAD
+# edit and verify inside /tmp/<repo>-<short-task-name>
+git status --short
+git add <paths>
+git commit -m "docs: <concise subject>"
+# after merge/apply/handoff:
+git worktree remove /tmp/<repo>-<short-task-name>
+```
+
+### Where project docs should live
+
+Default to keeping durable project-management artifacts in the repository (or the project’s documented knowledge repo) so agents, code review, issues, CI, and future checkouts share one versioned source of truth. This includes PRDs, tech specs, runbooks, UI guidelines, architecture notes, release checklists, QA plans, operational status-report templates, and agent/process instructions.
+
+Use Google Docs or another collaborative doc tool only when the user explicitly needs live human collaboration, comments/suggestions, client-friendly formatting, or non-technical stakeholder review. When Google Docs is used for source collaboration, create or update a repo stub that links to the doc and records owner, status, last reviewed date, and the rule for when content must be mirrored back into the repo. Do not let a Google Doc become an invisible second source of truth for active implementation.
+
+Preferred pattern:
+
+- Repo markdown = canonical implementation/agent source of truth.
+- Google Docs = collaborative review/presentation layer when useful.
+- If both exist, the repo artifact must link to the Google Doc, state which one is canonical for the current phase, and include a task to sync accepted changes back to the canonical location.
 
 ## Subagent Execution Rules
 
