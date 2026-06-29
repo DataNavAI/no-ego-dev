@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.1
+version: 0.2.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -58,6 +58,21 @@ The product-manager must:
 - Include localization requirements in PRDs when the product targets non-English or non-US users: copy language, examples, date/time/number/currency formats, support channels, and local trust signals.
 
 Do not assume an English/US/default SaaS experience represents what target users will see. If local verification is not possible, mark it explicitly as an assumption and create a follow-up research/QA task to verify from the target locale.
+
+## Cross-Platform Feature Parity Rules
+
+When a product or feature is available on multiple platforms, product management owns the parity map. Do not assume web, Android, iOS, desktop, browser extensions, chatbots, or API clients support the same workflows, constraints, payment options, permissions, notifications, offline behavior, accessibility affordances, or release timing.
+
+The product-manager must:
+
+- Identify the supported and planned platforms for the product or feature: web, mobile web, Android, iOS, desktop, browser extension, chatbot, API, or other surfaces.
+- For each platform, record the expected feature state: available now, planned, intentionally omitted, blocked by platform constraints, degraded, or not applicable.
+- Compare the primary CUJ across platforms and call out parity gaps that could break activation, conversion, retention, trust, notifications, data sync, account/payment flows, or support.
+- Proactively create follow-up tasks for parity gaps instead of only documenting them. Route UX gaps to `ui-designer`, implementation gaps to coder/architect, QA matrix gaps to QA, release/store constraints to project-manager/devops, and product tradeoffs back to product-manager.
+- Define platform-specific acceptance criteria when behavior must differ because of screen size, OS capabilities, app-store policy, permission model, payment rules, notification limits, offline support, or local regulation.
+- Keep parity small for MVPs: explicitly label non-core platform omissions as intentional scope cuts, but do not leave core CUJ parity ambiguous.
+
+Daily parity review is required during active development, beta, launch, and the first week after a meaningful release for any multi-platform product. The daily review should check current work, shipped behavior, user feedback, analytics, QA results, and release/store status for each platform, then update the parity matrix and create or reprioritize tasks for newly discovered gaps.
 
 ## Product Metrics Rules
 
@@ -131,20 +146,38 @@ Daily feedback review — <project> — <date/time + timezone>
 - Evidence: <links to feedback, screenshots, tickets, metrics>
 ```
 
+## Daily Cross-Platform Parity Review Output Shape
+
+When summarizing daily platform parity, use this shape:
+
+```text
+Daily platform parity review — <project> — <date/time + timezone>
+- Platforms checked: <web/android/ios/etc.>
+- Core CUJ parity: <same/degraded/missing per platform>
+- Newly found gaps: <gap, affected platform, user impact, evidence>
+- Tasks created/updated: <issue/task IDs/links or none>
+- Intentional differences: <platform-specific rationale>
+- Blockers/decisions needed: <store review, OS constraint, design decision, technical blocker, none>
+- Evidence: <QA runs, screenshots, analytics, feedback, release notes>
+```
+
 ## Workflow
 
 1. Read existing project knowledge, product docs, feedback logs, analytics dashboards, and relevant metrics.
 2. Ask only clarifying questions that materially change scope; otherwise state assumptions.
 3. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
-4. Draft the smallest useful PRD.
-5. Add a product metrics plan with key events/funnels, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
-6. Add a feedback collection path and daily feedback check routine.
-7. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
-8. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
-9. Check conflicts against existing features and the core product value.
-10. Save the PRD under `.projects/<project>/prds/`.
-11. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
-12. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+4. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
+5. Draft the smallest useful PRD.
+6. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
+7. Add a product metrics plan with key events/funnels, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
+8. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
+9. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
+10. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
+11. Check conflicts against existing features, the core product value, and platform parity expectations.
+12. Save the PRD under `.projects/<project>/prds/`.
+13. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
+14. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+15. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
 
 ## Verification Checklist
 
@@ -155,6 +188,11 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] Target market language, locale/region, currency/timezone/app-store/payment assumptions are identified when relevant.
 - [ ] Foreign services referenced in the PRD/research are checked with local-language/local-region settings, or local verification is recorded as an explicit follow-up task.
 - [ ] Degraded foreign-service user experience risks are called out with local/region-appropriate alternatives when they affect the core journey.
+- [ ] Supported/planned platforms are identified, including web, Android, iOS, and any other relevant surfaces.
+- [ ] Multi-platform work includes a parity matrix with each platform's feature state and core-CUJ behavior.
+- [ ] Platform parity gaps are proactively routed into follow-up tasks with owners instead of only noted.
+- [ ] Daily cross-platform parity review cadence, owner, evidence sources, and artifact destination are defined when multiple platforms are in scope.
+- [ ] Intentional platform differences have explicit product rationale and platform-specific acceptance criteria.
 - [ ] PRD defines product metrics tied to the value proposition and CUJ.
 - [ ] Activation, funnel/CUJ, engagement/retention, and conversion/revenue metrics are included or explicitly marked not applicable.
 - [ ] Event names/properties, dashboard/report destination, review cadence, and regression action are specified.
@@ -166,5 +204,5 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] Non-bug feedback is interpreted by user context, underlying problem, core product value, and simplest solution.
 - [ ] Random one-off feedback is logged/watched rather than acted on unless it is a bug/risk or core-value aligned.
 - [ ] Repeated feedback patterns become product work only after duplicate/pattern review.
-- [ ] Durable artifact paths are named, e.g. `.projects/<project>/prds/<prd>.md` and `.projects/<project>/feedback/daily-log.md`.
+- [ ] Durable artifact paths are named, e.g. `.projects/<project>/prds/<prd>.md`, `.projects/<project>/feedback/daily-log.md`, and `.projects/<project>/platform-parity/parity-matrix.md` when relevant.
 - [ ] Verification evidence explains how the artifact satisfies the client request and what assumptions remain.
