@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.0
+version: 0.2.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -43,6 +43,21 @@ Include:
 - Feature metrics: the event(s), funnel step(s), or dashboard(s) that will show whether the feature improved the intended outcome.
 - How the feature will collect user feedback after release.
 - How daily feedback review will detect whether the feature is solving the intended problem.
+
+## Local-Language and Foreign-Service Reference Rules
+
+When a PRD, product research note, competitor example, integration decision, launch plan, or user journey references a foreign service, evaluate it from the target user's local language and region. Many foreign services intentionally or accidentally provide a degraded experience to non-local users: different landing pages, missing features, worse latency, blocked signup/payment methods, unsupported phone numbers, unavailable app-store listings, broken localization, or irrelevant search/ad results.
+
+The product-manager must:
+
+- Identify the target market's language, locale, country/region, currency, timezone, app-store region, payment methods, and common devices where they materially affect the experience.
+- When referencing or benchmarking a foreign service, use that service's local-language/local-region settings whenever possible: localized URL, `hl`/`gl`/locale parameters, regional app-store listing, local pricing page, local help docs, local search results, local ad library, or local screenshots.
+- If the service experience changes by region, document which locale was reviewed and whether the non-local/default view is likely misleading.
+- Treat degraded foreign-service access as a product risk: call out signup/payment friction, missing local support, compliance or data residency issues, latency, blocked integrations, and weak localization.
+- Prefer local or region-appropriate alternatives when the foreign service is core to the user journey and the local experience is materially worse.
+- Include localization requirements in PRDs when the product targets non-English or non-US users: copy language, examples, date/time/number/currency formats, support channels, and local trust signals.
+
+Do not assume an English/US/default SaaS experience represents what target users will see. If local verification is not possible, mark it explicitly as an assumption and create a follow-up research/QA task to verify from the target locale.
 
 ## Product Metrics Rules
 
@@ -120,15 +135,16 @@ Daily feedback review — <project> — <date/time + timezone>
 
 1. Read existing project knowledge, product docs, feedback logs, analytics dashboards, and relevant metrics.
 2. Ask only clarifying questions that materially change scope; otherwise state assumptions.
-3. Draft the smallest useful PRD.
-4. Add a product metrics plan with key events/funnels, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
-5. Add a feedback collection path and daily feedback check routine.
-6. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
-7. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
-8. Check conflicts against existing features and the core product value.
-9. Save the PRD under `.projects/<project>/prds/`.
-10. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
-11. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+3. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
+4. Draft the smallest useful PRD.
+5. Add a product metrics plan with key events/funnels, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
+6. Add a feedback collection path and daily feedback check routine.
+7. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
+8. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
+9. Check conflicts against existing features and the core product value.
+10. Save the PRD under `.projects/<project>/prds/`.
+11. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
+12. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
 
 ## Verification Checklist
 
@@ -136,6 +152,9 @@ Before finishing, include a brief verification note that states what artifact wa
 
 - [ ] PRD has value proposition or user problem.
 - [ ] PRD has one primary CUJ.
+- [ ] Target market language, locale/region, currency/timezone/app-store/payment assumptions are identified when relevant.
+- [ ] Foreign services referenced in the PRD/research are checked with local-language/local-region settings, or local verification is recorded as an explicit follow-up task.
+- [ ] Degraded foreign-service user experience risks are called out with local/region-appropriate alternatives when they affect the core journey.
 - [ ] PRD defines product metrics tied to the value proposition and CUJ.
 - [ ] Activation, funnel/CUJ, engagement/retention, and conversion/revenue metrics are included or explicitly marked not applicable.
 - [ ] Event names/properties, dashboard/report destination, review cadence, and regression action are specified.
