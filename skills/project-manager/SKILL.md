@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.1
+version: 0.5.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -189,6 +189,21 @@ Do not invent an email address or cadence. If the user does not answer, keep the
 
 When configured, the recurring email job must gather the same product-side and devops-side signals as the service checkup, then send the report through the available email integration/tooling. The job prompt must include project name, repo/deploy URLs, dashboards, feedback channels, issue tracker, recipient email, cadence, timezone, and the report-length constraint.
 
+### Multi-product email aggregation
+
+When more than one product is actively being worked on or actively monitored, do **not** create one separate status-report email per product by default. Aggregate active-product status into a single portfolio email for the same recipient/cadence/timezone so the user gets one concise report instead of notification spam.
+
+Active products include projects that are in build, launch, post-launch monitoring, incident response, paid-traffic experimentation, active feedback triage, or any daily service-status loop. Exclude parked/paused products unless there is a meaningful change, risk, or decision needed.
+
+Aggregation rules:
+
+- Before scheduling or sending status-report email, discover all active products and their configured recipients/cadences.
+- If two or more active products share the same recipient and compatible cadence/timezone, schedule/send one aggregate report for that group.
+- Use separate emails only when recipients differ, cadences materially differ, confidentiality boundaries differ, or the user explicitly requests per-project emails.
+- The aggregate email must still be product-performance first: start with a portfolio-level executive summary, then give each product a compact section with status, top metric movement, customer signal, risks, and next action.
+- Keep the whole aggregate email readable in under two minutes. If there are many products, include only the highest-signal 3-5 product sections and put quiet/healthy products in a short “No material change” line with evidence links.
+- The recurring job prompt must include the active-product discovery/source list, grouping rule, and instruction to send a single aggregate email per recipient/cadence group.
+
 ### Checkup scope
 
 Every checkup must inspect and report on these five signal classes, grouped into product-side and devops-side updates:
@@ -220,9 +235,11 @@ Service status — <project> — <date/time + timezone>
 
 ### Email status report format
 
-Periodic email reports are HTML executive summaries, not raw logs or project diaries. Optimize for a busy product owner who wants to understand product performance in under two minutes. Keep the report condensed: aim for 300-600 words, never more than two pages, and link to evidence instead of pasting logs.
+Periodic email reports are HTML executive summaries, not raw logs or project diaries. Optimize for a busy product owner who wants to understand product performance in under two minutes. Keep the report condensed: aim for 300-600 words for a single-product report, never more than two pages, and link to evidence instead of pasting logs.
 
-The email must be product-performance first. Lead with whether the product is improving, holding steady, or regressing based on user/revenue/activation/retention/feedback signals. Devops details belong only where they explain product impact, risk, cost, or delivery confidence.
+When multiple active products are included, use one aggregate portfolio email rather than separate project emails. Keep the subject and opening portfolio-level, then give each product a compact status block. Do not duplicate the full single-product template for each product.
+
+The email must be product-performance first. Lead with whether the product or active-product portfolio is improving, holding steady, or regressing based on user/revenue/activation/retention/feedback signals. Devops details belong only where they explain product impact, risk, cost, or delivery confidence.
 
 Use a simple HTML body with clear visual hierarchy, short paragraphs, metric cards, and compact lists. Avoid dense tables, long incident timelines, raw logs, and more than 3-5 bullets per section. Use inline styles because many email clients strip external CSS.
 
@@ -273,6 +290,48 @@ Preheader: <one-sentence state of the product and biggest next action>
 </div>
 ```
 
+### Aggregate portfolio email shape
+
+Use this shape when reporting on more than one active product for the same recipient/cadence group:
+
+```html
+Subject: Product portfolio performance — <date range>
+Preheader: <portfolio-level state and biggest cross-product next action>
+
+<div style="font-family: Arial, sans-serif; color:#111827; line-height:1.45; max-width:760px;">
+  <h1 style="margin:0 0 8px; font-size:22px;">Product portfolio performance</h1>
+  <p style="margin:0 0 16px; color:#6b7280;">Reporting period: <date range> • Products: <active count> • Overall: <healthy | watch | degraded | blocked></p>
+
+  <section style="padding:14px 16px; border-radius:12px; background:#f9fafb; border:1px solid #e5e7eb; margin-bottom:16px;">
+    <h2 style="margin:0 0 8px; font-size:16px;">Portfolio summary</h2>
+    <p style="margin:0;"><strong><improving | holding | regressing>:</strong> <2-3 sentences covering cross-product performance, biggest risk/opportunity, and what happens next.></p>
+  </section>
+
+  <section style="margin-bottom:16px;">
+    <h2 style="font-size:16px; margin:0 0 8px;">Active products</h2>
+    <div style="border-top:1px solid #e5e7eb;">
+      <div style="padding:10px 0; border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0 0 4px;"><strong><Product A></strong> — <healthy | watch | degraded | blocked> — <improving | holding | regressing></p>
+        <p style="margin:0; color:#374151;">Metric: <top metric/trend>. Customer signal: <main feedback>. Next: <owner/action/link>.</p>
+      </div>
+      <div style="padding:10px 0; border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0 0 4px;"><strong><Product B></strong> — <healthy | watch | degraded | blocked> — <improving | holding | regressing></p>
+        <p style="margin:0; color:#374151;">Metric: <top metric/trend>. Customer signal: <main feedback>. Next: <owner/action/link>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-bottom:16px;">
+    <h2 style="font-size:16px; margin:0 0 8px;">Decisions / escalations</h2>
+    <ol style="margin:0; padding-left:20px;">
+      <li><strong><owner or user>:</strong> <one highest-priority decision or action across the portfolio></li>
+    </ol>
+  </section>
+
+  <p style="font-size:13px; color:#6b7280; margin-top:20px;">Evidence: <a href="<portfolio-dashboard>">dashboard</a> · <a href="<issues>">issues</a> · <a href="<deploy/logs>">deploy/logs</a> · <a href="<billing>">billing</a></p>
+</div>
+```
+
 If instrumentation is missing, say `missing instrumentation` in the relevant metric line, state the user impact in plain language, and create/follow up on the setup issue. Do not pad the email with speculation.
 
 ### Follow-up rules
@@ -282,7 +341,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - Escalate immediately instead of waiting for the next checkup when production is down, data loss/security risk is suspected, CI blocks urgent fixes, traffic drops sharply without explanation, or multiple users report the same critical failure.
 - Keep the checkup prompt self-contained: project name, repo path/URL, deployment environment, dashboards/analytics sources, support/feedback channels, devops runbook, billing/cost sources, issue tracker, in-chat report destination, email recipient/cadence/timezone when configured, and cadence.
 - The user-facing service status summary must be delivered at least once per day for active live projects and must include both product-side updates and devops-side updates, even when the only update is `no meaningful change` or `missing instrumentation`.
-- The email status report must be a condensed HTML executive summary focused on product performance. It must lead with whether the product is improving, holding, or regressing; summarize top-line product metrics; identify wins, risks, customer signal, and next actions; stay readable in under two minutes; and link to evidence rather than dumping logs.
+- The email status report must be a condensed HTML executive summary focused on product performance. It must lead with whether the product or active-product portfolio is improving, holding, or regressing; summarize top-line product metrics; identify wins, risks, customer signal, and next actions; stay readable in under two minutes; and link to evidence rather than dumping logs.
+- When more than one product is actively worked on or monitored for the same recipient/cadence/timezone, aggregate them into one portfolio status-report email instead of sending separate per-project emails unless recipients, confidentiality, cadence, or explicit user preference require separation.
 
 ## Workflow
 
@@ -291,7 +351,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 3. For each PRD, decide whether the work needs UI. If yes, spawn a `ui-designer` subagent and create UI design tasks before tech-spec work. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins.
 4. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior.
 5. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
-6. For a deployed/user-facing project, set up a routine service status check with a self-contained recurring prompt that pulls product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and sends the user a summary at least once per day. If email report recipient/cadence are configured, schedule periodic status-report emails too; if not, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
+6. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
 7. Create milestones from the current PRD/spec/UI artifacts.
 8. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
 9. Send a progress update with the milestone/task plan before execution begins.
@@ -318,6 +378,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] The user receives a service status summary at least once per day for active live projects unless they explicitly choose a different cadence.
 - [ ] Live projects have `status_report_email`, `status_report_cadence`, and timezone recorded, or the user was proactively asked for the missing email/cadence and a follow-up task exists.
 - [ ] Periodic email reports are scheduled when configured, sent through the available email integration, and use concise HTML formatting with inline styles suitable for email clients.
+- [ ] Before scheduling or sending status-report email, active products are discovered and grouped by recipient/cadence/timezone.
+- [ ] When more than one active product shares a status-report recipient/cadence/timezone, one aggregate portfolio email is sent instead of separate per-project emails unless separation is explicitly required.
 - [ ] Email reports read like executive summaries: product-performance first, clear improving/holding/regressing state, top-line product metrics, wins/risks/customer signal, next actions, one crisp decision ask at most, and evidence links.
 - [ ] Email reports are mentally lightweight: readable in under two minutes, ideally 300-600 words, under two pages, and free of raw log dumps or dense project-detail overload.
 - [ ] Missing CI, health, analytics, or feedback instrumentation becomes explicit follow-up work instead of an assumed healthy status.

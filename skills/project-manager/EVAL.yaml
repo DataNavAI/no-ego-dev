@@ -20,6 +20,8 @@ expectations:
   - "sends the user a service status summary at least once per day for active live projects unless explicitly configured otherwise"
   - "proactively asks for status report email recipient and cadence when either is missing for a live project"
   - "schedules periodic status report emails when recipient and cadence are configured"
+  - "discovers active products before scheduling or sending status report email and groups them by recipient cadence and timezone"
+  - "when multiple active products share recipient cadence and timezone sends one aggregate portfolio status report email instead of separate per project emails unless separation is required"
   - "email status reports use HTML formatting with inline styles suitable for email clients"
   - "email status reports read like condensed executive summaries focused on product performance improving holding or regressing top-line product metrics wins risks customer signal next actions and evidence links"
   - "email status reports are mentally lightweight readable in under two minutes ideally 300 to 600 words under two pages and avoid raw log dumps or dense project-detail overload"
