@@ -1,0 +1,21 @@
+prompt: |
+  Use the integrator skill to respond to a realistic client/project request: research and integrate a third-party email delivery provider for a web app. The user wants the agent to compare options, handle account/workspace setup guidance, integrate API or SDK configuration, verify sandbox delivery, and document reusable provider-specific knowledge without exposing secrets.
+expectations:
+  - "mentions durable artifact"
+  - "includes verification"
+  - "avoids vague next steps"
+  - "researches or compares third-party tool options against fit cost limits privacy data handling API maturity and integration effort"
+  - "checks existing project docs and code for current providers before adding a new service"
+  - "identifies account workspace project billing plan auth scopes webhook callback or domain verification prerequisites before implementation"
+  - "asks once for the complete access needed and gives provider-specific account or workspace setup steps when user action is required"
+  - "prefers official CLI browser login project-scoped collaborator access or scoped tokens stored in a secret store over raw secrets in chat"
+  - "keeps API keys OAuth secrets webhook signing secrets and service account credentials out of source control and documents only names or secret-store references"
+  - "integrates SDK API CLI webhook or config through minimal provider boundary with environment examples and deployment or CI secret names"
+  - "verifies integration with harmless read/status checks and sandbox smoke tests such as test webhook delivery test email or API dry run"
+  - "documents provider resources secret locations setup verification operations troubleshooting cost limits and official source links in project docs"
+  - "creates or updates reusable tool-specific skills support files or runbooks when provider knowledge is likely to recur"
+  - "creates follow-up issues for missing credentials admin access paid-plan or billing decisions privacy approvals production verification blockers or cleanup"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
