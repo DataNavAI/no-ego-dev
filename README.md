@@ -24,6 +24,7 @@ no-ego-dev chat
 - `skills/architect`: PRD to tech spec workflow.
 - `skills/project-manager`: milestones/issues/subagent orchestration workflow.
 - `skills/coder`: test-backed implementation workflow.
+- `skills/integrator`: third-party tool research, account setup, integration, and reusable provider knowledge workflow.
 - `skills/devops`: CI/CD, deployment, and observability workflow.
 - `eval_runner/`: local runner for EVAL.yaml files.
 
