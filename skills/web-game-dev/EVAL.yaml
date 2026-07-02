@@ -1,0 +1,16 @@
+prompt: |
+  Use the web-game-dev skill to write the architecture approach for a browser-based game PRD.
+expectations:
+  - "classifies the game by 2D or 3D multiplayer mode session length target devices browser classes core loop progression and persistence needs"
+  - "researches and compares at least two to four viable web game engines or libraries before recommending one"
+  - "recommends a performant engine default appropriate to the game type and explains rendering mobile tooling TypeScript bundle runtime community licensing and tradeoffs"
+  - "documents common game architecture patterns such as scene state stack ECS component game objects finite state machines fixed timestep event bus data driven content multiplayer authority asset pipeline and persistence"
+  - "selects architecture patterns that fit the actual gameplay rather than treating the game like a normal CRUD app"
+  - "defines FPS frame budget asset loading strategy input audio physics collision persistence analytics and browser performance constraints"
+  - "searches for an existing engine-specific skill for the chosen engine or creates or queues creation of one before implementation"
+  - "coordinates with architect product metrics by defining gameplay analytics events for activation tutorial level attempts completions failures session length retention monetization or performance where applicable"
+  - "includes browser smoke tests performance checks mobile viewport checks and gameplay acceptance tests"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

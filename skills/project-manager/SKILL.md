@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.6
+version: 0.5.7
 author: NoEgoDev
 license: MIT
 metadata:
@@ -142,6 +142,7 @@ Always spawn focused subagents for directly asked actionable tasks and for tasks
 - React Native app setup / Expo or React Native CLI implementation / Metro / Android Studio + SDK setup / emulator testing → spawn a subagent instructed to use `react-native-app-dev` when that skill is available, otherwise use `coder` with explicit React Native mobile context.
 - Native Android app implementation / Gradle / Jetpack Compose / emulator testing / Play Store packaging/build artifacts → spawn a subagent instructed to use `android-app-dev` when that skill is available, otherwise use `coder` with explicit Android context.
 - Architecture / technical spec / system design / repo bootstrap decisions → spawn a subagent instructed to use `architect`.
+- Browser/web game architecture, performant game engine selection, gameplay systems, engine-specific skill discovery/creation, or game performance planning → spawn a subagent instructed to use `web-game-dev`, usually paired with or before `architect` finalizes the tech spec.
 - Coding / tests / refactors / implementation / bug fixing → spawn one or more subagents instructed to use `coder`.
 - DevOps / CI/CD / deployment / observability / infrastructure / runbooks → spawn a subagent instructed to use `devops`.
 - QA / smoke tests / feature test plans / UI regression checks / release verification → spawn a subagent instructed to use `qa`.
@@ -391,20 +392,21 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
 4. For each PRD, decide whether the work needs UI. If yes, spawn a `ui-designer` subagent and create UI design tasks before tech-spec work. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins.
-5. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior.
-6. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
-7. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
-8. For the directly asked task, create or update the durable issue/task before execution, even if the request looks small.
-9. Create milestones from the current PRD/spec/UI artifacts.
-10. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
-11. Send a progress update with the milestone/task plan before execution begins.
-12. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
-13. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution.
-14. Spawn a `qa` subagent for the follow-up QA task; require a pass/fail report, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
-15. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
-16. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
-17. When tasks complete, verify the milestone goal using direct evidence.
-18. Send a phase-complete progress update. If achieved and bug triage is clean, mark milestone done and notify the client; otherwise create missing-part tasks and send an updated plan.
+5. If the PRD is a browser/web game or game-like interactive product, spawn a `web-game-dev` subagent during architecture planning so the engine choice, game architecture patterns, and engine-specific skill plan are ready before implementation.
+6. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior; for web games, require it to cite the `web-game-dev` engine/architecture recommendation.
+7. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
+8. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
+9. For the directly asked task, create or update the durable issue/task before execution, even if the request looks small.
+10. Create milestones from the current PRD/spec/UI artifacts.
+11. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
+12. Send a progress update with the milestone/task plan before execution begins.
+13. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
+14. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution.
+15. Spawn a `qa` subagent for the follow-up QA task; require a pass/fail report, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
+16. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
+17. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
+18. When tasks complete, verify the milestone goal using direct evidence.
+19. Send a phase-complete progress update. If achieved and bug triage is clean, mark milestone done and notify the client; otherwise create missing-part tasks and send an updated plan.
 
 ## Verification Checklist
 
@@ -414,7 +416,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Project email communications use the configured agent identity/delegated mailbox by default, or email is blocked pending identity/access setup.
 - [ ] Directly asked actionable tasks have a durable issue/task before execution and are assigned to a focused subagent by default.
 - [ ] Subagents receive enough context.
-- [ ] Any product-management, architecture, coding, devops, or QA work was delegated to the corresponding specialist subagent.
+- [ ] Any product-management, architecture, web-game, coding, devops, or QA work was delegated to the corresponding specialist subagent.
+- [ ] Browser/web game projects include a `web-game-dev` architecture-phase recommendation before implementation.
 - [ ] Every PRD was checked for whether UI design is applicable, with a recorded reason when it is not.
 - [ ] UI-bearing PRDs have UI design tasks before architecture/tech-spec work begins.
 - [ ] New UI-bearing projects have a durable UI guideline after the core PRD and before tech spec.

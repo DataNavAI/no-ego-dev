@@ -6,6 +6,7 @@ expectations:
   - "avoids vague next steps"
   - "includes progress update cadence or phase progress updates"
   - "delegates product, marketing, architecture, coding, devops, UI design, or QA work to specialist subagents"
+  - "for browser or web game projects delegates web-game engine selection and game architecture planning to web-game-dev during the architecture phase"
   - "invokes agent-identity-and-access during new project onboarding to set up or confirm the agent identity OAuth delegated access signed-in browser SSO and email access status"
   - "creates a follow-up agent identity setup issue when account OAuth browser SSO or email access is missing and blocks identity-dependent work until verified"
   - "uses the configured agent identity or delegated mailbox by default when communicating with the user or others via email"
