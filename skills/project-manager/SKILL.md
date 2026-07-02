@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.2
+version: 0.5.4
 author: NoEgoDev
 license: MIT
 metadata:
@@ -13,7 +13,7 @@ metadata:
 
 ## Overview
 
-Operate the project loop. Break work into objectively verifiable milestones, create issue-managed tasks, kick off subagents, inspect completion evidence, and create follow-up work when reality diverges from the plan.
+Operate the project loop. Break work into objectively verifiable milestones, create issue-managed tasks, kick off subagents, inspect completion evidence, and create follow-up work when reality diverges from the plan. Direct user requests become issue-managed work and are executed by focused subagents by default.
 
 The project manager also owns the routine service status loop for live projects: schedule recurring checkups, gather product-side and devops-side updates, summarize health for the user at least once per day, send periodic status-report emails when configured, and convert findings into prioritized issue-managed work.
 
@@ -23,6 +23,21 @@ The project manager also owns the routine service status loop for live projects:
 - Each task is small enough for one focused branch/PR.
 - Tasks link to PRDs/specs and have acceptance checks.
 - Completion requires evidence, not just a worker saying “done”.
+
+
+## Direct User Request Issue and Subagent Rules
+
+When the user directly asks for an actionable project task, create or update an issue before execution and run the work through a subagent by default. The project manager should coordinate, verify, and report; it should not quietly perform directly requested project work inline.
+
+For every directly asked task:
+
+1. Create or update a durable issue/task immediately with the original user request, project/repo, scope, acceptance criteria, owner/subagent role, expected evidence, and links to relevant PRDs/specs/files.
+2. If an external issue tracker is configured, use it. Otherwise create a repo-local issue/task artifact under the project's durable knowledge area, such as `.projects/<project>/issues/`, or the active Kanban board if that is the project's issue system.
+3. Spawn the appropriate focused subagent to execute the issue, instructing it to use the matching skill (`product-manager`, `architect`, `coder`, `devops`, `qa`, etc.) and to return evidence, changed paths, test output, PR/commit links, blockers, and follow-up issue suggestions.
+4. After the subagent returns, verify the evidence directly before marking the issue complete or reporting success.
+5. If no delegation/subagent tool is available, still create the issue and write a complete handoff prompt/assignment in it; do not let the task exist only in chat memory.
+
+Issue-first execution can be skipped only for pure conversational answers, clarifying questions, or emergency read-only diagnostics where creating an issue would materially delay risk mitigation. If skipped, record the reason and create a follow-up issue once stable.
 
 ## Progress Update Rules
 
@@ -52,16 +67,17 @@ Treat documentation, planning, prompt, copy, process, and configuration changes 
 
 For every project task that changes repository artifacts — including docs, PRDs, runbooks, issue templates, skill files, marketing copy, configuration examples, or planning files:
 
-1. Create a fresh checkout/worktree/branch before editing. Do not work directly in the user’s active checkout unless they explicitly instruct you to do so for that task.
-2. Record the checkout path and branch in the task/progress update before execution begins.
-3. Keep changes scoped to the task. Do not mix unrelated docs, code, config, or cleanup in the same branch/commit.
-4. Run the lightest meaningful verification for the artifact type:
+1. Ensure the directly requested task already has a durable issue/task artifact and assigned subagent owner before editing.
+2. Create a fresh checkout/worktree/branch before editing. Do not work directly in the user’s active checkout unless they explicitly instruct you to do so for that task.
+3. Record the checkout path and branch in the task/progress update before execution begins.
+4. Keep changes scoped to the task. Do not mix unrelated docs, code, config, or cleanup in the same branch/commit.
+5. Run the lightest meaningful verification for the artifact type:
    - Markdown/docs: render/lint when tooling exists; otherwise inspect the diff for broken links, paths, headings, and stale references.
    - Skills/profile docs: validate required files and update eval expectations when behavior changes.
    - Config examples/templates: parse or dry-run if tooling exists.
-5. Commit completed work with a concise `docs:`, `chore:`, `fix:`, or `feat:` subject as appropriate.
-6. Preserve the commit hash/branch/PR link as completion evidence.
-7. After the work is merged, applied, or otherwise handed off, clean up the temporary checkout/worktree and confirm no uncommitted changes remain.
+6. Commit completed work with a concise `docs:`, `chore:`, `fix:`, or `feat:` subject as appropriate.
+7. Preserve the commit hash/branch/PR link as completion evidence.
+8. After the work is merged, applied, or otherwise handed off, clean up the temporary checkout/worktree and confirm no uncommitted changes remain.
 
 Default checkout pattern when the repo uses git:
 
@@ -87,11 +103,47 @@ Preferred pattern:
 - Google Docs = collaborative review/presentation layer when useful.
 - If both exist, the repo artifact must link to the Google Doc, state which one is canonical for the current phase, and include a task to sync accepted changes back to the canonical location.
 
+## Agent Account and Communication Setup Rules
+
+For every new project, establish a dedicated project/agent Google account as early operational infrastructure unless the user explicitly declines or the organization already provides a managed identity. You cannot reliably set up SaaS tooling, analytics, support inboxes, alerts, calendars, or vendor communications if every service depends on a personal inbox or ad-hoc login.
+
+Default ask during onboarding when no agent-owned account is documented:
+
+```text
+Please create a dedicated Gmail/Google account for this project/agent, such as <project-agent>@gmail.com or a Workspace alias if you have a domain. I will use it as the single agent-owned identity for SSO/signups across project services where appropriate, service notifications, and project email communications with you and collaborators. Please keep ownership/recovery credentials yourself, enable appropriate 2FA/recovery settings, and grant the agent access only through the approved email/auth integration.
+```
+
+Record the account in the project runbook, PRD operations section, or issue tracker:
+
+```yaml
+agent_google_account: <project-agent@gmail.com or workspace alias>
+agent_account_owner: <user/org owner>
+agent_account_purpose:
+  - SSO/signups for project services where Google login is acceptable
+  - analytics/billing/support/vendor notifications
+  - agent email communications with user, collaborators, support, vendors, and testers
+agent_email_access_method: <Hermes email integration | delegated mailbox | not configured yet>
+agent_account_security_notes: <2FA/recovery owner/access boundaries>
+```
+
+Use this account as the default identity for cost-effective third-party services, analytics tools, monitoring, support/contact channels, no-code admin portals, calendars, and vendor accounts when doing so reduces operational fragmentation. Prefer organization-owned Workspace accounts or aliases when the project has a domain or company workspace. Use personal user accounts only when the user explicitly instructs it or a vendor requires a personal owner.
+
+Safety rules:
+
+- Do not create, guess, store, or commit account passwords, recovery codes, app passwords, OAuth refresh tokens, cookies, or backup codes.
+- Ask the user to create/own the account and complete verification, billing approval, or 2FA steps that require human ownership.
+- Use official OAuth/delegated email tooling when available; document missing email access as a follow-up issue instead of pretending communication is configured.
+- Keep access least-privilege: separate production billing/admin ownership from agent automation access when a service supports roles.
+- Before signing up for paid services or enabling billing with this account, surface the cost/plan and get the user's approval unless the project already has explicit billing policy.
+- For outbound email, identify the agent/project clearly, keep user-facing communications concise and professional, and record important sent-email context in the durable project status/issue system.
+
+If the account is missing, create a setup task and continue with non-blocked planning. Block SSO-dependent service setup, analytics dashboard ownership, support inbox setup, or automated email reporting until the user provides the account or an approved alternative.
+
 ## Subagent Execution Rules
 
 The project manager orchestrates; it does not personally perform every specialist job.
 
-Always spawn focused subagents for tasks that require any major NoEgoDev skill/domain:
+Always spawn focused subagents for directly asked actionable tasks and for tasks that require any major NoEgoDev skill/domain. Create/update the linked issue first, then include that issue path/ID in the subagent prompt:
 
 - Product management / PRD / user story / scope decisions → spawn a subagent instructed to use `product-manager`.
 - Marketing / launch planning / channel strategy / sincere outreach / app-store listing copy, ASO, localization, or ads → spawn a subagent instructed to use `marketer`.
@@ -110,7 +162,7 @@ Every completed implementation task must get a follow-up QA task unless it was d
 Subagent prompts must include:
 
 - The project goal and current phase.
-- Relevant PRD/spec/issue paths or IDs.
+- Relevant PRD/spec/issue paths or IDs, including the directly requested task issue created before execution.
 - Exact deliverables expected.
 - Acceptance checks and evidence required.
 - Repository/workdir and branch/PR expectations when applicable.
@@ -347,26 +399,30 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 ## Workflow
 
 1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context.
-2. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
-3. For each PRD, decide whether the work needs UI. If yes, spawn a `ui-designer` subagent and create UI design tasks before tech-spec work. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins.
-4. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior.
-5. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
-6. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
-7. Create milestones from the current PRD/spec/UI artifacts.
-8. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
-9. Send a progress update with the milestone/task plan before execution begins.
-10. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
-11. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution.
-12. Spawn a `qa` subagent for the follow-up QA task; require a pass/fail report, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
-13. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
-14. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
-15. When tasks complete, verify the milestone goal using direct evidence.
-16. Send a phase-complete progress update. If achieved and bug triage is clean, mark milestone done and notify the client; otherwise create missing-part tasks and send an updated plan.
+2. During new-project onboarding, ask for or confirm the dedicated project/agent Gmail/Google account for SSO, service notifications, and email communications; record it in the runbook/operations context or create a follow-up setup issue if missing.
+3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
+4. For each PRD, decide whether the work needs UI. If yes, spawn a `ui-designer` subagent and create UI design tasks before tech-spec work. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins.
+5. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior.
+6. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
+7. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
+8. For the directly asked task, create or update the durable issue/task before execution, even if the request looks small.
+9. Create milestones from the current PRD/spec/UI artifacts.
+10. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
+11. Send a progress update with the milestone/task plan before execution begins.
+12. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
+13. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution.
+14. Spawn a `qa` subagent for the follow-up QA task; require a pass/fail report, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
+15. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
+16. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
+17. When tasks complete, verify the milestone goal using direct evidence.
+18. Send a phase-complete progress update. If achieved and bug triage is clean, mark milestone done and notify the client; otherwise create missing-part tasks and send an updated plan.
 
 ## Verification Checklist
 
 - [ ] Milestone goal is objective.
 - [ ] Tasks are tracked in an issue system.
+- [ ] New projects have a documented dedicated project/agent Gmail/Google account for SSO, service notifications, and email communications, or a follow-up setup issue exists.
+- [ ] Directly asked actionable tasks have a durable issue/task before execution and are assigned to a focused subagent by default.
 - [ ] Subagents receive enough context.
 - [ ] Any product-management, architecture, coding, devops, or QA work was delegated to the corresponding specialist subagent.
 - [ ] Every PRD was checked for whether UI design is applicable, with a recorded reason when it is not.
