@@ -7,7 +7,10 @@ expectations:
   - "chooses or recommends the easiest-to-maintain viable hosting provider"
   - "adds product metrics instrumentation for user-facing products tied to PRD success metrics and the critical user journey"
   - "defines analytics events properties capture points dashboard or reporting path owner cadence and privacy constraints"
+  - "researches cost effective analytics options and recommends an analytics tool/default or explicitly reuses adequate existing tooling"
   - "includes tests or QA checks for metrics firing correctly and not leaking private data"
+  - "for browser or web game projects invokes web-game-dev during architecture to research compare and recommend a performant game engine"
+  - "for web games documents game architecture patterns frame budget asset pipeline and engine-specific skill discovery or creation"
   - "considers MVP cost when recommending hosting"
   - "asks the user to choose only when provider tradeoffs materially affect cost, architecture, compliance, or access"
 setupCommands: []
