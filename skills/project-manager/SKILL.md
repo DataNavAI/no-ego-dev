@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.5
+version: 0.5.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -103,63 +103,29 @@ Preferred pattern:
 - Google Docs = collaborative review/presentation layer when useful.
 - If both exist, the repo artifact must link to the Google Doc, state which one is canonical for the current phase, and include a task to sync accepted changes back to the canonical location.
 
-## Agent Account and Communication Setup Rules
+## Agent Identity and Email Communication Rules
 
-For every new project, establish a dedicated project/agent Google account as early operational infrastructure unless the user explicitly declines or the organization already provides a managed identity. You cannot reliably set up SaaS tooling, analytics, support inboxes, alerts, calendars, or vendor communications if every service depends on a personal inbox or ad-hoc login.
+For every new project, invoke `agent-identity-and-access` during onboarding unless the user explicitly declines or the organization already provides a managed identity. The project manager owns making identity setup visible in the plan; the detailed account, OAuth, browser SSO, and email-access procedure belongs to `agent-identity-and-access`.
 
-Default ask during onboarding when no agent-owned account is documented:
+Project-manager responsibilities:
 
-```text
-Please create a dedicated Gmail/Google account for this project/agent, such as <project-agent>@gmail.com or a Workspace alias if you have a domain. I will use it as the single agent-owned identity for SSO/signups across project services where appropriate, service notifications, and project email communications with you and collaborators. Please keep ownership/recovery credentials yourself and enable appropriate 2FA/recovery settings. After the account exists, I will ask you to help complete the approved OAuth/delegated-access flow so the agent can use the account without you sharing passwords or recovery codes.
-```
+- Ask for or confirm the dedicated project/agent Google account or Workspace alias as part of onboarding.
+- Create a setup issue for `agent-identity-and-access` when the account, OAuth/delegated access, signed-in browser SSO profile, or email access is missing.
+- Do not block unrelated product planning while waiting for identity setup, but block SSO-dependent service setup, analytics dashboard ownership, support inbox setup, automated email reporting, and agent-sent email until `agent-identity-and-access` verifies access.
+- When communicating with the user or others via email, use the configured agent identity/delegated mailbox by default. Do not send from the user's personal inbox or an ad-hoc fallback account unless the user explicitly approves.
+- Record important sent-email context in the durable project status/issue system: recipient group, subject, date, purpose, and evidence/link when available.
 
-Record the account in the project runbook, PRD operations section, or issue tracker:
-
-```yaml
-agent_google_account: <project-agent@gmail.com or workspace alias>
-agent_account_owner: <user/org owner>
-agent_account_purpose:
-  - SSO/signups for project services where Google login is acceptable
-  - analytics/billing/support/vendor notifications
-  - agent email communications with user, collaborators, support, vendors, and testers
-agent_email_access_method: <Hermes email integration | delegated mailbox | not configured yet>
-agent_oauth_status: <not requested | user action needed | granted | expired | revoked>
-agent_oauth_scopes: <email send/read, calendar, drive, or service-specific scopes actually granted>
-agent_oauth_access_path: <OAuth consent URL | device-code flow | delegated mailbox setup | service-specific auth flow>
-agent_account_security_notes: <2FA/recovery owner/access boundaries>
-```
-
-Use this account as the default identity for cost-effective third-party services, analytics tools, monitoring, support/contact channels, no-code admin portals, calendars, and vendor accounts when doing so reduces operational fragmentation. Prefer organization-owned Workspace accounts or aliases when the project has a domain or company workspace. Use personal user accounts only when the user explicitly instructs it or a vendor requires a personal owner.
-
-### OAuth/delegated-access setup
-
-After the account exists, proactively ask the user to help complete the OAuth, device-code, delegated mailbox, or service-specific authorization flow required for the agent to access that account. Do this before assuming the agent can send or receive email, read service notifications, access shared Drive/Calendar artifacts, or operate SSO-backed services.
-
-Default OAuth ask when access is missing:
+Minimum identity setup task shape:
 
 ```text
-The project Google account exists, but I still need your help completing the OAuth/delegated-access step. Please open the authorization link or device-code prompt I provide, sign in as <agent_google_account>, review the requested scopes, approve only the scopes needed for this project, and tell me when it is complete. Do not send me the password, recovery codes, backup codes, cookies, or raw tokens.
+Agent identity setup — <project>
+- Skill: agent-identity-and-access
+- Required identity: <project-agent@gmail.com or Workspace alias, if known>
+- Needed capabilities: <Google SSO/browser profile | OAuth/delegated email | service notifications | Drive/Calendar | vendor/support email>
+- User action needed: <create account | approve OAuth/device-code | sign browser profile into Google | confirm delegated mailbox>
+- Blocked work: <email reporting/service signup/support inbox/etc.>
+- Acceptance: <identity record exists, access verified, no secrets committed, browser/email/OAuth status recorded>
 ```
-
-OAuth rules:
-
-- Request the narrowest practical scopes for the immediate job, such as email send-only before email read/write, and add broader scopes only when required.
-- Explain why each requested scope is needed in plain language before asking the user to approve it.
-- Use the platform's official OAuth/delegated-access flow; never ask the user to paste passwords, cookies, recovery codes, backup codes, or long-lived raw tokens into chat or committed files.
-- If a CLI/tool prints a consent URL, device code, or browser auth prompt, pass only that approval step to the user and wait for confirmation before testing access.
-- After consent, verify with a harmless read/status call or draft/test action, then record the access method, granted scopes, OAuth status, and verification evidence in the project runbook/ops context.
-- If consent expires, is revoked, or fails, mark `agent_oauth_status` accordingly and create a follow-up setup issue instead of pretending email/service access works.
-
-Safety rules:
-
-- Do not create, guess, store, or commit account passwords, recovery codes, app passwords, OAuth refresh tokens, cookies, or backup codes.
-- Ask the user to create/own the account and complete verification, billing approval, 2FA, OAuth consent, delegated-access, or device-code steps that require human ownership.
-- Use official OAuth/delegated email tooling when available; document missing or expired OAuth/email access as a follow-up issue instead of pretending communication is configured.
-- Keep access least-privilege: separate production billing/admin ownership from agent automation access when a service supports roles.
-- Before signing up for paid services or enabling billing with this account, surface the cost/plan and get the user's approval unless the project already has explicit billing policy.
-- For outbound email, identify the agent/project clearly, keep user-facing communications concise and professional, and record important sent-email context in the durable project status/issue system.
-
-If the account is missing, create a setup task and continue with non-blocked planning. If OAuth/delegated access is missing, create a setup task and ask the user for help completing the consent flow. Block SSO-dependent service setup, analytics dashboard ownership, support inbox setup, automated email reporting, or agent-sent email until the user provides the account plus required OAuth/delegated access or an approved alternative.
 
 ## Subagent Execution Rules
 
@@ -169,6 +135,7 @@ Always spawn focused subagents for directly asked actionable tasks and for tasks
 
 - Product management / PRD / user story / scope decisions → spawn a subagent instructed to use `product-manager`.
 - Marketing / launch planning / channel strategy / sincere outreach / app-store listing copy, ASO, localization, or ads → spawn a subagent instructed to use `marketer`.
+- Agent/project identity, Gmail/Google account setup, OAuth/delegated access, signed-in browser SSO, or email identity for communications → spawn a subagent instructed to use `agent-identity-and-access`.
 - Google Play Console UI publishing / AAB upload / internal testing / tester lists / rollout status → spawn a subagent instructed to use `play-store-publisher` when that skill is available; coordinate with `marketer` only for listing/ad/user-acquisition work.
 - Google Play CLI/API automation / fastlane supply / EAS Submit / Gradle Play Publisher / Play service account setup → spawn a subagent instructed to use `play-store-cli` when that skill is available; coordinate with `devops` for CI secret storage and pipelines.
 - UI guidelines / design systems / screen/state planning / visual UX review / UI bug triage → spawn a subagent instructed to use `ui-designer`.
@@ -421,7 +388,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 ## Workflow
 
 1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context.
-2. During new-project onboarding, ask for or confirm the dedicated project/agent Gmail/Google account for SSO, service notifications, and email communications; then ask the user to help complete the required OAuth/delegated-access flow, record account/OAuth status in the runbook/operations context, or create a follow-up setup issue if missing.
+2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
 4. For each PRD, decide whether the work needs UI. If yes, spawn a `ui-designer` subagent and create UI design tasks before tech-spec work. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins.
 5. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior.
@@ -443,8 +410,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 
 - [ ] Milestone goal is objective.
 - [ ] Tasks are tracked in an issue system.
-- [ ] New projects have a documented dedicated project/agent Gmail/Google account for SSO, service notifications, and email communications, or a follow-up setup issue exists.
-- [ ] OAuth/delegated access for the agent Google account was requested from the user, verified with least-privilege scopes, and recorded, or a follow-up setup issue exists.
+- [ ] New projects have invoked `agent-identity-and-access` and have a documented agent identity/access status or a follow-up setup issue.
+- [ ] Project email communications use the configured agent identity/delegated mailbox by default, or email is blocked pending identity/access setup.
 - [ ] Directly asked actionable tasks have a durable issue/task before execution and are assigned to a focused subagent by default.
 - [ ] Subagents receive enough context.
 - [ ] Any product-management, architecture, coding, devops, or QA work was delegated to the corresponding specialist subagent.
