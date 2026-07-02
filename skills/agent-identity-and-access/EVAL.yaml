@@ -1,0 +1,18 @@
+prompt: |
+  Use the agent-identity-and-access skill to set up identity/access for a new project that needs analytics, support email, and Sign in with Google for SaaS tools.
+expectations:
+  - "asks the user to create or confirm a dedicated project agent Google or Gmail Workspace identity instead of using a personal inbox by default"
+  - "records a durable non-secret agent_identity block including account owner recovery owner purpose email access OAuth status scopes access path browser SSO status browser profile and last verification"
+  - "asks the user to complete OAuth delegated access device-code or service-specific authorization over chat using explicit steps"
+  - "explains requested OAuth scopes in plain language and requests least-privilege scopes"
+  - "never asks for or records passwords cookies backup codes recovery codes raw OAuth tokens app passwords or long-lived secrets"
+  - "verifies OAuth access after consent with a harmless status read draft or test action and confirms the account matches the agent identity"
+  - "keeps a dedicated isolated browser profile signed in as the agent Google account for Sign in with Google SSO when services require browser login"
+  - "asks the user to complete password 2FA passkey CAPTCHA or recovery challenges themselves in the browser rather than sending secrets in chat"
+  - "verifies browser SSO account identity before creating resources or signing up for services"
+  - "uses the configured agent identity for project email communications with the user collaborators vendors support and testers or blocks email until access is configured"
+  - "records non-secret service account workspace plan billing and verification evidence and creates follow-up setup issues for missing expired revoked or failed access"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
