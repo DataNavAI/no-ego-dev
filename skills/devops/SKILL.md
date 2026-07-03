@@ -1,7 +1,7 @@
 ---
 name: devops
 description: "Use when setting up CI/CD, deployments, environment management, or operational health checks."
-version: 0.5.0
+version: 0.5.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -18,12 +18,14 @@ Make the product shippable and observable. NED devops chooses boring, reliable a
 ## Responsibilities
 
 - CI pipeline for tests, lint, type checks, build, and security basics.
+- New-project hosting research: compare viable hosting/deployment options, present the tradeoffs clearly, recommend a default, and ask the user to choose before committing the project to a provider/account.
 - CD pipeline or documented deploy command.
 - At least two persistent environments for every deployable product: **staging** and **production**.
 - Automatic deployment to staging from the integration branch after CI passes.
 - Environment variable and secret handling.
 - Preview/staging/production environment strategy.
 - Monitoring, logs, health checks, hosting-cost visibility, and rollback plan.
+- Chat-first provider account setup: use the configured primary Google account for SSO/account creation whenever practical, and minimize anything that requires the user to access the agent machine directly.
 - Per-project deployment and system monitoring documentation, including routine cost checks for hosted resources.
 
 ## Access and Tooling Prerequisites
@@ -57,6 +59,71 @@ Default recommendations:
 - Full-stack app/API with simple managed deploy: prefer Render, Railway, or Fly.io based on the stack and existing account; choose one and explain why.
 - Existing cloud account/project: use the user's current provider rather than migrating.
 - Hosting, DNS, domain registrar, and infrastructure providers such as GoDaddy, Cloudflare, Render, Railway, Fly.io, Vercel, AWS, GCP, Azure, Supabase, Neon, or similar: prefer official CLI/API access over manual dashboard work when available.
+
+## New Project Hosting Selection
+
+For a new deployable project, do not silently pick a hosting provider unless the user already specified one or the project repository clearly has a committed platform. Devops owns a short provider selection step before account creation, billing setup, DNS work, or production deployment.
+
+Process:
+
+1. Inspect the product shape and stack: static site, Next.js/serverless, full-stack web app, API worker, background jobs, database/storage needs, region/latency, expected traffic, domains, compliance/privacy needs, build/runtime language, and budget sensitivity.
+2. Research 3-5 realistic hosting options for the exact project type. Include the obvious default plus any provider the user already uses. Prefer current provider docs/pricing over memory when pricing, limits, supported runtimes, regions, or account setup materially affect the choice.
+3. Present a concise hosting choice brief, then ask the user to choose one before creating a new hosting account or committing production architecture. Do not bury the decision in a long essay.
+4. Recommend one default with rationale, but make the tradeoffs explicit: deployment fit, managed database/story for persistence, staging/prod support, GitHub integration, CLI/API maturity, logs/monitoring, rollback, domain/DNS path, expected cost/free-tier risk, lock-in/migration cost, and whether the agent can operate it mostly through chat.
+5. After the user chooses, record the decision and rationale in `.projects/<project>/runbooks/deployment-and-monitoring.md` or a project decision log, then proceed with account/project setup.
+
+Hosting choice brief template:
+
+```text
+Hosting options for <project>
+
+Recommendation: <provider> because <1-2 sentence rationale tied to stack, MVP needs, cost, and operability>.
+
+Options:
+1. <Provider> — Best for: <fit>. Pros: <2-3>. Cons/risks: <2-3>. Estimated MVP cost: <free/low/monthly range + caveat>. Agent operability: <CLI/API/GitHub integration quality>.
+2. <Provider> — Best for: ...
+3. <Provider> — Best for: ...
+
+My suggested choice: <provider>.
+Please choose: A) <provider>, B) <provider>, C) <provider>, or D) other.
+After you choose, I’ll set up the account/project as far as possible using the configured primary Google account and chat-friendly authorization.
+```
+
+If the user cannot decide, choose the lowest-risk reversible default for the MVP stage and state the assumption. If the choice has billing or account-ownership consequences, ask for the explicit provider choice before proceeding.
+
+## Primary Google Account and Chat-First Account Setup
+
+Use the configured primary Google account as the default identity for new hosting/provider accounts whenever practical. This usually means Google SSO, Google Workspace-managed account access, or adding the primary Google account as the owner/admin/member for the provider team/project. Do not create random new email/password accounts unless Google SSO is unavailable or the user explicitly wants a separate identity.
+
+Before setup, check what account/access is already configured in the profile or tooling without exposing secrets: Google Workspace/gws auth, browser logged-in state, provider CLI auth, existing provider teams, and documented project identity conventions. If there is a project-specific agent identity skill or runbook, follow it.
+
+Rules for account setup:
+
+- Prefer flows the agent can finish from the machine/browser/CLI using the configured primary Google account, while keeping ownership in the user's account/team.
+- Prefer OAuth/device-code/dashboard approval flows over asking the user to run commands on the agent machine. The user is often on chat only and cannot access the machine at that moment.
+- If the user must intervene, give a condensed numbered checklist they can complete from phone or desktop chat: exact URL, button/menu path, account to select, role/scopes to grant, and what non-secret confirmation to send back.
+- When a local-machine login is unavoidable, offer a chat-friendly alternative first: add the primary Google account/agent account as collaborator, create a scoped token in the provider dashboard, approve a GitHub/provider integration for the repo, or use a device-code link.
+- Avoid raw passwords, broad long-lived secrets, or screenshots of secrets in chat. If a token is unavoidable, request scoped/revocable access and tell the user exactly where to store it or paste it directly into the provider/GitHub secret UI.
+- After the user completes an intervention, verify access with a harmless `whoami`, project/team list, repo integration check, or read-only API call before creating/changing resources.
+
+Condensed user-intervention template:
+
+```text
+I can do the rest from chat, but I need you to approve <provider> access once.
+
+Please do this (<2 minutes):
+1. Open: <exact URL>
+2. Sign in with the primary Google account: <account label/email if known, otherwise "the configured primary Google account">.
+3. Click: <exact button/menu path>.
+4. Choose/grant: <team/project/repo/role/scopes>.
+5. If asked for billing, choose: <free tier/trial/existing billing account>; do not upgrade unless you approve it.
+6. Reply here with: <non-secret confirmation such as team name, project slug, or URL>.
+
+Do not send passwords or raw long-lived secrets in chat. Once you reply, I’ll verify access and finish setup via CLI/API.
+```
+
+For provider signups that support Google SSO, first try to create/select the provider account with the primary Google account, then configure the project through the provider's GitHub integration, CLI, or API. For providers that require billing verification, present the exact billing step and safe default plan/trial selection, then stop for explicit user confirmation before paid upgrades.
+
 
 ## CLI/API Provider Access Setup
 
@@ -290,26 +357,33 @@ If cost data is unavailable, mark it as `missing cost visibility`, identify the 
 
 ## Workflow
 
-1. Inspect stack, hosting constraints, existing pipelines, and current authenticated access.
-2. If end-to-end devops access is missing, make one upfront access request covering repository/CI, deployment provider, secrets/environments, logs, monitoring, rollback, domains, and supporting services needed for this project. Use the easiest-path step-by-step instructions above.
-3. Prefer CLI/API access for hosting/DNS/cloud providers; guide the user step by step through login or scoped API-key creation so the rest of the setup can be completed via chat.
-4. Verify granted access immediately with CLI/API checks, then proceed without repeated permission prompts unless a new external system or stronger permission is genuinely required.
-5. Add the smallest CI workflow that blocks broken code.
-6. Choose a secret store for API keys and credentials before creating or requesting keys. Add a store-backed local loader script from `skills/devops/scripts/load-secrets-from-store.sh` and commit only safe examples/references, not secret values.
-7. Configure separate staging and production environments, including separate secrets/env var namespaces and separate store paths/items.
-8. Add deployment automation that auto-deploys staging after CI passes on the integration branch.
-9. Add a safe production deployment path with an explicit approval/tag/manual trigger unless the user asks for fully automatic production deploys.
-10. Document required secrets as names and store references/paths only; never commit secret values.
-11. Create or update the per-project deployment and system monitoring runbook at `.projects/<project>/runbooks/deployment-and-monitoring.md`.
-12. Add health checks, hosting-cost visibility, budget-alert expectations, and operational runbook details.
-13. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
+1. Inspect stack, hosting constraints, existing pipelines, current authenticated access, and whether this is a new project needing provider selection.
+2. For a new project without a chosen provider, research 3-5 viable hosting options for the specific stack and MVP/serviceability needs; present a concise recommendation brief and ask the user to choose before creating accounts or locking architecture.
+3. After the user chooses a provider, prefer the configured primary Google account for provider signup/SSO/team ownership and choose a chat-first setup path that does not require the user to access the agent machine when avoidable.
+4. If end-to-end devops access is missing, make one upfront access request covering repository/CI, deployment provider, secrets/environments, logs, monitoring, rollback, domains, and supporting services needed for this project. Use the easiest-path step-by-step instructions above.
+5. Prefer CLI/API access for hosting/DNS/cloud providers; guide the user step by step through login, OAuth/device-code approval, collaborator access, or scoped API-key creation so the rest of the setup can be completed via chat.
+6. Verify granted access immediately with CLI/API checks, then proceed without repeated permission prompts unless a new external system or stronger permission is genuinely required.
+7. Add the smallest CI workflow that blocks broken code.
+8. Choose a secret store for API keys and credentials before creating or requesting keys. Add a store-backed local loader script from `skills/devops/scripts/load-secrets-from-store.sh` and commit only safe examples/references, not secret values.
+9. Configure separate staging and production environments, including separate secrets/env var namespaces and separate store paths/items.
+10. Add deployment automation that auto-deploys staging after CI passes on the integration branch.
+11. Add a safe production deployment path with an explicit approval/tag/manual trigger unless the user asks for fully automatic production deploys.
+12. Document required secrets as names and store references/paths only; never commit secret values.
+13. Create or update the per-project deployment and system monitoring runbook at `.projects/<project>/runbooks/deployment-and-monitoring.md`.
+14. Add health checks, hosting-cost visibility, budget-alert expectations, and operational runbook details.
+15. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
 
 ## Verification Checklist
 
 - [ ] CI runs tests/build on pull requests.
+- [ ] For new projects, 3-5 viable hosting options were researched for the actual stack/product constraints and presented in a concise choice brief.
+- [ ] The user chose a hosting provider, or an explicit reversible default/assumption was recorded before account creation or architecture lock-in.
+- [ ] The hosting decision and rationale were recorded in the deployment/monitoring runbook or decision log.
 - [ ] End-to-end devops access was checked upfront across repository/CI, deployment provider, secrets/environments, logs, monitoring, rollback, domains, and supporting services.
 - [ ] If access was missing, the user received one easiest-path upfront access request broad enough to avoid repeated permission prompts during normal devops operations.
-- [ ] Hosting/DNS/cloud provider setup uses CLI/API access when available, with step-by-step user guidance for login or scoped API-key creation.
+- [ ] Hosting/DNS/cloud provider setup uses CLI/API access when available, with step-by-step user guidance for login, OAuth/device-code approval, collaborator access, or scoped API-key creation.
+- [ ] New provider accounts use the configured primary Google account for SSO/account ownership where practical.
+- [ ] If user intervention was required, the instructions were condensed, phone/chat-friendly, and did not assume the user could access the agent machine.
 - [ ] Granted access was verified with CLI/API checks before proceeding.
 - [ ] The chosen provider is the easiest viable path for the user and product stage.
 - [ ] Staging and production environments are configured or explicitly documented as required setup.
