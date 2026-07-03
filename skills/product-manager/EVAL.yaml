@@ -2,6 +2,10 @@ prompt: |
   Use the product-manager skill to respond to a realistic client/project request for a user-facing product that needs a PRD and a way to learn from user feedback after launch.
 expectations:
   - "mentions durable artifact"
+  - "explicitly classifies the work as prototype MVP beta or production iteration with rationale"
+  - "for an MVP plans a fully working serviceable core product rather than a stakeholder demo"
+  - "includes real deployment or release target for the MVP or a justified exception"
+  - "includes serviceability operability support monitoring rollback ownership and QA gates for major user flows"
   - "includes verification"
   - "avoids vague next steps"
   - "adds a way for users to submit feedback"
@@ -17,6 +21,7 @@ expectations:
   - "documents intentional platform differences with rationale and platform specific acceptance criteria"
   - "includes activation funnel engagement retention and conversion or revenue metrics or explicitly marks categories not applicable"
   - "specifies analytics events or dashboard/report destination review cadence and what to do if metrics regress"
+  - "researches and recommends a cost effective analytics tool by default or explicitly reuses an adequate existing analytics stack"
   - "creates follow-up work when product metrics instrumentation is missing"
   - "treats bug reports as defects to verify or route to QA/issue triage"
   - "does not take non-bug feedback literally and instead identifies user context, underlying problem, and simplest solution"
