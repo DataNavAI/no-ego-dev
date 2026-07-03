@@ -110,8 +110,8 @@ browser:
     session_key: ''
     adopt_existing_tab: false
 checkpoints:
-  enabled: false
-  max_snapshots: 20
+  enabled: true
+  max_snapshots: 50
   max_total_size_mb: 500
   max_file_size_mb: 10
   auto_prune: true
@@ -397,7 +397,7 @@ matrix:
   free_response_rooms: ''
   allowed_rooms: ''
 approvals:
-  mode: manual
+  mode: smart
   timeout: 60
   cron_mode: deny
   mcp_reload_confirm: true
