@@ -1,7 +1,7 @@
 ---
 name: qa
 description: "Use when writing or maintaining smoke/feature test plans, running UI QA, producing pass/fail reports with screenshots, and filing bugs in the issue system."
-version: 0.1.0
+version: 0.1.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -36,7 +36,7 @@ Include:
 - Purpose and scope.
 - Environment/URL and required test account or seed data assumptions.
 - Preconditions and reset steps.
-- Test cases with stable IDs, steps, expected result, and evidence to capture.
+- Test cases with stable IDs, covered user flow, persona/role when relevant, preconditions/test data, detailed step-by-step actions, expected result per major step, and evidence to capture.
 - Negative/edge cases for user-facing errors.
 - Accessibility/usability checks where relevant: loading states, disabled buttons, empty states, error copy, keyboard basics, responsive layout.
 - Known open bugs or intentionally deferred checks, linked to issue IDs.
@@ -44,6 +44,22 @@ Include:
 Smoke plans should cover only the smallest critical path set: app loads, authentication if applicable, core create/read/update/delete or primary conversion path, navigation, and production/staging health indicators.
 
 Feature plans should cover the feature's happy path, common failure paths, permission/state variants, and interactions with nearby features.
+
+## Major User Flow Coverage
+
+When authoring or updating a smoke, feature, release, or regression plan, identify the product's major user flows before writing individual cases. A major user flow is any end-to-end journey a real user must complete to receive core value, recover from failure, manage account/payment/state, or safely exit/undo important actions.
+
+For each major user flow in scope, write at least one detailed test case. Do not leave a flow covered only by a vague checklist item such as `test onboarding` or `verify checkout`. Each major-flow test case must include:
+
+- Stable case ID and user-flow name, e.g. `SMOKE-03 — New user signup and first project creation`.
+- Persona/role and starting state when relevant: anonymous visitor, new user, returning user, admin, paid user, blocked user, empty account, populated account, etc.
+- Preconditions, test data, account/device/browser assumptions, and reset/cleanup steps.
+- Detailed numbered steps from the user's first action through the expected end state, including navigation, form inputs, confirmation actions, and any emails/notifications/deep links.
+- Expected result for the whole flow and for major intermediate checkpoints where failure would mislead or block a user.
+- Evidence to capture: screenshots, video, console/network logs, database/admin confirmation, issue links, or analytics/event checks where relevant.
+- Negative or recovery variant when the flow has common user-facing failure states, such as invalid input, permission denial, payment failure, offline/network error, empty state, duplicate submission, or back/refresh behavior.
+
+If a major flow is intentionally out of scope for the current run, list it under `Out-of-scope major flows` with the reason and the follow-up plan. If the flow is blocked by missing environment, credentials, seed data, or deployment, mark it `BLOCKED` rather than silently omitting it.
 
 ## Running a Test Plan
 
@@ -146,6 +162,8 @@ Related issue/PR/milestone:
 
 ## Test Results
 ### <CASE-ID>: <case title>
+User flow covered:
+Persona/starting state:
 Status: PASS | FAIL | BLOCKED
 Steps run:
 Expected:
@@ -164,15 +182,19 @@ Notes:
 
 ## Common Pitfalls
 
-1. **Calling QA done without screenshots.** A UI QA run needs visual evidence, especially for failures.
-2. **Filing duplicate bugs.** Always search first; update existing bugs with new evidence when possible.
-3. **Deleting evidence too early.** Upload/attach and verify first, then remove the per-run folder.
-4. **Ignoring obvious adjacent breakage.** A normal user does not care that the plan only covered one feature; report obvious broken navigation, auth, layout, error handling, or data-loss risks.
-5. **Letting stale bugs block milestones.** Re-triage before execution and milestone completion; close invalid, obsolete, or too-minor bugs as won't fix with rationale.
+1. **Skipping detailed cases for major flows.** Every major user flow in scope needs at least one detailed test case with concrete steps, expected checkpoints, data, and evidence; vague checklist rows are not enough.
+2. **Calling QA done without screenshots.** A UI QA run needs visual evidence, especially for failures.
+3. **Filing duplicate bugs.** Always search first; update existing bugs with new evidence when possible.
+4. **Deleting evidence too early.** Upload/attach and verify first, then remove the per-run folder.
+5. **Ignoring obvious adjacent breakage.** A normal user does not care that the plan only covered one feature; report obvious broken navigation, auth, layout, error handling, or data-loss risks.
+6. **Letting stale bugs block milestones.** Re-triage before execution and milestone completion; close invalid, obsolete, or too-minor bugs as won't fix with rationale.
 
 ## Verification Checklist
 
 - [ ] Smoke/feature test plan exists or was updated.
+- [ ] Major user flows in scope were identified before writing cases.
+- [ ] Each major user flow has at least one detailed test case with concrete steps, expected checkpoints, preconditions/test data, and evidence requirements.
+- [ ] Any major flow not tested is explicitly marked out of scope or blocked with a reason and follow-up.
 - [ ] One unique artifact folder was created for this run.
 - [ ] UI steps were executed in the intended environment.
 - [ ] Pass/fail/blocked result exists for every test case.

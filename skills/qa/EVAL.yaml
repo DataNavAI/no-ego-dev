@@ -2,6 +2,9 @@ prompt: |
   Use the qa skill to create or run a realistic UI smoke test plan for a deployed project and describe the required report.
 expectations:
   - "creates or updates a smoke or feature test plan"
+  - "identifies the major user flows in scope before writing cases"
+  - "writes a detailed test case for each major user flow with concrete steps preconditions expected checkpoints and evidence requirements"
+  - "marks untested major flows as out of scope or blocked with a reason and follow up"
   - "uses a separate artifact folder for each QA run"
   - "includes pass/fail or blocked results with failure details"
   - "captures screenshots or visual evidence for UI failures"

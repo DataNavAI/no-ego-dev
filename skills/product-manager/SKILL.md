@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.2
+version: 0.2.4
 author: NoEgoDev
 license: MIT
 metadata:
@@ -14,9 +14,9 @@ metadata:
 
 ## Overview
 
-Turn a client request into a small, coherent product definition. Focus on why the feature matters, who uses it, the critical user journey, and conflicts with existing product behavior.
+Turn a client request into a small, coherent product definition. Focus on why the feature matters, who uses it, the critical user journey, conflicts with existing product behavior, and whether the requested outcome is a prototype or a real MVP.
 
-Product management also owns the learning loop. Every PRD should include a practical way for users to submit feedback, a daily routine for checking that feedback while the project is active or newly launched, and a concrete product-metrics plan so the team can tell whether the product is working.
+Product management also owns the learning loop. Every PRD should include a practical way for users to submit feedback, a daily routine for checking that feedback while the project is active or newly launched, and a concrete product-metrics plan so the team can tell whether the product is working. By default, every new user-facing project should research and recommend a cost-effective analytics tool and make measurement part of the product definition: you cannot improve things unless you measure.
 
 ## Core PRD for New Projects
 
@@ -26,10 +26,33 @@ Include:
 - Single CUJ: the one critical user journey the MVP must nail.
 - Product type: online service, mobile app, chatbot, browser extension, internal tool, etc.
 - Target users and non-goals.
+- Product stage definition: prototype, MVP, beta, or production iteration, with explicit rationale.
 - Success metrics and launch constraints.
 - Product metrics plan: activation, engagement, retention, conversion/revenue, and core-CUJ completion metrics or explicit reasons when a category is not applicable.
+- Cost-effective analytics tool recommendation: existing analytics to reuse, or 2-4 researched low-cost/privacy-appropriate options with a recommended default for the project stage.
 - User feedback path: where users can submit feedback, who reviews it, and how it is linked to the issue/product planning system.
 - Daily feedback check: when feedback is reviewed, which channels are checked, and where findings/actions are recorded.
+- MVP deployment and serviceability plan when the requested outcome is an MVP: live environment, release path, ownership, monitoring, support, data/backups, QA gates, rollback, and operational follow-up tasks.
+
+## Prototype vs MVP Rules
+
+Be explicit about product stage. A prototype and an MVP are not the same thing.
+
+A **prototype** is allowed to be partial, fragile, mocked, local-only, or manually operated if its purpose is to let stakeholders experience or evaluate a slice of user flows, design direction, technical feasibility, or market reaction. Prototype PRDs should name what is fake/manual/incomplete and what decision the prototype is meant to unlock.
+
+An **MVP** is a real product with the smallest coherent set of core features that actual users can use to receive the promised value. It must be fully working and serviceable for the core journey, even if scope is intentionally narrow. Usually an MVP requires a real deployment or release channel, not just a local demo or stakeholder walkthrough.
+
+For an MVP PRD, include the minimum serviceable-product plan:
+
+- Core feature set: the smallest features required for the primary CUJ to work end to end without manual agent intervention.
+- Real deployment/release target: production, staging-to-production path, app-store/TestFlight/internal release, hosted web URL, bot/channel deployment, API endpoint, or explicit exception when deployment is genuinely not applicable.
+- Serviceability requirements: account/auth model, persistence, error handling, recovery states, backups or data-retention expectations, admin/support access, basic abuse/privacy/safety considerations, and dependency ownership.
+- Operability: monitoring/logging, alerts or daily health check, rollback/redeploy path, incident owner, support/feedback intake, and handoff notes.
+- Quality gates: detailed QA plan for each major user flow, acceptance criteria, performance/security/privacy checks where relevant, and launch blockers.
+- Measurement and learning: analytics/events, dashboard/report location, feedback loop, and review cadence after launch.
+- Scope cuts: features intentionally excluded from MVP because they are not required for core value, plus follow-up parking lot.
+
+Do not call something an MVP if users cannot complete the primary CUJ in a real environment, if critical data is not persisted, if there is no support/feedback path, or if the team cannot operate/recover it after launch. Label it a prototype instead and define the path from prototype to MVP.
 
 ## Feature PRD for Existing Projects
 
@@ -86,9 +109,11 @@ The PRD must specify:
 - Engagement/retention metric when repeated use matters; conversion/revenue metric when monetization or signup flow matters.
 - Event names/properties or analytics questions the architect/coder must instrument, using privacy-safe identifiers and avoiding sensitive payloads.
 - Dashboard/report destination and review cadence, e.g. `.projects/<project>/metrics/dashboard-plan.md`, analytics dashboard URL, or issue tracker report.
+- Analytics tool selection: identify any existing analytics, logs, data warehouse, app-store console, or hosting metrics that can be reused; otherwise research cost-effective tools appropriate for the platform, privacy needs, expected event volume, team skills, and budget.
+- Recommended analytics default with cost expectation, tradeoffs, integration owner, and why it is sufficient for learning at the current product stage.
 - Baseline/current value when available, target/threshold when known, and what action to take when metrics regress.
 
-If metrics instrumentation does not exist yet, create a follow-up architecture/devops/coder task instead of pretending metrics are available. Keep the first metrics plan small; do not block MVPs on heavyweight analytics unless the product depends on it.
+If metrics instrumentation does not exist yet, create a follow-up architecture/devops/coder task instead of pretending metrics are available. Keep the first metrics plan small; do not block MVPs on heavyweight analytics unless the product depends on it. Prefer affordable/free-tier analytics that can answer the core learning questions now, with a migration path only when scale or compliance justifies it.
 
 ## User Feedback Loop Rules
 
@@ -165,19 +190,21 @@ Daily platform parity review — <project> — <date/time + timezone>
 
 1. Read existing project knowledge, product docs, feedback logs, analytics dashboards, and relevant metrics.
 2. Ask only clarifying questions that materially change scope; otherwise state assumptions.
-3. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
-4. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
-5. Draft the smallest useful PRD.
-6. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
-7. Add a product metrics plan with key events/funnels, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
-8. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
-9. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
-10. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
-11. Check conflicts against existing features, the core product value, and platform parity expectations.
-12. Save the PRD under `.projects/<project>/prds/`.
-13. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
-14. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
-15. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
+3. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, define the smallest fully working/serviceable core product and the real deployment/release target. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
+4. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
+5. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
+6. Draft the smallest useful PRD.
+7. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
+8. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
+9. Add a product metrics plan with key events/funnels, researched cost-effective analytics tool recommendation, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
+10. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
+11. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
+12. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
+13. Check conflicts against existing features, the core product value, and platform parity expectations.
+14. Save the PRD under `.projects/<project>/prds/`.
+15. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
+16. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+17. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
 
 ## Verification Checklist
 
@@ -185,6 +212,12 @@ Before finishing, include a brief verification note that states what artifact wa
 
 - [ ] PRD has value proposition or user problem.
 - [ ] PRD has one primary CUJ.
+- [ ] PRD explicitly classifies the work as prototype, MVP, beta, or production iteration with rationale.
+- [ ] Prototype plans identify mocked/manual/incomplete pieces and the decision the prototype should unlock.
+- [ ] MVP plans define a fully working and serviceable core product, not merely a stakeholder demo.
+- [ ] MVP plans include real deployment/release target or an explicit justified exception.
+- [ ] MVP plans include serviceability and operability: persistence, error handling, monitoring/logging, support/feedback, ownership, rollback/recovery, and launch handoff.
+- [ ] MVP plans include QA gates for each major user flow and launch blockers.
 - [ ] Target market language, locale/region, currency/timezone/app-store/payment assumptions are identified when relevant.
 - [ ] Foreign services referenced in the PRD/research are checked with local-language/local-region settings, or local verification is recorded as an explicit follow-up task.
 - [ ] Degraded foreign-service user experience risks are called out with local/region-appropriate alternatives when they affect the core journey.
@@ -196,6 +229,7 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] PRD defines product metrics tied to the value proposition and CUJ.
 - [ ] Activation, funnel/CUJ, engagement/retention, and conversion/revenue metrics are included or explicitly marked not applicable.
 - [ ] Event names/properties, dashboard/report destination, review cadence, and regression action are specified.
+- [ ] A cost-effective analytics tool/default is researched and recommended, or an existing adequate analytics stack is explicitly reused.
 - [ ] Missing analytics/instrumentation becomes explicit follow-up work.
 - [ ] Acceptance criteria are objective.
 - [ ] Feature conflicts are addressed.
