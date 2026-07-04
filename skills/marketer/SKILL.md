@@ -40,6 +40,7 @@ Prefer project-local artifacts so future project, product, devops, and QA agents
 - Messaging/positioning: `.projects/<project>/marketing/positioning.md`
 - App-store submission checklist: `.projects/<project>/marketing/app-store-submission.md`
 - Google Play country/localization worksheet: `.projects/<project>/marketing/play-store-localization.md`
+- Google Ads test plan: `.projects/<project>/marketing/google-ads-test-plan.md`
 - Post-launch report: `.projects/<project>/marketing/post-launch-report.md`
 
 If the project already has a stronger convention, follow it and mention the path used.
@@ -153,6 +154,16 @@ Do not lead with paid spend until message/channel fit has some signal. After org
 - Reddit/LinkedIn ads for narrowly defined B2B or niche audiences.
 - Retargeting for landing-page visitors if privacy policy and consent setup are correct.
 
+For Google Ads specifically, use `references/google-ads-bidding-and-simulators.md` and create `.projects/<project>/marketing/google-ads-test-plan.md` when paid Search, App, Performance Max, Demand Gen, Shopping, or retargeting is part of the launch. The practical rule is: define conversion tracking first, choose a campaign type that matches user intent, set a small test budget and stop-loss rule, then use bid/budget/target simulators when available before changing bids or Smart Bidding targets.
+
+Google Ads troubleshooting guardrails:
+
+- If a Search campaign has no impressions, do not assume creative is the only issue. Check account/billing/policy/ad approval basics, then inspect whether manual bids are too low or Smart Bidding targets are unrealistic.
+- Very low manual bids, target CPA values far below historical CPA, or target ROAS values above recent performance can prevent campaigns from entering/winning enough auctions and may cause little or no serving.
+- When conversion volume is the business goal, prefer a conversion-aligned strategy such as Maximize conversions over arbitrarily low bid targets.
+- Treat Google Ads simulators as planning estimates for recent weekly impressions, clicks, cost, conversions, and conversion value; they are not guarantees. Conversion estimates require stable tracking and must account for conversion delay.
+- Change one major lever at a time: budget, bid strategy, target CPA/ROAS, audience, creative, or landing page. Record changes in the launch/post-launch report.
+
 ## Minimum Response Requirements
 
 When the user asks for a launch or publishing plan, the marketer response must explicitly include all of these sections even if the final answer is concise:
@@ -170,7 +181,8 @@ When the user asks for a launch or publishing plan, the marketer response must e
 11. **Country-specific Play Store listing plan** — for each target country/Play country, state listing language(s), local user pain wording, search phrases, competitors, localized screenshots/feature graphic/video needs, trust/compliance/pricing notes, launch channels, and experiment/measurement plan. Do not treat localization as literal translation or reuse one English listing globally.
 12. **Measurement and operating loop** — UTMs/source tags, traffic, installs, signups, activation, feedback themes, reviews, crashes, app-store status, daily launch review, and issue creation for blockers.
 13. **Cross-functional coordination** — state what project manager, product manager, devops, QA, UI designer, iOS/Android/app-development agents must verify; do not imply marketing can fix store compliance or product readiness alone.
-14. **Trust boundary** — explicitly avoid fake engagement, astroturfing, scraped bulk spam, deceptive claims, unsupported superlatives, and upvote begging.
+14. **Google Ads planning when paid ads are included** — state campaign goal/type, conversion action, destination URL/app path, audience/keywords/geography, daily budget/test duration, bidding strategy, simulator check if available, stop-loss rule, and no-impression troubleshooting path for low bids or unrealistic CPA/ROAS targets. Use `references/google-ads-bidding-and-simulators.md` and name `.projects/<project>/marketing/google-ads-test-plan.md`.
+15. **Trust boundary** — explicitly avoid fake engagement, astroturfing, scraped bulk spam, deceptive claims, unsupported superlatives, and upvote begging.
 
 ## Launch Plan Template
 
@@ -218,6 +230,7 @@ Product URL/app-store URL:
 ## Measurement
 - Success metrics:
 - Source tags/UTMs:
+- Google Ads test plan path if paid search/app/PMax/Demand Gen is used:
 - Daily launch review cadence:
 - Post-launch report path:
 ```
@@ -365,4 +378,5 @@ Before finishing marketer work, include a brief verification note with artifact 
 - [ ] Email/waitlist plan is permission-based and includes opt-out/legal basics.
 - [ ] Mobile app plan includes Apple and/or Google account/access, app record/listing, build upload, screenshots/metadata, privacy/data safety, testing tracks, review submission, release mode, and common rejection risks.
 - [ ] Measurement plan includes source tracking, launch review cadence, feedback triage, and post-launch report path.
+- [ ] If Google Ads is recommended, the plan includes conversion tracking, campaign type, budget/test duration, bidding strategy, simulator check, stop-loss rule, and no-impression troubleshooting for low bids or unrealistic CPA/ROAS targets.
 - [ ] Follow-up issues are created for missing launch readiness, missing analytics, app-store blockers, repeated feedback, or conversion problems.
