@@ -8,6 +8,7 @@ FocusNest is a fictional mobile app for remote software engineers. It protects t
 - an iOS TestFlight build;
 - an Android internal test build;
 - an intent to publish to Apple App Store and Google Play soon;
+- early organic interest from remote-work communities, enough to justify a small paid Google Ads test after launch readiness and conversion tracking are verified;
 - no desire to use spam, fake engagement, or generic growth hacks.
 
 A passing marketer response should produce a practical launch and app-store publishing plan, not just slogans. It should combine channel strategy, sincere outreach copy, launch assets, measurement, post-launch learning, and official app-store submission knowledge for both Apple and Google.
