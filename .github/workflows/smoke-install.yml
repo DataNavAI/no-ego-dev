@@ -1,0 +1,44 @@
+name: Smoke test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  install-profile:
+    name: install-profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Hermes Agent
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Hermes is available
+        shell: bash
+        run: |
+          set -euxo pipefail
+          hermes --version
+          hermes profile list
+
+      - name: Install this profile distribution
+        shell: bash
+        run: |
+          set -euxo pipefail
+          PROFILE_NAME="no-ego-dev-smoke-${GITHUB_RUN_ID}"
+          hermes profile install "$GITHUB_WORKSPACE" --name "$PROFILE_NAME" --yes
+          hermes profile info "$PROFILE_NAME"
+          hermes --profile "$PROFILE_NAME" skills list
+          test -f "$HOME/.hermes/profiles/$PROFILE_NAME/SOUL.md"
+          test -f "$HOME/.hermes/profiles/$PROFILE_NAME/distribution.yaml"
+          hermes profile delete "$PROFILE_NAME" --yes

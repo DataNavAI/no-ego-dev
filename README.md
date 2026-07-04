@@ -1,12 +1,14 @@
 # NoEgoDev (NED)
 
+[한국어 README](README.ko.md)
+
 NoEgoDev — NED for short — is a Hermes profile that turns a plain request into a working, publishable prototype. It can help shape the product, design the UI, build the app, QA it, publish it, and plan honest marketing around it.
 
 NED is best for people who want to test an idea quickly with something real enough to share with users, teammates, or customers.
 
 ## Getting Started
 
-Minimum requirement: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 or newer. That is the first release line with profile distribution support.
+Minimum requirement: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 / v0.14.0 or newer. That is the first release line with profile distribution support.
 
 1. Install Hermes Agent.
 2. Open Hermes.
@@ -26,7 +28,7 @@ NED works best when you describe the outcome rather than prescribing technical c
 
 ## Minimum requirements
 
-- [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 or newer.
+- [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 / v0.14.0 or newer.
 
 ## What NED can help with — and prompts to try
 
