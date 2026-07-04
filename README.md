@@ -4,103 +4,90 @@ NoEgoDev — NED for short — is a Hermes profile that turns a plain request in
 
 NED is best for people who want to test an idea quickly with something real enough to share with users, teammates, or customers.
 
-## What NED can help with
+## Getting Started
 
-- Turn a rough idea, URL, screenshots, or benchmark product into a concrete build plan.
-- Design a practical UI and core user flow.
-- Build browser, mobile, game, or app prototypes.
-- QA the result with reproducible checks and user-flow testing.
-- Prepare publishing/deployment steps when the project is ready to share.
-- Create positioning, launch notes, outreach plans, and marketing assets without spammy growth hacks.
+Minimum requirement: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 or newer. That is the first release line with profile distribution support.
 
-## Install
+1. Install Hermes Agent.
+2. Open Hermes.
+3. Paste one of these prompts:
 
-```bash
-hermes profile install github.com/knoomdevbot/no-ego-dev --alias
+```text
+Install github.com/knoomdevbot/no-ego-dev on the current profile.
 ```
 
-Then copy the environment example and add at least one model provider key:
-
-```bash
-cd ~/.hermes/profiles/no-ego-dev
-cp .env.EXAMPLE .env
-# edit .env with your API key
+```text
+Install github.com/knoomdevbot/no-ego-dev on a new profile named no-ego-dev.
 ```
 
-Run NED:
+4. Start using NED with a practical product prompt. Tell it what you want to test, who it is for, and any URL, screenshots, benchmark product, or publishing goal it should use.
 
-```bash
-no-ego-dev chat
-```
-
-If you installed without the alias, run:
-
-```bash
-hermes --profile no-ego-dev chat
-```
+NED works best when you describe the outcome rather than prescribing technical choices. Give it the product intent and examples; let it infer the simplest practical way to build and share the prototype.
 
 ## Minimum requirements
 
-- [Hermes Agent](https://hermes-agent.nousresearch.com/docs) installed and working.
-- A model provider API key in `.env`.
-  - OpenRouter: `OPENROUTER_API_KEY`
-  - Anthropic: `ANTHROPIC_API_KEY`
-- Git installed if you want NED to work with repositories.
-- Node.js and/or Python installed for the kinds of projects you want NED to build.
-- Optional: GitHub CLI, hosting provider CLI, browser access, or app-store credentials when you ask NED to publish something.
+- [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 or newer.
 
-## How to use NED
+## What NED can help with — and prompts to try
 
-Start with the outcome you want, the audience/problem, and any examples NED should learn from. Good prompts usually include:
+### Product shaping
 
-- What you want to test or show.
-- Who it is for.
-- A benchmark URL, screenshots, sketches, or examples if you have them.
-- What matters most: visual similarity, main interaction, speed to publish, polish, onboarding, conversion, etc.
-- Any constraints: platform, branding, content, language, deadline, or places you want to publish.
-
-NED works best when you ask for a usable prototype rather than prescribing technical choices. Give it the product intent and examples; let it infer the simplest practical way to build and share it.
-
-## Copy-paste example prompts
-
-```text
-Build a prototype inspired by this website: [URL]. Keep the core user flow, but adapt it for [your audience/problem].
-```
-
-```text
-Build a prototype based on these screenshots. Focus on reproducing the main interaction and visual structure, not every detail.
-```
+Turn a rough idea, URL, screenshots, or benchmark product into a clear product direction and shareable prototype.
 
 ```text
 I want to test this product idea: [idea]. Use [URL] as the benchmark product. Create something simple enough to publish and test with real users.
 ```
 
 ```text
+Build a prototype inspired by this website: [URL]. Keep the core user flow, but adapt it for [your audience/problem].
+```
+
+### UI design
+
+Design a practical UI, visual structure, and first-user flow from examples or screenshots.
+
+```text
+Build a prototype based on these screenshots. Focus on reproducing the main interaction and visual structure, not every detail.
+```
+
+```text
 Here are screenshots of an app I like. Build a prototype with a similar flow, but for this different use case: [use case].
 ```
 
-```text
-Turn this rough idea into a shareable prototype: [idea]. Make the first user flow obvious, include realistic sample content, QA it, and give me a link I can send to testers.
-```
+### Build
 
-```text
-Build a landing page and lightweight product demo for [audience] who struggle with [problem]. Use this competitor as a quality bar: [URL]. Keep it practical and ready to publish.
-```
-
-```text
-I have a product concept for [audience]. Create a prototype that lets a user experience the main value in under two minutes, then suggest how I should test it with real users.
-```
+Build browser, mobile, game, or app prototypes that are usable enough to show real people.
 
 ```text
 Create a prototype for this mobile app idea: [idea]. I care most about onboarding, the main interaction, and whether the concept feels useful enough to share.
 ```
 
 ```text
+Build a shareable browser game for [audience/use case]. Make the first interaction obvious, include realistic sample content, and keep it simple enough for real users to try.
+```
+
+### QA
+
+Check the main user flow, find usability issues, and report practical fixes before you share publicly.
+
+```text
 Review this deployed prototype: [URL]. QA the main user flow, identify the biggest usability issues, and suggest the next practical improvements before I share it publicly.
 ```
 
+### Publishing
+
+Prepare the prototype for public sharing, including launch readiness and publishing steps.
+
 ```text
-Prepare this prototype for launch: [URL or repo]. Check the user flow, write concise launch copy, list publishing steps, and create a non-spammy marketing plan.
+Prepare this prototype for launch: [URL or repo]. Check the user flow, write concise launch copy, list publishing steps, and make it ready to share with testers.
+```
+
+### Marketing
+
+Create positioning, launch copy, outreach notes, and feedback loops without spammy growth hacks.
+
+```text
+Create a practical launch plan for this prototype: [URL or repo]. Include positioning, target users, launch copy, outreach ideas, and how we should collect useful feedback.
 ```
 
 ## Skills included
@@ -130,18 +117,12 @@ NED is packaged with focused skills for the common work needed to go from idea t
 
 Examples of deployed work created through the NED workflow:
 
-- **Korean Ground News / DataNav News** — a deployed news-analysis product with live story feeds and product monitoring.  
-  https://3ddjyvpgr3.us-east-1.awsapprunner.com/
-- **Group Game Maker** — a shareable browser game/prototype experience.  
+- **Korean Ground News** — a deployed news-analysis product with live story feeds and product monitoring.
+  https://news.datanav.app
+- **Budget Table** — a deployed budget-planning product for exploring and comparing financial scenarios.
+  https://budget.datanav.app
+- **Group Game Maker** — a shareable browser game/prototype experience.
   https://knoomdevbot.github.io/group-game-maker/
-- **Viral Product Experiments** — a set of lightweight viral/shareable product experiments.  
-  https://knoomdevbot.github.io/viral-product-experiments/
-
-## Configuration
-
-This repository includes shareable profile defaults. Put machine-specific paths, private tokens, API keys, browser sessions, and local runtime state in your installed profile's local files, not in this repository.
-
-Use `.env.EXAMPLE` as the safe template for local secrets.
 
 ## Run evals
 
