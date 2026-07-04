@@ -12,6 +12,8 @@ distribution_owned:
   - eval_runner/
   - evaldata/
   - README.md
+  - .env.EXAMPLE
+  - LICENSE
 env_requires:
   - name: OPENROUTER_API_KEY
     description: "Model access for Hermes if using OpenRouter."
