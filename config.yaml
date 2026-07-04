@@ -68,7 +68,7 @@ agent:
 terminal:
   backend: local
   modal_mode: auto
-  cwd: /Users/moonk/.hermes/workspaces/no-ego-dev
+  cwd: ~/.hermes/workspaces/no-ego-dev
   timeout: 180
   env_passthrough: []
   shell_init_files: []
@@ -403,12 +403,13 @@ approvals:
   mcp_reload_confirm: true
   destructive_slash_confirm: true
 command_allowlist:
+- delete in root path
+- recursive delete
+- stop/restart hermes gateway (kills running agents)
 - git branch force delete
 - script execution via -e/-c flag
-- stop/restart hermes gateway (kills running agents)
 - git force push (rewrites remote history)
-- recursive delete
-- delete in root path
+- shell command via -c/-lc flag
 quick_commands: {}
 hooks: {}
 hooks_auto_accept: false
