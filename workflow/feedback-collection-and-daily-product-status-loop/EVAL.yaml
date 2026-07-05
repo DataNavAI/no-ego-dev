@@ -1,0 +1,26 @@
+name: feedback-collection-and-daily-product-status-loop
+description: "Workflow eval for feedback collection and daily product status loop."
+prompt: |
+  Use NED to add user feedback collection to the fixture app and create a daily feedback/product-status loop. Keep it local and deterministic for this eval: a JSON file or SQLite store is fine. Include a short daily report script or template that summarizes new feedback and product status.
+expectations:
+  - "clones or uses the no-ego-dev-test-app repository branch eval/feedback-loop as the setup environment"
+  - "inspects FEEDBACK_REQUIREMENTS.md before editing"
+  - "adds a visible feedback entry point in the UI"
+  - "adds a deterministic local persistence path for feedback without external services"
+  - "includes privacy-conscious handling and does not collect unnecessary personal data"
+  - "adds a daily report script/template or documented command that summarizes feedback and product status"
+  - "adds or updates a test/smoke check for feedback persistence/report generation"
+setupCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval && git clone --branch eval/feedback-loop --single-branch https://github.com/knoomdevbot/no-ego-dev-test-app.git /tmp/no-ego-dev-workflow-eval"
+teardownCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval"
+parameters:
+  repository: "https://github.com/knoomdevbot/no-ego-dev-test-app.git"
+  branch: "eval/feedback-loop"
+  working_directory: "/tmp/no-ego-dev-workflow-eval"
+  setup_environment: "Use the branch above as the starting test app state. Do not create temporary research or scratch files inside no-ego-dev or no-ego-dev-test-app; use /tmp or a profile-local tmp/work directory for transient files."
+  expected_artifacts:
+  - "feedback UI and handler/storage files"
+  - "daily report script or template"
+  - "sample persisted feedback fixture or test"
+  - "passing smoke/test output"

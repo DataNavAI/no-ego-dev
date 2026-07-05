@@ -1,0 +1,25 @@
+name: mobile-first-ui-ux-polish-from-screenshots-or-videos
+description: "Workflow eval for mobile first ui ux polish from screenshots or videos."
+prompt: |
+  Use NED to polish the app for mobile first based on SCREENSHOT_NOTES.md. Fix the above-the-fold layout, make the primary action visible, improve text readability, and remove horizontal overflow on a 390px-wide phone. Keep the page simple and practical.
+expectations:
+  - "clones or uses the no-ego-dev-test-app repository branch eval/mobile-first-ui-polish as the setup environment"
+  - "inspects SCREENSHOT_NOTES.md and existing CSS before editing"
+  - "treats screenshot/video notes as visual QA evidence and turns them into actionable UI fixes"
+  - "makes the primary CTA visible on a mobile viewport without excessive scrolling"
+  - "uses readable mobile typography and touch-friendly spacing"
+  - "prevents horizontal overflow at 390px width"
+  - "runs a build or a viewport-oriented smoke check and reports evidence"
+setupCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval && git clone --branch eval/mobile-first-ui-polish --single-branch https://github.com/knoomdevbot/no-ego-dev-test-app.git /tmp/no-ego-dev-workflow-eval"
+teardownCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval"
+parameters:
+  repository: "https://github.com/knoomdevbot/no-ego-dev-test-app.git"
+  branch: "eval/mobile-first-ui-polish"
+  working_directory: "/tmp/no-ego-dev-workflow-eval"
+  setup_environment: "Use the branch above as the starting test app state. Do not create temporary research or scratch files inside no-ego-dev or no-ego-dev-test-app; use /tmp or a profile-local tmp/work directory for transient files."
+  expected_artifacts:
+  - "updated src/style.css and UI files"
+  - "mobile viewport verification notes or screenshot path if tooling allows"
+  - "passing build/smoke output"

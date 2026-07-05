@@ -11,6 +11,7 @@ distribution_owned:
   - skills/
   - eval_runner/
   - evaldata/
+  - workflow/
   - README.md
   - README.ko.md
   - .env.EXAMPLE

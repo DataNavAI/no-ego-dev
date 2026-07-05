@@ -1,0 +1,26 @@
+name: android-react-native-app-creation-and-emulator-qa
+description: "Workflow eval for android react native app creation and emulator qa."
+prompt: |
+  Use NED to turn the fixture into a simple Android/React Native app that can be tested on an Android emulator. Fix the localhost API assumption and safe-area/status-bar layout issue. Run emulator-based QA if available; if the emulator is unavailable, report the exact blocker and still run static config checks.
+expectations:
+  - "clones or uses the no-ego-dev-test-app repository branch eval/android-react-native-qa as the setup environment"
+  - "inspects mobile/App.js, mobile/app.json, and MOBILE_QA_NOTES.md before editing"
+  - "does not claim emulator success unless an emulator/device run actually happened"
+  - "replaces or abstracts localhost API usage so Android device testing can work"
+  - "adds safe-area/status-bar aware layout handling"
+  - "runs available React Native/Expo static checks or mobile test script"
+  - "reports emulator QA evidence or an explicit environment blocker"
+setupCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval && git clone --branch eval/android-react-native-qa --single-branch https://github.com/knoomdevbot/no-ego-dev-test-app.git /tmp/no-ego-dev-workflow-eval"
+teardownCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval"
+parameters:
+  repository: "https://github.com/knoomdevbot/no-ego-dev-test-app.git"
+  branch: "eval/android-react-native-qa"
+  working_directory: "/tmp/no-ego-dev-workflow-eval"
+  setup_environment: "Use the branch above as the starting test app state. Do not create temporary research or scratch files inside no-ego-dev or no-ego-dev-test-app; use /tmp or a profile-local tmp/work directory for transient files."
+  expected_artifacts:
+  - "updated mobile app files"
+  - "passing mobile config/static test output"
+  - "emulator/device evidence or clearly documented blocker"
+  - "final install/test instructions"

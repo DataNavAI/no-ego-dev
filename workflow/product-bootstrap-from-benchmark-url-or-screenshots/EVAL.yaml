@@ -1,0 +1,26 @@
+name: product-bootstrap-from-benchmark-url-or-screenshots
+description: "Workflow eval for product bootstrap from benchmark url or screenshots."
+prompt: |
+  Use NED to build a small publishable prototype inspired by the benchmark notes in BENCHMARK.md. Keep the core idea, but adapt it for independent dog walkers who need a client intake flow. Do not over-explain implementation details to the user; infer the simplest prototype approach and ship a practical result.
+expectations:
+  - "clones or uses the no-ego-dev-test-app repository branch eval/product-bootstrap-benchmark as the setup environment"
+  - "inspects BENCHMARK.md and the existing app before editing"
+  - "creates a working frontend prototype with a clear dog-walker client intake flow"
+  - "keeps the benchmark inspiration but does not copy benchmark-specific branding or text"
+  - "keeps the implementation simple enough to publish and test with real users"
+  - "runs a build or smoke test and reports the exact verification command/result"
+  - "leaves durable artifacts in the test app repo only when they are part of the prototype, not scratch notes"
+setupCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval && git clone --branch eval/product-bootstrap-benchmark --single-branch https://github.com/knoomdevbot/no-ego-dev-test-app.git /tmp/no-ego-dev-workflow-eval"
+teardownCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval"
+parameters:
+  repository: "https://github.com/knoomdevbot/no-ego-dev-test-app.git"
+  branch: "eval/product-bootstrap-benchmark"
+  working_directory: "/tmp/no-ego-dev-workflow-eval"
+  setup_environment: "Use the branch above as the starting test app state. Do not create temporary research or scratch files inside no-ego-dev or no-ego-dev-test-app; use /tmp or a profile-local tmp/work directory for transient files."
+  expected_artifacts:
+  - "updated src/main.jsx or equivalent UI files"
+  - "updated styling"
+  - "passing npm build or smoke test output"
+  - "brief final summary with test evidence"
