@@ -1,0 +1,22 @@
+prompt: |
+  Use the online-opportunity-seeker skill to respond to this realistic opportunity research request:
+
+  "I want to build a small online product in the pet services vertical, probably around dog walkers, pet sitters, or anxious first-time dog owners. Research product opportunities by looking at search keyword demand, Reddit/community pain, existing Google results, and Play Store/App Store style competitors. I do not want generic startup ideas; I want a ranked shortlist with evidence, competitor gaps, MVP wedges, acquisition angles, and what to validate next."
+expectations:
+  - "states vertical scope assumptions target users geography language platform scope and source limitations"
+  - "creates or names durable research artifacts such as opportunity map keyword map community pain log competitor matrix opportunity shortlist and validation plan"
+  - "builds multiple keyword clusters with query examples intent and demand proxies or explicit unknowns rather than relying on one head term"
+  - "includes Reddit or community research paths pain patterns urgency and community norms or explains if community evidence is unavailable"
+  - "maps existing services from Google search app stores or marketplaces including competitors substitutes manual workarounds strengths gaps and review or complaint signals"
+  - "separates evidence from assumptions and avoids invented search volume trend percentages review counts downloads revenue or rankings"
+  - "synthesizes opportunity patterns where search demand community pain and weak existing products overlap"
+  - "identifies anti opportunities or risky crowded ideas to avoid or defer"
+  - "ranks at least three product opportunities with pain intensity evidence quality acquisition potential competitive gap MVP feasibility monetization risk and wedge strength"
+  - "for top opportunities provides target user job to be done existing alternatives gap MVP concept critical user journey acquisition keywords or communities monetization hypothesis risk and validation test"
+  - "includes mobile/app store reality for app-like opportunities such as app store competitor review signals screenshots subscriptions update recency and policy or trust constraints"
+  - "routes next work to product-manager for PRD ui-designer for mocks marketer for validation or project-manager for issue routing as appropriate"
+  - "does not produce generic ideas disconnected from keyword search language community pain existing services or app store evidence"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
