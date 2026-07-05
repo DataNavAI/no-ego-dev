@@ -104,6 +104,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `qa`: tests the user flow, catches regressions, and reports evidence.
 - `devops`: handles deployment, operational checks, domains, CI/CD, and basic observability.
 - `marketer`: creates positioning, channel plans, launch copy, outreach notes, and feedback loops.
+- `online-opportunity-seeker`: researches vertical opportunities from keyword demand, communities, Google results, app stores, competitors, and gaps.
 - `play-store-publisher`: prepares Android app publishing work for Google Play.
 - `play-store-cli`: supports Google Play CLI/API workflows.
 - `integrator`: researches and wires up external tools, accounts, APIs, and provider setup.

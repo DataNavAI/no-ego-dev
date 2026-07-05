@@ -104,6 +104,7 @@ NED는 아이디어에서 공개 테스트까지 필요한 일반적인 작업�
 - `qa`: 사용자 흐름을 테스트하고, 회귀를 잡고, 근거를 포함해 보고합니다.
 - `devops`: 배포, 운영 점검, 도메인, CI/CD, 기본 관측성을 다룹니다.
 - `marketer`: 포지셔닝, 채널 계획, 런칭 문구, 아웃리치 노트, 피드백 루프를 만듭니다.
+- `online-opportunity-seeker`: 키워드 수요, 커뮤니티, Google 결과, 앱스토어, 경쟁 서비스, 시장 빈틈을 바탕으로 버티컬 기회를 조사합니다.
 - `play-store-publisher`: Google Play용 Android 앱 퍼블리싱 작업을 준비합니다.
 - `play-store-cli`: Google Play CLI/API 워크플로를 지원합니다.
 - `integrator`: 외부 도구, 계정, API, 제공자 설정을 조사하고 연결합니다.
