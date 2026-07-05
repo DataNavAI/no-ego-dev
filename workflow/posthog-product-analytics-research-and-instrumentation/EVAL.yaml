@@ -1,0 +1,27 @@
+name: posthog-product-analytics-research-and-instrumentation
+description: "Workflow eval for posthog product analytics research and instrumentation."
+prompt: |
+  Use NED to research and add simple PostHog product analytics to the fixture app. Instrument the primary compare/search journey, but do not send raw search text or private user-entered content. The app must work safely when PostHog env vars are missing.
+expectations:
+  - "clones or uses the no-ego-dev-test-app repository branch eval/posthog-analytics as the setup environment"
+  - "inspects ANALYTICS_REQUIREMENTS.md and .env.EXAMPLE before editing"
+  - "briefly researches or states why PostHog is appropriate for this simple product analytics use case"
+  - "adds PostHog initialization gated by environment variables"
+  - "does not send raw search terms, article URLs, contact info, IP, user agent, or private free-text values as event properties"
+  - "defines a small event taxonomy for activation and primary journey completion"
+  - "adds safe fallback behavior when VITE_POSTHOG_KEY is unset and verifies build/test output"
+setupCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval && git clone --branch eval/posthog-analytics --single-branch https://github.com/knoomdevbot/no-ego-dev-test-app.git /tmp/no-ego-dev-workflow-eval"
+teardownCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval"
+parameters:
+  repository: "https://github.com/knoomdevbot/no-ego-dev-test-app.git"
+  branch: "eval/posthog-analytics"
+  working_directory: "/tmp/no-ego-dev-workflow-eval"
+  setup_environment: "Use the branch above as the starting test app state. Do not create temporary research or scratch files inside no-ego-dev or no-ego-dev-test-app; use /tmp or a profile-local tmp/work directory for transient files."
+  expected_artifacts:
+  - "analytics initialization code"
+  - "sanitized event instrumentation"
+  - "updated .env.EXAMPLE if needed"
+  - "privacy note or analytics README section"
+  - "passing build/smoke output"
