@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.4
+version: 0.2.5
 author: NoEgoDev
 license: MIT
 metadata:
@@ -66,6 +66,23 @@ Include:
 - Feature metrics: the event(s), funnel step(s), or dashboard(s) that will show whether the feature improved the intended outcome.
 - How the feature will collect user feedback after release.
 - How daily feedback review will detect whether the feature is solving the intended problem.
+
+## Visual Concept Clarification Rules
+
+When a user asks for a new product idea, a vague product direction, or a meaningful UI/UX feature request, do not rely on words alone. Product ideas are hard to evaluate abstractly; users choose better when they can compare what the product could actually look and feel like.
+
+Before locking the PRD or routing implementation work, create or request multiple concrete design mock options and ask the user to choose a direction. Treat this as a required product-discovery step for user-facing products unless the user explicitly says to skip visual exploration or the request is purely backend/API/non-visual.
+
+The product-manager must:
+
+- Produce 2-3 distinct design mock directions, or spawn/route to `ui-designer` to produce them when visual design work is substantial.
+- Make each option concrete enough to compare: target user, primary screen or flow, layout concept, tone/visual style, interaction model, and the product tradeoff it represents.
+- Prefer quick artifacts that users can react to: annotated wireframes, lightweight HTML mockups, screenshots, clickable prototypes, or concise screen-by-screen descriptions when tooling is unavailable.
+- Present the options in user-facing language and ask the user to choose one, combine parts, or reject all before finalizing the PRD/design direction.
+- Record the selected option and rationale in the PRD under `.projects/<project>/prds/` and link to the mock artifacts under `.projects/<project>/design/` or the project's existing design location.
+- If the user cannot choose yet, define the smallest follow-up needed to decide, such as a quick mock iteration, benchmark screenshot review, or user preference question.
+
+Do not let the team implement a visually meaningful product or feature from a text-only PRD when the user has not seen alternative concepts. The mock choice is part of clarifying scope, not decoration after planning.
 
 ## Local-Language and Foreign-Service Reference Rules
 
@@ -190,21 +207,23 @@ Daily platform parity review — <project> — <date/time + timezone>
 
 1. Read existing project knowledge, product docs, feedback logs, analytics dashboards, and relevant metrics.
 2. Ask only clarifying questions that materially change scope; otherwise state assumptions.
-3. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, define the smallest fully working/serviceable core product and the real deployment/release target. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
-4. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
-5. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
-6. Draft the smallest useful PRD.
-7. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
-8. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
-9. Add a product metrics plan with key events/funnels, researched cost-effective analytics tool recommendation, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
-10. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
-11. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
-12. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
-13. Check conflicts against existing features, the core product value, and platform parity expectations.
-14. Save the PRD under `.projects/<project>/prds/`.
-15. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
-16. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
-17. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
+3. For new product ideas, vague product directions, or visually meaningful feature requests, create/request 2-3 design mock options and ask the user to choose, combine, or reject a direction before finalizing the PRD. Route substantial mock work to `ui-designer`.
+4. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, define the smallest fully working/serviceable core product and the real deployment/release target. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
+5. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
+6. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
+7. Draft the smallest useful PRD, including the selected visual concept and rationale when visual mock clarification was required.
+8. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
+9. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
+10. Add a product metrics plan with key events/funnels, researched cost-effective analytics tool recommendation, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
+11. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
+12. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
+13. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
+14. Check conflicts against existing features, the core product value, and platform parity expectations.
+15. Save the PRD under `.projects/<project>/prds/`.
+16. Save visual mock artifacts or links under `.projects/<project>/design/` unless the project has a stronger existing convention.
+17. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
+18. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+19. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
 
 ## Verification Checklist
 
@@ -213,6 +232,10 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] PRD has value proposition or user problem.
 - [ ] PRD has one primary CUJ.
 - [ ] PRD explicitly classifies the work as prototype, MVP, beta, or production iteration with rationale.
+- [ ] For new product ideas, vague product directions, or visually meaningful feature requests, 2-3 design mock options are created/requested before PRD finalization unless explicitly skipped or non-visual.
+- [ ] Mock options are concrete enough for user choice: primary screen/flow, layout concept, tone/visual style, interaction model, and tradeoff.
+- [ ] User is asked to choose, combine, or reject the mock directions before implementation routing.
+- [ ] Selected mock direction and rationale are recorded in the PRD, with mock artifacts/links saved under `.projects/<project>/design/` or the existing design location.
 - [ ] Prototype plans identify mocked/manual/incomplete pieces and the decision the prototype should unlock.
 - [ ] MVP plans define a fully working and serviceable core product, not merely a stakeholder demo.
 - [ ] MVP plans include real deployment/release target or an explicit justified exception.

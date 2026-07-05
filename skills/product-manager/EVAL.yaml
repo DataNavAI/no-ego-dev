@@ -1,8 +1,11 @@
 prompt: |
-  Use the product-manager skill to respond to a realistic client/project request for a user-facing product that needs a PRD and a way to learn from user feedback after launch.
+  Use the product-manager skill to respond to a realistic client/project request for a new user-facing product idea that needs visual concept clarification, a PRD, and a way to learn from user feedback after launch.
 expectations:
   - "mentions durable artifact"
   - "explicitly classifies the work as prototype MVP beta or production iteration with rationale"
+  - "for a new product idea or visually meaningful feature request creates or requests 2 to 3 concrete design mock options before finalizing the PRD"
+  - "presents visual mock options in user facing language and asks the user to choose combine or reject a direction"
+  - "records the selected mock direction and rationale in the PRD and links mock artifacts under a design artifact path"
   - "for an MVP plans a fully working serviceable core product rather than a stakeholder demo"
   - "includes real deployment or release target for the MVP or a justified exception"
   - "includes serviceability operability support monitoring rollback ownership and QA gates for major user flows"
