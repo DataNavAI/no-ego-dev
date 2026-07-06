@@ -97,6 +97,7 @@ Create a practical launch plan for this prototype: [URL or repo]. Include positi
 NED는 아이디어에서 공개 테스트까지 필요한 일반적인 작업을 위한 집중 스킬들을 포함합니다.
 
 - `product-manager`: 모호한 요청을 제품 방향, 대상 사용자, 성공 기준, 프로토타입 범위로 정리합니다.
+- `product-bootstrap`: 벤치마크 URL, 스크린샷, 노트, 스타터 앱을 바탕으로 벤치마크 고유 브랜딩/문구를 복사하지 않고 작게 공개 테스트 가능한 프로토타입을 만듭니다.
 - `ui-designer`: 실용적인 화면, 인터랙션 흐름, 첫 사용자 경험, 시각 QA 노트를 설계합니다.
 - `architect`: 접근 방식을 과하게 복잡하게 만들지 않으면서 빌드 계획과 프로젝트 구조를 잡습니다.
 - `project-manager`: 작업을 추적 가능한 단위로 나누고 전문 서브에이전트를 조율합니다.
