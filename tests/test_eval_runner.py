@@ -19,6 +19,21 @@ def _fake_hermes_command(tmp_path: Path, output: str = "done appears") -> str:
     return f"{sys.executable} {script}"
 
 
+def _recording_hermes_command(tmp_path: Path) -> str:
+    script = tmp_path / "recording_hermes.py"
+    record = tmp_path / "record.json"
+    script.write_text(
+        "import json, os, pathlib, sys\n"
+        "prompt = sys.argv[-1] if sys.argv else ''\n"
+        "if 'Return only JSON' in prompt:\n"
+        "    print(json.dumps({'passed': True, 'failure_reasons': []}))\n"
+        "else:\n"
+        f"    pathlib.Path({str(record)!r}).write_text(json.dumps({{'cwd': os.getcwd(), 'prompt': prompt}}))\n"
+        "    print('done appears')\n"
+    )
+    return f"{sys.executable} {script}"
+
+
 def test_discovers_eval_yaml_files(tmp_path):
     (tmp_path / "a").mkdir()
     (tmp_path / "a" / "EVAL.yaml").write_text("prompt: hi\nexpectations: [done]\n")
@@ -56,6 +71,32 @@ def test_run_eval_writes_result_json_using_hermes_oneshot_command(tmp_path):
     assert result_json.exists()
     data = json.loads(result_json.read_text())
     assert data["failure_reasons"] == []
+
+
+def test_run_eval_passes_parameters_and_uses_working_directory(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    workdir = tmp_path / "fixture"
+    workdir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text(
+        "prompt: Inspect fixture\n"
+        "expectations:\n"
+        "  - done appears\n"
+        "parameters:\n"
+        f"  working_directory: {workdir}\n"
+        "  branch: eval/demo\n"
+    )
+
+    result = run_eval(eval_path, output_root=tmp_path / "runs", hermes_command=_recording_hermes_command(tmp_path))
+
+    assert result.passed is True
+    record = json.loads((tmp_path / "record.json").read_text())
+    assert record["cwd"] == str(workdir)
+    assert "Eval execution context" in record["prompt"]
+    assert "eval/demo" in record["prompt"]
+    assert str(workdir) in record["prompt"]
+    assert "Eval execution context" in (Path(result.run_dir) / "prompt.txt").read_text()
 
 
 def test_run_eval_rejects_missing_hermes_command(tmp_path):
