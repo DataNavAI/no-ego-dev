@@ -97,6 +97,7 @@ Create a practical launch plan for this prototype: [URL or repo]. Include positi
 NED is packaged with focused skills for the common work needed to go from idea to public test:
 
 - `product-manager`: turns fuzzy requests into product direction, target users, success criteria, and prototype scope.
+- `product-bootstrap`: builds small publishable prototypes from benchmark URLs, screenshots, notes, or starter apps without copying benchmark-specific branding or text.
 - `ui-designer`: designs practical screens, interaction flows, first-user experience, and visual QA notes.
 - `architect`: shapes the build plan and project structure without overcomplicating the approach.
 - `project-manager`: breaks work into tracked tasks and coordinates specialist subagents.
