@@ -115,6 +115,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `project-knowledge-organization`: keeps project decisions, notes, and artifacts organized.
 - `skill-creator`: creates or adapts Hermes skills.
 - `eval-creator`: creates evals for skills and workflows.
+- `workflow-training`: iteratively runs workflow evals, diagnoses failures, and improves general skills until the agent passes without weakening correct evals.
 
 ## Built with NED
 

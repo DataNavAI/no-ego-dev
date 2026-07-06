@@ -115,6 +115,7 @@ NED는 아이디어에서 공개 테스트까지 필요한 일반적인 작업�
 - `project-knowledge-organization`: 프로젝트 결정, 노트, 산출물을 정리합니다.
 - `skill-creator`: Hermes 스킬을 만들거나 조정합니다.
 - `eval-creator`: 스킬과 워크플로용 평가를 만듭니다.
+- `workflow-training`: 워크플로 평가를 반복 실행하고 실패를 진단하며, 올바른 평가를 약화하지 않고 일반적인 스킬을 개선해 에이전트가 통과하도록 훈련합니다.
 
 ## Built with NED
 
