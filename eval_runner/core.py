@@ -4,6 +4,7 @@ import dataclasses
 import html
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import time
@@ -138,6 +139,33 @@ def _extract_json_object(text: str) -> dict[str, Any]:
     return data
 
 
+def _agent_prompt(spec: EvalSpec) -> str:
+    """Build the actual prompt sent to the eval agent.
+
+    `parameters` are part of the EVAL contract. They tell the isolated agent
+    where setup cloned a fixture, which branch/repository to use, and where
+    transient output belongs. Keep the human task first, then append concrete
+    execution context so existing eval prompts remain readable while agents can
+    still discover deterministic setup details.
+    """
+    if not spec.parameters:
+        return spec.prompt
+    return (
+        f"{spec.prompt}\n\n"
+        "Eval execution context:\n"
+        f"{json.dumps(spec.parameters, indent=2, sort_keys=True)}"
+    )
+
+
+def _agent_cwd(spec: EvalSpec, run_dir: Path) -> Path:
+    raw = spec.parameters.get("working_directory") if isinstance(spec.parameters, dict) else None
+    if isinstance(raw, str) and raw.strip():
+        path = Path(raw).expanduser()
+        if path.exists() and path.is_dir():
+            return path
+    return run_dir
+
+
 def _judge_with_hermes(output: str, spec: EvalSpec, hermes_command: str, env: dict[str, str]) -> tuple[bool, list[str], str]:
     judge_prompt = f"""You are judging a NoEgoDev EVAL.yaml run.
 
@@ -153,7 +181,7 @@ Candidate output:
 Return only JSON with this exact schema:
 {{"passed": boolean, "failure_reasons": string[]}}
 """
-    command = f"{hermes_command} -z {json.dumps(judge_prompt)}"
+    command = f"{hermes_command} -z {shlex.quote(judge_prompt)}"
     proc = subprocess.run(command, cwd=Path(env["HERMES_HOME"]).parent, shell=True, text=True, capture_output=True, timeout=1800, env=env)
     judge_output = proc.stdout + proc.stderr
     if proc.returncode != 0:
@@ -185,12 +213,13 @@ def run_eval(eval_path: str | Path, output_root: str | Path = ".eval-runs", herm
     token_counts = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     try:
         output_parts.extend(_run_shell_commands(spec.setup_commands, spec.path.parent, env))
+        agent_prompt = _agent_prompt(spec)
         prompt_file = run_dir / "prompt.txt"
-        prompt_file.write_text(spec.prompt)
+        prompt_file.write_text(agent_prompt)
         # Hermes one-shot mode uses the active HERMES_HOME as the isolated profile.
         # The historical shorthand is `hermes -z PROMPT`.
-        command = f"{hermes_command} -z {json.dumps(spec.prompt)}"
-        proc = subprocess.run(command, cwd=run_dir, shell=True, text=True, capture_output=True, timeout=1800, env=env)
+        command = f"{hermes_command} -z {shlex.quote(agent_prompt)}"
+        proc = subprocess.run(command, cwd=_agent_cwd(spec, run_dir), shell=True, text=True, capture_output=True, timeout=1800, env=env)
         output_parts.append(proc.stdout + proc.stderr)
         if proc.returncode != 0:
             failure_reasons.append(f"Hermes command failed with exit code {proc.returncode}")
