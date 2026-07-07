@@ -1,0 +1,15 @@
+prompt: |
+  Use the ui-reviewer skill to review design images or a real product UI for a realistic product. The project has no existing UI review guideline, so the reviewer must establish the guideline using foundational UI principles and top-of-market comparable services before giving feedback.
+expectations:
+  - "creates or updates a durable project UI review guideline when one does not exist"
+  - "researches or requests at least three top-of-market comparable services and captures relevant UI patterns"
+  - "uses foundational UI principles such as hierarchy spacing typography color contrast consistency affordance states accessibility and responsive or mobile fit"
+  - "reviews design images screenshots or real UI evidence rather than only text when available"
+  - "scores the review as PASS PASS WITH MINOR POLISH NEEDS ITERATION or BLOCKED"
+  - "prioritizes findings by blocker high medium or low impact"
+  - "ties feedback to principles guideline sections comparable patterns accessibility or user journey impact"
+  - "provides a concrete revision checklist and implementation guardrails when approved"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

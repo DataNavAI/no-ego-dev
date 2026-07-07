@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, ui-design, product-design, qa]
-    related_skills: [product-manager, qa, project-manager]
+    related_skills: [product-manager, qa, project-manager, ui-reviewer]
 ---
 
 # UI Designer
@@ -23,10 +23,53 @@ UI design work is not only aesthetics. Good UI guidance makes the product easier
 Prefer project-local artifacts so future product, coding, and QA agents can reuse them:
 
 - UI guideline: `.projects/<project>/design/ui-guidelines.md`
+- Feature UI brief: `.projects/<project>/features/<feature-slug>/design/ui-brief.md` or the project's equivalent feature artifact folder beside the PRD and tech spec
+- Feature design images/mockups: `.projects/<project>/features/<feature-slug>/design/images/` or the project's equivalent feature artifact folder beside the PRD and tech spec
 - UI review reports: `.projects/<project>/design/ui-reviews/<YYYYMMDD-HHMMSS>-<scope>.md`
 - UI assets/screenshots, if not attached to issues: `.projects/<project>/design/.artifacts/<review-id>/`
 
 If the project already has a design-system or docs convention, follow it and mention the path used in the report.
+
+## Feature Design Task and Design Images
+
+When project-manager creates a UI design task for a UI-related feature, the ui-designer must produce design artifacts before architecture/tech-spec generation proceeds.
+
+Design task requirements:
+
+1. **Use the project design guideline as the basis**
+   - Read `.projects/<project>/design/ui-guidelines.md` or the project's equivalent guideline first.
+   - If no guideline exists, create/update a minimal guideline before generating feature designs, or mark the design task blocked with the missing guideline and the exact follow-up needed.
+   - Do not generate feature mockups from generic taste alone; tie layout, visual language, components, copy tone, accessibility, and responsive choices back to the guideline.
+
+2. **Generate design images/mockups for the feature**
+   - Produce concrete visual design images for the affected screens, key states, and primary responsive/device variants needed by the PRD.
+   - Include enough states for implementation and QA to work without guessing: default, empty, loading, error, success, disabled, permission/auth, and mobile/desktop variants where relevant.
+   - The images may be screenshots from an HTML mock, generated visual mockups, annotated wireframes, exported design-tool frames, or other concrete image artifacts. Prefer image files (`.png`, `.jpg`, `.webp`, `.svg`) over text-only descriptions for UI-bearing features.
+   - If image generation/export is blocked by tooling, create a text design brief plus a follow-up image-generation task; do not pretend a text-only brief satisfies the design-image requirement.
+
+3. **Store design artifacts beside the feature PRD and tech spec**
+   - Prefer a feature-local artifact folder so PRD, design, and tech spec travel together, e.g.:
+     - `.projects/<project>/features/<feature-slug>/prd.md`
+     - `.projects/<project>/features/<feature-slug>/design/ui-brief.md`
+     - `.projects/<project>/features/<feature-slug>/design/images/<screen-state>.png`
+     - `.projects/<project>/features/<feature-slug>/tech-spec.md`
+   - If the project already uses `.projects/<project>/prds/` and `.projects/<project>/tech-specs/`, keep those canonical files but add cross-links to the feature design folder and image paths.
+   - Every design brief must list the related PRD path and expected tech-spec path; every tech spec should be able to cite the guideline, brief, and image paths.
+
+4. **Design brief contents**
+   - Related PRD/issue and CUJ/user need.
+   - Guideline sections used.
+   - Screens/components/states covered.
+   - Image index with file paths and what each image demonstrates.
+   - Interaction rules, copy/microcopy, responsive/device behavior, accessibility notes, and open questions.
+   - Implementation acceptance notes the architect/coder must preserve.
+
+5. **Spawn an independent UI review iteration loop**
+   - After generating or updating UI design images/mockups, spawn a subagent instructed to load and use the `ui-reviewer` skill.
+   - Give the reviewer the PRD/CUJ, project UI guideline, design brief, image paths or UI URL, target platforms, and the current approval bar.
+   - Require the reviewer to create/update `.projects/<project>/design/ui-review-guideline.md` if it does not exist, including foundational UI principles and top-of-market comparable services for the product category.
+   - Treat reviewer status `NEEDS ITERATION` or `BLOCKED` as not ready for engineering handoff. Revise the design artifacts and rerun review until the reviewer returns `PASS` or `PASS WITH MINOR POLISH`, or until a real blocker is documented with the exact missing input/tooling.
+   - Preserve the review report path and final approval rationale in the design brief so architects, coders, and QA can see what quality bar was met.
 
 ## Creating a UI Guideline
 
@@ -181,6 +224,56 @@ Related PRD/spec/issues:
 -
 ```
 
+## Feature UI Design Brief Template
+
+```markdown
+# Feature UI Design Brief: <feature>
+
+Status: READY | BLOCKED
+Date/time:
+Designer: NED UI Designer
+Related PRD: <path/link>
+Expected tech spec: <path/link>
+Issue/task: <path/link>
+Project UI guideline: <path/link + sections used>
+UI review guideline: <path/link>
+Final UI review report: <path/link + PASS/PASS WITH MINOR POLISH/BLOCKED rationale>
+CUJ/user need:
+
+## Scope
+- Screens/components:
+- States covered:
+- Platforms/viewports:
+
+## Design Image Index
+| Image | Screen/state | Purpose | Notes |
+| --- | --- | --- | --- |
+| `design/images/<file>.png` | <screen/state> | <what implementation should preserve> | <responsive/accessibility/copy notes> |
+
+## Interaction and State Rules
+-
+
+## Copy and Microcopy
+-
+
+## Responsive / Device Behavior
+-
+
+## Accessibility Notes
+-
+
+## Implementation Acceptance Notes
+-
+
+## UI Reviewer Iteration Log
+| Iteration | Reviewer report | Status | Required revisions | Resolution |
+| --- | --- | --- | --- | --- |
+| 1 | <path> | NEEDS ITERATION | <summary> | <what changed> |
+
+## Open Questions / Blockers
+-
+```
+
 ## UI Review Report Template
 
 ```markdown
@@ -220,13 +313,21 @@ Issue:
 
 1. **Reviewing from taste instead of guidelines.** Personal preference is not a bug. Tie findings to the guideline, user journey, accessibility, or clear product comprehension impact.
 2. **Skipping the guideline.** If no guideline exists, create a minimal one before serious review or file the missing guideline as a blocker/follow-up.
-3. **Filing vague UI bugs.** "Make it look better" is not actionable. Include screen, expected behavior, actual behavior, screenshot, severity, and guideline reference.
-4. **Ignoring states.** Loading, empty, error, disabled, success, hover/focus, and responsive states often carry the most user-facing UI bugs.
-5. **Duplicating QA without design judgment.** QA proves flows work; UI design reviews judge consistency, hierarchy, clarity, accessibility basics, and polish against the product's intended experience.
+3. **Treating UI design as text-only for a UI-bearing feature.** Feature design tasks must generate concrete design images/mockups based on the project guideline and store them beside the PRD/tech spec. If tooling blocks images, record the blocker and create a follow-up image-generation task.
+4. **Skipping independent review of generated designs.** Newly generated UI design images must be reviewed by a separate subagent using `ui-reviewer`; do not self-approve major UI work without a reviewer pass or documented blocker.
+5. **Filing vague UI bugs.** "Make it look better" is not actionable. Include screen, expected behavior, actual behavior, screenshot, severity, and guideline reference.
+6. **Ignoring states.** Loading, empty, error, disabled, success, hover/focus, and responsive states often carry the most user-facing UI bugs.
+7. **Duplicating QA without design judgment.** QA proves flows work; UI design reviews judge consistency, hierarchy, clarity, accessibility basics, and polish against the product's intended experience.
 
 ## Verification Checklist
 
 - [ ] UI guideline exists or was updated at a durable project path.
+- [ ] For UI-related feature design tasks, the project design guideline was read first or a missing-guideline blocker/follow-up was recorded.
+- [ ] Feature design images/mockups were generated for required screens/states/viewport variants, or an explicit tooling blocker and follow-up image-generation task exists.
+- [ ] Feature design brief and image paths are stored beside or cross-linked with the feature PRD and expected tech spec.
+- [ ] A subagent using `ui-reviewer` reviewed newly generated design images/mockups and produced a durable review report.
+- [ ] Design iteration continued until reviewer status was `PASS` or `PASS WITH MINOR POLISH`, or a real blocker was documented with missing inputs/tooling.
+- [ ] Final design brief links the UI review guideline and final reviewer approval/blocker rationale.
 - [ ] Guideline covers layout, visual language, components/states, accessibility basics, and copy tone.
 - [ ] Review used the real implemented UI or documented why it was blocked.
 - [ ] Screenshots/evidence were captured for reviewed failures.

@@ -11,6 +11,9 @@ expectations:
   - "searches the issue system before filing UI bugs"
   - "files actionable UI bugs with severity, expected vs actual, evidence, and guideline reference"
   - "creates follow-up work when the UI guideline is missing or ambiguous"
+  - "spawns an independent ui-reviewer subagent to review newly generated UI design images"
+  - "requires the ui-reviewer to create or update a project UI review guideline with foundational principles and top market comparables when missing"
+  - "iterates designs until ui-reviewer returns PASS or PASS WITH MINOR POLISH or documents a real blocker"
 setupCommands: []
 teardownCommands: []
 parameters:
