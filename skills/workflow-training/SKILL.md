@@ -103,7 +103,8 @@ Minimum search procedure:
    - OpenAI owned repositories, such as cookbook/examples/evals where relevant
    - Google-owned repositories, such as Gemini CLI docs/evals where relevant
 3. If a fitting skill exists, consider downloading or adapting it. Preserve attribution and license metadata. Do not blindly copy untrusted third-party skills.
-4. If no fitting skill exists, create a new NoEgoDev skill that captures the reusable workflow class.
+4. Do not create a dedicated skill named for the target workflow, target eval, project, product, fixture, or one-off outcome. A workflow eval should train existing general roles first, such as product-manager, ui-designer, ui-reviewer, architect, coder, qa, devops, project-manager, or a broad workflow-training/orchestration skill.
+5. If no fitting skill exists after that search, create a new NoEgoDev skill only when it represents a reusable workflow class that will recur across multiple projects, not a target-specific pass condition.
 
 Use the search to answer:
 
@@ -117,7 +118,8 @@ Prefer the least new surface area that fixes the class of failures:
 
 1. Patch an existing relevant skill when it already owns the workflow.
 2. Add a reference file when the detail is bulky but belongs to an existing skill.
-3. Create a new class-level skill only when no existing skill covers the pattern.
+3. Patch an existing orchestrator/workflow skill when the gap is sequencing across known roles.
+4. Create a new class-level skill only when no existing skill covers the recurring pattern. Never create a dedicated skill for the target workflow/eval/project itself just to make one eval pass.
 
 A skill update should be general enough that it helps with future tasks of the same shape. For example:
 
@@ -209,11 +211,17 @@ Patch an existing skill when:
 - The skill should already have triggered for this workflow.
 - The update is a narrow behavior refinement.
 
-Create a new skill when:
+Create a new skill only when:
 
-- Multiple existing skills are involved and need an orchestrating workflow.
-- The eval represents a recurring workflow class not owned by any specialist.
-- The agent needs a stable sequence: inspect fixture → plan → delegate/build → QA → report.
+- The eval represents a recurring workflow class not owned by any specialist or existing orchestrator.
+- Multiple future projects would use the same class-level workflow and patching product-manager, ui-designer, architect, coder, qa, devops, project-manager, or workflow-training would make those skills too broad or contradictory.
+- The needed stable sequence is reusable beyond the target eval, for example inspect fixture → plan → delegate/build → QA → report.
+
+Do not create a new skill when:
+
+- The proposed skill name is the target workflow, product, fixture, or eval name.
+- The behavior belongs naturally as a rule, pitfall, checklist item, or reference file in an existing specialist skill.
+- The change would only help one branch, one benchmark, one product, or one user prompt pass.
 
 Download/adapt an external skill when:
 
@@ -226,13 +234,14 @@ Download/adapt an external skill when:
 
 1. **Changing the eval instead of learning from it.** Only edit objectively incorrect evals. Most failures should produce skill or runner improvements.
 2. **Overfitting to the fixture.** Do not encode product names, one repo path, or one prompt's wording unless they are parameters in a general rule.
-3. **Skipping the baseline run.** Without a baseline, you do not know whether the skill helped.
-4. **Ignoring setup parameters.** If an eval clones a repo or declares `parameters.working_directory`, the agent must operate there unless the eval says otherwise.
-5. **Not searching existing skills.** Before adding a new skill, inspect local skills and trusted external first-party repositories such as Anthropic skills, OpenAI examples/evals, and Google/Gemini docs/evals.
-6. **Forgetting live-profile sync.** Source repo changes do not affect a running NED profile until synced and, when needed, the gateway is restarted.
-7. **Polluting repos with scratch artifacts.** Eval reports, cloned fixtures, and temporary scripts belong in `/tmp` or profile-local scratch, not the source repo.
-8. **Trusting the judge alone.** If a judge times out or passes weakly, inspect artifacts and rerun deterministic verification commands yourself.
-9. **Bundling unrelated dirty changes.** Preserve and report unrelated working-tree changes separately.
+3. **Creating target-workflow skills.** Avoid skills named after the target eval/workflow/product, such as `dog-walker-bootstrap` or `kpop-heaven-website-design`, when the real fix is to patch a general role skill or workflow-training guidance.
+4. **Skipping the baseline run.** Without a baseline, you do not know whether the skill helped.
+5. **Ignoring setup parameters.** If an eval clones a repo or declares `parameters.working_directory`, the agent must operate there unless the eval says otherwise.
+6. **Not searching existing skills.** Before adding a new skill, inspect local skills and trusted external first-party repositories such as Anthropic skills, OpenAI examples/evals, and Google/Gemini docs/evals.
+7. **Forgetting live-profile sync.** Source repo changes do not affect a running NED profile until synced and, when needed, the gateway is restarted.
+8. **Polluting repos with scratch artifacts.** Eval reports, cloned fixtures, and temporary scripts belong in `/tmp` or profile-local scratch, not the source repo.
+9. **Trusting the judge alone.** If a judge times out or passes weakly, inspect artifacts and rerun deterministic verification commands yourself.
+10. **Bundling unrelated dirty changes.** Preserve and report unrelated working-tree changes separately.
 
 ## Verification Checklist
 
@@ -241,6 +250,8 @@ Download/adapt an external skill when:
 - [ ] Eval was not edited unless objectively incorrect, and the reason is documented.
 - [ ] Local existing skills were searched before adding a new skill.
 - [ ] Trusted external sources were searched before adding/downloading a skill.
+- [ ] Existing specialist or orchestrator skills were patched when they naturally own the behavior.
+- [ ] No dedicated target-workflow/eval/project skill was created unless the gap is a genuinely reusable class not covered by existing skills.
 - [ ] New or patched skills are general to the workflow class, not overfit to one fixture.
 - [ ] Skill has `EVAL.yaml` and `evaldata/` when added to the NoEgoDev distribution.
 - [ ] Source skill changes validate and focused tests pass.

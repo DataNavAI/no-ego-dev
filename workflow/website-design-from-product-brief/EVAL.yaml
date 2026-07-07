@@ -1,0 +1,36 @@
+name: website-design-from-product-brief
+description: "Workflow eval for designing a mobile-first website from product/design briefs using Kpop Heaven design work as a reusable example."
+prompt: |
+  Use NED to design a mobile-first website for FanSignal based on WEBSITE_DESIGN_BRIEF.md. Use KPOP_HEAVEN_DESIGN_EXAMPLE.md as an example of the recent NED Kpop Heaven design artifact quality bar, but do not copy Kpop Heaven branding, domain text, or exact visuals. This is a design workflow, not a build task: create durable website design artifacts that a coder and QA agent could implement and verify.
+expectations:
+  - "clones or uses the no-ego-dev-test-app repository branch eval/website-design-kpop-heaven-example as the setup environment"
+  - "inspects WEBSITE_DESIGN_BRIEF.md and KPOP_HEAVEN_DESIGN_EXAMPLE.md before creating design artifacts"
+  - "creates durable project design artifacts under .projects/fansignal/design or a clearly equivalent project design path"
+  - "creates or updates a project UI guideline for the website before finalizing screen designs"
+  - "produces a website design brief or design baseline covering mobile first information architecture visual language components states accessibility and responsive behavior"
+  - "produces concrete visual design artifacts for key website screens such as home artist page calendar agenda fan events and submit or trust flow"
+  - "includes a contact sheet or relationship map showing how the website screens connect rather than only isolated card designs"
+  - "adds stable annotation IDs to important interactive components in design images and includes an annotation legend mapping IDs to expected behaviors states destinations validation and accessibility notes"
+  - "uses rights safe imagery or fallback image guidance and avoids scraped celebrity photos AI real person likenesses or unsupported media assumptions"
+  - "uses the Kpop Heaven example as pattern inspiration without copying Kpop Heaven branding copy or K-pop-specific text into FanSignal"
+  - "runs an appropriate artifact validation or smoke check such as SVG/XML parsing markdown path verification or another concrete check and reports the exact command/result"
+  - "keeps temporary research scratch files screenshots and intermediate exports outside the source repo unless they are intentional durable design artifacts"
+setupCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval && git clone --branch eval/website-design-kpop-heaven-example --single-branch https://github.com/knoomdevbot/no-ego-dev-test-app.git /tmp/no-ego-dev-workflow-eval"
+teardownCommands:
+  - "rm -rf /tmp/no-ego-dev-workflow-eval"
+parameters:
+  repository: "https://github.com/knoomdevbot/no-ego-dev-test-app.git"
+  branch: "eval/website-design-kpop-heaven-example"
+  working_directory: "/tmp/no-ego-dev-workflow-eval"
+  setup_environment: "Use the branch above as the starting design-fixture repository. Do not create temporary research or scratch files inside no-ego-dev or no-ego-dev-test-app; use /tmp or a profile-local tmp/work directory for transient files."
+  fixture_files:
+    - "WEBSITE_DESIGN_BRIEF.md"
+    - "KPOP_HEAVEN_DESIGN_EXAMPLE.md"
+  expected_artifacts:
+    - ".projects/fansignal/design/ui-guidelines.md or equivalent"
+    - ".projects/fansignal/design/<design-brief-or-baseline>.md"
+    - ".projects/fansignal/design/artifacts/<design-set>/ visual design files"
+    - "contact sheet or screen relationship map"
+    - "annotated design artifacts and annotation legend"
+    - "validation command/result in final summary"
