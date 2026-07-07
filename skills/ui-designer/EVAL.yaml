@@ -14,6 +14,8 @@ expectations:
   - "spawns an independent ui-reviewer subagent to review newly generated UI design images"
   - "requires the ui-reviewer to create or update a project UI review guideline with foundational principles and top market comparables when missing"
   - "iterates designs until ui-reviewer returns PASS or PASS WITH MINOR POLISH or documents a real blocker"
+  - "annotates important interactive components in generated design images with stable IDs"
+  - "includes an annotation legend mapping each interactive component ID to expected behavior states destinations validation and accessibility notes"
 setupCommands: []
 teardownCommands: []
 parameters:

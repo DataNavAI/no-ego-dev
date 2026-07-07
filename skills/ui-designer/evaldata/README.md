@@ -30,3 +30,9 @@ Feature design iteration scenario:
 - The reviewer must create/update `.projects/<project>/design/ui-review-guideline.md` if missing, using foundational UI principles and top-of-market comparable services.
 - The ui-designer should iterate the design artifacts until the reviewer returns `PASS` or `PASS WITH MINOR POLISH`, or record a real blocker with the missing input/tooling.
 - The final design brief should link the UI review guideline, review report, status, and implementation guardrails.
+
+Interactive annotation requirement:
+- When generating UI design images/mockups for implementation handoff, a passing `ui-designer` response should add visible stable annotation IDs such as `A1`, `A2`, and `A3` to important interactive components.
+- Annotated components should include buttons, links, tabs, nav items, icon buttons, inputs/selects, toggles, tappable cards, modal/sheet controls, destructive actions, and key empty/error-state actions.
+- The feature UI brief should include an annotation legend mapping each ID to expected behavior, destination or state transition, validation rules, disabled/loading/error behavior, and accessibility notes.
+- If clean visual images are also needed for design review, the designer should export both clean and annotated versions, with the annotated version required for implementation handoff.
