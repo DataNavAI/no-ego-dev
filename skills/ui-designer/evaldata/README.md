@@ -22,3 +22,11 @@ Context:
 - The project uses GitHub issues for bugs and follow-up work.
 
 A good response should create or update a durable UI guideline path, describe how to review staging screens against it, identify UI findings with screenshot/evidence expectations, and file/search issue-managed UI bugs rather than giving vague aesthetic feedback.
+
+
+Feature design iteration scenario:
+- The product manager asks ui-designer to create design images for a new onboarding flow before architecture/tech-spec work begins.
+- A passing `ui-designer` response should generate or update concrete design images and a feature UI brief, then spawn an independent subagent using the `ui-reviewer` skill.
+- The reviewer must create/update `.projects/<project>/design/ui-review-guideline.md` if missing, using foundational UI principles and top-of-market comparable services.
+- The ui-designer should iterate the design artifacts until the reviewer returns `PASS` or `PASS WITH MINOR POLISH`, or record a real blocker with the missing input/tooling.
+- The final design brief should link the UI review guideline, review report, status, and implementation guardrails.
