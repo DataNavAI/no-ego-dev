@@ -6,6 +6,7 @@ expectations:
   - "does not recommend weakening or changing the eval unless it is objectively incorrect"
   - "identifies workspace routing and fixture inspection as general skill or runner-training issues"
   - "says to search local skills and trusted external sources before creating a new skill"
+  - "avoids creating a dedicated skill for the target workflow eval project or fixture when an existing specialist or orchestrator skill can be patched"
   - "proposes general skill updates rather than hard-coded fixes for one dog-walker fixture"
   - "reruns the eval after syncing or applying skill changes and compares against the baseline"
   - "keeps eval artifacts and scratch outputs outside the source repo"
