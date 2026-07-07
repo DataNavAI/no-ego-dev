@@ -45,6 +45,9 @@ Design task requirements:
    - Produce concrete visual design images for the affected screens, key states, and primary responsive/device variants needed by the PRD.
    - Include enough states for implementation and QA to work without guessing: default, empty, loading, error, success, disabled, permission/auth, and mobile/desktop variants where relevant.
    - The images may be screenshots from an HTML mock, generated visual mockups, annotated wireframes, exported design-tool frames, or other concrete image artifacts. Prefer image files (`.png`, `.jpg`, `.webp`, `.svg`) over text-only descriptions for UI-bearing features.
+   - Add visible annotations to every important interactive component in design images/mockups. At minimum annotate buttons, links, tabs, nav items, icon buttons, inputs/selects, toggles, cards that open details, modal/sheet controls, destructive actions, and primary empty/error-state actions.
+   - Use stable annotation IDs such as `A1`, `A2`, `A3` directly on or beside the component with a non-obscuring callout/outline. Pair the IDs with an interaction legend in the design brief describing expected click/tap behavior, destination/state transition, validation rules, disabled/loading/error behavior, and accessibility notes.
+   - Do not let annotations replace the clean visual design. When the final visual needs to be evaluated without overlays, export both a clean image and an annotated image, e.g. `dashboard.png` and `dashboard-annotated.png`; the annotated version is required for implementation handoff.
    - If image generation/export is blocked by tooling, create a text design brief plus a follow-up image-generation task; do not pretend a text-only brief satisfies the design-image requirement.
 
 3. **Store design artifacts beside the feature PRD and tech spec**
@@ -60,7 +63,8 @@ Design task requirements:
    - Related PRD/issue and CUJ/user need.
    - Guideline sections used.
    - Screens/components/states covered.
-   - Image index with file paths and what each image demonstrates.
+   - Image index with clean and annotated image paths and what each image demonstrates.
+   - Interactive component annotation legend mapping annotation IDs to behavior, states, destinations, validation, and accessibility notes.
    - Interaction rules, copy/microcopy, responsive/device behavior, accessibility notes, and open questions.
    - Implementation acceptance notes the architect/coder must preserve.
 
@@ -248,7 +252,13 @@ CUJ/user need:
 ## Design Image Index
 | Image | Screen/state | Purpose | Notes |
 | --- | --- | --- | --- |
-| `design/images/<file>.png` | <screen/state> | <what implementation should preserve> | <responsive/accessibility/copy notes> |
+| `design/images/<file>.png` | <screen/state> | Clean visual reference | <responsive/accessibility/copy notes> |
+| `design/images/<file>-annotated.png` | <screen/state> | Annotated implementation reference | <annotation coverage notes> |
+
+## Interactive Component Annotation Legend
+| ID | Component | User action | Expected behavior/destination | States/validation | Accessibility note |
+| --- | --- | --- | --- | --- | --- |
+| A1 | <button/link/input/etc.> | <click/tap/type> | <result> | <default/disabled/loading/error/success> | <label/focus/target-size note> |
 
 ## Interaction and State Rules
 -
@@ -314,16 +324,19 @@ Issue:
 1. **Reviewing from taste instead of guidelines.** Personal preference is not a bug. Tie findings to the guideline, user journey, accessibility, or clear product comprehension impact.
 2. **Skipping the guideline.** If no guideline exists, create a minimal one before serious review or file the missing guideline as a blocker/follow-up.
 3. **Treating UI design as text-only for a UI-bearing feature.** Feature design tasks must generate concrete design images/mockups based on the project guideline and store them beside the PRD/tech spec. If tooling blocks images, record the blocker and create a follow-up image-generation task.
-4. **Skipping independent review of generated designs.** Newly generated UI design images must be reviewed by a separate subagent using `ui-reviewer`; do not self-approve major UI work without a reviewer pass or documented blocker.
-5. **Filing vague UI bugs.** "Make it look better" is not actionable. Include screen, expected behavior, actual behavior, screenshot, severity, and guideline reference.
-6. **Ignoring states.** Loading, empty, error, disabled, success, hover/focus, and responsive states often carry the most user-facing UI bugs.
-7. **Duplicating QA without design judgment.** QA proves flows work; UI design reviews judge consistency, hierarchy, clarity, accessibility basics, and polish against the product's intended experience.
+4. **Forgetting interactive annotations.** UI design images for implementation handoff must annotate important interactive components with stable IDs and include a matching interaction legend; otherwise coders and QA will guess behavior from visuals.
+5. **Skipping independent review of generated designs.** Newly generated UI design images must be reviewed by a separate subagent using `ui-reviewer`; do not self-approve major UI work without a reviewer pass or documented blocker.
+6. **Filing vague UI bugs.** "Make it look better" is not actionable. Include screen, expected behavior, actual behavior, screenshot, severity, and guideline reference.
+7. **Ignoring states.** Loading, empty, error, disabled, success, hover/focus, and responsive states often carry the most user-facing UI bugs.
+8. **Duplicating QA without design judgment.** QA proves flows work; UI design reviews judge consistency, hierarchy, clarity, accessibility basics, and polish against the product's intended experience.
 
 ## Verification Checklist
 
 - [ ] UI guideline exists or was updated at a durable project path.
 - [ ] For UI-related feature design tasks, the project design guideline was read first or a missing-guideline blocker/follow-up was recorded.
 - [ ] Feature design images/mockups were generated for required screens/states/viewport variants, or an explicit tooling blocker and follow-up image-generation task exists.
+- [ ] Annotated design images/mockups exist for important interactive components, with stable annotation IDs that do not obscure the design.
+- [ ] Feature design brief includes an interactive component annotation legend mapping each ID to behavior, states, destinations, validation, and accessibility notes.
 - [ ] Feature design brief and image paths are stored beside or cross-linked with the feature PRD and expected tech spec.
 - [ ] A subagent using `ui-reviewer` reviewed newly generated design images/mockups and produced a durable review report.
 - [ ] Design iteration continued until reviewer status was `PASS` or `PASS WITH MINOR POLISH`, or a real blocker was documented with missing inputs/tooling.
