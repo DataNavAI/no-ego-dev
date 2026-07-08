@@ -25,6 +25,13 @@ expectations:
   - "stores API keys and credentials in a secret store rather than committed env files or chat"
   - "adds or references a local loader script that loads secrets from the store into the local environment without printing secret values"
   - "documents secret-store paths or references, rotation notes, and CI or provider secret consumers without exposing raw secret values"
+  - "when asked to monitor services creates a Hermes cronjob scheduled every 5 minutes unless otherwise specified"
+  - "monitoring cronjob runs silently with empty stdout when there are no issues"
+  - "monitoring discovers all deployed services and especially checks backend API services workers databases and provider managed dependencies"
+  - "monitoring checks backend error counts high latency and CPU or memory usage above 90 percent as outage risk signals"
+  - "alerts only on issues missing critical visibility or useful recovery and deduplicates repeated incident alerts"
+  - "documents cronjob id schedule script path state file monitored services metric sources thresholds and pause remove run instructions in the deployment monitoring runbook"
+  - "verifies monitoring script healthy output is silent and simulated failure output is a concise alert"
 setupCommands: []
 teardownCommands: []
 parameters:
