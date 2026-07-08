@@ -355,6 +355,51 @@ Every periodic system checkup must include hosting cost as a first-class signal,
 
 If cost data is unavailable, mark it as `missing cost visibility`, identify the provider/account/dashboard or API access needed, and create a setup task for budget alerts or billing access. Never claim a system is fully healthy when hosting cost cannot be checked for a live product.
 
+## Service Monitoring Cronjobs
+
+When the user asks to monitor deployed services, set up a recurring Hermes cronjob that runs every 5 minutes unless the user specifies a different cadence. Monitoring must be proactive and quiet-by-default: the job should send a message only when it detects an issue, cannot check a required signal, or recovers from a previously reported issue if recovery notifications are useful.
+
+Default behavior:
+
+1. **Discover all deployed services and backends**
+   - Inspect the deployment/monitoring runbook, provider projects, CI environments, DNS/domain records, service manifests, and repo configuration to identify every deployed environment.
+   - Include frontend hosting, backend/API services, workers, queues/cron jobs, databases, storage, and any provider-managed services that can cause outages.
+   - Pay special attention to backend/API services because backend error spikes, high latency, and CPU/memory pressure are the most common precursors to outages.
+
+2. **Create a 5-minute silent watchdog**
+   - Use `cronjob(action='create', schedule='every 5m', no_agent=True, script=<script path>, deliver='origin')` for deterministic watchdogs when possible.
+   - The script must print nothing and exit 0 when everything is healthy. Empty stdout means silent success.
+   - Print a concise alert only when a threshold is breached, a health check fails, required metrics/log access is missing, or the script itself cannot determine safety.
+   - Avoid LLM-driven recurring jobs for simple metric polling unless interpretation/summarization is genuinely required.
+
+3. **Check health and backend risk signals**
+   - Health endpoints and uptime checks for every deployed service/environment.
+   - Recent backend error counts/rates from logs, provider metrics, APM/error monitoring, or application endpoints.
+   - High latency: p95/p99 response latency, timeout rate, queue lag, slow DB queries, or provider request-duration metrics. Define project-specific thresholds; if none exist, start with conservative defaults and document them.
+   - High CPU/memory: alert when CPU or memory usage is above 90% for a sustained or repeated sample window, because this usually leads to outages.
+   - Database/storage/queue pressure where available: connection saturation, disk/storage near quota, failed jobs, retry/dead-letter growth, migration failures, or backup failures.
+   - Hosting-cost/billing visibility can remain part of slower periodic checkups, but immediate outage watchdogs should prioritize health, errors, latency, CPU, and memory.
+
+4. **Make alerts actionable**
+   - Include service/environment, failing signal, observed value, threshold, time window, provider/source, likely impact, and the first diagnostic or remediation command/link.
+   - Deduplicate alerts so the user is not spammed every 5 minutes for the same ongoing incident. Store a tiny local state file outside the repo, e.g. `~/.hermes/tmp/<project>-monitor-state.json`, or in another profile-local non-repo path.
+   - Send recovery messages only when they reduce ambiguity, e.g. `RECOVERED: api-prod p95 latency back below 1s`.
+
+5. **Document and verify**
+   - Record cronjob name/id, schedule, delivery target, script path, monitored services, thresholds, metric sources, state-file path, and how to pause/remove/run the job in `.projects/<project>/runbooks/deployment-and-monitoring.md`.
+   - Verify by running the script once manually, confirming healthy output is empty, confirming simulated failures produce a concise alert, and listing the cronjob after creation.
+   - If provider metric/log access is missing, set up the cronjob to alert about missing critical visibility rather than silently claiming health, and create the required access/setup task.
+
+Watchdog script requirements:
+
+```text
+healthy run: stdout empty, exit 0
+issue found: stdout contains alert text, exit 0
+script/config failure: stdout contains diagnostic alert, exit 0 unless the scheduler itself should report a broken watchdog
+secrets: read from provider CLI, environment, or secret store; never hard-code or commit them
+state: store under ~/.hermes/tmp/ or another non-repo profile-local path
+```
+
 ## Workflow
 
 1. Inspect stack, hosting constraints, existing pipelines, current authenticated access, and whether this is a new project needing provider selection.
@@ -371,7 +416,8 @@ If cost data is unavailable, mark it as `missing cost visibility`, identify the 
 12. Document required secrets as names and store references/paths only; never commit secret values.
 13. Create or update the per-project deployment and system monitoring runbook at `.projects/<project>/runbooks/deployment-and-monitoring.md`.
 14. Add health checks, hosting-cost visibility, budget-alert expectations, and operational runbook details.
-15. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
+15. When asked to monitor deployed services, discover all deployed services/backends and set up a quiet every-5-minute Hermes cronjob watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
+16. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, confirming monitoring cronjob healthy output is silent and failure output alerts, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
 
 ## Verification Checklist
 
@@ -396,6 +442,13 @@ If cost data is unavailable, mark it as `missing cost visibility`, identify the 
 - [ ] Per-project deployment and system monitoring doc exists at `.projects/<project>/runbooks/deployment-and-monitoring.md` or an equivalent documented path.
 - [ ] The deployment/monitoring doc includes environment inventory, deployment triggers, rollback, health checks, hosting cost/budget visibility, logs, dashboards/alerts, and operational procedures.
 - [ ] Periodic system checkups include current hosting spend, projected run-rate, plan limits, resource-usage cost drivers, renewal/trial dates, and cost anomalies or missing-cost-visibility tasks.
+- [ ] When the user asked to monitor services, a Hermes cronjob was created with schedule `every 5m` unless the user specified otherwise.
+- [ ] The monitoring cronjob runs silently when all services are healthy, using empty stdout for healthy no-op runs.
+- [ ] Monitoring covers all deployed services/environments discovered from runbooks/provider config, especially backend/API services, workers, databases, and provider-managed dependencies.
+- [ ] Monitoring checks backend error counts/rates, high latency, and CPU/memory usage above 90%, plus health endpoints and queue/database/storage pressure where available.
+- [ ] Alerts are concise and actionable, include observed value and threshold, and are deduplicated to avoid repeating the same incident every 5 minutes.
+- [ ] The monitoring script was manually verified for silent healthy output and simulated failure alert output, and the cronjob was listed after creation.
+- [ ] Cronjob id/name, schedule, delivery target, script path, state-file path, monitored services, metric sources, thresholds, and pause/remove/run instructions are documented in the deployment/monitoring runbook.
 - [ ] Secrets are documented but not committed.
 - [ ] Deploy path is reproducible.
 - [ ] Health/rollback docs exist.
