@@ -99,6 +99,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `product-manager`: turns fuzzy requests into product direction, target users, success criteria, and prototype scope.
 - `product-bootstrap`: builds small publishable prototypes from benchmark URLs, screenshots, notes, or starter apps without copying benchmark-specific branding or text.
 - `ui-reviewer`: reviews design images, screenshots, prototypes, or real product UIs against foundational UI principles, top-market comparables, and a project-specific review guideline.
+- `english-copywriter`: writes and reviews concise English UI copy for websites and mobile apps, removing text when the UI can explain itself and preserving words only when they improve clarity, trust, accessibility, or recovery.
 - `ui-designer`: designs practical screens, interaction flows, first-user experience, and visual QA notes.
 - `architect`: shapes the build plan and project structure without overcomplicating the approach.
 - `project-manager`: breaks work into tracked tasks and coordinates specialist subagents.
