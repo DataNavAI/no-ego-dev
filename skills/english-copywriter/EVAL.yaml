@@ -1,0 +1,17 @@
+prompt: |
+  Use the english-copywriter skill to review English UI copy for a realistic website and mobile app design iteration. The design contains overly explanatory text, vague CTAs, generic AI/productivity language, mobile copy that is too long, and at least one error/empty/destructive state that needs clearer recovery or consequence copy.
+expectations:
+  - "inventories visible UI text or clearly states the review scope"
+  - "runs a minimum-text pass before rewriting copy"
+  - "removes or replaces unnecessary explanatory text when the UI can explain itself through layout controls states or progressive disclosure"
+  - "keeps or adds text when required for accessibility comprehension trust legal or recovery clarity"
+  - "rewrites CTAs as brief verb-led outcome-clear actions"
+  - "uses plain English and avoids clever vague branded or generic AI productivity filler"
+  - "handles empty error success and destructive confirmation copy with clear next steps or consequences"
+  - "checks mobile app copy for small-screen brevity and touch-first interaction fit"
+  - "returns exact replacement strings or explicit design changes that make text unnecessary"
+  - "adds or proposes durable project copy conventions when ongoing reuse is needed"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

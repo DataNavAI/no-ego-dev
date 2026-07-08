@@ -18,18 +18,24 @@ Context:
 - The product has a PRD under `.projects/atlasboard/prds/core-mvp.md`.
 - There is no durable UI guideline yet.
 - A staging build exists with screens for login, dashboard, launch-detail, and settings.
-- Existing implementation uses inconsistent button styles, weak empty states, and unclear error copy.
+- Existing implementation uses inconsistent button styles, weak empty states, unclear error copy, vague CTAs, and long helper text that explains controls users can already understand from layout/state.
 - The project uses GitHub issues for bugs and follow-up work.
 
 A good response should create or update a durable UI guideline path, describe how to review staging screens against it, identify UI findings with screenshot/evidence expectations, and file/search issue-managed UI bugs rather than giving vague aesthetic feedback.
 
+When visible UI text is in scope, a good response should spawn an `english-copywriter` subagent or run the same copy workflow. The copy review should inventory visible strings, run the minimum-text pass before rewrites, remove or replace unnecessary explanatory text with clearer UI structure, preserve necessary labels/accessibility/trust/recovery/consequence copy, and provide exact replacement strings for vague CTAs, errors, empty states, and destructive confirmations.
+
 
 Feature design iteration scenario:
 - The product manager asks ui-designer to create design images for a new onboarding flow before architecture/tech-spec work begins.
-- A passing `ui-designer` response should generate or update concrete design images and a feature UI brief, then spawn an independent subagent using the `ui-reviewer` skill.
+- A passing `ui-designer` response should generate or update concrete design images and a feature UI brief, then spawn an independent subagent using the `english-copywriter` skill to review all visible UI text before final UI approval.
+- The copywriter must run a minimum-text pass first: remove, shorten, or replace explanatory text when the UI can explain itself through layout, control choice, state, iconography, defaults, or progressive disclosure.
+- The ui-designer should revise design and copy until the copywriter returns `PASS` or `PASS WITH MINOR POLISH`, or record a real blocker with the missing input/tooling.
+- The feature UI brief should record copywriter status, key removals/rewrites, and copy guideline path or notes.
+- After copy review, the designer should spawn an independent subagent using the `ui-reviewer` skill.
 - The reviewer must create/update `.projects/<project>/design/ui-review-guideline.md` if missing, using foundational UI principles and top-of-market comparable services.
 - The ui-designer should iterate the design artifacts until the reviewer returns `PASS` or `PASS WITH MINOR POLISH`, or record a real blocker with the missing input/tooling.
-- The final design brief should link the UI review guideline, review report, status, and implementation guardrails.
+- The final design brief should link the copywriter review, UI review guideline, review report, status, and implementation guardrails.
 
 Interactive annotation requirement:
 - When generating UI design images/mockups for implementation handoff, a passing `ui-designer` response should add visible stable annotation IDs such as `A1`, `A2`, and `A3` to important interactive components.

@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, ui-design, product-design, qa]
-    related_skills: [product-manager, qa, project-manager, ui-reviewer]
+    related_skills: [product-manager, qa, project-manager, ui-reviewer, english-copywriter]
 ---
 
 # UI Designer
@@ -68,11 +68,20 @@ Design task requirements:
    - Interaction rules, copy/microcopy, responsive/device behavior, accessibility notes, and open questions.
    - Implementation acceptance notes the architect/coder must preserve.
 
-5. **Spawn an independent UI review iteration loop**
-   - After generating or updating UI design images/mockups, spawn a subagent instructed to load and use the `ui-reviewer` skill.
-   - Give the reviewer the PRD/CUJ, project UI guideline, design brief, image paths or UI URL, target platforms, and the current approval bar.
+5. **Spawn an independent English copy review loop**
+   - After generating or updating UI design images/mockups and before final UI approval, spawn a subagent instructed to load and use the `english-copywriter` skill.
+   - Give the copywriter the PRD/CUJ, project UI guideline, design brief, image paths or UI URL, target platforms, brand/tone notes, and all visible UI text from the mockups when available.
+   - Require the copywriter to run a minimum-text pass first: remove, shorten, or replace explanatory text with clearer UI structure whenever the screen/control/state can explain itself.
+   - The copywriter must review all visible strings in scope: headlines, navigation, tabs, CTAs, labels, placeholders, helper text, empty/error/success states, toasts, modals, onboarding, permission/payment/privacy/destructive-action copy, and text embedded in design images.
+   - Treat copywriter status `NEEDS ITERATION` or `BLOCKED` as not ready for final design handoff. Revise the design and text, then rerun copy review until it returns `PASS` or `PASS WITH MINOR POLISH`, or document a real blocker.
+   - Preserve the copy review status, highest-impact rewrites/removals, and copy guideline path or notes in the design brief.
+
+6. **Spawn an independent UI review iteration loop**
+   - After the copywriter pass has been applied or explicitly blocked, spawn a subagent instructed to load and use the `ui-reviewer` skill.
+   - Give the reviewer the PRD/CUJ, project UI guideline, copywriter report/status, design brief, image paths or UI URL, target platforms, and the current approval bar.
    - Require the reviewer to create/update `.projects/<project>/design/ui-review-guideline.md` if it does not exist, including foundational UI principles and top-of-market comparable services for the product category.
-   - Treat reviewer status `NEEDS ITERATION` or `BLOCKED` as not ready for engineering handoff. Revise the design artifacts and rerun review until the reviewer returns `PASS` or `PASS WITH MINOR POLISH`, or until a real blocker is documented with the exact missing input/tooling.
+   - During UI review, include copy quality as part of design quality: unnecessary explanatory text, vague CTAs, long mobile copy, inaccessible label removal, and unclear errors/destructive confirmations are design iteration issues.
+   - Treat reviewer status `NEEDS ITERATION` or `BLOCKED` as not ready for engineering handoff. Revise the design artifacts and rerun copy/UI review as needed until the reviewer returns `PASS` or `PASS WITH MINOR POLISH`, or until a real blocker is documented with the exact missing input/tooling.
    - Preserve the review report path and final approval rationale in the design brief so architects, coders, and QA can see what quality bar was met.
 
 ## Creating a UI Guideline
@@ -86,7 +95,7 @@ A useful guideline should be specific enough that a coder or QA agent can apply 
 - Visual language: typography, color roles, contrast expectations, elevation/borders, icons, imagery, and motion restraint.
 - Components and states: buttons, forms, inputs, tables/lists, cards, modals, empty/loading/error/success states, toasts, and destructive actions. For mobile apps, include native mobile patterns such as bottom tabs, bottom sheets, safe-area handling, keyboard overlays, permission states, and offline/interrupted-session states.
 - Accessibility basics: keyboard reachability, focus states, visible labels, contrast, target sizes, reduced-motion concerns, and semantic headings where applicable.
-- Copy and microcopy: tone, button labels, empty-state copy, error messages, confirmation text, and formatting conventions.
+- Copy and microcopy: tone, CTA conventions, navigation labels, empty/error/success states, confirmation text, and formatting conventions. The default copy rule is minimum text: remove or replace explanatory text with clearer UI structure when a screen/control/state can explain itself, while preserving labels and recovery/trust copy that users need.
 - Do / don't examples when helpful.
 - Open questions and intentionally deferred design decisions.
 
@@ -126,6 +135,7 @@ Review the real UI, not only code. Use screenshots, browser inspection, local/st
 
 3. **Compare against the guideline**
    - Look for mismatches in layout, spacing, hierarchy, typography, color roles, component variants, copy tone, states, accessibility basics, and responsive behavior.
+   - For visible UI text, either spawn an `english-copywriter` subagent or run the same minimum-text copy review yourself: remove unnecessary explanatory copy, flag vague CTAs, check mobile string length, and ensure errors/empty/destructive states help users recover or understand consequences.
    - Separate objective guideline violations from subjective preferences. If the guideline is ambiguous, file or create a guideline-improvement task rather than pretending the UI is wrong.
 
 4. **Prioritize findings**
@@ -240,6 +250,7 @@ Related PRD: <path/link>
 Expected tech spec: <path/link>
 Issue/task: <path/link>
 Project UI guideline: <path/link + sections used>
+Copywriter review: <path/link + PASS/PASS WITH MINOR POLISH/BLOCKED rationale + key removals/rewrites>
 UI review guideline: <path/link>
 Final UI review report: <path/link + PASS/PASS WITH MINOR POLISH/BLOCKED rationale>
 CUJ/user need:
@@ -264,7 +275,10 @@ CUJ/user need:
 -
 
 ## Copy and Microcopy
--
+- Minimum-text pass summary:
+- Removed/replaced text because UI explains itself:
+- Final strings / CTA conventions:
+- Empty/error/success/destructive states:
 
 ## Responsive / Device Behavior
 -
@@ -325,10 +339,11 @@ Issue:
 2. **Skipping the guideline.** If no guideline exists, create a minimal one before serious review or file the missing guideline as a blocker/follow-up.
 3. **Treating UI design as text-only for a UI-bearing feature.** Feature design tasks must generate concrete design images/mockups based on the project guideline and store them beside the PRD/tech spec. If tooling blocks images, record the blocker and create a follow-up image-generation task.
 4. **Forgetting interactive annotations.** UI design images for implementation handoff must annotate important interactive components with stable IDs and include a matching interaction legend; otherwise coders and QA will guess behavior from visuals.
-5. **Skipping independent review of generated designs.** Newly generated UI design images must be reviewed by a separate subagent using `ui-reviewer`; do not self-approve major UI work without a reviewer pass or documented blocker.
-6. **Filing vague UI bugs.** "Make it look better" is not actionable. Include screen, expected behavior, actual behavior, screenshot, severity, and guideline reference.
-7. **Ignoring states.** Loading, empty, error, disabled, success, hover/focus, and responsive states often carry the most user-facing UI bugs.
-8. **Duplicating QA without design judgment.** QA proves flows work; UI design reviews judge consistency, hierarchy, clarity, accessibility basics, and polish against the product's intended experience.
+5. **Skipping independent copy review.** Newly generated UI design images and UI review passes must include an `english-copywriter` review of all visible text. Run the minimum-text pass first: remove/replace explanatory copy when the UI can explain itself, but preserve necessary labels, accessible names, trust, recovery, and consequence copy.
+6. **Skipping independent review of generated designs.** Newly generated UI design images must be reviewed by a separate subagent using `ui-reviewer`; do not self-approve major UI work without a reviewer pass or documented blocker.
+7. **Filing vague UI bugs.** "Make it look better" is not actionable. Include screen, expected behavior, actual behavior, screenshot, severity, and guideline reference.
+8. **Ignoring states.** Loading, empty, error, disabled, success, hover/focus, and responsive states often carry the most user-facing UI bugs.
+9. **Duplicating QA without design judgment.** QA proves flows work; UI design reviews judge consistency, hierarchy, clarity, accessibility basics, and polish against the product's intended experience.
 
 ## Verification Checklist
 
@@ -338,6 +353,10 @@ Issue:
 - [ ] Annotated design images/mockups exist for important interactive components, with stable annotation IDs that do not obscure the design.
 - [ ] Feature design brief includes an interactive component annotation legend mapping each ID to behavior, states, destinations, validation, and accessibility notes.
 - [ ] Feature design brief and image paths are stored beside or cross-linked with the feature PRD and expected tech spec.
+- [ ] A subagent using `english-copywriter` reviewed all visible UI text in generated design images/mockups or real UI review scope.
+- [ ] Copywriter review ran the minimum-text pass first and removed, shortened, or replaced unnecessary explanatory text when UI structure could explain itself.
+- [ ] Necessary copy remains for labels/accessibility, comprehension, trust/privacy/payment, errors, empty states, and destructive-action consequences.
+- [ ] Feature design brief records copywriter status, key removals/rewrites, and any copy guideline path or notes.
 - [ ] A subagent using `ui-reviewer` reviewed newly generated design images/mockups and produced a durable review report.
 - [ ] Design iteration continued until reviewer status was `PASS` or `PASS WITH MINOR POLISH`, or a real blocker was documented with missing inputs/tooling.
 - [ ] Final design brief links the UI review guideline and final reviewer approval/blocker rationale.
