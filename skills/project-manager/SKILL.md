@@ -163,15 +163,16 @@ If the environment lacks a subagent/delegation tool, create explicit task handof
 
 ## UI Design Planning Rules
 
-Treat UI design as a planning input, not polish after implementation. For every core PRD and feature PRD, decide whether the work has user-facing UI. A feature needs UI planning when it creates or changes screens, flows, navigation, forms, empty/loading/error states, onboarding, settings, notifications, mobile/app surfaces, or user-visible copy/layout.
+Treat UI design as a required planning input before technical specification, not polish after implementation. For every core PRD and every UI-related feature PRD, decide whether the work has user-facing UI. A feature is UI-related when it creates or changes screens, flows, navigation, forms, empty/loading/error states, onboarding, settings, notifications, mobile/app surfaces, user-visible copy/layout, or any interaction a user can see or operate.
 
-When a PRD needs UI:
+When a PRD or feature is UI-related:
 
-- Create explicit UI design tasks immediately after the PRD is accepted and before the architecture/tech-spec phase starts.
-- Spawn a `ui-designer` subagent to create or update the durable UI guideline and define the required screens, states, interaction rules, copy tone, responsive/device constraints, accessibility baseline, and visual acceptance criteria.
+- Create an explicit UI design task immediately after the PRD is accepted and **before generating or assigning the architecture/tech-spec task**.
+- Spawn a `ui-designer` subagent for that design task. The designer must create/update the durable UI guideline when needed, produce feature-specific design images/mockups based on the project's design guideline, and define required screens, states, interaction rules, copy tone, responsive/device constraints, accessibility baseline, and visual acceptance criteria.
 - For new projects, after the core PRD is done, create the project UI guideline before asking the architect to write the tech spec whenever the product has any UI surface. Default path: `.projects/<project>/design/ui-guidelines.md` unless the repo already has a stronger convention.
-- For feature PRDs, update the existing UI guideline or create a focused UI design brief before tech spec. The brief should name affected screens/components/states and link back to the PRD.
-- Do not ask the architect to write a final tech spec for UI-bearing work until UI design tasks exist and their artifacts/owners are known. The tech spec should cite the UI guideline/brief and translate design constraints into implementation tasks.
+- For feature PRDs, create/update a focused UI design brief and generated design images before tech spec. The brief should name affected screens/components/states, link back to the PRD, and store or link the design images beside the feature PRD and future tech spec.
+- Do not ask the architect to write even a draft tech spec for UI-bearing work until the UI design task exists with an owner and expected artifacts. Do not ask the architect to finalize the tech spec until the UI guideline/brief/design-image artifacts exist or are explicitly marked blocked with a reason.
+- The tech spec must cite the UI guideline, feature UI brief, and design image paths, then translate design constraints into implementation tasks.
 - If UI is not applicable, record `UI: not applicable` with a short reason in the milestone/task plan so the omission is deliberate.
 
 Minimum UI planning task shape:
@@ -179,11 +180,13 @@ Minimum UI planning task shape:
 ```text
 UI design task — <project/feature>
 - PRD: <path/link>
-- Required artifact: <ui guideline path or feature UI brief path>
+- Required artifacts: <ui guideline path>, <feature UI brief path>, <design image/mockup paths>
 - Scope: <screens/components/states/copy/responsive/accessibility concerns>
+- Design basis: <project UI guideline path or task to create/update it first>
+- Storage: <feature artifact folder alongside PRD/tech spec, e.g. .projects/<project>/features/<feature-slug>/design/>
 - Owner: ui-designer
-- Due before: architecture/tech spec finalization
-- Acceptance: <artifact exists, linked from tech spec, implementation/QA tasks can apply it>
+- Due before: architecture/tech spec generation
+- Acceptance: <design task exists before tech spec task; guideline/brief/images exist or blocker is documented; tech spec can cite artifacts; implementation/QA tasks can apply them>
 ```
 
 ## Bug and Milestone Rules
@@ -391,7 +394,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context.
 2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
-4. For each PRD, decide whether the work needs UI. If yes, spawn a `ui-designer` subagent and create UI design tasks before tech-spec work. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins.
+4. For each PRD, decide whether the work needs UI. If yes, create the UI design issue/task and spawn a `ui-designer` subagent before creating or assigning any architecture/tech-spec task. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins. For UI-related features, require feature design images/mockups and a feature UI brief before tech-spec generation proceeds.
 5. If the PRD is a browser/web game or game-like interactive product, spawn a `web-game-dev` subagent during architecture planning so the engine choice, game architecture patterns, and engine-specific skill plan are ready before implementation.
 6. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior; for web games, require it to cite the `web-game-dev` engine/architecture recommendation.
 7. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
@@ -420,8 +423,10 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Browser/web game projects include a `web-game-dev` architecture-phase recommendation before implementation.
 - [ ] Every PRD was checked for whether UI design is applicable, with a recorded reason when it is not.
 - [ ] UI-bearing PRDs have UI design tasks before architecture/tech-spec work begins.
+- [ ] UI-related feature tech-spec tasks were not created/assigned until the design task existed with owner, design basis, storage path, and required artifacts.
 - [ ] New UI-bearing projects have a durable UI guideline after the core PRD and before tech spec.
-- [ ] Tech specs for UI-bearing work cite the UI guideline or feature UI brief.
+- [ ] UI-related features have a feature UI brief plus design image/mockup paths, or an explicit blocker/follow-up before tech-spec generation.
+- [ ] Tech specs for UI-bearing work cite the UI guideline, feature UI brief, and design image/mockup paths.
 - [ ] Deployed/user-facing projects have a routine service status check scheduled with cadence, destination, and self-contained prompt.
 - [ ] Service status checks pull product-side updates and devops-side updates, including CI status, system health, hosting cost, user traffic, and feedback from all known channels.
 - [ ] The user receives a service status summary at least once per day for active live projects unless they explicitly choose a different cadence.

@@ -465,7 +465,7 @@ updates:
   pre_update_backup: false
   backup_keep: 5
 lsp:
-  enabled: true
+  enabled: false
   wait_mode: document
   wait_timeout: 5.0
   install_strategy: auto

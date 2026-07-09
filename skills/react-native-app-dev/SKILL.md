@@ -287,7 +287,7 @@ React Native environment setup — <project>
 ```text
 React Native implementation report — <feature/fix>
 - Summary:
-- PRD/spec/UI artifacts used:
+- Files/artifacts inspected before editing: <explicitly name mobile/App.js, app config files such as mobile/app.json, QA notes, PRD/spec/UI artifacts, and existing tests that informed the change>
 - Framework/platforms touched:
 - Files changed:
 - Checks run:
@@ -295,6 +295,8 @@ React Native implementation report — <feature/fix>
 - Known gaps/follow-ups:
 - Release/package notes if relevant:
 ```
+
+For evals or acceptance-driven mobile tasks, the final response must explicitly say which required source/config/QA-note files were inspected before editing, even if the implementation changed those same files. Automated judges cannot infer inspection from a diff alone.
 
 ## Common Pitfalls
 

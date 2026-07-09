@@ -1,0 +1,18 @@
+prompt: |
+  Use the product-reviewer skill to review a realistic product website or app for its target audience. The project may not have existing audience or CUJ documentation, so the reviewer must create or update broad pain-point-oriented audience/persona notes, run an objective product-review subagent, review CUJs, and review important screens for information value.
+expectations:
+  - "uses an objective product-review subagent for objectivity"
+  - "seeds the subagent with target audience personas or broad user types"
+  - "researches and creates or updates a target audience/persona document when one does not already exist"
+  - "keeps personas broad and focused on key pain points rather than narrow invented demographics"
+  - "identifies critical user journeys as user goals"
+  - "records satisfaction and dissatisfaction points for each CUJ"
+  - "calculates a 0 to 10 promoter-style score per CUJ"
+  - "reviews each important screen from an information value perspective"
+  - "checks whether the most important information is visible at a glance"
+  - "checks whether detailed or less commonly used information is reachable without cluttering the primary view"
+  - "outputs per-CUJ score plus key satisfaction and dissatisfaction points"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
