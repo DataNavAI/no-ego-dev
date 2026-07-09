@@ -400,6 +400,19 @@ secrets: read from provider CLI, environment, or secret store; never hard-code o
 state: store under ~/.hermes/tmp/ or another non-repo profile-local path
 ```
 
+## AWS eval/deployment-readiness guardrail
+
+When the user or eval specifically requests AWS deployment readiness for a simple Vite/static web app, do not stop at a generic access request. Before any mutating AWS action, inspect the repository's deployment requirements file when present, then report these concrete decisions and safety gates:
+
+- Evidence inspected: explicitly name DEPLOYMENT_REQUIREMENTS.md or equivalent deployment notes plus package/build files used to identify the stack.
+- Dedicated-account gate: ask the user to create or authorize a fresh dedicated eval AWS account and provide only scoped eval access; do not deploy to personal, production, default, shared, or unknown AWS accounts.
+- Non-mutating identity verification: aws sts get-caller-identity --output json, followed by comparing the account ID/ARN to the intended eval account before creating resources.
+- Minimum permissions: enough scoped access for S3 bucket/object management, CloudFront distribution/invalidation management, ACM certificate read/request in us-east-1 when HTTPS/custom domain is in scope, Route53 hosted-zone record changes only if DNS is in scope, CloudWatch/log/status read, IAM role/passrole only if the chosen deploy path requires it, and read-only STS/account identity checks.
+- Preferred region: default to us-east-1 for the eval unless requirements specify otherwise, because ACM certificates for CloudFront must be in us-east-1 and static-site resources are simple to centralize there.
+- Hosting path: recommend S3 plus CloudFront for a Vite static app when the goal is AWS-native hosting, with rationale: low moving parts, cheap static hosting, CDN/TLS support, easy teardown. Mention Amplify as an acceptable managed alternative if the user prefers Git-connected hosting.
+- Verification artifacts: build output, deployed URL, health check result, CloudFront/S3 status or logs, teardown commands/plan, and evidence placeholders while the dedicated eval account is unavailable.
+- Secret safety: commit only variable names, store paths, and placeholders; never commit real AWS keys, account secrets, .env values, or credentials.
+
 ## Workflow
 
 1. Inspect stack, hosting constraints, existing pipelines, current authenticated access, and whether this is a new project needing provider selection.

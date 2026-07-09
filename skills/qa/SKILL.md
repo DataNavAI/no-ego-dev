@@ -17,6 +17,8 @@ Act like a practical human QA tester. Maintain durable smoke and feature test pl
 
 QA is not a rubber stamp. If an obvious user-facing issue appears while running a plan, report it even when it is outside the specific test case. Use common sense about how a normal user would understand the product.
 
+For exploratory QA of a website or app, behave like a user with zero context on the product. For every main-screen control component — button, link, tab, menu item, icon button, input submit action, checkbox/radio/select, carousel control, modal close, or other interactive control — state the expectation before interacting, then verify whether the resulting state meets that expectation. Unexpected states are bugs. Results that meet roughly 70% of the expectation are acceptable enough to continue but must be recorded as improvement ideas. Results that meet roughly 90% or more of the expectation are good; note them as working unless a small polish issue remains. Cover all main screens and report back both bugs and improvement ideas.
+
 ## Durable Test Plan Locations
 
 Prefer project-local QA artifacts so future agents can reuse them:
@@ -60,6 +62,33 @@ For each major user flow in scope, write at least one detailed test case. Do not
 - Negative or recovery variant when the flow has common user-facing failure states, such as invalid input, permission denial, payment failure, offline/network error, empty state, duplicate submission, or back/refresh behavior.
 
 If a major flow is intentionally out of scope for the current run, list it under `Out-of-scope major flows` with the reason and the follow-up plan. If the flow is blocked by missing environment, credentials, seed data, or deployment, mark it `BLOCKED` rather than silently omitting it.
+
+## Exploratory QA Control Expectations
+
+Use this section whenever the user asks for exploratory QA, app QA, website QA, UX QA, dogfooding, or a broad UI sweep rather than a narrow scripted test plan.
+
+1. **Map main screens first**
+   - Identify the main screens and primary flows in scope before deep clicking.
+   - Include home/landing, auth or onboarding where accessible, primary value flow, settings/account, empty states, and any screen the navigation presents as important.
+   - If a screen is blocked by auth, missing data, or environment access, mark it `BLOCKED` with the reason instead of silently skipping it.
+
+2. **Evaluate every control component on each main screen**
+   - For each visible button, link, tab, menu item, icon button, form submit, checkbox/radio/select, carousel control, modal control, or other interactive component, write a one-line expectation before interacting.
+   - Frame the expectation from the perspective of a user who has zero context on the product and is relying only on the visible UI copy, placement, icon, and surrounding context.
+   - Example: `Control: "Start free" button. Zero-context expectation: opens a signup or onboarding flow and explains what I get for free before asking for payment.`
+
+3. **Interact and classify the outcome**
+   - Click or operate the control in the real UI.
+   - Compare the resulting state to the expectation:
+     - **Bug**: unexpected state, broken state, dead end, incorrect destination, missing feedback, confusing result, console error, inaccessible behavior, or anything that violates the zero-context expectation.
+     - **Improvement idea**: outcome meets roughly 70% of the expectation but has meaningful clarity, UX, flow, copy, accessibility, or completeness gaps.
+     - **Good**: outcome meets roughly 90% or more of the expectation; note as working unless a small polish suggestion remains.
+   - Record enough evidence to explain the classification: URL/state, screenshot when useful, console/network errors, and exact visible behavior.
+
+4. **Report both bugs and improvement ideas**
+   - Bugs should include repro steps, expected vs actual, severity, and evidence.
+   - Improvement ideas should explain the gap from the zero-context expectation and the suggested product/UI change.
+   - Do not bury 70%-met controls as passes; they are improvement opportunities.
 
 ## Running a Test Plan
 
@@ -158,7 +187,15 @@ Related issue/PR/milestone:
 - Passed: <n>
 - Failed: <n>
 - Blocked: <n>
+- Controls evaluated: <n, for exploratory QA>
 - Bugs filed/updated: <issue links>
+
+## Exploratory Control Matrix
+Use for exploratory QA runs; omit only for purely scripted test-plan execution.
+
+| Screen | Control | Zero-context expectation | Actual result | Classification | Evidence/notes |
+| --- | --- | --- | --- | --- | --- |
+| <screen> | <button/link/etc.> | <what a new user would expect before clicking> | <observed state after interaction> | Bug / Improvement idea / Good | <screenshot/URL/console note> |
 
 ## Test Results
 ### <CASE-ID>: <case title>
@@ -183,11 +220,13 @@ Notes:
 ## Common Pitfalls
 
 1. **Skipping detailed cases for major flows.** Every major user flow in scope needs at least one detailed test case with concrete steps, expected checkpoints, data, and evidence; vague checklist rows are not enough.
-2. **Calling QA done without screenshots.** A UI QA run needs visual evidence, especially for failures.
-3. **Filing duplicate bugs.** Always search first; update existing bugs with new evidence when possible.
-4. **Deleting evidence too early.** Upload/attach and verify first, then remove the per-run folder.
-5. **Ignoring obvious adjacent breakage.** A normal user does not care that the plan only covered one feature; report obvious broken navigation, auth, layout, error handling, or data-loss risks.
-6. **Letting stale bugs block milestones.** Re-triage before execution and milestone completion; close invalid, obsolete, or too-minor bugs as won't fix with rationale.
+2. **Exploratory QA without per-control expectations.** For website/app exploration, every main-screen control needs a zero-context expectation, actual result, and Bug / Improvement idea / Good classification. Do not click randomly and summarize only the obvious bugs.
+3. **Treating 70%-met behavior as fully passing.** If a control mostly works but leaves a meaningful user-context, copy, flow, accessibility, or completeness gap, report it as an improvement idea.
+4. **Calling QA done without screenshots.** A UI QA run needs visual evidence, especially for failures.
+5. **Filing duplicate bugs.** Always search first; update existing bugs with new evidence when possible.
+6. **Deleting evidence too early.** Upload/attach and verify first, then remove the per-run folder.
+7. **Ignoring obvious adjacent breakage.** A normal user does not care that the plan only covered one feature; report obvious broken navigation, auth, layout, error handling, or data-loss risks.
+8. **Letting stale bugs block milestones.** Re-triage before execution and milestone completion; close invalid, obsolete, or too-minor bugs as won't fix with rationale.
 
 ## Verification Checklist
 
@@ -200,6 +239,8 @@ Notes:
 - [ ] Pass/fail/blocked result exists for every test case.
 - [ ] Failures include repro steps, expected vs actual, and screenshots.
 - [ ] Obvious out-of-scope user-facing issues were noted and triaged.
+- [ ] For exploratory QA, main screens were mapped and every main-screen control received a zero-context expectation, actual result, and Bug / Improvement idea / Good classification.
+- [ ] For exploratory QA, 70%-met controls were reported as improvement ideas instead of being counted as clean passes.
 - [ ] Issue system was searched before filing each bug.
 - [ ] Bugs were created or duplicate bugs updated with evidence.
 - [ ] QA report was uploaded/attached and verified.

@@ -14,7 +14,9 @@ metadata:
 
 ## Overview
 
-Turn a client request into a small, coherent product definition. Focus on why the feature matters, who uses it, the critical user journey, conflicts with existing product behavior, and whether the requested outcome is a prototype or a real MVP.
+Turn a client request into a small, coherent product definition. Focus on why the feature matters, who uses it, the critical user journeys (CUJs), conflicts with existing product behavior, and whether the requested outcome is a prototype or a real MVP.
+
+Product management owns the user's defined CUJs as living product artifacts. Each CUJ must satisfy a specific user need or pain point in the simplest and most delightful way the product can support. The goal of every product improvement is to improve one or more CUJs and strengthen the user's satisfaction at the end of those journeys.
 
 Product management also owns the learning loop. Every PRD should include a practical way for users to submit feedback, a daily routine for checking that feedback while the project is active or newly launched, and a concrete product-metrics plan so the team can tell whether the product is working. By default, every new user-facing project should research and recommend a cost-effective analytics tool and make measurement part of the product definition: you cannot improve things unless you measure.
 
@@ -23,7 +25,8 @@ Product management also owns the learning loop. Every PRD should include a pract
 Include:
 
 - Value proposition: the promise in one sentence.
-- Single CUJ: the one critical user journey the MVP must nail.
+- User-defined CUJ set: the critical user journeys the user/client has defined, with one marked as the primary CUJ for the MVP.
+- For each CUJ: target user, need/pain point, simplest delightful journey, desired end-state/satisfaction moment, current gaps/friction, success metric, and owner/artifact link.
 - Product type: online service, mobile app, chatbot, browser extension, internal tool, etc.
 - Target users and non-goals.
 - Product stage definition: prototype, MVP, beta, or production iteration, with explicit rationale.
@@ -33,6 +36,39 @@ Include:
 - User feedback path: where users can submit feedback, who reviews it, and how it is linked to the issue/product planning system.
 - Daily feedback check: when feedback is reviewed, which channels are checked, and where findings/actions are recorded.
 - MVP deployment and serviceability plan when the requested outcome is an MVP: live environment, release path, ownership, monitoring, support, data/backups, QA gates, rollback, and operational follow-up tasks.
+
+## Critical User Journey Ownership
+
+Maintain the user's defined critical user journeys as first-class product truth, not as one-off PRD paragraphs.
+
+Default artifact location:
+
+- `.projects/<project>/product/critical-user-journeys.md`
+
+Use the project's existing product-document convention instead when one already exists, but still keep the CUJs easy to find and update.
+
+Each CUJ must include:
+
+- CUJ name and stable ID.
+- User/persona and context.
+- User need or pain point the journey satisfies.
+- The simplest delightful path: the minimum steps a user should take to reach value without unnecessary choices, waiting, confusion, or manual support.
+- Entry point, major steps, exit/end state, and the satisfaction moment at the end of the journey.
+- Current product support: working, degraded, missing, blocked, or unknown.
+- Current friction, anxieties, failure states, and support burden.
+- Success metric: completion, time-to-value, activation, conversion, retention, satisfaction score, or qualitative signal.
+- Related feedback, analytics, QA evidence, PRDs, issues, and design artifacts.
+- Product owner/date last reviewed.
+
+CUJ maintenance rules:
+
+1. At the start of product-manager work, read the existing CUJ artifact when present. If absent for a user-facing product, create it or add a task to create it before major implementation planning.
+2. When the user defines, corrects, or prioritizes a CUJ, update the CUJ artifact immediately.
+3. Every product improvement, PRD, feature request, bug-priority decision, design change, or scope cut must state which CUJ it improves or protects. If it does not improve/protect any CUJ, treat it as suspect scope expansion unless the user explicitly wants it.
+4. Prefer the smallest, simplest change that increases end-of-journey satisfaction for the target CUJ. Delight means less confusion/friction, clearer progress, faster value, better trust, or a more satisfying completion state — not more features by default.
+5. When interpreting feedback, map the underlying pain point to an existing CUJ or propose a CUJ update/new CUJ. Do not implement surface requests that weaken the primary CUJ.
+6. During active development or launch, review CUJs alongside feedback, metrics, QA, and platform parity. Update current gaps, satisfaction evidence, and follow-up tasks.
+7. For multi-platform products, compare whether each platform preserves the same CUJ satisfaction moment, even when implementation details differ.
 
 ## Prototype vs MVP Rules
 
@@ -64,6 +100,7 @@ Include:
 - Conflicts, migrations, or edge cases.
 - Acceptance criteria that can be tested.
 - Feature metrics: the event(s), funnel step(s), or dashboard(s) that will show whether the feature improved the intended outcome.
+- CUJ impact: which user-defined CUJ(s) this feature improves or protects, the need/pain point addressed, and how the end-of-journey satisfaction should become stronger.
 - How the feature will collect user feedback after release.
 - How daily feedback review will detect whether the feature is solving the intended problem.
 
@@ -205,32 +242,39 @@ Daily platform parity review — <project> — <date/time + timezone>
 
 ## Workflow
 
-1. Read existing project knowledge, product docs, feedback logs, analytics dashboards, and relevant metrics.
+1. Read existing project knowledge, product docs, CUJ artifacts, feedback logs, analytics dashboards, and relevant metrics.
 2. Ask only clarifying questions that materially change scope; otherwise state assumptions.
-3. For new product ideas, vague product directions, or visually meaningful feature requests, create/request 2-3 design mock options and ask the user to choose, combine, or reject a direction before finalizing the PRD. Route substantial mock work to `ui-designer`.
-4. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, define the smallest fully working/serviceable core product and the real deployment/release target. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
-5. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
-6. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
-7. Draft the smallest useful PRD, including the selected visual concept and rationale when visual mock clarification was required.
-8. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
-9. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
-10. Add a product metrics plan with key events/funnels, researched cost-effective analytics tool recommendation, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
-11. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
-12. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
-13. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
-14. Check conflicts against existing features, the core product value, and platform parity expectations.
-15. Save the PRD under `.projects/<project>/prds/`.
-16. Save visual mock artifacts or links under `.projects/<project>/design/` unless the project has a stronger existing convention.
-17. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
-18. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
-19. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
+3. Identify the user's defined CUJs. Read or create/update `.projects/<project>/product/critical-user-journeys.md` or the project's equivalent CUJ artifact.
+4. For the requested product improvement, state which CUJ(s) it improves or protects and how it strengthens satisfaction at the end of the journey. If no CUJ is improved/protected, flag the work as suspect scope expansion unless the user explicitly wants it.
+5. For new product ideas, vague product directions, or visually meaningful feature requests, create/request 2-3 design mock options and ask the user to choose, combine, or reject a direction before finalizing the PRD. Route substantial mock work to `ui-designer`.
+6. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, define the smallest fully working/serviceable core product and the real deployment/release target. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
+7. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
+8. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
+9. Draft the smallest useful PRD, including the selected visual concept and rationale when visual mock clarification was required.
+10. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
+11. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
+12. Add a product metrics plan with key events/funnels, researched cost-effective analytics tool recommendation, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
+13. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
+14. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
+15. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
+16. Check conflicts against existing features, the core product value, user-defined CUJs, and platform parity expectations.
+17. Save the PRD under `.projects/<project>/prds/`.
+18. Save/update the CUJ artifact under `.projects/<project>/product/critical-user-journeys.md` unless the project has a stronger existing convention.
+19. Save visual mock artifacts or links under `.projects/<project>/design/` unless the project has a stronger existing convention.
+20. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
+21. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+22. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
 
 ## Verification Checklist
 
 Before finishing, include a brief verification note that states what artifact was created or updated, where it lives, and how the PRD was checked against the request.
 
 - [ ] PRD has value proposition or user problem.
-- [ ] PRD has one primary CUJ.
+- [ ] User-defined CUJs were read, created, or updated in `.projects/<project>/product/critical-user-journeys.md` or the project's equivalent artifact.
+- [ ] PRD has one primary CUJ and records any additional user-defined CUJs in scope.
+- [ ] Each CUJ states the user need/pain point, simplest delightful journey, and end-of-journey satisfaction moment.
+- [ ] Every product improvement states which CUJ it improves/protects and how it strengthens satisfaction at the end of the journey.
+- [ ] Work that does not improve/protect a CUJ is explicitly justified as user-requested scope or parked as suspect scope expansion.
 - [ ] PRD explicitly classifies the work as prototype, MVP, beta, or production iteration with rationale.
 - [ ] For new product ideas, vague product directions, or visually meaningful feature requests, 2-3 design mock options are created/requested before PRD finalization unless explicitly skipped or non-visual.
 - [ ] Mock options are concrete enough for user choice: primary screen/flow, layout concept, tone/visual style, interaction model, and tradeoff.
