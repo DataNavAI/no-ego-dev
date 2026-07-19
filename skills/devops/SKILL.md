@@ -1,7 +1,7 @@
 ---
 name: devops
 description: "Use when setting up CI/CD, deployments, environment management, or operational health checks."
-version: 0.5.1
+version: 0.5.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -231,6 +231,22 @@ vercel projects ls
 
 ## Environment Strategy
 
+### Supported Device Interface Deployment Gate
+
+Before promoting staging, deploying production, submitting to an app store, or rolling out a release, read `.projects/<project>/product/supported-device-interfaces.yaml`. This is the canonical supported device interface release gate.
+
+DevOps must block deployment unless all of the following are true:
+
+- The registry exists, parses, names the exact release candidate, and has no unresolved `undecided` interface relevant to the release.
+- Every interface marked `supported` has at least one executable test case ID.
+- QA ran every supported interface against the same release candidate being deployed and recorded a separate `PASS` with durable evidence and concrete target details.
+- No supported-interface result is `not-run`, `fail`, `blocked`, or `stale`.
+- Any intentional interface omission or difference is recorded by product management rather than silently accepted by deployment automation.
+
+CI/CD should implement a deterministic registry validation/release-gate job where practical. It must fail closed on missing or malformed registry data, zero test cases for a supported interface, release-candidate mismatch, missing evidence, or non-PASS results. A manual production approval cannot waive this gate without an explicit, issue-linked user decision documenting affected users, risk, rollback, and follow-up QA.
+
+Record the registry path, validated release candidate, supported interface IDs, case IDs, per-interface evidence, gate result, and any exception decision in the deployment runbook/release record.
+
 Every deployable product must have at least two persistent environments:
 
 - **Staging**: production-like environment used for integration verification, demos, QA, migration rehearsals, and smoke tests.
@@ -428,9 +444,10 @@ When the user or eval specifically requests AWS deployment readiness for a simpl
 11. Add a safe production deployment path with an explicit approval/tag/manual trigger unless the user asks for fully automatic production deploys.
 12. Document required secrets as names and store references/paths only; never commit secret values.
 13. Create or update the per-project deployment and system monitoring runbook at `.projects/<project>/runbooks/deployment-and-monitoring.md`.
-14. Add health checks, hosting-cost visibility, budget-alert expectations, and operational runbook details.
-15. When asked to monitor deployed services, discover all deployed services/backends and set up a quiet every-5-minute Hermes cronjob watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
-16. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, confirming monitoring cronjob healthy output is silent and failure output alerts, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
+14. Validate `.projects/<project>/product/supported-device-interfaces.yaml`; require at least one test case and a current PASS/evidence row for every supported device interface against the exact release candidate, and block promotion/deployment/store submission when the gate is incomplete or failing.
+15. Add health checks, hosting-cost visibility, budget-alert expectations, and operational runbook details.
+16. When asked to monitor deployed services, discover all deployed services/backends and set up a quiet every-5-minute Hermes cronjob watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
+17. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, confirming the supported-interface release gate, confirming monitoring cronjob healthy output is silent and failure output alerts, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
 
 ## Verification Checklist
 
@@ -448,6 +465,9 @@ When the user or eval specifically requests AWS deployment readiness for a simpl
 - [ ] Staging and production environments are configured or explicitly documented as required setup.
 - [ ] Staging auto-deploys from the integration branch after CI passes.
 - [ ] Production deploy is protected by manual approval, release tag, protected branch, or documented explicit command.
+- [ ] `.projects/<project>/product/supported-device-interfaces.yaml` exists, parses, and names the exact release candidate.
+- [ ] Every supported device interface has at least one executable test case and a current PASS with durable evidence for the same release candidate.
+- [ ] Promotion/deployment/store submission is blocked when the interface registry is missing/malformed/undecided or any supported-interface result is missing, stale, failed, or blocked.
 - [ ] Environment variables/secrets are separated by environment and documented by name only.
 - [ ] API keys and credentials are stored in a secret store rather than source files, chat, shell history, or committed `.env` files.
 - [ ] A local loader script exists (for example `scripts/load-secrets-from-store.sh`) and loads secrets from the store without printing values.

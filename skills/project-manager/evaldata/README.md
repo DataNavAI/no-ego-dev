@@ -12,6 +12,7 @@ Client asks NED to build a new Android app with onboarding, a dashboard, and a f
 - Require a durable UI guideline, e.g. `.projects/<project>/design/ui-guidelines.md`, before the tech spec is finalized.
 - Require the later tech spec and implementation tasks to cite the UI guideline or feature UI brief.
 - Still include the periodic product checkup once the project is deployed/user-facing, covering CI status, system health, user traffic, and feedback channels.
+- Create `.projects/<project>/product/supported-device-interfaces.yaml`, mark Android supported, explicitly classify desktop web/mobile web/iOS rather than assuming support, require at least one Android test case, and block release until Android has a current PASS/evidence row for the exact build.
 - If no status-report email recipient/cadence is provided, proactively ask which email should receive reports and how often to send them.
 - When email reporting is configured, require a concise HTML executive-summary report with inline styles, focused on product performance rather than project-detail overload: improving/holding/regressing state, top-line product metrics, wins, risks, customer signal, next actions, one crisp decision ask at most, and evidence links.
 
