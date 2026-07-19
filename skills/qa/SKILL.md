@@ -1,7 +1,7 @@
 ---
 name: qa
 description: "Use when writing or maintaining smoke/feature test plans, running UI QA, producing pass/fail reports with screenshots, and filing bugs in the issue system."
-version: 0.1.1
+version: 0.1.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -28,6 +28,20 @@ Prefer project-local QA artifacts so future agents can reuse them:
 - QA run index: `.projects/<project>/qa/runs.md` or the issue/PR comments if the project uses only the issue system for history
 
 If the project already has a QA/test-plan convention, follow it instead and update this skill's paths in the report.
+
+## Supported Device Interface Coverage
+
+Before authoring or running UI, release, smoke, regression, or feature QA, read `.projects/<project>/product/supported-device-interfaces.yaml`. It is the canonical supported device interface registry. If it is missing, stale, or contains `undecided` interfaces for a release, mark the release `BLOCKED` and create/update the project-management issue; do not infer supported interfaces from whichever build is easiest to open.
+
+For every interface whose `support_status` is `supported`:
+
+1. Include at least one executable test case. The case must identify the interface ID and concrete target such as browser/viewport, real device, emulator/simulator, OS/API version, app build, extension host, or other relevant environment.
+2. Cover the primary CUJ on that interface at minimum. Add interface-specific permission, navigation, responsive/layout, lifecycle, offline/network, accessibility, notification, payment, deep-link, install/update, or store behavior when relevant.
+3. Execute against the exact release candidate and target environment. Record a separate `PASS`, `FAIL`, or `BLOCKED` result and evidence for each interface, even when a test case is shared/parameterized.
+4. Update the registry's `test_case_ids`, `latest_result`, `tested_release_candidate`, `evidence`, and `blockers` fields or link it to the authoritative run report.
+5. Mark the overall release `FAIL` or `BLOCKED` when any supported interface has no case, was not run, has stale evidence, fails, or is blocked. Do not average results across interfaces and do not let desktop web stand in for mobile web, Android, or iOS.
+
+QA approval is valid only for the release candidate that was actually tested. Any code/config/build change that can affect user behavior makes the relevant interface evidence stale and requires rerun before deployment.
 
 ## Test Plan Authoring Rules
 
@@ -190,6 +204,11 @@ Related issue/PR/milestone:
 - Controls evaluated: <n, for exploratory QA>
 - Bugs filed/updated: <issue links>
 
+## Supported Device Interface Matrix
+| Interface ID | Concrete target | Test case IDs | Release candidate | Result | Evidence | Blockers |
+| --- | --- | --- | --- | --- | --- | --- |
+| <web-desktop/mobile-web/android/ios/etc.> | <browser/viewport/device/OS/build> | <IDs; at least one> | <commit/tag/build> | PASS / FAIL / BLOCKED | <links> | <none or issue> |
+
 ## Exploratory Control Matrix
 Use for exploratory QA runs; omit only for purely scripted test-plan execution.
 
@@ -227,6 +246,8 @@ Notes:
 6. **Deleting evidence too early.** Upload/attach and verify first, then remove the per-run folder.
 7. **Ignoring obvious adjacent breakage.** A normal user does not care that the plan only covered one feature; report obvious broken navigation, auth, layout, error handling, or data-loss risks.
 8. **Letting stale bugs block milestones.** Re-triage before execution and milestone completion; close invalid, obsolete, or too-minor bugs as won't fix with rationale.
+9. **Testing only the easiest interface.** Read the supported device interface registry and produce a separate current result/evidence row for every supported interface; desktop web is not evidence for mobile web, Android, or iOS.
+10. **Approving a release with missing interface coverage.** At least one executable test case is mandatory for each supported interface, and missing/stale/failed/blocked coverage blocks deployment.
 
 ## Verification Checklist
 
@@ -236,6 +257,10 @@ Notes:
 - [ ] Any major flow not tested is explicitly marked out of scope or blocked with a reason and follow-up.
 - [ ] One unique artifact folder was created for this run.
 - [ ] UI steps were executed in the intended environment.
+- [ ] `.projects/<project>/product/supported-device-interfaces.yaml` was read and was current for the release candidate.
+- [ ] Every supported device interface has at least one executable test case with a concrete browser/viewport/device/OS/build target.
+- [ ] Every supported device interface was run against the exact release candidate and has a separate PASS/FAIL/BLOCKED result with durable evidence.
+- [ ] Overall release status is FAIL/BLOCKED when any supported-interface case or current result is missing, stale, failed, or blocked.
 - [ ] Pass/fail/blocked result exists for every test case.
 - [ ] Failures include repro steps, expected vs actual, and screenshots.
 - [ ] Obvious out-of-scope user-facing issues were noted and triaged.

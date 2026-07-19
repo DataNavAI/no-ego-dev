@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.5
+version: 0.2.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -151,6 +151,23 @@ The product-manager must:
 
 Daily parity review is required during active development, beta, launch, and the first week after a meaningful release for any multi-platform product. The daily review should check current work, shipped behavior, user feedback, analytics, QA results, and release/store status for each platform, then update the parity matrix and create or reprioritize tasks for newly discovered gaps.
 
+## Supported Device Interface Registry
+
+For every user-facing product, create and maintain one canonical supported device interface registry at `.projects/<project>/product/supported-device-interfaces.yaml`. Start from `templates/supported-device-interfaces.yaml`. This registry is the release source of truth for which interfaces the team promises to support; a parity matrix supplements it but does not replace it.
+
+Interface means a separately testable user surface or form factor, not merely a technology label. Typical IDs include `web-desktop`, `mobile-web`, `android`, `ios`, desktop applications, tablet-specific applications, browser extensions, TV/wearable clients, chat surfaces, API clients, or other product-specific interfaces. Do not assume responsive desktop web proves mobile-web support, or that one mobile OS proves another.
+
+For every candidate interface:
+
+1. Record `support_status` as `supported`, `planned`, `intentionally-unsupported`, `not-applicable`, `deprecated`, or `undecided`.
+2. Record the user/CUJ scope, implementation or release channel, minimum browser/OS/device constraints, form factors, owner, and intentional differences.
+3. For every `supported` interface, require QA before deployment and reference at least one executable test case ID. One shared test case may cover multiple interfaces only when it is explicitly parameterized and produces separate result/evidence rows for each interface.
+4. Update the registry whenever the PRD, CUJs, implementation, support policy, minimum versions, release channels, or platform scope changes. Never let a code build silently expand support.
+5. Treat `undecided` interfaces and supported interfaces with zero test cases as release blockers until product scope is resolved.
+6. Require the latest QA result, tested release candidate, evidence links, and blockers to be refreshed for the exact build/commit/tag being released. A previous-release pass is stale evidence.
+
+Product management owns the support decision and registry accuracy. QA owns per-interface case coverage and results. DevOps enforces the registry as a deployment gate. Project management ensures updates and missing coverage become tracked tasks.
+
 ## Product Metrics Rules
 
 Always add a way to track product metrics for user-facing products and features. The PRD should define a minimal measurement plan that answers: are users reaching the core value, where are they dropping off, and is the product improving after changes?
@@ -249,7 +266,7 @@ Daily platform parity review — <project> — <date/time + timezone>
 5. For new product ideas, vague product directions, or visually meaningful feature requests, create/request 2-3 design mock options and ask the user to choose, combine, or reject a direction before finalizing the PRD. Route substantial mock work to `ui-designer`.
 6. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, define the smallest fully working/serviceable core product and the real deployment/release target. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
 7. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
-8. Identify supported/planned platforms and create or update a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
+8. Identify supported/planned interfaces and create or update `.projects/<project>/product/supported-device-interfaces.yaml` from the bundled template, plus a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
 9. Draft the smallest useful PRD, including the selected visual concept and rationale when visual mock clarification was required.
 10. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
 11. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
@@ -289,6 +306,10 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] Foreign services referenced in the PRD/research are checked with local-language/local-region settings, or local verification is recorded as an explicit follow-up task.
 - [ ] Degraded foreign-service user experience risks are called out with local/region-appropriate alternatives when they affect the core journey.
 - [ ] Supported/planned platforms are identified, including web, Android, iOS, and any other relevant surfaces.
+- [ ] `.projects/<project>/product/supported-device-interfaces.yaml` exists and is current for every user-facing product.
+- [ ] Every supported device interface names its CUJ/user scope, implementation/release channel, minimum environment, owner, and intentional differences.
+- [ ] Every supported device interface references at least one executable test case and requires fresh QA evidence for the release candidate before deployment.
+- [ ] Undecided interfaces and supported interfaces with missing test coverage are explicit release blockers.
 - [ ] Multi-platform work includes a parity matrix with each platform's feature state and core-CUJ behavior.
 - [ ] Platform parity gaps are proactively routed into follow-up tasks with owners instead of only noted.
 - [ ] Daily cross-platform parity review cadence, owner, evidence sources, and artifact destination are defined when multiple platforms are in scope.

@@ -1,0 +1,103 @@
+# Copy this file to:
+# .projects/<project>/product/supported-device-interfaces.yaml
+#
+# Keep only real product interfaces. Set every interface deliberately; do not
+# infer support merely because a build exists. Deployment is blocked when a
+# supported interface lacks at least one current passing test case and evidence.
+schema_version: 1
+artifact_path: .projects/<project>/product/supported-device-interfaces.yaml
+project: <project>
+owner: product-manager
+last_updated: <ISO-8601 timestamp>
+release_candidate: <commit, tag, build, or version>
+allowed_support_statuses:
+  - supported
+  - planned
+  - intentionally-unsupported
+  - not-applicable
+  - deprecated
+  - undecided
+interfaces:
+  - id: web-desktop
+    label: Desktop web
+    support_status: undecided
+    user_scope: <personas/CUJs available on this interface>
+    implementation: <URL/app/package/entry point>
+    minimum_versions: <browser/OS constraints or not applicable>
+    form_factors: [desktop]
+    intentional_differences: []
+    owner: <team/person>
+    qa:
+      required_before_deploy: true
+      minimum_test_cases: 1
+      test_case_ids: []
+      test_targets: [<browser and viewport>]
+      latest_result: not-run
+      tested_release_candidate: null
+      evidence: []
+      blockers: []
+  - id: mobile-web
+    label: Mobile web
+    support_status: undecided
+    user_scope: <personas/CUJs available on this interface>
+    implementation: <responsive/PWA URL or entry point>
+    minimum_versions: <mobile browser/OS constraints>
+    form_factors: [phone, tablet]
+    intentional_differences: []
+    owner: <team/person>
+    qa:
+      required_before_deploy: true
+      minimum_test_cases: 1
+      test_case_ids: []
+      test_targets: [<real device or emulated browser/viewport>]
+      latest_result: not-run
+      tested_release_candidate: null
+      evidence: []
+      blockers: []
+  - id: android
+    label: Android app
+    support_status: undecided
+    user_scope: <personas/CUJs available on this interface>
+    implementation: <package/application ID and release track>
+    minimum_versions: <minimum supported Android API/OS>
+    form_factors: [phone, tablet]
+    intentional_differences: []
+    owner: <team/person>
+    qa:
+      required_before_deploy: true
+      minimum_test_cases: 1
+      test_case_ids: []
+      test_targets: [<emulator and/or real device model/API>]
+      latest_result: not-run
+      tested_release_candidate: null
+      evidence: []
+      blockers: []
+  - id: ios
+    label: iOS app
+    support_status: undecided
+    user_scope: <personas/CUJs available on this interface>
+    implementation: <bundle ID and release/TestFlight track>
+    minimum_versions: <minimum supported iOS/iPadOS>
+    form_factors: [iphone, ipad]
+    intentional_differences: []
+    owner: <team/person>
+    qa:
+      required_before_deploy: true
+      minimum_test_cases: 1
+      test_case_ids: []
+      test_targets: [<simulator and/or real device model/OS>]
+      latest_result: not-run
+      tested_release_candidate: null
+      evidence: []
+      blockers: []
+release_gate:
+  policy: >-
+    Every interface with support_status supported must have at least one
+    executable test case, a PASS result against this release candidate in the
+    target environment, and durable evidence before staging promotion,
+    production deployment, or app-store submission.
+  unresolved_statuses_block_release: [undecided]
+  blocking_results: [not-run, fail, blocked, stale]
+  qa_report: <path or URL>
+  approved_by: null
+  approved_at: null

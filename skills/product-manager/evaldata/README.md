@@ -10,6 +10,7 @@ Existing product context:
 - Feedback sources available: in-app feedback link, support email, Telegram beta group, GitHub issues, and short post-signup survey.
 - Current analytics are incomplete: page views and signup counts exist, but publish-state confusion, signup-form errors, activation, and retention are not instrumented yet.
 - Deployment expectation: MVP should run at a hosted production URL with deploy/rollback ownership, basic monitoring/logging, persistence for pages and signups, support/feedback intake, and QA gates for create page, publish, share link, collect signup, and manage signup data flows.
+- Supported device interfaces for launch: desktop web and mobile web. Native Android and iOS are planned but not supported for this release. The project does not yet have `.projects/launchpad-lite/product/supported-device-interfaces.yaml`; the response should create it from the bundled template and require at least one executable, release-candidate-specific QA case/result/evidence row for each supported web interface before deployment.
 - Current raw feedback examples:
   - One user asks for "AI-generated animated backgrounds".
   - Five beta users say they cannot tell whether their page is published or still draft.

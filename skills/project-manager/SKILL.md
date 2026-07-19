@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.7
+version: 0.5.8
 author: NoEgoDev
 license: MIT
 metadata:
@@ -102,6 +102,31 @@ Preferred pattern:
 - Repo markdown = canonical implementation/agent source of truth.
 - Google Docs = collaborative review/presentation layer when useful.
 - If both exist, the repo artifact must link to the Google Doc, state which one is canonical for the current phase, and include a task to sync accepted changes back to the canonical location.
+
+## Supported Device Interface Coordination
+
+Every user-facing project must maintain a canonical supported device interface registry at `.projects/<project>/product/supported-device-interfaces.yaml`, initialized from the `product-manager` template. The registry distinguishes separately testable interfaces such as desktop web, mobile web, Android, iOS, desktop apps, extensions, and other supported surfaces. A platform parity document does not replace this release-control artifact.
+
+Project-manager responsibilities:
+
+1. Create the registry during product onboarding before implementation milestones are finalized, and assign product-manager as support-scope owner.
+2. Require every PRD, UI plan, architecture spec, implementation issue, QA plan, and release issue to read the current registry and name affected interface IDs.
+3. When interface support, minimum versions, form factors, CUJ availability, or release channels change, create/update the support-decision task and registry in the same milestone.
+4. Create QA coverage work so every `supported` device interface has at least one executable test case. A parameterized shared case is acceptable only with a separate run/result/evidence row for each interface.
+5. Before assigning deployment, app-store submission, rollout, or milestone completion, verify that QA tested every supported interface against the exact release candidate and recorded `PASS` plus durable evidence.
+6. Block deployment when the registry is missing or stale, an interface is `undecided`, a supported interface lacks a test case, or any required interface result is missing, stale, failed, or blocked. Create follow-up issues instead of waiving the gate silently.
+
+Minimum release task evidence:
+
+```text
+Supported-device-interface gate — <release candidate>
+- Registry: .projects/<project>/product/supported-device-interfaces.yaml
+- Supported interfaces: <IDs>
+- Test coverage: <at least one case ID per interface>
+- QA results: <PASS/FAIL/BLOCKED per interface + evidence>
+- Decision: READY | BLOCKED
+- Follow-ups: <issue IDs/owners>
+```
 
 ## Agent Identity and Email Communication Rules
 
@@ -404,8 +429,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 11. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
 12. Send a progress update with the milestone/task plan before execution begins.
 13. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
-14. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution.
-15. Spawn a `qa` subagent for the follow-up QA task; require a pass/fail report, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
+14. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution covering every affected supported device interface in the canonical registry.
+15. Spawn a `qa` subagent for the follow-up QA task; require at least one test case and a separate pass/fail/blocked result with evidence for each supported interface, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
 16. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
 17. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
 18. When tasks complete, verify the milestone goal using direct evidence.
@@ -440,6 +465,9 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Progress updates were sent at phase start, phase completion, before subagent batches, and after subagent results.
 - [ ] Completed tasks have evidence.
 - [ ] Each completed implementation task has a linked follow-up QA task unless explicitly non-user-facing.
+- [ ] Every user-facing project has a current `.projects/<project>/product/supported-device-interfaces.yaml` registry.
+- [ ] Every supported device interface has at least one executable test case and a current per-interface QA result/evidence row for the exact release candidate.
+- [ ] Deployment/store submission is blocked when the registry or any supported-interface test coverage/result is missing, stale, failed, blocked, or undecided.
 - [ ] QA reports include pass/fail/blocked status, failure details, screenshots, and linked bugs.
 - [ ] Bugs were searched for duplicates before creation and triaged on creation.
 - [ ] Before milestone completion, all linked open bugs were fixed, closed as invalid/obsolete/won't-fix with rationale, or explicitly deferred without compromising milestone acceptance.
