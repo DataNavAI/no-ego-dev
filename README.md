@@ -2,11 +2,34 @@
 
 [한국어 README](README.ko.md)
 
-NoEgoDev — NED for short — is a Hermes profile that turns a plain request into a working, publishable prototype. It can help shape the product, design the UI, build the app, QA it, publish it, and plan honest marketing around it.
+NoEgoDev — NED for short — is a Hermes profile that turns a plain request into a working, publishable product. It can help shape the product, design the UI, build the app, QA it, publish it, and plan honest marketing around it.
 
 NED is best for people who want to test an idea quickly with something real enough to share with users, teammates, or customers.
 
-## Getting Started
+## Create a private hosted NED (CLI beta)
+
+Requirements: Node.js 20+, a Daytona account, and a Daytona API key with `write:sandboxes`, `delete:sandboxes`, and `manage:secrets`. Create the key at https://app.daytona.io/dashboard/keys and keep it in your local shell—never paste it into chat.
+
+```bash
+npm install --global no-ego-dev
+read -s DAYTONA_API_KEY && export DAYTONA_API_KEY
+ned create
+```
+
+`ned create` asks no infrastructure questions. It opens OpenRouter authorization in your browser, creates one private persistent Daytona workspace, installs pinned Hermes and NED, and runs an inference health check.
+
+```bash
+ned chat "Build the smallest useful version of my product idea"
+ned doctor
+ned reset
+ned destroy --yes
+```
+
+The workspace stops after 15 idle minutes and archives after seven idle days. Stopped workspaces retain disk billing; archived containers retain restorable state without active sandbox billing. Model usage is billed separately by OpenRouter.
+
+See [`docs/ned-create/PRD.md`](docs/ned-create/PRD.md), [`CUJ.md`](docs/ned-create/CUJ.md), and [`TECH_SPEC.md`](docs/ned-create/TECH_SPEC.md) for the product and security contract.
+
+## Install into an existing Hermes profile
 
 Minimum requirement: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 / v0.14.0 or newer. That is the first release line with profile distribution support.
 

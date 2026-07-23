@@ -1,5 +1,5 @@
 name: no-ego-dev
-version: 0.1.0
+version: 0.2.0
 description: "NoEgoDev (NED), a Hermes profile distribution template for turning client requests into shipped products."
 hermes_requires: ">=0.14.0"
 author: "knoomdevbot"

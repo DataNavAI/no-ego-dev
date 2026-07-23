@@ -1,0 +1,61 @@
+name: NED CLI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python3 -m pip install pytest pyyaml
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: python3 -m pytest -q
+      - run: npm audit --omit=dev
+      - name: Verify installable tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="$(npm pack --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s)[0].filename))")"
+          prefix="$(mktemp -d)"
+          npm install --global --prefix "$prefix" "$package"
+          "$prefix/bin/ned" create --dry-run --json | tee /tmp/ned-dry-run.json
+          node -e "const p=require('/tmp/ned-dry-run.json'); if(p.questionsAsked!==0 || p.provider!=='daytona') process.exit(1)"
+
+  macos-smoke:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: Verify installable tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="$(npm pack --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s)[0].filename))")"
+          prefix="$(mktemp -d)"
+          npm install --global --prefix "$prefix" "$package"
+          "$prefix/bin/ned" --help
+          "$prefix/bin/ned" create --dry-run --json
