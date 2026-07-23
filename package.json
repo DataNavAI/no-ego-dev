@@ -1,0 +1,52 @@
+{
+  "name": "no-ego-dev",
+  "version": "0.2.0",
+  "description": "Create and run a private NED product partner on Daytona.",
+  "type": "module",
+  "bin": {
+    "ned": "bin/ned.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "distribution.yaml",
+    "SOUL.md",
+    "AGENTS.md",
+    "config.yaml",
+    "skills/",
+    "eval_runner/",
+    "!eval_runner/**/__pycache__/**",
+    "!eval_runner/**/*.pyc",
+    "evaldata/",
+    "docs/ned-create/",
+    ".env.EXAMPLE",
+    "README.md",
+    "README.ko.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/ned-create/*.test.js",
+    "test:all": "node --test tests/**/*.test.js && python -m pytest",
+    "check": "node --check bin/ned.js && node --check src/app.js && node --check src/cli.js && node --check src/plan.js && node --check src/profile-archive.js && node --check src/state.js && node --check src/auth/openrouter.js && node --check src/providers/daytona.js",
+    "pack:check": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "@daytona/sdk": "0.200.1",
+    "tar": "7.5.21"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DataNavAI/no-ego-dev.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DataNavAI/no-ego-dev/issues"
+  },
+  "homepage": "https://ned.datanav.app",
+  "overrides": {
+    "@opentelemetry/propagator-jaeger": "2.10.0"
+  }
+}

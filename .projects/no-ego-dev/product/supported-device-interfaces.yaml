@@ -1,0 +1,31 @@
+schema_version: 1
+product: ned-cli
+release_candidate: 0.2.0
+interfaces:
+  - id: cli-macos
+    support_status: supported
+    target: macOS 26, Node.js 20+
+    primary_cuj: CUJ-1 create and CUJ-2 chat
+    test_case_ids: [NED-SMOKE-01, NED-SMOKE-02]
+    latest_result: blocked
+    tested_release_candidate: 0.2.0
+    evidence:
+      - NED-SMOKE-01 PASS from installed tarball on current Node and Node 20; SHA-256 943b17b03098a35340aeacc521420e6af4ffa5252e55bcb7eadc446b8faf6769.
+      - .projects/no-ego-dev/qa/runs/2026-07-23-ned-cli-0.2.0.md
+    blockers:
+      - Live Daytona smoke requires DAYTONA_API_KEY.
+  - id: cli-linux
+    support_status: supported
+    target: Ubuntu 24.04, Node.js 20+
+    primary_cuj: CUJ-1 create and CUJ-2 chat
+    test_case_ids: [NED-SMOKE-01, NED-SMOKE-02]
+    latest_result: not-run
+    tested_release_candidate: null
+    evidence: []
+    blockers:
+      - GitHub Actions run pending.
+      - Live Daytona smoke requires DAYTONA_API_KEY.
+  - id: cli-windows
+    support_status: unsupported
+    target: Windows 11
+    rationale: Windows is deferred until package installation, browser launch, filesystem permissions, and Daytona lifecycle behavior have dedicated CI evidence.

@@ -1,0 +1,20 @@
+prompt: |
+  Evaluate the `ned create` MVP implementation in this repository as a release candidate. Inspect docs/ned-create/PRD.md, docs/ned-create/CUJ.md, docs/ned-create/TECH_SPEC.md, package.json, src/, and tests/ned-create/. Run the documented local verification commands. Do not create a real Daytona resource unless DAYTONA_API_KEY is already available and the evaluator is explicitly authorized to incur trial usage.
+expectations:
+  - "reports that the default create path asks zero infrastructure questions"
+  - "verifies the fixed private persistent Daytona resource policy"
+  - "verifies official OpenRouter OAuth PKCE with an environment-key fallback"
+  - "verifies OpenRouter plaintext is excluded from sandbox files local state profile archives command output and prompts"
+  - "verifies Hermes is pinned to v2026.7.20 commit 3ef6bbd201263d354fd83ec55b3c306ded2eb72a"
+  - "verifies create rollback deletes a newly created workspace when bootstrap or health fails"
+  - "verifies activation requires remote sandbox Hermes NED profile and inference health"
+  - "verifies ned chat wakes the existing workspace and safely handles shell metacharacters"
+  - "verifies doctor reset and destroy semantics"
+  - "verifies package contents include the NED distribution and exclude credentials runtime state and repository metadata"
+  - "runs npm test npm run check npm audit --omit=dev npm pack --dry-run and python -m pytest"
+  - "does not claim a live Daytona smoke passed without real create doctor chat and destroy evidence"
+  - "explains why KakaoTalk is deferred rather than shipping an unofficial personal-account bot"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: docs/ned-create/CUJ.md

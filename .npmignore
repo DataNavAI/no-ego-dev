@@ -1,3 +1,5 @@
+**/__pycache__/**
+**/*.pyc
 .env
 .env.*
 !.env.EXAMPLE
@@ -7,12 +9,7 @@ memories/
 logs/
 workspace/
 state.db*
-*_cache/
-local/
 .pytest_cache/
-node_modules/
-__pycache__/
-*.pyc
 .eval-runs/
 .projects/
 .DS_Store

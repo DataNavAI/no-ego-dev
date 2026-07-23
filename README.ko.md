@@ -2,11 +2,34 @@
 
 [English README](README.md)
 
-NoEgoDev, 줄여서 NED는 간단한 요청을 작동하고 공유 가능한 프로토타입으로 바꿔주는 Hermes 프로필입니다. 제품 방향을 잡고, UI를 디자인하고, 앱을 만들고, QA하고, 퍼블리싱을 준비하고, 과장 없는 마케팅 계획까지 도와줄 수 있습니다.
+NoEgoDev, 줄여서 NED는 간단한 요청을 작동하고 공개 가능한 제품으로 바꿔주는 Hermes 프로필입니다. 제품 방향을 잡고, UI를 디자인하고, 앱을 만들고, QA하고, 퍼블리싱을 준비하고, 과장 없는 마케팅 계획까지 도와줄 수 있습니다.
 
 NED는 아이디어를 빠르게 검증하고 싶은 사람에게 가장 잘 맞습니다. 사용자, 팀원, 고객에게 실제로 보여줄 수 있는 무언가를 빠르게 만들 때 유용합니다.
 
-## 시작하기
+## 비공개 호스팅 NED 만들기 (CLI 베타)
+
+요구사항은 Node.js 20 이상, Daytona 계정, 그리고 `write:sandboxes`, `delete:sandboxes`, `manage:secrets` 권한이 있는 Daytona API 키입니다. https://app.daytona.io/dashboard/keys 에서 키를 만든 뒤 로컬 셸에만 보관하세요. 채팅에는 붙여넣지 마세요.
+
+```bash
+npm install --global no-ego-dev
+read -s DAYTONA_API_KEY && export DAYTONA_API_KEY
+ned create
+```
+
+`ned create`는 인프라를 묻지 않습니다. 브라우저에서 OpenRouter 권한을 승인하면 비공개 영구 Daytona 워크스페이스를 만들고, 고정 버전의 Hermes와 NED를 설치한 뒤 실제 추론 상태 확인을 실행합니다.
+
+```bash
+ned chat "내 제품 아이디어의 가장 작은 유용한 버전을 만들어줘"
+ned doctor
+ned reset
+ned destroy --yes
+```
+
+워크스페이스는 15분 동안 유휴 상태이면 중지되고 7일 뒤 아카이브됩니다. 중지 상태에서는 디스크 비용이 남지만, 아카이브된 컨테이너는 복원 가능한 상태를 유지하면서 활성 샌드박스 비용이 발생하지 않습니다. OpenRouter 모델 사용료는 별도입니다.
+
+제품 및 보안 계약은 [`docs/ned-create/PRD.md`](docs/ned-create/PRD.md), [`CUJ.md`](docs/ned-create/CUJ.md), [`TECH_SPEC.md`](docs/ned-create/TECH_SPEC.md)를 참고하세요.
+
+## 기존 Hermes 프로필에 설치하기
 
 최소 요구사항: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 / v0.14.0 이상. 이 버전 라인이 프로필 배포를 지원하는 첫 릴리스입니다.
 
