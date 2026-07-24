@@ -1,13 +1,13 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.7
+version: 0.2.8
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development, product-management, feedback]
-    related_skills: [mvp-planning, project-manager, ui-designer, qa]
+    related_skills: [mvp-planning, project-manager, ui-designer, qa, subagent-driven-development]
 ---
 
 # Product Manager
@@ -276,6 +276,90 @@ Daily platform parity review — <project> — <date/time + timezone>
 - Evidence: <QA runs, screenshots, analytics, feedback, release notes>
 ```
 
+## Independent PRD Review and Revision Gate
+
+A product-manager must not self-approve a PRD. After saving a complete draft, spawn a fresh independent reviewer subagent that did not author the PRD. Treat this as a **revision gate**, not an optional suggestion pass.
+
+### Reviewer context
+
+Provide the reviewer with the latest PRD revision, not a stale excerpt, plus:
+
+- Original user/client request and explicit constraints.
+- Product stage and target user/problem.
+- Selected CUJs and MVP scope contract when applicable.
+- Selected design direction and linked artifacts.
+- Existing-product constraints, supported interfaces, metrics, feedback, QA, deployment, and open decisions.
+- Exact PRD path and revision identifier or timestamp.
+
+Include the full artifact text in the delegation context when practical. Otherwise provide its durable path and require the reviewer to read that exact revision before returning a verdict.
+
+Dispatch the review with `delegate_task` directly. Adapt paths/context, but preserve independence and the exact-revision requirement:
+
+```python
+delegate_task(
+    goal="Independently review the complete latest PRD and return the required structured verdict. Do not edit the PRD.",
+    context="""
+    Original request and constraints: <full context>
+    Latest PRD revision: <exact path/id plus full text when practical>
+    CUJ/MVP/design/QA/metrics/interface context: <full relevant context>
+    Review against every rubric dimension below. Return only the structured PRD review; do not assume author intent.
+    """,
+    toolsets=["file"],
+)
+```
+
+### Required reviewer rubric
+
+Ask the independent subagent to evaluate:
+
+1. Fidelity to the user's actual problem and requested outcome.
+2. One coherent target user/problem and CUJ alignment; for MVPs, compliance with the one-problem and 1-3-CUJ scope contract.
+3. Scope discipline, explicit non-goals, and absence of unjustified feature creep.
+4. UX clarity and shortest path to value, including failure/recovery/accessibility/trust states.
+5. Objective, testable acceptance criteria and CUJ-level QA/release evidence.
+6. Product metrics, feedback loop, supported-interface parity, deployment/serviceability, and ownership.
+7. Contradictions, unresolved assumptions, missing decisions, or requirements that cannot be implemented or verified.
+
+Require structured output:
+
+```text
+PRD review — round <N> — revision <path/id>
+Verdict: APPROVED | APPROVED_WITH_MINOR_NOTES | NEEDS_REVISION | BLOCKED
+Findings:
+- <BLOCKER|HIGH|MEDIUM|LOW> — <issue> — <evidence> — <recommended correction>
+Scope additions challenged: <items or none>
+Unresolved decisions/assumptions: <items or none>
+Approval rationale: <why the latest revision is or is not ready>
+```
+
+### Revision loop
+
+1. Save review output under `.projects/<project>/reviews/<prd-name>-prd-review-round-<N>.md` or the project's equivalent review directory.
+2. Classify every finding as accepted, rejected with evidence/rationale, deferred with owner, or blocked on a user decision.
+3. Revise the PRD to address every `BLOCKER` and `HIGH` finding and every accepted `MEDIUM` finding. Do not blindly add reviewer suggestions that expand scope or weaken the chosen CUJ.
+4. Record a concise disposition table in the PRD or linked review artifact: finding, disposition, change/rationale, owner, and revision.
+5. Spawn a **fresh independent reviewer subagent** for the latest revision. Explicitly provide prior findings/dispositions and require the reviewer to verify the actual changes; approval of an older revision does not count.
+6. Repeat until the latest revision is `APPROVED` or `APPROVED_WITH_MINOR_NOTES`, has zero unresolved `BLOCKER`/`HIGH` findings, and any remaining `MEDIUM` findings have an accepted disposition the reviewer agrees is non-blocking.
+
+Bound the revision gate to **three review rounds**. Escalate earlier if issue severity/count does not decrease, reviewers identify conflicting product assumptions, or a missing user decision prevents convergence. After round three, do not self-approve: present the unresolved findings and dispositions to the user and wait for direction. Low/minor notes may remain only when they do not affect user value, scope, feasibility, safety, testability, or launch readiness.
+
+### Asynchronous continuation state
+
+`delegate_task` returns before the reviewer finishes. Immediately after dispatch, checkpoint the review state in the PRD or review index:
+
+```text
+review_status: REVIEW_PENDING
+round: <N>
+prd_revision: <exact path/id/hash or timestamp>
+reviewer_handle: <delegate handle when available>
+resume_at: disposition_and_revision
+handoff_blocked: true
+```
+
+Do not fabricate a verdict, mark the gate complete, or end with "approved" while the reviewer is still running. When the reviewer result re-enters the session, resume from the checkpoint: validate the response shape, save the review artifact, disposition findings, revise, and dispatch the next fresh review if needed. A response that only reports `REVIEW_PENDING` is an honest checkpoint, not completion of the product workflow. The pending response must still name the exact revision/round, reviewer handle when available, review-artifact destination, rubric dimensions sent to the reviewer, handoff block, and callback transition: validate structured findings → save review → disposition → revise → fresh re-review until approval or three-round escalation.
+
+Do not route the PRD to architecture or implementation until this gate passes or the user explicitly accepts documented residual risk.
+
 ## Workflow
 
 1. Read existing project knowledge, product docs, CUJ artifacts, feedback logs, analytics dashboards, and relevant metrics.
@@ -295,11 +379,12 @@ Daily platform parity review — <project> — <date/time + timezone>
 15. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
 16. Check conflicts against existing features, the core product value, user-defined CUJs, and platform parity expectations.
 17. Save the PRD under `.projects/<project>/prds/`.
-18. Save/update the CUJ artifact under `.projects/<project>/product/critical-user-journeys.md` unless the project has a stronger existing convention.
-19. Save visual mock artifacts or links under `.projects/<project>/design/` unless the project has a stronger existing convention.
-20. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
-21. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
-22. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
+18. Spawn a fresh independent PRD reviewer subagent, save its structured findings, revise the PRD, and repeat review against the latest revision until the revision gate passes or escalates after at most three rounds.
+19. Save/update the CUJ artifact under `.projects/<project>/product/critical-user-journeys.md` unless the project has a stronger existing convention.
+20. Save visual mock artifacts or links under `.projects/<project>/design/` unless the project has a stronger existing convention.
+21. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
+22. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+23. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
 
 ## Verification Checklist
 
@@ -352,3 +437,7 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] Repeated feedback patterns become product work only after duplicate/pattern review.
 - [ ] Durable artifact paths are named, e.g. `.projects/<project>/prds/<prd>.md`, `.projects/<project>/feedback/daily-log.md`, and `.projects/<project>/platform-parity/parity-matrix.md` when relevant.
 - [ ] Verification evidence explains how the artifact satisfies the client request and what assumptions remain.
+- [ ] A fresh independent reviewer subagent reviewed the complete latest PRD revision against the original request, CUJs, scope, UX, acceptance criteria, QA, metrics, interfaces, and serviceability.
+- [ ] Every review finding has severity and disposition; all blockers/high findings and accepted medium findings were addressed or escalated.
+- [ ] The revised PRD was re-reviewed, with the review artifact and exact revision path/id recorded.
+- [ ] The final reviewer verdict is `APPROVED` or `APPROVED_WITH_MINOR_NOTES` with no unresolved blocker/high findings; otherwise the workflow escalated after no more than three rounds rather than self-approving.

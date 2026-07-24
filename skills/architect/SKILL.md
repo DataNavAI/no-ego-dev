@@ -1,12 +1,13 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.2
+version: 0.2.3
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development]
+    related_skills: [mvp-planning, subagent-driven-development, requesting-code-review, qa]
 ---
 
 # Architect
@@ -28,6 +29,30 @@ Translate product intent into a technical plan that a coder can implement safely
 - Hosting/deployment provider options that support the required stack, including tradeoffs and a recommended default.
 - Web game engine and game architecture selection when the product is a browser/web game: researched performant engine recommendation, game loop/state/scene/entity architecture, asset pipeline, browser performance budget, and engine-specific skill plan.
 - Test and rollout plan.
+- Mandatory milestone/feature-end refactoring task: after every milestone or feature delivery, schedule a dedicated refactoring task focused on reducing complex dependencies, removing redundant code, and improving testability so product behavior can be verified by the automated test suite.
+
+## Milestone-End Refactoring Task
+
+Every architecture plan, milestone plan, feature spec, or implementation task breakdown must end with an explicit refactoring task. Do not treat refactoring as optional polish or a vague future improvement; make it a scheduled task with acceptance criteria.
+
+The refactoring task's goal is to keep the codebase product-verifiable:
+
+- Reduce complex dependencies, hidden coupling, cross-module tangles, and fragile integration seams introduced or exposed by the milestone/feature.
+- Remove redundant code, duplicate product logic, copied UI/state handling, and overlapping abstractions.
+- Improve testability by creating clearer boundaries, injectable dependencies, deterministic data flows, and smaller units/components that can be verified without brittle end-to-end-only coverage.
+- Expand or reshape tests so most product features and critical user journeys can be verified by the test suite, not only by manual QA.
+- Preserve behavior: refactoring tasks should specify the existing tests/smoke checks that must stay green and the new/updated tests that prove feature behavior remains intact.
+
+Refactoring task template:
+
+```text
+Refactoring task: <milestone/feature> testability and dependency cleanup.
+Goal: reduce <complex dependency/redundant code areas> and make <product features/CUJs> verifiable by automated tests.
+Scope: <modules/components/APIs/state paths to simplify>.
+Testability work: <new seams/injections/helpers/fixtures/component boundaries>.
+Tests to add/update: <unit/integration/component/e2e tests proving core product behavior>.
+Acceptance criteria: redundant code removed, dependencies simplified, product behavior covered by tests, existing suite remains green.
+```
 
 ## Product Metrics Instrumentation
 
@@ -136,6 +161,90 @@ Engine-specific skill: <existing skill path or follow-up skill to create>.
 Implementation/QA tasks: <engine setup, gameplay systems, analytics, tests, smoke/perf checks>.
 ```
 
+## Independent Technical Review and Revision Gate
+
+An architect must not self-approve a technical specification. After saving a complete draft, spawn a fresh independent technical reviewer subagent that did not author the spec. This is a **revision gate** and must pass before coder/project-manager handoff.
+
+### Reviewer context
+
+Provide the reviewer with the complete latest tech-spec revision plus:
+
+- Original user request, approved PRD, selected CUJs, MVP scope contract, and design artifacts when applicable.
+- Current repository architecture, affected components/interfaces, relevant source paths, and existing conventions.
+- Product/security/privacy/compliance constraints, supported interfaces, rollout target, budget/operational constraints, and open decisions.
+- Exact tech-spec path and revision identifier or timestamp.
+- Prior-round findings and dispositions when this is a re-review.
+
+Include full artifact text in delegation context when practical. Otherwise require the subagent to read the exact durable revision before returning a verdict. Never ask the reviewer to assess a summary in place of the actual specification.
+
+Dispatch the technical review with `delegate_task` directly. Adapt paths/context, but preserve independence and the exact-revision requirement:
+
+```python
+delegate_task(
+    goal="Independently review the complete latest technical specification and return the required structured verdict. Do not edit the spec.",
+    context="""
+    Original request, approved PRD/CUJs, scope, and design: <full context>
+    Repository architecture and constraints: <full context>
+    Latest tech-spec revision: <exact path/id plus full text when practical>
+    Review every technical rubric dimension below. Return only the structured technical review; do not assume author intent.
+    """,
+    toolsets=["file", "terminal"],
+)
+```
+
+### Required technical review rubric
+
+Ask the independent subagent to evaluate:
+
+1. Traceability to the approved PRD, CUJs, scope contract, acceptance criteria, design artifacts, and product metrics.
+2. Grounding in the actual repository and accurate identification of affected components, interfaces, data models, dependencies, and ownership.
+3. Simplest sustainable design: no unnecessary services, abstractions, platforms, migrations, integrations, or operational burden.
+4. Interface/API/event/schema clarity, data flow, invariants, state transitions, error handling, concurrency/idempotency, and failure recovery.
+5. Security, privacy, permissions, secrets, abuse risks, compliance boundaries, and data retention.
+6. Testability and CUJ verification across unit, integration, contract, component, E2E, migration, and release smoke layers as applicable.
+7. Backward compatibility, migration/backfill, rollout/canary, observability, support, rollback, disaster recovery, and cost/operability.
+8. Unresolved decisions, contradictions, feasibility risks, hidden assumptions, and scope creep.
+
+Require structured output:
+
+```text
+Technical review — round <N> — revision <path/id>
+Verdict: APPROVED | APPROVED_WITH_MINOR_NOTES | NEEDS_REVISION | BLOCKED
+Findings:
+- <BLOCKER|HIGH|MEDIUM|LOW> — <issue> — <evidence> — <recommended correction>
+Overengineering/scope challenges: <items or none>
+Missing decisions/experiments: <items or none>
+Approval rationale: <why the latest revision is or is not implementable, testable, operable, and safe>
+```
+
+### Revision loop
+
+1. Save review output under `.projects/<project>/tech-specs/reviews/<spec-name>-technical-review-round-<N>.md` or the project's equivalent review directory.
+2. Classify each finding as accepted, rejected with evidence/rationale, deferred with owner, or blocked on a user/product decision.
+3. Revise the tech spec to address every `BLOCKER` and `HIGH` finding and every accepted `MEDIUM` finding. Preserve the approved PRD and MVP scope; do not add reviewer-proposed architecture that lacks a CUJ, risk, or operational justification.
+4. Record a disposition table in the spec or linked review artifact: finding, disposition, change/rationale, owner, and revision.
+5. Spawn a **fresh independent technical reviewer subagent** for the latest revision. Require explicit verification of prior dispositions and a full check for new contradictions or regressions; approval of an older revision does not count.
+6. Repeat until the latest revision is `APPROVED` or `APPROVED_WITH_MINOR_NOTES`, has zero unresolved `BLOCKER`/`HIGH` findings, and any remaining `MEDIUM` findings have a reviewer-confirmed non-blocking disposition.
+
+Bound the revision gate to **three review rounds**. Escalate earlier when findings do not decrease in severity/count, the review exposes a missing product decision or architecture spike, or reviewers disagree on a material constraint. After round three, do not declare the spec ready: present unresolved findings, dispositions, and decision options to the user. Low/minor notes may remain only when they do not affect feasibility, correctness, security, privacy, data integrity, testability, deployment, rollback, operability, or CUJ success.
+
+### Asynchronous continuation state
+
+`delegate_task` returns before the technical reviewer finishes. Immediately after dispatch, checkpoint the review state in the tech spec or review index:
+
+```text
+review_status: REVIEW_PENDING
+round: <N>
+spec_revision: <exact path/id/hash or timestamp>
+reviewer_handle: <delegate handle when available>
+resume_at: disposition_and_revision
+handoff_blocked: true
+```
+
+Do not fabricate a verdict, mark the spec approved, or begin handoff while review is running. When the reviewer result re-enters the session, resume from the checkpoint: validate its structured output, save the review artifact, disposition findings, revise the latest spec, and dispatch a fresh technical review when needed. A response that only reports `REVIEW_PENDING` is an honest checkpoint, not completion of the architecture workflow. The pending response must still name the exact revision/round, reviewer handle when available, review-artifact destination, every technical rubric dimension sent to the reviewer, handoff block, and callback transition: validate structured findings → save review → disposition → revise → fresh re-review until approval or three-round escalation.
+
+No coder/project-manager handoff may begin until the gate passes or the user explicitly accepts documented residual risk.
+
 ## Workflow
 
 1. Inspect the repository and existing project knowledge.
@@ -147,6 +256,8 @@ Implementation/QA tasks: <engine setup, gameplay systems, analytics, tests, smok
 7. Ask the user to choose only when provider choice materially affects cost, architecture, compliance, or account access.
 8. Name every affected component and interface.
 9. Save the spec under `.projects/<project>/tech-specs/`.
+10. Spawn a fresh independent technical reviewer subagent, save its severity-ranked findings, revise the spec, and repeat review against the latest revision until the revision gate passes or escalates after at most three rounds.
+11. End every milestone/feature task breakdown with a scheduled refactoring task whose acceptance criteria reduce complex dependencies, remove redundant code, improve testability, and add/update automated tests for the product behavior touched by that milestone/feature.
 
 ## Verification Checklist
 
@@ -163,3 +274,8 @@ Implementation/QA tasks: <engine setup, gameplay systems, analytics, tests, smok
 - [ ] Affected components and interfaces are explicit.
 - [ ] Schema/data migrations are described when relevant.
 - [ ] Tests and rollout are included.
+- [ ] Every milestone/feature plan ends with a scheduled refactoring task to reduce complex dependencies, remove redundant code, improve testability, and ensure touched product behavior is verifiable by automated tests.
+- [ ] A fresh independent technical reviewer subagent reviewed the complete latest spec against the approved PRD/CUJs, repository, interfaces, data model, failures, security/privacy, testability, migration, deployment, observability, rollback, cost, and scope simplicity.
+- [ ] Review output names the exact spec revision and uses a structured verdict with severity, evidence, recommended correction, scope challenges, and missing decisions.
+- [ ] Every finding has a disposition; all blocker/high findings and accepted medium findings were revised and then checked by a fresh independent reviewer.
+- [ ] The latest spec is `APPROVED` or `APPROVED_WITH_MINOR_NOTES` with no unresolved blocker/high findings; otherwise the workflow escalated after no more than three rounds and did not self-approve or start handoff.

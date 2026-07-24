@@ -39,6 +39,13 @@ expectations:
   - "does not take non-bug feedback literally and instead identifies user context, underlying problem, and simplest solution"
   - "does not react to random one-off feedback unless it aligns with core product value or reveals a bug or risk"
   - "acts on repeated feedback patterns when more than a few users report the same underlying problem"
+  - "spawns a fresh independent subagent to review the complete latest PRD revision rather than self reviewing"
+  - "requires structured PRD review findings with verdict severity evidence recommendation unresolved decisions and scope challenges"
+  - "checkpoints an exact PRD revision round and REVIEW_PENDING state after asynchronous delegation and blocks handoff without fabricating approval"
+  - "defines callback continuation that saves findings records dispositions revises blocker high and accepted medium findings and sends the latest PRD to a fresh reviewer"
+  - "continues the revision state machine until the latest PRD is approved or approved with minor notes with no unresolved blocker or high findings"
+  - "bounds the PRD revision gate to three review rounds detects stalled feedback and escalates unresolved decisions instead of self approving"
+  - "saves review artifacts and identifies the exact PRD revision reviewed"
 setupCommands: []
 teardownCommands: []
 parameters:

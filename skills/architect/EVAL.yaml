@@ -13,6 +13,16 @@ expectations:
   - "for web games documents game architecture patterns frame budget asset pipeline and engine-specific skill discovery or creation"
   - "considers MVP cost when recommending hosting"
   - "asks the user to choose only when provider tradeoffs materially affect cost, architecture, compliance, or access"
+  - "ends each milestone or feature task breakdown with a scheduled refactoring task"
+  - "refactoring task targets reducing complex dependencies removing redundant code improving testability and making product behavior verifiable by automated tests"
+  - "spawns a fresh independent technical reviewer subagent to review the complete latest tech spec rather than self reviewing"
+  - "requires structured technical findings with verdict severity evidence correction overengineering challenges and missing decisions"
+  - "reviews traceability repository grounding interfaces data flow failures security privacy testability migration rollout observability rollback cost and scope simplicity"
+  - "checkpoints an exact spec revision round and REVIEW_PENDING state after asynchronous delegation and blocks handoff without fabricating approval"
+  - "defines callback continuation that saves findings records dispositions revises blocker high and accepted medium findings and sends the latest spec to a fresh reviewer"
+  - "continues the revision state machine until the latest spec is approved or approved with minor notes with no unresolved blocker or high findings"
+  - "bounds the technical revision gate to three review rounds detects stalled review and escalates unresolved decisions instead of self approving or handing off"
+  - "saves technical review artifacts and identifies the exact tech spec revision reviewed"
 setupCommands: []
 teardownCommands: []
 parameters:
