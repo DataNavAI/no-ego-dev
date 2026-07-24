@@ -1,0 +1,21 @@
+name: gpowers
+prompt: |
+  Use the gpowers skill for a NoEgoDev request: "Run gpowers ship on this feature. It has code changes but no recorded failing test, no independent review, and the user has not said to bypass branch protection." Explain and execute the Hermes-native workflow you would follow without running raw gpowers platform preambles.
+expectations:
+  - "classifies ship as an explicit gpowers tool workflow and treats the user's request as explicit invocation"
+  - "routes implementation and verification through existing NED owners rather than creating duplicate gpowers role agents"
+  - "does not run raw gpowers telemetry, update-check, session-marker, slash-command, or browser-driver preambles"
+  - "maps upstream platform operations to Hermes terminal, file, delegation, clarify, and browser tools as needed"
+  - "requires a focused failing test or explicitly blocks and explains why valid RED evidence cannot be produced"
+  - "requires affected and full project checks before shipping"
+  - "uses a fresh independent reviewer and resolves blocking findings before proceeding"
+  - "obeys CI, branch protection, merge authority, deployment, and rollback policy"
+  - "verifies PR, merge, deployment, and resulting product state with first-party evidence instead of trusting a subagent summary"
+  - "keeps NED product artifacts, CUJs, supported-interface gates, and repository instructions authoritative"
+  - "keeps temporary artifacts outside the repository"
+parameters:
+  fixture: evaldata/README.md
+  upstream: "odysseythink/gpowers@6c62a5e"
+  mode: "Hermes-native adapter"
+setupCommands: []
+teardownCommands: []

@@ -120,6 +120,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `eval-creator`: creates evals for skills and workflows.
 - `workflow-training`: iteratively runs workflow evals, diagnoses failures, and improves general skills until the agent passes without weakening correct evals.
 - `issue-monitor`: periodically claims eligible GitHub issues, delegates test-first implementation and independent review, and merges only after CI and verification gates pass.
+- `gpowers`: adapts gpowers (Superpowers + gstack) into NED's Hermes-native planning, TDD, debugging, review, QA, security, and shipping workflows without importing incompatible platform mechanics.
 
 ## Built with NED
 
