@@ -1,6 +1,10 @@
 prompt: |
   Use the ui-designer skill for realistic web and mobile app projects that need UI guidelines and design reviews of implemented screens. Include a mobile app review case where layout must be small-screen focused and navigation must work by touch/one-finger browsing.
 expectations:
+  - "for MVP work reads the mvp plan scope contract and designs only one primary and no more than two supporting CUJs"
+  - "for MVP work maps every screen and state to a selected CUJ step counts and minimizes entry to value actions and excludes parked features"
+  - "for MVP work gives each screen one primary job and avoids unnecessary onboarding dashboards navigation settings fields and choices"
+  - "for MVP work preserves essential accessibility trust privacy loading empty error success and recovery states while simplifying"
   - "creates or updates a durable UI guideline artifact"
   - "UI guideline covers layout, visual language, components or states, accessibility basics, and copy tone"
   - "distinguishes mobile app UX review from web app UX review when the product is mobile or mobile-first"

@@ -1,13 +1,13 @@
 ---
 name: ui-designer
 description: "Use when creating project UI guidelines, reviewing implemented UI against those guidelines, identifying visual/UX/accessibility inconsistencies, and filing UI bugs in the issue system."
-version: 0.1.0
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, ui-design, product-design, qa]
-    related_skills: [product-manager, qa, project-manager, ui-reviewer, english-copywriter]
+    related_skills: [mvp-planning, product-manager, qa, project-manager, ui-reviewer, english-copywriter]
 ---
 
 # UI Designer
@@ -100,6 +100,23 @@ A useful guideline should be specific enough that a coder or QA agent can apply 
 - Open questions and intentionally deferred design decisions.
 
 Do not invent a massive design system when the project needs a small MVP. Start with the smallest durable guideline that prevents inconsistent implementation.
+
+## MVP UX Scope and Simplicity Rules
+
+When designing a new MVP or an MVP reset, load/read the project's `mvp-planning` output and treat `.projects/<project>/product/mvp-plan.md` as the UI scope contract.
+
+1. Design for exactly the approved one primary and zero to two supporting CUJs. Do not convert the parking lot into screens, tabs, cards, settings, or disabled placeholders.
+2. Build the screen/state map from CUJ steps. Every screen/state must name the CUJ step it enables; cut anything with no mapping.
+3. Count user-visible actions from entry to the value moment. Remove avoidable onboarding, confirmations, fields, choices, navigation detours, and repeated data entry.
+4. Give each screen one primary job and one visually dominant next action. Secondary actions must not compete with the core journey.
+5. Prefer strong defaults, direct manipulation, familiar controls, progressive disclosure, and in-context help over setup wizards, dense dashboards, and configuration walls.
+6. Use the minimum necessary copy. First simplify hierarchy, controls, defaults, and state; keep words required for labels, accessibility, privacy/trust, errors, recovery, payment, and destructive consequences.
+7. Preserve required loading, empty, error, success, auth/permission, offline/network, and recovery states. Simplicity is not silent failure or missing feedback.
+8. Keep navigation proportional to one to three CUJs. A broad sidebar, many tabs, admin console, or multi-level information architecture needs an explicit CUJ dependency.
+9. Use the minimum supported interface set approved in the MVP plan. Do not create implied parity for planned or intentionally unsupported platforms.
+10. In the design brief, include a `MVP UX scope check` with the primary problem, selected CUJs, screen-to-CUJ map, entry-to-value action count, removed steps/screens, and parked ideas not represented.
+
+Before handoff, require the independent `ui-reviewer` to fail the design when extraneous features distract from the primary CUJ, when avoidable steps remain, when a screen has multiple competing primary jobs, or when the design implies scope outside the MVP contract.
 
 ## Mobile App UX Review Rules
 
@@ -256,9 +273,21 @@ Final UI review report: <path/link + PASS/PASS WITH MINOR POLISH/BLOCKED rationa
 CUJ/user need:
 
 ## Scope
+- MVP plan / scope contract: <path/link or not applicable>
+- Key user problem:
+- Selected CUJs: <exactly one primary; zero to two supporting for MVP>
 - Screens/components:
 - States covered:
 - Platforms/viewports:
+
+## MVP UX Scope Check
+- Primary CUJ entry → value moment:
+- User-visible action count:
+- Screen/state → CUJ-step mapping:
+- Steps/screens/fields/choices removed:
+- Defaults/progressive disclosure used:
+- Parked ideas intentionally not represented:
+- Simplicity blockers or scope-change requests:
 
 ## Design Image Index
 | Image | Screen/state | Purpose | Notes |
@@ -347,6 +376,9 @@ Issue:
 
 ## Verification Checklist
 
+- [ ] For MVP work, `.projects/<project>/product/mvp-plan.md` or the equivalent scope contract was read and the design stays within one primary and at most two supporting CUJs.
+- [ ] For MVP work, every screen/state maps to a selected CUJ step, user-visible actions were counted/minimized, and parked ideas are not represented.
+- [ ] For MVP work, each screen has one primary job/action and navigation/choices/defaults are proportional to the narrow scope.
 - [ ] UI guideline exists or was updated at a durable project path.
 - [ ] For UI-related feature design tasks, the project design guideline was read first or a missing-guideline blocker/follow-up was recorded.
 - [ ] Feature design images/mockups were generated for required screens/states/viewport variants, or an explicit tooling blocker and follow-up image-generation task exists.

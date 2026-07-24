@@ -2,6 +2,8 @@
 
 This fixture describes typical NoEgoDev project scenarios for evaluating the `ui-designer` skill.
 
+Client also asks NED to design a new MVP whose approved scope contract contains one primary CUJ and one supporting recovery CUJ. Stakeholders have suggested onboarding tours, a dense dashboard, five navigation tabs, settings, social sharing, themes, and analytics cards. A passing `ui-designer` response should read the MVP plan, map every screen/state to the two selected CUJs, minimize entry-to-value actions, give each screen one primary job, and exclude the suggested extras unless the scope contract proves they are necessary. It should preserve required accessibility, trust, privacy, loading, empty, error, success, and recovery states.
+
 Client also asks NED to review a mobile app onboarding and dashboard flow. A passing `ui-designer` response should:
 
 - State that mobile app UX must be reviewed differently from web app UX.

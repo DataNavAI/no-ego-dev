@@ -1,6 +1,11 @@
 prompt: |
   Use the qa skill to create or run a realistic UI smoke test plan for a deployed project and describe the required report.
 expectations:
+  - "for MVP work reads the mvp plan and limits test scope to exactly one primary and no more than two supporting CUJs"
+  - "for MVP work creates a CUJ traceability matrix linking acceptance criteria automated coverage manual release QA supported interfaces and evidence"
+  - "prioritizes executable end to end or integration coverage for the primary CUJ and focused tests for critical rules persistence permissions and recovery"
+  - "defines a zero context manual smoke case for every selected CUJ with exact preconditions steps checkpoints cleanup and evidence"
+  - "blocks launch when primary CUJ coverage is missing stale failed or blocked"
   - "creates or updates a smoke or feature test plan"
   - "identifies the major user flows in scope before writing cases"
   - "writes a detailed test case for each major user flow with concrete steps preconditions expected checkpoints and evidence requirements"

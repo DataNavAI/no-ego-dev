@@ -1,12 +1,13 @@
 ---
 name: qa
 description: "Use when writing or maintaining smoke/feature test plans, running UI QA, producing pass/fail reports with screenshots, and filing bugs in the issue system."
-version: 0.1.2
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development, qa, testing]
+    related_skills: [mvp-planning, product-manager, project-manager]
 ---
 
 # QA
@@ -60,6 +61,26 @@ Include:
 Smoke plans should cover only the smallest critical path set: app loads, authentication if applicable, core create/read/update/delete or primary conversion path, navigation, and production/staging health indicators.
 
 Feature plans should cover the feature's happy path, common failure paths, permission/state variants, and interactions with nearby features.
+
+## MVP CUJ Test Strategy and Release Gate
+
+For a new MVP, load/read `.projects/<project>/product/mvp-plan.md` and the canonical CUJ artifact before implementation planning. QA must turn the selected one primary and zero to two supporting CUJs into a test traceability matrix before coding starts:
+
+| CUJ | Acceptance criteria | Automated coverage | Manual/release QA | Supported interfaces | Evidence |
+|---|---|---|---|---|---|
+
+Requirements:
+
+1. Every selected CUJ has an executable end-to-end or integration-level test that reaches the defined value moment when technically feasible.
+2. The primary CUJ happy path is the first automation priority. Next cover failures that cause data loss, security/privacy risk, payment/auth failure, or inability to recover; then necessary supporting CUJs and high-risk integrations.
+3. Critical business rules, persistence, validation, permissions, and recovery logic receive focused unit/integration coverage. Component tests alone do not prove the MVP.
+4. Every selected CUJ has a zero-context manual smoke case in the real release environment with exact preconditions, data, numbered steps, expected checkpoints, reset/cleanup, and evidence.
+5. Every supported interface has current release-candidate-specific PASS/FAIL/BLOCKED evidence for the CUJs assigned to it. Planned or intentionally unsupported interfaces must not be silently tested or promised as supported.
+6. If end-to-end automation is genuinely infeasible, document the blocker, define the smallest reliable manual blocking gate, name the owner/evidence, and create a follow-up automation task.
+7. Missing, stale, failed, or blocked primary-CUJ coverage blocks launch. Do not average core journey failure into an overall pass.
+8. Keep QA proportional to the narrow MVP: prioritize core journeys and high-risk failures before low-value cosmetic permutations, while retaining required accessibility, privacy, trust, error, and recovery checks.
+
+QA should reject an MVP plan that has more than three CUJs, lacks one clearly marked primary CUJ, or includes features/screens with no CUJ mapping. Route scope problems back to `product-manager`/`mvp-planning` rather than expanding the test plan around extraneous ideas.
 
 ## Major User Flow Coverage
 
@@ -251,6 +272,10 @@ Notes:
 
 ## Verification Checklist
 
+- [ ] For MVP work, the MVP plan and CUJ artifact were read and the test scope contains exactly one primary and at most two supporting CUJs.
+- [ ] For MVP work, a CUJ traceability matrix links every selected journey to acceptance criteria, automated coverage, manual release QA, supported interfaces, and evidence.
+- [ ] Primary CUJ has executable end-to-end/integration coverage or a justified blocking manual gate plus an automation follow-up.
+- [ ] Missing, stale, failed, or blocked primary-CUJ evidence blocks launch.
 - [ ] Smoke/feature test plan exists or was updated.
 - [ ] Major user flows in scope were identified before writing cases.
 - [ ] Each major user flow has at least one detailed test case with concrete steps, expected checkpoints, preconditions/test data, and evidence requirements.

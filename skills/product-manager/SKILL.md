@@ -1,13 +1,13 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.6
+version: 0.2.7
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development, product-management, feedback]
-    related_skills: [project-manager, ui-designer, qa]
+    related_skills: [mvp-planning, project-manager, ui-designer, qa]
 ---
 
 # Product Manager
@@ -69,6 +69,25 @@ CUJ maintenance rules:
 5. When interpreting feedback, map the underlying pain point to an existing CUJ or propose a CUJ update/new CUJ. Do not implement surface requests that weaken the primary CUJ.
 6. During active development or launch, review CUJs alongside feedback, metrics, QA, and platform parity. Update current gaps, satisfaction evidence, and follow-up tasks.
 7. For multi-platform products, compare whether each platform preserves the same CUJ satisfaction moment, even when implementation details differ.
+
+## New MVP Scoping Gate
+
+When the requested product stage is MVP, load and apply `mvp-planning` before finalizing the PRD, visual direction, architecture handoff, or milestone backlog.
+
+The MVP plan must:
+
+1. State one key user problem for one specific target user and context.
+2. Select exactly one primary CUJ and no more than two necessary supporting CUJs. More than three total CUJs requires explicit user approval to redefine or split the release.
+3. Define the shortest end-to-end path and observable value moment for every selected CUJ.
+4. Run every requested feature, screen, platform, integration, and service through the CUJ necessity test. If no selected journey breaks without it, cut or park it.
+5. Separate `must ship`, `manual/internal for MVP`, and `not in MVP / parking lot` scope with rejection rationale and evidence needed to reconsider.
+6. Create `.projects/<project>/product/mvp-plan.md` from the `mvp-planning` template; cross-link existing PRD/CUJ/UI/tech/task/QA artifacts and name planned durable paths/owners for missing artifacts without creating empty documents.
+7. Require `ui-designer` to minimize screens, choices, fields, navigation, and user-visible actions while preserving accessibility, trust, privacy, error, and recovery states.
+8. Require `qa` to define a CUJ traceability matrix with automated coverage, zero-context manual smoke cases, supported-interface evidence, and launch blockers before implementation begins.
+
+For visual concept clarification, any 2-3 mock directions must all solve the same approved key problem and selected CUJs. Compare materially different ways to shorten or clarify the core path; do not use mock exploration to introduce extra personas, features, dashboards, or navigation. When one conventional direction is obviously simplest and alternatives would be artificial, present one recommended direction plus the rejected alternatives and rationale instead of generating design theater.
+
+Treat the MVP scope contract as a change-control boundary. New ideas enter the parking lot unless they map to a selected CUJ step/failure/trust need and the user approves the scope change.
 
 ## Prototype vs MVP Rules
 
@@ -264,7 +283,7 @@ Daily platform parity review — <project> — <date/time + timezone>
 3. Identify the user's defined CUJs. Read or create/update `.projects/<project>/product/critical-user-journeys.md` or the project's equivalent CUJ artifact.
 4. For the requested product improvement, state which CUJ(s) it improves or protects and how it strengthens satisfaction at the end of the journey. If no CUJ is improved/protected, flag the work as suspect scope expansion unless the user explicitly wants it.
 5. For new product ideas, vague product directions, or visually meaningful feature requests, create/request 2-3 design mock options and ask the user to choose, combine, or reject a direction before finalizing the PRD. Route substantial mock work to `ui-designer`.
-6. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, define the smallest fully working/serviceable core product and the real deployment/release target. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
+6. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, load `mvp-planning`, define one key user problem, select exactly one primary and at most two necessary supporting CUJs, create `.projects/<project>/product/mvp-plan.md`, and enforce its scope/UX/QA contract before finalizing the PRD. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
 7. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
 8. Identify supported/planned interfaces and create or update `.projects/<project>/product/supported-device-interfaces.yaml` from the bundled template, plus a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
 9. Draft the smallest useful PRD, including the selected visual concept and rationale when visual mock clarification was required.
@@ -298,6 +317,11 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] User is asked to choose, combine, or reject the mock directions before implementation routing.
 - [ ] Selected mock direction and rationale are recorded in the PRD, with mock artifacts/links saved under `.projects/<project>/design/` or the existing design location.
 - [ ] Prototype plans identify mocked/manual/incomplete pieces and the decision the prototype should unlock.
+- [ ] MVP planning used `mvp-planning` and created `.projects/<project>/product/mvp-plan.md` or the project's equivalent.
+- [ ] MVP scope states one key user problem, exactly one primary CUJ, and no more than two necessary supporting CUJs.
+- [ ] Every must-ship capability maps to a selected CUJ; manual/internal operations and parked ideas are explicit.
+- [ ] MVP UX minimizes screens, decisions, fields, navigation, and user-visible actions while preserving required states and accessibility/trust/recovery needs.
+- [ ] MVP QA maps every selected CUJ to automated coverage, zero-context manual smoke QA, supported-interface evidence, and launch blockers.
 - [ ] MVP plans define a fully working and serviceable core product, not merely a stakeholder demo.
 - [ ] MVP plans include real deployment/release target or an explicit justified exception.
 - [ ] MVP plans include serviceability and operability: persistence, error handling, monitoring/logging, support/feedback, ownership, rollback/recovery, and launch handoff.
