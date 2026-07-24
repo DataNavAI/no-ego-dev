@@ -120,7 +120,6 @@ NED는 아이디어에서 공개 테스트까지 필요한 일반적인 작업�
 - `eval-creator`: 스킬과 워크플로용 평가를 만듭니다.
 - `workflow-training`: 워크플로 평가를 반복 실행하고 실패를 진단하며, 올바른 평가를 약화하지 않고 일반적인 스킬을 개선해 에이전트가 통과하도록 훈련합니다.
 - `issue-monitor`: 적격 GitHub 이슈를 주기적으로 선점하고, 테스트 우선 구현과 독립 리뷰를 위임하며, CI와 검증 게이트를 통과한 경우에만 병합합니다.
-- `gpowers`: gpowers(Superpowers + gstack)를 호환되지 않는 플랫폼 동작 없이 NED의 Hermes 네이티브 기획, TDD, 디버깅, 리뷰, QA, 보안, 배포 워크플로에 맞게 적용합니다.
 
 ## Built with NED
 
