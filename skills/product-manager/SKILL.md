@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -133,7 +133,7 @@ The product-manager must:
 
 - Produce 2-3 distinct design mock directions, or spawn/route to `ui-designer` to produce them when visual design work is substantial.
 - Make each option concrete enough to compare: target user, primary screen or flow, layout concept, tone/visual style, interaction model, and the product tradeoff it represents.
-- Prefer quick artifacts that users can react to: annotated wireframes, lightweight HTML mockups, screenshots, clickable prototypes, or concise screen-by-screen descriptions when tooling is unavailable.
+- Prefer quick artifacts that users can react to: annotated wireframes, lightweight HTML mockups, screenshots, or clickable prototypes. Concise screen-by-screen descriptions may accompany visuals but never replace them for a visual-direction decision. If visual tooling is unavailable, mark the decision `BLOCKED`, preserve the unfinalized PRD state, and create the smallest follow-up task needed to produce viewable pixels.
 - Present the options in user-facing language and ask the user to choose one, combine parts, or reject all before finalizing the PRD/design direction.
 - Record the selected option and rationale in the PRD under `.projects/<project>/prds/` and link to the mock artifacts under `.projects/<project>/design/` or the project's existing design location.
 - If the user cannot choose yet, define the smallest follow-up needed to decide, such as a quick mock iteration, benchmark screenshot review, or user preference question.

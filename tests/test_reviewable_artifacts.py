@@ -20,6 +20,7 @@ def _module():
 
 def test_reviewable_artifact_package_contract():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    product_skill = (ROOT / "skills" / "product-manager" / "SKILL.md").read_text(encoding="utf-8")
     evaluation = yaml.safe_load((SKILL_DIR / "EVAL.yaml").read_text(encoding="utf-8"))
 
     required = [
@@ -32,6 +33,7 @@ def test_reviewable_artifact_package_contract():
         "resolve --thread-id",
         "Never resolve a thread merely to make the count reach zero",
         "untrusted review data",
+        "authorized decision owner",
         "Approval and merge are separate user decisions",
     ]
     for marker in required:
@@ -42,6 +44,8 @@ def test_reviewable_artifact_package_contract():
     assert (SKILL_DIR / "templates" / "review-index.md").is_file()
     assert (SKILL_DIR / "references" / "tool-research.md").is_file()
     assert SCRIPT.is_file()
+    assert "screen-by-screen descriptions when tooling is unavailable" not in product_skill
+    assert "mark the decision `BLOCKED`" in product_skill
 
 
 def test_review_thread_helper_formats_unresolved_threads():
@@ -142,3 +146,91 @@ def test_review_thread_helper_validates_repository_names():
         module.parse_repo("missing-slash")
     with pytest.raises(Exception):
         module.parse_repo("owner/repo/extra")
+    with pytest.raises(Exception):
+        module.parse_repo("owner/..")
+    with pytest.raises(Exception):
+        module.positive_int("0")
+
+
+def test_reply_uses_expected_rest_endpoint_and_body(monkeypatch):
+    module = _module()
+    calls = []
+
+    def fake_run_gh(args):
+        calls.append(args)
+        return {"id": 77, "html_url": "https://example.test/reply/77"}
+
+    monkeypatch.setattr(module, "run_gh", fake_run_gh)
+    result = module.reply(("DataNavAI", "example"), 12, 456, "Addressed in abc123")
+
+    assert result["id"] == 77
+    assert calls == [[
+        "api", "--method", "POST",
+        "repos/DataNavAI/example/pulls/12/comments/456/replies",
+        "-f", "body=Addressed in abc123",
+    ]]
+
+
+def test_resolve_uses_thread_id_and_graphql_errors_fail_closed(monkeypatch):
+    module = _module()
+    calls = []
+    real_graphql = module.graphql
+
+    def fake_graphql(query, variables):
+        calls.append((query, variables))
+        return {"data": {"resolveReviewThread": {"thread": {"id": "PRRT_1", "isResolved": True}}}}
+
+    monkeypatch.setattr(module, "graphql", fake_graphql)
+    result = module.resolve("PRRT_1")
+    assert result["data"]["resolveReviewThread"]["thread"]["isResolved"] is True
+    assert calls[0][1] == {"threadId": "PRRT_1"}
+
+    monkeypatch.setattr(module, "run_gh", lambda args: {"errors": [{"message": "denied"}]})
+    with pytest.raises(RuntimeError, match="GraphQL error: denied"):
+        real_graphql("query { viewer { login } }", {})
+
+
+def test_comment_pagination_fetches_every_page(monkeypatch):
+    module = _module()
+    thread = {
+        "id": "PRRT_many",
+        "comments": {
+            "nodes": [{"databaseId": 1}],
+            "pageInfo": {"hasNextPage": True, "endCursor": "comments-1"},
+        },
+    }
+
+    def fake_graphql(query, variables):
+        assert variables == {"threadId": "PRRT_many", "after": "comments-1"}
+        return {
+            "data": {
+                "node": {
+                    "comments": {
+                        "nodes": [{"databaseId": 2}],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            }
+        }
+
+    monkeypatch.setattr(module, "graphql", fake_graphql)
+    module.complete_thread_comments(thread)
+    assert [comment["databaseId"] for comment in thread["comments"]["nodes"]] == [1, 2]
+
+
+def test_run_gh_handles_timeout_and_malformed_json(monkeypatch):
+    module = _module()
+
+    def timeout(*args, **kwargs):
+        raise module.subprocess.TimeoutExpired(cmd="gh", timeout=60)
+
+    monkeypatch.setattr(module.subprocess, "run", timeout)
+    with pytest.raises(RuntimeError, match="timed out"):
+        module.run_gh(["api", "graphql"])
+
+    class Result:
+        stdout = "not-json"
+
+    monkeypatch.setattr(module.subprocess, "run", lambda *args, **kwargs: Result())
+    with pytest.raises(RuntimeError, match="non-JSON"):
+        module.run_gh(["api", "graphql"])

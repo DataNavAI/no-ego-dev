@@ -31,6 +31,7 @@ query($owner: String!, $name: String!, $number: Int!, $after: String) {
           line
           originalLine
           comments(first: 100) {
+            pageInfo { hasNextPage endCursor }
             nodes {
               id
               databaseId
@@ -40,6 +41,26 @@ query($owner: String!, $name: String!, $number: Int!, $after: String) {
               author { login }
             }
           }
+        }
+      }
+    }
+  }
+}
+"""
+
+THREAD_COMMENTS_QUERY = r"""
+query($threadId: ID!, $after: String) {
+  node(id: $threadId) {
+    ... on PullRequestReviewThread {
+      comments(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id
+          databaseId
+          body
+          createdAt
+          url
+          author { login }
         }
       }
     }
@@ -61,9 +82,19 @@ def parse_repo(value: str) -> tuple[str, str]:
     if len(parts) != 2 or not all(parts):
         raise argparse.ArgumentTypeError("repository must be OWNER/REPO")
     allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
-    if any(set(part) - allowed for part in parts):
+    if any(set(part) - allowed or part in {".", ".."} for part in parts):
         raise argparse.ArgumentTypeError("repository contains unsupported characters")
     return parts[0], parts[1]
+
+
+def positive_int(value: str) -> int:
+    try:
+        number = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("value must be a positive integer") from exc
+    if number <= 0:
+        raise argparse.ArgumentTypeError("value must be a positive integer")
+    return number
 
 
 def run_gh(args: list[str]) -> dict[str, Any]:
@@ -73,12 +104,15 @@ def run_gh(args: list[str]) -> dict[str, Any]:
             check=True,
             capture_output=True,
             text=True,
+            timeout=60,
         )
     except FileNotFoundError as exc:
         raise RuntimeError("GitHub CLI `gh` is not installed") from exc
     except subprocess.CalledProcessError as exc:
         detail = (exc.stderr or exc.stdout or "gh command failed").strip()
         raise RuntimeError(detail) from exc
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("GitHub CLI request timed out after 60 seconds") from exc
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError as exc:
@@ -92,10 +126,36 @@ def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
             continue
         flag = "-F" if isinstance(value, (int, bool)) else "-f"
         args.extend([flag, f"{key}={str(value).lower() if isinstance(value, bool) else value}"])
-    return run_gh(args)
+    payload = run_gh(args)
+    errors = payload.get("errors") or []
+    if errors:
+        messages = "; ".join(str(error.get("message") or "unknown GraphQL error") for error in errors)
+        raise RuntimeError(f"GitHub GraphQL error: {messages}")
+    return payload
+
+
+def complete_thread_comments(thread: dict[str, Any]) -> None:
+    connection = thread.get("comments") or {}
+    page_info = connection.get("pageInfo") or {}
+    after = page_info.get("endCursor")
+    while page_info.get("hasNextPage"):
+        if not after:
+            raise RuntimeError("GitHub reported more thread comments without an end cursor")
+        payload = graphql(THREAD_COMMENTS_QUERY, {"threadId": thread.get("id"), "after": after})
+        node = payload.get("data", {}).get("node")
+        if not node:
+            raise RuntimeError(f"review thread not found while paginating comments: {thread.get('id')}")
+        next_connection = node.get("comments") or {}
+        connection.setdefault("nodes", []).extend(next_connection.get("nodes") or [])
+        page_info = next_connection.get("pageInfo") or {}
+        after = page_info.get("endCursor")
+    connection["pageInfo"] = page_info
+    thread["comments"] = connection
 
 
 def fetch_threads(repo: tuple[str, str], pr_number: int) -> dict[str, Any]:
+    if pr_number <= 0:
+        raise RuntimeError("pull request number must be positive")
     owner, name = repo
     after: str | None = None
     threads: list[dict[str, Any]] = []
@@ -116,7 +176,10 @@ def fetch_threads(repo: tuple[str, str], pr_number: int) -> dict[str, Any]:
         pr_url = pull_request.get("url") or pr_url
         head_sha = pull_request.get("headRefOid") or head_sha
         connection = pull_request.get("reviewThreads") or {}
-        threads.extend(connection.get("nodes") or [])
+        page_threads = connection.get("nodes") or []
+        for thread in page_threads:
+            complete_thread_comments(thread)
+        threads.extend(page_threads)
         page_info = connection.get("pageInfo") or {}
         if not page_info.get("hasNextPage"):
             break
@@ -174,6 +237,8 @@ def markdown_report(data: dict[str, Any], unresolved_only: bool = False) -> str:
 
 def reply(repo: tuple[str, str], pr_number: int, comment_id: int, body: str) -> dict[str, Any]:
     owner, name = repo
+    if pr_number <= 0 or comment_id <= 0:
+        raise RuntimeError("pull request and comment numbers must be positive")
     if not body.strip():
         raise RuntimeError("reply body cannot be empty")
     return run_gh(
@@ -200,14 +265,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     list_parser = subparsers.add_parser("list", help="list PR review threads")
     list_parser.add_argument("--repo", required=True, type=parse_repo, metavar="OWNER/REPO")
-    list_parser.add_argument("--pr", required=True, type=int, metavar="NUMBER")
+    list_parser.add_argument("--pr", required=True, type=positive_int, metavar="NUMBER")
     list_parser.add_argument("--unresolved", action="store_true", help="show unresolved threads only")
     list_parser.add_argument("--json", action="store_true", help="emit JSON instead of Markdown")
 
     reply_parser = subparsers.add_parser("reply", help="reply to a PR review comment")
     reply_parser.add_argument("--repo", required=True, type=parse_repo, metavar="OWNER/REPO")
-    reply_parser.add_argument("--pr", required=True, type=int, metavar="NUMBER")
-    reply_parser.add_argument("--comment-id", required=True, type=int)
+    reply_parser.add_argument("--pr", required=True, type=positive_int, metavar="NUMBER")
+    reply_parser.add_argument("--comment-id", required=True, type=positive_int)
     reply_parser.add_argument("--body", required=True)
 
     resolve_parser = subparsers.add_parser("resolve", help="resolve a PR review thread after verification")
