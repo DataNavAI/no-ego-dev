@@ -2,7 +2,7 @@ name: reviewable-artifacts
 prompt: |
   Prepare a long Markdown MVP specification and three onboarding design directions for a client review. The project is hosted on GitHub. Explain and execute the review-presentation workflow so the client can comment beside exact document sections and exact design variants/hotspots, and so NED can read, address, reply to, and resolve those threads without losing the canonical source.
 expectations:
-  - "classifies the PR mode and marks temporary review surfaces as draft REVIEW ONLY DO NOT MERGE in title body branch and available labels while keeping repository Markdown canonical"
+  - "classifies the PR mode before publication marks only temporary review surfaces as draft REVIEW ONLY DO NOT MERGE in title body branch and available labels and leaves normal landing PRs MERGEABLE and free of review only markers"
   - "structures Markdown with a review header TLDR decisions requested changed since last revision open questions stable review IDs and a feedback disposition log"
   - "uses GitHub rendered prose or rich diff for comprehension and Files changed line comments for anchored feedback"
   - "produces runnable visual prototypes and embedded clean screenshots instead of only verbally explaining design ideas"

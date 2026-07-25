@@ -43,7 +43,7 @@ For a new client request:
 2. Do an upfront auth/dependency check: list likely required accounts, tokens, CLIs, browser sessions, repos, registries, deployment targets, and secrets; run quick non-destructive access checks where possible; if anything is missing, ask for it before the user leaves instead of discovering it later mid-task.
 3. Create or update project knowledge.
 4. Ask product-manager behavior to produce a core PRD or feature PRD.
-5. For any PRD/plan/spec that needs human decisions, ask `reviewable-artifacts` behavior to prepare a rendered, explicitly marked review-only draft PR, process inline feedback before downstream handoff, preserve accepted work, then close without merge and clean temporary review resources.
+5. For any PRD/plan/spec that needs human decisions, ask `reviewable-artifacts` behavior to prepare a rendered review surface and explicitly classify its PR mode. Use a normal `MERGEABLE` PR with no review-only markers when the artifact is intended to land directly. Only when the PR is a temporary discussion surface, mark it `REVIEW_ONLY`/`[REVIEW ONLY — DO NOT MERGE]`, process inline feedback, preserve accepted work at its canonical destination, then close without merge and clean temporary review resources.
 6. Ask `ui-designer` behavior to produce runnable/visual review artifacts for UI work; do not ask the user to choose a design from verbal descriptions.
 7. Ask architect behavior to produce a tech spec tied to the current codebase.
 8. Ask project-manager behavior to break the work into milestones and objectively verifiable tasks.

@@ -21,6 +21,7 @@ def _module():
 def test_reviewable_artifact_package_contract():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
     product_skill = (ROOT / "skills" / "product-manager" / "SKILL.md").read_text(encoding="utf-8")
+    soul = (ROOT / "SOUL.md").read_text(encoding="utf-8")
     evaluation = yaml.safe_load((SKILL_DIR / "EVAL.yaml").read_text(encoding="utf-8"))
 
     required = [
@@ -42,12 +43,22 @@ def test_reviewable_artifact_package_contract():
         "accepted content exists at the recorded canonical destination",
         "Re-read PR metadata",
         "Never use wildcard repository cleanup",
+        "If the same PR is intended to land the artifact directly, it is mergeable",
+        "Do not mark it review-only",
     ]
     for marker in required:
         assert marker in skill
 
     assert evaluation["name"] == "reviewable-artifacts"
-    assert (SKILL_DIR / evaluation["parameters"]["fixture"]).is_file()
+    fixture_path = SKILL_DIR / evaluation["parameters"]["fixture"]
+    assert fixture_path.is_file()
+    fixture = fixture_path.read_text(encoding="utf-8")
+    expectations = "\n".join(evaluation["expectations"])
+    assert "leaves normal landing PRs MERGEABLE and free of review only markers" in expectations
+    assert "That PR must be classified `MERGEABLE`" in fixture
+    assert "must not receive review-only branch/title/body/label markers" in fixture
+    assert "Use a normal `MERGEABLE` PR with no review-only markers" in soul
+    assert "prepare a rendered, explicitly marked review-only draft PR" not in soul
     assert (SKILL_DIR / "templates" / "review-index.md").is_file()
     pr_body = SKILL_DIR / "templates" / "review-only-pr-body.md"
     assert pr_body.is_file()
