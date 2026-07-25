@@ -34,7 +34,14 @@ def test_reviewable_artifact_package_contract():
         "Never resolve a thread merely to make the count reach zero",
         "untrusted review data",
         "authorized decision owner",
-        "Approval and merge are separate user decisions",
+        "artifact approval is explicit and separate from merge/publication approval",
+        "REVIEW_ONLY",
+        "[REVIEW ONLY — DO NOT MERGE]",
+        "Review-Only PR Cleanup Gate",
+        "Close the review-only PR **without merging**",
+        "accepted content exists at the recorded canonical destination",
+        "Re-read PR metadata",
+        "Never use wildcard repository cleanup",
     ]
     for marker in required:
         assert marker in skill
@@ -42,10 +49,26 @@ def test_reviewable_artifact_package_contract():
     assert evaluation["name"] == "reviewable-artifacts"
     assert (SKILL_DIR / evaluation["parameters"]["fixture"]).is_file()
     assert (SKILL_DIR / "templates" / "review-index.md").is_file()
+    pr_body = SKILL_DIR / "templates" / "review-only-pr-body.md"
+    assert pr_body.is_file()
+    body = pr_body.read_text(encoding="utf-8")
+    assert "REVIEW ONLY — DO NOT MERGE" in body
+    assert "Close this PR **without merge**" in body
+    assert "Delete only the exact remote review head branch" in body
+    assert "Verify the review worktree is clean" in body
     assert (SKILL_DIR / "references" / "tool-research.md").is_file()
     assert SCRIPT.is_file()
     assert "screen-by-screen descriptions when tooling is unavailable" not in product_skill
     assert "mark the decision `BLOCKED`" in product_skill
+
+
+def test_downstream_skills_enforce_review_only_cleanup_contract():
+    for name in ("product-manager", "architect", "project-manager", "ui-designer"):
+        skill = (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+        assert "REVIEW_ONLY" in skill, name
+        assert "[REVIEW ONLY — DO NOT MERGE]" in skill, name
+        assert "close" in skill.lower() and "without merge" in skill.lower(), name
+        assert "worktree" in skill and "cleanup" in skill.lower(), name
 
 
 def test_review_thread_helper_formats_unresolved_threads():

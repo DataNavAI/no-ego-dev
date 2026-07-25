@@ -11,6 +11,14 @@
 > **Review URL:** `<draft PR / rendered artifact>`
 >
 > **Decision requested:** `<one sentence>`
+>
+> **PR mode:** `REVIEW_ONLY | MERGEABLE`
+>
+> **Review-only warning:** `REVIEW ONLY — DO NOT MERGE` when applicable
+>
+> **Canonical destination/handoff:** `<branch, PR, or artifact path>`
+>
+> **Cleanup owner/trigger:** `<owner> / <approved, abandoned, or superseded>`
 
 ## TL;DR
 
@@ -84,3 +92,15 @@
 | Comment/thread | Review ID | Disposition | Change or rationale | Revision | Status |
 |---|---|---|---|---|---|
 | `<URL or thread ID>` | `DEC-01` | accepted | ... | `<commit>` | resolved |
+
+## Review-only cleanup record
+
+- Outcome: `APPROVED | ABANDONED | SUPERSEDED`
+- Closed review PR URL:
+- Closed without merge: [ ]
+- Accepted revision preserved at canonical destination:
+- Remote `review-only/*` branch deleted: [ ]
+- Local review branch/worktree removed: [ ]
+- Temporary previews/captures/copies/access removed: [ ]
+- Durable decision record and evidence retained: [ ]
+- Residual cleanup task/owner, if any:

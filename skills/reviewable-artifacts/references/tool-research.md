@@ -71,11 +71,14 @@ Penpot is a credible open-source design platform and hosted visual-feedback prod
 The smallest reliable NED workflow is:
 
 1. canonical Markdown/prototype source in the repository;
-2. draft GitHub PR;
-3. rendered review index with stable IDs and embedded images;
-4. inline review threads;
-5. agent reads threads through `gh`/GraphQL;
-6. agent edits canonical source and regenerates evidence;
-7. agent replies with the addressing revision;
-8. agent resolves only verified/agreed threads;
-9. user explicitly approves the artifact separately from merge.
+2. explicit PR mode selection: a normal mergeable PR when changes should land directly, or a temporary review-only PR when it is only a discussion surface;
+3. for review-only mode, a `review-only/*` branch and draft PR marked `[REVIEW ONLY — DO NOT MERGE]` in title/body and available labels;
+4. rendered review index with stable IDs and embedded images;
+5. inline review threads;
+6. agent reads threads through `gh`/GraphQL;
+7. agent edits canonical source and regenerates evidence;
+8. agent replies with the addressing revision;
+9. agent resolves only verified/agreed threads;
+10. user explicitly approves the artifact separately from merge;
+11. accepted work is verified at a canonical branch or separate mergeable PR;
+12. the review-only PR is closed without merge and its temporary branch, worktree, previews/copies/access, and scratch assets are removed with verification while the closed PR/disposition record remains durable.

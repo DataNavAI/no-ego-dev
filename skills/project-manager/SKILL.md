@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.9
+version: 0.6.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -96,7 +96,7 @@ git worktree remove /tmp/<repo>-<short-task-name>
 
 Default to keeping durable project-management artifacts in the repository (or the project’s documented knowledge repo) so agents, code review, issues, CI, and future checkouts share one versioned source of truth. This includes PRDs, tech specs, runbooks, UI guidelines, architecture notes, release checklists, QA plans, operational status-report templates, and agent/process instructions.
 
-For Markdown artifacts that need human approval or detailed feedback, load/use `reviewable-artifacts` and default to a draft GitHub pull request: repository Markdown remains canonical, GitHub renders the review surface, the user leaves inline comments beside stable review IDs, and NED reads, addresses, replies to, and resolves threads after verification. A file path or chat summary alone is not a review handoff.
+For Markdown artifacts that need human approval or detailed feedback, load/use `reviewable-artifacts` and default to a draft GitHub pull request: repository Markdown remains canonical, GitHub renders the review surface, the user leaves inline comments beside stable review IDs, and NED reads, addresses, replies to, and resolves threads after verification. If the PR is a temporary review surface rather than a landing vehicle, record mode `REVIEW_ONLY`, use `[REVIEW ONLY — DO NOT MERGE]` plus branch/body/available label markers, assign cleanup ownership, and prohibit merge/auto-merge. After approval, abandonment, or supersession, verify accepted work is preserved, close without merge, remove the review branch/worktree and temporary previews/copies/access/scratch assets, and record cleanup evidence. A file path or chat summary alone is not a review handoff.
 
 Use Google Docs, Figma, or another collaborative tool only when the user explicitly needs its interaction model or the project already uses it. When an external review layer is used, create/update a repo stub that links to it and records owner, status, last reviewed date, canonical source, and sync-back rule. Do not let an external document/design become an invisible second source of truth.
 

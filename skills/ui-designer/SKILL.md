@@ -1,7 +1,7 @@
 ---
 name: ui-designer
 description: "Use when creating project UI guidelines, reviewing implemented UI against those guidelines, identifying visual/UX/accessibility inconsistencies, and filing UI bugs in the issue system."
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -50,7 +50,7 @@ Do not ask a user to approve a visual direction from prose. For every material n
    - Recommend one direction and explain why while explicitly inviting the user to choose, combine, or reject.
 4. **Publish the review surface**
    - Keep prototype source, screenshots, brief, and `DESIGN_REVIEW.md` canonical in the repository.
-   - Default to a draft GitHub PR through `reviewable-artifacts`; include the rendered review link, `Files changed` comment instructions, exact decisions requested, and any safe deploy-preview links.
+   - When the PR exists only as a design-review surface, explicitly use `REVIEW_ONLY`: a `review-only/*` branch, `[REVIEW ONLY — DO NOT MERGE]` draft title/body banner, available `review-only`/`do-not-merge` labels, cleanup owner/trigger, rendered review link, `Files changed` instructions, exact decisions, and preview links. Never merge it; after the selected design is preserved in its canonical destination, close it without merge and clean its branch, worktree, temporary previews/captures/copies/access, then verify cleanup.
    - True coordinate-pinned Figma comments are optional only when the project already uses Figma; preserve a repository disposition/sync-back record.
 5. **Process human comments as a gate**
    - Read unresolved GitHub review threads through the `reviewable-artifacts` helper/GraphQL workflow.

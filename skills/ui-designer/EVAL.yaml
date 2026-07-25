@@ -26,9 +26,10 @@ expectations:
   - "includes an annotation legend mapping each interactive component ID to expected behavior states destinations validation and accessibility notes"
   - "presents material UX design ideas as runnable prototypes or concrete mockups with clean screenshots rather than verbal descriptions"
   - "creates a rendered DESIGN_REVIEW.md index with embedded screenshots runnable preview links a comparison matrix a recommendation and stable variant screen and hotspot anchors"
-  - "uses a draft GitHub PR as the default review surface so the user can comment beside exact design ideas"
+  - "when a draft GitHub PR is only a temporary design review surface marks it REVIEW ONLY DO NOT MERGE in branch title body and available labels assigns cleanup ownership and never merges it"
   - "reads unresolved design review threads updates canonical prototype source regenerates and verifies screenshots replies with the addressing revision and resolves only addressed agreed comments"
   - "keeps disputed design decisions open and separates resolved threads explicit design approval engineering handoff and PR merge"
+  - "after review preserves the selected design at its canonical destination closes the review only PR without merge and verifies cleanup of temporary branch worktree previews captures copies access and scratch assets"
 setupCommands: []
 teardownCommands: []
 parameters:

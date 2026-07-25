@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.3.1
+version: 0.3.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -476,7 +476,7 @@ Do not route the PRD to architecture or implementation until this gate passes or
 
 ## Human PRD Review Presentation Gate
 
-For a core PRD, material feature PRD, or any product artifact requiring user decisions, load/use `reviewable-artifacts` after the latest independent PRD review revision is ready. Structure the canonical Markdown with a review header, TL;DR, stable `DEC-*`/`Q-*`/`RISK-*` IDs, decisions requested, changes since the last revision, open questions, and a feedback disposition log. Render it and default to a draft GitHub PR so the user can comment beside exact sections.
+For a core PRD, material feature PRD, or any product artifact requiring user decisions, load/use `reviewable-artifacts` after the latest independent PRD review revision is ready. Structure the canonical Markdown with a review header, TL;DR, stable `DEC-*`/`Q-*`/`RISK-*` IDs, decisions requested, changes since the last revision, open questions, and a feedback disposition log. Render it and, when the PR is only a temporary decision surface, explicitly mark it `REVIEW_ONLY`/`[REVIEW ONLY — DO NOT MERGE]` so the user can comment beside exact sections without implying merge authorization. After approval/abandonment/supersession, preserve accepted content at its canonical destination, close the review PR without merge, clean temporary branch/worktree/preview/access/scratch resources, and verify cleanup.
 
 When visual direction is part of the decision, require `ui-designer` to publish runnable prototypes, screenshots, and `DESIGN_REVIEW.md`; do not substitute verbal descriptions. Read unresolved review threads, update the canonical PRD/design source, verify, reply with the addressing revision, and resolve only agreed/addressed threads. Human artifact approval is separate from thread resolution and merge authorization. Block architecture handoff on unresolved material product decisions unless the user explicitly accepts documented residual risk.
 

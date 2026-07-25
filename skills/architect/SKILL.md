@@ -1,7 +1,7 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.4
+version: 0.2.5
 author: NoEgoDev
 license: MIT
 metadata:
@@ -247,7 +247,7 @@ No coder/project-manager handoff may begin until the gate passes or the user exp
 
 ## Human Tech-Spec Review Presentation Gate
 
-When the technical specification contains material architecture, migration, cost, security, rollout, or operational decisions, load/use `reviewable-artifacts` after the independent technical review gate has produced the latest revision. Make the canonical Markdown scannable with a review header, TL;DR, stable `DEC-*`/`API-*`/`DATA-*`/`RISK-*` IDs, explicit decisions requested, diagrams, changes since the prior revision, open questions, and the technical-finding disposition log. Publish a rendered draft GitHub PR review surface rather than handing the user only a path.
+When the technical specification contains material architecture, migration, cost, security, rollout, or operational decisions, load/use `reviewable-artifacts` after the independent technical review gate has produced the latest revision. Make the canonical Markdown scannable with a review header, TL;DR, stable `DEC-*`/`API-*`/`DATA-*`/`RISK-*` IDs, explicit decisions requested, diagrams, changes since the prior revision, open questions, and the technical-finding disposition log. Publish a rendered draft GitHub PR review surface rather than handing the user only a path. If it exists only for technical review, explicitly mark it `REVIEW_ONLY`/`[REVIEW ONLY — DO NOT MERGE]`, never merge it, and after the approved spec is preserved at its canonical destination close it without merge and verify cleanup of its branch, worktree, temporary previews/access, and scratch assets.
 
 Read unresolved review threads, update the canonical spec/diagrams, rerun applicable checks, reply with the addressing revision, and resolve only verified/agreed threads. Keep disputed architecture decisions open and block coder/project-manager handoff while material comments remain unresolved unless the user explicitly accepts documented residual risk. Thread resolution, spec approval, and PR merge are separate gates.
 
