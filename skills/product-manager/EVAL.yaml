@@ -46,6 +46,12 @@ expectations:
   - "continues the revision state machine until the latest PRD is approved or approved with minor notes with no unresolved blocker or high findings"
   - "bounds the PRD revision gate to three review rounds detects stalled feedback and escalates unresolved decisions instead of self approving"
   - "saves review artifacts and identifies the exact PRD revision reviewed"
+  - "uses Google Trends for new product demand research with target geo language time category and search surface settings and inspects Top and Rising related queries and topics"
+  - "clusters related searches by user intent maps them to the key problem CUJs and value proposition hypotheses and cross checks the relative signal without treating it as absolute demand"
+  - "saves Google Trends evidence URLs exports or screenshots caveats and hypotheses under .projects project research demand-validation.md and never fabricates unavailable values"
+  - "suggests an honest paid landing page smoke test with 2 to 4 query informed value proposition variants message matched ads pages one qualified CTA and coming soon or early access disclosure"
+  - "predeclares budget sample conversion thresholds UTMs qualified conversion metrics stop loss and continue iterate stop decision rules rather than judging clicks alone"
+  - "requires explicit user approval before ad spend or publication and prohibits fabricated testimonials false scarcity unsupported claims charging for unavailable features or misleading availability"
 setupCommands: []
 teardownCommands: []
 parameters:

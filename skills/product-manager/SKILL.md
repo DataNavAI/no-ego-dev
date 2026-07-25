@@ -1,13 +1,13 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.8
+version: 0.2.9
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development, product-management, feedback]
-    related_skills: [mvp-planning, project-manager, ui-designer, qa, subagent-driven-development]
+    related_skills: [mvp-planning, product-experiment, project-manager, ui-designer, qa, subagent-driven-development]
 ---
 
 # Product Manager
@@ -186,6 +186,120 @@ For every candidate interface:
 6. Require the latest QA result, tested release candidate, evidence links, and blockers to be refreshed for the exact build/commit/tag being released. A previous-release pass is stale evidence.
 
 Product management owns the support decision and registry accuracy. QA owns per-interface case coverage and results. DevOps enforces the registry as a deployment gate. Project management ensures updates and missing coverage become tracked tasks.
+
+## Market-Demand Discovery with Google Trends
+
+For a new product, major positioning change, or weakly validated value proposition, use Google Trends to discover how the target market describes the problem before locking PRD language or paid-test copy. The goal is not to chase popular words; it is to find real problem, outcome, alternative, and purchase-intent language that can sharpen the target user, CUJs, value proposition, landing-page copy, and acquisition hypothesis.
+
+Save findings under `.projects/<project>/research/demand-validation.md` or the project's existing research directory.
+
+### Google Trends workflow
+
+1. Start with 5-10 seed terms derived from the user problem, desired outcome, current workaround, product category, and alternatives. Include the target market's natural/local language; do not search only the team's internal product terminology.
+2. Open Google Trends Explore at `https://trends.google.com/trends/explore` with the appropriate country/region, language, time range, category, and search surface (`Web Search`, `YouTube Search`, `Shopping Search`, `News Search`, or `Image Search`). Record every setting because results are not comparable when filters differ.
+3. Compare at most five terms at a time. Prefer a Google Trends **Topic** over an exact search term when the topic correctly represents the concept across languages; otherwise document that an exact term was used.
+4. Inspect interest over time and by subregion, then inspect both **Related queries** and **Related topics**. Capture both **Top** and **Rising** results. Treat `Breakout` as rapid relative growth, not proof of large absolute demand.
+5. Repeat promising seeds and related queries until the results stop producing materially new user intent. Check target-market language variants, synonyms, question forms, competitor/alternative terms, and jobs-to-be-done phrases.
+6. Cluster findings by intent:
+   - problem/pain recognition;
+   - desired outcome/job;
+   - solution/category discovery;
+   - workaround or alternative;
+   - comparison/evaluation;
+   - transactional or purchase intent;
+   - irrelevant/noisy intent to exclude.
+7. Turn clusters into 2-4 falsifiable value-proposition hypotheses. For each hypothesis, name the target user/context, problem, promised outcome, supporting search queries, selected CUJ, expected conversion action, and what evidence would disconfirm it.
+8. Cross-check the strongest clusters against at least one additional source when practical: current search-results pages, keyword/ad-planner estimates, customer interviews, support/feedback logs, community language, competitor pages, or first-party analytics. Do not treat Google Trends alone as market validation.
+
+### Interpretation rules
+
+- Google Trends is a normalized relative-interest index, not absolute search volume, revenue, willingness to pay, or total addressable market.
+- A `0` or low value may mean insufficient sampled volume, not zero demand.
+- Seasonality, news events, viral spikes, ambiguity, and regional language can distort results. Explain material anomalies.
+- Compare like-for-like filter settings and avoid claiming that separately filtered charts are directly comparable.
+- Do not choose a product or value proposition merely because a related query is rising. It must still map to the key user problem and a selected CUJ.
+- If Google Trends is unavailable, blocked, or too sparse, record the limitation and use alternative evidence. Never invent query lists or trend values.
+
+Required research table:
+
+```text
+Google Trends research — <date/time + timezone>
+Settings: <geo, language, time range, category, search surface>
+Seed/topic: <term + exact term/topic>
+Related query/topic: <text>
+Result type: <Top|Rising|Breakout>
+Observed signal: <relative index/rank or qualitative observation>
+Intent cluster: <problem|outcome|solution|alternative|evaluation|transactional|noise>
+User/CUJ relevance: <why it matters>
+Value-proposition implication: <hypothesis/copy change or none>
+Source/evidence: <saved URL, export, screenshot, or notes>
+Caveat: <seasonality, ambiguity, sparse data, etc.>
+```
+
+## Paid Landing-Page Smoke Tests
+
+When market interest or positioning is uncertain, suggest a small paid **landing-page smoke test** (also called a demand test or pretotype) before building broad MVP scope. The test should compare honest value propositions with real target traffic, not pretend a nonexistent product is already available.
+
+A smoke test is appropriate when:
+
+- the key problem appears plausible but willingness to act is uncertain;
+- multiple value propositions compete for the same primary CUJ;
+- Google Trends/search/community evidence reveals distinct intent clusters;
+- the next build decision is expensive enough that a small demand test would reduce risk.
+
+Do not suggest paid traffic when the audience cannot be targeted credibly, the conversion event would be meaningless, policy/compliance risk is unresolved, organic/customer evidence is already decisive, or the test budget cannot produce directional signal.
+
+### Experiment design
+
+1. Define one decision: which target-user/problem/value-proposition combination deserves deeper validation or implementation.
+2. Choose 2-4 materially distinct value-proposition variants derived from the related-query intent clusters. Keep the audience, offer shape, page quality, and conversion event comparable; avoid variants that test many unrelated changes at once.
+3. Give each variant a message-matched ad and landing page. The page should show the proposed outcome, target user, key workflow/CUJ, expected pricing or commitment level when relevant, and one primary CTA.
+4. Use an honest CTA such as `Join the waitlist`, `Request early access`, `Book a discovery call`, `Get launch updates`, or `Tell us your workflow`. If the product is not available, clearly disclose `coming soon`, `early concept`, `pilot recruiting`, or equivalent before or immediately after the CTA. Do not charge for unavailable functionality or imply immediate access that does not exist.
+5. Before launch, record:
+   - hypothesis and variants;
+   - target audience/search queries and negative/excluded intent;
+   - ad platform and placement;
+   - total and daily budget cap;
+   - run window or minimum sample target;
+   - primary and secondary conversion events;
+   - continue/iterate/stop thresholds;
+   - stop-loss rule;
+   - UTMs and analytics verification;
+   - owner and decision date.
+6. Measure more than clicks: impressions, click-through rate, landing-page conversion, qualified conversion, cost per qualified action, downstream interview/activation intent, query/audience quality, and qualitative responses.
+7. Interpret the funnel:
+   - low CTR → weak audience/message or uncompetitive creative;
+   - adequate CTR + low landing conversion → ad/page mismatch, weak trust, unclear value, or too much commitment;
+   - strong signup + weak qualification/interview follow-through → curiosity rather than meaningful demand;
+   - strong qualified action at an acceptable cost → evidence to continue discovery or build the narrow CUJ, not proof of product-market fit.
+8. Save results and the build/positioning decision in the demand-validation artifact. Preserve negative results and do not move goalposts after seeing performance.
+
+### Honesty, consent, and spend gates
+
+- Never use fabricated testimonials, fake customer counts, false scarcity, unsupported performance claims, misleading pricing, fake endorsements, or claims that the product exists when it does not.
+- Collect the minimum data needed. Provide appropriate privacy/consent disclosure, secure storage, unsubscribe/deletion paths, and jurisdiction-appropriate terms.
+- Follow the selected ad platform's current advertising, destination, data-collection, and misrepresentation policies. When policy is uncertain, verify it before launch.
+- Paid ads are an external side effect. **Do not launch, spend money, create campaigns in a user's account, or publish creatives without explicit user approval of the platform, target URL, audience/queries, creatives, budget cap, and stop-loss rule.** Suggest and prepare the experiment first.
+- Verify the landing page, analytics, CTA, consent flow, mobile experience, and UTMs before requesting spend approval.
+- Pause when tracking is broken, traffic is irrelevant, policy review fails, the stop-loss threshold is reached, or the landing page misstates availability.
+
+Suggested plan shape:
+
+```text
+Demand smoke test — <project>
+Decision: <what this test will decide>
+Variants: <A/B/C value propositions + related-query evidence>
+Audience/queries: <target + negatives>
+Landing URLs: <one per variant>
+CTA/disclosure: <qualified action + honest availability statement>
+Budget: <$ total, $/day; pending explicit approval>
+Primary metric: <qualified conversion + threshold>
+Secondary metrics: <CTR, LP conversion, cost per action, interview follow-through>
+Stop-loss: <spend/time/quality rule>
+Tracking: <UTMs, events, dashboard, QA evidence>
+Owner/review date: <...>
+Decision rule: <continue, iterate, or stop>
+```
 
 ## Product Metrics Rules
 
@@ -369,22 +483,24 @@ Do not route the PRD to architecture or implementation until this gate passes or
 5. For new product ideas, vague product directions, or visually meaningful feature requests, create/request 2-3 design mock options and ask the user to choose, combine, or reject a direction before finalizing the PRD. Route substantial mock work to `ui-designer`.
 6. Classify the requested artifact as prototype, MVP, beta, or production iteration. If MVP, load `mvp-planning`, define one key user problem, select exactly one primary and at most two necessary supporting CUJs, create `.projects/<project>/product/mvp-plan.md`, and enforce its scope/UX/QA contract before finalizing the PRD. If prototype, name the intentionally partial/mocked/manual parts and the decision it should unlock.
 7. Identify the target user locale/region and, when referencing foreign services, use local-language/local-region settings or record a follow-up task to verify local experience.
-8. Identify supported/planned interfaces and create or update `.projects/<project>/product/supported-device-interfaces.yaml` from the bundled template, plus a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
-9. Draft the smallest useful PRD, including the selected visual concept and rationale when visual mock clarification was required.
-10. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
-11. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
-12. Add a product metrics plan with key events/funnels, researched cost-effective analytics tool recommendation, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
-13. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
-14. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
-15. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
-16. Check conflicts against existing features, the core product value, user-defined CUJs, and platform parity expectations.
-17. Save the PRD under `.projects/<project>/prds/`.
-18. Spawn a fresh independent PRD reviewer subagent, save its structured findings, revise the PRD, and repeat review against the latest revision until the revision gate passes or escalates after at most three rounds.
-19. Save/update the CUJ artifact under `.projects/<project>/product/critical-user-journeys.md` unless the project has a stronger existing convention.
-20. Save visual mock artifacts or links under `.projects/<project>/design/` unless the project has a stronger existing convention.
-21. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
-22. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
-23. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
+8. For a new product, uncertain market, or competing positioning hypotheses, use Google Trends to inspect target-region Top/Rising related queries and topics, cluster search intent, cross-check the signal, and save `.projects/<project>/research/demand-validation.md`.
+9. When demand or value-proposition uncertainty justifies it, suggest an honest paid landing-page smoke test with 2-4 query-informed variants, a qualified conversion event, disclosure that unavailable functionality is coming soon/early access, predeclared thresholds, analytics/UTMs, and a stop-loss rule. Prepare the plan but do not spend or publish without explicit user approval.
+10. Identify supported/planned interfaces and create or update `.projects/<project>/product/supported-device-interfaces.yaml` from the bundled template, plus a feature parity matrix for web, Android, iOS, and any other relevant surfaces.
+11. Draft the smallest useful PRD, including the selected visual concept and rationale when visual mock clarification was required.
+12. Add platform-specific behavior and acceptance criteria where parity differs or platform constraints apply.
+13. For MVPs, add deployment, serviceability, operability, support, rollback, and QA-gate requirements; route follow-up tasks to project-manager/devops/architect/coder/qa as needed.
+14. Add a product metrics plan with key events/funnels, researched cost-effective analytics tool recommendation, dashboard/report destination, review cadence, and instrumentation follow-up tasks if needed.
+15. Add a feedback collection path, daily feedback check routine, and daily cross-platform parity review routine when multiple platforms are in scope.
+16. If feedback already exists, classify it as bug report, core-value/product opportunity, repeated pattern, watchlist, or no-action.
+17. For non-bug feedback that deserves action, define the underlying user/problem and simplest solution instead of implementing the surface request.
+18. Check conflicts against existing features, the core product value, user-defined CUJs, and platform parity expectations.
+19. Save the PRD under `.projects/<project>/prds/`.
+20. Spawn a fresh independent PRD reviewer subagent, save its structured findings, revise the PRD, and repeat review against the latest revision until the revision gate passes or escalates after at most three rounds.
+21. Save/update the CUJ artifact under `.projects/<project>/product/critical-user-journeys.md` unless the project has a stronger existing convention.
+22. Save visual mock artifacts or links under `.projects/<project>/design/` unless the project has a stronger existing convention.
+23. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
+24. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
+25. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
 
 ## Verification Checklist
 
@@ -428,6 +544,12 @@ Before finishing, include a brief verification note that states what artifact wa
 - [ ] Event names/properties, dashboard/report destination, review cadence, and regression action are specified.
 - [ ] A cost-effective analytics tool/default is researched and recommended, or an existing adequate analytics stack is explicitly reused.
 - [ ] Missing analytics/instrumentation becomes explicit follow-up work.
+- [ ] New-product or uncertain-positioning research uses Google Trends with recorded geo/language/time/category/search-surface settings and captures Top and Rising related queries/topics.
+- [ ] Related queries are clustered by user intent, tied back to the key problem/CUJs, cross-checked with another source when practical, and interpreted as relative interest rather than absolute demand.
+- [ ] Google Trends research is saved under `.projects/<project>/research/demand-validation.md` with URLs/exports/screenshots, caveats, and value-proposition hypotheses; unavailable/sparse data is disclosed rather than fabricated.
+- [ ] When useful, the PRD suggests an honest landing-page smoke test with 2-4 query-informed value propositions, message-matched ads/pages, one qualified CTA, clear coming-soon/early-access disclosure, predeclared thresholds, UTMs, and a stop-loss rule.
+- [ ] Paid test results are judged by qualified conversion and downstream intent—not clicks alone—and produce an explicit continue/iterate/stop decision.
+- [ ] No ad spend or campaign publication occurs without explicit approval of platform, target URL, audience/queries, creatives, budget cap, and stop-loss rule; privacy, consent, ad policy, and non-deception checks are complete.
 - [ ] Acceptance criteria are objective.
 - [ ] Feature conflicts are addressed.
 - [ ] Feedback collection path exists for user-facing work.
