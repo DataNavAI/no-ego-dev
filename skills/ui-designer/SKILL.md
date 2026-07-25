@@ -1,7 +1,7 @@
 ---
 name: ui-designer
 description: "Use when creating project UI guidelines, reviewing implemented UI against those guidelines, identifying visual/UX/accessibility inconsistencies, and filing UI bugs in the issue system."
-version: 0.3.1
+version: 0.3.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -42,12 +42,15 @@ Do not ask a user to approve a visual direction from prose. For every material n
    - Open each prototype or design artifact directly and capture clean screenshots at target viewports.
    - Export annotated screenshots for important interactions using stable IDs such as `UI-01`, `SCREEN-02`, `A1`, and `A2` without obscuring the clean design.
    - If the prototype cannot run or screenshots cannot be produced, mark visual review `BLOCKED`; a verbal description does not satisfy the gate unless the user explicitly requested text-only low-fidelity wireframes.
-3. **Create `DESIGN_REVIEW.md`**
-   - Store it beside the feature design brief, e.g. `.projects/<project>/features/<feature>/design/DESIGN_REVIEW.md`.
-   - Embed each clean screenshot directly under a separate stable variant/screen heading and link its runnable prototype/preview.
-   - Include a compact comparison matrix covering CUJ fit, entry-to-value action count, hierarchy, responsive/mobile behavior, accessibility/trust, implementation cost, and key tradeoff.
+3. **Create a visual-first, slide-like `DESIGN_REVIEW.md`**
+   - Store it beside the feature design brief, e.g. `.projects/<project>/features/<feature>/design/DESIGN_REVIEW.md`, and use `templates/visual-review-deck.md` as the default structure.
+   - Treat the review document as a presentation deck, not a design essay. After the compact review header, show a contact sheet or thumbnail index before background, rationale, or implementation prose.
+   - Give each direction, screen, or material state its own slide-like section: a short title, one dominant clean visual (or a clearly grouped desktop/mobile pair), at most three concise bullets or roughly 75 words, and one explicit decision prompt. The visual artifact must occupy most of the section and carry the idea; prose only labels the intent, evidence, and tradeoff.
+   - Embed each clean screenshot directly under a separate stable variant/screen heading and link its runnable prototype/preview. Add visual strips for key states and annotated interaction frames where they improve understanding.
+   - Include one compact comparison matrix covering CUJ fit, entry-to-value action count, hierarchy, responsive/mobile behavior, accessibility/trust, implementation cost, and key tradeoff.
    - Put each variant, screen, and annotated hotspot on its own Markdown line/table row so GitHub inline comments attach to the exact idea.
-   - Recommend one direction and explain why while explicitly inviting the user to choose, combine, or reject.
+   - Recommend one direction and explicitly invite the user to choose, combine, or reject. Keep detailed requirements, token tables, annotation legends, research notes, and implementation specifications in the linked UI brief or a clearly separated appendix rather than interrupting the visual review flow.
+   - Reject verbose review decks: no long executive summary, screen-by-screen verbal substitute, or multi-paragraph rationale before the first visual. If viewable visuals cannot be produced, mark the design decision `BLOCKED`; do not compensate with more prose.
 4. **Publish the review surface**
    - Keep prototype source, screenshots, brief, and `DESIGN_REVIEW.md` canonical in the repository.
    - When the PR exists only as a design-review surface, explicitly use `REVIEW_ONLY`: a `review-only/*` branch, `[REVIEW ONLY — DO NOT MERGE]` draft title/body banner, available `review-only`/`do-not-merge` labels, cleanup owner/trigger, rendered review link, `Files changed` instructions, exact decisions, and preview links. Never merge it; after the selected design is preserved in its canonical destination, close it without merge and clean its branch, worktree, temporary previews/captures/copies/access, then verify cleanup.
@@ -359,6 +362,11 @@ CUJ/user need:
 
 ## Implementation Acceptance Notes
 -
+
+## Supporting Detail
+- Market/reference research:
+- Design tokens, typography, spacing, and component notes:
+- Additional implementation constraints or rationale:
 
 ## UI Reviewer Iteration Log
 | Iteration | Reviewer report | Status | Required revisions | Resolution |

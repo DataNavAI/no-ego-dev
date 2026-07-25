@@ -73,6 +73,44 @@ def test_reviewable_artifact_package_contract():
     assert "mark the decision `BLOCKED`" in product_skill
 
 
+def test_ui_designer_requires_visual_first_slide_like_review_decks():
+    skill_dir = ROOT / "skills" / "ui-designer"
+    skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+    evaluation = yaml.safe_load((skill_dir / "EVAL.yaml").read_text(encoding="utf-8"))
+    fixture = (skill_dir / evaluation["parameters"]["fixture"]).read_text(encoding="utf-8")
+    template = skill_dir / "templates" / "visual-review-deck.md"
+
+    assert "visual-first, slide-like `DESIGN_REVIEW.md`" in skill
+    assert "show a contact sheet or thumbnail index before background" in skill
+    assert "at most three concise bullets or roughly 75 words" in skill
+    assert "The visual artifact must occupy most of the section" in skill
+    assert "no long executive summary" in skill
+    assert "mark the design decision `BLOCKED`" in skill
+    assert template.is_file()
+    template_text = template.read_text(encoding="utf-8")
+    assert "## Visual contact sheet" in template_text
+    assert "**Decision:** Keep, combine, revise, or reject" in template_text
+    assert "Appendix — linked detail, not the presentation" in template_text
+    assert "ui-brief.md#interactive-component-annotation-legend" in template_text
+    assert "ui-brief.md#supporting-detail" in template_text
+    assert "review-index.md#feedback-disposition-log" in template_text
+    assert "## Interactive Component Annotation Legend" in skill
+    assert "## Supporting Detail" in skill
+    review_index = (
+        ROOT / "skills" / "reviewable-artifacts" / "templates" / "review-index.md"
+    ).read_text(encoding="utf-8")
+    assert "## Feedback disposition log" in review_index
+    assert "ui-brief.md#interaction-legend" not in template_text
+    assert "review-index.md#thread-dispositions" not in template_text
+
+    expectations = "\n".join(evaluation["expectations"])
+    assert "opening contact sheet and dominant screenshots" in expectations
+    assert "no more than three concise bullets or roughly 75 words" in expectations
+    assert "A verbose design essay" in fixture
+    assert "the design decision remains `BLOCKED`" in fixture
+
+
+
 def test_downstream_skills_enforce_review_only_cleanup_contract():
     for name in ("product-manager", "architect", "project-manager", "ui-designer"):
         skill = (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
