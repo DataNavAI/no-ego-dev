@@ -52,6 +52,10 @@ expectations:
   - "suggests an honest paid landing page smoke test with 2 to 4 query informed value proposition variants message matched ads pages one qualified CTA and coming soon or early access disclosure"
   - "predeclares budget sample conversion thresholds UTMs qualified conversion metrics stop loss and continue iterate stop decision rules rather than judging clicks alone"
   - "requires explicit user approval before ad spend or publication and prohibits fabricated testimonials false scarcity unsupported claims charging for unavailable features or misleading availability"
+  - "presents core or material PRD Markdown through reviewable-artifacts with a rendered draft GitHub PR stable decision risk and question anchors and explicit decisions requested"
+  - "requires visual product directions to use ui-designer runnable prototypes screenshots and DESIGN_REVIEW.md instead of verbal explanations"
+  - "reads addresses replies to and resolves inline human review threads only after updating and verifying the canonical PRD or design revision"
+  - "blocks architecture handoff on unresolved material product decisions and separates thread resolution artifact approval and merge"
 setupCommands: []
 teardownCommands: []
 parameters:

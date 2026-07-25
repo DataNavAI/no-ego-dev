@@ -1,13 +1,13 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.3
+version: 0.2.4
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development]
-    related_skills: [mvp-planning, subagent-driven-development, requesting-code-review, qa]
+    related_skills: [mvp-planning, subagent-driven-development, requesting-code-review, qa, reviewable-artifacts]
 ---
 
 # Architect
@@ -244,6 +244,12 @@ handoff_blocked: true
 Do not fabricate a verdict, mark the spec approved, or begin handoff while review is running. When the reviewer result re-enters the session, resume from the checkpoint: validate its structured output, save the review artifact, disposition findings, revise the latest spec, and dispatch a fresh technical review when needed. A response that only reports `REVIEW_PENDING` is an honest checkpoint, not completion of the architecture workflow. The pending response must still name the exact revision/round, reviewer handle when available, review-artifact destination, every technical rubric dimension sent to the reviewer, handoff block, and callback transition: validate structured findings → save review → disposition → revise → fresh re-review until approval or three-round escalation.
 
 No coder/project-manager handoff may begin until the gate passes or the user explicitly accepts documented residual risk.
+
+## Human Tech-Spec Review Presentation Gate
+
+When the technical specification contains material architecture, migration, cost, security, rollout, or operational decisions, load/use `reviewable-artifacts` after the independent technical review gate has produced the latest revision. Make the canonical Markdown scannable with a review header, TL;DR, stable `DEC-*`/`API-*`/`DATA-*`/`RISK-*` IDs, explicit decisions requested, diagrams, changes since the prior revision, open questions, and the technical-finding disposition log. Publish a rendered draft GitHub PR review surface rather than handing the user only a path.
+
+Read unresolved review threads, update the canonical spec/diagrams, rerun applicable checks, reply with the addressing revision, and resolve only verified/agreed threads. Keep disputed architecture decisions open and block coder/project-manager handoff while material comments remain unresolved unless the user explicitly accepts documented residual risk. Thread resolution, spec approval, and PR merge are separate gates.
 
 ## Workflow
 

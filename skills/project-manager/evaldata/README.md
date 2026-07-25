@@ -15,6 +15,8 @@ Client asks NED to build a new Android app with onboarding, a dashboard, and a f
 - Create `.projects/<project>/product/supported-device-interfaces.yaml`, mark Android supported, explicitly classify desktop web/mobile web/iOS rather than assuming support, require at least one Android test case, and block release until Android has a current PASS/evidence row for the exact build.
 - If no status-report email recipient/cadence is provided, proactively ask which email should receive reports and how often to send them.
 - When email reporting is configured, require a concise HTML executive-summary report with inline styles, focused on product performance rather than project-detail overload: improving/holding/regressing state, top-line product metrics, wins, risks, customer signal, next actions, one crisp decision ask at most, and evidence links.
+- For PRDs, plans, specs, runbooks, or other Markdown requiring human approval, keep repository Markdown canonical and use `reviewable-artifacts` to publish a rendered draft GitHub PR with stable inline-comment anchors. Track thread disposition, verified revision replies, resolution, explicit artifact approval, and merge as separate states.
+- UI design tasks must produce runnable prototypes or concrete mockups, screenshots, and `DESIGN_REVIEW.md`; a verbal-only design explanation does not satisfy the task.
 
 ## Scenario: React Native app planning
 

@@ -23,6 +23,9 @@ expectations:
   - "continues the revision state machine until the latest spec is approved or approved with minor notes with no unresolved blocker or high findings"
   - "bounds the technical revision gate to three review rounds detects stalled review and escalates unresolved decisions instead of self approving or handing off"
   - "saves technical review artifacts and identifies the exact tech spec revision reviewed"
+  - "presents material technical specification Markdown through reviewable-artifacts with a rendered draft GitHub PR stable decision API data and risk anchors diagrams and explicit decisions requested"
+  - "reads human review threads updates and verifies the canonical specification replies with the addressing revision and resolves only addressed agreed comments"
+  - "blocks coder and project manager handoff on unresolved material architecture comments and separates thread resolution spec approval and merge"
 setupCommands: []
 teardownCommands: []
 parameters:

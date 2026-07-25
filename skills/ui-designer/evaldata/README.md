@@ -44,3 +44,8 @@ Interactive annotation requirement:
 - Annotated components should include buttons, links, tabs, nav items, icon buttons, inputs/selects, toggles, tappable cards, modal/sheet controls, destructive actions, and key empty/error-state actions.
 - The feature UI brief should include an annotation legend mapping each ID to expected behavior, destination or state transition, validation rules, disabled/loading/error behavior, and accessibility notes.
 - If clean visual images are also needed for design review, the designer should export both clean and annotated versions, with the annotated version required for implementation handoff.
+
+Human visual-review scenario:
+- The user asks to compare onboarding directions and explicitly does not want a verbal explanation. A passing `ui-designer` response must create runnable HTML/CSS prototypes or equivalent concrete visual mockups, run them, capture clean mobile/desktop screenshots, and publish a rendered `DESIGN_REVIEW.md` with each variant/screen/hotspot on a stable `UI-*`/`A*` anchor.
+- The index should embed screenshots, link runnable previews, compare CUJ fit/action count/hierarchy/responsiveness/accessibility/implementation cost, recommend a direction, and use a draft GitHub PR so the user can comment beside the exact visual item.
+- NED must read unresolved review threads, update canonical prototype source, regenerate screenshots, verify, reply with the addressing revision, and resolve only addressed/agreed comments. Disputed design decisions remain open; thread resolution, design approval, engineering handoff, and merge are separate states.

@@ -1,13 +1,13 @@
 ---
 name: ui-designer
 description: "Use when creating project UI guidelines, reviewing implemented UI against those guidelines, identifying visual/UX/accessibility inconsistencies, and filing UI bugs in the issue system."
-version: 0.2.0
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, ui-design, product-design, qa]
-    related_skills: [mvp-planning, product-manager, qa, project-manager, ui-reviewer, english-copywriter]
+    related_skills: [mvp-planning, product-manager, qa, project-manager, ui-reviewer, english-copywriter, reviewable-artifacts]
 ---
 
 # UI Designer
@@ -29,6 +29,34 @@ Prefer project-local artifacts so future product, coding, and QA agents can reus
 - UI assets/screenshots, if not attached to issues: `.projects/<project>/design/.artifacts/<review-id>/`
 
 If the project already has a design-system or docs convention, follow it and mention the path used in the report.
+
+## Human-Reviewable Visual Design Gate
+
+Do not ask a user to approve a visual direction from prose. For every material new UI direction or redesign, load/use `reviewable-artifacts` and produce a concrete visual review bundle before architecture/engineering handoff.
+
+1. **Create pixels, not a verbal pitch**
+   - Prefer 2-3 lightweight runnable HTML/CSS prototypes when real alternatives would improve the decision. When one direction is clearly best, produce one polished recommended prototype plus a concise visual record of rejected alternatives/rationale instead of artificial variety.
+   - Use realistic content and the actual primary CUJ. A style tile or decorative hero alone is not enough.
+   - Include the states and viewports needed to judge the concept: at minimum the primary default path plus material loading, empty, error, success, permission/auth, mobile, and desktop behavior as applicable.
+2. **Run and capture every direction**
+   - Open each prototype or design artifact directly and capture clean screenshots at target viewports.
+   - Export annotated screenshots for important interactions using stable IDs such as `UI-01`, `SCREEN-02`, `A1`, and `A2` without obscuring the clean design.
+   - If the prototype cannot run or screenshots cannot be produced, mark visual review `BLOCKED`; a verbal description does not satisfy the gate unless the user explicitly requested text-only low-fidelity wireframes.
+3. **Create `DESIGN_REVIEW.md`**
+   - Store it beside the feature design brief, e.g. `.projects/<project>/features/<feature>/design/DESIGN_REVIEW.md`.
+   - Embed each clean screenshot directly under a separate stable variant/screen heading and link its runnable prototype/preview.
+   - Include a compact comparison matrix covering CUJ fit, entry-to-value action count, hierarchy, responsive/mobile behavior, accessibility/trust, implementation cost, and key tradeoff.
+   - Put each variant, screen, and annotated hotspot on its own Markdown line/table row so GitHub inline comments attach to the exact idea.
+   - Recommend one direction and explain why while explicitly inviting the user to choose, combine, or reject.
+4. **Publish the review surface**
+   - Keep prototype source, screenshots, brief, and `DESIGN_REVIEW.md` canonical in the repository.
+   - Default to a draft GitHub PR through `reviewable-artifacts`; include the rendered review link, `Files changed` comment instructions, exact decisions requested, and any safe deploy-preview links.
+   - True coordinate-pinned Figma comments are optional only when the project already uses Figma; preserve a repository disposition/sync-back record.
+5. **Process human comments as a gate**
+   - Read unresolved GitHub review threads through the `reviewable-artifacts` helper/GraphQL workflow.
+   - Map each comment to its stable variant/screen/hotspot ID, update the canonical prototype/source, regenerate screenshots, verify the result, reply with the addressing revision, and only then resolve the thread.
+   - Keep disputed product/design decisions open. `All threads resolved`, `design approved`, and `PR merged` are separate states.
+   - Do not begin final engineering handoff until required visual decisions are explicitly approved or a blocker/residual risk is documented.
 
 ## Feature Design Task and Design Images
 
@@ -270,6 +298,10 @@ Project UI guideline: <path/link + sections used>
 Copywriter review: <path/link + PASS/PASS WITH MINOR POLISH/BLOCKED rationale + key removals/rewrites>
 UI review guideline: <path/link>
 Final UI review report: <path/link + PASS/PASS WITH MINOR POLISH/BLOCKED rationale>
+Human review index: <DESIGN_REVIEW.md path>
+Draft review PR / rendered URL: <link>
+Human review status: DRAFT | IN REVIEW | CHANGES REQUESTED | APPROVED | BLOCKED
+Unresolved material threads: <count + links/IDs>
 CUJ/user need:
 
 ## Scope
@@ -288,6 +320,16 @@ CUJ/user need:
 - Defaults/progressive disclosure used:
 - Parked ideas intentionally not represented:
 - Simplicity blockers or scope-change requests:
+
+## Design Review Index
+- `DESIGN_REVIEW.md`: <path>
+- Runnable variants/previews: <links>
+- Recommended direction: <UI-ID + reason>
+- Decision requested: <choose/combine/reject>
+
+| Variant/screen ID | Embedded clean screenshot | CUJ/action count | Responsive/accessibility | Cost/tradeoff | Review status |
+| --- | --- | --- | --- | --- | --- |
+| `UI-01` | `design/images/<file>.png` | <fit/count> | <notes> | <notes> | IN REVIEW |
 
 ## Design Image Index
 | Image | Screen/state | Purpose | Notes |
@@ -385,6 +427,11 @@ Issue:
 - [ ] Annotated design images/mockups exist for important interactive components, with stable annotation IDs that do not obscure the design.
 - [ ] Feature design brief includes an interactive component annotation legend mapping each ID to behavior, states, destinations, validation, and accessibility notes.
 - [ ] Feature design brief and image paths are stored beside or cross-linked with the feature PRD and expected tech spec.
+- [ ] Material design directions are runnable/concrete and were captured as clean mobile/desktop screenshots; they are not verbal-only descriptions.
+- [ ] `DESIGN_REVIEW.md` embeds each variant/screen screenshot, links runnable previews, compares CUJ fit/action count/hierarchy/responsiveness/accessibility/cost, and recommends a direction.
+- [ ] Each variant, screen, and hotspot has a stable review ID on its own line/row, and a draft GitHub PR or approved equivalent lets the user comment beside it.
+- [ ] Human review threads were fetched and dispositioned; accepted changes updated canonical prototype source, screenshots were regenerated/verified, replies name addressing revisions, and only addressed/agreed threads were resolved.
+- [ ] Disputed material design threads remain open, and resolved-thread state, explicit design approval, engineering handoff, and merge remain separate gates.
 - [ ] A subagent using `english-copywriter` reviewed all visible UI text in generated design images/mockups or real UI review scope.
 - [ ] Copywriter review ran the minimum-text pass first and removed, shortened, or replaced unnecessary explanatory text when UI structure could explain itself.
 - [ ] Necessary copy remains for labels/accessibility, comprehension, trust/privacy/payment, errors, empty states, and destructive-action consequences.

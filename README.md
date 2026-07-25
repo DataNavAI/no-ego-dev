@@ -97,11 +97,12 @@ Create a practical launch plan for this prototype: [URL or repo]. Include positi
 NED is packaged with focused skills for the common work needed to go from idea to public test:
 
 - `product-manager`: turns fuzzy requests into product direction, target users, success criteria, and prototype scope.
+- `reviewable-artifacts`: presents Markdown and visual design bundles through rendered GitHub draft PRs with stable inline-comment anchors, agent-readable feedback, verified revisions, and resolvable review threads.
 - `mvp-planning`: reduces a new MVP to one key user problem and one to three critical user journeys, designs the shortest intuitive UX, cuts everything nonessential, and defines CUJ-level automated and manual QA gates.
 - `product-bootstrap`: builds small publishable prototypes from benchmark URLs, screenshots, notes, or starter apps without copying benchmark-specific branding or text.
 - `ui-reviewer`: reviews design images, screenshots, prototypes, or real product UIs against foundational UI principles, top-market comparables, and a project-specific review guideline.
 - `english-copywriter`: writes and reviews concise English UI copy for websites and mobile apps, removing text when the UI can explain itself and preserving words only when they improve clarity, trust, accessibility, or recovery.
-- `ui-designer`: designs practical screens, interaction flows, first-user experience, and visual QA notes.
+- `ui-designer`: produces runnable visual directions, screenshots, and `DESIGN_REVIEW.md` review galleries so users can compare and comment on exact variants/screens/hotspots instead of approving designs from verbal descriptions.
 - `architect`: shapes the build plan and project structure without overcomplicating the approach.
 - `project-manager`: breaks work into tracked tasks and coordinates specialist subagents.
 - `coder`: builds and verifies the product changes.

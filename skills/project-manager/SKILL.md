@@ -1,12 +1,13 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.8
+version: 0.5.9
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
-    tags: [no-ego-dev, software-development]
+    tags: [no-ego-dev, software-development, artifact-review]
+    related_skills: [reviewable-artifacts]
 ---
 
 # Project Manager
@@ -95,13 +96,17 @@ git worktree remove /tmp/<repo>-<short-task-name>
 
 Default to keeping durable project-management artifacts in the repository (or the project’s documented knowledge repo) so agents, code review, issues, CI, and future checkouts share one versioned source of truth. This includes PRDs, tech specs, runbooks, UI guidelines, architecture notes, release checklists, QA plans, operational status-report templates, and agent/process instructions.
 
-Use Google Docs or another collaborative doc tool only when the user explicitly needs live human collaboration, comments/suggestions, client-friendly formatting, or non-technical stakeholder review. When Google Docs is used for source collaboration, create or update a repo stub that links to the doc and records owner, status, last reviewed date, and the rule for when content must be mirrored back into the repo. Do not let a Google Doc become an invisible second source of truth for active implementation.
+For Markdown artifacts that need human approval or detailed feedback, load/use `reviewable-artifacts` and default to a draft GitHub pull request: repository Markdown remains canonical, GitHub renders the review surface, the user leaves inline comments beside stable review IDs, and NED reads, addresses, replies to, and resolves threads after verification. A file path or chat summary alone is not a review handoff.
+
+Use Google Docs, Figma, or another collaborative tool only when the user explicitly needs its interaction model or the project already uses it. When an external review layer is used, create/update a repo stub that links to it and records owner, status, last reviewed date, canonical source, and sync-back rule. Do not let an external document/design become an invisible second source of truth.
 
 Preferred pattern:
 
-- Repo markdown = canonical implementation/agent source of truth.
-- Google Docs = collaborative review/presentation layer when useful.
-- If both exist, the repo artifact must link to the Google Doc, state which one is canonical for the current phase, and include a task to sync accepted changes back to the canonical location.
+- Repo Markdown/prototype source = canonical implementation and agent source of truth.
+- GitHub draft PR = default rendered review, inline-comment, disposition, and resolution layer.
+- Figma = optional coordinate-pinned visual review layer when already configured.
+- Google Docs = optional non-technical/live coauthoring layer when explicitly useful.
+- Accepted feedback from any external layer must be synced to the canonical repo artifact and recorded in the disposition log.
 
 ## Supported Device Interface Coordination
 

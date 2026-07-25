@@ -1,13 +1,13 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.9
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development, product-management, feedback]
-    related_skills: [mvp-planning, product-experiment, project-manager, ui-designer, qa, subagent-driven-development]
+    related_skills: [mvp-planning, product-experiment, project-manager, ui-designer, qa, subagent-driven-development, reviewable-artifacts]
 ---
 
 # Product Manager
@@ -473,6 +473,12 @@ handoff_blocked: true
 Do not fabricate a verdict, mark the gate complete, or end with "approved" while the reviewer is still running. When the reviewer result re-enters the session, resume from the checkpoint: validate the response shape, save the review artifact, disposition findings, revise, and dispatch the next fresh review if needed. A response that only reports `REVIEW_PENDING` is an honest checkpoint, not completion of the product workflow. The pending response must still name the exact revision/round, reviewer handle when available, review-artifact destination, rubric dimensions sent to the reviewer, handoff block, and callback transition: validate structured findings → save review → disposition → revise → fresh re-review until approval or three-round escalation.
 
 Do not route the PRD to architecture or implementation until this gate passes or the user explicitly accepts documented residual risk.
+
+## Human PRD Review Presentation Gate
+
+For a core PRD, material feature PRD, or any product artifact requiring user decisions, load/use `reviewable-artifacts` after the latest independent PRD review revision is ready. Structure the canonical Markdown with a review header, TL;DR, stable `DEC-*`/`Q-*`/`RISK-*` IDs, decisions requested, changes since the last revision, open questions, and a feedback disposition log. Render it and default to a draft GitHub PR so the user can comment beside exact sections.
+
+When visual direction is part of the decision, require `ui-designer` to publish runnable prototypes, screenshots, and `DESIGN_REVIEW.md`; do not substitute verbal descriptions. Read unresolved review threads, update the canonical PRD/design source, verify, reply with the addressing revision, and resolve only agreed/addressed threads. Human artifact approval is separate from thread resolution and merge authorization. Block architecture handoff on unresolved material product decisions unless the user explicitly accepts documented residual risk.
 
 ## Workflow
 
