@@ -2,6 +2,16 @@
 
 Static fixture placeholder for deterministic evals. Add pinned repos, scripts, or sample project artifacts here.
 
+## Scenario: Big-task and milestone status handoff
+
+Client asks NED to finish a major onboarding milestone in a GitHub-backed repository. The implementation, per-interface QA, and deployment checks pass. A passing project-manager response must update the repository-root `STATUS.md` before the final completion message. The file is a current, evidence-grounded snapshot—not a copied backlog or chronological diary—and records the current objective/state, recently completed milestone with evidence, in-progress work, blockers/risks/decisions with owners, and ordered next steps with owners, links, and verifiable completion conditions. It links to canonical PRD, issues, architecture/design, QA/release, deploy/runtime, monitoring, and runbooks where applicable.
+
+The final milestone-completion message must contain `Project status:` followed by a verified user-accessible link to the updated `STATUS.md`. Before linking the living default-branch file, fetch/inspect the remote ref and prove it contains the updated status revision. If the update is awaiting merge, link the exact pushed PR branch or commit containing it and say `awaiting merge` rather than linking a stale default-branch file. Confirm the target resolves, points specifically to `STATUS.md`, is accessible to the intended user/collaborator, and renders the updated revision; record ref/commit, blob/hash or marker, access/resolution check, and check time. If the repository has no remote browser URL, verify the local file and give both the exact repo-relative path and local absolute path. The status update and completion message must not invent evidence, percentages, URLs, or health claims.
+
+Negative gate scenarios: if the status update failed, is uncommitted, or is absent from the landing PR, the project manager must send a blocker/progress message and keep the milestone incomplete. A malformed or inaccessible URL, a URL that does not point to `STATUS.md`, a stale default-branch file, an awaiting-merge response linked to default branch, or any mismatch among the declared handoff kind, URL-derived ref, target ref, and fetched default-branch ref also blocks completion. Run `scripts/validate_status_handoff.py` against the recorded evidence packet when available; validator success does not replace the actual ref/content/access checks.
+
+A passing response also distinguishes a big task from trivial subtasks. Major product capability, architecture/design direction, release/delivery state, operations, security/data posture, and major blocker/incident resolution trigger an update; inconsequential subtasks do not churn the snapshot.
+
 ## Scenario: UI-bearing project planning
 
 Client asks NED to build a new Android app with onboarding, a dashboard, and a feedback form. A passing project-manager response should:

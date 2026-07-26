@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.6.0
+version: 0.7.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -60,6 +60,61 @@ Progress update — Phase <N>: <phase name>
 - Evidence: <tests, PRs, docs, screenshots, deploy URLs, logs>
 - In progress / next: <next concrete task or subagent batch>
 - Blockers / decisions needed: <none or explicit ask>
+```
+
+## Repository STATUS.md Contract
+
+Every active project repository must maintain a concise living `STATUS.md` at the repository root. This is the user-facing project snapshot and agent handoff surface, not a replacement for issues, PRDs, roadmaps, release notes, or detailed history. Link to those canonical records instead of duplicating them.
+
+### Initialize and update cadence
+
+1. Create `STATUS.md` during new-project bootstrap or when inheriting an active repository that lacks it. Use `templates/STATUS.md` unless the repository already has a stricter compatible template.
+2. Re-read repository, issue, PR/CI, QA, deploy, and monitoring evidence before editing. Never carry forward stale claims or infer health from silence; write `unknown` or `not yet verified` when evidence is unavailable.
+3. Update `STATUS.md` after every **big task** or **milestone**. A big task materially changes product capability, architecture, design direction, delivery/release state, operations, security/data posture, or resolves a major incident/blocker. Do not churn the file for trivial subtasks that do not change the project snapshot.
+4. Update it in the same branch/PR/commit as the milestone when practical. Otherwise create an immediate linked follow-up update. If the status revision cannot be committed or included in the landing PR, send a blocker/progress message, keep the big task or milestone incomplete, and do **not** send a task/milestone-complete message until the gate passes.
+5. Treat the file as a current snapshot: rewrite stale sections, keep recent completed work concise, and move detailed chronology to issues, releases, or changelogs.
+
+### Required content
+
+`STATUS.md` must include:
+
+- Project name and one-sentence outcome.
+- Overall state: `planning`, `active`, `at-risk`, `blocked`, `maintenance`, or `complete`.
+- Last-updated date/time with timezone, updater, and evidence revision when available.
+- Current objective or milestone and its objective acceptance state.
+- Concise current-state summary grounded in evidence.
+- Recently completed big tasks/milestones with issue/PR/commit/QA/deploy links.
+- In-progress work with owner and evidence/task link.
+- Blockers, risks, and decisions needed with owner or decision owner; write `none known` only after checking.
+- Ordered next steps with owner, link, and verifiable completion condition.
+- Canonical links to PRD/roadmap, issue tracker, architecture/design, QA, deploy/runtime, monitoring, and runbooks when applicable.
+
+Do not put secrets, raw logs, speculative promises, copied issue backlogs, or unverified percentages in `STATUS.md`.
+
+### Completion-message link gate
+
+After a big task or milestone is verified:
+
+1. Update and verify `STATUS.md` against the exact completed revision and current open work.
+2. Commit/push the update or include it in the landing PR.
+3. Build and verify the handoff target:
+   - After the update lands, prefer the repository's canonical browser URL on the default branch, such as `https://github.com/<owner>/<repo>/blob/<default-branch>/STATUS.md`, so it continues to show the living snapshot.
+   - Before using a default-branch URL, fetch the remote default branch and verify its `STATUS.md` blob/content contains the just-completed status revision. A local commit or assumed merge is insufficient.
+   - If delivery is still awaiting merge, link the exact pushed PR branch or commit containing the updated file and state `awaiting merge`; never link a stale default-branch copy as though it contains the new status.
+   - Confirm the target resolves in the repository's authenticated collaboration context, points specifically to `STATUS.md`, and renders the updated status revision. For private repositories, also confirm the intended user/collaborator has access; if that cannot be verified, ask/resolve access instead of claiming a user-accessible completion handoff.
+   - Record link-verification evidence: declared handoff kind, URL-derived target ref, fetched default-branch ref, remote/ref or commit, `STATUS.md` blob/hash or unambiguous updated marker, resolution/access check, and check time. The declared kind, URL ref, and fetched ref must agree; labels supplied by the caller are not proof.
+   - If no remote browser URL exists, verify the local file exists and contains the updated revision, then provide the exact repo-relative `STATUS.md` path and local absolute path rather than inventing a URL.
+4. Run `scripts/validate_status_handoff.py` against the recorded handoff packet when the script is available. It is a fail-closed consistency gate, not a substitute for the actual remote/ref, content, resolution, and access checks.
+5. Include `Project status: [STATUS.md](<verified user-accessible URL>)` in the task/milestone completion message when a browser URL exists. A completion message without the verified status link (or the required verified paths for a local-only repository) does not pass the project-manager completion gate.
+
+Minimum completion-message shape:
+
+```text
+Milestone complete — <name>
+- Outcome: <verified user/project result>
+- Evidence: <PR/commit/tests/QA/deploy links>
+- Project status: [STATUS.md](<user-accessible URL>) or <exact repo-relative and absolute paths for local-only repositories>
+- Next: <highest-priority next step or explicit none>
 ```
 
 ## Workspace and Documentation Source-of-Truth Rules
@@ -421,7 +476,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 
 ## Workflow
 
-1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context.
+1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context. Create or verify the repository-root `STATUS.md` for active projects and use it as the concise current-status snapshot.
 2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
 4. For each PRD, decide whether the work needs UI. If yes, create the UI design issue/task and spawn a `ui-designer` subagent before creating or assigning any architecture/tech-spec task. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins. For UI-related features, require feature design images/mockups and a feature UI brief before tech-spec generation proceeds.
@@ -439,7 +494,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 16. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
 17. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
 18. When tasks complete, verify the milestone goal using direct evidence.
-19. Send a phase-complete progress update. If achieved and bug triage is clean, mark milestone done and notify the client; otherwise create missing-part tasks and send an updated plan.
+19. After every verified big task or milestone, update and commit the repository-root `STATUS.md` with the current state, evidence, blockers/decisions, and ordered next steps.
+20. Send a phase-complete progress update. If achieved and bug triage is clean, mark the milestone done and notify the client with a user-accessible `STATUS.md` link; otherwise create missing-part tasks, update the status snapshot, and send an updated plan.
 
 ## Verification Checklist
 
@@ -469,6 +525,11 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Missing CI, health, analytics, or feedback instrumentation becomes explicit follow-up work instead of an assumed healthy status.
 - [ ] Progress updates were sent at phase start, phase completion, before subagent batches, and after subagent results.
 - [ ] Completed tasks have evidence.
+- [ ] Every active project repository has a current root `STATUS.md` that is a concise evidence-grounded snapshot rather than a duplicate issue backlog or chronology.
+- [ ] Every completed big task or milestone updated and committed `STATUS.md` before the final completion message; if the update failed, the milestone stayed incomplete and received only a blocker/progress message.
+- [ ] Every big-task/milestone completion message includes a verified user-accessible `Project status:` link, or exact verified repo-relative and absolute paths when no browser URL exists.
+- [ ] Link evidence confirms the target resolves, points to `STATUS.md`, is accessible to the intended user, contains the updated revision, and—when using default branch—exists on the fetched remote default ref; awaiting-merge handoffs use the exact pushed PR branch or commit.
+- [ ] `STATUS.md` records current objective/state, recent outcomes/evidence, in-progress work, blockers/risks/decisions, ordered next steps with owners and completion conditions, and canonical project links.
 - [ ] Each completed implementation task has a linked follow-up QA task unless explicitly non-user-facing.
 - [ ] Every user-facing project has a current `.projects/<project>/product/supported-device-interfaces.yaml` registry.
 - [ ] Every supported device interface has at least one executable test case and a current per-interface QA result/evidence row for the exact release candidate.
