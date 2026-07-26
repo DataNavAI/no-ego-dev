@@ -1,0 +1,21 @@
+prompt: |
+  You are a fresh delegated leaf subagent. Load and use the prd-reviewer skill to review the exact LaunchPad Assist feature PRD revision in the fixture. Do not edit the PRD. Return the required structured verdict.
+expectations:
+  - "runs only in a fresh delegated leaf subagent and blocks self review in the author or orchestrator context"
+  - "reviews the exact PRD revision using a neutral packet without private author scratchpads hidden transcripts desired verdicts or summary substitution"
+  - "restates one precise target user problem and traces pain through feature behavior to resolved outcome and evidence"
+  - "judges shortest path defaults clarity accessibility trust failure and recovery rather than whether controls merely exist"
+  - "reviews functional and emotional satisfaction at the journey finish and suggests zero to three grounded satisfaction boosters without dark patterns or unrelated scope"
+  - "requires outcome completion time failure recovery and proportionate qualitative satisfaction evidence rather than vanity metrics"
+  - "checks whether the base product can be simplified or extended before adding a feature"
+  - "identifies reused navigation terminology components data permissions settings notifications and support paths"
+  - "flags duplicate workflows sources of truth settings surfaces concepts and maintenance burden"
+  - "requires merge remove migrate or deprecate decisions and the smallest coherent integration point"
+  - "requires objective acceptance for user outcome ease base product regressions supported interfaces feedback and launch learning"
+  - "returns structured severity evidence smallest correction base product fit satisfaction boosters and verdict"
+  - "negative author or orchestrator invocation returns REVIEW_DELEGATION_REQUIRED without findings or approval and unavailable delegation remains BLOCKED"
+  - "does not edit publish merge spend or otherwise change canonical artifacts or external systems"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

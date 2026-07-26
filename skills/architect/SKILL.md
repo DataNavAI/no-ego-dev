@@ -1,13 +1,13 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.5
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development]
-    related_skills: [mvp-planning, subagent-driven-development, requesting-code-review, qa, reviewable-artifacts]
+    related_skills: [mvp-planning, technical-design-reviewer, subagent-driven-development, requesting-code-review, qa, reviewable-artifacts]
 ---
 
 # Architect
@@ -163,7 +163,9 @@ Implementation/QA tasks: <engine setup, gameplay systems, analytics, tests, smok
 
 ## Independent Technical Review and Revision Gate
 
-An architect must not self-approve a technical specification. After saving a complete draft, spawn a fresh independent technical reviewer subagent that did not author the spec. This is a **revision gate** and must pass before coder/project-manager handoff.
+An architect must not self-approve a technical specification. **All technical-design and tech-spec review judgment must be produced by a fresh delegated leaf subagent that loads and uses `technical-design-reviewer`.** The architect/orchestrator may prepare a neutral packet, dispatch, validate report shape/revision, save findings, disposition, and revise—but it must not perform the review, draft/supplement findings, or infer approval. If delegation is unavailable, set the gate to `BLOCKED`; author-context review is never a fallback.
+
+Use a new leaf subagent for every round. Do not reuse the architect, implementer, or prior reviewer. Pass exact artifacts, repository paths, and objective operational evidence, but exclude private scratchpads, chain-of-thought, hidden transcripts, preferred architecture, persuasive summaries, and desired verdicts. This context firewall forces independent reconstruction from the current system. This is a **revision gate** and must pass before coder/project-manager handoff.
 
 ### Reviewer context
 
@@ -181,14 +183,15 @@ Dispatch the technical review with `delegate_task` directly. Adapt paths/context
 
 ```python
 delegate_task(
-    goal="Independently review the complete latest technical specification and return the required structured verdict. Do not edit the spec.",
+    goal="Load and use the `technical-design-reviewer` skill. Independently review the complete latest technical specification and return its required structured verdict. Do not edit the spec or repository.",
     context="""
     Original request, approved PRD/CUJs, scope, and design: <full context>
     Repository architecture and constraints: <full context>
     Latest tech-spec revision: <exact path/id plus full text when practical>
-    Review every technical rubric dimension below. Return only the structured technical review; do not assume author intent.
+    This is a neutral evidence packet. Do not assume author intent, preferred architecture, or desired verdict.
+    Review every `technical-design-reviewer` rubric dimension and return only its structured report.
     """,
-    toolsets=["file", "terminal"],
+    role="leaf",
 )
 ```
 
@@ -196,14 +199,17 @@ delegate_task(
 
 Ask the independent subagent to evaluate:
 
-1. Traceability to the approved PRD, CUJs, scope contract, acceptance criteria, design artifacts, and product metrics.
-2. Grounding in the actual repository and accurate identification of affected components, interfaces, data models, dependencies, and ownership.
-3. Simplest sustainable design: no unnecessary services, abstractions, platforms, migrations, integrations, or operational burden.
-4. Interface/API/event/schema clarity, data flow, invariants, state transitions, error handling, concurrency/idempotency, and failure recovery.
-5. Security, privacy, permissions, secrets, abuse risks, compliance boundaries, and data retention.
-6. Testability and CUJ verification across unit, integration, contract, component, E2E, migration, and release smoke layers as applicable.
-7. Backward compatibility, migration/backfill, rollout/canary, observability, support, rollback, disaster recovery, and cost/operability.
-8. Unresolved decisions, contradictions, feasibility risks, hidden assumptions, and scope creep.
+1. Traceability to the approved PRD/CUJs and grounding in actual repository components, interfaces, data models, dependencies, runtime, and ownership.
+2. Integrity: assumptions, invariants, contracts, state/data flow, validation, failures, timeout/retry/idempotency/ordering/concurrency, consistency, migration, security/privacy, rollout, rollback, and recovery.
+3. Simplest sustainable design: actively test a smaller alternative, reuse existing code/data/jobs/interfaces/providers/telemetry/runbooks, minimize moving parts, and reject hypothetical-scale abstractions or parallel sources of truth.
+4. Complexity and redundancy ledger: justify each new service, abstraction, queue, table, cache, flag, dependency, or configuration by current need; name reused alternative, test surface, operational owner/cost, deletion condition, and mechanisms removed/consolidated.
+5. Automatic testability: deterministic unit/contract/integration/E2E/migration/concurrency/fault/smoke checks as applicable, with concrete commands, fixtures, environments, evidence, and CI failure behavior; avoid hidden side effects and mocks that only prove mocks.
+6. Operability and self-monitoring: safe structured logs, outcome/failure metrics, health/readiness, thresholds, deduplicated actionable alerts, dashboards/query paths, synthetic CUJ checks, invariants/data-quality/stuck-work checks, telemetry-loss detection, runbooks, rollback triggers, and recovery verification.
+7. Test the monitoring itself through emitted-telemetry checks and simulated faults; missing telemetry must fail closed rather than appear healthy.
+8. Existing-system fit, compatibility, bounded migration/deprecation, security/privacy/compliance, cost/capacity, support, and lifecycle ownership.
+9. Unresolved decisions, contradictions, feasibility risks, hidden assumptions, and scope creep.
+
+`technical-design-reviewer` is the canonical detailed rubric; these points are the minimum integration contract.
 
 Require structured output:
 
@@ -212,9 +218,14 @@ Technical review — round <N> — revision <path/id>
 Verdict: APPROVED | APPROVED_WITH_MINOR_NOTES | NEEDS_REVISION | BLOCKED
 Findings:
 - <BLOCKER|HIGH|MEDIUM|LOW> — <issue> — <evidence> — <recommended correction>
+Integrity assessment: <invariants, contracts, states, failures, data, security>
+Simplest viable alternative: <smaller design considered and why sufficient/insufficient>
+Complexity and redundancy ledger: <new parts, necessity, reuse alternative, test/ops cost, deletion condition, removals>
+Automatic testability matrix: <behavior/failure → test layer → command/evidence>
+Operability/self-monitoring matrix: <health/failure/invariant → signal → threshold → owner/runbook → recovery check>
 Overengineering/scope challenges: <items or none>
 Missing decisions/experiments: <items or none>
-Approval rationale: <why the latest revision is or is not implementable, testable, operable, and safe>
+Approval rationale: <why the latest revision is or is not sound, minimal, automatically testable, operable, and sustainable>
 ```
 
 ### Revision loop
@@ -230,6 +241,8 @@ Bound the revision gate to **three review rounds**. Escalate earlier when findin
 
 ### Asynchronous continuation state
 
+Current Hermes single-task `delegate_task` dispatch is automatically background and returns a handle immediately. The deprecated `background` argument is ignored, so do not add it or wait/poll; preserve the callback state machine below.
+
 `delegate_task` returns before the technical reviewer finishes. Immediately after dispatch, checkpoint the review state in the tech spec or review index:
 
 ```text
@@ -243,7 +256,7 @@ handoff_blocked: true
 
 Do not fabricate a verdict, mark the spec approved, or begin handoff while review is running. When the reviewer result re-enters the session, resume from the checkpoint: validate its structured output, save the review artifact, disposition findings, revise the latest spec, and dispatch a fresh technical review when needed. A response that only reports `REVIEW_PENDING` is an honest checkpoint, not completion of the architecture workflow. The pending response must still name the exact revision/round, reviewer handle when available, review-artifact destination, every technical rubric dimension sent to the reviewer, handoff block, and callback transition: validate structured findings → save review → disposition → revise → fresh re-review until approval or three-round escalation.
 
-No coder/project-manager handoff may begin until the gate passes or the user explicitly accepts documented residual risk.
+No coder/project-manager handoff may begin until the gate passes. A user may accept documented residual risk only **after a completed independent leaf review of the exact revision** returned a valid verdict and findings; that acceptance may disposition reviewer-identified non-blocking risk, but it can never substitute for unavailable delegation, a pending/missing/malformed review, revision mismatch, `BLOCKED`, or unresolved `BLOCKER`/`HIGH` findings.
 
 ## Human Tech-Spec Review Presentation Gate
 
@@ -262,7 +275,7 @@ Read unresolved review threads, update the canonical spec/diagrams, rerun applic
 7. Ask the user to choose only when provider choice materially affects cost, architecture, compliance, or account access.
 8. Name every affected component and interface.
 9. Save the spec under `.projects/<project>/tech-specs/`.
-10. Spawn a fresh independent technical reviewer subagent, save its severity-ranked findings, revise the spec, and repeat review against the latest revision until the revision gate passes or escalates after at most three rounds.
+10. Spawn a fresh independent leaf subagent instructed to load/use `technical-design-reviewer`, save its severity-ranked findings, revise the spec, and repeat review against the latest revision until the revision gate passes or escalates after at most three rounds.
 11. End every milestone/feature task breakdown with a scheduled refactoring task whose acceptance criteria reduce complex dependencies, remove redundant code, improve testability, and add/update automated tests for the product behavior touched by that milestone/feature.
 
 ## Verification Checklist
@@ -281,7 +294,9 @@ Read unresolved review threads, update the canonical spec/diagrams, rerun applic
 - [ ] Schema/data migrations are described when relevant.
 - [ ] Tests and rollout are included.
 - [ ] Every milestone/feature plan ends with a scheduled refactoring task to reduce complex dependencies, remove redundant code, improve testability, and ensure touched product behavior is verifiable by automated tests.
-- [ ] A fresh independent technical reviewer subagent reviewed the complete latest spec against the approved PRD/CUJs, repository, interfaces, data model, failures, security/privacy, testability, migration, deployment, observability, rollback, cost, and scope simplicity.
+- [ ] A fresh independent leaf subagent loaded/used `technical-design-reviewer` and reviewed the complete latest spec; no technical review judgment was produced or supplemented in the architect/implementer/orchestrator context.
+- [ ] The neutral packet contained exact spec/repository/operational evidence but excluded private scratch reasoning, hidden transcripts, preferred architecture, desired verdict, and summary substitution.
+- [ ] Review covered integrity, simplest viable alternative, complexity/redundancy ledger, automatic testability, operability, self-monitoring, telemetry failure, recovery, and existing-system fit.
 - [ ] Review output names the exact spec revision and uses a structured verdict with severity, evidence, recommended correction, scope challenges, and missing decisions.
 - [ ] Every finding has a disposition; all blocker/high findings and accepted medium findings were revised and then checked by a fresh independent reviewer.
 - [ ] The latest spec is `APPROVED` or `APPROVED_WITH_MINOR_NOTES` with no unresolved blocker/high findings; otherwise the workflow escalated after no more than three rounds and did not self-approve or start handoff.

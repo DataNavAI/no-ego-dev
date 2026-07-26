@@ -97,6 +97,8 @@ Create a practical launch plan for this prototype: [URL or repo]. Include positi
 NED is packaged with focused skills for the common work needed to go from idea to public test:
 
 - `product-manager`: turns fuzzy requests into product direction, target users, success criteria, and prototype scope.
+- `prd-reviewer`: runs only in a fresh leaf subagent to review exact PRDs for target-user problem fit, easy/effective resolution, end-of-journey satisfaction, and coherent reuse of the base product without redundancy.
+- `technical-design-reviewer`: runs only in a fresh leaf subagent to review exact technical designs for integrity, the simplest viable solution, automatic testability, operability, self-monitoring, and minimal system redundancy.
 - `reviewable-artifacts`: presents Markdown and visual design bundles through rendered GitHub draft PRs with stable inline-comment anchors, agent-readable feedback, verified revisions, and resolvable review threads. Temporary review surfaces are explicitly marked `[REVIEW ONLY — DO NOT MERGE]`, then closed without merge and cleaned up after accepted work and review evidence are preserved.
 - `mvp-planning`: reduces a new MVP to one key user problem and one to three critical user journeys, designs the shortest intuitive UX, cuts everything nonessential, and defines CUJ-level automated and manual QA gates.
 - `product-bootstrap`: builds small publishable prototypes from benchmark URLs, screenshots, notes, or starter apps without copying benchmark-specific branding or text.
