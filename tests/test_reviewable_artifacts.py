@@ -73,6 +73,61 @@ def test_reviewable_artifact_package_contract():
     assert "mark the decision `BLOCKED`" in product_skill
 
 
+def test_ui_designer_bootstraps_minimum_viable_design_system_first():
+    skill_dir = ROOT / "skills" / "ui-designer"
+    skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+    evaluation = yaml.safe_load((skill_dir / "EVAL.yaml").read_text(encoding="utf-8"))
+    fixture = (skill_dir / evaluation["parameters"]["fixture"]).read_text(encoding="utf-8")
+    research_path = skill_dir / "references" / "mvp-design-system-minimum.md"
+
+    assert "## New-Project Design System Bootstrap Gate" in skill
+    assert "before** producing feature-level screens or flows" in skill
+    assert "Semantic foundations/tokens" in skill
+    assert "CUJ-required component set" in skill
+    assert "Accessibility baseline" in skill
+    assert "Visual specimen, not just documentation" in skill
+    assert "Feature mockups must consume this baseline" in skill
+    assert "audit and reuse it instead of creating a competing one" in skill
+    assert "Implementation mapping and ownership" in skill
+    assert "decision owner has accepted the baseline" in skill
+    assert "explicitly accepted documented residual risks" in skill
+    assert "design-system contract owns token/component definitions" in skill
+    assert "Do not build an enterprise-scale library for an MVP" in skill
+    assert research_path.is_file()
+    research = research_path.read_text(encoding="utf-8")
+    for source in (
+        "https://designsystem.digital.gov/design-tokens/",
+        "https://design-system.service.gov.uk/styles/",
+        "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+        "https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html",
+        "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html",
+        "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html",
+        "https://www.w3.org/WAI/WCAG22/Understanding/reflow.html",
+    ):
+        assert source in research
+
+    for claim in (
+        "color, typesetting/font size and family, spacing units",
+        "4.5:1 contrast for normal text and 3:1 for large text",
+        "visible keyboard focus",
+        "24-by-24 CSS-pixel target-size floor",
+        "still need user research for the service using them",
+    ):
+        assert claim in research
+
+    expectations = "\n".join(evaluation["expectations"])
+    assert "minimum viable design system before feature level screens" in expectations
+    assert "established implementation or design system exists audits adopts themes" in expectations
+    assert "derives the minimum component inventory" in expectations
+    assert "renders and inspects a concrete design system specimen" in expectations
+    assert "A prose-only style guide" in fixture
+    assert "Feature designs must consume the accepted baseline" in fixture
+    assert "Brownfield boundary scenario" in fixture
+    assert "must not run the greenfield gate" in fixture
+    assert "existing system's canonical source and ownership/change process" in fixture
+
+
+
 def test_ui_designer_requires_visual_first_slide_like_review_decks():
     skill_dir = ROOT / "skills" / "ui-designer"
     skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")

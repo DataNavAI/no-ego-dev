@@ -1,7 +1,7 @@
 ---
 name: ui-designer
 description: "Use when creating project UI guidelines, reviewing implemented UI against those guidelines, identifying visual/UX/accessibility inconsistencies, and filing UI bugs in the issue system."
-version: 0.3.2
+version: 0.3.3
 author: NoEgoDev
 license: MIT
 metadata:
@@ -23,6 +23,8 @@ UI design work is not only aesthetics. Good UI guidance makes the product easier
 Prefer project-local artifacts so future product, coding, and QA agents can reuse them:
 
 - UI guideline: `.projects/<project>/design/ui-guidelines.md`
+- MVP design-system contract: `.projects/<project>/design/design-system.md`
+- Runnable design-system specimen: `.projects/<project>/design/design-system-preview/` with reviewed captures under `.projects/<project>/design/images/design-system/`
 - Feature UI brief: `.projects/<project>/features/<feature-slug>/design/ui-brief.md` or the project's equivalent feature artifact folder beside the PRD and tech spec
 - Feature design images/mockups: `.projects/<project>/features/<feature-slug>/design/images/` or the project's equivalent feature artifact folder beside the PRD and tech spec
 - UI review reports: `.projects/<project>/design/ui-reviews/<YYYYMMDD-HHMMSS>-<scope>.md`
@@ -114,6 +116,24 @@ Design task requirements:
    - During UI review, include copy quality as part of design quality: unnecessary explanatory text, vague CTAs, long mobile copy, inaccessible label removal, and unclear errors/destructive confirmations are design iteration issues.
    - Treat reviewer status `NEEDS ITERATION` or `BLOCKED` as not ready for engineering handoff. Revise the design artifacts and rerun copy/UI review as needed until the reviewer returns `PASS` or `PASS WITH MINOR POLISH`, or until a real blocker is documented with the exact missing input/tooling.
    - Preserve the review report path and final approval rationale in the design brief so architects, coders, and QA can see what quality bar was met.
+
+## New-Project Design System Bootstrap Gate
+
+When bootstrapping a new product or greenfield UI, define and visually validate the minimum viable design system **before** producing feature-level screens or flows. A mood board, brand adjective list, or prose-only guideline does not satisfy this gate. If an established implementation/design system already exists, audit and reuse it instead of creating a competing one.
+
+Use `.projects/<project>/design/design-system.md` as the durable contract and `references/mvp-design-system-minimum.md` as the research-backed checklist. The design-system contract owns token/component definitions and implementation mapping; `ui-guidelines.md` owns product-specific usage rules and links to the contract instead of duplicating values. Keep the system deliberately proportional to the approved MVP CUJs:
+
+1. **Context and reuse decision** — record users, platform, brand/trust needs, supported viewports, existing framework/library audit, and whether the project will adopt, theme, extend, or minimally create a system.
+2. **Semantic foundations/tokens** — define actual names and values for semantic color roles (surface, text, border, action, status, focus), typography roles/scale, spacing scale, grid/container/breakpoints, radius/border/elevation, icon rules, and motion rules only where motion is needed. Add dark theme or multiple themes only when the product requires them.
+3. **CUJ-required component set** — inventory only components needed by the first approved CUJs. At minimum consider the page/app shell, text/link, button/icon button, required form controls, validation/error summary, loading/empty/error/success feedback, and navigation. Add tables, cards, tabs, modals, charts, or other components only when a mapped CUJ step requires them.
+4. **State and interaction contract** — show every included component in applicable default, hover, focus-visible, active/pressed, selected, disabled, loading, validation/error, success, and destructive states; document keyboard/touch behavior and content constraints.
+5. **Accessibility baseline** — verify normal text contrast of at least 4.5:1 and large text at least 3:1, non-color status cues, visible keyboard focus, semantic names/roles/values, readable/reflowing type, and minimum target sizing/spacing. Use the stronger existing 44px mobile touch-target guideline where applicable; WCAG 2.2's 24-by-24 CSS-pixel minimum (with exceptions) is a floor, not the mobile product target.
+6. **Visual specimen, not just documentation** — build a small runnable HTML/component specimen or equivalent concrete mock showing foundations, components, states, and at least one representative mobile/desktop composition. Capture and inspect clean screenshots. Present material system choices through the visual-first slide-like review deck; keep token tables and implementation detail in `design-system.md` or its appendix.
+7. **Implementation mapping and ownership** — record the canonical token source, component/code path, naming convention, supported variants, owner, version/date, and how exceptions or changes are approved so the mock and implementation do not drift.
+
+The bootstrap gate passes only when tokens have concrete values, the first-CUJ component inventory and states are represented, accessibility checks are recorded, the specimen has been rendered and inspected at required viewports, and the decision owner has accepted the baseline or explicitly accepted documented residual risks. Feature mockups must consume this baseline. A temporary visual spike may be used to test system choices, but it is not a feature-screen exception and must be reconciled into the system contract before feature design continues.
+
+Do not build an enterprise-scale library for an MVP. Prefer one semantic token source, one foundations/specimen page, and the smallest reusable component set that covers the selected CUJs and required resilience states. Park speculative components, themes, and variants.
 
 ## Creating a UI Guideline
 

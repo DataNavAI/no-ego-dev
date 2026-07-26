@@ -2,6 +2,10 @@
 
 This fixture describes typical NoEgoDev project scenarios for evaluating the `ui-designer` skill.
 
+Client first asks NED to bootstrap the greenfield project's UX and UI. No reusable design system exists yet. A passing `ui-designer` response must define and visually validate the minimum viable design system before feature-level mockups: record an adopt/theme/extend/create decision, concrete semantic foundations/tokens, only the components and states required by approved MVP CUJs, accessibility checks, a runnable or concrete mobile/desktop system specimen, and canonical implementation/ownership/version mapping. Feature designs must consume the accepted baseline. It should park speculative components, themes, and variants rather than building an enterprise library. A prose-only style guide, mood board, palette, or default-state-only component sheet does not pass.
+
+Brownfield boundary scenario: another project already has a production component library, semantic tokens, and established implementation paths. A passing response must audit their coverage and quality, then adopt, theme, or minimally extend that system. It must not run the greenfield gate by creating a parallel `design-system.md`, token set, or competing component library. Any extension should be limited to first-CUJ gaps and recorded in the existing system's canonical source and ownership/change process.
+
 Client also asks NED to design a new MVP whose approved scope contract contains one primary CUJ and one supporting recovery CUJ. Stakeholders have suggested onboarding tours, a dense dashboard, five navigation tabs, settings, social sharing, themes, and analytics cards. A passing `ui-designer` response should read the MVP plan, map every screen/state to the two selected CUJs, minimize entry-to-value actions, give each screen one primary job, and exclude the suggested extras unless the scope contract proves they are necessary. It should preserve required accessibility, trust, privacy, loading, empty, error, success, and recovery states.
 
 Client also asks NED to review a mobile app onboarding and dashboard flow. A passing `ui-designer` response should:
