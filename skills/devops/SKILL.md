@@ -1,7 +1,7 @@
 ---
 name: devops
 description: "Use when setting up CI/CD, deployments, environment management, or operational health checks."
-version: 0.5.2
+version: 0.6.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -27,6 +27,7 @@ Make the product shippable and observable. NED devops chooses boring, reliable a
 - Monitoring, logs, health checks, hosting-cost visibility, and rollback plan.
 - Chat-first provider account setup: use the configured primary Google account for SSO/account creation whenever practical, and minimize anything that requires the user to access the agent machine directly.
 - Per-project deployment and system monitoring documentation, including routine cost checks for hosted resources.
+- Repository workflow monitoring with durable, deduplicated fix tasks for persistent CI/CD failures.
 
 ## Access and Tooling Prerequisites
 
@@ -371,6 +372,66 @@ Every periodic system checkup must include hosting cost as a first-class signal,
 
 If cost data is unavailable, mark it as `missing cost visibility`, identify the provider/account/dashboard or API access needed, and create a setup task for budget alerts or billing access. Never claim a system is fully healthy when hosting cost cannot be checked for a live product.
 
+## Repository Workflow Failure Monitoring
+
+For every maintained repository with automated workflows, monitor the status of **all active workflows**, not only the main test workflow. Prioritize required checks, default/protected branches, pull requests, scheduled jobs, release/deployment workflows, security scans, migrations, and production automation. Intentionally disabled or retired workflows are out of scope only when that decision is documented.
+
+### Monitoring setup
+
+1. Prefer repository-host events such as GitHub `workflow_run` webhooks for near-real-time detection. Add a reconciliation poll after setup and at least every 15 minutes so missed, delayed, duplicated, or out-of-order events and gateway downtime cannot hide or fabricate a red workflow. If webhook-management permission is unavailable, use a recurring Hermes cronjob or existing scheduler at `every 15m` by default; polling is a valid least-privilege fallback.
+2. For GitHub, inventory workflows first with `gh workflow list --all --limit 1000 --json id,name,path,state`, verify the inventory is not truncated, and read each active workflow file from the authoritative ref to inventory its trigger events. Combine those triggers with default/protected/release branches, open PR heads, scheduled/default-branch lanes, and documented deploy lanes. Query **each workflow + relevant event + relevant branch/ref lane** rather than only each workflow; paginate until the latest two completed attempts plus the preceding success are known for every lane, or until the API is exhausted within the documented retention window. A global or per-workflow-only `--limit <N>` query can hide infrequent schedule, release, or deployment lanes behind busy PR/push runs. Use authenticated read-only discovery such as `gh run list --workflow <id-or-file> --event <event> --branch <branch> --limit <N> --json databaseId,attempt,workflowName,status,conclusion,headBranch,headSha,event,createdAt,updatedAt,url` and `gh run view <run-id> --attempt <attempt> --json attempt,jobs,url,workflowName,headBranch,headSha,event,conclusion`. For event types where `--branch` is not meaningful, query by workflow/event and partition the returned runs by authoritative ref.
+
+   Minimum GitHub access is repository metadata/contents read, Actions read, branch-protection/rulesets read where required checks are monitored, and Issues write when GitHub Issues is the task tracker. Webhook mode additionally needs repository-hook administration/write; do not request that stronger scope when polling is sufficient. Verify each granted capability with harmless list/read calls and a dry-run or test issue path before declaring monitoring ready.
+3. Track stable workflow ID plus path (not display name alone), relevant branch/event, run ID/attempt/URL, head SHA, conclusion, failed job/step, normalized failure signature, first/last seen, consecutive failure count, existing task URL/ID, and last notified state. Store runtime state outside the repository, for example `~/.hermes/tmp/<project>-workflow-monitor-state.json`; never commit transient monitor state.
+4. Treat `failure`, `timed_out`, `startup_failure`, and `action_required` as failing conclusions. Investigate repeated `cancelled` runs when they block required CI, but do not classify an intentional manual cancellation as a code failure. `skipped` and `neutral` are not successes for a required check unless the repository's branch-protection policy intentionally permits them.
+5. If no runs can be read, authentication is missing, a workflow disappeared, trigger/lane inventory or pagination is incomplete, inventory is truncated, or branch-protection/required-check visibility is unavailable, report `missing workflow visibility` rather than claiming CI is healthy. Maintain one open deduplicated visibility/setup task per repository + missing capability/scope, update it on every materially changed outage, and deduplicate unchanged visibility alerts just like unchanged red-state alerts. If the configured tracker cannot be written, persist one pending-task record in atomic local monitor state, emit one actionable blocker alert, and retry the idempotent task upsert; never claim that a task was created until its returned ID/URL is verified. Reconcile workflow renames by stable ID/path history. Prune state for removed/disabled workflows only after verifying and linking an intentional retirement decision; otherwise keep the visibility task open.
+
+### Persistent-failure gate
+
+A single failed run is a **candidate incident**, not automatically a fix task. Inspect the failed jobs/steps and record the candidate immediately. A workflow is **continuing to fail** and requires a durable fix task when any of these is true:
+
+- the latest two completed attempts of the same active workflow fail on the same relevant branch/event with the same normalized failure signature and no intervening success; historical failures followed by a current success do not trip the gate;
+- the latest three completed attempts on the same workflow/branch/event all fail without an intervening success, even if signatures differ; create or update one `mixed-signature` lane task so a continuously red workflow cannot evade tracking by changing errors;
+- a safe, explicitly authorized rerun fails again with the same normalized failure signature;
+- a required default/protected/release/deployment workflow remains red for 30 minutes and still blocks merge, staging, release, or production delivery;
+- a scheduled workflow fails in two consecutive scheduled executions, even when those runs are far apart.
+
+Do not blindly rerun deployment, migration, billing, destructive, or non-idempotent workflows. Inspect side effects and obtain the required approval first. A changed failure signature starts a distinct investigation but should update the same workflow task when the failures share one underlying blocked outcome.
+
+### Fix-task creation and deduplication
+
+When the persistent-failure gate trips, search the configured issue/task system before creating anything. Maintain **one open fix task per repository + stable workflow ID/path + relevant branch/event + normalized failure signature**; use a reserved `mixed-signature` value for the three-failure continuously-red lane gate. Store that deterministic dedupe key in the task body/metadata or label, re-search immediately before creation, and use an atomic lock/idempotent upsert so concurrent webhook and reconciliation workers cannot race into duplicates. Write state atomically (temporary file plus rename). Update the existing task with new runs and evidence instead of creating duplicate issues on every poll.
+
+A persistent failure is not safely tracked until the repair task's returned ID/URL is verified and a read-back confirms the dedupe key and current failure evidence. If repair-task creation/update fails, times out, or returns an ambiguous response, persist exactly one pending repair-task record per dedupe key in atomic local monitor state, emit one actionable blocker alert, and retry the idempotent upsert on reconciliation. Before retrying, search the tracker by dedupe key to adopt a task that may have been created despite a lost response. Never claim the repair task exists, mark the gate handled, or send a milestone-complete status while the task ID/URL and read-back remain unverified; deduplicate unchanged tracker-outage alerts.
+
+Use GitHub Issues when the repository uses GitHub and Issues are enabled; otherwise use the configured tracker or a repo-local durable task under `.projects/<project>/issues/`. The task must include:
+
+```text
+Fix persistent workflow failure — <workflow> — <branch/event>
+- Repository: <URL/path>
+- Workflow: <name/path and workflow URL>
+- Failure state: <conclusion; first seen; last seen; consecutive count>
+- Affected runs: <run IDs/URLs, head SHAs, events>
+- Failed jobs/steps: <names and safe concise evidence>
+- Normalized signature: <stable redacted signature used for dedupe>
+- Impact/severity: <merge, staging, release, deploy, security, scheduled operation, etc.>
+- Suspected cause: <evidence-grounded hypothesis or `unknown`; never present speculation as fact>
+- Owner: <devops/coder/security/other>
+- Acceptance: <fix merged; original failing scenario rerun passes; required check reports success; two consecutive normal runs succeed; workflow was not merely disabled/skipped to hide failure>
+- Links: <PR/spec/runbook/STATUS.md if milestone state changed>
+```
+
+Redact tokens, secrets, private environment values, and sensitive log payloads before storing evidence. If a persistent failure blocks a milestone, release, or current objective, notify project-manager and update the repository `STATUS.md` through its completion/status workflow so the blocker and next action stay visible.
+
+### Recovery and verification
+
+- A new green run does not erase the task history. Add recovery evidence to the task and verify the original failing scenario plus two consecutive normal runs before resolving intermittent failures.
+- Do not close a task merely because the workflow was disabled, removed, changed to `continue-on-error`, or made non-required. Such changes need an explicit, issue-linked decision showing that coverage or delivery safety was not silently weakened.
+- Treat webhook payloads as hints, not authoritative ordering. Before every candidate/persistent/recovery transition, task upsert, or alert, fetch and sort authoritative remote lane state by completion time, run ID, and attempt; reject an event at or behind the stored lane cursor unless it adds missing evidence. Reconcile remote runs and open tasks on every transition and monitor restart so delayed events or stale local state cannot regress status, duplicate tasks, or replay alerts.
+- Alert only on a new candidate failure, persistent-gate transition/task creation, materially changed failure, deduplicated missing-visibility transition, or verified recovery. Deduplicate unchanged red-state **and visibility** alerts.
+- Verify the monitor with fixtures or dry runs for: all-green silent behavior; first-failure candidate without task creation; second matching failure creating one task; three mixed-signature failures creating one lane task; lane pagination finding an infrequent scheduled/release run behind busy PR runs; repeated/concurrent polls updating rather than duplicating tasks; missing visibility creating one deduplicated setup task; stale/out-of-order webhook rejection; distinct rerun attempts; malformed/missing API data failing closed; and recovery evidence without premature closure.
+- Document monitor mechanism, cadence, repository/workflow scope, required permissions, state path, task tracker/labels, persistence thresholds, dedupe key, notification destination, and pause/remove/manual-run instructions in `.projects/<project>/runbooks/deployment-and-monitoring.md`.
+
 ## Service Monitoring Cronjobs
 
 When the user asks to monitor deployed services, set up a recurring Hermes cronjob that runs every 5 minutes unless the user specifies a different cadence. Monitoring must be proactive and quiet-by-default: the job should send a message only when it detects an issue, cannot check a required signal, or recovers from a previously reported issue if recovery notifications are useful.
@@ -446,8 +507,9 @@ When the user or eval specifically requests AWS deployment readiness for a simpl
 13. Create or update the per-project deployment and system monitoring runbook at `.projects/<project>/runbooks/deployment-and-monitoring.md`.
 14. Validate `.projects/<project>/product/supported-device-interfaces.yaml`; require at least one test case and a current PASS/evidence row for every supported device interface against the exact release candidate, and block promotion/deployment/store submission when the gate is incomplete or failing.
 15. Add health checks, hosting-cost visibility, budget-alert expectations, and operational runbook details.
-16. When asked to monitor deployed services, discover all deployed services/backends and set up a quiet every-5-minute Hermes cronjob watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
-17. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, confirming the supported-interface release gate, confirming monitoring cronjob healthy output is silent and failure output alerts, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
+16. Configure repository workflow monitoring for every active workflow using workflow-run events plus a 15-minute reconciliation poll when available, or a 15-minute poll when events are unavailable. Create/update one deduplicated fix task when the persistent-failure gate trips.
+17. When asked to monitor deployed services, discover all deployed services/backends and set up a quiet every-5-minute Hermes cronjob watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
+18. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, confirming the supported-interface release gate, confirming monitoring cronjob healthy output is silent and failure output alerts, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
 
 ## Verification Checklist
 
@@ -475,6 +537,11 @@ When the user or eval specifically requests AWS deployment readiness for a simpl
 - [ ] Per-project deployment and system monitoring doc exists at `.projects/<project>/runbooks/deployment-and-monitoring.md` or an equivalent documented path.
 - [ ] The deployment/monitoring doc includes environment inventory, deployment triggers, rollback, health checks, hosting cost/budget visibility, logs, dashboards/alerts, and operational procedures.
 - [ ] Periodic system checkups include current hosting spend, projected run-rate, plan limits, resource-usage cost drivers, renewal/trial dates, and cost anomalies or missing-cost-visibility tasks.
+- [ ] Every maintained repository inventories workflow triggers and monitors every active workflow/event/branch lane—including infrequent scheduled/release/deploy lanes—using workflow-run events plus reconciliation or a documented recurring poll with complete pagination.
+- [ ] First failures are recorded as candidate incidents; persistent failures are defined by two consecutive matching completed attempts, three continuously red mixed-signature attempts, a failed safe rerun attempt, a required red workflow still blocking after 30 minutes, or two consecutive scheduled failures.
+- [ ] Persistent workflow failures atomically create or update one durable deduplicated fix task with run/attempt links and SHAs, failed jobs/steps, redacted signature, impact, owner, evidence-grounded cause or unknown, and objective acceptance checks; failed/ambiguous tracker writes remain one pending repair record until ID/URL and read-back verification succeed.
+- [ ] Workflow monitoring verifies contents/Actions/rules/task-tracker and optional webhook permissions, fails closed on incomplete trigger/lane/pagination/auth/run/required-check visibility, and deduplicates visibility tasks/alerts.
+- [ ] Workflow monitor verification covers green silence, matching and mixed-signature persistence, infrequent lane pagination, distinct attempts, concurrency/duplicate suppression, deduplicated missing visibility, stale/out-of-order events, malformed data, and recovery without premature closure.
 - [ ] When the user asked to monitor services, a Hermes cronjob was created with schedule `every 5m` unless the user specified otherwise.
 - [ ] The monitoring cronjob runs silently when all services are healthy, using empty stdout for healthy no-op runs.
 - [ ] Monitoring covers all deployed services/environments discovered from runbooks/provider config, especially backend/API services, workers, databases, and provider-managed dependencies.
