@@ -95,7 +95,11 @@ For each `(profile, skill)` record:
 - prior observed digest from the external state file, if present;
 - whether several profiles contain distinct variants.
 
-A candidate is interesting when it differs from the remote-default source package and is new or changed since the last successful harvest. On the first run, inventory all differences but apply the same validation and conflict rules; do not bulk-copy blindly.
+A candidate is interesting when it differs from the remote-default source package and is new or changed since the last successful harvest.
+
+**Initial enrollment is a baseline, not a historical bulk import.** When no state file exists, record the current source/profile digests as `initialized_at` inventory and report the baseline counts. Unless the user explicitly asks for a backfill, do not treat every pre-existing difference as newly updated. This prevents the first scheduled run from importing an entire bundled/global skill library by accident.
+
+By default, harvest only skill names already owned by the canonical distribution repository. A profile-only skill may be proposed only when its frontmatter/provenance identifies it as NoEgoDev-authored or adapted, it contains a complete reusable package with eval coverage, and it is not merely a bundled/global skill copied into that profile. Ambiguous profile-only skills are reported but not uploaded.
 
 ### 4. Classify each difference
 

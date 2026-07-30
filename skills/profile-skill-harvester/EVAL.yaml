@@ -14,6 +14,7 @@ expectations:
   - "Defines precedence for legal, security, privacy, explicit user constraints, specific applicable rules, and high-blast-radius work."
   - "Adds or updates EVAL.yaml and evaldata scenarios for each lifecycle branch and at least one boundary case."
   - "Uses an isolated Git worktree from the remote default branch and does not sweep a dirty canonical checkout."
+  - "Treats a missing state file as initial enrollment baseline rather than a historical bulk import, and excludes ambiguous bundled/global profile-only skills by default."
   - "Validates frontmatter, eval YAML, fixtures, support scripts, repository tests, git diff, and staged secret safety before publishing."
   - "Blocks only the unresolved skill when evidence cannot resolve a same-scope contradiction while allowing independent safe skills to proceed."
   - "Advances external inventory state only after merge or an explicit stable disposition."

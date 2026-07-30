@@ -48,6 +48,7 @@ def test_profile_skill_harvester_package_contract():
         "Precedence rules",
         "isolated worktree",
         "Complete packages move together",
+        "Initial enrollment is a baseline",
         "Advances external inventory state only after merge",
     ):
         assert marker in skill or marker in "\n".join(evaluation["expectations"])

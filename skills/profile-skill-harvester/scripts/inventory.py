@@ -225,8 +225,10 @@ def main() -> int:
                 if candidate["skill"] == skill_name:
                     candidate["multiple_profile_variants"] = True
 
+    observed_at = datetime.now(timezone.utc).isoformat()
     snapshot = {
-        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "initialized_at": prior.get("initialized_at") or observed_at,
+        "observed_at": observed_at,
         "repo": str(repo),
         "source": {name: asdict(package) for name, package in sorted(source.items())},
         "profiles": {
