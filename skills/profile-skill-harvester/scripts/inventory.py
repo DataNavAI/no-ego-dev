@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""Inventory complete Hermes skill packages without copying their contents.
+
+The output contains paths, digests, and change classifications only. Operational
+state belongs outside the repository and is written only with --record.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import sys
+import tempfile
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterable
+
+IGNORED_DIRS = {
+    ".git",
+    ".hg",
+    ".svn",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "node_modules",
+    "sessions",
+    "logs",
+    "memories",
+    "workspace",
+    "workspaces",
+}
+IGNORED_FILES = {".DS_Store", "Thumbs.db"}
+RUNTIME_NAMES = {
+    ".env",
+    "auth.json",
+    "google_token.json",
+    "google_client_secret.json",
+    "google_oauth_pending.json",
+}
+NAME_RE = re.compile(r"(?m)^name:\s*[\"']?([a-z0-9][a-z0-9_-]{0,63})[\"']?\s*$")
+
+
+@dataclass(frozen=True)
+class Package:
+    name: str
+    path: str
+    digest: str
+    file_count: int
+    newest_mtime: str
+
+
+def parse_name(skill_md: Path) -> str:
+    text = skill_md.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        raise ValueError(f"frontmatter must start at byte zero: {skill_md}")
+    closing = text.find("\n---\n", 4)
+    if closing < 0:
+        raise ValueError(f"frontmatter is not closed: {skill_md}")
+    match = NAME_RE.search(text[4:closing])
+    if not match:
+        raise ValueError(f"frontmatter name is missing or invalid: {skill_md}")
+    return match.group(1)
+
+
+def package_files(package_dir: Path) -> Iterable[Path]:
+    for path in sorted(package_dir.rglob("*")):
+        if path.is_symlink() or not path.is_file():
+            continue
+        rel = path.relative_to(package_dir)
+        if any(part in IGNORED_DIRS for part in rel.parts):
+            continue
+        if path.name in IGNORED_FILES or path.name in RUNTIME_NAMES:
+            continue
+        if path.name.endswith((".pyc", ".pyo", "~", ".swp")):
+            continue
+        yield path
+
+
+def hash_package(package_dir: Path) -> tuple[str, int, str]:
+    digest = hashlib.sha256()
+    count = 0
+    newest = 0.0
+    for path in package_files(package_dir):
+        rel = path.relative_to(package_dir).as_posix()
+        data = path.read_bytes()
+        digest.update(rel.encode("utf-8") + b"\0")
+        digest.update(hashlib.sha256(data).digest())
+        count += 1
+        newest = max(newest, path.stat().st_mtime)
+    when = datetime.fromtimestamp(newest, timezone.utc).isoformat() if newest else ""
+    return digest.hexdigest(), count, when
+
+
+def discover(skills_root: Path) -> tuple[dict[str, Package], list[str]]:
+    packages: dict[str, Package] = {}
+    errors: list[str] = []
+    if not skills_root.is_dir():
+        return packages, [f"skills root does not exist: {skills_root}"]
+    for skill_md in sorted(skills_root.rglob("SKILL.md")):
+        if any(part in IGNORED_DIRS for part in skill_md.parts):
+            continue
+        try:
+            name = parse_name(skill_md)
+            if name in packages:
+                raise ValueError(
+                    f"duplicate skill name {name!r}: {packages[name].path} and {skill_md.parent}"
+                )
+            package_dir = skill_md.parent
+            digest, count, newest = hash_package(package_dir)
+            packages[name] = Package(
+                name=name,
+                path=str(package_dir.resolve()),
+                digest=digest,
+                file_count=count,
+                newest_mtime=newest,
+            )
+        except (OSError, UnicodeError, ValueError) as exc:
+            errors.append(str(exc))
+    return packages, errors
+
+
+def load_state(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid state file {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"state file must contain a JSON object: {path}")
+    return data
+
+
+def atomic_json_write(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    os.chmod(path.parent, 0o700)
+    fd, temporary = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(value, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def parse_profile(value: str) -> tuple[str, Path]:
+    if "=" not in value:
+        raise argparse.ArgumentTypeError("profile must be NAME=/absolute/profile/path")
+    name, raw_path = value.split("=", 1)
+    path = Path(raw_path).expanduser()
+    if not name or not path.is_absolute():
+        raise argparse.ArgumentTypeError("profile must be NAME=/absolute/profile/path")
+    return name, path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", required=True, type=Path, help="Canonical repository root")
+    parser.add_argument(
+        "--profile",
+        action="append",
+        default=[],
+        type=parse_profile,
+        help="Profile mapping NAME=/absolute/profile/path; repeat as needed",
+    )
+    parser.add_argument("--state", type=Path, help="External state JSON path")
+    parser.add_argument(
+        "--record",
+        action="store_true",
+        help="Record the current observation baseline after a successful disposition",
+    )
+    args = parser.parse_args()
+
+    repo = args.repo.expanduser().resolve()
+    source, source_errors = discover(repo / "skills")
+    prior = load_state(args.state.expanduser()) if args.state else {}
+    prior_profiles = prior.get("profiles", {}) if isinstance(prior.get("profiles", {}), dict) else {}
+
+    profiles: dict[str, dict[str, Package]] = {}
+    errors = list(source_errors)
+    for profile_name, profile_path in args.profile:
+        resolved = profile_path.resolve()
+        found, profile_errors = discover(resolved / "skills")
+        profiles[profile_name] = found
+        errors.extend(f"{profile_name}: {message}" for message in profile_errors)
+
+    candidates = []
+    all_names = sorted(set(source).union(*(set(skills) for skills in profiles.values())))
+    for skill_name in all_names:
+        source_package = source.get(skill_name)
+        variants: dict[str, list[str]] = {}
+        for profile_name, profile_packages in profiles.items():
+            package = profile_packages.get(skill_name)
+            if not package:
+                continue
+            variants.setdefault(package.digest, []).append(profile_name)
+            old_digest = (
+                prior_profiles.get(profile_name, {})
+                .get(skill_name, {})
+                .get("digest")
+            )
+            differs = source_package is None or package.digest != source_package.digest
+            newly_observed = package.digest != old_digest
+            if differs:
+                candidates.append(
+                    {
+                        "skill": skill_name,
+                        "profile": profile_name,
+                        "profile_digest": package.digest,
+                        "source_digest": source_package.digest if source_package else None,
+                        "newly_observed": newly_observed,
+                        "classification": "profile-only" if source_package is None else "divergent",
+                    }
+                )
+        if len(variants) > 1:
+            for candidate in candidates:
+                if candidate["skill"] == skill_name:
+                    candidate["multiple_profile_variants"] = True
+
+    observed_at = datetime.now(timezone.utc).isoformat()
+    snapshot = {
+        "initialized_at": prior.get("initialized_at") or observed_at,
+        "observed_at": observed_at,
+        "repo": str(repo),
+        "source": {name: asdict(package) for name, package in sorted(source.items())},
+        "profiles": {
+            profile: {name: asdict(package) for name, package in sorted(packages.items())}
+            for profile, packages in sorted(profiles.items())
+        },
+        "candidates": candidates,
+        "errors": errors,
+    }
+
+    if args.record:
+        if not args.state:
+            parser.error("--record requires --state")
+        if errors:
+            raise SystemExit("refusing to record an inventory with discovery errors")
+        atomic_json_write(args.state.expanduser(), snapshot)
+
+    json.dump(snapshot, fp=sys.stdout, indent=2, sort_keys=True)
+    print()
+    return 0 if not errors else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

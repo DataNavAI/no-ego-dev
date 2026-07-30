@@ -137,6 +137,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `project-knowledge-organization`: keeps project decisions, notes, and artifacts organized.
 - `skill-creator`: creates or adapts Hermes skills.
 - `eval-creator`: creates evals for skills and workflows.
+- `profile-skill-harvester`: consolidates reusable updates from live NED profiles into the canonical repository, scopes contradictory guidance by product stage and use case, and publishes only validated complete skill packages.
 
 ## Built with NED
 
