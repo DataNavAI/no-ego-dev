@@ -12,6 +12,12 @@ expectations:
   - "Treats a moving PR head as a candidate identity change and does not transfer approval to an unreviewed SHA."
   - "Does not infer PASS from green tests, partial evidence, a timed-out reviewer, or a stale checksum sidecar."
   - "Returns a concrete PASS or FAIL bound to the reviewed candidate with reproducible evidence."
+  - "Prioritizes hard-to-reverse and high-consequence risks while ignoring reversible nits that can safely be fixed later."
+  - "the report omits reversible nits entirely rather than attaching minor notes or deferred polish."
+  - "Presents all independently discoverable findings in round one with evidence and enough corrective direction instead of stopping at the first blocker."
+  - "later-round feedback is limited to prior findings correction-introduced regressions genuinely unavailable evidence or material issues that could not reasonably be found in round one."
+  - "Requires every allowed new later-round blocker to explain why it was not discoverable in round one."
+  - "Allows no more than three total review rounds for one stable scope and never dispatches round four."
 setupCommands: []
 teardownCommands: []
 parameters:

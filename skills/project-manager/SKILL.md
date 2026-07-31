@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.14.0
+version: 0.15.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -17,6 +17,18 @@ metadata:
 Operate the project loop. Break work into objectively verifiable milestones, create issue-managed tasks, kick off subagents, inspect completion evidence, and create follow-up work when reality diverges from the plan. Direct user requests become issue-managed work and are executed by focused subagents by default.
 
 The project manager also owns the routine service status loop for live projects: schedule recurring checkups, gather product-side and devops-side updates, summarize health for the user at least once per day, send periodic status-report emails when configured, and convert findings into prioritized issue-managed work.
+
+## Risk-weighted review convergence
+
+Every review workflow uses **Risk-weighted review**: prioritize hard-to-reverse or high-consequence decisions and defects, including public contracts, destructive migrations, security/privacy/authorization, money, critical journeys, infrastructure commitments, and weak rollback. Reversible nits, stylistic preferences, cosmetic polish, and optional refactors that can safely be fixed later are non-blocking and must not consume a review round.
+
+Require **first-round completeness**. **Round 1** is the comprehensive pass and returns all independently discoverable Critical/Important or otherwise material findings in one deduplicated, evidence-backed steering packet; reviewers inspect the complete authorized scope and bounded sibling instances instead of stopping at the first defect. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** is final. New later-round feedback is permitted only for unresolved prior findings, changes introduced by remediation, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must include `Why it was not discoverable in round 1: <cause>`.
+
+**No round 4** is allowed for the same stable artifact lineage or implementation scope. If Round 3 cannot approve, preserve the exact unresolved hard-to-reverse decisions and options, block the candidate, and escalate to the user/owner. Do not reset the count by renaming, changing reviewer roles, splitting review kinds, or obtaining human authorization for another autonomous cycle. Materially new owner-approved requirements form a new scope; corrections to the same findings do not.
+
+### Canonical round accounting
+
+**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all earlier commit-bound verdicts.
 
 ## Milestone Rules
 
@@ -279,19 +291,21 @@ The project manager orchestrates; it does not personally perform every specialis
 
 Always spawn focused subagents for directly asked actionable tasks and for tasks that require any major NoEgoDev skill/domain. Create/update the linked issue first, then include that issue path/ID in the subagent prompt:
 
-- Product management / PRD / user story / scope decisions → spawn a subagent instructed to use `product-manager`. Before assigning another PRD review, verify the durable review index and enforce both the three-round stable-scope escalation and the absolute 10-round lifetime cap per product/feature PRD lineage. Never reset the lifetime count through renaming, scope labels, parallel review types, or reviewer retries; at the cap, block further review dispatch and escalate the recurring findings and decision options to the user.
+- Product management / PRD / user story / scope decisions → spawn an authoring subagent instructed to use `product-manager`; once the PRD is frozen, dispatch a separate `prd-reviewer` fresh review-only leaf that did not author or edit the candidate.
 - Marketing / launch planning / channel strategy / sincere outreach / app-store listing copy, ASO, localization, or ads → spawn a subagent instructed to use `marketer`.
 - Agent/project identity, Gmail/Google account setup, OAuth/delegated access, signed-in browser SSO, or email identity for communications → spawn a subagent instructed to use `agent-identity-and-access`.
 - Google Play Console UI publishing / AAB upload / internal testing / tester lists / rollout status → spawn a subagent instructed to use `play-store-publisher` when that skill is available; coordinate with `marketer` only for listing/ad/user-acquisition work.
 - Google Play CLI/API automation / fastlane supply / EAS Submit / Gradle Play Publisher / Play service account setup → spawn a subagent instructed to use `play-store-cli` when that skill is available; coordinate with `devops` for CI secret storage and pipelines.
-- UI guidelines / design systems / screen/state planning / visual UX review / UI bug triage → spawn a subagent instructed to use `ui-designer`.
+- UI guidelines / design systems / screen/state planning / UI bug triage → spawn an authoring subagent instructed to use `ui-designer`; once the guideline and frozen evidence are ready, dispatch a separate `ui-reviewer` fresh review-only leaf that did not author or edit the candidate.
 - React Native app setup / Expo or React Native CLI implementation / Metro / Android Studio + SDK setup / emulator testing → spawn a subagent instructed to use `react-native-app-dev` when that skill is available, otherwise use `coder` with explicit React Native mobile context.
 - Native Android app implementation / Gradle / Jetpack Compose / emulator testing / Play Store packaging/build artifacts → spawn a subagent instructed to use `android-app-dev` when that skill is available, otherwise use `coder` with explicit Android context.
-- Architecture / technical spec / system design / repo bootstrap decisions → spawn a subagent instructed to use `architect`. Before assigning another technical review, verify the durable review index, enforce the three-round stable-scope escalation and absolute 10-round lifetime cap, and inspect reviewer finding routing. If `Architecture revisions required: none`, route implementation/security/QA and BUILD_REQUIRED work to downstream issues and proceed to implementation; do not request another design review merely because code, staging, monitoring, or release evidence remains.
+- Architecture / technical spec / system design / repo bootstrap decisions → spawn an authoring subagent instructed to use `architect`; once the design is frozen, dispatch a separate `technical-design-reviewer` fresh review-only leaf that did not author or edit the candidate. Before assigning another technical review, verify the durable lineage/round index, enforce the absolute maximum of three total review rounds for the stable technical-design scope, and inspect reviewer finding routing. If `Architecture revisions required: none`, route implementation/security/QA and BUILD_REQUIRED work to downstream issues and proceed to implementation; do not request another design review merely because code, staging, monitoring, or release evidence remains.
 - Browser/web game architecture, performant game engine selection, gameplay systems, engine-specific skill discovery/creation, or game performance planning → spawn a subagent instructed to use `web-game-dev`, usually paired with or before `architect` finalizes the tech spec.
 - Coding / tests / refactors / implementation / bug fixing → spawn one or more subagents instructed to use `coder`.
 - DevOps / CI/CD / deployment / observability / infrastructure / runbooks → spawn a subagent instructed to use `devops`.
 - QA / smoke tests / feature test plans / UI regression checks / release verification → spawn a subagent instructed to use `qa`.
+
+Every domain-review dispatch must include the exact artifact identity, lineage and shared round number, complete required-review-kind set, authoritative contract and evidence, and a unique durable report location. The reviewer is read-only and fail-closed: it must not modify the candidate, and missing identity/lineage/evidence yields a blocking receipt rather than an inferred approval.
 
 Every completed implementation task must get a follow-up QA task unless it was documentation-only or explicitly non-user-facing. The QA task should reference the implementation issue/PR, the affected feature test plan, target environment, and required report destination.
 
@@ -312,7 +326,7 @@ For implementation review/fix loops, use [`references/implementation-review-conv
 - Pin every review to exact base/head SHAs and verify the remote head before acting.
 - Require early pushed checkpoints from long fix workers. If a worker times out, classify it as `interrupted`, inspect remote branches/PRs/commits/worktrees, and compare the branch SHA to its immutable base before claiming recovery. Continue an existing checkpoint; when no artifact exists, record that on the issue and split independently testable outcomes into dependency-ordered children instead of retrying the same oversized assignment.
 - Split oversized corrections into non-overlapping branches, integrate them into the original PR, and expect contract-boundary integration REDs even when each branch was independently green.
-- Default to at most two autonomous correction cycles for one stable implementation scope. Every correction creates a new SHA and requires fresh independent exact-SHA review before merge. If the final allowed review finds another bypass, do not patch-and-merge or enter an unbounded correction loop: freeze the finding and escalate/block the candidate. A human-authorized continuation may start a new bounded cycle, but tests or scanners never substitute for independent review of changed bytes.
+- Allow at most three total review rounds for one stable implementation scope: the comprehensive initial review plus at most two correction re-reviews. Every correction creates a new SHA and requires fresh independent exact-SHA review before merge; that review must occur within the three-round cap. If Round 3 finds another blocker, do not patch-and-merge or dispatch Round 4: freeze the finding and escalate/block the candidate; tests or scanners never substitute for independent review of changed bytes.
 - Never merge while an exploit still reproduces, exact-commit evidence is missing, or residual risk remains material.
 - For public artifact boundaries, require more than path/hash closure: semantically validate structured outputs, detect provider/generic credentials in text assets, reproduce reviewer attacks, and run an external secret scanner when available.
 - For generated images/exports or other security-sensitive outputs, reject caller-owned object graphs at the boundary when feasible: accept bounded primitive JSON text, parse once, validate/freeze one snapshot, derive bytes/filenames only from it, and regression-test alternating Proxies with zero trap invocation.

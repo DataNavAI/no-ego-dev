@@ -12,6 +12,9 @@ expectations:
   - "Triages reproducible findings from a stale older-SHA review against the current candidate without transferring its verdict."
   - "Keeps the next sequential task blocked until every required gate passes at the final exact SHA."
   - "Preserves repository cleanliness and candidate identity after verification."
+  - "Prioritizes hard-to-reverse high-consequence findings and excludes safely reversible nits from blocking review."
+  - "Requires comprehensive Round 1 findings with enough correction direction and limits later feedback to prior findings remediation regressions unavailable evidence or otherwise undiscoverable material issues."
+  - "Keeps exact-SHA gates but permits no more than three total review rounds for one stable scope and blocks rather than creating a Round 4 candidate."
 setupCommands: []
 teardownCommands: []
 parameters:

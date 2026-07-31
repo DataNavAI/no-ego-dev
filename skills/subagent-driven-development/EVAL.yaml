@@ -13,6 +13,10 @@ expectations:
   - "Recovers remote branches, commits, PRs, reports, and isolated residue before replacing a timed-out implementer or reviewer."
   - "Does not mutate a shared worktree while a writer or snapshot reviewer is using it."
   - "Runs a final integration review and canonical verification before declaring the plan complete."
+  - "Uses risk-weighted review so hard-to-reverse and high-consequence changes receive depth while reversible nits do not block."
+  - "Makes Round 1 comprehensive and returns all independently discoverable Critical/Important or otherwise material findings with enough direction in one correction matrix."
+  - "Limits later-round new feedback to correction regressions unavailable evidence or material issues not reasonably discoverable in Round 1 and records why."
+  - "Stops after three total review rounds for one stable scope and blocks or escalates instead of dispatching Round 4."
 setupCommands: []
 teardownCommands: []
 parameters:

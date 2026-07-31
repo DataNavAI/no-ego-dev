@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans via delegate_task subagents (2-stage review)."
-version: 1.4.0
+version: 1.5.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -22,6 +22,18 @@ Execute implementation plans by dispatching fresh subagents per task with system
 **Bounded review principle:** Fresh context does not mean repeated execution of the same unchanged candidate. Every review stage has a fixed budget, a durable attempt-scoped result, and an exact `(candidate SHA, review kind)` identity. Reserve the final 20% for report closure. Reuse verified exact-SHA CI for broad coverage, run only missing focused/adversarial checks, and return `INCOMPLETE` rather than timing out without evidence. A valid negative verdict routes one fixer; it is not retried against the same SHA.
 
 For scheduled controllers, never rely on async completion reinjection. Dispatch at most one reviewer per run, require a durable external report or marked tracker comment, end as `REVIEW_PENDING`, and reconcile the durable sink before the next retry. Attach only the controller skill to the cron job by default; each child loads its role-specific review skills so the parent does not begin with an oversized repeated context.
+
+## Risk-weighted review convergence
+
+Apply **Risk-weighted review** across specification, quality, domain, and integration gates. Reviewers spend their deepest effort on hard-to-reverse or high-consequence changes—public contracts, migrations, destructive data paths, authorization/privacy/security, payments, infrastructure commitments, critical journeys, and decisions without credible rollback. Reversible nits such as naming taste, cosmetic formatting, optional refactors, and minor polish do not block and do not justify another round.
+
+Enforce **first-round completeness**. **Round 1** must inspect the full authorized scope, follow every bounded sibling instance of a discovered issue class, and return all independently discoverable Critical/Important or otherwise material findings in one deduplicated correction matrix with evidence and enough direction for the author to fix the class rather than one symptom. **Round 2** verifies those dispositions and correction-introduced regressions. **Round 3** is the final review. Later-round feedback is limited to unresolved prior findings, correction-introduced regressions, genuinely unavailable evidence, or a material defect that could not reasonably have been found earlier; every new blocker states `Why it was not discoverable in round 1: <cause>`.
+
+**No round 4** is dispatched for the same stable scope or lineage. If Round 3 is not approved, keep the candidate blocked and escalate the unresolved hard-to-reverse decision, residual risk, or scope choice. A changed SHA still requires exact-SHA review, but the round cap means no post-round-3 patch-and-review loop; tests and scanners cannot waive the unresolved gate.
+
+### Canonical round accounting
+
+**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all prior commit-bound verdicts.
 
 ## When to Use
 
@@ -183,14 +195,13 @@ delegate_task(
     OUTPUT FORMAT:
     - Critical Issues: [must fix before proceeding]
     - Important Issues: [should fix]
-    - Minor Issues: [optional]
     - Verdict: APPROVED or REQUEST_CHANGES
     """,
     toolsets=['file']
 )
 ```
 
-**If quality issues found:** Fix issues, re-review. Continue only when approved.
+**If quality issues found:** Fix the complete round-1 correction matrix and re-review, for no more than three total rounds. Continue only when approved.
 
 #### Step 4: Mark Complete
 
@@ -278,9 +289,9 @@ git add -A && git commit -m "feat: complete [feature name] implementation"
 
 - Implementer subagent (or a new one) fixes them.
 - Reviewer reviews again.
-- Repeat until approved; do not skip the re-review.
+- Re-review only through Round 3; do not skip required exact-SHA review and do not dispatch Round 4.
 - `REQUEST_CHANGES` remains blocking even when production behavior is already correct and the only gap is durable regression coverage. Add the missing tests, report honestly when they pass immediately against an existing fix, and rerun the reviewer that raised the gap.
-- If a follow-up commit changes tests only and leaves the previously spec-approved production contract untouched, rerun the focused quality review against the final commit. Rerun spec review too only when the tests reveal or encode a contract change; do not perform ceremonial duplicate reviews.
+- A test-only correction changes the commit SHA and can alter or weaken the asserted contract. Therefore rerun every required exact-SHA review kind against the final commit; no earlier commit-bound specification, quality, domain, or integration verdict transfers.
 
 ### If a Reviewer Times Out or Returns No Verdict
 

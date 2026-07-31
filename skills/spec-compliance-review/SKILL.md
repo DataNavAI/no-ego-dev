@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.6.0
+version: 1.7.0
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -14,6 +14,29 @@ metadata:
 Use this skill when the user asks for an independent spec audit, immutable commit review, release-gate review, or exact PASS/FAIL verdict against written requirements.
 
 **Core principle:** Passing tests are evidence, not the contract. Build an explicit requirement matrix from the authoritative plan, technical specification, failure matrix, and acceptance checklist, then seek false-success cases.
+
+## Risk-weighted review priority
+
+Prioritize findings by consequence and reversibility, not by how many comments can be produced. Spend the deepest review effort on decisions that are **hard to reverse** or expensive to unwind: destructive data or schema changes, public contracts and migrations, authentication/authorization, privacy and security boundaries, money movement, compliance commitments, infrastructure lock-in, broad blast radius, and choices without a credible rollback. Also block an immediately severe correctness or safety defect even when its patch is mechanically small.
+
+Do not block on reversible nits that can safely be fixed later: naming preferences, cosmetic formatting, optional refactors, minor wording, speculative abstractions, or polish that does not alter the contract, critical journey, safety, or rollback posture. **Omit them entirely** from review findings; never create a follow-up note or another review round for them. Severity is the combination of consequence, reversibility, and evidence—not reviewer taste.
+
+## First-round completeness
+
+**Round 1 is the comprehensive review.** Inspect the complete authorized scope and present all independently discoverable findings in round one as much as possible. Do not stop after the first blocker. Use the requirement/failure matrix, inspect related instances of every discovered defect class, deduplicate overlaps, and give the author one coherent correction set with evidence, impact, and the smallest safe direction—not a sequence of surprises.
+
+Rounds 2 and 3 are disposition and regression checks. Later-round feedback is limited to unresolved round-1 findings, regressions or risks introduced by the correction, evidence that was genuinely unavailable in round 1, or a Critical/Important defect that could not reasonably have been discovered in the original frozen scope. Every newly raised later-round blocker must include `Why it was not discoverable in round 1: <cause>`. Do not introduce new preferences, reversible nits, or unrelated review surfaces after the author has followed the first report.
+
+## Three-round maximum
+
+- **Round 1:** complete risk-weighted review and a sufficiently detailed correction map.
+- **Round 2:** verify dispositions on the corrected immutable candidate and report only allowed later-round findings.
+- **Round 3:** final independent verification of the remaining correction set and correction-introduced regressions.
+- **No round 4** for the same stable scope or artifact lineage. If round 3 cannot approve, keep the candidate blocked and escalate the unresolved hard-to-reverse decision, residual risk, or scope choice to the user/owner. Renaming the candidate, changing reviewers, or splitting the same findings across review kinds does not reset the count. Materially new requirements create a new scope only when the owner explicitly accepts that new review contract.
+
+## Mandatory review lineage gate
+
+**Before substantive review**, require an authenticated controller receipt containing `lineage`, requested round (`1`–`3`), `candidate_identity`, `review_kind`, and `required_review_kinds`. If any field is **missing or ambiguous**, return `BLOCKED_INVALID_LINEAGE` without reviewing. A requested **Round 4** returns `ITERATION_LIMIT_REACHED` without substantive review. Every durable result must repeat all receipt fields plus the verdict; all required review kinds for one candidate share its round number.
 
 ## Scope and immutability
 
@@ -230,7 +253,7 @@ A timeout or missing completion summary does not make a surviving report trustwo
 
 Use the user's requested verdict vocabulary exactly, including paired forms such as `APPROVED` / `CHANGES REQUIRED`. If none is specified, begin with exactly `PASS` or `FAIL`.
 
-When the user requests a blocker-only verdict, put the verdict first and include only concrete release blockers. Omit positive findings, general commentary, verification summaries, recommendations, and non-blocking polish unless needed to establish a blocker. If the candidate passes, return only the requested positive verdict token (for example, `APPROVED` or `PASS`) unless the user explicitly requests additional metadata. Do not append “no blockers,” cleanliness summaries, or low-polish notes merely to show work. For each blocker, preserve only the evidence essentials: severity, violated requirement, file/line range, observed reproducer, and consequence.
+When the user requests a blocker-only chat verdict, put the verdict first and include only concrete release blockers. Omit positive findings, general commentary, verification summaries, recommendations, and non-blocking polish unless needed to establish a blocker. A passing chat response may contain only the requested token, but the reviewer must first persist a durable receipt containing `lineage`, requested round, `candidate_identity`, `review_kind`, `required_review_kinds`, verdict, and reviewer/evidence identity. Do not append “no blockers,” cleanliness summaries, or low-polish notes merely to show work. For each blocker, preserve only the evidence essentials: severity, violated requirement, file/line range, observed reproducer, and consequence.
 
 When the user did **not** request blocker-only output, then list as applicable:
 

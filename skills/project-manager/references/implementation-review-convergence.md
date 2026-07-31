@@ -31,12 +31,16 @@ Late arrival order is not priority. Candidate identity, report integrity, and re
 
 ## Bounded correction loop
 
-Default maximum for one stable implementation scope: two autonomous correction cycles. Every changed SHA still requires a fresh independent review before merge.
+Absolute maximum for one stable implementation scope: three total review rounds. Every changed SHA still requires fresh independent review within that cap before merge.
 
-- Cycle 1 reviews the immutable candidate and returns closed findings.
-- Add one regression test per finding and apply a bounded correction.
-- Cycle 2 re-reviews the corrected immutable commit and actively reproduces prior attacks.
-- If the final allowed review finds one new narrow bypass, do not patch-and-merge an unreviewed SHA and do not create an open-ended autonomous loop. Reproduce and record it, keep the candidate blocked, and escalate the complete finding. A human-authorized continuation may apply the regression-first minimal fix and begin a new bounded cycle, whose resulting SHA must receive fresh independent review.
+One review round is one immutable candidate generation, not one reviewer invocation. Every required review kind against that candidate shares the same round number whether scheduled sequentially or concurrently; timeout replacements stay in that round. Persist the complete required-review-kind set and outcomes in a receipt keyed by lineage, round, and candidate SHA. A corrected candidate increments the round.
+
+- **Round 1** reviews the immutable candidate comprehensively, prioritizes hard-to-reverse/high-consequence risk, follows bounded sibling instances of each defect class, and returns all independently discoverable findings in one closed correction matrix. Reversible nits do not block or create follow-up rounds.
+- Add one regression test per blocking finding and apply a bounded correction.
+- **Round 2** re-reviews the corrected immutable commit, dispositions the complete round-1 matrix, and actively reproduces prior attacks.
+- **Round 3** is the final review for unresolved findings and correction-introduced regressions.
+- Later-round new blockers are allowed only for correction-introduced changes, genuinely unavailable evidence, or material defects that could not reasonably have been found in Round 1, and must state `Why it was not discoverable in round 1: <cause>`.
+- **No round 4.** If the final review finds another blocker, do not patch-and-merge and do not start another bounded cycle. Reproduce and record it, keep the candidate blocked, and escalate the complete hard-to-reverse decision, residual risk, or scope choice.
 - Never merge if the exploit still reproduces, residual uncertainty is material, or exact-commit evidence is missing; escalate instead.
 
 ## Public artifact security pattern
