@@ -77,7 +77,7 @@ Keep the decision easy to route:
 2. Comparative scorecard.
 3. Why the winner wins.
 4. Why each alternative loses.
-5. `PASS`, `PASS WITH MINOR POLISH`, `NEEDS ITERATION`, or `BLOCKED` for implementation readiness.
+5. `PASS`, `NEEDS ITERATION`, or `BLOCKED` for implementation readiness; omit safely reversible minor polish rather than reporting it.
 6. Exact changes required before implementation.
 7. Evidence inspected and verification performed.
 

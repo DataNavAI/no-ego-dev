@@ -105,7 +105,7 @@ A checked-in attestation can bind exact product/review bytes while its generic v
 
 ### Finding-disposition truth
 
-For every claimed prior-finding disposition, inspect the actual current artifact named by the disposition. A table saying “runbook corrected,” “workflow replaced,” or “schema frozen” is not evidence when the runbook/workflow/schema still contains the stale authority. Classify the underlying impact (often a handoff-quality LOW, but higher when the stale path can execute or authorize) and never convert an asserted disposition into closure without byte-level verification.
+For every claimed prior-finding disposition, inspect the actual current artifact named by the disposition. A table saying “runbook corrected,” “workflow replaced,” or “schema frozen” is not evidence when the runbook/workflow/schema still contains the stale authority. If the underlying impact is only safely reversible handoff polish, omit it; otherwise classify the material consequence and never convert an asserted disposition into closure without byte-level verification.
 
 ## Executable-CI integrity
 
