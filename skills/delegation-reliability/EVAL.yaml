@@ -1,0 +1,18 @@
+prompt: |
+  A parent Hermes session dispatched two implementation subagents. One reports completed but only an early commit is on the remote branch; the other timed out after being asked to write a checksum-closed review report. The active-agent view is now empty, the project still has runnable dependency-safe work, and the user does not want a duplicate persistent queue.
+
+  Use the delegation-reliability skill to explain and execute the safe recovery and continuation approach. Distinguish runtime state, durable artifacts, review verdicts, and downstream authorization.
+expectations:
+  - "Does not treat a delegation handle, completed status, empty active-agent view, or self-report as proof that the requested deliverable exists."
+  - "Inspects the remote branch/commit/PR, shared checkout, isolated worker residue, and exact requested report/checksum paths before re-dispatching."
+  - "Classifies completed-with-partial-deliverable and timed-out-with-recovered-artifact states separately from task verdicts."
+  - "Verifies immutable identities, report bytes, checksums, and explicit verdicts before releasing dependencies."
+  - "Uses unique attempt-scoped artifact paths and reconciles late results without overwriting evidence."
+  - "Uses hook-only continuation with the canonical external tracker because the user rejected a duplicate queue, while stating that this mode is process-local."
+  - "Keeps at least one real worker active when runnable dependency-safe work remains, without racing overlapping writers or mutating a frozen review target."
+  - "Uses separate single-task delegations when each completion must trigger independent continuation rather than relying on batch first-finisher behavior."
+  - "Does not recursively schedule agents from a cron watchdog and keeps healthy watchdog output silent."
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

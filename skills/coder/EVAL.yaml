@@ -4,6 +4,8 @@ expectations:
   - "mentions durable artifact"
   - "includes verification"
   - "avoids vague next steps"
+  - "does not add explanatory user facing text that is absent from the PRD design artifacts tech spec linked issue or explicitly referenced existing pattern"
+  - "flags missing UI copy or microcopy specifications instead of inventing text"
 setupCommands: []
 teardownCommands: []
 parameters:

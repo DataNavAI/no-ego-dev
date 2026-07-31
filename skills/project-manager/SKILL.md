@@ -1,12 +1,13 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.5.7
+version: 0.13.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
-    tags: [no-ego-dev, software-development]
+    tags: [no-ego-dev, software-development, artifact-review]
+    related_skills: [reviewable-artifacts]
 ---
 
 # Project Manager
@@ -19,11 +20,64 @@ The project manager also owns the routine service status loop for live projects:
 
 ## Milestone Rules
 
-- Each milestone has one objectively verifiable goal.
-- Each task is small enough for one focused branch/PR.
+- Never represent a broad product outcome, feature area, architecture package, release, or multi-surface request as one implementation task. Create a milestone/epic parent instead; the parent coordinates scope and progress but is not itself the unit assigned for implementation.
+- Before creating work, classify the request as either:
+  - **Small task:** one independently verifiable outcome, one primary side-effect domain, and one focused branch/PR.
+  - **Milestone/epic:** anything spanning multiple outcomes, components, authorities, interfaces, specialists, or independently testable acceptance criteria.
+- Each milestone has one objectively verifiable user/project goal and a detailed dependency-ordered child-task backlog before execution begins.
+- Each child task is deliberately small enough for one focused worker and one focused branch/PR. If its title or acceptance criteria contain multiple independently shippable outcomes, split it again.
+- Every child task names: exact outcome, affected files/components or interface, dependencies, owner/specialist, explicit exclusions, objective acceptance checks, targeted tests/QA, and evidence required for closure.
+- Use separate children for deterministic core logic, integration/orchestration, UI, migration/data, analytics, deployment/operations, and independent QA whenever those concerns can be verified separately.
+- If decomposition depends on an unknown, create a bounded spike/research child with a decision artifact; do not hide discovery inside a large implementation task.
+- Show the hierarchy before execution: milestone count, child implementation count, QA count, release-gate count, dependency order, and which small children are currently unblocked.
 - Tasks link to PRDs/specs and have acceptance checks.
 - Completion requires evidence, not just a worker saying “done”.
+- A pending asynchronous review blocks only that branch's merge or production deployment. Keep the active milestone moving by dispatching another dependency-safe, non-overlapping child in an isolated branch/worktree when one exists; do not start a later milestone, overlap generated-output ownership, or ignore a late blocking verdict merely to avoid idle time.
+- When the user expects autonomous continuation after worker-state changes and prefers no duplicate queue, keep GitHub/Linear canonical and use hook-only continuation: separate single-task `delegate_task` calls, async completion delivery back into the parent session, direct evidence verification, live tracker reconciliation, then immediate kickoff of the next dependency-safe task. `subagent_stop` is observer-only; child status cannot complete work or release dependencies, and batched delegation is not a first-finisher event stream. State the process-local trade-off honestly: gateway/parent interruption can lose active children or their callback, so recover remote artifacts before resuming. Use Hermes Kanban only when unattended restart durability materially outweighs queue duplication and the user accepts it. Load `delegation-reliability` and follow `references/harness-completion-hooks.md`.
+- When GitHub, Linear, or another tracker already owns the issue backlog, do **not** maintain a second copy of issue bodies in Kanban. Keep external issues canonical and use thin idempotent Kanban cards for execution state, machine-readable dependency edges, worktree/assignee routing, retries, and evidence handoff. Workers re-read the live issue before editing and update the external issue/PR plus Kanban completion as one reconciled handoff. Follow [`references/canonical-issues-thin-kanban-queue.md`](references/canonical-issues-thin-kanban-queue.md).
 
+## Epic Decomposition and Progress Truthfulness
+
+Architecture milestones and broad implementation packages are **epics**, not development tasks. Before implementation begins on an epic:
+
+1. Re-read the full parent acceptance criteria and mandatory end task.
+2. Create durable child implementation issues, each sized for one focused branch/PR with an owner, dependencies, acceptance tests, exclusions, and required evidence.
+   - Before dispatch, apply the **separability test**: if the proposed child contains two or more independently verifiable authorities or side-effect domains—such as pure artifact generation, controller/browser orchestration, analytics delivery, deployment, or supported-interface QA—split them into dependency-ordered children even if the work was already labeled a “child.”
+   - Prefer a pure deterministic core child first, an integration/orchestration child second, and an independent QA child last when those layers can land separately.
+3. Create a linked QA child for every user-facing implementation child.
+4. Treat branches, PRs, and parent comments as execution evidence—not substitutes for child issues.
+5. Keep the parent open until every acceptance criterion maps to landed child work plus required QA/release evidence.
+
+When asked how many tasks remain, report epic count, child-task count, QA count, and release gates separately. Never call the number of open epics the number of remaining dev tasks. If children do not exist, say that a truthful task-level count is unavailable and decompose the epics before implementation or percentage reporting.
+
+After the apparent final PR merges, verify immutable main and perform a fresh parent-closure audit against every named acceptance output. A clean PR review proves that PR scope, not parent completeness. Create a missing child issue rather than closing the parent when any output is absent.
+
+Detailed procedure and examples: [`references/epic-decomposition-and-progress-counting.md`](references/epic-decomposition-and-progress-counting.md).
+
+When an accepted mock is photo-rich but production ships fallback-only or abstract visuals, use [`references/photo-rich-mock-to-production-recovery.md`](references/photo-rich-mock-to-production-recovery.md). Diagnose the exact media/build boundary, then split the correction into rights-bound deterministic media, UI integration, and independent visual/media QA children. Update the parent objective, dependencies, counts, and status truth; do not collapse these separate authorities into one “add pictures” task.
+
+For converting an existing GitHub backlog into native milestones/sub-issues, removing circular implementation-vs-release-QA dependencies, verifying exact label/count/hierarchy readback, and handling audit-discovered backlog deltas without stale `STATUS.md` claims, use [`references/native-github-milestone-decomposition.md`](references/native-github-milestone-decomposition.md).
+
+### Immutable parent-closure acceptance audits
+
+When the apparent final implementation has merged, audit the parent criterion-by-criterion from a fresh detached default-branch checkout before closing anything. Classify each independently testable row as `PASS`, `MISSING`, or `MOVED_TO_<later milestone>`; split implementation behavior from staged-candidate/supported-interface release QA rather than moving a compound criterion wholesale. Search runtime source and tests for every named CUJ's route wiring, activation/completion events, value moment, and recovery path—a schema fixture or adjacent component test is not proof that the journey exists. Close deepest passing parents in dependency order, stop at the first missing criterion, and draft a small child issue for that exact gap. Re-read live issue bodies, milestone assignments, remote main, and counts immediately before reporting because planning work may have reparented gates during the audit. Preserve later release blockers explicitly and never reinterpret single-browser evidence as supported-interface approval.
+
+Use [`references/immutable-parent-acceptance-audit.md`](references/immutable-parent-acceptance-audit.md) for the full read-only evidence procedure, matrix rules, generated-artifact checks, closure sequencing, and report packet.
+
+### Unresolved and late audit results
+
+A parent-closure matrix is **provisional** while any independent audit or reviewer dispatched for that same closure is unresolved. Do not close the parent, complete the milestone, or start the next milestone merely because the controller's local checks passed first. Keep the immutable target stable where possible and distinguish `running`, `completed`, `interrupted`, and `missing result` explicitly.
+
+When a late result arrives:
+
+1. Verify its immutable revision and durable evidence before using the self-report.
+2. Compare every finding against current repository/GitHub state; do not discard it because planning or docs have moved on.
+3. If it contradicts the provisional matrix, publish an explicit superseding correction, reopen/keep open affected parents, and stop later-milestone work.
+4. Close only deepest independently passing parents in dependency order.
+5. Decompose each material missing criterion by separable authority (for example pure projection, retry-safe analytics, then browser orchestration) rather than recreating one oversized catch-all child.
+6. Update native hierarchy, live counts, coordination issue, and `STATUS.md`; label earlier evidence as provisional/superseded rather than silently rewriting history.
+
+If the audit discovers a historical secret-scan false positive, do not waive the red command. Create a focused exact-fingerprint security child and follow [`references/audit-discovered-secret-scan-exceptions.md`](references/audit-discovered-secret-scan-exceptions.md).
 
 ## Direct User Request Issue and Subagent Rules
 
@@ -31,11 +85,12 @@ When the user directly asks for an actionable project task, create or update an 
 
 For every directly asked task:
 
-1. Create or update a durable issue/task immediately with the original user request, project/repo, scope, acceptance criteria, owner/subagent role, expected evidence, and links to relevant PRDs/specs/files.
-2. If an external issue tracker is configured, use it. Otherwise create a repo-local issue/task artifact under the project's durable knowledge area, such as `.projects/<project>/issues/`, or the active Kanban board if that is the project's issue system.
-3. Spawn the appropriate focused subagent to execute the issue, instructing it to use the matching skill (`product-manager`, `architect`, `coder`, `devops`, `qa`, etc.) and to return evidence, changed paths, test output, PR/commit links, blockers, and follow-up issue suggestions.
-4. After the subagent returns, verify the evidence directly before marking the issue complete or reporting success.
-5. If no delegation/subagent tool is available, still create the issue and write a complete handoff prompt/assignment in it; do not let the task exist only in chat memory.
+1. Apply the milestone-vs-small-task classification before creating the execution issue. If the request is broad, create one coordination-only milestone/epic parent plus the detailed small child issues first; never paste the whole request into one oversized implementation issue and dispatch it.
+2. Create or update the durable child issue/task with the relevant slice of the original user request, project/repo, exact scope and exclusions, dependencies, acceptance criteria, owner/subagent role, targeted tests/QA, expected evidence, and links to relevant PRDs/specs/files.
+3. If an external issue tracker is configured, use it. Otherwise create a repo-local issue/task artifact under the project's durable knowledge area, such as `.projects/<project>/issues/`, or the active Kanban board if that is the project's issue system.
+4. Spawn the appropriate focused subagent to execute only that small child issue, instructing it to use the matching skill (`product-manager`, `architect`, `coder`, `devops`, `qa`, etc.) and to return evidence, changed paths, test output, PR/commit links, blockers, and follow-up issue suggestions.
+5. After the subagent returns, verify the evidence directly before marking the child complete or reporting success.
+6. If no delegation/subagent tool is available, still create the milestone/child hierarchy and write a complete handoff prompt/assignment in each unblocked child; do not let the work exist only in chat memory.
 
 Issue-first execution can be skipped only for pure conversational answers, clarifying questions, or emergency read-only diagnostics where creating an issue would materially delay risk mitigation. If skipped, record the reason and create a follow-up issue once stable.
 
@@ -59,6 +114,64 @@ Progress update — Phase <N>: <phase name>
 - Evidence: <tests, PRs, docs, screenshots, deploy URLs, logs>
 - In progress / next: <next concrete task or subagent batch>
 - Blockers / decisions needed: <none or explicit ask>
+```
+
+## Repository STATUS.md Contract
+
+Every active project repository must maintain a concise living `STATUS.md` at the repository root. This is the user-facing project snapshot and agent handoff surface, not a replacement for issues, PRDs, roadmaps, release notes, or detailed history. Link to those canonical records instead of duplicating them.
+
+### Initialize and update cadence
+
+1. Create `STATUS.md` during new-project bootstrap or when inheriting an active repository that lacks it. Use `templates/STATUS.md` unless the repository already has a stricter compatible template.
+2. Re-read repository, issue, PR/CI, QA, deploy, and monitoring evidence before editing. Never carry forward stale claims or infer health from silence; write `unknown` or `not yet verified` when evidence is unavailable.
+3. Update `STATUS.md` after every **big task** or **milestone**. A big task materially changes product capability, architecture, design direction, delivery/release state, operations, security/data posture, or resolves a major incident/blocker. Do not churn the file for trivial subtasks that do not change the project snapshot.
+4. Update it in the same branch/PR/commit as the milestone when practical. Otherwise create an immediate linked follow-up update. If the status revision cannot be committed or included in the landing PR, send a blocker/progress message, keep the big task or milestone incomplete, and do **not** send a task/milestone-complete message until the gate passes.
+5. Treat the file as a current snapshot: rewrite stale sections, keep recent completed work concise, and move detailed chronology to issues, releases, or changelogs.
+
+### Required content
+
+`STATUS.md` must include:
+
+- Project name and one-sentence outcome.
+- Overall state: `planning`, `active`, `at-risk`, `blocked`, `maintenance`, or `complete`.
+- Last-updated date/time with timezone, updater, and evidence revision when available.
+- Current objective or milestone and its objective acceptance state.
+- Concise current-state summary grounded in evidence.
+- Recently completed big tasks/milestones with issue/PR/commit/QA/deploy links.
+- In-progress work with owner and evidence/task link.
+- Blockers, risks, and decisions needed with owner or decision owner; write `none known` only after checking.
+- Ordered next steps with owner, link, and verifiable completion condition.
+- Canonical links to PRD/roadmap, issue tracker, architecture/design, QA, deploy/runtime, monitoring, and runbooks when applicable.
+
+Do not put secrets, raw logs, speculative promises, copied issue backlogs, or unverified percentages in `STATUS.md`.
+
+### Completion-message link gate
+
+After a big task or milestone is verified:
+
+1. Update and verify `STATUS.md` against the exact completed revision and current open work.
+2. Commit/push the update or include it in the landing PR.
+3. Build and verify the handoff target:
+   - After the update lands, prefer the repository's canonical browser URL on the default branch, such as `https://github.com/<owner>/<repo>/blob/<default-branch>/STATUS.md`, so it continues to show the living snapshot.
+   - Before using a default-branch URL, fetch the remote default branch and verify its `STATUS.md` blob/content contains the just-completed status revision. A local commit or assumed merge is insufficient.
+   - If delivery is still awaiting merge, link the exact pushed PR branch or commit containing the updated file and state `awaiting merge`; never link a stale default-branch copy as though it contains the new status.
+   - Confirm the target resolves in the repository's authenticated collaboration context, points specifically to `STATUS.md`, and renders the updated status revision. For private repositories, also confirm the intended user/collaborator has access; if that cannot be verified, ask/resolve access instead of claiming a user-accessible completion handoff.
+   - Record link-verification evidence: declared handoff kind, URL-derived target ref, fetched default-branch ref, remote/ref or commit, `STATUS.md` blob/hash or unambiguous updated marker, resolution/access check, and check time. The declared kind, URL ref, and fetched ref must agree; labels supplied by the caller are not proof.
+   - If no remote browser URL exists, verify the local file exists and contains the updated revision, then provide the exact repo-relative `STATUS.md` path and local absolute path rather than inventing a URL.
+4. For private GitHub repositories, do not treat an unauthenticated browser or `curl` `404` as proof that a link is broken. Verify issues, PRs, milestones, commits, and file/tree targets through authenticated `gh api` or an authenticated browser context. For an awaiting-merge branch handoff, require local HEAD = pushed ref = PR head, require local and GitHub Contents API `STATUS.md` blob hashes to match, and verify an unambiguous remote content marker.
+5. Run `scripts/validate_status_handoff.py` against the recorded handoff packet when the script is available. It is a fail-closed consistency gate, not a substitute for the actual remote/ref, content, resolution, and access checks.
+6. Include `Project status: [STATUS.md](<verified user-accessible URL>)` in the task/milestone completion message when a browser URL exists. A completion message without the verified status link (or the required verified paths for a local-only repository) does not pass the project-manager completion gate.
+
+For the evidence-first milestone-counting, private-link, exact-head/blob, scope-isolation, and mergeability procedure, use [`references/status-snapshot-pr-verification.md`](references/status-snapshot-pr-verification.md).
+
+Minimum completion-message shape:
+
+```text
+Milestone complete — <name>
+- Outcome: <verified user/project result>
+- Evidence: <PR/commit/tests/QA/deploy links>
+- Project status: [STATUS.md](<user-accessible URL>) or <exact repo-relative and absolute paths for local-only repositories>
+- Next: <highest-priority next step or explicit none>
 ```
 
 ## Workspace and Documentation Source-of-Truth Rules
@@ -95,13 +208,44 @@ git worktree remove /tmp/<repo>-<short-task-name>
 
 Default to keeping durable project-management artifacts in the repository (or the project’s documented knowledge repo) so agents, code review, issues, CI, and future checkouts share one versioned source of truth. This includes PRDs, tech specs, runbooks, UI guidelines, architecture notes, release checklists, QA plans, operational status-report templates, and agent/process instructions.
 
-Use Google Docs or another collaborative doc tool only when the user explicitly needs live human collaboration, comments/suggestions, client-friendly formatting, or non-technical stakeholder review. When Google Docs is used for source collaboration, create or update a repo stub that links to the doc and records owner, status, last reviewed date, and the rule for when content must be mirrored back into the repo. Do not let a Google Doc become an invisible second source of truth for active implementation.
+For Markdown artifacts that need human approval or detailed feedback, load/use `reviewable-artifacts` and default to a draft GitHub pull request: repository Markdown remains canonical, GitHub renders the review surface, the user leaves inline comments beside stable review IDs, and NED reads, addresses, replies to, and resolves threads after verification. If the PR is a temporary review surface rather than a landing vehicle, record mode `REVIEW_ONLY`, use `[REVIEW ONLY — DO NOT MERGE]` plus branch/body/available label markers, assign cleanup ownership, and prohibit merge/auto-merge. After approval, abandonment, or supersession, verify accepted work is preserved, close without merge, remove the review branch/worktree and temporary previews/copies/access/scratch assets, and record cleanup evidence. A file path or chat summary alone is not a review handoff.
+
+Use Google Docs, Figma, or another collaborative tool only when the user explicitly needs its interaction model or the project already uses it. When an external review layer is used, create/update a repo stub that links to it and records owner, status, last reviewed date, canonical source, and sync-back rule. Do not let an external document/design become an invisible second source of truth.
 
 Preferred pattern:
 
-- Repo markdown = canonical implementation/agent source of truth.
-- Google Docs = collaborative review/presentation layer when useful.
-- If both exist, the repo artifact must link to the Google Doc, state which one is canonical for the current phase, and include a task to sync accepted changes back to the canonical location.
+- Repo Markdown/prototype source = canonical implementation and agent source of truth.
+- GitHub draft PR = default rendered review, inline-comment, disposition, and resolution layer.
+- Figma = optional coordinate-pinned visual review layer when already configured.
+- Google Docs = optional non-technical/live coauthoring layer when explicitly useful.
+- Accepted feedback from any external layer must be synced to the canonical repo artifact and recorded in the disposition log.
+
+## Supported Device Interface Coordination
+
+Every user-facing project must maintain a canonical supported device interface registry at `.projects/<project>/product/supported-device-interfaces.yaml`, initialized from the `product-manager` template. The registry distinguishes separately testable interfaces such as desktop web, mobile web, Android, iOS, desktop apps, extensions, and other supported surfaces. A platform parity document does not replace this release-control artifact.
+
+Project-manager responsibilities:
+
+1. Create the registry during product onboarding before implementation milestones are finalized, and assign product-manager as support-scope owner.
+2. Require every PRD, UI plan, architecture spec, implementation issue, QA plan, and release issue to read the current registry and name affected interface IDs.
+3. When interface support, minimum versions, form factors, CUJ availability, or release channels change, create/update the support-decision task and registry in the same milestone.
+4. Create QA coverage work so every `supported` device interface has at least one executable test case. A parameterized shared case is acceptable only with a separate run/result/evidence row for each interface.
+5. Before assigning deployment, app-store submission, rollout, or milestone completion, verify that QA tested every supported interface against the exact release candidate and recorded `PASS` plus durable evidence for every target required by the registry's verification tier.
+6. For low-risk web MVPs, default the registry to `mvp-local` unless the user or a material risk requires `full-certified`. `mvp-local` may use representative local vendor browsers, automated Chromium/Firefox/WebKit, responsive mobile/desktop viewports, accessibility basics, and explicit residual-risk notes. Missing BrowserStack/Sauce/physical-device/current-plus-previous-version evidence becomes a post-launch hardening issue rather than a launch blocker.
+7. Escalate to `full-certified` for contractual/SLA browser matrices, payments, user-identity and permissions behavior, regulated/sensitive data, critical native APIs, known browser-specific defects, or explicit broad compatibility claims.
+8. Block deployment when the registry is missing or stale, an interface is `undecided`, a supported interface lacks a case, or any target required by the selected tier is missing, stale, failed, or blocked. Track optional untested combinations as limitations/follow-up work instead of silently claiming coverage.
+
+Minimum release task evidence:
+
+```text
+Supported-device-interface gate — <release candidate>
+- Registry: .projects/<project>/product/supported-device-interfaces.yaml
+- Supported interfaces: <IDs>
+- Test coverage: <at least one case ID per interface>
+- QA results: <PASS/FAIL/BLOCKED per interface + evidence>
+- Decision: READY | BLOCKED
+- Follow-ups: <issue IDs/owners>
+```
 
 ## Agent Identity and Email Communication Rules
 
@@ -133,7 +277,7 @@ The project manager orchestrates; it does not personally perform every specialis
 
 Always spawn focused subagents for directly asked actionable tasks and for tasks that require any major NoEgoDev skill/domain. Create/update the linked issue first, then include that issue path/ID in the subagent prompt:
 
-- Product management / PRD / user story / scope decisions → spawn a subagent instructed to use `product-manager`.
+- Product management / PRD / user story / scope decisions → spawn a subagent instructed to use `product-manager`. Before assigning another PRD review, verify the durable review index and enforce both the three-round stable-scope escalation and the absolute 10-round lifetime cap per product/feature PRD lineage. Never reset the lifetime count through renaming, scope labels, parallel review types, or reviewer retries; at the cap, block further review dispatch and escalate the recurring findings and decision options to the user.
 - Marketing / launch planning / channel strategy / sincere outreach / app-store listing copy, ASO, localization, or ads → spawn a subagent instructed to use `marketer`.
 - Agent/project identity, Gmail/Google account setup, OAuth/delegated access, signed-in browser SSO, or email identity for communications → spawn a subagent instructed to use `agent-identity-and-access`.
 - Google Play Console UI publishing / AAB upload / internal testing / tester lists / rollout status → spawn a subagent instructed to use `play-store-publisher` when that skill is available; coordinate with `marketer` only for listing/ad/user-acquisition work.
@@ -141,7 +285,7 @@ Always spawn focused subagents for directly asked actionable tasks and for tasks
 - UI guidelines / design systems / screen/state planning / visual UX review / UI bug triage → spawn a subagent instructed to use `ui-designer`.
 - React Native app setup / Expo or React Native CLI implementation / Metro / Android Studio + SDK setup / emulator testing → spawn a subagent instructed to use `react-native-app-dev` when that skill is available, otherwise use `coder` with explicit React Native mobile context.
 - Native Android app implementation / Gradle / Jetpack Compose / emulator testing / Play Store packaging/build artifacts → spawn a subagent instructed to use `android-app-dev` when that skill is available, otherwise use `coder` with explicit Android context.
-- Architecture / technical spec / system design / repo bootstrap decisions → spawn a subagent instructed to use `architect`.
+- Architecture / technical spec / system design / repo bootstrap decisions → spawn a subagent instructed to use `architect`. Before assigning another technical review, verify the durable review index, enforce the three-round stable-scope escalation and absolute 10-round lifetime cap, and inspect reviewer finding routing. If `Architecture revisions required: none`, route implementation/security/QA and BUILD_REQUIRED work to downstream issues and proceed to implementation; do not request another design review merely because code, staging, monitoring, or release evidence remains.
 - Browser/web game architecture, performant game engine selection, gameplay systems, engine-specific skill discovery/creation, or game performance planning → spawn a subagent instructed to use `web-game-dev`, usually paired with or before `architect` finalizes the tech spec.
 - Coding / tests / refactors / implementation / bug fixing → spawn one or more subagents instructed to use `coder`.
 - DevOps / CI/CD / deployment / observability / infrastructure / runbooks → spawn a subagent instructed to use `devops`.
@@ -159,19 +303,33 @@ Subagent prompts must include:
 
 Do not mark subagent work complete from self-report alone. Verify evidence directly: inspect files, run tests, check PR/CI status, read logs, or open the deployed URL as appropriate.
 
+### Recoverable implementation review and bounded correction
+
+For implementation review/fix loops, use [`references/implementation-review-convergence.md`](references/implementation-review-convergence.md).
+
+- Pin every review to exact base/head SHAs and verify the remote head before acting.
+- Require early pushed checkpoints from long fix workers. If a worker times out, classify it as `interrupted`, inspect remote branches/PRs/commits/worktrees, and compare the branch SHA to its immutable base before claiming recovery. Continue an existing checkpoint; when no artifact exists, record that on the issue and split independently testable outcomes into dependency-ordered children instead of retrying the same oversized assignment.
+- Split oversized corrections into non-overlapping branches, integrate them into the original PR, and expect contract-boundary integration REDs even when each branch was independently green.
+- Default to at most two independent review cycles for one stable implementation scope. A new narrow bypass found in cycle two receives exact reproduction, a regression-first minimal fix, full canonical verification, and an external deterministic check where applicable—not an unbounded third review loop.
+- Never merge while an exploit still reproduces, exact-commit evidence is missing, or residual risk remains material.
+- For public artifact boundaries, require more than path/hash closure: semantically validate structured outputs, detect provider/generic credentials in text assets, reproduce reviewer attacks, and run an external secret scanner when available.
+- For generated images/exports or other security-sensitive outputs, reject caller-owned object graphs at the boundary when feasible: accept bounded primitive JSON text, parse once, validate/freeze one snapshot, derive bytes/filenames only from it, and regression-test alternating Proxies with zero trap invocation.
+- For mobile containment, do not stop at `document.scrollWidth`: use a maximum-length schema-valid label at the minimum supported width and compare child bounds plus component `scrollWidth/clientWidth`; `overflow:hidden` can conceal clipping while page-level overflow remains clean.
+
 If the environment lacks a subagent/delegation tool, create explicit task handoff prompts and issue assignments instead of doing specialist work inline.
 
 ## UI Design Planning Rules
 
-Treat UI design as a planning input, not polish after implementation. For every core PRD and feature PRD, decide whether the work has user-facing UI. A feature needs UI planning when it creates or changes screens, flows, navigation, forms, empty/loading/error states, onboarding, settings, notifications, mobile/app surfaces, or user-visible copy/layout.
+Treat UI design as a required planning input before technical specification, not polish after implementation. For every core PRD and every UI-related feature PRD, decide whether the work has user-facing UI. A feature is UI-related when it creates or changes screens, flows, navigation, forms, empty/loading/error states, onboarding, settings, notifications, mobile/app surfaces, user-visible copy/layout, or any interaction a user can see or operate.
 
-When a PRD needs UI:
+When a PRD or feature is UI-related:
 
-- Create explicit UI design tasks immediately after the PRD is accepted and before the architecture/tech-spec phase starts.
-- Spawn a `ui-designer` subagent to create or update the durable UI guideline and define the required screens, states, interaction rules, copy tone, responsive/device constraints, accessibility baseline, and visual acceptance criteria.
+- Create an explicit UI design task immediately after the PRD is accepted and **before generating or assigning the architecture/tech-spec task**.
+- Spawn a `ui-designer` subagent for that design task. The designer must create/update the durable UI guideline when needed, produce feature-specific design images/mockups based on the project's design guideline, and define required screens, states, interaction rules, copy tone, responsive/device constraints, accessibility baseline, and visual acceptance criteria.
 - For new projects, after the core PRD is done, create the project UI guideline before asking the architect to write the tech spec whenever the product has any UI surface. Default path: `.projects/<project>/design/ui-guidelines.md` unless the repo already has a stronger convention.
-- For feature PRDs, update the existing UI guideline or create a focused UI design brief before tech spec. The brief should name affected screens/components/states and link back to the PRD.
-- Do not ask the architect to write a final tech spec for UI-bearing work until UI design tasks exist and their artifacts/owners are known. The tech spec should cite the UI guideline/brief and translate design constraints into implementation tasks.
+- For feature PRDs, create/update a focused UI design brief and generated design images before tech spec. The brief should name affected screens/components/states, link back to the PRD, and store or link the design images beside the feature PRD and future tech spec.
+- Do not ask the architect to write even a draft tech spec for UI-bearing work until the UI design task exists with an owner and expected artifacts. Do not ask the architect to finalize the tech spec until the UI guideline/brief/design-image artifacts exist or are explicitly marked blocked with a reason.
+- The tech spec must cite the UI guideline, feature UI brief, and design image paths, then translate design constraints into implementation tasks.
 - If UI is not applicable, record `UI: not applicable` with a short reason in the milestone/task plan so the omission is deliberate.
 
 Minimum UI planning task shape:
@@ -179,11 +337,13 @@ Minimum UI planning task shape:
 ```text
 UI design task — <project/feature>
 - PRD: <path/link>
-- Required artifact: <ui guideline path or feature UI brief path>
+- Required artifacts: <ui guideline path>, <feature UI brief path>, <design image/mockup paths>
 - Scope: <screens/components/states/copy/responsive/accessibility concerns>
+- Design basis: <project UI guideline path or task to create/update it first>
+- Storage: <feature artifact folder alongside PRD/tech spec, e.g. .projects/<project>/features/<feature-slug>/design/>
 - Owner: ui-designer
-- Due before: architecture/tech spec finalization
-- Acceptance: <artifact exists, linked from tech spec, implementation/QA tasks can apply it>
+- Due before: architecture/tech spec generation
+- Acceptance: <design task exists before tech spec task; guideline/brief/images exist or blocker is documented; tech spec can cite artifacts; implementation/QA tasks can apply them>
 ```
 
 ## Bug and Milestone Rules
@@ -388,10 +548,10 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 
 ## Workflow
 
-1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context.
+1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context. Create or verify the repository-root `STATUS.md` for active projects and use it as the concise current-status snapshot.
 2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
-4. For each PRD, decide whether the work needs UI. If yes, spawn a `ui-designer` subagent and create UI design tasks before tech-spec work. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins.
+4. For each PRD, decide whether the work needs UI. If yes, create the UI design issue/task and spawn a `ui-designer` subagent before creating or assigning any architecture/tech-spec task. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins. For UI-related features, require feature design images/mockups and a feature UI brief before tech-spec generation proceeds.
 5. If the PRD is a browser/web game or game-like interactive product, spawn a `web-game-dev` subagent during architecture planning so the engine choice, game architecture patterns, and engine-specific skill plan are ready before implementation.
 6. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior; for web games, require it to cite the `web-game-dev` engine/architecture recommendation.
 7. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
@@ -401,12 +561,13 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 11. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
 12. Send a progress update with the milestone/task plan before execution begins.
 13. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
-14. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution.
-15. Spawn a `qa` subagent for the follow-up QA task; require a pass/fail report, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
+14. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution covering every affected supported device interface in the canonical registry.
+15. Spawn a `qa` subagent for the follow-up QA task; require at least one test case and a separate pass/fail/blocked result with evidence for each supported interface, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
 16. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
 17. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
 18. When tasks complete, verify the milestone goal using direct evidence.
-19. Send a phase-complete progress update. If achieved and bug triage is clean, mark milestone done and notify the client; otherwise create missing-part tasks and send an updated plan.
+19. After every verified big task or milestone, update and commit the repository-root `STATUS.md` with the current state, evidence, blockers/decisions, and ordered next steps.
+20. Send a phase-complete progress update. If achieved and bug triage is clean, mark the milestone done and notify the client with a user-accessible `STATUS.md` link; otherwise create missing-part tasks, update the status snapshot, and send an updated plan.
 
 ## Verification Checklist
 
@@ -420,8 +581,10 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Browser/web game projects include a `web-game-dev` architecture-phase recommendation before implementation.
 - [ ] Every PRD was checked for whether UI design is applicable, with a recorded reason when it is not.
 - [ ] UI-bearing PRDs have UI design tasks before architecture/tech-spec work begins.
+- [ ] UI-related feature tech-spec tasks were not created/assigned until the design task existed with owner, design basis, storage path, and required artifacts.
 - [ ] New UI-bearing projects have a durable UI guideline after the core PRD and before tech spec.
-- [ ] Tech specs for UI-bearing work cite the UI guideline or feature UI brief.
+- [ ] UI-related features have a feature UI brief plus design image/mockup paths, or an explicit blocker/follow-up before tech-spec generation.
+- [ ] Tech specs for UI-bearing work cite the UI guideline, feature UI brief, and design image/mockup paths.
 - [ ] Deployed/user-facing projects have a routine service status check scheduled with cadence, destination, and self-contained prompt.
 - [ ] Service status checks pull product-side updates and devops-side updates, including CI status, system health, hosting cost, user traffic, and feedback from all known channels.
 - [ ] The user receives a service status summary at least once per day for active live projects unless they explicitly choose a different cadence.
@@ -433,8 +596,25 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Email reports are mentally lightweight: readable in under two minutes, ideally 300-600 words, under two pages, and free of raw log dumps or dense project-detail overload.
 - [ ] Missing CI, health, analytics, or feedback instrumentation becomes explicit follow-up work instead of an assumed healthy status.
 - [ ] Progress updates were sent at phase start, phase completion, before subagent batches, and after subagent results.
+- [ ] Autonomous continuation uses the user-approved mode: hook-only with the canonical tracker and separate single-task callbacks, or durable Kanban by explicit trade-off.
+- [ ] The correct lifecycle source is used for each worker type; batch-drain behavior, process-local interruption risk, and recovery are documented.
+- [ ] Hook-only completion was smoke-tested to re-enter the parent, verify evidence, reconcile the live tracker, and launch at most one dependency-safe next task without a duplicate queue.
+- [ ] Any observer hook is bounded/non-recursive and cannot promote failed, partial, timed-out, or unverified work.
 - [ ] Completed tasks have evidence.
+- [ ] Parent/milestone closure remains provisional while any independent closure audit is unresolved; late contradictory results are verified, explicitly supersede stale matrices/status, and block the next milestone until reconciled.
+- [ ] Audit-discovered historical secret findings are either treated as incidents or handled by a focused exact-fingerprint security child with fail-closed tests, adversarial detection proof, independent immutable review, and post-merge current/history scans.
+- [ ] Implementation reviews name exact base/head SHAs, and the verified remote head matches the reviewed commit.
+- [ ] Timed-out workers were checked for recoverable remote artifacts before restarting; long fix tasks pushed early checkpoints.
+- [ ] Stable-scope implementation correction stayed within the two-review default or explicitly escalated material residual risk instead of looping.
+- [ ] Every active project repository has a current root `STATUS.md` that is a concise evidence-grounded snapshot rather than a duplicate issue backlog or chronology.
+- [ ] Every completed big task or milestone updated and committed `STATUS.md` before the final completion message; if the update failed, the milestone stayed incomplete and received only a blocker/progress message.
+- [ ] Every big-task/milestone completion message includes a verified user-accessible `Project status:` link, or exact verified repo-relative and absolute paths when no browser URL exists.
+- [ ] Link evidence confirms the target resolves, points to `STATUS.md`, is accessible to the intended user, contains the updated revision, and—when using default branch—exists on the fetched remote default ref; awaiting-merge handoffs use the exact pushed PR branch or commit.
+- [ ] `STATUS.md` records current objective/state, recent outcomes/evidence, in-progress work, blockers/risks/decisions, ordered next steps with owners and completion conditions, and canonical project links.
 - [ ] Each completed implementation task has a linked follow-up QA task unless explicitly non-user-facing.
+- [ ] Every user-facing project has a current `.projects/<project>/product/supported-device-interfaces.yaml` registry.
+- [ ] Every supported device interface has at least one executable test case and exact-candidate evidence for every target required by the selected verification tier.
+- [ ] Deployment/store submission is blocked when the registry/tier is missing, malformed, stale, or undecided, or when required-tier evidence is missing, stale, failed, or blocked; optional `mvp-local` combinations are documented and tracked post-launch.
 - [ ] QA reports include pass/fail/blocked status, failure details, screenshots, and linked bugs.
 - [ ] Bugs were searched for duplicates before creation and triaged on creation.
 - [ ] Before milestone completion, all linked open bugs were fixed, closed as invalid/obsolete/won't-fix with rationale, or explicitly deferred without compromising milestone acceptance.
