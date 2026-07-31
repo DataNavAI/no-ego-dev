@@ -123,6 +123,11 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `ui-designer`: designs practical screens, interaction flows, first-user experience, and visual QA notes.
 - `architect`: shapes the build plan and project structure without overcomplicating the approach.
 - `project-manager`: breaks work into tracked tasks and coordinates specialist subagents.
+- `issue-monitor`: runs scheduled issue/PR workflows with one bounded reviewer attempt, durable exact-SHA results, and duplicate-review suppression.
+- `delegation-reliability`: supervises background subagents, verifies durable handoffs, and safely recovers interrupted or partial work.
+- `subagent-driven-development`: executes implementation plans with fresh focused subagents and immutable specification/quality review gates.
+- `spec-compliance-review`: audits fixed candidates against authoritative plans, contracts, and acceptance matrices without modifying them.
+- `immutable-candidate-verification`: keeps TDD, candidate identity, independent reviews, and release evidence bound to one exact commit.
 - `coder`: builds and verifies the product changes.
 - `qa`: tests the user flow, catches regressions, and reports evidence.
 - `devops`: handles deployment, operational checks, domains, CI/CD, and basic observability.

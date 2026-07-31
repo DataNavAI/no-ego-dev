@@ -1,0 +1,254 @@
+---
+name: spec-compliance-review
+description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
+version: 1.6.0
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [code-review, spec-compliance, immutable-review, deterministic-gates, verification]
+    related_skills: [requesting-code-review, github-code-review]
+---
+
+# Spec Compliance Review
+
+Use this skill when the user asks for an independent spec audit, immutable commit review, release-gate review, or exact PASS/FAIL verdict against written requirements.
+
+**Core principle:** Passing tests are evidence, not the contract. Build an explicit requirement matrix from the authoritative plan, technical specification, failure matrix, and acceptance checklist, then seek false-success cases.
+
+## Scope and immutability
+
+First distinguish the review boundary:
+
+- **Immutable commit gate:** identify the repository, branch, and exact commit SHA; confirm `HEAD` matches and both index and worktree are clean; review the commit against its parent. If the exact commit is absent from every local object database but the requester named an authoritative remote PR/commit, do not fetch into or reset a shared checkout. Retrieve the host's exact-SHA archive and commit metadata into a reviewer-owned disposable directory, verify the API-reported SHA/parent/tree identity, and review/test that frozen archive. Retrieve the exact base/parent archive separately when a comparison is required. A source archive has no `.git`; before running canonical builds, inspect whether scripts call `git rev-parse` and, when the project exposes a revision override, bind it explicitly to the reviewed SHA (for example `BUILD_REVISION=<exact-sha>`). Report archive-bound identity rather than claiming local Git cleanliness, and remove the disposable snapshot at the end. For authenticated private-PR retrieval, extracted-tree verification, source-preservation checks, async Proxy/thenable semantics, and technical-versus-administrative verdict separation, use `references/exact-sha-pr-archive-review.md`.
+- **Exact staged-diff/pre-commit gate:** the index is intentionally dirty. Before any probe, record `HEAD`, `git status --porcelain=v2`, staged path/blob identities, and a hash of `git diff --cached --binary`. Require an empty unstaged diff and capture the initial untracked set. Review only the staged patch against `HEAD`; never mistake the dirty index for a failed cleanliness check. When the requester supplies an expected index-tree SHA, run `git write-tree` in the candidate repository and require an exact match before reviewing behavior. If the SHA is absent from that object database or the tree differs, first locate the intended nested repository/worktree; do not substitute a nearby repository or silently review a different index. If no matching candidate is available, candidate-identity mismatch is itself a reproducible blocker.
+- **Full dirty implementation gate:** review the cumulative staged, unstaged, and untracked tree against `HEAD` (or the supplied base). Start with `git status --short --untracked-files=all`; remember that every `git diff` form omits untracked files, so enumerate and inspect those separately. Do not ask the user to stage changes merely to make them reviewable. Generated snapshots, lockfiles, workflows, infrastructure, tests, and operational scripts remain in scope unless explicitly excluded.
+
+For all modes:
+
+1. Do not edit repository files, stage, commit, or run commands that regenerate tracked output when the review is declared immutable. Do not fetch network data into the candidate repository. The only remote-source exception is the exact-SHA disposable-archive recovery described above when the named candidate is unavailable locally; keep those bytes outside every shared checkout and bind them to authoritative host metadata.
+2. Temporary probes should execute directly or live outside the repository; remove any disposable files before finishing.
+3. Inspect focused tests before running them. A nominally focused test file can spawn generators, nested canonical suites, or long-lived child processes and mutate tracked output after the parent command appears complete. Prefer direct external behavioral probes when they cover the contract without repository writes. When the complete focused suite may invoke a default-path generator, test an exact staged snapshot in a disposable sandbox: materialize `HEAD`, overlay all staged paths, and run there. Place that sandbox outside `os.tmpdir()` when the suite itself verifies temporary-directory containment, or valid outside-temp negative cases can become harness-only failures. Before launch, make the sandbox working directory explicit (`cd "$sandbox"`, a tool `workdir`, or the runner's cwd option) and print/assert `pwd` plus one staged-only sentinel. Merely creating or patching a sandbox does not make later commands execute there; an omitted cwd can run the suite in the immutable checkout and create caches or generated files. See `references/exact-staged-sandbox-tests.md`.
+4. If a permitted verification command can spawn children, establish process quiescence before the final state check. Do not restore while a generator is still running, because it can immediately dirty the checkout again. Restore only paths proven to have been created or changed by that command and only when the initial snapshot proves no user work occupied them.
+5. At the end, reconfirm `HEAD`, staged paths/blob identities, staged binary-patch hash, unstaged diff, and untracked set against the initial snapshot. For an exact staged review, identical staged hash plus identical unstaged/untracked state is the preservation proof.
+6. Treat candidate mutation during review as an identity change, not as an automatic finding against either version. If any reviewed file hash, diff, index tree, or status changes mid-run, discard behavioral conclusions from the superseded snapshot, wait for the candidate to settle, capture a fresh identity snapshot, reread the changed files, and rerun every affected probe against the final bytes. Explicitly bind local-browser evidence to those bytes: use a reviewer-owned unused port rather than an already-running development server, hash the served JavaScript/CSS/HTML response and compare it with the checkout file, and only then interpret route/state results. An occupied default port can silently expose an older or different worktree and produce a false finding.
+7. For an exact-SHA review named through a moving PR, query the PR head at both the start and the end. If the PR advances while the frozen exact-SHA archive is under review, finish only the explicitly requested immutable SHA; do not silently switch to the newer head or discard valid exact-SHA evidence. State prominently that the reviewed SHA is now superseded and that the verdict does not apply to the current PR head. If the requester asked for the current merge verdict rather than the named immutable SHA, the head movement invalidates the candidate and requires a fresh review of the new head.
+
+## Contract extraction
+
+Read together:
+
+- the numbered implementation task;
+- the authoritative technical specification;
+- its data-flow and failure matrix;
+- release/acceptance checklists;
+- the changed production and test files.
+
+Convert prose into an executable matrix covering:
+
+- required output shape and evidence dimensions;
+- exact cohort/cardinality and subset semantics;
+- ordering and byte determinism;
+- route/entity/schema/source/asset/current/rights status;
+- blocker versus warning behavior;
+- stable error codes;
+- output write ordering and partial-build behavior;
+- release-evidence freshness as a provenance dimension: candidate, component, gate, interface, browser, benchmark, and analytics timestamps must be represented and bound to the decision clock/candidate; matching release IDs alone do not prove freshness, and an arbitrarily old injected decision clock must not make equally old evidence READY;
+- strict input shapes, non-mutation, and freezing promises;
+- for canonical analytics allowlists, the **entire stored/forwarded envelope**, not only sanitized `props`: legacy fields such as `locale`, `referrerHost`, `path`, or provider metadata can bypass a clean property schema with raw URLs or free text;
+- exact unknown-field semantics: “drop unknowns” is not equivalent to rejecting otherwise-valid input after an undocumented total-key cap;
+- aggregate naming and semantics: distinguish ready/blocked **rows** from total blocker **occurrences**, and distinguish warning rows from warning occurrences.
+
+When aggregate vocabulary changes, verify both meaning and downstream compatibility. Names such as `blockedRows` and `blockerCount` should make row-versus-occurrence semantics explicit; similarly, a warning count must not ambiguously alternate between warning rows and total warnings.
+
+Do not silently narrow an objective such as “route/entity/source/schema/OG/current/rights statuses” to whichever status fields happen to exist in the implementation.
+
+## Trace facts to authoritative owners
+
+For each report field, identify the real source of truth:
+
+- validated registry identity;
+- generated route and alias maps;
+- rendered-detail inventory;
+- actual generated asset specifications;
+- selected exact-entity current inventory;
+- approved rights/source policy.
+
+Prefer structured build facts over reparsing arbitrary HTML when the generator already owns those facts. Check cross-field coherence, not only local validity: a path can be syntactically valid yet refer to the wrong entity or asset.
+
+For source-backed current inventory, derive the truthful production count by running the real normalization → final publication gate → exact-entity selector chain against the reviewed inventory. Reconcile the accepted titles and owners, not only the aggregate. Group-owned rows whose titles are actually about a named member, subunit, collaborator, or other distinct subject require explicit ownership policy; a syntactically relevant group mention must not silently turn member news into a group card. Treat a required exact count mismatch as a blocker even when all focused fixtures pass.
+
+For canonical records that retain legacy/raw snapshots, build a field-pair closure matrix rather than checking a short handpicked identity list. Mutate every redundant identity, type, collection/route, source, action URL, and timestamp field independently in both directions. This includes schedule subtype, start/end/date, collection identity, publication/retrieval/discovery/update times, and any derived type. An intentionally supported normalization exception must be recomputed from the legacy record and narrowly asserted; it must not become a general contradiction bypass.
+
+Verify report emission occurs only after required artifacts have been written. If an earlier write fails, no success report should survive.
+
+For multi-artifact durable evidence (for example JSON + Markdown + screenshots/traces), audit publication as a transaction rather than checking only that JSON is renamed before Markdown. Final-path directories and files must not become visible until the complete staged bundle is ready; every injected failure point must leave either the previous complete bundle or no new bundle. Require a fixed filesystem/fault-injection seam and probe failures during artifact copy, JSON rename, Markdown rename, and cleanup. A sequence that publishes JSON and then can fail before Markdown is not atomic even though its local ordering is correct.
+
+## Registry provenance closure
+
+When a gate claims to consume a validated registry, verify that provenance cannot be forged:
+
+1. Prefer the complete canonical registry as the public input, not a raw entity array or a caller-supplied `{ ok, errors, entities }` validation result.
+2. Clone the registry through a strict JSON-like boundary without invoking accessors, then revalidate that clone against a cohort loaded internally from the authoritative frozen source.
+3. Reject raw arrays, partial subsets, forged success envelopes, and registry-shaped objects missing any canonical field—even when visible QID/rank/path values look plausible.
+4. Probe identity drift after cloning: duplicate or changed ranks, QIDs, types, paths, aliases, and schema-bearing fields must not inherit trust from an earlier validation.
+5. Confirm the generator passes the canonical registry into the report builder rather than a mutable validation result produced elsewhere.
+
+Treat this as a closure property: no alternate accepted input path may bypass canonical registry validation.
+
+## Adversarial probe matrix
+
+Probe at least:
+
+1. Complete valid production cohort and deterministic rerun.
+2. Raw entity arrays, forged validation-success envelopes, and partial registry-shaped objects.
+3. Missing, duplicate, unknown, reordered, and mismatched identities.
+3. Wrong canonical route, alias, entity type, and schema.
+4. Missing and mismatched asset paths, including approved-primary-image entities that might bypass OG checks.
+5. Source failure and rights failure independently and together.
+6. Empty current inventory as a warning, not fabricated success or an automatic blocker unless specified.
+7. Partial/reference subsets: reject them or clearly label non-production readiness.
+8. Input mutation and recursive output freezing when promised.
+9. Release-evidence freshness closure:
+   - keep the candidate/release ID current while making each component timestamp stale independently;
+   - set both the decision clock and gate timestamp to the same arbitrarily old instant to catch validators that check equality but not freshness;
+   - reject evidence schemas that omit timestamps for freshness-sensitive components, because an ID-only component can be replayed indefinitely;
+   - verify stale blockers are stable and dimension-specific rather than inferred from one shared timestamp.
+10. Hostile JavaScript shapes:
+   - sparse arrays;
+   - symbols and extra own properties;
+   - accessors/getters;
+   - non-enumerable properties;
+   - custom and null prototypes;
+   - inherited numeric and named properties on otherwise-standard arrays (`Array.prototype` pollution), because `Reflect.ownKeys(array)` cannot see them and custom-prototype probes may be rejected earlier;
+   - malformed timestamps and bounded numeric/string fields.
+
+For descriptor-only snapshot or isolation claims, trace the complete reconstruction path after the safe read. A correct recursive descriptor clone can still lose accepted provenance when a later object spread, `Object.assign`, array method, or JSON round-trip copies only enumerable/string/serializable fields. Probe nested moderation/trust metadata with non-enumerable own-data properties and require one explicit outcome: reject the unsupported shape before acceptance, or preserve the complete accepted descriptor graph in the isolated result. Never accept and then silently drop provenance.
+
+Descriptor inspection is also not Proxy rejection. `Object.getPrototypeOf`, `Reflect.ownKeys`, and `Object.getOwnPropertyDescriptor` all remain trap-controlled, and a Proxy can report an ordinary data-record shape while changing values on later reads. For every caller-object-to-artifact path, enumerate reads across shape checking, semantic validation, rendering/encoding, metadata, and filename construction. Use a stateful Proxy that returns canonical values through validation and a visible sentinel on the first post-validation read; separately substitute an oversized string to test CPU-bound closure. Require every consumer to use one bounded immutable snapshot rather than rereading the caller. If the contract requires rejection with zero trap invocation, use bounded JSON text or another boundary that excludes live objects—copying a Proxy still invokes traps. For deterministic image/archive/document output, follow `references/proxy-snapshot-and-deterministic-binary-artifact-audit.md` for the complete Proxy, binary parser, pixel-privacy, glyph, performance, and authority-drift matrix.
+
+For asynchronous browser loaders and pure retry state machines, bind validation, selection, rendering, and persistence to coherent snapshots. Repeated reads such as `validate(loader.release)` followed by `render(loader.release)` permit stateful-accessor substitution even when the validator itself is strict. Separately audit idempotent-event retry closure for **every contractually durable event class**, including activations as well as completions, across replay, reload, day/version rollover, history eviction, duplicate normalization, and overlapping async operations. Retaining only an event key prevents collisions but cannot retry a lost payload, while a newer key-only row must not shadow an older full pending envelope. Distinguish delivery-pending envelopes from journey-unresolved activations: an acknowledged start can still be awaiting a valid future completion and must not be silently evicted merely because no send is pending. Treat history bounding as priority selection, not `slice(-limit)`: scan the complete accepted window and evict only truly resolved metadata before unresolved journeys or envelopes. After every awaited send, reject stale acknowledgement writes that can overwrite newer persisted state; inspect raw storage at intermediate boundaries, not only the eventual final state. Validate acknowledgement/result objects against their full documented shape, including prototype and hostile-shape semantics, before clearing retry evidence. For contracts where only exact plain data `{ok:true}` is success, specifically audit **boolean-first inert rejection**: capture the exact top-level record, compare the captured `ok` value to primitive `true`, and return failure before any recursive clone/validation when it is not `true`. Probe direct and deeply nested getters, nested Proxies, functions, and `WeakMap` values and require zero nested traversal, unchanged retry evidence, the same logical key on retry, and successful queue recovery after a later exact `{ok:true}`. Probe transparent top-level `{ok:true}` Proxies separately; rejection may require trap activity because JavaScript cannot identify a transparent Proxy without interacting with it, so do not conflate that case with zero nested traversal. Apply this matrix independently to sink acknowledgements and authoritative storage receipts. In receipt probes, honor the adapter contract: every malformed/failure receipt must coincide with **no commit**. A harness that commits bytes and then returns malformed/false output creates a contradictory adapter outside the contract and can manufacture a false finding. Seed collision protection from all retained keys, including acknowledged events still attached to the active record, and probe cross-reload same-key/different-event reuse. Include intra-turn UI interleavings—especially a result/replay control becoming usable before an awaited event send settles—because a synchronous replay can replace the pending active record before the continuation looks it up. Exercise the outermost boot/catch recovery path separately and require unavailable markup to install noindex, not merely controller-local failures. Use `references/browser-loader-and-retry-state-audit.md` for hostile-loader, exact dependency-result, unresolved-journey eviction, concurrent stale-ack, pending-event, collision, history-selection, noindex, and render-before-ack matrices. For rereviews of a final-answer/Replay serialization fix, use `references/final-answer-replay-serialization-rereview.md` to prove exact event-key ordering, false/throw retry liveness, single-flight Replay, close/replacement cancellation, and non-final-answer regression. For a concrete exact-SHA archive layout, tree-identity proof, and blocked-send cancellation harness that checks raw storage bytes and every multi-pending boundary, use `references/exact-sha-route-close-verdict-recipe.md`.
+
+For inherited provenance probes, preserve the production-accepted container prototype, use getters that count invocations, and require zero calls during validation. Check both the selector result and the server/page-model object: rendered HTML may omit the attacker value while the accepted model still exposes it through prototype lookup.
+
+Probe custom prototypes and null prototypes as separate cases at both the outer-object and nested-record levels. Do not collapse them into one “prototype” result: shared helpers often reject inherited custom prototypes while explicitly accepting `Object.create(null)`. If the contract requires canonical JSON provenance or strict hostile-shape rejection, accepting a null-prototype object is a compliance gap even when a later safe clone normalizes it. If the contract intentionally permits JSON-like null-prototype dictionaries, document that allowance instead of inferring failure merely from the word “hostile.”
+
+Apply equivalent strictness to every accepted entry path. A strict registry path plus a permissive raw-entities shortcut is a bypass.
+
+For canonical analytics validation, probe beyond the named property bag:
+
+- send sentinel PII/free text/raw URLs through every legacy top-level envelope field and inspect both the in-house record shape and the exact provider-forwarding payload;
+- verify client identity fields are ignored while server-derived identity remains intact; for retention identity, use two real sessions across UTC days plus a second account and anonymous/fake/expired controls;
+- for generic analytics, require exact raw-key allowlisting before normalization, per-key value schemas, unknown-key flood resistance, and an inventory check against every current production emitter;
+- test one unknown field and enough unknown string/symbol fields to cross generic own-key limits, distinguishing contractual dropping from rejection;
+- compare counts before/after malformed requests to prove no storage, and separately force the real storage-failure catch path without external I/O.
+
+See `references/analytics-validation-adversarial-probes.md` for loopback provider capture, hostile-shape, unknown-key-limit, and refused-loopback storage recipes.
+
+For generated browser analytics, audit the complete renderer → embedded data → delegated listener → sender → server-validator chain. Do not accept tests that inject structured records directly into an extracted helper when production initializes from a generated payload; verify every required record is actually embedded. Probe canonical-host and path-prefixed serving surfaces, exact supported-interface boundary widths, auth/session timing for `signed_in`, and action-level semantic attributes that distinguish biography/fact sources from official outbound actions without relying on visible copy. See `references/generated-browser-analytics-lifecycle-audit.md` for the reusable lifecycle and document-structure matrix.
+
+## Verification discipline
+
+### Bounded execution and report-first closure
+
+At review start, classify the candidate by diff size, risk, changed components, and trustworthy exact-SHA CI already available. Build a time budget before running commands and reserve the final 20% to finalize the durable report. Write an attempt-scoped `IN_PROGRESS` header containing repository, candidate SHA, base SHA, review kind, and planned gates before optional slow work.
+
+Independence does not require wasteful duplication. Inspect the complete diff and independently judge test adequacy, but reuse broad exact-SHA CI when its workflow, tested SHA, commands, and result are verified. Spend fresh execution time on missing focused or adversarial probes. Do not stack equivalent `make check`, full suite, race suite, lint, install, browser, and stress commands when they cover the same evidence. Never run an unbounded stress loop in a bounded reviewer.
+
+Before the deadline, atomically finalize exactly one durable state:
+
+- `PASS`/`APPROVED` only when every required gate is satisfied;
+- `FAIL`/`REQUEST_CHANGES` with the complete independently discoverable blocker set;
+- `INCOMPLETE` with fresh evidence, reused exact-SHA evidence, and the exact missing gate.
+
+`INCOMPLETE` is fail-closed and cannot approve a candidate. A replacement reviewer should receive the prior artifact and run only the missing scope after revalidating candidate identity; it must not restart already trustworthy broad checks. A valid negative verdict against an unchanged SHA must not be repeatedly re-reviewed—fix the blockers, freeze a new SHA, then review the new candidate.
+
+- Run focused task tests when they preserve immutability.
+- Before invoking a focused test directly, inspect its fixture prerequisites and the canonical package-script setup. A test file may assume an ignored/generated artifact created by an earlier script; a direct filtered invocation can therefore produce setup failures that are not implementation failures.
+- Preserve package-script environment when filtering tests. Test-only sinks or hooks may require variables such as `NODE_ENV=test`, and server suites can leave listeners open when setup aborts. Prefer the canonical script's environment; if a direct run fails only because that environment was omitted, rerun correctly and label the first result as a setup-only failure rather than an implementation finding.
+- In an immutable checkout, do not recreate a missing generated fixture inside the repository. Generate the artifact into a disposable directory outside the checkout, preserve required cross-artifact facts such as a shared `generatedAt`, and point a temporary adversarial harness at that artifact. Use the runtime's authoritative temporary directory (for Node, `os.tmpdir()`), especially when the generator validates realpath containment.
+- When the generator requires a canonical absolute override path or an exact output-directory basename, construct it with the runtime path API rather than shell string concatenation: for Node, use `mkdtempSync(join(os.tmpdir(), 'probe-'))` and `join(root, 'required-basename')`. This avoids doubled separators and macOS `/var` versus `/private/var` realpath aliases causing a disposable probe to fail before exercising the implementation. Assert that the valid baseline generated successfully before interpreting any negative result.
+- For generated-document audits, sample both entity classes (for example, group and individual) and both main/detail routes. Count each required app root, embedded payload, module, and stylesheet hook exactly, and scan rendered attributes for accidental serialized sentinels such as `undefined`.
+- Trace generated HTML through the **final composition path**, not only the pure renderer. A renderer may intentionally omit the stylesheet/app shell and rely on a fail-closed instrumentation wrapper to insert them before the generator writes the file. Before reporting a missing-hook finding, inspect the renderer caller and every composition/instrumentation transform, then confirm the final generated artifact contains each hook exactly once. Conversely, a correct wrapper does not excuse a static gate that never exercises the composed artifact.
+- For selected records that must become rendered cards, verify **selector-to-renderer closure**: candidate normalization → publishability filter → entity selector → page-model projection/clone → renderer → generated artifact. Report counts at each boundary. A selector returning valid rows is not success if a later strict clone silently drops them. Specifically probe optional properties represented as own `undefined` values: strict JSON-like cloners commonly reject `undefined`, while broad normalizers often materialize optional keys with that value. Require either omission during normalization/projection or an explicitly supported null/value representation, and exercise the real page-model builder plus generated output—not only the selector in isolation. See `references/selector-to-renderer-closure.md`.
+- For static responsive/CSS gates, verify the selected stylesheet is actually linked into generated pages and audit the full containment/cascade path—not only an isolated marked CSS block. An outer app shell, ancestor width cap, later `!important` rule, or inherited overflow can invalidate an otherwise-correct component contract. Conversely, keep static evidence honest: source/CSS assertions may prove declared dimensions, focus rules, safe-area declarations, and local asset references, but they do not prove computed geometry, transferred bytes, LCP, or browser accessibility. Reserve those claims for the browser/performance gate.
+- A clean document-level horizontal-overflow result does **not** prove descendant containment. `overflow: hidden` can keep `documentElement.scrollWidth === innerWidth` while clipping a maximum-valid unbroken label or link inside a card. For every changed content-derived label/list at the smallest supported viewport, derive a longest contract-valid fixture, compare child and clipping-ancestor rectangles, inspect ancestor `scrollWidth > clientWidth`, and record computed `overflow-wrap`/`word-break`. See `references/hidden-overflow-and-clipping-probes.md` for the reusable CDP/browser recipe.
+- When replacing bespoke local UI with a shared plugin, classify every deleted stylesheet rule before accepting removal. Product-specific wrapper flex/grid sizing, child width/height, card stretch, overflow, and media placement remain host-owned even when the plugin supplies pin positioning and panel styles. Run an immutable browser A/B by measuring computed rectangles before and after temporarily injecting only the deleted host-layout declarations; a material primary-journey geometry regression is an Important finding even if axe/no-overflow/integration checks remain green. See `references/shared-plugin-integration-layout-preservation.md`.
+- When the exact product SHA and shared-plugin SHA live in separate frozen repositories and the hub has not yet pinned the product candidate, compose them in a disposable Playwright probe through HTTPS request interception rather than editing either checkout or adding test-only attributes to production markup. Serve exact product/plugin blobs, an in-memory generated config bound to the product SHA, and a schema-faithful API; then verify all route IDs, dynamic re-decoration, host control accessibility, migration storage preservation, axe, console errors, and CSS geometry A/B. See `references/exact-sha-shared-plugin-browser-integration.md`.
+- For exact-SHA static candidates that generate downloadable/shareable PNGs in the browser, exercise the complete UI under the authoritative CSP, capture the real fallback `File` at the `URL.createObjectURL` seam, verify PNG magic/type/size/filename, require zero CSP violations, and then verify sequential route continuity. See `references/exact-sha-csp-png-share-probe.md`.
+- For rights-bound raster rereviews after marker-only MIME validation is remediated, reconcile every promoted record against immutable receipts while treating historical review disposition and newly authorized production eligibility as separate authority layers. Require strict decoder success and exact decoded-dimension parity at both source and emitted-public boundaries; verify dependency license/integrity/transitives, exact raster allowlisting, review-only composite exclusion, canonical credits, and moving-PR identity. See `references/rights-bound-raster-remediation-rereview.md`.
+- When the remaining raster blocker is whole-container closure, audit the JPEG parser as a marker/entropy state machine rather than relying on decoder success or terminal-byte checks. Inventory the real cohort's scans, stuffing, restarts, fill, and EOI structure; then probe marker-like APP payloads, progressive/multi-scan files, a generated restart-marker fixture, malformed/truncated segments, trailing payloads, and concatenated JPEGs. At both source and public boundaries, update every attacker-controlled identity contract so an earlier hash/path mismatch cannot mask acceptance. See `references/whole-container-jpeg-structural-probes.md`.
+- When whole-container validation causes a strict decoder to falsely reject valid standalone JPEG TEM (`FF01`) markers, require structural validation of the complete original bytes first, strip only structurally recorded TEM ranges into decoder-only bytes, and keep hashes, byte counts, filenames, receipts, and emitted bytes bound to the untouched original. Probe TEM after SOI, between segments, inside APP payloads, and in entropy data; then run an isolated end-to-end source/build/public identity check so helper-only success cannot hide emission of derived bytes. See `references/standalone-tem-jpeg-remediation-rereview.md`.
+- For temporary object-URL cleanup, retain the exact creator owner **and methods**, and track creation success with a separate boolean rather than using `null` or another possible return value as a sentinel. Mutate `window.URL` and the original owner's methods during click/remove, inject hostile creator return values, and require exactly one revoke for every non-throwing creation. See `references/object-url-cleanup-adversarial-probe.md`.
+- When authoritative plans live in tracked dot-directories that ordinary filesystem search omits, enumerate candidate contracts with `git ls-files` and then read the exact tracked files. Do not conclude that a plan/spec is absent from an empty non-hidden search.
+- When a static gate derives evidence from repeated HTML containers, distinguish **valid empty markup** from **malformed markup**. The scanner/parser should return a separate failure sentinel (not `[]`) for unexpected closes, nested opens, or unclosed containers, and every result branch—including honest-empty rows—must reject that sentinel before checking card counts. Probe a valid populated container, a valid empty document, sibling containers that split required evidence, an unexpected close, a nested container, and an unclosed container. This prevents timestamps, actions, or sources from being combined across boundaries and prevents malformed output from passing as an honest empty state.
+- Bind populated rendered records to exact authoritative membership, not generic syntax: compare entity ownership, title, canonical timestamp, source URL, subtype, count, and ordering. Compare the complete rendered source-action tuple set `(URL, source type)` with reviewed sources; one syntactically valid HTTPS action does not prove completeness or identity.
+- Check branch coverage in the actual fixed fixture. If every cohort row is honestly empty, add a synthetic behavioral probe that makes one valid populated record pass and independently mutates each membership field to prove failure. Do not change production data merely to exercise the branch.
+- Treat provenance-sensitive in-memory models as non-serializable unless proven otherwise. Rebuilding from emitted JSON can lose WeakSet, symbol, or object-identity trust and silently produce a different baseline. Compare any reconstruction with the authoritative report first; if they disagree, use generator-owned structured evidence or exact owned-inventory matching instead of weakening assertions.
+- Compare test cases to the extracted contract matrix; green happy-path tests do not prove failure behavior.
+- When a review fails **only because durable proof is missing**, add the reviewer-requested regression tests before touching production code. If they fail for the expected behavior, preserve RED and make the smallest production fix. If they pass immediately against the existing implementation, classify the change honestly as proof-only remediation—do not manufacture RED or alter correct production code merely to create a bug-fix narrative. Commit the test-only evidence, freeze the new head, and require a fresh independent reviewer to disposition every prior finding as `resolved|unresolved` before advancing to quality/security review. See `references/proof-gap-remediation.md`.
+- For integration features driven by a production manifest or pinned external checkout, exercise the real manifest entry and exact pinned source—not only a synthetic fixture that supplies the desired option. Trace manifest value → generated config → browser/server consumer. A generic builder test can prove that `legacy_storage_keys`, plugin hooks, or similar fields work when present while the actual product entry omits them and ships the old implementation.
+- Use deterministic temporary probes outside the checkout for missing negative cases. Include one valid baseline before hostile mutations so fixture/setup errors cannot masquerade as fail-closed success.
+- For machine-local path freezers and privacy gates, expand each path **class** into every operational spelling before claiming closure: macOS/Linux homes, Windows profiles with both separator styles, local-file URIs, system temp lexical/realpath aliases, and both ordinary and private-realpath macOS var-folders roots. Inject each representation independently after a valid baseline and report accepted/rejected counts by representation; one rejected alias does not prove the class is closed.
+- For cohort-bound behavior, derive both positive and negative probe identities from the freshly generated authoritative artifact. Assert that the positive identity is in the cohort and dynamically select a catalog identity absent from the cohort; never rely on a familiar entity being non-cohort. This prevents a stale assumption from turning a correct implementation into a false failure.
+- When generated runtime functions are minified but line-delimited, a disposable external probe may extract exact function and constant lines from the generated asset and evaluate them with controlled dependencies. Exercise the real generated sender and mutation flow, assert exact request bodies and zero-event cases, remove the probe, then recheck repository cleanliness.
+- When the useful browser/runtime harness is module-private inside a large test file, reuse it through a disposable copied test outside the checkout rather than rebuilding an incomplete simulation. Rewrite relative imports and `import.meta.url` resolution for the temporary location, append uniquely prefixed probes, run only that prefix, remove the copy, and recheck cleanliness. See `references/disposable-private-harness-probes.md`.
+- When a static candidate has no Playwright/Puppeteer dependency, launch disposable headless Chrome directly at the loopback candidate URL and drive the exact page target over its DevTools WebSocket. Use this for viewport matrices, rendered-state journeys, focus checks, runtime logs, and local axe injection without modifying the checkout. Do not accept `--window-size` or screenshot pixel dimensions as viewport proof: apply CDP device metrics and assert `innerWidth`, document `scrollWidth`, and critical element rectangles before interpreting clipping or responsive layout. Inspect serious/critical axe `incomplete` results manually, and classify shared-service 404s against the parent/harness contract rather than silently treating them as candidate errors or passes. See `references/local-static-browser-cdp-audit.md`.
+- For reusable browser-plugin/API/agent-CLI services, audit credential destination confinement, migration-receipt transactionality (including special JavaScript property-name IDs), delegated IAM privilege escalation, exact committed release closure from a clean archive, and lifecycle/recovery artifact closure. See `references/reusable-review-service-security-audit.md`.
+- An intentionally failing adversarial probe is evidence, not fresh passing verification. After editing copied tests, restore or delete the disposable probe and rerun the canonical command on the pristine exact snapshot before finalizing; otherwise verification automation may correctly mark the result stale even though the target checkout was untouched.
+- For a validated report consumer, mutate one dimension at a time and probe both field constraints and derived aggregate lies. Examples: negative/non-integer/over-limit counts, count/status equivalence violations, warning-row aggregate lies, blocker-row aggregate lies, and occurrence-count aggregate lies.
+- Label broad-suite/build evidence as fresh or reused. Never imply reused evidence was rerun.
+- Treat reviewer-owned executable probes and checksum sidecars as verification-sensitive artifacts even when they live outside the candidate repository. Before closing the durable report, directly execute every new probe, verify every sidecar against final report bytes, and run any canonical project command required by the host verifier (for example, the literal `npm run test`, not only an equivalent command hidden inside a wrapper). Record those results in the report before hashing so later verification does not make a checksum-closed report's “not rerun” section stale. If output is too large or the tool misreports a successful process, rerun the literal command with output redirected to a reviewer-owned log, preserve its real exit status, print only the summary tail, and require explicit exit code 0.
+- Bind every package-manager command to the frozen candidate directory explicitly. A shell command that clones into `"$root/repo"` does **not** change the process cwd; use a subshell such as `(cd "$root/repo" && npm ci && npm run test)`, the terminal tool's `workdir` after the path is known, or `npm --prefix "$root/repo" ...`. Before interpreting install/test output, print/assert `pwd` and `git rev-parse HEAD`. Never let a successful or failed command from the caller workspace stand in for candidate verification. If a mistaken-cwd setup attempt created or removed files, restore only those reviewer-caused paths, then require empty status and staged/unstaged digests before closing.
+- Complete host-required canonical verification **before** writing the final report and sidecar whenever the host tracks reviewer artifacts as changed paths. Writing the checksum sidecar can itself trigger a post-turn verification demand even though no product code changed; avoiding a stale verification state is part of durable report closure, not an optional follow-up.
+- Run the host-required literal test command as a standalone tool call in the frozen candidate checkout (or with only minimal `pwd`/`git rev-parse` prechecks). Do not bury it inside one large shell wrapper that also clones, hashes, cleans up, removes the checkout, or performs unrelated assertions: a later wrapper or host-hook failure can make a genuinely green test appear unverified. Capture the test command's own exit/result first, then perform preservation, checksum, and cleanup checks separately.
+- If a post-turn verification hook nevertheless flags only a reviewer-owned report/checksum sidecar after closure, do not rewrite the checksum-closed report. Retain or recreate the exact frozen candidate checkout, rerun the literal required command there as post-report supplemental evidence, verify candidate identity and cleanliness separately, and keep the clean checkout inspectable until the completion response when the hook requires persistent evidence. Remove it only after the host accepts verification or when explicit cleanup is required.
+- After report closure, do not rewrite a checksum-verified immutable report merely to append supplemental checks. Verify the report/sidecar remain byte-consistent and publish later test output as clearly labeled post-report supplemental evidence. If the report was supposed to be the complete evidence record, generate a new report and sidecar under a new path rather than silently changing the old artifact.
+- Do not invent or infer a prior canonical-suite result from commit messages, task history, an earlier task number, or the apparent completeness of the candidate. Report reused evidence only when the current conversation, a reviewed durable artifact, or an inspected CI record actually supplies the command and result. If a standalone suite fails only because its canonical generator prerequisite was intentionally skipped to preserve immutability, label that run setup-inconclusive and report only the focused/self-contained results actually observed; do not fill the gap with an unobserved pass count.
+- Keep all findings grounded in actual source lines and probe results.
+
+For benchmark scorers that award product-specific semantic credit, treat the product root as a trust boundary: require exactly one valid root; bind its slug, entity type, and **root-scoped visible identity/H1** to the frozen row and canonical route; scope all evidence selectors inside it; require exact canonical action paths rather than suffix matches; and never let a page-global title/H1, generic prose, or honest-empty copy satisfy a product-scoped identity/action/link dimension. Compute one shared root/identity-validity predicate and prove that **every** product-specific dimension uses it—including identity relevance and entity integrity, not only facts/current/empty/official links. Duplicated per-dimension checks drift and create partial false-success paths. Run the complete mutation × dimension matrix before the immutable commit rather than discovering one dimension bypass per review cycle. Include shadow-DOM-style fixtures with a correct title or unrelated correct H1 outside a wrong-identity product root. Resolve each stored evidence selector against the exact scored document and require the resolved scoped node's normalized text to equal the recorded exact text; a correct score with an ambiguous selector is still a failed evidence claim. If honest scoring exposes missing product semantics, fix the product surface rather than weakening the scorer. See `references/benchmark-semantic-evidence-audit.md` for the reusable probe and selector-reconciliation matrix.
+
+See `references/immutable-deterministic-gate-review.md` for the reusable detailed checklist and common false-success patterns, `references/static-cuj-gate-audit.md` for generated static CUJ membership and dormant-branch probes, `references/centralized-identity-index-audit.md` for centralized route/entity/follow/schema indexes, and `references/full-dirty-service-review-probes.md` for cross-layer dirty-tree reviews covering credential URLs, eventual-consistency readback, modal inert restoration, static-first cloud candidate identity, portable provenance, browser analytics receipts, Lambda package/alias closure, immutable deployment sequencing, and rollback.
+
+For checksum-closed product bundles combining ranked catalogs, third-party source decisions, editorial review workflows, and release validators, use `references/source-rights-editorial-publication-gate-audit.md`. It covers missing rights-evidence packages, ranking-input reuse boundaries, held-adapter migration contradictions, aggregate-review false successes, and architecture-versus-launch feasibility classification.
+
+For record-by-record editorial reviews over a fixed catalog, raw-response checksum manifest, exact JSON evidence locators, deterministic questions, and feed/Following records, use `references/source-rights-editorial-record-audit.md`. It includes full-cohort mapping closure, risk-row dispositions, Unicode-normalized answer checks, relation-date wording, future source-date handling, first-stage eligibility versus publication-authority separation, exact normalized receipt-count closure, paired ordinary/`--require-published` validation, candidate-hash-bound receipt scoping, fixed-key signed-envelope mutation probes, and candidate-local key-registry takeover testing.
+
+## Durable report finalization
+
+When the review must write a durable report and return its digest, finalize evidence in this exact order:
+
+1. Write the complete report, including final verdict, immutable identity, requirement matrix, checks, preservation proof, and mutation statement. Do not embed the report's own digest in its body.
+2. Close the final report bytes before hashing.
+3. Compute SHA-256 from the finished report and write an adjacent reviewer-owned sidecar such as `<report>.sha256`.
+4. Immediately recompute SHA-256 from the report and compare it byte-for-byte with the sidecar value. If they differ, the report changed after hashing: regenerate the sidecar and repeat verification before returning.
+5. Return the exact verdict, report path, verified digest, and blocker summary only after this comparison passes.
+
+A timeout or missing completion summary does not make a surviving report trustworthy by itself. The parent must recompute the final-byte digest, verify candidate identity, inspect required sections, and independently ground consequential findings before using the verdict. A stale sidecar is an artifact-integrity defect; preserve it and create separate parent-verified evidence rather than silently rewriting review history.
+
+## Verdict format
+
+Use the user's requested verdict vocabulary exactly, including paired forms such as `APPROVED` / `CHANGES REQUIRED`. If none is specified, begin with exactly `PASS` or `FAIL`.
+
+When the user requests a blocker-only verdict, put the verdict first and include only concrete release blockers. Omit positive findings, general commentary, verification summaries, recommendations, and non-blocking polish unless needed to establish a blocker. If the candidate passes, return only the requested positive verdict token (for example, `APPROVED` or `PASS`) unless the user explicitly requests additional metadata. Do not append “no blockers,” cleanliness summaries, or low-polish notes merely to show work. For each blocker, preserve only the evidence essentials: severity, violated requirement, file/line range, observed reproducer, and consequence.
+
+When the user did **not** request blocker-only output, then list as applicable:
+
+- confirmed-correct behavior;
+- verification counts;
+- reviewed SHA;
+- final repository cleanliness;
+- files modified (`none` for immutable reviews).
+
+A test failure is not required for `FAIL`; untested behavior that demonstrably violates the immutable contract is sufficient.
+
+## Pitfalls
+
+- Treating implementation vocabulary as the specification.
+- Reviewing only the added tests instead of the failure matrix.
+- Checking field syntax without cross-field identity coherence.
+- Allowing one stronger credential, such as approved portrait rights, to bypass a separate OG requirement.
+- Reporting a one-row subset as fully ready for a fixed-50 production gate.
+- Accepting type/schema values without required status evidence.
+- Running a canonical command that dirties tracked generated output during an immutable audit.
+- Forgetting the final SHA/cleanliness check.

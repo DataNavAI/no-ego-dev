@@ -1,0 +1,18 @@
+prompt: |
+  Independently review a fixed pull-request commit against an authoritative implementation task, technical specification, failure matrix, and acceptance checklist. The shared checkout is dirty, the PR may move while review runs, focused tests may generate tracked output, and the final response must contain a fail-closed candidate-bound verdict.
+
+  Use the spec-compliance-review skill to define and execute the immutable review procedure without modifying the candidate.
+expectations:
+  - "Identifies the exact review mode and binds the verdict to an immutable commit SHA, parent/base, and authoritative requirements."
+  - "Uses an isolated clean worktree or exact-SHA disposable archive instead of resetting or cleaning a dirty shared checkout."
+  - "Builds an explicit requirement and failure matrix rather than treating tests or implementation vocabulary as the contract."
+  - "Inspects production code, tests, generated artifacts, and every accepted entry path for false-success cases."
+  - "Runs mutation or adversarial probes outside the immutable checkout and proves a valid baseline before interpreting failures."
+  - "Preserves candidate identity, staged/unstaged state, untracked files, and generated outputs throughout review."
+  - "Treats a moving PR head as a candidate identity change and does not transfer approval to an unreviewed SHA."
+  - "Does not infer PASS from green tests, partial evidence, a timed-out reviewer, or a stale checksum sidecar."
+  - "Returns a concrete PASS or FAIL bound to the reviewed candidate with reproducible evidence."
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
