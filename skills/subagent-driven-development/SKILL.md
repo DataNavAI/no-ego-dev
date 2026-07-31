@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans via delegate_task subagents (2-stage review)."
-version: 1.5.0
+version: 1.6.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -68,6 +68,30 @@ todo([
 ```
 
 **Key:** Read the plan ONCE. Extract everything. Don't make subagents read the plan file — provide the full task text directly in context.
+
+### 1.4 Delegation Timeout Pre-flight
+
+Before the first `delegate_task` call in a workflow, verify the **active profile's** execution budget. Do not assume a copied profile, gateway process, or prior session inherited the intended timeout.
+
+1. Resolve the active profile and its config path with `hermes config path`, then read that exact `config.yaml`.
+2. Require `delegation.child_timeout_seconds` to be a positive value of **at least `1800` seconds (30 minutes)**. A missing value, `0` (disabled), invalid value, or value below `1800` does not satisfy this workflow contract. For the standard NED baseline, persist it with:
+
+   ```bash
+   hermes config set delegation.child_timeout_seconds 1800
+   ```
+
+3. Require `agent.gateway_timeout` to be **strictly greater than** the child timeout so the parent has time to receive, validate, and persist the child's result. For the 1800-second child baseline, use:
+
+   ```bash
+   hermes config set agent.gateway_timeout 3600
+   ```
+
+   If the configured child timeout already exceeds 3000 seconds, set the gateway timeout to at least `child_timeout_seconds + 600` instead of lowering it to 3600.
+4. Re-read the active profile's `config.yaml` and verify both numeric invariants from the persisted file. Do not dispatch any implementer or reviewer while either value is missing, invalid, too small, or written to a different profile.
+5. For a gateway-originated workflow, prove that the active profile gateway started from the persisted timeout configuration **even when the persisted value was already correct when this pre-flight began**. Capture the profile gateway PID and process start time without printing its environment or secrets, and compare that generation with the config file's modification time and the recorded values. If the runtime predates the config, the service identity is ambiguous, or you otherwise cannot prove the running process adopted the current `agent.gateway_timeout`, checkpoint the plan and resume point, restart that profile's gateway, and stop the current request without dispatching.
+6. After any restart, continue only in a fresh request. Re-read the persisted config, identify the new gateway PID/process start time, and record evidence that the new runtime generation postdates the saved config before dispatching. A config write, a successful restart command, or values read only from disk do not by themselves prove runtime adoption.
+
+Record the active profile, config path, child timeout, gateway timeout, and whether a restart was required in the workflow's pre-flight evidence. **Do not dispatch** the first subagent until the persisted values and active runtime satisfy this gate.
 
 ### 1.5 Contract-Alignment Pre-flight
 
