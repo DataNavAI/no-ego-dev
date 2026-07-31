@@ -119,6 +119,35 @@ def reject_caller_authority(args: list[str]) -> None:
             raise Denied("caller-supplied --profile is forbidden; the guard attributes the active profile")
 
 
+def env_provider(args: list[str]) -> str | None:
+    """Return the provider from IFA's `env [flags] <provider>` grammar."""
+    index = 1
+    while index < len(args):
+        arg = args[index]
+        if arg == "--allow-git-repository" or arg.startswith("--write="):
+            index += 1
+        elif arg == "--write":
+            index += 2
+        elif arg.startswith("-"):
+            index += 1
+        else:
+            return arg
+    return None
+
+
+def authorize_shared_invocation(args: list[str], grant: dict[str, Any]) -> None:
+    if args[0] not in {"status", "exec"}:
+        raise Denied(f"shared operation {args[0]!r} is forbidden; use status or exec")
+    if len(args) < 2 or args[1].startswith("-"):
+        raise Denied("shared operation requires an explicit provider")
+    requested_provider = args[1].strip().lower()
+    granted_provider = str(grant["provider"]).strip().lower()
+    if requested_provider != granted_provider:
+        raise Denied(
+            f"shared provider mismatch: requested {requested_provider!r}, granted {granted_provider!r}"
+        )
+
+
 def run_ifa(policy: dict[str, Any], profile: str, args: list[str]) -> int:
     grant_id = None
     if args[:1] == ["--grant-id"]:
@@ -128,9 +157,12 @@ def run_ifa(policy: dict[str, Any], profile: str, args: list[str]) -> int:
     if not args:
         raise Denied("missing IFA command")
     reject_caller_authority(args)
+    if args[0] == "env" and (env_provider(args) or "").strip().lower() == "google":
+        raise Denied("Google token export is prohibited; use exec google")
 
     if grant_id:
-        store, _, _ = load_shared_grant(policy, profile, grant_id)
+        store, _, grant = load_shared_grant(policy, profile, grant_id)
+        authorize_shared_invocation(args, grant)
     else:
         store = profile_store(policy, profile)
 

@@ -262,3 +262,72 @@ def test_shared_grant_authorization_and_profile_removal_preserve_remaining_consu
         installed, home, "kiaened", "run", "--grant-id", "team-gh", "status", fake_ifa=executable
     )
     assert denied.returncode != 0
+
+
+def test_shared_grant_provider_mismatch_is_denied_without_invoking_ifa(tmp_path, monkeypatch):
+    installed = install_skill(tmp_path)
+    home = tmp_path / "home"
+    shared = home / ".hermes/state/identity-for-agent/shared/team-gh"
+    shared.mkdir(parents=True)
+    (shared / "store.json").write_text("{}", encoding="utf-8")
+    (shared / "grant.json").write_text(
+        json.dumps(
+            {
+                "grant_id": "team-gh",
+                "provider": "github",
+                "account": "team",
+                "source_profile": "ned",
+                "approved_profiles": ["nedxned"],
+                "authorized_at": "2026-07-31T00:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    executable, log = fake_ifa(tmp_path)
+    monkeypatch.setenv("IFA_TEST_LOG", str(log))
+
+    denied = run_guard(
+        installed,
+        home,
+        "nedxned",
+        "run",
+        "--grant-id",
+        "team-gh",
+        "status",
+        "google",
+        fake_ifa=executable,
+    )
+
+    assert denied.returncode != 0
+    assert "provider" in denied.stderr.lower()
+    assert not log.exists()
+
+    denied = run_guard(
+        installed,
+        home,
+        "nedxned",
+        "run",
+        "--grant-id",
+        "team-gh",
+        "request",
+        "github",
+        fake_ifa=executable,
+    )
+
+    assert denied.returncode != 0
+    assert "operation" in denied.stderr.lower()
+    assert not log.exists()
+
+
+def test_google_env_is_denied_without_invoking_ifa(tmp_path, monkeypatch):
+    installed = install_skill(tmp_path)
+    home = tmp_path / "home"
+    executable, log = fake_ifa(tmp_path)
+    monkeypatch.setenv("IFA_TEST_LOG", str(log))
+
+    denied = run_guard(installed, home, "ned", "run", "env", "google", fake_ifa=executable)
+
+    assert denied.returncode != 0
+    assert "google" in denied.stderr.lower()
+    assert "export" in denied.stderr.lower()
+    assert not log.exists()
