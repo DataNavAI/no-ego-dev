@@ -41,13 +41,21 @@ def test_cross_skill_timeout_rules_preserve_review_quality() -> None:
         for phrase in phrases:
             assert phrase in content, f"{skill} missing {phrase!r}"
 
+    project_manager = text("project-manager")
+    assert "Every correction creates a new SHA and requires fresh independent exact-SHA review before merge" in project_manager
+    assert "tests or scanners never substitute for independent review of changed bytes" in project_manager
+
+    issue_monitor = text("issue-monitor")
+    assert "merge-only executor" in issue_monitor
+    assert "It may not edit code, change the approval, waive checks, approve a different SHA, or broaden scope" in issue_monitor
+
 
 def test_issue_monitor_eval_covers_timeout_and_duplicate_suppression() -> None:
     data = yaml.safe_load((SKILLS / "issue-monitor" / "EVAL.yaml").read_text(encoding="utf-8"))
-    scenario = data["scenarios"][0]
-    expectations = "\n".join(scenario["expectations"])
+    expectations = "\n".join(data["expectations"])
 
-    assert data["skill"] == "issue-monitor"
+    assert isinstance(data["prompt"], str) and data["prompt"].strip()
     assert "not reviewed again" in expectations
     assert "at most one reviewer" in expectations
     assert "INCOMPLETE remains fail-closed" in expectations
+    assert "merge-only executor" in expectations

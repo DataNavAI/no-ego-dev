@@ -1,21 +1,22 @@
-skill: issue-monitor
-version: 1.6.0
-scenarios:
-  - id: bounded-durable-review-reconciliation
-    description: Prevent duplicate or timing-out scheduled reviewers while preserving exact-SHA independent review quality.
-    prompt: |
-      A scheduled issue monitor sees PR #17 at immutable SHA
-      0123456789abcdef0123456789abcdef01234567. Green exact-SHA CI already
-      covers the full suite and race checks. A previous reviewer wrote a valid
-      REQUEST_CHANGES durable marker for this same SHA. Another earlier attempt
-      timed out after writing an INCOMPLETE attempt report with one focused
-      check. Explain the next action and the rules for any later review after a
-      fixer pushes a new SHA.
-    expectations:
-      - The unchanged SHA is not reviewed again after a structurally valid REQUEST_CHANGES result.
-      - One fixer receives the complete blocking set, and review resumes only for the resulting new SHA.
-      - Timeout recovery inspects the attempt-scoped artifact before any replacement is dispatched.
-      - A scheduled run dispatches at most one reviewer and never relies on async completion reinjection.
-      - A replacement reuses trustworthy exact-SHA CI and recovered checks, running only missing focused or adversarial evidence.
-      - APPROVED is impossible while any required gate is missing; INCOMPLETE remains fail-closed.
-      - The reviewer reserves report-closure time and writes a durable candidate-bound outcome.
+prompt: |
+  A scheduled issue monitor sees PR #17 at immutable SHA
+  0123456789abcdef0123456789abcdef01234567. Green exact-SHA CI already
+  covers the full suite and race checks. A previous reviewer wrote a valid
+  REQUEST_CHANGES durable marker for this same SHA. Another earlier attempt
+  timed out after writing an INCOMPLETE attempt report with one focused check.
+  Explain the next action and the rules for later review after a fixer pushes a
+  new SHA. Also explain how an exact-SHA APPROVED result can merge safely when
+  CI finishes after the reviewer's cron run has ended.
+expectations:
+  - "The unchanged SHA is not reviewed again after a structurally valid REQUEST_CHANGES result."
+  - "One fixer receives the complete blocking set, and review resumes only for the resulting new SHA."
+  - "Timeout recovery inspects the attempt-scoped artifact before any replacement is dispatched."
+  - "A scheduled run dispatches at most one reviewer and never relies on async completion reinjection."
+  - "A replacement reuses trustworthy exact-SHA CI and recovered checks, running only missing focused or adversarial evidence."
+  - "APPROVED is impossible while any required gate is missing; INCOMPLETE remains fail-closed."
+  - "The reviewer reserves report-closure time and writes a durable candidate-bound outcome."
+  - "A durable approval may enable auto-merge or be consumed by one merge-only executor after exact-SHA approval, checks, and policy are revalidated; no duplicate reviewer is dispatched."
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

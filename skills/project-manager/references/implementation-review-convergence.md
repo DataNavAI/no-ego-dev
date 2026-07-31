@@ -31,12 +31,12 @@ Late arrival order is not priority. Candidate identity, report integrity, and re
 
 ## Bounded correction loop
 
-Default maximum for one stable implementation scope: two independent review cycles.
+Default maximum for one stable implementation scope: two autonomous correction cycles. Every changed SHA still requires a fresh independent review before merge.
 
 - Cycle 1 reviews the immutable candidate and returns closed findings.
 - Add one regression test per finding and apply a bounded correction.
 - Cycle 2 re-reviews the corrected immutable commit and actively reproduces prior attacks.
-- If cycle 2 finds one new narrow bypass, do not create an open-ended third review. Reproduce it exactly, capture RED, apply the smallest fix, run the full canonical suite plus a deterministic external scanner where applicable, and record the disposition.
+- If the final allowed review finds one new narrow bypass, do not patch-and-merge an unreviewed SHA and do not create an open-ended autonomous loop. Reproduce and record it, keep the candidate blocked, and escalate the complete finding. A human-authorized continuation may apply the regression-first minimal fix and begin a new bounded cycle, whose resulting SHA must receive fresh independent review.
 - Never merge if the exploit still reproduces, residual uncertainty is material, or exact-commit evidence is missing; escalate instead.
 
 ## Public artifact security pattern
