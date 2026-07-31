@@ -46,11 +46,11 @@ When a background reviewer times out after making no changes, inspect the worktr
 
 Report:
 
-- `Critical`, `Important`, and `Minor` findings;
+- `Critical`, `Important`, and otherwise material findings only;
 - an explicit `APPROVED` or blocking verdict;
 - exact reviewed SHA and file scope;
 - focused test/check counts;
 - any supplied evidence reused rather than rerun;
 - files modified/created (`None` for a clean read-only pass).
 
-A test-strength observation may be Minor and non-blocking when direct review and runtime probes confirm behavior. Distinguish it from a correctness regression.
+A safely reversible test-strength observation is omitted. If the test gap materially weakens correctness, contract, security, migration, or release confidence, classify it as `Important` and make its consequence and required outcome explicit.

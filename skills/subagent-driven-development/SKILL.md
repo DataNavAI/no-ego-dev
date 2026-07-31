@@ -195,7 +195,6 @@ delegate_task(
     OUTPUT FORMAT:
     - Critical Issues: [must fix before proceeding]
     - Important Issues: [should fix]
-    - Deferred reversible nits: [omit by default; never blocking]
     - Verdict: APPROVED or REQUEST_CHANGES
     """,
     toolsets=['file']

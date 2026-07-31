@@ -139,11 +139,11 @@ For a frozen candidate reviewed against a finite set of authoritative comments, 
    - `BLOCKED` if required artifacts, access, screenshots, or product context are missing.
 
 5. **Give actionable feedback**
-   - Prioritize findings by impact: blocker, high, medium, low.
-   - Obey an explicit severity/output boundary. If the requester asks for “blockers/high findings only,” do not surface medium/low polish, do not downgrade an otherwise clean result merely to mention optional polish, and return a compact verdict plus the requested acceptance-criterion receipts.
+   - Prioritize material findings by impact: blocker, high, or medium. Omit reversible nits entirely rather than assigning them a low severity.
+   - Obey an explicit severity/output boundary. If the requester asks for “blockers/high findings only,” return only those findings plus the requested acceptance-criterion receipts.
    - Tie each finding to a principle, guideline section, comparable pattern, or user-journey impact.
    - For each non-trivial issue, include a concrete fix direction, not only criticism.
-   - Separate must-fix changes from optional polish.
+   - Return one deduplicated material correction set; do not attach a polish backlog.
 
 6. **Write the report**
    - Save a review report when the review is part of a project workflow or design iteration.
@@ -277,7 +277,7 @@ For a full photo-heavy design-system specimen and rights-safe fixture review, fo
 ## Common Pitfalls
 
 1. **Reviewing only from personal taste.** Critique must connect to foundational UI principles, project guideline, comparable market patterns, accessibility, or user-journey impact.
-2. **Skipping market research.** If no project review guideline exists, research top comparable services and write the guideline before finalizing the review.
+2. **Skipping the canonical-guideline gate.** If no frozen project UI guideline exists, return `BLOCKED_MISSING_UI_GUIDELINE`; do not research or author a replacement within the review.
 3. **Approving generic mockups.** A design that looks like a placeholder template, ignores states, or lacks hierarchy should return `NEEDS ITERATION` even if it is visually tidy.
 4. **Overfitting to competitors.** Use comparables to understand expected patterns and quality bars; do not copy brand-specific visuals, copy, assets, or proprietary flows.
 5. **Mixing QA and design review.** QA verifies behavior. UI review judges hierarchy, affordance, visual coherence, accessibility basics, state design, and market-quality polish.

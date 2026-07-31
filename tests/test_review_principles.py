@@ -110,6 +110,19 @@ def test_reversible_nits_are_omitted_not_reported_as_minor_feedback() -> None:
     assert "PASS WITH MINOR POLISH" not in ui
     assert "**Low**" not in ui
     assert "| low" not in ui
+    for forbidden in (
+        "blocker, high, medium, low",
+        "medium/low polish",
+        "optional polish",
+    ):
+        assert forbidden not in ui
+
+    subagent = package_text("subagent-driven-development")
+    assert "Deferred reversible nits" not in subagent
+
+    coder = package_text("coder")
+    assert "`Critical`, `Important`, and `Minor` findings" not in coder
+    assert "A test-strength observation may be Minor" not in coder
 
 
 def test_round_is_one_candidate_generation_shared_by_all_review_kinds() -> None:
@@ -192,6 +205,13 @@ def test_ui_reviewer_is_read_only_and_uses_the_canonical_guideline() -> None:
         "BLOCKED_MISSING_UI_GUIDELINE",
     ):
         assert phrase in content
+    assert "research top comparable services and write the guideline before finalizing the review" not in content
+
+
+def test_subagent_eval_requires_all_material_round_one_findings() -> None:
+    expectations = eval_expectations("subagent-driven-development")
+    assert "all independently discoverable Critical/Important or otherwise material findings" in expectations
+    assert "all independently discoverable blockers" not in expectations
 
 
 def test_complete_domain_reviewer_packages_are_publishable() -> None:

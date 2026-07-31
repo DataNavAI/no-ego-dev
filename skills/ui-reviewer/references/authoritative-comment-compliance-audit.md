@@ -30,7 +30,7 @@ Use when reviewing a frozen UI candidate against a finite set of authoritative r
 
 ## Severity/output discipline
 
-- Report only blocker/high findings when requested. Do not turn optional polish into a failing verdict.
+- Report only blocker/high findings when requested. Omit every safely reversible nit entirely; never include one as commentary or use one to change the verdict.
 - Use the requester’s verdict vocabulary exactly. If none is supplied, use `APPROVED` or `CHANGES_REQUESTED`.
 - If approved, return the positive verdict plus compact acceptance receipts; do not invent findings to make the review look substantive.
 - If changes are required, return the negative verdict; each finding must include severity, user impact, and exact file/line fix guidance.
