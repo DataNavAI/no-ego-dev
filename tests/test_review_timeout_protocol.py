@@ -50,6 +50,10 @@ def test_cross_skill_timeout_rules_preserve_review_quality() -> None:
     assert "It may not edit code, change the approval, waive checks, approve a different SHA, or broaden scope" in issue_monitor
     assert "gh pr merge PR_NUMBER --repo OWNER/REPO --squash --delete-branch --match-head-commit APPROVED_SHA" in issue_monitor
     assert "If no atomic expected-head merge operation is available, it must not merge" in issue_monitor
+    assert "Do not enable GitHub auto-merge" in issue_monitor
+    assert "normally merges immediately or enables auto-merge" not in issue_monitor
+    assert "enable auto-merge or use" not in issue_monitor
+    assert "through auto-merge" not in issue_monitor
 
 
 def test_issue_monitor_eval_covers_timeout_and_duplicate_suppression() -> None:
@@ -62,3 +66,4 @@ def test_issue_monitor_eval_covers_timeout_and_duplicate_suppression() -> None:
     assert "INCOMPLETE remains fail-closed" in expectations
     assert "merge-only executor" in expectations
     assert "--match-head-commit APPROVED_SHA" in expectations
+    assert "GitHub auto-merge is not used" in expectations
