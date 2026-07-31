@@ -25,7 +25,7 @@ Implement one focused task per branch. Write tests for the key path, keep the di
 
 ## Risk-weighted review convergence
 
-Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence changes and omit safely reversible nits. Enforce **first-round completeness**: **Round 1** receives the complete evidence-backed correction set, **Round 2** verifies dispositions and correction regressions, and **Round 3** is final. Later new feedback is allowed only for remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been found earlier, and must state `Why it was not discoverable in round 1: <cause>`. **No round 4** is allowed for the same stable scope; a negative Round 3 keeps the candidate unmerged and routes scope/risk decisions to the owner without waiving exact-SHA approval.
+Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence changes and omit safely reversible nits. Enforce **first-round completeness**: **Round 1** receives all independently discoverable Critical/Important or otherwise material findings in one complete evidence-backed correction set, **Round 2** verifies dispositions and correction regressions, and **Round 3** is final. Later new feedback is allowed only for remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been found earlier, and must state `Why it was not discoverable in round 1: <cause>`. **No round 4** is allowed for the same stable scope; a negative Round 3 keeps the candidate unmerged and routes scope/risk decisions to the owner without waiving exact-SHA approval.
 
 ### Canonical round accounting
 

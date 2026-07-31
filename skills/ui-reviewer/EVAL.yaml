@@ -1,7 +1,8 @@
 prompt: |
-  Use the ui-reviewer skill to review design images or a real product UI for a realistic product. The project has no existing UI review guideline, so the reviewer must establish the guideline using foundational UI principles and top-of-market comparable services before giving feedback.
+  Use the ui-reviewer skill in a fresh review-only leaf to review frozen design images or a real product UI for a realistic product. A pre-authored canonical project UI guideline is frozen with the candidate; review without creating or editing the guideline or candidate, and explain the fail-closed result if that guideline were missing.
 expectations:
-  - "creates or updates a durable project UI review guideline when one does not exist"
+  - "requires a pre-authored frozen canonical project UI guideline and blocks when it is missing"
+  - "runs in a fresh review-only leaf and never creates edits or updates candidate or guideline artifacts"
   - "researches or requests at least three top-of-market comparable services and captures relevant UI patterns"
   - "uses foundational UI principles such as hierarchy spacing typography color contrast consistency affordance states accessibility and responsive or mobile fit"
   - "reviews design images screenshots or real UI evidence rather than only text when available"

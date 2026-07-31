@@ -279,7 +279,7 @@ It must independently:
 3. Check spec compliance, scope, project conventions, error handling, security, and test quality.
 4. Run focused and high-risk checks missing from trustworthy exact-SHA CI. Do not duplicate broad suites already proven by green exact-SHA CI merely to make the review look independent; independently verify candidate identity, diff scope, test adequacy, and the CI binding instead.
 5. Query GitHub checks and branch protection. Never bypass, disable, dismiss, or weaken a required gate.
-6. Write and read back a compact durable result before returning: `REQUEST_CHANGES` with all independently discoverable blockers and enough direction to correct the defect class in Round 1, `APPROVED` with commands/evidence, or `INCOMPLETE` naming the missing gate. Never let timeout erase the only verdict copy.
+6. Write and read back a compact durable result before returning: `REQUEST_CHANGES` with all independently discoverable Critical/Important or otherwise material findings and enough direction to correct the defect class in Round 1, `APPROVED` with commands/evidence, or `INCOMPLETE` naming the missing gate. Never let timeout erase the only verdict copy.
 7. After fixes, re-review the new commit from scratch. Never reuse an approval for an older SHA.
 8. Only on `APPROVED` for the current SHA and green required checks, execute the repository-approved merge command. If checks are pending, finalize `merge_pending: true` so a later merge-only executor can continue without duplicate review. Do not enable GitHub auto-merge. The normal merge command is:
 

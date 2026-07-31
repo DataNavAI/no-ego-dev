@@ -1,7 +1,7 @@
 ---
 name: ui-reviewer
-description: "Use when reviewing design images, screenshots, prototypes, or real product UIs from an experienced UI designer perspective, benchmarking comparable market leaders, creating project UI review guidelines, and giving prioritized design feedback."
-version: 0.2.0
+description: "Use as a fresh read-only reviewer for frozen UI evidence, benchmarking comparable market leaders and giving prioritized design feedback against the canonical project UI guideline."
+version: 0.2.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -41,11 +41,15 @@ Rounds 2 and 3 are bounded disposition checks. Later-round feedback is limited t
 
 **Before substantive review**, require an authenticated controller receipt containing `lineage`, requested round (`1`–`3`), `candidate_identity` (commit SHA or frozen UI-evidence digest), `review_kind`, and `required_review_kinds`. If any field is **missing or ambiguous**, return `BLOCKED_INVALID_LINEAGE` without reviewing. A requested **Round 4** returns `ITERATION_LIMIT_REACHED` without substantive review. Every report must bind those fields, the evidence-generation identity, and the verdict; all required review kinds for one candidate share its round number.
 
+## Independent read-only boundary
+
+Run this skill in a **fresh review-only leaf** that did not author the guideline, design, implementation, or evidence. The reviewer **must not create, edit, or update** candidate artifacts, project guidance, screenshots, or code. Use only the frozen canonical guideline and exact evidence identity supplied by the orchestrator; authoring and remediation belong to `ui-designer` or `coder` in a later candidate generation.
+
 ## Durable Artifact Locations
 
 Prefer project-local artifacts so future product, design, coding, and QA agents can reuse the review standard:
 
-- Project UI review guideline: `.projects/<project>/design/ui-review-guideline.md`
+- Project UI review guideline: `.projects/<project>/design/ui-guidelines.md`
 - Market/comparable research notes: `.projects/<project>/design/market-comparables.md` or a section inside the review guideline
 - UI review reports: `.projects/<project>/design/ui-reviews/<YYYYMMDD-HHMMSS>-<scope>.md`
 - Evidence/images, if not attached to issues: `.projects/<project>/design/.artifacts/<review-id>/`
@@ -65,7 +69,7 @@ Do not approve a UI-bearing design from text alone when images or a runnable UI 
 
 ## Project UI Review Guideline Requirement
 
-Before performing a serious review, ensure a project UI review guideline exists. If it does not, create the smallest useful guideline first at `.projects/<project>/design/ui-review-guideline.md` or the project equivalent.
+Before review, require the frozen canonical project UI guideline at `.projects/<project>/design/ui-guidelines.md` or the repository's already-established equivalent. If it is missing, return `BLOCKED_MISSING_UI_GUIDELINE`; do not create a competing review contract while judging the candidate.
 
 The guideline is not a generic checklist. It must be project-specific and should include:
 
@@ -104,9 +108,9 @@ For a frozen candidate reviewed against a finite set of authoritative comments, 
 1. **Orient**
    - Identify project, scope, artifact paths/URLs, target platform/device, PRD/issue/feature, and expected audience.
    - Read the project UI guideline and design brief if they exist.
-   - If the `ui-review-guideline.md` does not exist, create it before final review.
+   - If the canonical `ui-guidelines.md` does not exist, return `BLOCKED_MISSING_UI_GUIDELINE` before final review.
 
-2. **Research comparables when guideline is missing or stale**
+2. **Research comparables when the frozen guideline calls for it or appears stale**
    - Search for top services in the category and adjacent services with similar UI problems.
    - Capture 3–7 comparables with URLs, why they matter, and the specific UI lessons relevant to this project.
    - Avoid copying brand-specific visuals or proprietary content; extract interaction patterns and quality expectations.
@@ -281,7 +285,7 @@ For a full photo-heavy design-system specimen and rights-safe fixture review, fo
 
 ## Verification Checklist
 
-- [ ] Project UI review guideline exists or was created/updated at a durable path.
+- [ ] Frozen canonical project UI guideline exists at the durable path and the reviewer did not modify it.
 - [ ] Guideline includes project context, top comparable services, foundational UI principles, and an explicit approval bar.
 - [ ] Review used design images, screenshots, or real UI evidence; text-only limitations are marked.
 - [ ] Findings are tied to principles, guideline sections, comparable patterns, accessibility, or user-journey impact.

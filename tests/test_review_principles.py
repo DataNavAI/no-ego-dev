@@ -161,3 +161,55 @@ def test_direct_reviewers_reject_missing_or_fourth_round_before_review_and_bind_
             "required_review_kinds",
         ):
             assert phrase in content, f"{name} missing fail-closed lineage receipt {phrase!r}"
+
+
+def test_round_one_includes_all_material_findings_not_only_blockers() -> None:
+    phrase = "all independently discoverable Critical/Important or otherwise material findings"
+    for name in REVIEW_ORCHESTRATION_SKILLS:
+        assert phrase in skill_text(name), f"{name} narrows Round 1 below material findings"
+
+
+def test_project_manager_dispatches_fresh_domain_reviewer_leaves() -> None:
+    content = skill_text("project-manager")
+    for role in ("prd-reviewer", "technical-design-reviewer", "ui-reviewer"):
+        assert role in content
+    for phrase in (
+        "fresh review-only leaf",
+        "did not author or edit the candidate",
+        "exact artifact identity",
+        "durable report location",
+    ):
+        assert phrase in content
+
+
+def test_ui_reviewer_is_read_only_and_uses_the_canonical_guideline() -> None:
+    content = skill_text("ui-reviewer")
+    assert ".projects/<project>/design/ui-guidelines.md" in content
+    assert "ui-review-guideline.md" not in content
+    for phrase in (
+        "fresh review-only leaf",
+        "must not create, edit, or update",
+        "BLOCKED_MISSING_UI_GUIDELINE",
+    ):
+        assert phrase in content
+
+
+def test_complete_domain_reviewer_packages_are_publishable() -> None:
+    expected = {
+        "prd-reviewer": {"SKILL.md", "EVAL.yaml", "evaldata/README.md"},
+        "technical-design-reviewer": {"SKILL.md", "EVAL.yaml", "evaldata/README.md"},
+        "ui-reviewer": {"SKILL.md", "EVAL.yaml", "evaldata/README.md"},
+    }
+    for name, required in expected.items():
+        package = SKILLS / name
+        actual = {str(path.relative_to(package)) for path in package.rglob("*") if path.is_file()}
+        assert required <= actual
+
+
+def test_direct_reviewer_fixtures_reject_late_feedback_and_round_four() -> None:
+    for name in DIRECT_REVIEW_SKILLS:
+        fixture = (SKILLS / name / "evaldata" / "README.md").read_text(encoding="utf-8")
+        assert "Negative scenario" in fixture
+        assert "Round 2" in fixture
+        assert "Round 4" in fixture
+        assert "ITERATION_LIMIT_REACHED" in fixture
