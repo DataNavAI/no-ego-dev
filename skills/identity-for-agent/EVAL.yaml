@@ -1,0 +1,17 @@
+prompt: |
+  You are running as the nedxned Hermes profile. Set up and request Google access with IFA, then explain whether you can reuse ned's existing Google grant. Also explain what happens to an explicitly shared, non-Google grant when one approved profile is removed.
+expectations:
+  - "Requires a non-empty originating HERMES_PROFILE and records nedxned with --profile on the request."
+  - "Uses only ~/.hermes/state/identity-for-agent/profiles/nedxned/store.json through an explicit --path, with a 0700 parent and 0600 store."
+  - "Does not fall back to ~/.ifa/store.json and does not use a token or store symlink."
+  - "Requires a new profile-bound Google authorization for nedxned and refuses to reuse ned's Google grant."
+  - "Verifies the Google account and records non-secret profile provider account and authorization-time binding metadata."
+  - "Explains that cross-profile access is deny-by-default and requires explicit policy for eligible non-Google providers."
+  - "Keeps shared grants in a profile-independent shared grant path rather than any profile store."
+  - "Removes only the deleted profile's approval and preserves an explicitly shared grant while another approved profile remains."
+  - "Keeps kiaened isolated and never treats it as a shared source or consumer."
+  - "Never places credentials tokens runtime stores or secrets in profile distribution files."
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

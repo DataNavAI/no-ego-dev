@@ -9,6 +9,7 @@ distribution_owned:
   - AGENTS.md
   - config.yaml
   - skills/
+  - skills/identity-for-agent/
   - eval_runner/
   - evaldata/
   - README.md
@@ -22,3 +23,10 @@ env_requires:
   - name: ANTHROPIC_API_KEY
     description: "Model access for Hermes if using Anthropic."
     required: false
+identity_for_agent:
+  install_profiles:
+    - ned
+    - nedxned
+    - alphaned
+    - kiaened
+  credential_policy: skills/identity-for-agent/references/profile-credential-policy.yaml

@@ -19,6 +19,10 @@ test('published npm package contains the NED distribution and excludes runtime s
     assert.ok(files.includes(required), `${required} missing from npm package`);
   }
   assert.ok(files.some((file) => file.startsWith('skills/coder/')));
+  assert.ok(files.includes('skills/identity-for-agent/SKILL.md'));
+  assert.ok(files.includes('skills/identity-for-agent/EVAL.yaml'));
+  assert.ok(files.includes('skills/identity-for-agent/evaldata/README.md'));
+  assert.ok(files.includes('skills/identity-for-agent/references/profile-credential-policy.yaml'));
   assert.ok(files.some((file) => file.startsWith('eval_runner/')));
   assert.ok(files.includes('evaldata/ned-create/EVAL.yaml'));
   assert.equal(files.includes('.env'), false);

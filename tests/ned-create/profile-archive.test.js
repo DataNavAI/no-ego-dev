@@ -20,6 +20,10 @@ test('profile archive contains the distribution but excludes runtime state and r
   assert.ok(entries.includes('SOUL.md'));
   assert.ok(entries.includes('config.yaml'));
   assert.ok(entries.some((entry) => entry.startsWith('skills/coder/')));
+  assert.ok(entries.includes('skills/identity-for-agent/SKILL.md'));
+  assert.ok(entries.includes('skills/identity-for-agent/EVAL.yaml'));
+  assert.ok(entries.includes('skills/identity-for-agent/evaldata/README.md'));
+  assert.ok(entries.includes('skills/identity-for-agent/references/profile-credential-policy.yaml'));
   assert.ok(entries.some((entry) => entry.startsWith('eval_runner/')));
   assert.ok(entries.includes('evaldata/ned-create/EVAL.yaml'));
   assert.equal(entries.some((entry) => entry.startsWith('.git/')), false);

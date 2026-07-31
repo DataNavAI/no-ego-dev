@@ -131,6 +131,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `play-store-cli`: supports Google Play CLI/API workflows.
 - `integrator`: researches and wires up external tools, accounts, APIs, and provider setup.
 - `agent-identity-and-access`: helps create agent-owned accounts, OAuth access, browser SSO, and email identity.
+- `identity-for-agent`: brokers approved third-party access through profile-attributed requests and isolated per-profile credential stores.
 - `web-game-dev`: builds browser games and interactive web experiences.
 - `android-app-dev`: supports native Android app work.
 - `react-native-app-dev`: supports cross-platform mobile app work.
