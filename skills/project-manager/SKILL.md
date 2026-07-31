@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.13.0
+version: 0.14.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -34,6 +34,8 @@ The project manager also owns the routine service status loop for live projects:
 - Completion requires evidence, not just a worker saying “done”.
 - A pending asynchronous review blocks only that branch's merge or production deployment. Keep the active milestone moving by dispatching another dependency-safe, non-overlapping child in an isolated branch/worktree when one exists; do not start a later milestone, overlap generated-output ownership, or ignore a late blocking verdict merely to avoid idle time.
 - When the user expects autonomous continuation after worker-state changes and prefers no duplicate queue, keep GitHub/Linear canonical and use hook-only continuation: separate single-task `delegate_task` calls, async completion delivery back into the parent session, direct evidence verification, live tracker reconciliation, then immediate kickoff of the next dependency-safe task. `subagent_stop` is observer-only; child status cannot complete work or release dependencies, and batched delegation is not a first-finisher event stream. State the process-local trade-off honestly: gateway/parent interruption can lose active children or their callback, so recover remote artifacts before resuming. Use Hermes Kanban only when unattended restart durability materially outweighs queue duplication and the user accepts it. Load `delegation-reliability` and follow `references/harness-completion-hooks.md`.
+- Scope hook-only continuation to an interactive parent that remains available to receive completion. A cron run or fresh scheduled session must instead require a durable attempt-scoped report or marked tracker comment, dispatch at most one reviewer per run, and reconcile that evidence on the next tick. Never create same-run reviewer retry fan-out because a result was not reinjected.
+- Deduplicate review work by exact candidate SHA and review kind. A valid negative verdict is complete and blocks that SHA; assign one remediation owner and review only the resulting new SHA. Budget every review, reserve time to close the report, reuse trustworthy exact-SHA CI, and preserve an explicit `INCOMPLETE` artifact when required evidence does not fit.
 - When GitHub, Linear, or another tracker already owns the issue backlog, do **not** maintain a second copy of issue bodies in Kanban. Keep external issues canonical and use thin idempotent Kanban cards for execution state, machine-readable dependency edges, worktree/assignee routing, retries, and evidence handoff. Workers re-read the live issue before editing and update the external issue/PR plus Kanban completion as one reconciled handoff. Follow [`references/canonical-issues-thin-kanban-queue.md`](references/canonical-issues-thin-kanban-queue.md).
 
 ## Epic Decomposition and Progress Truthfulness

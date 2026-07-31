@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.5.0
+version: 1.6.0
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -147,6 +147,20 @@ See `references/analytics-validation-adversarial-probes.md` for loopback provide
 For generated browser analytics, audit the complete renderer → embedded data → delegated listener → sender → server-validator chain. Do not accept tests that inject structured records directly into an extracted helper when production initializes from a generated payload; verify every required record is actually embedded. Probe canonical-host and path-prefixed serving surfaces, exact supported-interface boundary widths, auth/session timing for `signed_in`, and action-level semantic attributes that distinguish biography/fact sources from official outbound actions without relying on visible copy. See `references/generated-browser-analytics-lifecycle-audit.md` for the reusable lifecycle and document-structure matrix.
 
 ## Verification discipline
+
+### Bounded execution and report-first closure
+
+At review start, classify the candidate by diff size, risk, changed components, and trustworthy exact-SHA CI already available. Build a time budget before running commands and reserve the final 20% to finalize the durable report. Write an attempt-scoped `IN_PROGRESS` header containing repository, candidate SHA, base SHA, review kind, and planned gates before optional slow work.
+
+Independence does not require wasteful duplication. Inspect the complete diff and independently judge test adequacy, but reuse broad exact-SHA CI when its workflow, tested SHA, commands, and result are verified. Spend fresh execution time on missing focused or adversarial probes. Do not stack equivalent `make check`, full suite, race suite, lint, install, browser, and stress commands when they cover the same evidence. Never run an unbounded stress loop in a bounded reviewer.
+
+Before the deadline, atomically finalize exactly one durable state:
+
+- `PASS`/`APPROVED` only when every required gate is satisfied;
+- `FAIL`/`REQUEST_CHANGES` with the complete independently discoverable blocker set;
+- `INCOMPLETE` with fresh evidence, reused exact-SHA evidence, and the exact missing gate.
+
+`INCOMPLETE` is fail-closed and cannot approve a candidate. A replacement reviewer should receive the prior artifact and run only the missing scope after revalidating candidate identity; it must not restart already trustworthy broad checks. A valid negative verdict against an unchanged SHA must not be repeatedly re-reviewed—fix the blockers, freeze a new SHA, then review the new candidate.
 
 - Run focused task tests when they preserve immutability.
 - Before invoking a focused test directly, inspect its fixture prerequisites and the canonical package-script setup. A test file may assume an ignored/generated artifact created by an earlier script; a direct filtered invocation can therefore produce setup failures that are not implementation failures.

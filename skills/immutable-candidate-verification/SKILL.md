@@ -1,7 +1,7 @@
 ---
 name: immutable-candidate-verification
 description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, independent review, and reproducible evidence.
-version: 1.0.46
+version: 1.0.47
 ---
 
 # Immutable Candidate Verification
@@ -15,6 +15,8 @@ A task is complete only when every required gate names the same clean commit SHA
 Do not build, push, stage, or deploy the candidate artifact after staged-diff/pre-commit reviews alone. Commit first, run every required immutable post-commit gate against that exact clean SHA, and only then construct the one-time artifact. Aggregate parallel verdicts fail-closed: any specification **FAIL**, quality **REQUEST_CHANGES**, domain **REJECTED**, timeout, provider interruption, missing verdict, or completed delegation whose verdict text was not preserved leaves the task and candidate incomplete even if a separate completion reviewer says **COMPLETE**. Revoke and clearly label any already-built or staged candidate discovered to lack these gates; preserve its digest and deployment evidence as rejected history, never as authorization for the next task or promotion.
 
 Treat a late verdict and its findings separately. A verdict against an older SHA can never approve or reject the current candidate, but its reproducible findings remain useful hypotheses. Triage every late Blocking/High finding against the current exact tree instead of dismissing it as stale: reproduce it, add a regression when relevant, fix it if still present, rerun affected gates, and obtain fresh independent approval for the resulting SHA. When several reviewers finish out of order, preserve the newest exact-SHA verdict while still applying any older finding that the newest review missed.
+
+Index durable review evidence by candidate SHA **and review kind**. For an unchanged candidate, one structurally valid `FAIL`, `REQUEST_CHANGES`, or `REJECTED` result closes that gate negatively; it must route remediation and suppress duplicate review dispatch until a new SHA exists. Timeout, malformed output, or missing delivery may justify one replacement only after checking the attempt's durable artifact, and that replacement should cover missing evidence rather than rerunning verified exact-SHA checks. This deduplication never converts negative evidence into approval and never allows one review kind to substitute for another.
 
 For journey analytics or domain events that claim retry/idempotency across reload, replay, or rollover, apply `references/persisted-journey-event-outbox-review.md`. Review activation and completion as one engine-owned persisted outbox: retain full envelopes and original keys until durable acknowledgement, exercise immediate-transition and route-close races at every awaited sink boundary, treat history caps as unresolved-first priority selection rather than newest-first truncation, and require bounded backpressure rather than pending-event eviction. Before re-review, run the complete global key-location matrix across active/history and activation/completion fields; reject cross-type or cross-payload ambiguity before persistence, preserve raw stored bytes on fail-closed recovery, protect acknowledged keys after reload, ensure stale async continuations cannot acknowledge/persist/render after cancellation, and ensure every browser-unavailable path installs `noindex`.
 

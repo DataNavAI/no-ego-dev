@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans via delegate_task subagents (2-stage review)."
-version: 1.3.0
+version: 1.4.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -18,6 +18,10 @@ metadata:
 Execute implementation plans by dispatching fresh subagents per task with systematic two-stage review.
 
 **Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration.
+
+**Bounded review principle:** Fresh context does not mean repeated execution of the same unchanged candidate. Every review stage has a fixed budget, a durable attempt-scoped result, and an exact `(candidate SHA, review kind)` identity. Reserve the final 20% for report closure. Reuse verified exact-SHA CI for broad coverage, run only missing focused/adversarial checks, and return `INCOMPLETE` rather than timing out without evidence. A valid negative verdict routes one fixer; it is not retried against the same SHA.
+
+For scheduled controllers, never rely on async completion reinjection. Dispatch at most one reviewer per run, require a durable external report or marked tracker comment, end as `REVIEW_PENDING`, and reconcile the durable sink before the next retry. Attach only the controller skill to the cron job by default; each child loads its role-specific review skills so the parent does not begin with an oversized repeated context.
 
 ## When to Use
 
