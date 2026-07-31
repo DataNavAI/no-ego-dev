@@ -26,6 +26,10 @@ Require **first-round completeness**. **Round 1** is the comprehensive pass and 
 
 **No round 4** is allowed for the same stable artifact lineage or implementation scope. If Round 3 cannot approve, preserve the exact unresolved hard-to-reverse decisions and options, block the candidate, and escalate to the user/owner. Do not reset the count by renaming, changing reviewer roles, splitting review kinds, or obtaining human authorization for another autonomous cycle. Materially new owner-approved requirements form a new scope; corrections to the same findings do not.
 
+### Canonical round accounting
+
+**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all earlier commit-bound verdicts.
+
 ## Milestone Rules
 
 - Never represent a broad product outcome, feature area, architecture package, release, or multi-surface request as one implementation task. Create a milestone/epic parent instead; the parent coordinates scope and progress but is not itself the unit assigned for implementation.

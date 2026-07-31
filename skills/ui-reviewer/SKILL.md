@@ -37,6 +37,10 @@ Rounds 2 and 3 are bounded disposition checks. Later-round feedback is limited t
 - **Round 3:** final review of unresolved journey/design-system risks and revision-introduced regressions.
 - **No round 4** for the same design lineage and stable scope. If round 3 cannot pass, preserve the unresolved hard-to-reverse choices and escalate to the user/owner for scope, direction, or residual-risk disposition. Renaming artifacts or swapping reviewers does not reset the cap.
 
+## Mandatory review lineage gate
+
+**Before substantive review**, require an authenticated controller receipt containing `lineage`, requested round (`1`–`3`), `candidate_identity` (commit SHA or frozen UI-evidence digest), `review_kind`, and `required_review_kinds`. If any field is **missing or ambiguous**, return `BLOCKED_INVALID_LINEAGE` without reviewing. A requested **Round 4** returns `ITERATION_LIMIT_REACHED` without substantive review. Every report must bind those fields, the evidence-generation identity, and the verdict; all required review kinds for one candidate share its round number.
+
 ## Durable Artifact Locations
 
 Prefer project-local artifacts so future product, design, coding, and QA agents can reuse the review standard:
@@ -216,6 +220,12 @@ Related product docs/issues:
 # UI Review: <scope>
 
 Status: PASS | NEEDS ITERATION | BLOCKED
+Lineage:
+Round: 1 | 2 | 3
+Candidate identity:
+Review kind: ui
+Required review kinds:
+Evidence-generation identity:
 Date/time:
 Reviewer: NED UI Reviewer
 Project:
@@ -237,7 +247,7 @@ Target platform/device:
 
 ## Findings
 ### <finding title>
-Severity: blocker | high | medium | low
+Severity: blocker | high | medium
 Principle/guideline/comparable reference:
 Observed:
 Impact:

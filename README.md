@@ -131,7 +131,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `ui-reviewer`: independently reviews frozen UI evidence for durable journey/design-system risk while deferring reversible cosmetic nits.
 - `spec-compliance-review`: audits fixed candidates against authoritative plans, contracts, and acceptance matrices with complete first-round findings and no more than three rounds.
 - `immutable-candidate-verification`: keeps TDD, candidate identity, independent reviews, release evidence, and three-round review lineage bound to exact commits.
-- `coder`: builds and verifies the product changes.
+- `coder`: builds product changes, provisions ecosystem-appropriate project-owned static analysis when absent, and reruns it after every code change plus final full verification.
 - `qa`: tests the user flow, catches regressions, and reports evidence.
 - `devops`: handles deployment, operational checks, domains, CI/CD, and basic observability.
 - `marketer`: creates positioning, channel plans, launch copy, outreach notes, and feedback loops.

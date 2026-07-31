@@ -38,7 +38,11 @@ Enforce **first-round completeness**. **Round 1** inspects the complete issue co
 
 **No round 4** is dispatched for the same stable issue/PR scope. If Round 3 is not approved, leave the PR blocked and escalate the unresolved hard-to-reverse decision, risk, or scope choice. Renaming a branch, changing reviewers, or splitting review kinds does not reset the count.
 
-Scheduled controllers must assume delegated completion delivery is **not durable** across cron-run exit, gateway restart, or a fresh controller session. A review is reusable only when it leaves a controller-readable artifact bound to `(repository, PR, exact head SHA, review kind, attempt ID)`—for example one structured PR comment with a stable marker or an attempt-scoped JSON report outside every repository. The controller must read that artifact back before acting; a cache filename, delegation handle, lifecycle status, or child summary alone is not a merge gate.
+#### Canonical round accounting
+
+**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all earlier commit-bound verdicts.
+
+Scheduled controllers must assume delegated completion delivery is **not durable** across cron-run exit, gateway restart, or a fresh controller session. A review is reusable only when it leaves a controller-readable artifact bound to `(repository, PR, lineage, round, exact head SHA, complete required-review-kind set, review kind, attempt ID)`—for example one structured PR comment with a stable marker or an attempt-scoped JSON report outside every repository. The controller must read that artifact back before acting; a cache filename, delegation handle, lifecycle status, or child summary alone is not a merge gate.
 
 Before dispatching any reviewer:
 

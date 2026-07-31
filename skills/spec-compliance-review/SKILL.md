@@ -34,6 +34,10 @@ Rounds 2 and 3 are disposition and regression checks. Later-round feedback is li
 - **Round 3:** final independent verification of the remaining correction set and correction-introduced regressions.
 - **No round 4** for the same stable scope or artifact lineage. If round 3 cannot approve, keep the candidate blocked and escalate the unresolved hard-to-reverse decision, residual risk, or scope choice to the user/owner. Renaming the candidate, changing reviewers, or splitting the same findings across review kinds does not reset the count. Materially new requirements create a new scope only when the owner explicitly accepts that new review contract.
 
+## Mandatory review lineage gate
+
+**Before substantive review**, require an authenticated controller receipt containing `lineage`, requested round (`1`–`3`), `candidate_identity`, `review_kind`, and `required_review_kinds`. If any field is **missing or ambiguous**, return `BLOCKED_INVALID_LINEAGE` without reviewing. A requested **Round 4** returns `ITERATION_LIMIT_REACHED` without substantive review. Every durable result must repeat all receipt fields plus the verdict; all required review kinds for one candidate share its round number.
+
 ## Scope and immutability
 
 First distinguish the review boundary:
@@ -249,7 +253,7 @@ A timeout or missing completion summary does not make a surviving report trustwo
 
 Use the user's requested verdict vocabulary exactly, including paired forms such as `APPROVED` / `CHANGES REQUIRED`. If none is specified, begin with exactly `PASS` or `FAIL`.
 
-When the user requests a blocker-only verdict, put the verdict first and include only concrete release blockers. Omit positive findings, general commentary, verification summaries, recommendations, and non-blocking polish unless needed to establish a blocker. If the candidate passes, return only the requested positive verdict token (for example, `APPROVED` or `PASS`) unless the user explicitly requests additional metadata. Do not append “no blockers,” cleanliness summaries, or low-polish notes merely to show work. For each blocker, preserve only the evidence essentials: severity, violated requirement, file/line range, observed reproducer, and consequence.
+When the user requests a blocker-only chat verdict, put the verdict first and include only concrete release blockers. Omit positive findings, general commentary, verification summaries, recommendations, and non-blocking polish unless needed to establish a blocker. A passing chat response may contain only the requested token, but the reviewer must first persist a durable receipt containing `lineage`, requested round, `candidate_identity`, `review_kind`, `required_review_kinds`, verdict, and reviewer/evidence identity. Do not append “no blockers,” cleanliness summaries, or low-polish notes merely to show work. For each blocker, preserve only the evidence essentials: severity, violated requirement, file/line range, observed reproducer, and consequence.
 
 When the user did **not** request blocker-only output, then list as applicable:
 

@@ -33,6 +33,8 @@ Late arrival order is not priority. Candidate identity, report integrity, and re
 
 Absolute maximum for one stable implementation scope: three total review rounds. Every changed SHA still requires fresh independent review within that cap before merge.
 
+One review round is one immutable candidate generation, not one reviewer invocation. Every required review kind against that candidate shares the same round number whether scheduled sequentially or concurrently; timeout replacements stay in that round. Persist the complete required-review-kind set and outcomes in a receipt keyed by lineage, round, and candidate SHA. A corrected candidate increments the round.
+
 - **Round 1** reviews the immutable candidate comprehensively, prioritizes hard-to-reverse/high-consequence risk, follows bounded sibling instances of each defect class, and returns all independently discoverable findings in one closed correction matrix. Reversible nits do not block or create follow-up rounds.
 - Add one regression test per blocking finding and apply a bounded correction.
 - **Round 2** re-reviews the corrected immutable commit, dispositions the complete round-1 matrix, and actively reproduces prior attacks.
