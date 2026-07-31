@@ -1,7 +1,7 @@
 ---
 name: immutable-candidate-verification
 description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, independent review, and reproducible evidence.
-version: 1.0.47
+version: 1.0.48
 ---
 
 # Immutable Candidate Verification
@@ -17,6 +17,14 @@ Do not build, push, stage, or deploy the candidate artifact after staged-diff/pr
 Treat a late verdict and its findings separately. A verdict against an older SHA can never approve or reject the current candidate, but its reproducible findings remain useful hypotheses. Triage every late Blocking/High finding against the current exact tree instead of dismissing it as stale: reproduce it, add a regression when relevant, fix it if still present, rerun affected gates, and obtain fresh independent approval for the resulting SHA. When several reviewers finish out of order, preserve the newest exact-SHA verdict while still applying any older finding that the newest review missed.
 
 Index durable review evidence by candidate SHA **and review kind**. For an unchanged candidate, one structurally valid `FAIL`, `REQUEST_CHANGES`, or `REJECTED` result closes that gate negatively; it must route remediation and suppress duplicate review dispatch until a new SHA exists. Timeout, malformed output, or missing delivery may justify one replacement only after checking the attempt's durable artifact, and that replacement should cover missing evidence rather than rerunning verified exact-SHA checks. This deduplication never converts negative evidence into approval and never allows one review kind to substitute for another.
+
+## Risk-weighted review convergence
+
+Use **Risk-weighted review** within every immutable gate. Prioritize hard-to-reverse or high-consequence changes such as public contracts, destructive migrations, authorization/security/privacy, payments, critical journeys, infrastructure lock-in, broad blast radius, and changes without credible rollback. Reversible nits—naming taste, cosmetic formatting, optional refactors, or minor polish that can safely be fixed later—do not block and do not justify a new candidate/review round.
+
+Enforce **first-round completeness** for each stable scope. **Round 1** is comprehensive: inspect the full frozen candidate and return all independently discoverable blockers in one deduplicated finding set with evidence and enough direction to fix each defect class. **Round 2** verifies dispositions on the corrected exact SHA. **Round 3** is final and checks unresolved findings plus correction-introduced regressions. Later-round new feedback is allowed only for remediation changes, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must state `Why it was not discoverable in round 1: <cause>`.
+
+**No round 4** is permitted for the same stable scope or artifact lineage. Every correction still invalidates prior SHA-bound verdicts, but after a negative Round 3 the workflow must block and escalate rather than create and review another remediation SHA. Tests, scanners, renaming, reviewer replacement, or splitting review kinds cannot reset or waive the three-round maximum.
 
 For journey analytics or domain events that claim retry/idempotency across reload, replay, or rollover, apply `references/persisted-journey-event-outbox-review.md`. Review activation and completion as one engine-owned persisted outbox: retain full envelopes and original keys until durable acknowledgement, exercise immediate-transition and route-close races at every awaited sink boundary, treat history caps as unresolved-first priority selection rather than newest-first truncation, and require bounded backpressure rather than pending-event eviction. Before re-review, run the complete global key-location matrix across active/history and activation/completion fields; reject cross-type or cross-payload ambiguity before persistence, preserve raw stored bytes on fail-closed recovery, protect acknowledged keys after reload, ensure stale async continuations cannot acknowledge/persist/render after cancellation, and ensure every browser-unavailable path installs `noindex`.
 

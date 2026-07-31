@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.6.0
+version: 1.7.0
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -14,6 +14,25 @@ metadata:
 Use this skill when the user asks for an independent spec audit, immutable commit review, release-gate review, or exact PASS/FAIL verdict against written requirements.
 
 **Core principle:** Passing tests are evidence, not the contract. Build an explicit requirement matrix from the authoritative plan, technical specification, failure matrix, and acceptance checklist, then seek false-success cases.
+
+## Risk-weighted review priority
+
+Prioritize findings by consequence and reversibility, not by how many comments can be produced. Spend the deepest review effort on decisions that are **hard to reverse** or expensive to unwind: destructive data or schema changes, public contracts and migrations, authentication/authorization, privacy and security boundaries, money movement, compliance commitments, infrastructure lock-in, broad blast radius, and choices without a credible rollback. Also block an immediately severe correctness or safety defect even when its patch is mechanically small.
+
+Do not block on reversible nits that can safely be fixed later: naming preferences, cosmetic formatting, optional refactors, minor wording, speculative abstractions, or polish that does not alter the contract, critical journey, safety, or rollback posture. Omit them or place a short grouped note in deferred follow-up; never create another review round for them. Severity is the combination of consequence, reversibility, and evidence—not reviewer taste.
+
+## First-round completeness
+
+**Round 1 is the comprehensive review.** Inspect the complete authorized scope and present all independently discoverable findings in round one as much as possible. Do not stop after the first blocker. Use the requirement/failure matrix, inspect related instances of every discovered defect class, deduplicate overlaps, and give the author one coherent correction set with evidence, impact, and the smallest safe direction—not a sequence of surprises.
+
+Rounds 2 and 3 are disposition and regression checks. Later-round feedback is limited to unresolved round-1 findings, regressions or risks introduced by the correction, evidence that was genuinely unavailable in round 1, or a Critical/Important defect that could not reasonably have been discovered in the original frozen scope. Every newly raised later-round blocker must include `Why it was not discoverable in round 1: <cause>`. Do not introduce new preferences, reversible nits, or unrelated review surfaces after the author has followed the first report.
+
+## Three-round maximum
+
+- **Round 1:** complete risk-weighted review and a sufficiently detailed correction map.
+- **Round 2:** verify dispositions on the corrected immutable candidate and report only allowed later-round findings.
+- **Round 3:** final independent verification of the remaining correction set and correction-introduced regressions.
+- **No round 4** for the same stable scope or artifact lineage. If round 3 cannot approve, keep the candidate blocked and escalate the unresolved hard-to-reverse decision, residual risk, or scope choice to the user/owner. Renaming the candidate, changing reviewers, or splitting the same findings across review kinds does not reset the count. Materially new requirements create a new scope only when the owner explicitly accepts that new review contract.
 
 ## Scope and immutability
 

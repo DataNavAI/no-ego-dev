@@ -1,0 +1,26 @@
+prompt: |
+  You are a fresh delegated leaf subagent. Load and use the technical-design-reviewer skill to review the exact LaunchPad recommendation technical design revision in the fixture. Do not edit the spec or repository. Return the required structured verdict.
+expectations:
+  - "runs only in a fresh delegated leaf subagent and blocks self review in the architect implementer or orchestrator context"
+  - "reviews the exact design revision and repository evidence from a neutral packet without private author reasoning preferred architecture or desired verdict"
+  - "checks assumptions invariants contracts states failure handling concurrency idempotency data integrity security migration rollout and rollback"
+  - "actively considers a smaller design and requires the fewest concepts and dependencies that preserve integrity testability and operability"
+  - "actively considers the simplest viable solution reuses existing boundaries data stores jobs interfaces telemetry and runbooks before adding new services queues tables caches flags or configuration"
+  - "requires a complexity and redundancy ledger with necessity alternative test surface operational owner cost and deletion condition"
+  - "requires deterministic unit contract integration end to end migration concurrency failure and smoke tests as applicable with concrete commands and evidence"
+  - "rejects hidden side effects nondeterminism environment coupling and mocks that only prove mocks"
+  - "requires structured logs outcome and failure metrics health checks alerts dashboards synthetic checks invariant checks telemetry self checks and recovery verification"
+  - "makes monitoring and alerts automatically testable with simulated faults and fails closed when telemetry disappears"
+  - "checks existing system fit removes duplicate sources paths rules and configuration and defines bounded deprecation"
+  - "returns structured integrity simplicity complexity testability operability findings and exact revision verdict"
+  - "negative architect implementer or orchestrator invocation returns REVIEW_DELEGATION_REQUIRED without findings or approval and unavailable delegation remains BLOCKED"
+  - "does not edit code specs deploy migrate merge or change external systems"
+  - "prioritizes hard-to-reverse and high-consequence architecture decisions while ignoring reversible nits that can safely be fixed later"
+  - "presents all independently discoverable findings in round one with evidence constraints and enough corrective direction"
+  - "later-round feedback is limited to unresolved findings revision-introduced regressions genuinely new evidence or material issues not reasonably discoverable in round one"
+  - "requires every allowed new later-round blocker to explain why it was not discoverable in round one"
+  - "allows no more than three total review rounds for one stable technical-design lineage and never dispatches round four"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
