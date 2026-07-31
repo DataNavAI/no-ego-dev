@@ -16,6 +16,7 @@ expectations:
   - "APPROVED is impossible while any required gate is missing; INCOMPLETE remains fail-closed."
   - "The reviewer reserves report-closure time and writes a durable candidate-bound outcome."
   - "A durable approval may enable auto-merge or be consumed by one merge-only executor after exact-SHA approval, checks, and policy are revalidated; no duplicate reviewer is dispatched."
+  - "The merge-only executor uses an atomic expected-head operation such as gh pr merge --match-head-commit APPROVED_SHA, and refuses to merge when no atomic head guard is available."
 setupCommands: []
 teardownCommands: []
 parameters:

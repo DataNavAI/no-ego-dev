@@ -48,7 +48,7 @@ A valid durable `APPROVED` result must not deadlock merely because required CI c
 2. If CI is still pending and repository policy permits, the reviewer enables auto-merge bound to the reviewed head SHA.
 3. Otherwise the reviewer finalizes approval with `merge_pending: true`, the exact head SHA, approval artifact digest/marker, required-check identities, and merge policy.
 4. A later run revalidates that the PR head still equals the approved SHA, the approval artifact is intact, every required check is green for that SHA, and branch protection permits the configured method. It then dispatches one **merge-only executor**—not another reviewer.
-5. The merge-only executor may only re-read those gates, execute the approved merge command, and return the merge handle. It may not edit code, change the approval, waive checks, approve a different SHA, or broaden scope. Any identity drift or failed gate stops fail-closed and requires fresh independent review of the new SHA.
+5. The merge-only executor may only re-read those gates, execute the approved merge command with an atomic head-match guard, and return the merge handle. For GitHub CLI it must pass `--match-head-commit APPROVED_SHA`; a read-then-merge comparison alone has a race window. It may not edit code, change the approval, waive checks, approve a different SHA, or broaden scope. Any identity drift, head-match failure, or failed gate stops fail-closed and requires fresh independent review of the new SHA.
 
 This continuation preserves independent approval while preventing duplicate same-SHA review. The controller and orchestrator verify the merge afterward but never perform it themselves.
 
@@ -272,12 +272,12 @@ It must independently:
 8. Only on `APPROVED` for the current SHA and green required checks, execute the repository-approved merge command. If checks are pending, enable auto-merge when allowed or finalize `merge_pending: true` so a later merge-only executor can continue without duplicate review. The normal merge command is:
 
 ```bash
-gh pr merge PR_NUMBER --repo OWNER/REPO --squash --delete-branch
+gh pr merge PR_NUMBER --repo OWNER/REPO --squash --delete-branch --match-head-commit APPROVED_SHA
 ```
 
 If the same GitHub identity cannot submit a formal approval on its own PR, do not fabricate approval. Record the independent agent verdict in a PR comment and merge only if repository policy permits. If human approval is required, enable auto-merge when allowed or leave the PR open with `agent:human-review`.
 
-The merge-only executor receives only the PR identity, exact approved SHA, durable approval marker/digest, required-check identities, branch-protection policy, and approved merge method. It must re-read all of them, fail closed on drift, perform no code or review work, and merge at most once. Its existence never authorizes the controller, orchestrator, implementer, or fixer to merge.
+The merge-only executor receives only the PR identity, exact approved SHA, durable approval marker/digest, required-check identities, branch-protection policy, and approved merge method. It must re-read all of them, fail closed on drift, perform no code or review work, and merge at most once using the provider's atomic expected-head primitive (`gh pr merge --match-head-commit APPROVED_SHA` on GitHub). If no atomic expected-head merge operation is available, it must not merge. Its existence never authorizes the controller, orchestrator, implementer, or fixer to merge.
 
 ## Fix and Re-review Loop
 

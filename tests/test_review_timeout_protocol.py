@@ -48,6 +48,8 @@ def test_cross_skill_timeout_rules_preserve_review_quality() -> None:
     issue_monitor = text("issue-monitor")
     assert "merge-only executor" in issue_monitor
     assert "It may not edit code, change the approval, waive checks, approve a different SHA, or broaden scope" in issue_monitor
+    assert "gh pr merge PR_NUMBER --repo OWNER/REPO --squash --delete-branch --match-head-commit APPROVED_SHA" in issue_monitor
+    assert "If no atomic expected-head merge operation is available, it must not merge" in issue_monitor
 
 
 def test_issue_monitor_eval_covers_timeout_and_duplicate_suppression() -> None:
@@ -59,3 +61,4 @@ def test_issue_monitor_eval_covers_timeout_and_duplicate_suppression() -> None:
     assert "at most one reviewer" in expectations
     assert "INCOMPLETE remains fail-closed" in expectations
     assert "merge-only executor" in expectations
+    assert "--match-head-commit APPROVED_SHA" in expectations
