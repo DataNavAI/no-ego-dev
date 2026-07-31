@@ -22,7 +22,7 @@ This is a **review-only leaf-subagent skill**. It does not author or edit the ca
 
 Prioritize product decisions by consequence and reversibility. Spend the deepest attention on choices that are **hard to reverse**: the target problem and audience, primary journey, public promises, irreversible user/data consequences, rights/privacy commitments, monetization or trust boundaries, duplicated sources of truth, and scope that creates long-lived product or migration cost. A severe user-safety or product-integrity defect remains blocking even if its textual correction is small.
 
-Ignore reversible nits that can safely be fixed later, including stylistic wording preferences, minor document organization, cosmetic polish, or implementation details already routed downstream. Omit them or group them as non-blocking follow-up; do not consume another PRD round on them.
+Ignore reversible nits that can safely be fixed later, including stylistic wording preferences, minor document organization, cosmetic polish, or implementation details already routed downstream. **Omit them entirely** from findings and follow-up; do not consume another PRD round on them.
 
 ## First-round completeness
 
@@ -82,7 +82,7 @@ After the first complete review, every later review must be a **bounded disposit
 
 Use the least-blocking valid verdict:
 
-- Return `APPROVED` or `APPROVED_WITH_MINOR_NOTES` when product semantics are determinate, even if architecture, implementation, editorial, QA, or release follow-ups remain.
+- Return `APPROVED` when product semantics are determinate, even if architecture, implementation, editorial, QA, or release follow-ups remain. Reversible nits are omitted rather than attached as minor notes.
 - Return `NEEDS_REVISION`/`BLOCKED` only for unresolved PRD decision defects that prevent the next SDLC role from working without inventing product behavior or accepting unsafe product risk.
 - Never require implementation code, final content, deployment evidence, or production operations as proof of PRD approval when those are explicitly downstream gates.
 
@@ -189,12 +189,9 @@ Metrics must have a baseline or explicit missing-baseline task, target/guardrail
 - `BLOCKER`: wrong/unknown target problem, contradictory core journey/source of truth, unsafe or unverifiable scope, or missing decision that prevents meaningful review.
 - `HIGH`: likely ineffective or difficult journey, major base-product redundancy, missing outcome acceptance, or unsustainable launch/support requirement.
 - `MEDIUM`: material improvement needed but implementation can be planned after an accepted disposition.
-- `LOW`: non-blocking polish or clarification.
-
 Verdicts:
 
 - `APPROVED`: no unresolved `BLOCKER`, `HIGH`, or `MEDIUM`; user-problem, ease, effectiveness, satisfaction, base fit, and verification are explicit.
-- `APPROVED_WITH_MINOR_NOTES`: only `LOW` notes remain.
 - `NEEDS_REVISION`: any unresolved `HIGH` or `MEDIUM`.
 - `BLOCKED`: any `BLOCKER` or missing review evidence/decision.
 
@@ -202,7 +199,7 @@ Verdicts:
 
 ```text
 PRD review — round <N> — revision <path/id/hash>
-Verdict: APPROVED | APPROVED_WITH_MINOR_NOTES | NEEDS_REVISION | BLOCKED
+Verdict: APPROVED | NEEDS_REVISION | BLOCKED
 Target-user problem restatement: <one sentence>
 Problem-resolution trace: <pain → mechanism → outcome → evidence>
 Ease/effectiveness assessment: <path, friction, recovery, confidence>
@@ -213,7 +210,7 @@ Base-product fit:
 - Merge/remove/migrate/deprecate: <items or none>
 Satisfaction boosters: <0-3 grounded suggestions or none>
 Findings:
-- <BLOCKER|HIGH|MEDIUM|LOW> — <issue> — <artifact/repository evidence> — <smallest corrective action>
+- <BLOCKER|HIGH|MEDIUM> — <issue> — <artifact/repository evidence> — <smallest corrective action>
 Outcome and satisfaction verification gaps: <items or none>
 Unresolved decisions/assumptions: <items or none>
 Approval rationale: <why this exact revision is or is not ready>

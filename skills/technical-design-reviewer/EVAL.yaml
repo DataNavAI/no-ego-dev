@@ -16,6 +16,7 @@ expectations:
   - "negative architect implementer or orchestrator invocation returns REVIEW_DELEGATION_REQUIRED without findings or approval and unavailable delegation remains BLOCKED"
   - "does not edit code specs deploy migrate merge or change external systems"
   - "prioritizes hard-to-reverse and high-consequence architecture decisions while ignoring reversible nits that can safely be fixed later"
+  - "the report omits reversible nits entirely rather than attaching minor notes or deferred polish"
   - "presents all independently discoverable findings in round one with evidence constraints and enough corrective direction"
   - "later-round feedback is limited to unresolved findings revision-introduced regressions genuinely new evidence or material issues not reasonably discoverable in round one"
   - "requires every allowed new later-round blocker to explain why it was not discoverable in round one"

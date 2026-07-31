@@ -22,7 +22,7 @@ The reviewer is intentionally separate from the designer. When reviewing newly g
 
 Prioritize UI findings by user consequence and reversibility. Spend the deepest attention on decisions that are **hard to reverse** after implementation or launch: information architecture, core journey structure, navigation model, irreversible or high-consequence actions, accessibility foundations, trust/privacy representations, platform-wide design-system contracts, and patterns whose rollout would force broad migration. Also block severe user harm or inability to complete the primary journey even when the visual fix itself is small.
 
-Ignore reversible nits that can safely be fixed later: one-off spacing, cosmetic alignment, minor copy polish, subjective stylistic preference, or local decoration that does not affect comprehension, accessibility, trust, implementation contract, or the primary journey. Do not create another design round for such polish; omit it or group it once as optional follow-up.
+Ignore reversible nits that can safely be fixed later: one-off spacing, cosmetic alignment, minor copy polish, subjective stylistic preference, or local decoration that does not affect comprehension, accessibility, trust, implementation contract, or the primary journey. **Omit them entirely** from findings and follow-up; do not create another design round for such polish.
 
 ## First-round completeness
 
@@ -125,7 +125,7 @@ For a frozen candidate reviewed against a finite set of authoritative comments, 
    - For dated market/comparable research, use `references/live-comparable-mobile-capture.md`: capture exact first/later mobile viewports, record final URL and geometry, inspect pixels plus DOM evidence, separate observation from transfer risk, and verify any scratch capture utility before reporting completion.
 
 4. **Score against the bar**
-   - Use `PASS`, `PASS WITH MINOR POLISH`, `NEEDS ITERATION`, or `BLOCKED`.
+   - Use `PASS`, `NEEDS ITERATION`, or `BLOCKED`.
    - Only pass when the design is clear, coherent, implementable, accessible enough for the target, and competitive for the product's market tier.
    - `NEEDS ITERATION` if a competent designer would revise before handing to engineering or shipping.
    - `BLOCKED` if required artifacts, access, screenshots, or product context are missing.
@@ -148,7 +148,7 @@ When invoked by `ui-designer` to review a newly generated UI design:
 - Be stricter than a casual QA pass. The target is “credible experienced product designer handoff,” not “technically has UI elements.”
 - Fail designs that look generic, visually incoherent, hard to scan, under-specified for states, inaccessible, weak compared with market norms, or disconnected from the PRD/CUJ.
 - Return a compact revision checklist the designer can act on in the next iteration.
-- Approve only when remaining issues are minor polish that will not confuse implementation or users.
+- Approve when no material issue remains; omit safely reversible polish rather than reporting it.
 - If the design passes, state the exact approval rationale and any implementation guardrails the coder must preserve.
 
 ## Visual Category-Fit Gate
@@ -167,8 +167,6 @@ For image-led consumer categories—fandom, entertainment, travel, fashion, food
 - **Blocker**: user cannot understand or complete the primary journey; major mismatch with PRD/CUJ; missing required design artifact; severe accessibility/responsive failure; design is below credible handoff quality.
 - **High**: core hierarchy, navigation, CTA, state, or trust issue likely to confuse many users or lead to wrong implementation.
 - **Medium**: inconsistent component/state/copy or visual system issue that degrades comprehension, polish, or competitive quality but does not block the core path.
-- **Low**: minor spacing, alignment, copy, or polish detail worth fixing if time permits.
-
 ## UI Review Guideline Template
 
 ```markdown
@@ -217,7 +215,7 @@ Related product docs/issues:
 ```markdown
 # UI Review: <scope>
 
-Status: PASS | PASS WITH MINOR POLISH | NEEDS ITERATION | BLOCKED
+Status: PASS | NEEDS ITERATION | BLOCKED
 Date/time:
 Reviewer: NED UI Reviewer
 Project:
@@ -277,6 +275,6 @@ For a full photo-heavy design-system specimen and rights-safe fixture review, fo
 - [ ] Guideline includes project context, top comparable services, foundational UI principles, and an explicit approval bar.
 - [ ] Review used design images, screenshots, or real UI evidence; text-only limitations are marked.
 - [ ] Findings are tied to principles, guideline sections, comparable patterns, accessibility, or user-journey impact.
-- [ ] Report assigns `PASS`, `PASS WITH MINOR POLISH`, `NEEDS ITERATION`, or `BLOCKED`.
+- [ ] Report assigns `PASS`, `NEEDS ITERATION`, or `BLOCKED` and omits reversible nits.
 - [ ] Revision checklist is concrete enough for `ui-designer` or a coder to act on.
 - [ ] Approval, if given, includes rationale and implementation guardrails.

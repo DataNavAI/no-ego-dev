@@ -74,6 +74,7 @@ def test_review_evals_cover_all_three_user_principles() -> None:
     required = (
         "hard-to-reverse",
         "reversible nits",
+        "omits reversible nits entirely",
         "all independently discoverable findings in round one",
         "later-round feedback is limited",
         "three total review rounds",
@@ -83,3 +84,18 @@ def test_review_evals_cover_all_three_user_principles() -> None:
         expectations = eval_expectations(name)
         for phrase in required:
             assert phrase in expectations, f"{name} eval missing {phrase!r}"
+
+
+def test_reversible_nits_are_omitted_not_reported_as_minor_feedback() -> None:
+    for name in DIRECT_REVIEW_SKILLS:
+        content = skill_text(name)
+        assert "Omit them entirely" in content, f"{name} must omit reversible nits"
+
+    for name in ("prd-reviewer", "technical-design-reviewer"):
+        content = skill_text(name)
+        assert "APPROVED_WITH_MINOR_NOTES" not in content
+        assert "`LOW`" not in content
+
+    ui = skill_text("ui-reviewer")
+    assert "PASS WITH MINOR POLISH" not in ui
+    assert "**Low**" not in ui

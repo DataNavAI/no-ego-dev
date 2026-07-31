@@ -22,7 +22,7 @@ This is a **review-only leaf-subagent skill**. It does not author or edit the ca
 
 Prioritize architecture findings by consequence and reversibility. Spend the deepest effort on decisions that are **hard to reverse**: public interfaces and schemas, destructive migrations, data ownership, authentication/authorization, privacy/security boundaries, persistence and consistency models, provider or infrastructure lock-in, irreversible rollout choices, broad blast radius, and designs without credible rollback or recovery. A severe correctness or safety defect remains blocking even when its code fix could be small.
 
-Ignore reversible nits that can safely be fixed later, such as naming taste, formatting, minor organization, optional abstractions, speculative optimization, and implementation polish that does not change the architecture contract. Omit them or route them once as non-blocking follow-up; never spend another technical-design round on them.
+Ignore reversible nits that can safely be fixed later, such as naming taste, formatting, minor organization, optional abstractions, speculative optimization, and implementation polish that does not change the architecture contract. **Omit them entirely** from findings and follow-up; never spend another technical-design round on them.
 
 ## First-round completeness
 
@@ -214,12 +214,9 @@ Require objective acceptance showing:
 - `BLOCKER`: unsound integrity/data/security boundary, unverifiable critical behavior, no viable operation/recovery, contradictory source of truth, or missing evidence that prevents review.
 - `HIGH`: unnecessary major complexity, material failure gap, missing automated test/monitor/rollback path, or serious redundancy with the base system.
 - `MEDIUM`: sustainable implementation needs a material correction with accepted ownership.
-- `LOW`: non-blocking clarity or optimization.
-
 Verdicts:
 
 - `APPROVED`: no unresolved `BLOCKER`, `HIGH`, or `MEDIUM`; integrity, minimality, testability, operability, monitoring, and system fit are evidenced.
-- `APPROVED_WITH_MINOR_NOTES`: only `LOW` notes remain.
 - `NEEDS_REVISION`: any unresolved `HIGH` or `MEDIUM`.
 - `BLOCKED`: any `BLOCKER` or unavailable material evidence/decision.
 
@@ -227,7 +224,7 @@ Verdicts:
 
 ```text
 Technical design review — round <N> — revision <path/id/hash>
-Verdict: APPROVED | APPROVED_WITH_MINOR_NOTES | NEEDS_REVISION | BLOCKED
+Verdict: APPROVED | NEEDS_REVISION | BLOCKED
 Solution restatement: <current system → proposed change → intended outcome>
 Integrity assessment: <invariants, contracts, state/failure/data/security>
 Simplest viable alternative: <smaller design considered and why sufficient/insufficient>
@@ -239,7 +236,7 @@ Automatic testability matrix:
 Operability/self-monitoring matrix:
 - <health/failure/invariant> — <signal/check> — <threshold> — <alert/owner/runbook> — <recovery verification>
 Findings:
-- <BLOCKER|HIGH|MEDIUM|LOW> — <issue> — <artifact/repository evidence> — <smallest corrective action>
+- <BLOCKER|HIGH|MEDIUM> — <issue> — <evidence> — <smallest corrective action>
 Missing decisions/experiments: <items or none>
 Approval rationale: <why this exact design is or is not sound, minimal, testable, operable, and sustainable>
 ```

@@ -19,7 +19,7 @@ Use this skill when the user asks for an independent spec audit, immutable commi
 
 Prioritize findings by consequence and reversibility, not by how many comments can be produced. Spend the deepest review effort on decisions that are **hard to reverse** or expensive to unwind: destructive data or schema changes, public contracts and migrations, authentication/authorization, privacy and security boundaries, money movement, compliance commitments, infrastructure lock-in, broad blast radius, and choices without a credible rollback. Also block an immediately severe correctness or safety defect even when its patch is mechanically small.
 
-Do not block on reversible nits that can safely be fixed later: naming preferences, cosmetic formatting, optional refactors, minor wording, speculative abstractions, or polish that does not alter the contract, critical journey, safety, or rollback posture. Omit them or place a short grouped note in deferred follow-up; never create another review round for them. Severity is the combination of consequence, reversibility, and evidence—not reviewer taste.
+Do not block on reversible nits that can safely be fixed later: naming preferences, cosmetic formatting, optional refactors, minor wording, speculative abstractions, or polish that does not alter the contract, critical journey, safety, or rollback posture. **Omit them entirely** from review findings; never create a follow-up note or another review round for them. Severity is the combination of consequence, reversibility, and evidence—not reviewer taste.
 
 ## First-round completeness
 

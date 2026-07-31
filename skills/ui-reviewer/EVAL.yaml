@@ -10,6 +10,7 @@ expectations:
   - "ties feedback to principles guideline sections comparable patterns accessibility or user journey impact"
   - "provides a concrete revision checklist and implementation guardrails when approved"
   - "prioritizes hard-to-reverse and high-consequence journey design-system accessibility and trust decisions while ignoring reversible nits that can safely be fixed later"
+  - "the report omits reversible nits entirely rather than attaching minor-polish notes or optional follow-up"
   - "presents all independently discoverable findings in round one with evidence user impact and enough corrective direction"
   - "later-round feedback is limited to unresolved findings revision-introduced regressions genuinely new evidence or material issues not reasonably discoverable in round one"
   - "requires every allowed new later-round blocker to explain why it was not discoverable in round one"
