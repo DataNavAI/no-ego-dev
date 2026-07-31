@@ -41,4 +41,7 @@ jobs:
           hermes --profile "$PROFILE_NAME" skills list
           test -f "$HOME/.hermes/profiles/$PROFILE_NAME/SOUL.md"
           test -f "$HOME/.hermes/profiles/$PROFILE_NAME/distribution.yaml"
+          test -f "$HOME/.hermes/profiles/$PROFILE_NAME/skills/identity-for-agent/SKILL.md"
+          test -f "$HOME/.hermes/profiles/$PROFILE_NAME/skills/identity-for-agent/EVAL.yaml"
+          test -f "$HOME/.hermes/profiles/$PROFILE_NAME/skills/identity-for-agent/references/profile-credential-policy.yaml"
           hermes profile delete "$PROFILE_NAME" --yes
