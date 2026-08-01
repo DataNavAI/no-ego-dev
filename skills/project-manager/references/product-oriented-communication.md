@@ -70,15 +70,28 @@ When a decision is required, offer a product-framed recommendation and compact o
 
 > We cannot ship the iOS update yet, so iPhone users will not receive the planned crash fix on schedule. Android is unaffected. Renewing release access restores the normal delivery path; no product-scope decision is needed.
 
+## Mandatory communication envelope
+
+Every user-facing communication includes four fields:
+
+1. `Purpose:` Why this message is being sent now.
+2. `Executive summary:` The product impact, current state, and next team step in plain language.
+3. `Action needed:` The exact user decision/action required to keep the project moving, with a recommendation and deadline when relevant. Write `Action needed: None` when the team can continue without the user.
+4. `Detailed information:` Verified links to canonical status, PRs, issues, decisions, incidents, dashboards, evidence, or specifications.
+
+Before sending, **verify every link** resolves, is accessible to the intended user, identifies the stated artifact/revision, and contains the evidence described. Never fabricate a URL. If no user-accessible link exists, say `Detailed information: No user-accessible link is available` and provide a verified repository-relative or local path when useful.
+
 ## Compact status format
 
 ```markdown
+Purpose: <status | decision | blocker | risk | completion | handoff>
+Executive summary: <why this matters to the product and current state>
 Product impact: <affected journey or promise>
 User-visible effect: <what users experience>
 Scope and urgency: <who/how many/how severe/workaround>
 Current response: <what is being done and next evidence checkpoint>
-Decision needed: <product requirement/tradeoff, recommendation, deadline — or "None">
-Technical evidence: <optional link or concise appendix>
+Action needed: <product requirement/tradeoff, recommendation, deadline — or "None">
+Detailed information: <verified canonical links or an honest unavailable/path note>
 ```
 
 Never disguise a severe issue with polished language. Product-oriented means clearer consequence and ownership, not minimizing technical risk.

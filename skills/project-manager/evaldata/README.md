@@ -48,3 +48,5 @@ Monitoring reports `Database connection pool saturation`, HTTP 503 responses, an
 
 If a product decision is needed, the manager asks which customer behavior, trust promise, priority, cost ceiling, or acceptable degradation the product should guarantee and recommends a default. It does not ask the user to choose a database, pool size, retry algorithm, cache, queue, or framework unless that technical choice itself changes the requested product contract.
 
+Every resulting message includes its purpose, a short executive summary, `Action needed:` with either the exact product decision or `None`, and verified user-accessible links for detailed information. A missing or inaccessible link is reported honestly rather than invented. The message makes clear whether the project can continue autonomously or is waiting on the user.
+

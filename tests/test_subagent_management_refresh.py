@@ -172,7 +172,17 @@ def test_project_manager_communicates_product_impact_and_product_decisions() -> 
     assert reference.is_file()
     assert "Technical-first" in reference.read_text(encoding="utf-8")
     assert "Product-first" in reference.read_text(encoding="utf-8")
+    assert "Purpose:" in reference.read_text(encoding="utf-8")
+    assert "Executive summary:" in reference.read_text(encoding="utf-8")
+    assert "Action needed:" in reference.read_text(encoding="utf-8")
+    assert "Detailed information:" in reference.read_text(encoding="utf-8")
+    assert "verify every link" in reference.read_text(encoding="utf-8")
+    assert "Every user-facing communication states its purpose" in content
+    assert "Action needed: None" in content
     assert "product impact" in expectations
     assert "implementation details" in expectations
+    assert "executive summary" in expectations
+    assert "action needed" in expectations
+    assert "detailed-information links" in expectations
     assert "Database connection pool saturation" in fixture
     assert "customers" in fixture

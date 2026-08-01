@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.17.0
+version: 0.18.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -33,6 +33,15 @@ After confirmation, keep the dependency-safe queue moving automatically across p
 **Ask the user to decide product requirements and product tradeoffs, not implementation details.** Ask about required behavior, audience, priority, privacy/retention, acceptable degradation, supported surfaces, cost ceiling, launch timing, compatibility, and rollback expectations. Provide a recommended product default and explain options through user experience, risk, cost, timing, and reversibility.
 
 **Implementation choices stay with the delivery team.** Do not ask the user to select frameworks, libraries, schemas, cache/queue policies, retry algorithms, code structure, or deployment wiring unless they explicitly own technical direction or that choice itself changes a product promise. Translate any unavoidable technical constraint back into its product consequence before requesting a decision.
+
+**Every user-facing communication states its purpose** and uses this decision-ready envelope:
+
+- `Purpose:` why the message is being sent now: status, decision, blocker, risk, completion, or handoff.
+- `Executive summary:` the product impact and current state in a few plain-language sentences or bullets.
+- `Action needed:` the exact user decision or action required to keep the project moving, including a recommended default and timing when relevant. If the user has no action, write **`Action needed: None`** and say what the team will do next.
+- `Detailed information:` verified links to the canonical status, PR, issue, decision record, incident, dashboard, evidence, or specification. Never invent a link; if no user-accessible source exists, say so and provide the verified repository-relative or local path when appropriate.
+
+Keep this envelope concise. The executive summary carries the product meaning; links carry depth. Do not force the user to inspect technical detail to discover why the message matters or whether the project is waiting on them.
 
 Use [`references/product-oriented-communication.md`](references/product-oriented-communication.md) for issue rewrites, decision boundaries, examples, and the compact status format.
 
