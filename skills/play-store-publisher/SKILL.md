@@ -1,7 +1,7 @@
 ---
 name: play-store-publisher
-description: "Use when publishing an Android app through the Google Play Console UI, including app creation, tester setup, AAB upload, internal testing, review, rollout, and Play Console browser-automation pitfalls."
-version: 0.1.0
+description: "Publish Android apps to Google Play, including daily change detection, mandatory versionCode updates, closed-testing uploads, and Play Console UI fallback."
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -28,6 +28,7 @@ Use this skill when:
 - A Play Console app, testing track, tester list, or production rollout needs to be created or checked.
 - Browser automation is being used against `play.google.com/console`.
 - Internal, closed, open, or production testing setup is blocking launch.
+- A mobile app needs a daily monitor that uploads each new releasable revision to its configured closed-testing track.
 
 Do not use this skill for writing the app code, fixing Android build failures, writing store listing copy, or planning ad/user acquisition except to hand off blockers to `android-app-dev`, `react-native-app-dev`, `marketer`, `devops`, `qa`, or `product-manager`.
 
@@ -58,12 +59,56 @@ Before touching Play Console, collect or derive:
 Do not start uploading random artifacts. First verify:
 
 1. **Package ID is final.** For example, a project-branded ID such as `app.datanav.news` is preferable to stale scaffolding like `com.example.*` or a previous working title. If wrong, stop and rebuild before upload.
-2. **VersionCode increments.** Play rejects reused version codes after an upload to the package.
+2. **VersionCode increments.** Before every upload, query the latest uploaded Play versionCode and update the authoritative project configuration to `max(local versionCode, latest uploaded Play versionCode) + 1`. Rebuild after the update and verify the processed AAB contains that exact value. Never reuse an earlier code or rely only on a local increment.
 3. **AAB is release-signed.** Expo/EAS production profiles or Gradle release builds should use the intended signing key and Play App Signing expectations.
 4. **Artifact opens structurally.** At minimum, inspect it as a zip and confirm `base/manifest/AndroidManifest.xml` exists.
 5. **Local sanity checks passed.** Run the repo's typecheck/tests/export/build checks or link to CI.
 6. **Privacy/policy claims are truthful.** Do not guess Data safety, ads, location, account deletion, or content rating answers.
 7. **Testing track has testers.** Internal testing release publication is not useful until at least one tester list is saved and selected.
+
+## Daily Closed-Testing Release Loop
+
+Use this loop when the user wants ongoing mobile builds delivered to closed testing. It is an unattended release path, so configure it only after the repository, package ID, authoritative version file, signed-build command, Play credentials, exact closed testing track, tester group, and verification method are known. A browser-only login is not sufficient for reliable daily automation; if non-interactive Play access is unavailable, report the setup blocker instead of pretending the monitor can upload.
+
+### 1. Schedule and serialize the monitor
+
+- Run once per day through Hermes cron or the project's CI scheduler, with a self-contained prompt and the mobile repository as `workdir`.
+- Attach `play-store-publisher`, `play-store-cli`, the applicable Android development skill, and project-specific release instructions.
+- Use a package-scoped lock outside the repository so two runs cannot build or upload the same revision concurrently.
+- Persist release state outside git, including the last successful source commit, release commit, artifact checksum, uploaded versionCode, closed track, Play release ID/status, and verification timestamp.
+
+### 2. Detect a new releasable revision before bumping
+
+- Fetch the configured default/release branch and identify the **source commit before the release-only version bump**.
+- Compare it with the source commit from the last verified closed-testing upload. Treat a commit generated only by this loop's prior version bump or publishing log as release bookkeeping, not a new app change; otherwise the monitor will release itself every day.
+- A new app source, resource, dependency, native, manifest, build-configuration, or product-config revision is releasable. Repository-only documentation or release-bookkeeping changes may be recorded without producing a binary.
+- If there are **No releasable changes**, do not bump, build, or upload. Leave durable state unchanged and keep a healthy scheduled run silent.
+
+### 3. Always allocate and persist a fresh versionCode
+
+For every release candidate that will be uploaded:
+
+1. Read the authoritative local `versionCode` from Gradle, Expo app config, or the project's declared version source.
+2. Query Google Play for the highest versionCode already uploaded to any track for this package.
+3. Set the next value to **`max(local versionCode, latest uploaded Play versionCode) + 1`**.
+4. Update the authoritative source file and any generated configuration through the framework's supported tooling. Never hand-edit two competing sources of truth.
+5. Commit the version update on the authorized release branch when repository policy permits, and record both source and release commits. Do not advance the successful-release baseline yet.
+6. Build the signed AAB from that exact candidate and inspect its manifest/bundle metadata to prove the package ID, version name, and versionCode match.
+
+### 4. Gate, build, and upload only to closed testing
+
+- Run the repository's static analysis, tests, release build, and mandatory emulator QA before upload. A failed gate blocks the release and does not consume the source revision.
+- Generate release notes from changes since the prior successful source commit.
+- Upload through the configured service-account/API path to the exact **closed testing track** and tester group. **Never upload this daily build to production**, open testing, or internal testing as a fallback.
+- If the configured track cannot be proven to be closed testing, fail closed without uploading.
+- Use the track's normal completed/in-review state when eligible. For a Play app that is still globally draft or blocked by policy setup, preserve a draft and report the exact blocker rather than claiming rollout.
+
+### 5. Verify and commit the release receipt
+
+- Read back Play state through the API or refreshed Console and verify package ID, target closed track, versionCode, artifact processing, tester availability, and release status.
+- Persist the successful source commit, release commit, AAB checksum, versionCode, track, Play release/status, and evidence URL or API response identifier only after verification.
+- On failure, preserve logs/artifacts, leave the last-successful baseline unchanged for retry, and avoid duplicate upload if Play already accepted the versionCode; reconcile Play state before rebuilding.
+- Alert only on a new release, a state transition, or a blocker requiring action. Healthy no-change runs should emit `[SILENT]`.
 
 ## Google Play Console UI Workflow
 

@@ -10,6 +10,10 @@ expectations:
   - "does not claim testers or publishing succeeded unless Play Console state is verified after save or refresh"
   - "captures opt-in link or exact blocker and writes a project-local Google Play publishing report/runbook"
   - "hands off store listing copy ads localization build fixes or policy unknowns to the appropriate NoEgoDev skills"
+  - "for a daily release monitor detects a new releasable source commit before creating any release-only version bump and stays silent with No releasable changes"
+  - "before every upload queries the latest uploaded Play versionCode updates the authoritative project source to max local or Play plus one rebuilds and verifies the AAB metadata"
+  - "runs static analysis tests release build and emulator QA then uploads only to the configured closed testing track never production or another fallback track"
+  - "verifies the closed-testing release and persists source and release commits artifact checksum versionCode track and Play status only after read-back evidence"
 setupCommands: []
 teardownCommands: []
 parameters:
