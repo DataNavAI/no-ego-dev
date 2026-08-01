@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -29,7 +29,7 @@ Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence cha
 
 ### Canonical round accounting
 
-**One review round is one immutable candidate generation.** One composite independent review covers specification, correctness, security, test honesty, conventions, integration, and operational risk for ordinary candidates. A named non-overlapping specialist may be predeclared only for a hard-to-reverse expertise gap; all authorized bundles **share one candidate generation and round number**. Persist one **review-readiness receipt** keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with each per-bundle outcome. **A corrected candidate advances exactly one round** and invalidates every earlier commit-bound verdict.
+**One review round is one immutable candidate generation.** One composite independent review covers specification, correctness, security, test honesty, conventions, integration, and operational risk for ordinary candidates. A named non-overlapping specialist may be predeclared only for a hard-to-reverse expertise gap; all authorized bundles **share one candidate generation and round number**. Persist one **review-readiness receipt** keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with each per-bundle outcome. **A corrected candidate advances exactly one round** and invalidates every earlier commit-bound verdict. Before freezing that correction, collect the complete material finding set: a new candidate is inadmissible until every authorized bundle in the prior generation has reached a terminal verdict.
 
 For asynchronous UI/state-machine work that renders Replay, Reset, Navigate, Close, Share, or Retry before acknowledgement/finalization settles, follow [`references/render-before-ack-interleavings.md`](references/render-before-ack-interleavings.md): write a deferred-promise RED test at the render-before-await boundary, assert accepted event order and original-key observation, preserve retry/generation semantics, and serialize competing actions rather than relying on sequential tests.
 

@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.0
+version: 1.12.1
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -61,7 +61,7 @@ Before spending independent reviewer capacity, the controller completes its own 
 
 For ordinary changes, dispatch one **composite independent reviewer** that covers specification, correctness, security, regression honesty, repository conventions, and operational risk in one complete pass. Use a separate specialized reviewer only for a clearly named hard-to-reverse domain—such as destructive migration, authorization/privacy, payments, cryptography, accessibility evidence, or broad infrastructure blast radius—that the composite reviewer is not qualified to assess. Required specialized kinds share the same frozen candidate and round; collect all results before one deduplicated correction packet.
 
-Use an atomic review index keyed by repository, PR/artifact, lineage, round, exact candidate SHA, and review bundle. One structurally valid `APPROVED` or `REQUEST_CHANGES` closes that bundle for the unchanged SHA; an active attempt suppresses another launch. An `INCOMPLETE` result permits at most one replacement restricted to its declared missing evidence. A changed SHA creates the next candidate round, never a retry of the old bytes.
+Use an atomic review index keyed by repository, PR/artifact, lineage, round, exact candidate SHA, and review bundle. One structurally valid `APPROVED` or `REQUEST_CHANGES` closes that bundle for the unchanged SHA; an active attempt suppresses another launch. An `INCOMPLETE` result permits at most one replacement restricted to its declared missing evidence. A changed SHA creates the next candidate round, never a retry of the old bytes, and only after every authorized bundle in the prior generation has reached a terminal verdict.
 
 ## When to Use
 

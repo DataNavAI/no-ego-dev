@@ -1,7 +1,7 @@
 ---
 name: immutable-candidate-verification
 description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, composite independent review, and reproducible evidence.
-version: 1.0.49
+version: 1.0.50
 ---
 
 # Immutable Candidate Verification
@@ -28,7 +28,7 @@ Enforce **first-round completeness** for each stable scope. **Round 1** is compr
 
 ### Canonical round accounting
 
-**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates every earlier commit-bound verdict.
+**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates every earlier commit-bound verdict. Do not admit it until every authorized bundle in the prior generation has reached a terminal verdict.
 
 For journey analytics or domain events that claim retry/idempotency across reload, replay, or rollover, apply `references/persisted-journey-event-outbox-review.md`. Review activation and completion as one engine-owned persisted outbox: retain full envelopes and original keys until durable acknowledgement, exercise immediate-transition and route-close races at every awaited sink boundary, treat history caps as unresolved-first priority selection rather than newest-first truncation, and require bounded backpressure rather than pending-event eviction. Before re-review, run the complete global key-location matrix across active/history and activation/completion fields; reject cross-type or cross-payload ambiguity before persistence, preserve raw stored bytes on fail-closed recovery, protect acknowledged keys after reload, ensure stale async continuations cannot acknowledge/persist/render after cancellation, and ensure every browser-unavailable path installs `noindex`.
 
@@ -74,15 +74,14 @@ For product-source plus publication-hub workflows, follow `references/multi-repo
    - Commit only after pre-commit approval.
    - Record the exact SHA and verify the worktree is clean.
 
-7. **Run every immutable gate at that SHA**
-   - Specification reviewer: compare frozen requirements to the exact commit and return PASS/FAIL.
-   - Quality reviewer: inspect security, correctness, maintainability, tests, and regressions at the exact same commit and return APPROVED/REQUEST_CHANGES.
-   - Add each frozen domain reviewer required by the plan (for example editorial/provenance ACCEPTED/REJECTED) at that same commit.
+7. **Run the immutable composite gate at that SHA**
+   - One fresh independent composite reviewer compares frozen requirements to the exact commit and inspects correctness, security, maintainability, tests, regressions, and operational risk before returning `APPROVED`, `REQUEST_CHANGES`, or `INCOMPLETE`.
+   - Add a frozen specialist bundle only when the readiness plan predeclares a named, non-overlapping, hard-to-reverse expertise boundary (for example editorial provenance, cryptography, payments, or destructive migrations). Every authorized bundle reviews the same candidate generation.
    - Reviewers must not edit the repository. Every prompt must name the absolute checkout path and immutable identity independently.
 
-8. **Advance sequentially**
-   - Mark the task complete only after all required verdicts pass at the same SHA.
-   - Do not start Task N+1 while either gate is absent or stale.
+8. **Advance only after aggregate completion**
+   - Mark the task complete only after the composite verdict and every predeclared specialist verdict approve the same SHA.
+   - Do not start Task N+1 while any authorized bundle is absent, active, incomplete, or stale.
 
 ## Fail-closed rules
 

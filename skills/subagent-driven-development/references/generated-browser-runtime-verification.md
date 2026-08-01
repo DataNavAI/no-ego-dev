@@ -76,7 +76,7 @@ For responsive image gates, do not invent unavailable renditions merely to popul
 
 ## Immutable review prompt
 
-Ask the spec reviewer to look specifically for fixture-only reachability, production initializer/data mismatches, text-based classification, route-prefix rejection, session timing races, viewport off-by-one errors, missing generated assets, baseline failures that still block final acceptance, and tests that extract helpers without executing the runtime.
+Ask the composite independent reviewer to look specifically for fixture-only reachability, production initializer/data mismatches, text-based classification, route-prefix rejection, session timing races, viewport off-by-one errors, missing generated assets, baseline failures that still block final acceptance, and tests that extract helpers without executing the runtime.
 
 ## Recovery
 

@@ -273,6 +273,14 @@ class ReviewGateStore:
     ) -> Optional[Dict[str, Any]]:
         return state["candidates"].get(identity.generation_key)
 
+    @staticmethod
+    def _manifest_is_terminal(candidate: Dict[str, Any]) -> bool:
+        for bundle_name in candidate.get("review_bundles", []):
+            attempts = candidate.get("bundles", {}).get(bundle_name, {}).get("attempts", [])
+            if not attempts or attempts[-1].get("status") not in FINAL_VERDICTS:
+                return False
+        return bool(candidate.get("review_bundles"))
+
     def _validate_generation(
         self, state: Dict[str, Any], identity: ReviewIdentity, readiness_hash: str
     ) -> Optional[Dict[str, Any]]:
@@ -303,6 +311,14 @@ class ReviewGateStore:
             return None
 
         max_round = max(int(candidate["identity"]["round"]) for candidate in lineage)
+        highest = next(
+            candidate for candidate in lineage
+            if int(candidate["identity"]["round"]) == max_round
+        )
+        if not self._manifest_is_terminal(highest):
+            raise GateError(
+                "prior generation review-bundle manifest must be terminal before a new candidate"
+            )
         if max_round >= 3:
             raise GateError("lineage exhausted after Round 3; Round 4 is prohibited")
         if identity.round < max_round:

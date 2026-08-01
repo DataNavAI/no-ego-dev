@@ -9,7 +9,7 @@ A coding delegation can time out after completing edits or while running the bro
 3. Run syntax checks and the smallest focused suite first. Preserve genuine RED evidence reported by the delegation; do not manufacture a second RED by reverting working code.
 4. If focused checks pass, run the canonical suite from the parent session with a sufficient foreground timeout.
 5. Restore only known generated-output trees, verify exact scope, and commit under the planned message.
-6. Re-dispatch immutable spec and quality review from the resulting SHA instead of asking another coder to reimplement the slice.
+6. Re-dispatch one composite independent review from the resulting immutable SHA instead of asking another coder to reimplement the slice.
 
 ## Isolated-worker and worktree recovery
 

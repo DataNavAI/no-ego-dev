@@ -4,6 +4,7 @@ import ast
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -221,6 +222,30 @@ def test_lineage_rounds_are_monotonic_unique_and_capped(tmp_path: Path) -> None:
         identity(gate, SHA_D, 4)
 
 
+def test_next_generation_waits_for_complete_terminal_prior_manifest(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first_manifest = readiness(bundles=["composite", "security"])
+    first_composite = identity(gate)
+    second = identity(gate, SHA_B, 2)
+
+    store.claim(first_composite, "round-one-composite", first_manifest)
+    with pytest.raises(gate.GateError, match="prior generation.*terminal"):
+        store.claim(second, "round-two-active-composite", readiness(SHA_B, 2))
+
+    store.finalize(first_composite, "round-one-composite", "REQUEST_CHANGES", DIGEST)
+    with pytest.raises(gate.GateError, match="prior generation.*terminal"):
+        store.claim(second, "round-two-security-not-started", readiness(SHA_B, 2))
+
+    first_security = identity(gate, review_bundle="security")
+    store.claim(first_security, "round-one-security", first_manifest)
+    with pytest.raises(gate.GateError, match="prior generation.*terminal"):
+        store.claim(second, "round-two-active-security", readiness(SHA_B, 2))
+
+    store.finalize(first_security, "round-one-security", "REQUEST_CHANGES", DIGEST)
+    assert store.claim(second, "round-two-after-terminal", readiness(SHA_B, 2))["started"] is True
+
+
 def test_same_sha_cannot_be_renamed_as_a_new_round(tmp_path: Path) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
@@ -374,15 +399,22 @@ def test_orchestration_contracts_prevent_fragmented_reviews() -> None:
             "review-readiness receipt",
             "one reviewer per immutable candidate",
             "complete review-bundle manifest",
+            "prior generation",
         ),
-        "delegation-reliability": ("review-readiness receipt", "atomic review index", "same-bundle"),
-        "project-manager": ("composite review", "specialized reviewer", "review-readiness receipt"),
-        "coder": ("composite independent review", "review-readiness receipt"),
+        "delegation-reliability": (
+            "review-readiness receipt", "atomic review index", "same-bundle", "prior generation"
+        ),
+        "project-manager": (
+            "composite review", "specialized reviewer", "review-readiness receipt", "prior generation"
+        ),
+        "coder": ("composite independent review", "review-readiness receipt", "prior generation"),
+        "immutable-candidate-verification": ("composite independent", "prior generation"),
         "issue-monitor": (
             "composite review bundle",
             "review-readiness receipt",
             "scripts/review_gate.py",
             "merge-only executor",
+            "prior generation",
         ),
     }
     for skill, phrases in required.items():
@@ -426,6 +458,21 @@ def test_orchestration_contracts_prevent_fragmented_reviews() -> None:
             text = path.read_text(encoding="utf-8")
             for fragment in stale_fragments:
                 assert fragment not in text, f"{path} retains fragmented review instruction {fragment!r}"
+
+    sequential_directive = re.compile(
+        r"(?i)(specification then quality review|spec(?:ification)?/quality review|"
+        r"spec(?:ification)? and quality(?:/security)? review|both immutable review gates|"
+        r"advance to quality review|before quality review|starting spec review|"
+        r"specification reviewer:|quality reviewer:|ask the spec reviewer)"
+    )
+    negative_guard = re.compile(r"(?i)(do not|never|no fragmented|rather than|must not)")
+    for skill in governed:
+        for path in (SKILLS / skill).rglob("*.md"):
+            for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if sequential_directive.search(line) and not negative_guard.search(line):
+                    pytest.fail(
+                        f"{path}:{line_number} retains an operative fragmented-review directive: {line}"
+                    )
 
 
 def test_evals_cover_readiness_dedup_composite_and_metrics() -> None:

@@ -54,7 +54,7 @@ The property bag is only one part of the privacy boundary. Once a stable signed-
 
 Inventory emitter **values**, not just keys. Follow values copied from server/account state through the browser emitter (for example, linked-account provider states), otherwise an over-tight enum can silently discard legitimate telemetry. Keep per-key schemas typed: bounded nonnegative integers, exact booleans/enums, canonical slugs, safe local paths, and narrow tokens; never stringify arbitrary objects or free-form strings under an allowed key.
 
-A passing test for a few named aliases is insufficient: fresh spec/quality review should probe variants, arbitrary unknown keys, normalization collisions, PII values under allowed keys, hostile descriptors, and every generic envelope field. If a review finds a leak, capture a focused RED through the real persistence/forwarding sink and re-run both immutable review gates at the new SHA.
+A passing test for a few named aliases is insufficient: one fresh composite independent review should probe variants, arbitrary unknown keys, normalization collisions, PII values under allowed keys, hostile descriptors, and every generic envelope field. If that review finds a leak, capture a focused RED through the real persistence/forwarding sink and re-run the complete composite review at the new immutable SHA.
 
 ## Privacy requirements
 

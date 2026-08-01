@@ -11,14 +11,16 @@ A task can satisfy its local prompt and still introduce a migration or integrati
 - a predicate accepts legacy and canonical shapes simultaneously;
 - tests prove the delegated examples but omit strict-shape, traversal, or unknown-field cases.
 
-## Required review sequence
+## Required composite review coverage
 
-1. **Local task review** — compare the implementation with the exact task text and RED/GREEN evidence.
-2. **Governing-contract review** — compare names, shapes, invariants, error codes, timestamps, URLs, and lifecycle rules with the authoritative PRD/tech spec/schema. The governing contract wins when the task prompt was merely condensed or ambiguous.
-3. **Integration review** — inspect existing and next planned consumers. Reject choices that force dual-schema support or a later migration without an explicit migration requirement.
-4. **Code-quality/security review** — only after the first three pass.
+One fresh independent reviewer evaluates these dimensions in a single pass against one immutable candidate:
 
-Every review should use an immutable commit SHA and report exact file/line evidence. If the worktree is shared, reviewers must be read-only and should distinguish reviewed-commit scope from unrelated later commits.
+1. **Local task contract** — compare the implementation with the exact task text and RED/GREEN evidence.
+2. **Governing contract** — compare names, shapes, invariants, error codes, timestamps, URLs, and lifecycle rules with the authoritative PRD/tech spec/schema. The governing contract wins when the task prompt was merely condensed or ambiguous.
+3. **Integration** — inspect existing and next planned consumers. Reject choices that force dual-schema support or a later migration without an explicit migration requirement.
+4. **Code quality and security** — inspect correctness, security, maintainability, regression risk, and test honesty alongside the contract dimensions.
+
+The composite review must use an immutable commit SHA and report exact file/line evidence. If the worktree is shared, the reviewer must be read-only and should distinguish reviewed-commit scope from unrelated later commits.
 
 ## Fail-closed patterns
 
@@ -30,9 +32,9 @@ Every review should use an immutable commit SHA and report exact file/line evide
 
 ## Review loop
 
-When contract review fails:
+When the composite review finds a contract defect:
 
 1. dispatch a focused TDD fix subagent;
-2. rerun the same failed contract review against the fix commit;
-3. do not advance to quality review until it passes;
-4. then run code-quality/security review and the canonical full suite.
+2. freeze the corrected candidate only after every finding is addressed together;
+3. rerun one complete composite independent review against the corrected immutable SHA;
+4. run the canonical full suite before review readiness and preserve the exact results.

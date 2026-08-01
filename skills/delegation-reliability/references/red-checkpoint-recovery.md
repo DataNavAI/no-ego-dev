@@ -35,7 +35,7 @@ A pushed failing-test commit is `timed_out_with_partial_deliverable`, not comple
    - missing acceptance coverage to add before GREEN;
    - explicit instruction not to restart/delete the checkpoint;
    - required commit/PR/test evidence.
-9. After replacement completion, independently verify local/remote/PR SHA parity, clean status, commit history, changed paths, and every modified file before starting spec review.
+9. After replacement completion, independently verify local/remote/PR SHA parity, clean status, commit history, changed paths, and every modified file before starting one composite independent review.
 
 ## Pitfalls
 

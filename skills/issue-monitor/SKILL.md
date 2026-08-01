@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.14.0
+version: 1.14.1
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -40,7 +40,7 @@ Enforce **first-round completeness**. **Round 1** inspects the complete issue co
 
 #### Canonical round accounting
 
-**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates all earlier commit-bound verdicts.
+**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates all earlier commit-bound verdicts. The gate rejects a new candidate until every authorized bundle in the prior generation has reached a terminal verdict.
 
 Scheduled controllers must assume delegated completion delivery is **not durable** across cron-run exit, gateway restart, or a fresh controller session. A review is reusable only when it leaves a controller-readable artifact bound to `(repository, PR, lineage, round, exact head SHA, complete required-review-kind set, review kind, attempt ID)`—for example one structured PR comment with a stable marker or an attempt-scoped JSON report outside every repository. The controller must read that artifact back before acting; a cache filename, delegation handle, lifecycle status, or child summary alone is not a merge gate.
 
