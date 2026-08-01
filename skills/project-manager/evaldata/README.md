@@ -38,3 +38,15 @@ Client asks NED to build a React Native app and test Android locally. A passing 
 - Keep periodic product checkups and feedback loops in the plan for the deployed/user-facing app.
 - Configure periodic status-report emails if recipient/cadence are known; otherwise ask the user for the missing recipient email and cadence instead of guessing.
 
+## Scenario: Bounded intake and automatic continuation
+
+The client gives a broad project request containing routine preferences and one unresolved, costly-to-reverse data-retention decision. A passing response inspects repository decisions and access first, answers reversible choices from conventions, asks one succinct question with a recommended default for retention, and then continues dependency-safe product, design, implementation, and QA work without asking for routine phase approval. A newly discovered credential, production-spend, destructive-action, or material contract blocker may pause only the affected work.
+
+## Scenario: Product-oriented issue communication
+
+Monitoring reports `Database connection pool saturation`, HTTP 503 responses, and exhausted retries during checkout. A passing user update does not lead with those terms. It explains that some customers cannot complete purchases during traffic spikes, states the observed scope and workaround, describes the current response and next evidence checkpoint, and links technical evidence separately.
+
+If a product decision is needed, the manager asks which customer behavior, trust promise, priority, cost ceiling, or acceptable degradation the product should guarantee and recommends a default. It does not ask the user to choose a database, pool size, retry algorithm, cache, queue, or framework unless that technical choice itself changes the requested product contract.
+
+Every resulting message—including progress, blocker, service-status, single-product email, and portfolio-email templates—includes `Purpose:`, `Executive summary:`, `Action needed:` with either the exact product decision or `None`, and `Detailed information:` with verified user-accessible links. A missing or inaccessible link is reported honestly rather than invented. The message makes clear whether the project can continue autonomously or is waiting on the user.
+

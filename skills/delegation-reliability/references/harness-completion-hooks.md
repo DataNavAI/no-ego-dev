@@ -17,16 +17,26 @@ Use this reference when work should continue automatically as workers stop, comp
 
 - `subagent_stop` fires once for each child created by `delegate_task`, with `child_status`, `child_summary`, duration, and parent identity.
 - It is an **observer hook**. Its return value is ignored, and `child_status=completed` says the child stopped normally—not that its requested artifact exists, tests passed, review approved, or a dependency can be released.
-- In current Hermes delegation, a `tasks:[...]` batch is drained before the parent receives the consolidated result; hook callbacks are marshalled on the parent thread. Do not assume a batch gives truly immediate first-finisher continuation. When the workflow must react independently to each child, launch separate single-task delegations (which may still be initiated in parallel) or put each work unit on Kanban.
+- In current Hermes delegation, a top-level `tasks:[...]` batch creates independent background children. Each child has its own handle, completion delivery, and `subagent_stop` event, so first-finisher reconciliation does not wait for siblings. Nested orchestrator delegation is the synchronous exception. Use separate single-task calls only when explicit per-call ownership, timing, or retry boundaries are useful.
 - `failed`, `error`, `interrupted`, and `timeout` are state changes worth sensing, but they usually trigger recovery/blocking—not downstream promotion.
 - A Kanban worker is not automatically a `delegate_task` child. Keep Kanban completion/dependency reconciliation as the authority for its lifecycle; the subagent hook is only a latency optimization for delegated children.
+
+## Required completion-to-scheduling chain
+
+1. Observe each terminal worker event through completion delivery, `subagent_stop`, or the worker type's native completion primitive.
+2. Emit one content-free, idempotent wake to the authoritative parent, scheduled controller, or Kanban dispatcher.
+3. Re-read durable task, artifact, verdict, claim, dependency, and capacity state; never promote from lifecycle status alone.
+4. Schedule the highest-priority eligible successor immediately, or persist the exact blocker when none is eligible.
+5. Debounce concurrent wakes under a lock and keep periodic reconciliation as lost-event fallback.
+
+The callback must not call `delegate_task`, choose a task from child-controlled payload, or mutate dependency state directly. In durable mode it may invoke one fixed-argument dispatcher pass; that dispatcher performs the authoritative reconciliation and claim before any child starts.
 
 ## Hook-only continuation without Kanban
 
 Use this mode when the user explicitly prefers no duplicate execution queue and accepts that active `delegate_task` children are coupled to the current parent/gateway process.
 
 1. Keep GitHub, Linear, or the chosen tracker as the only task queue and specification source. Derive the next task from live dependency, label, milestone, PR, and review state after every callback.
-2. Launch each continuation-sensitive worker as a separate single-task `delegate_task` call. Independent calls may be initiated in parallel, but do not put them in one `tasks:[...]` batch when first-finisher reaction matters.
+2. Launch independent work either as one top-level `tasks:[...]` fan-out or as separate single-task calls. Both provide per-child completion at the top level; use separate calls only for explicit ownership, timing, capacity, or retry boundaries.
 3. Rely on Hermes's async delegation completion delivery to re-enter the parent session. The new parent turn verifies the stopped child's durable artifact and verdict, reconciles the canonical tracker, selects the next dependency-safe task, and immediately calls `delegate_task` again.
 4. Treat `subagent_stop` as a harness observation/wakeup signal only. The hook callback cannot call `delegate_task` through its ignored return value and must not infer acceptance. Any actual next-worker kickoff happens in the parent agent turn created by completion delivery.
 5. Keep only transient session todos for visibility; do not recreate issue bodies or a second persistent queue. Re-read the live tracker at every handoff because session todos can become stale.
@@ -88,6 +98,19 @@ def register(ctx):
 ```
 
 Productionize the outline by using an absolute Hermes executable path for launchd/service environments, preserving the active profile's `HERMES_HOME`, logging non-zero exit/stderr without secrets, and avoiding project-hardcoded behavior in a global plugin unless that scope is intentional.
+
+## Read-only independent verification of a completion hook
+
+When reviewing an installed hook without firing it or mutating state:
+
+1. Verify the hook name, payload, invocation point, and callback-error isolation in the installed Hermes source.
+2. Trace trust boundaries. Child-controlled summaries, statuses, IDs, paths, and output must not influence executable argv, shell text, profile selection, or job identity. Ignore the payload when the hook is only a wake signal.
+3. Verify scope from fixed callback constants, the active profile's enabled-plugin entry, and the live cron/Kanban target.
+4. Require one shared lock, decision-under-lock, and atomic state replacement for cross-process debounce. Check missing/corrupt state, negative clock deltas, launch failure, timeout, and concurrent logging.
+5. Verify detached-launch hygiene: fixed argv with no shell, null stdin, bounded output, closed descriptors, a new session, timeout, and secret-safe failure records.
+6. Establish activation from process evidence. CLI discoverability does not prove a long-lived gateway loaded the plugin; compare gateway start with plugin/config generation or use a process-owned registration receipt. Never restart while process-local children are active.
+7. Keep verification non-invasive. Do not call the callback, run the cron target, or mutate debounce state. Compile in memory or disable bytecode writes.
+8. Separate code verdict from activation: `APPROVED — code correct; activation pending gateway reload` is valid when stated explicitly.
 
 ## Installation and activation
 
