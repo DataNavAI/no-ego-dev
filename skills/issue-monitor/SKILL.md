@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and autonomously taken from reproduction through an independently reviewed merge. Creates a Hermes cron job, claims one eligible issue at a time, delegates test-first implementation, requires a separate reviewer subagent, and merges only after verification and CI gates pass."
-version: 1.7.0
+version: 1.10.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -143,6 +143,16 @@ hermes -p PROFILE config set delegation.max_spawn_depth 2
 
 Restart the relevant gateway after changing delegation config, then verify its status. Do not raise depth above 2 for this workflow; deeper trees multiply cost without adding value.
 
+### Runtime-budget alignment
+
+Before the first worker—and whenever a worker stops at a repeatable duration—inspect the effective `delegation.child_timeout_seconds`; do not infer it from an issue comment, stage stale time, cron cadence, or gateway timeout. A stage budget is bookkeeping and does not extend the child process.
+
+- Require a positive child timeout of at least 1800 seconds and a gateway timeout strictly greater than it.
+- Estimate the longest legitimate stage, including tests, network waits, commit, push, and durable evidence persistence. If that envelope can exceed the configured cap, increase both the child and gateway budgets while preserving `gateway > child`; do not repeatedly kill valid workers at a known boundary.
+- Verify `max_iterations` independently because wall-clock and iteration limits are separate.
+- Treat a stop exactly at the cap as an orchestration-budget failure first. Inspect durable state and the owned worktree before retrying; do not mislabel it as a product blocker.
+- Re-dispatch one continuation only after proving the old worker stopped, candidate/base identity is stable, and recovered edits are attributable and pass `git diff --check`.
+
 ## Repository Labels and Claim Protocol
 
 Use these labels when the repository permits label management:
@@ -165,7 +175,7 @@ At every tick:
 7. Re-read the issue after the claim. If another active claim or PR appeared, remove this run's claim and stop.
 8. Process no more than `max_per_tick` (default one).
 
-A label is not a distributed transaction. The re-read step and one-issue-per-tick limit are mandatory duplicate-work defenses.
+A label is not a distributed transaction, and `agent:in-progress` is not proof of a live worker. On every tick, reconcile claims against scoped lifecycle-backed active-worker leases, durable attempt files, open PR/head activity, and stale deadlines. Release or replace orphaned claims before selecting new work. A timeout or recoverable owned worktree is a recovery state, not automatically `agent:blocked`.
 
 If no issue is eligible, respond with exactly `[SILENT]` so the cron tick is recorded but not delivered.
 
@@ -356,6 +366,14 @@ Leave evidence where maintainers can act: issue/PR comment, blocker label, faile
 14. **Same-run retry fan-out.** Async completion may arrive after the cron controller exits. Dispatch one attempt, require a durable sink, and reconcile it on the next run.
 15. **Preloading every worker skill into the cron controller.** Attach only the controller skill by default and make each child load its role-specific skills. Large repeated controller prompts cause continuation failures before useful work starts.
 16. **Reviewer check duplication.** Do not rerun equivalent full, race, lint, and stress suites when green exact-SHA CI already covers them. Spend the bounded budget on missing adversarial checks and report incomplete evidence fail-closed.
+
+## Completion-Triggered Continuation
+
+When the user wants workers kept active while eligible issues remain, retain the recurring cron as the durable fallback and optionally accelerate handoff with a profile-local lifecycle plugin. `subagent_start` creates a locked, non-secret active-worker lease; `subagent_stop` removes it and atomically debounces a delayed cron run. The hook is a wake signal only—the monitor must re-read durable GitHub, git, claim, and review state.
+
+A valid active-worker lease is an ownership signal, not approval. While one exists for the repository, preserve its worktree and claim and do not dispatch overlapping mutation work merely because no standalone OS process exists. With actionable work and no valid lease, dispatch exactly one next-stage worker or record a precise human-only blocker. Never restart a gateway to activate hooks while a process-local child is live.
+
+Follow `references/subagent-completion-continuation.md` for the registry schema, debounce/runner pattern, runtime-budget preflight, activation boundary, and verification checklist.
 
 ## Companion Workflow Failure Monitor
 

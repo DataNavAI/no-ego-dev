@@ -7,6 +7,8 @@ expectations:
   - "Inspects the remote branch/commit/PR, shared checkout, isolated worker residue, and exact requested report/checksum paths before re-dispatching."
   - "Classifies completed-with-partial-deliverable and timed-out-with-recovered-artifact states separately from task verdicts."
   - "Verifies immutable identities, report bytes, checksums, and explicit verdicts before releasing dependencies."
+  - "When a delivery is truncated or omits its middle, reads the complete saved summary before counting findings, planning remediation, or advancing a gate."
+  - "Verifies repository bytes and collaboration metadata separately after interruption and completes only missing idempotent metadata instead of launching another writer for already-complete code."
   - "Uses unique attempt-scoped artifact paths and reconciles late results without overwriting evidence."
   - "Uses hook-only continuation with the canonical external tracker because the user rejected a duplicate queue, while stating that this mode is process-local."
   - "Keeps at least one real worker active when runnable dependency-safe work remains, without racing overlapping writers or mutating a frozen review target."

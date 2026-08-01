@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.15.0
+version: 0.16.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -17,6 +17,14 @@ metadata:
 Operate the project loop. Break work into objectively verifiable milestones, create issue-managed tasks, kick off subagents, inspect completion evidence, and create follow-up work when reality diverges from the plan. Direct user requests become issue-managed work and are executed by focused subagents by default.
 
 The project manager also owns the routine service status loop for live projects: schedule recurring checkups, gather product-side and devops-side updates, summarize health for the user at least once per day, send periodic status-report emails when configured, and convert findings into prioritized issue-managed work.
+
+## Upfront Requirement Confirmation and Automatic Continuation
+
+At project start, inspect the request, repository, durable decisions, and available access. Identify only requirements whose later reversal would materially change scope, supported interfaces, data/privacy, architecture/provider, public contracts/migrations, cost, or release authority.
+
+If confirmation is needed, ask **one succinct upfront batch of no more than three questions**. Every question must be unanswered, costly to reverse, easy to understand, one decision only, and include a recommended default or short choices. Remove routine preferences, phase-status questions, and anything tools or a reversible default can settle.
+
+After confirmation, keep the dependency-safe queue moving automatically across product, design, architecture, implementation, QA, and documentation. Send progress updates, not permission requests. **Do not ask for routine phase approval.** Pause only for a newly discovered costly contradiction, missing access, unresolved blocking quality finding, or external spend, production, publication, credential, or destructive action. Quality gates and dependency checks remain mandatory.
 
 ## Risk-weighted review convergence
 

@@ -1,6 +1,7 @@
 prompt: |
   Use the project-manager skill to respond to a realistic client/project request.
 expectations:
+  - "Asks at most one upfront batch of no more than three costly-to-reverse unanswered questions with recommended defaults, then continues automatically without routine phase approval."
   - "mentions durable artifact"
   - "includes verification"
   - "avoids vague next steps"
@@ -53,7 +54,7 @@ expectations:
   - "tracks unresolved inline review threads accepted changes verified replies resolutions and explicit artifact approval separately from merge"
   - "preserves accepted work then closes review only PRs without merge and verifies remote local branch worktree preview copy access and scratch cleanup without deleting durable review evidence"
   - "enforces risk weighted review that prioritizes hard to reverse high consequence decisions and does not block on safely reversible nits"
-  - "requires the first review round to return all independently discoverable blockers with evidence and enough author steering in one deduplicated packet"
+  - "requires the first review round to return all independently discoverable Critical Important or otherwise material findings with evidence and enough author steering in one deduplicated packet"
   - "limits later round new feedback to remediation regressions unavailable evidence or material issues not reasonably discoverable in round one and records why"
   - "allows at most three total review rounds for one stable scope then blocks and escalates without round four or count reset"
 setupCommands: []

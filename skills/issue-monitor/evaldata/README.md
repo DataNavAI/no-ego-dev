@@ -11,3 +11,11 @@ The canonical scenario requires:
 - reuse of trustworthy exact-SHA CI instead of broad check duplication;
 - explicit fail-closed `INCOMPLETE` outcomes when the time budget cannot satisfy every gate; and
 - fresh independent review only after remediation creates a new candidate SHA.
+
+Additional liveness cases require the monitor to:
+
+- classify a worker ending exactly at its effective wall-clock or iteration limit as a runtime-budget problem before declaring a product blocker;
+- increase both child and gateway budgets when the legitimate stage envelope exceeds the cap while preserving `gateway > child`;
+- distinguish an orphaned `agent:in-progress` label from a valid lifecycle-backed active-worker lease;
+- preserve a live lease's worktree during registration grace and a forced monitor tick;
+- debounce completion bursts so they wake one serialized cron reconciliation without duplicate dispatch.

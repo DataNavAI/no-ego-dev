@@ -89,6 +89,19 @@ def register(ctx):
 
 Productionize the outline by using an absolute Hermes executable path for launchd/service environments, preserving the active profile's `HERMES_HOME`, logging non-zero exit/stderr without secrets, and avoiding project-hardcoded behavior in a global plugin unless that scope is intentional.
 
+## Read-only independent verification of a completion hook
+
+When reviewing an installed hook without firing it or mutating state:
+
+1. Verify the hook name, payload, invocation point, and callback-error isolation in the installed Hermes source.
+2. Trace trust boundaries. Child-controlled summaries, statuses, IDs, paths, and output must not influence executable argv, shell text, profile selection, or job identity. Ignore the payload when the hook is only a wake signal.
+3. Verify scope from fixed callback constants, the active profile's enabled-plugin entry, and the live cron/Kanban target.
+4. Require one shared lock, decision-under-lock, and atomic state replacement for cross-process debounce. Check missing/corrupt state, negative clock deltas, launch failure, timeout, and concurrent logging.
+5. Verify detached-launch hygiene: fixed argv with no shell, null stdin, bounded output, closed descriptors, a new session, timeout, and secret-safe failure records.
+6. Establish activation from process evidence. CLI discoverability does not prove a long-lived gateway loaded the plugin; compare gateway start with plugin/config generation or use a process-owned registration receipt. Never restart while process-local children are active.
+7. Keep verification non-invasive. Do not call the callback, run the cron target, or mutate debounce state. Compile in memory or disable bytecode writes.
+8. Separate code verdict from activation: `APPROVED — code correct; activation pending gateway reload` is valid when stated explicitly.
+
 ## Installation and activation
 
 1. Check prerequisites before changing the harness:

@@ -38,3 +38,7 @@ Client asks NED to build a React Native app and test Android locally. A passing 
 - Keep periodic product checkups and feedback loops in the plan for the deployed/user-facing app.
 - Configure periodic status-report emails if recipient/cadence are known; otherwise ask the user for the missing recipient email and cadence instead of guessing.
 
+## Scenario: Bounded intake and automatic continuation
+
+The client gives a broad project request containing routine preferences and one unresolved, costly-to-reverse data-retention decision. A passing response inspects repository decisions and access first, answers reversible choices from conventions, asks one succinct question with a recommended default for retention, and then continues dependency-safe product, design, implementation, and QA work without asking for routine phase approval. A newly discovered credential, production-spend, destructive-action, or material contract blocker may pause only the affected work.
+

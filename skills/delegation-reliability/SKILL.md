@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.8.0
+version: 1.9.0
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -48,7 +48,7 @@ When a supposedly lost original returns after a replacement was dispatched:
 5. Consolidate all verified findings into one remediation matrix so one writer addresses the complete bounded class instead of racing serial fixes.
 
 Read:
-- [`references/harness-completion-hooks.md`](references/harness-completion-hooks.md) for hook-only and durable modes, event semantics, batch-vs-single behavior, state routing, activation safety, and smoke verification.
+- [`references/harness-completion-hooks.md`](references/harness-completion-hooks.md) for hook-only and durable modes, event semantics, batch-vs-single behavior, state routing, activation safety, non-invasive independent review, and smoke verification.
 - [`references/recovered-review-artifact-integrity.md`](references/recovered-review-artifact-integrity.md) when a timed-out/interrupted reviewer may have left a report, checksum, or evidence directory; recompute final-byte integrity and route by the recovered verdict.
 - [`references/durable-kanban-continuation.md`](references/durable-kanban-continuation.md) only when the user accepts durable queue mode.
 
@@ -81,7 +81,8 @@ Treat worker capacity as a resource to keep productively occupied while the exec
 6a. **Recover direct implementation writes as an untrusted patch set—even when the batch says `completed`.** When a stopped child was authorized to edit a repository, check all three durable surfaces before re-dispatching: (1) the requested remote branch/commit/PR, (2) any shared checkout diff, and (3) the child's isolated workspace/worktree. A child may have pushed an early commit, reached a hard tool-call ceiling, returned a completion summary that describes later GREEN work, and still left those later files uncommitted in an inaccessible workspace. Treat self-reported file lists and test counts as recovery leads, not artifacts. Confirm the child is no longer writing; compare the remote head to the exact baseline; locate the isolated checkout by repository/branch or an authorized filename; inventory only declared paths; rerun narrow targeted tests yourself; and inspect safety-critical changes. If the isolated workspace is absent, state that only the last pushed SHA is recoverable and reconstruct the missing slice from requirements—do not claim the summarized edits exist. Classify the deliverable as `completed_with_partial_deliverable`, `timed_out_with_recovered_changes`, or `timed_out_with_partial_changes` while preserving the actual run state. Never treat passing tests as the missing child review, and never infer completion from files merely existing. Avoid overlapping replacement edits until the old child is confirmed stopped. See the direct-write section in `references/timeout-artifact-recovery.md`.
 6b. **Preserve coherent RED-only checkpoints instead of restarting.** A remote branch containing only a deliberate failing-test commit is a useful partial artifact, but it is not GREEN acceptance. Fetch and inspect the exact commit, recreate from its 40-character SHA when branch/worktree resolution is ambiguous, rerun the smallest focused test to prove the intended RED, and compare coverage against the whole task. If `main` advanced compatibly, rebase the checkpoint and update the feature branch only with a lease bound to the observed old remote SHA. Give the replacement worker the exact recovered worktree, RED SHA/output, current base, missing acceptance coverage, and an explicit instruction not to delete or restart the checkpoint. See `references/red-checkpoint-recovery.md`.
 6c. **Reconcile authorized external writes after timeout.** A worker can time out after finalizing its report and performing issue/PR/milestone/API mutations but before returning a summary. Reconstruct the prompt's exact mutation allowlist and dependency order, verify the report/checksum first, then read back every affected and explicitly preserved remote object plus the immutable target. Resume only missing idempotent steps; never duplicate evidence comments or broaden scope. Classify this as `timed_out_with_recovered_artifact_and_reconciled_writes`, not completed. If recovery reveals one new runnable blocker, create/update its canonical task and dispatch the next non-overlapping worker in the same turn. See the external-side-effect section in `references/timeout-artifact-recovery.md`.
-7. **Validate returned or recovered results.** Read or hash the reported artifacts and act on the exact candidate-bound verdict. Test success does not override a blocking verdict. If reviewers disagree on an objective claim (permissions, file count, hashes, writability, or test output), run an independent read-only probe and record the resolved evidence; do not silently choose the friendlier claim.
+   - Treat **repository bytes and collaboration metadata** as separate completion surfaces. A timed-out writer may have a complete committed/pushed branch while still missing a PR-body section, issue evidence comment, draft/ready transition, or tracker update. Authenticate local and remote candidate bytes, then each allowed comment/body/state mutation independently. If code/spec bytes are complete, **do not launch another writer**; finish only missing idempotent metadata from the parent and preserve the timed-out run classification.
+7. **Validate returned or recovered results.** Read or hash the reported artifacts and act on the exact candidate-bound verdict. Completion deliveries may intentionally show only a head/tail excerpt and provide a path to the complete saved summary. Treat `SUMMARY TRUNCATED`, `middle omitted`, character-limit notices, or full-output footers as proof that the visible message is incomplete: read the complete saved summary before counting findings, scoping remediation, or dispatching the next gate. If the saved summary is missing or unreadable, the detailed result is absent even when the excerpt contains a verdict. Test success does not override a blocking verdict. If reviewers disagree on an objective claim, run an independent read-only probe and record the resolved evidence.
 8. **Close supervision.** Once completion, interruption, or timeout is confirmed, stop expecting that run to appear in `/agents`; recovered artifacts affect the task verdict, not the run-state classification, and liveness checks should become silent.
 
 ## Quiet watchdog pattern
@@ -100,6 +101,7 @@ Create the scheduler as a recurring `no_agent=True` job, omit a finite repeat co
 
 ## Pitfalls
 
+- Do not scope remediation from a truncated completion excerpt. When the delivery names a complete saved summary, read that file first; omitted middle findings remain part of the verdict.
 - Do not equate `status=timeout` with “no result.” Check the requested durable output path first; a complete report may have been flushed before the process deadline.
 - Do not relabel a timed-out run as completed merely because its artifact is usable. Keep run-state and artifact/verdict state separate.
 - Do not re-run slow browser/install/network checks in a replacement review when preserved exact-candidate evidence already covers them; narrow the review and require report-first behavior.
@@ -124,8 +126,10 @@ Create the scheduler as a recurring `no_agent=True` job, omit a finite repeat co
 - [ ] Gateway shutdown/interruption markers after dispatch are checked.
 - [ ] Batch completion/interruption/timeout is classified separately from artifact completeness and verdict.
 - [ ] On timeout, every exact requested output path was checked before deciding to re-dispatch.
+- [ ] Any truncated or omitted delivery was expanded from its named complete saved summary before findings were counted.
 - [ ] Any recovered artifact has complete required sections, an independently computed digest, and unchanged-target integrity evidence.
 - [ ] After a timeout with authorized external writes, every allowed and preserved remote object was read back; partial writes were resumed idempotently without duplicate comments or broadened scope.
+- [ ] Repository bytes and collaboration metadata were verified separately; a complete pushed artifact was not needlessly assigned to another writer.
 - [ ] Recovery that exposes a runnable next blocker creates/updates its canonical task and dispatches a dependency-safe worker before the parent turn ends.
 - [ ] Missing reports are confirmed before replacement dispatch.
 - [ ] Any RED-only checkpoint was recreated from its exact SHA, re-read, and rerun to prove the intended failure.
