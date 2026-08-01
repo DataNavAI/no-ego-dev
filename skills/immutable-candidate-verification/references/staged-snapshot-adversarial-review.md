@@ -110,7 +110,7 @@ If the supplied path is not a Git repository but an exact index-tree hash was fr
 
 Treat timeout, provider interruption, safety-filter interruption, or a response without the required first-token verdict as no gate result. Do not translate these into PASS, FAIL, APPROVED, or REJECTED. Re-dispatch with narrower implementation/compliance wording and bounded local checks while keeping the candidate and review contract unchanged; do not weaken the matrix to obtain a response.
 
-When several gates are required, all verdicts must bind the same index tree or commit. A passing specification/quality pair cannot override a missing or rejected domain gate such as editorial/provenance, and a later source correction invalidates every gate in the batch.
+When several bundles or domain authorities are required, all verdicts must bind the same index tree or commit. An approved composite verdict cannot override a missing or rejected domain gate such as editorial/provenance, and a later source correction invalidates every gate in the batch.
 
 ## Verdict evidence
 

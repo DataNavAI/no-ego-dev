@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.13.0
+version: 1.14.0
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -31,9 +31,9 @@ A top-level multi-child `delegate_task(tasks=[...])` call creates independent ba
 
 **Cron/scheduled mode is different from an interactive parent session.** Do not assume an async delegation completion will be reinjected into the cron run that launched it—or into the next fresh cron session. Before dispatch, require an attempt-scoped durable sink that a later run can read: a structured external report or a stable marked tracker comment bound to repository, PR, exact SHA, review kind, and attempt ID. Also validate a candidate-bound **review-readiness receipt** containing the same repository/PR/lineage/round identity and complete authorized review-bundle manifest before spending reviewer capacity. A scheduled run dispatches at most one reviewer, ends as `REVIEW_PENDING` when no result is yet durable, and reconciles that sink before any retry on the next run.
 
-Deduplicate reviews by `(repository, PR, exact SHA, review kind)`. A structurally valid negative verdict is completed evidence, not a failed attempt: route its blockers to one fixer and suppress review of that same SHA until the candidate changes. On timeout, recover the attempt artifact first; re-dispatch only the missing evidence scope, preserve trustworthy exact-SHA CI and prior check evidence, and never repeat broad suites or stress loops merely because the summary delivery was lost.
+Deduplicate reviews by `(repository, PR, lineage, round, exact SHA, base SHA, review bundle)` inside one candidate generation. A structurally valid negative verdict is completed evidence, not a failed attempt: route its blockers to one fixer and suppress review of that same generation until the candidate or base changes under the monotonic round policy. On timeout, recover the attempt artifact first; re-dispatch only the missing evidence scope, preserve trustworthy exact-SHA CI and prior check evidence, and never repeat broad suites or stress loops merely because the summary delivery was lost.
 
-Enforce this through an **atomic review index**, not prompt memory. The index claims one `(repository, PR, lineage, round, exact SHA, review bundle)` before launch, records `IN_PROGRESS`, and closes on `APPROVED` or `REQUEST_CHANGES`. Active or finalized same-SHA attempts suppress duplicate dispatch. `INCOMPLETE` may open only one narrower replacement whose scope is a subset of the prior missing evidence. Count attempts, suppressions, narrow recoveries, verdicts, and rounds so review efficiency is measurable.
+Enforce this through an **atomic review index**, not prompt memory. The index claims one candidate generation `(repository, PR, lineage, round, exact SHA, base SHA)` and nests the complete predeclared bundle set beneath it. Each bundle records `IN_PROGRESS` and closes on `APPROVED`, `REQUEST_CHANGES`, or `INCOMPLETE`; merge authority requires aggregate approval across every authorized bundle. Active or finalized same-bundle attempts suppress duplicate dispatch. `INCOMPLETE` may open only one narrower replacement whose scope is a subset of the prior missing evidence. Count candidates once, then count bundles, attempts, suppressions, narrow recoveries, verdicts, and rounds separately so review efficiency is measurable.
 
 Use one composite review bundle for ordinary candidates. Separate review kinds are justified only by named specialized high-risk boundaries; they remain one shared candidate round and their findings are aggregated before remediation. Do not split specification, quality, and routine security checks merely to manufacture independent sessions.
 

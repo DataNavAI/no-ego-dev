@@ -9,7 +9,7 @@ Apply this companion note when source/data contract changes affect generated sta
 3. Run browser/interface verification for rendered semantics, accessibility, navigation order, source actions, or responsive changes.
 4. Restore tracked generated output and remove only untracked generated paths before staging.
 5. Stage an explicit file allowlist; verify `git diff --cached --check`, exact staged names, and absence of unstaged source changes.
-6. Run independent specification and quality/security reviews against that exact cached diff or one immutable SHA. Do not edit source while those reviews are in flight.
+6. Run one composite independent review against that exact cached diff or one immutable SHA. Add a specialist only when predeclared for a non-overlapping high-risk expertise gap. Do not edit source while authorized review is in flight.
 7. Pending asynchronous reviews are not approvals. Do not commit, build once, record a digest, or deploy until their verdicts are received and checked.
 
 ## Exact-shape migration pitfalls

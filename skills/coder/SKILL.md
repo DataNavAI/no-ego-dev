@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.2.0
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -29,7 +29,7 @@ Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence cha
 
 ### Canonical round accounting
 
-**One review round is one immutable candidate generation.** All required review kinds—specification, quality, domain, security when required, and integration—against that candidate **share the same round number**, whether they run sequentially or in parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with each per-kind outcome. **A corrected candidate increments the round** and invalidates every earlier commit-bound verdict.
+**One review round is one immutable candidate generation.** One composite independent review covers specification, correctness, security, test honesty, conventions, integration, and operational risk for ordinary candidates. A named non-overlapping specialist may be predeclared only for a hard-to-reverse expertise gap; all authorized bundles **share one candidate generation and round number**. Persist one **review-readiness receipt** keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with each per-bundle outcome. **A corrected candidate advances exactly one round** and invalidates every earlier commit-bound verdict.
 
 For asynchronous UI/state-machine work that renders Replay, Reset, Navigate, Close, Share, or Retry before acknowledgement/finalization settles, follow [`references/render-before-ack-interleavings.md`](references/render-before-ack-interleavings.md): write a deferred-promise RED test at the render-before-await boundary, assert accepted event order and original-key observation, preserve retry/generation semantics, and serialize competing actions rather than relying on sequential tests.
 
@@ -40,8 +40,8 @@ For asynchronous UI/state-machine work that renders Replay, Reset, Navigate, Clo
 3. For UI implementation, read and reference the linked design artifacts before editing: project UI guideline, feature UI brief, design images/mockups, screenshots, or Figma/design-tool files. Do not implement visible UI from the tech spec alone when design artifacts exist.
 4. Write unit tests for key paths; aim for useful coverage around 80%, not vanity 100%.
 5. Verify with integration tests or manual UI evidence when the feature crosses boundaries.
-6. Use separate subagents to review the exact PR/commit within the shared three-round candidate-generation budget. If review is asynchronous, staging the candidate and running non-production verification may continue, but **do not merge or deploy production while the verdict is pending**. A late blocking/high finding invalidates any premature approval. Remediate through RED→GREEN only when another round remains; after a negative Round 3, keep the candidate unmerged and escalate—do not dispatch Round 4 or accept unreviewed risk.
-   - **MVP/prototype exception:** do not dispatch a standalone product-security/security-specialist reviewer for a normal low-risk MVP slice. Keep the independent spec review, ordinary code-quality review, configured scanners, safe defaults, and targeted trust-boundary tests. Add dedicated security review only for authentication/authorization, payments, private/regulated data, cryptography/credential issuance, untrusted upload/deserialization/execution, public write/admin APIs, cloud IAM/secrets, package/artifact publication, or destructive account/data operations.
+6. Use one fresh subagent for the **composite independent review** of the exact ordinary PR/commit within the shared three-round candidate-generation budget. If review is asynchronous, staging the candidate and running non-production verification may continue, but **do not merge or deploy production while the verdict is pending**. A late blocking/high finding invalidates any premature approval. Remediate through RED→GREEN only when another round remains; after a negative Round 3, keep the candidate unmerged and escalate—do not dispatch Round 4 or accept unreviewed risk.
+   - **Specialist exception:** do not dispatch a standalone product-security/security-specialist reviewer for a normal low-risk slice. The composite reviewer, configured scanners, safe defaults, and targeted trust-boundary tests are the default. Predeclare a distinct specialist in the readiness manifest only for authentication/authorization, payments, private/regulated data, cryptography/credential issuance, untrusted upload/deserialization/execution, public write/admin APIs, cloud IAM/secrets, package/artifact publication, destructive account/data operations, or another named hard-to-reverse boundary the composite reviewer cannot credibly cover.
 7. A task is complete only after changes are merged to main.
 8. After completion, clean up the branch and local checkout.
 

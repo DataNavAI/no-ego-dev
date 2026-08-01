@@ -10,9 +10,9 @@ Use this when an implementation worker times out or loses its completion summary
 4. Inspect HEAD/status, staged and unstaged diffs, exact paths, syntax, and `diff --check`; re-read all modified files before touching them. If a late result says it modified files the parent read earlier, re-read those paths again.
 5. Check whether the canonical base advanced while the worker ran. A PR can be conflict-free yet still be based on an older main commit. Integrate current base **before** independent review, preserving useful RED/GREEN commits when practical; rerun focused and canonical verification, push the integrated head, and invalidate all earlier exact-head verdicts/evidence.
 6. Run narrow semantic/feature tests first, then the canonical suite. Restore only known generated output; never blanket-clean unrelated paths.
-7. Stage exact approved paths and request specification review of the full recovered/integrated slice.
+7. Stage exact approved paths and request one composite independent review of the full recovered/integrated slice.
 8. Convert every review or parent-inspection finding into a focused regression test, capture real RED, make the smallest correction, capture GREEN, rerun canonical verification, and re-request the same immutable review gate.
-9. Run ordinary quality review only after specification PASS; apply the workflow's proportional MVP/security-review policy. Commit/merge only after required gates clear.
+9. Add a separate specialist only when a named non-overlapping high-risk expertise boundary was predeclared in the readiness manifest. Commit/merge only after every authorized bundle clears.
 10. Record the recovery classification and evidence on the durable issue/PR so the reason for draft/blocking status is not hidden in chat.
 
 ## Semantic renderer lessons

@@ -1,12 +1,12 @@
 prompt: |
-  A sequential implementation task has a clean candidate commit, focused RED-GREEN evidence, and passing tests. Specification and quality reviewers must approve the same immutable SHA before the next task starts. One reviewer returns late against an older SHA, another times out after writing a report, and a post-review evidence correction changes the commit.
+  A sequential implementation task has a clean candidate commit, focused RED-GREEN evidence, and passing tests. One composite independent reviewer must approve the exact candidate and current base before the next task starts; a predeclared specialist is required only for a named non-overlapping high-risk scope. One reviewer returns late against an older SHA, another times out after writing a report, and a post-review evidence correction changes the commit.
 
   Use the immutable-candidate-verification skill to execute the gate and decide whether work may advance.
 expectations:
-  - "Requires specification, quality, and any domain verdicts to name the same clean immutable commit before task completion."
+  - "Requires one composite independent approval, every predeclared specialist bundle, and any separate domain authority to name the same clean immutable candidate and current base before task completion."
   - "Does not treat tests, staged-diff review, lifecycle completion, or an older-SHA approval as authorization to advance."
   - "Preserves focused RED-GREEN evidence and runs focused, integration, canonical, syntax, and diff checks appropriate to the task."
-  - "Stages exact authorized paths, obtains pre-commit review, commits, and then reruns every required immutable post-commit gate."
+  - "Stages exact authorized paths, completes readiness, commits, and then runs one composite immutable post-commit review plus only predeclared non-overlapping specialists."
   - "Invalidates earlier verdicts after any code, test, fixture, documentation, or evidence correction changes the SHA."
   - "Recovers and verifies a timed-out review report, sidecar, explicit verdict, and candidate identity before using it."
   - "Triages reproducible findings from a stale older-SHA review against the current candidate without transferring its verdict."

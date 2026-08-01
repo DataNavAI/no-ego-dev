@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Atomic review-readiness, deduplication, recovery, and metrics gate.
 
-The state file belongs outside every candidate repository. It is operational
-metadata, never an approval by itself; callers must still verify the durable
-review report and immutable candidate through their tracker/provider.
+Python 3.9+ compatible. The state file belongs outside every candidate
+repository. It is operational metadata, never an approval by itself; callers
+must still verify the durable review report and immutable candidate through
+their tracker/provider.
 """
 
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -14,7 +16,12 @@ import re
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional, Union
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -29,7 +36,6 @@ REQUIRED_CHECKS = {
     "github_checks",
     "self_audit",
 }
-PASS_VALUES = {"PASS"}
 
 
 class GateError(ValueError):
@@ -43,6 +49,7 @@ class ReviewIdentity:
     lineage: str
     round: int
     candidate_sha: str
+    base_sha: str
     review_bundle: str = "composite"
 
     def __post_init__(self) -> None:
@@ -56,30 +63,55 @@ class ReviewIdentity:
             raise GateError("round must be 1, 2, or 3; Round 4 is prohibited")
         if not SHA_RE.fullmatch(self.candidate_sha):
             raise GateError("candidate_sha must be a lowercase 40-character SHA")
+        if not SHA_RE.fullmatch(self.base_sha):
+            raise GateError("base_sha must be a lowercase 40-character SHA")
         if not re.fullmatch(r"[a-z][a-z0-9_-]{2,63}", self.review_bundle):
             raise GateError("invalid review_bundle")
 
     @property
-    def key(self) -> str:
-        raw = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
+    def generation_payload(self) -> Dict[str, Any]:
+        return {
+            "repository": self.repository,
+            "pr": self.pr,
+            "lineage": self.lineage,
+            "round": self.round,
+            "candidate_sha": self.candidate_sha,
+            "base_sha": self.base_sha,
+        }
+
+    @property
+    def generation_key(self) -> str:
+        raw = json.dumps(self.generation_payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
+    @property
+    def lineage_payload(self) -> Dict[str, Any]:
+        return {"repository": self.repository, "pr": self.pr, "lineage": self.lineage}
 
-def readiness_digest(payload: dict[str, Any]) -> str:
+
+def readiness_digest(payload: Dict[str, Any]) -> str:
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def validate_readiness(payload: dict[str, Any], expected_sha: str) -> str:
+def validate_readiness(
+    payload: Dict[str, Any], expected_sha: str, expected_base_sha: str
+) -> str:
     if not isinstance(payload, dict):
         raise GateError("readiness receipt must be an object")
     if payload.get("schema_version") != 1:
         raise GateError("unsupported readiness schema_version")
     if not SHA_RE.fullmatch(expected_sha):
         raise GateError("expected_sha must be a lowercase 40-character SHA")
+    if not SHA_RE.fullmatch(expected_base_sha):
+        raise GateError("expected_base_sha must be a lowercase 40-character SHA")
     if payload.get("candidate_sha") != expected_sha:
         raise GateError("readiness candidate_sha does not match expected_sha")
-    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", str(payload.get("repository", ""))):
+    if payload.get("base_sha") != expected_base_sha:
+        raise GateError("readiness base_sha does not match expected_base_sha")
+    if not re.fullmatch(
+        r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", str(payload.get("repository", ""))
+    ):
         raise GateError("readiness repository is invalid")
     if not isinstance(payload.get("pr"), int) or payload["pr"] < 1:
         raise GateError("readiness pr is invalid")
@@ -90,10 +122,11 @@ def validate_readiness(payload: dict[str, Any], expected_sha: str) -> str:
     bundles = payload.get("review_bundles")
     if not isinstance(bundles, list) or not bundles or len(bundles) != len(set(bundles)):
         raise GateError("readiness review_bundles must be a non-empty unique list")
-    if any(not re.fullmatch(r"[a-z][a-z0-9_-]{2,63}", str(bundle)) for bundle in bundles):
+    if any(
+        not re.fullmatch(r"[a-z][a-z0-9_-]{2,63}", str(bundle))
+        for bundle in bundles
+    ):
         raise GateError("readiness review bundle is invalid")
-    if not SHA_RE.fullmatch(str(payload.get("base_sha", ""))):
-        raise GateError("readiness base_sha is invalid")
     if payload.get("dirty_worktree") is not False:
         raise GateError("dirty_worktree must be false")
     if payload.get("untracked_scope") not in ([], None):
@@ -105,59 +138,84 @@ def validate_readiness(payload: dict[str, Any], expected_sha: str) -> str:
     if missing:
         raise GateError("missing readiness checks: " + ", ".join(missing))
     for name in sorted(REQUIRED_CHECKS):
-        allowed = PASS_VALUES | ({"PASS_OR_NOT_REQUIRED"} if name == "github_checks" else set())
+        allowed = {"PASS", "PASS_OR_NOT_REQUIRED"} if name == "github_checks" else {"PASS"}
         if checks.get(name) not in allowed:
-            raise GateError(f"readiness check {name} is not PASS")
+            raise GateError("readiness check {0} is not PASS".format(name))
     return readiness_digest(payload)
 
 
 class _FileMutex:
+    """Portable process-owned advisory lock; stale file contents are not authority."""
+
     def __init__(self, path: Path, timeout: float = 5.0) -> None:
         self.path = path
         self.timeout = timeout
-        self.fd: int | None = None
+        self.fd = None  # type: Optional[int]
+
+    def _try_lock(self) -> None:
+        if self.fd is None:
+            raise GateError("lock file is not open")
+        if os.name == "nt":
+            os.lseek(self.fd, 0, os.SEEK_SET)
+            msvcrt.locking(self.fd, msvcrt.LK_NBLCK, 1)
+        else:
+            fcntl.flock(self.fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def __enter__(self) -> "_FileMutex":
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.fd = os.open(self.path, os.O_CREAT | os.O_RDWR, 0o600)
+        if os.name == "nt" and os.fstat(self.fd).st_size == 0:
+            os.write(self.fd, b"\0")
+            os.fsync(self.fd)
         deadline = time.monotonic() + self.timeout
         while True:
             try:
-                self.fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-                os.write(self.fd, f"{os.getpid()}\n".encode("ascii"))
-                return self
-            except FileExistsError:
-                try:
-                    owner = int(self.path.read_text(encoding="ascii").strip())
-                    os.kill(owner, 0)
-                except ProcessLookupError:
-                    try:
-                        self.path.unlink()
-                    except FileNotFoundError:
-                        pass
-                    continue
-                except (ValueError, OSError):
-                    pass
+                self._try_lock()
+                break
+            except (BlockingIOError, OSError) as exc:
+                if isinstance(exc, OSError) and exc.errno not in {
+                    errno.EACCES,
+                    errno.EAGAIN,
+                    errno.EDEADLK,
+                }:
+                    os.close(self.fd)
+                    self.fd = None
+                    raise
                 if time.monotonic() >= deadline:
-                    raise GateError(f"review index lock is busy: {self.path}")
+                    os.close(self.fd)
+                    self.fd = None
+                    raise GateError("review index lock is busy: {0}".format(self.path))
                 time.sleep(0.05)
+        metadata = json.dumps({"pid": os.getpid(), "acquired_at": time.time()}) + "\n"
+        os.lseek(self.fd, 0, os.SEEK_SET)
+        os.ftruncate(self.fd, 0)
+        os.write(self.fd, metadata.encode("ascii"))
+        os.fsync(self.fd)
+        return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
-        if self.fd is not None:
-            os.close(self.fd)
+        if self.fd is None:
+            return
         try:
-            self.path.unlink()
-        except FileNotFoundError:
-            pass
+            if os.name == "nt":
+                os.lseek(self.fd, 0, os.SEEK_SET)
+                msvcrt.locking(self.fd, msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(self.fd, fcntl.LOCK_UN)
+        finally:
+            os.close(self.fd)
+            self.fd = None
 
 
 class ReviewGateStore:
-    def __init__(self, path: Path | str) -> None:
+    def __init__(self, path: Union[Path, str]) -> None:
         self.path = Path(path).expanduser().resolve()
         self.lock_path = self.path.with_suffix(self.path.suffix + ".lock")
 
     @staticmethod
-    def _empty() -> dict[str, Any]:
+    def _empty() -> Dict[str, Any]:
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "candidates": {},
             "counters": {
                 "duplicate_dispatches_suppressed": 0,
@@ -165,11 +223,11 @@ class ReviewGateStore:
             },
         }
 
-    def _read(self) -> dict[str, Any]:
+    def _read(self) -> Dict[str, Any]:
         if not self.path.exists():
             return self._empty()
         value = json.loads(self.path.read_text(encoding="utf-8"))
-        if value.get("schema_version") != 1:
+        if value.get("schema_version") != 2:
             raise GateError("unsupported review index schema")
         if not isinstance(value.get("candidates"), dict):
             raise GateError("invalid review index candidates")
@@ -178,74 +236,146 @@ class ReviewGateStore:
         value["counters"].setdefault("narrow_recoveries_started", 0)
         return value
 
-    def _write(self, value: dict[str, Any]) -> None:
+    def _write(self, value: Dict[str, Any]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(self.path.suffix + f".tmp.{os.getpid()}")
-        tmp.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, self.path)
+        tmp = self.path.with_suffix(
+            self.path.suffix + ".tmp.{0}.{1}".format(os.getpid(), time.time_ns())
+        )
+        try:
+            with tmp.open("w", encoding="utf-8") as handle:
+                handle.write(json.dumps(value, indent=2, sort_keys=True) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, self.path)
+            if os.name != "nt":
+                directory_fd = os.open(str(self.path.parent), os.O_RDONLY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
+        finally:
+            try:
+                tmp.unlink()
+            except FileNotFoundError:
+                pass
+
+    @staticmethod
+    def _same_lineage(candidate: Dict[str, Any], identity: ReviewIdentity) -> bool:
+        prior = candidate.get("identity", {})
+        return all(
+            prior.get(field) == getattr(identity, field)
+            for field in ("repository", "pr", "lineage")
+        )
+
+    def _locate_candidate(
+        self, state: Dict[str, Any], identity: ReviewIdentity
+    ) -> Optional[Dict[str, Any]]:
+        return state["candidates"].get(identity.generation_key)
+
+    def _validate_generation(
+        self, state: Dict[str, Any], identity: ReviewIdentity, readiness_hash: str
+    ) -> Optional[Dict[str, Any]]:
+        lineage = [
+            candidate
+            for candidate in state["candidates"].values()
+            if self._same_lineage(candidate, identity)
+        ]
+        exact = self._locate_candidate(state, identity)
+        for candidate in lineage:
+            prior = candidate["identity"]
+            if (
+                prior.get("candidate_sha") == identity.candidate_sha
+                and prior.get("base_sha") == identity.base_sha
+                and prior.get("round") != identity.round
+            ):
+                state["counters"]["duplicate_dispatches_suppressed"] += 1
+                self._write(state)
+                return {"started": False, "reason": "same-sha-round-reuse"}
+        if exact:
+            if exact.get("readiness_digest") != readiness_hash:
+                raise GateError("candidate readiness manifest drift")
+            return None
+
+        if not lineage:
+            if identity.round != 1:
+                raise GateError("first candidate must use the next round: Round 1")
+            return None
+
+        max_round = max(int(candidate["identity"]["round"]) for candidate in lineage)
+        if max_round >= 3:
+            raise GateError("lineage exhausted after Round 3; Round 4 is prohibited")
+        if identity.round < max_round:
+            raise GateError("candidate round would regress lineage progression")
+        if identity.round == max_round:
+            raise GateError("round {0} is already bound to another candidate".format(identity.round))
+        if identity.round != max_round + 1:
+            raise GateError("changed candidate must use the next round: Round {0}".format(max_round + 1))
+        return None
 
     def claim(
         self,
         identity: ReviewIdentity,
         attempt_id: str,
-        readiness: dict[str, Any],
-        missing_evidence: list[str] | None = None,
-    ) -> dict[str, Any]:
+        readiness: Dict[str, Any],
+        missing_evidence: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,96}", attempt_id):
             raise GateError("invalid attempt_id")
-        readiness_hash = validate_readiness(readiness, identity.candidate_sha)
+        readiness_hash = validate_readiness(
+            readiness, identity.candidate_sha, identity.base_sha
+        )
         for field in ("repository", "pr", "lineage", "round"):
             if readiness.get(field) != getattr(identity, field):
-                raise GateError(f"readiness {field} does not match review identity")
+                raise GateError("readiness {0} does not match review identity".format(field))
         if identity.review_bundle not in readiness["review_bundles"]:
             raise GateError("review bundle is not authorized by readiness manifest")
-        requested_scope = [str(item).strip() for item in (missing_evidence or []) if str(item).strip()]
+        requested_scope = [
+            str(item).strip() for item in (missing_evidence or []) if str(item).strip()
+        ]
 
         with _FileMutex(self.lock_path):
             state = self._read()
-            for existing in state["candidates"].values():
-                prior = existing.get("identity", {})
-                same_candidate = all(
-                    prior.get(field) == getattr(identity, field)
-                    for field in ("repository", "pr", "lineage", "candidate_sha")
-                )
-                if same_candidate and prior.get("round") != identity.round:
-                    state["counters"]["duplicate_dispatches_suppressed"] += 1
-                    self._write(state)
-                    return {"started": False, "reason": "same-sha-round-reuse"}
-                if same_candidate and prior.get("round") == identity.round:
-                    if existing.get("readiness_digest") != readiness_hash:
-                        raise GateError("candidate readiness manifest drift")
+            suppressed = self._validate_generation(state, identity, readiness_hash)
+            if suppressed:
+                return suppressed
             candidate = state["candidates"].setdefault(
-                identity.key,
+                identity.generation_key,
                 {
-                    "identity": asdict(identity),
+                    "identity": identity.generation_payload,
                     "readiness_digest": readiness_hash,
                     "review_bundles": list(readiness["review_bundles"]),
-                    "attempts": [],
+                    "bundles": {},
                 },
             )
-            attempts = candidate["attempts"]
-            if any(a.get("attempt_id") == attempt_id for a in attempts):
-                state["counters"]["duplicate_dispatches_suppressed"] += 1
-                self._write(state)
-                return {"started": False, "reason": "attempt-id-already-used"}
-            active = next((a for a in attempts if a.get("status") == "IN_PROGRESS"), None)
-            if active:
+            if candidate.get("review_bundles") != list(readiness["review_bundles"]):
+                raise GateError("candidate readiness manifest drift")
+            for bundle in candidate.get("bundles", {}).values():
+                if any(a.get("attempt_id") == attempt_id for a in bundle.get("attempts", [])):
+                    state["counters"]["duplicate_dispatches_suppressed"] += 1
+                    self._write(state)
+                    return {"started": False, "reason": "attempt-id-already-used"}
+            bundle_state = candidate["bundles"].setdefault(
+                identity.review_bundle, {"attempts": []}
+            )
+            attempts = bundle_state["attempts"]
+            if any(a.get("status") == "IN_PROGRESS" for a in attempts):
                 state["counters"]["duplicate_dispatches_suppressed"] += 1
                 self._write(state)
                 return {"started": False, "reason": "attempt-active"}
-            final = next(
-                (a for a in reversed(attempts) if a.get("status") in {"APPROVED", "REQUEST_CHANGES"}),
-                None,
-            )
-            if final:
+            if any(
+                a.get("status") in {"APPROVED", "REQUEST_CHANGES"}
+                for a in attempts
+            ):
                 state["counters"]["duplicate_dispatches_suppressed"] += 1
                 self._write(state)
                 return {"started": False, "reason": "verdict-already-final"}
 
-            scope: list[str] = ["full-composite-review"]
+            scope = (
+                ["full-composite-review"]
+                if identity.review_bundle == "composite"
+                else ["specialized-{0}-review".format(identity.review_bundle)]
+            )
             if attempts:
                 previous = attempts[-1]
                 if previous.get("status") != "INCOMPLETE":
@@ -274,7 +404,11 @@ class ReviewGateStore:
                 }
             )
             self._write(state)
-            return {"started": True, "scope": scope, "readiness_digest": readiness_hash}
+            return {
+                "started": True,
+                "scope": scope,
+                "readiness_digest": readiness_hash,
+            }
 
     def finalize(
         self,
@@ -282,16 +416,18 @@ class ReviewGateStore:
         attempt_id: str,
         verdict: str,
         report_digest: str,
-        missing_evidence: list[str] | None = None,
-        runtime_seconds: float | None = None,
-        fresh_tokens: int | None = None,
-    ) -> dict[str, Any]:
+        missing_evidence: Optional[List[str]] = None,
+        runtime_seconds: Optional[float] = None,
+        fresh_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
         verdict = verdict.upper()
         if verdict not in FINAL_VERDICTS:
             raise GateError("invalid review verdict")
         if not DIGEST_RE.fullmatch(report_digest):
             raise GateError("report_digest must be a lowercase SHA-256 digest")
-        missing = [str(item).strip() for item in (missing_evidence or []) if str(item).strip()]
+        missing = [
+            str(item).strip() for item in (missing_evidence or []) if str(item).strip()
+        ]
         if verdict == "INCOMPLETE" and not missing:
             raise GateError("INCOMPLETE requires missing_evidence")
         if verdict != "INCOMPLETE" and missing:
@@ -303,10 +439,16 @@ class ReviewGateStore:
 
         with _FileMutex(self.lock_path):
             state = self._read()
-            candidate = state["candidates"].get(identity.key)
+            candidate = self._locate_candidate(state, identity)
             if not candidate:
                 raise GateError("review candidate was never claimed")
-            attempt = next((a for a in candidate["attempts"] if a.get("attempt_id") == attempt_id), None)
+            bundle = candidate.get("bundles", {}).get(identity.review_bundle)
+            if not bundle:
+                raise GateError("review bundle was never claimed")
+            attempt = next(
+                (a for a in bundle["attempts"] if a.get("attempt_id") == attempt_id),
+                None,
+            )
             if not attempt:
                 raise GateError("review attempt was never claimed")
             if attempt.get("status") != "IN_PROGRESS":
@@ -322,25 +464,48 @@ class ReviewGateStore:
             self._write(state)
             return {"finalized": True, "verdict": verdict}
 
-    def metrics(self) -> dict[str, Any]:
+    def candidate_status(self, identity: ReviewIdentity) -> Dict[str, Any]:
+        with _FileMutex(self.lock_path):
+            state = self._read()
+            candidate = self._locate_candidate(state, identity)
+        if not candidate:
+            raise GateError("review candidate was never claimed")
+        statuses = {}
+        for bundle_name in candidate["review_bundles"]:
+            attempts = candidate.get("bundles", {}).get(bundle_name, {}).get("attempts", [])
+            statuses[bundle_name] = attempts[-1]["status"] if attempts else "NOT_STARTED"
+        return {
+            "candidate_sha": identity.candidate_sha,
+            "base_sha": identity.base_sha,
+            "round": identity.round,
+            "bundles": statuses,
+            "complete": all(value in FINAL_VERDICTS for value in statuses.values()),
+            "approved": bool(statuses) and all(value == "APPROVED" for value in statuses.values()),
+        }
+
+    def metrics(self) -> Dict[str, Any]:
         with _FileMutex(self.lock_path):
             state = self._read()
         verdicts = {name: 0 for name in sorted(FINAL_VERDICTS)}
         attempts_started = 0
         review_runtime_seconds = 0.0
         review_fresh_tokens = 0
-        candidate_rounds: dict[str, int] = {}
+        review_bundles = 0
+        candidate_rounds = {}  # type: Dict[str, int]
         for candidate in state["candidates"].values():
             round_key = str(candidate.get("identity", {}).get("round", "unknown"))
             candidate_rounds[round_key] = candidate_rounds.get(round_key, 0) + 1
-            for attempt in candidate.get("attempts", []):
-                attempts_started += 1
-                review_runtime_seconds += float(attempt.get("runtime_seconds") or 0)
-                review_fresh_tokens += int(attempt.get("fresh_tokens") or 0)
-                if attempt.get("status") in verdicts:
-                    verdicts[attempt["status"]] += 1
+            review_bundles += len(candidate.get("bundles", {}))
+            for bundle in candidate.get("bundles", {}).values():
+                for attempt in bundle.get("attempts", []):
+                    attempts_started += 1
+                    review_runtime_seconds += float(attempt.get("runtime_seconds") or 0)
+                    review_fresh_tokens += int(attempt.get("fresh_tokens") or 0)
+                    if attempt.get("status") in verdicts:
+                        verdicts[attempt["status"]] += 1
         return {
             "candidates": len(state["candidates"]),
+            "review_bundles": review_bundles,
             "attempts_started": attempts_started,
             "duplicate_dispatches_suppressed": state["counters"]["duplicate_dispatches_suppressed"],
             "narrow_recoveries_started": state["counters"]["narrow_recoveries_started"],
@@ -358,12 +523,24 @@ def _identity_from_args(args: argparse.Namespace) -> ReviewIdentity:
         lineage=args.lineage,
         round=args.round,
         candidate_sha=args.candidate_sha,
+        base_sha=args.base_sha,
         review_bundle=args.review_bundle,
     )
 
 
-def _read_json(path: str) -> dict[str, Any]:
+def _read_json(path: str) -> Dict[str, Any]:
     return json.loads(Path(path).expanduser().resolve().read_text(encoding="utf-8"))
+
+
+def _add_identity_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--state", required=True)
+    parser.add_argument("--repository", required=True)
+    parser.add_argument("--pr", required=True, type=int)
+    parser.add_argument("--lineage", required=True)
+    parser.add_argument("--round", required=True, type=int)
+    parser.add_argument("--candidate-sha", required=True)
+    parser.add_argument("--base-sha", required=True)
+    parser.add_argument("--review-bundle", default="composite")
 
 
 def main() -> int:
@@ -373,41 +550,56 @@ def main() -> int:
     validate = sub.add_parser("validate-readiness")
     validate.add_argument("--receipt", required=True)
     validate.add_argument("--expected-sha", required=True)
+    validate.add_argument("--expected-base-sha", required=True)
 
-    for name in ("claim", "finalize"):
-        cmd = sub.add_parser(name)
-        cmd.add_argument("--state", required=True)
-        cmd.add_argument("--repository", required=True)
-        cmd.add_argument("--pr", required=True, type=int)
-        cmd.add_argument("--lineage", required=True)
-        cmd.add_argument("--round", required=True, type=int)
-        cmd.add_argument("--candidate-sha", required=True)
-        cmd.add_argument("--review-bundle", default="composite")
-        cmd.add_argument("--attempt-id", required=True)
-        cmd.add_argument("--missing-evidence", action="append", default=[])
-    claim = sub.choices["claim"]
+    claim = sub.add_parser("claim")
+    _add_identity_arguments(claim)
+    claim.add_argument("--attempt-id", required=True)
+    claim.add_argument("--missing-evidence", action="append", default=[])
     claim.add_argument("--readiness", required=True)
-    finalize = sub.choices["finalize"]
+
+    finalize = sub.add_parser("finalize")
+    _add_identity_arguments(finalize)
+    finalize.add_argument("--attempt-id", required=True)
+    finalize.add_argument("--missing-evidence", action="append", default=[])
     finalize.add_argument("--verdict", required=True, choices=sorted(FINAL_VERDICTS))
     finalize.add_argument("--report-digest", required=True)
     finalize.add_argument("--runtime-seconds", type=float)
     finalize.add_argument("--fresh-tokens", type=int)
+
+    status = sub.add_parser("candidate-status")
+    _add_identity_arguments(status)
 
     metrics = sub.add_parser("metrics")
     metrics.add_argument("--state", required=True)
 
     args = parser.parse_args()
     if args.command == "validate-readiness":
-        result = {"valid": True, "readiness_digest": validate_readiness(_read_json(args.receipt), args.expected_sha)}
+        result = {
+            "valid": True,
+            "readiness_digest": validate_readiness(
+                _read_json(args.receipt), args.expected_sha, args.expected_base_sha
+            ),
+        }
     elif args.command == "claim":
         result = ReviewGateStore(args.state).claim(
-            _identity_from_args(args), args.attempt_id, _read_json(args.readiness), args.missing_evidence
+            _identity_from_args(args),
+            args.attempt_id,
+            _read_json(args.readiness),
+            args.missing_evidence,
         )
     elif args.command == "finalize":
         result = ReviewGateStore(args.state).finalize(
-            _identity_from_args(args), args.attempt_id, args.verdict, args.report_digest,
-            args.missing_evidence, args.runtime_seconds, args.fresh_tokens
+            _identity_from_args(args),
+            args.attempt_id,
+            args.verdict,
+            args.report_digest,
+            args.missing_evidence,
+            args.runtime_seconds,
+            args.fresh_tokens,
         )
+    elif args.command == "candidate-status":
+        result = ReviewGateStore(args.state).candidate_status(_identity_from_args(args))
     else:
         result = ReviewGateStore(args.state).metrics()
     print(json.dumps(result, sort_keys=True))

@@ -8,12 +8,12 @@ Use this when implementation reviews expose multiple findings, delegated fix wor
 - Confirm the remote PR still points to that head before acting on a review.
 - Passing tests from a moving branch or different checkout are not evidence for reviewed bytes.
 
-## Parallel review fan-in before correction
+## Predeclared specialist fan-in before correction
 
-Default to specification review before quality review, but a frozen candidate may receive independent read-only spec and quality reviews concurrently when latency or worker-liveness goals justify the extra work. Parallelism changes scheduling, not gate semantics.
+Default to one composite independent review covering specification and quality/integration risk for an ordinary frozen candidate. Extra parallel review is justified only by a predeclared named, non-overlapping high-risk expertise gap; latency alone never justifies duplicate reads.
 
-1. Give each reviewer a unique report/checksum path and record every in-flight handle for the exact SHA.
-2. Keep the PR head frozen until all already-running reviewers for that SHA stop. A first failure closes the merge gate but does not make the remaining review irrelevant; its later findings may broaden the same correction class.
+1. Give the composite reviewer and every predeclared specialist a unique report/checksum path and record every in-flight handle for the exact SHA.
+2. Keep the PR head frozen until all authorized bundles for that SHA stop. A first failure closes the merge gate but does not make a distinct predeclared specialist irrelevant; its later findings may broaden the same correction class.
 3. Independently verify each returned or timeout-recovered report and reproduce consequential objective findings where practical.
 4. Fan in all verified blockers and bounded matrices before dispatching a writer. Do not push the first fix while another exact-head reviewer is still running unless deliberately accepting that its verdict will become superseded and must be rerun.
 5. Produce one deduplicated remediation matrix with finding IDs, exact reproducers, affected paths, required RED tests, and acceptance checks. One writer owns overlapping corrections.

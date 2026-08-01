@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import ast
 import importlib.util
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,6 +17,10 @@ SKILLS = ROOT / "skills"
 SCRIPT = SKILLS / "issue-monitor" / "scripts" / "review_gate.py"
 SHA_A = "a" * 40
 SHA_B = "b" * 40
+SHA_C = "c" * 40
+SHA_D = "d" * 40
+BASE_A = "e" * 40
+BASE_B = "f" * 40
 DIGEST = "d" * 64
 
 
@@ -23,16 +32,21 @@ def load_gate():
     return module
 
 
-def readiness(sha: str = SHA_A) -> dict:
+def readiness(
+    sha: str = SHA_A,
+    round_number: int = 1,
+    base_sha: str = BASE_A,
+    bundles: list[str] | None = None,
+) -> dict:
     return {
         "schema_version": 1,
         "repository": "DataNavAI/example",
         "pr": 17,
         "lineage": "issue-17",
-        "round": 1 if sha == SHA_A else 2,
-        "review_bundles": ["composite"],
+        "round": round_number,
+        "review_bundles": bundles or ["composite"],
         "candidate_sha": sha,
-        "base_sha": SHA_B,
+        "base_sha": base_sha,
         "dirty_worktree": False,
         "untracked_scope": [],
         "checks": {
@@ -47,13 +61,20 @@ def readiness(sha: str = SHA_A) -> dict:
     }
 
 
-def identity(gate, sha: str = SHA_A, round_number: int = 1, review_bundle: str = "composite"):
+def identity(
+    gate,
+    sha: str = SHA_A,
+    round_number: int = 1,
+    review_bundle: str = "composite",
+    base_sha: str = BASE_A,
+):
     return gate.ReviewIdentity(
         repository="DataNavAI/example",
         pr=17,
         lineage="issue-17",
         round=round_number,
         candidate_sha=sha,
+        base_sha=base_sha,
         review_bundle=review_bundle,
     )
 
@@ -63,17 +84,28 @@ def test_readiness_fails_closed_before_review() -> None:
     payload = readiness()
     payload["checks"]["full_tests"] = "FAIL"
     with pytest.raises(gate.GateError, match="full_tests"):
-        gate.validate_readiness(payload, expected_sha=SHA_A)
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
 
     payload = readiness()
     payload["dirty_worktree"] = True
     with pytest.raises(gate.GateError, match="dirty_worktree"):
-        gate.validate_readiness(payload, expected_sha=SHA_A)
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
 
     payload = readiness()
     payload["checks"]["full_tests"] = "PASS_OR_NOT_REQUIRED"
     with pytest.raises(gate.GateError, match="full_tests"):
-        gate.validate_readiness(payload, expected_sha=SHA_A)
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_readiness_rejects_stale_base_with_unchanged_head(tmp_path: Path) -> None:
+    gate = load_gate()
+    stale = readiness(base_sha=BASE_A)
+    with pytest.raises(gate.GateError, match="base_sha"):
+        gate.validate_readiness(stale, expected_sha=SHA_A, expected_base_sha=BASE_B)
+    with pytest.raises(gate.GateError, match="base_sha"):
+        gate.ReviewGateStore(tmp_path / "review-index.json").claim(
+            identity(gate, base_sha=BASE_B), "attempt-one", stale
+        )
 
 
 def test_receipt_identity_and_bundle_manifest_are_enforced(tmp_path: Path) -> None:
@@ -88,8 +120,7 @@ def test_receipt_identity_and_bundle_manifest_are_enforced(tmp_path: Path) -> No
         store.claim(identity(gate, review_bundle="security"), "attempt-two", readiness())
 
     store.claim(identity(gate), "attempt-base", readiness())
-    expanded = readiness()
-    expanded["review_bundles"] = ["composite", "security"]
+    expanded = readiness(bundles=["composite", "security"])
     with pytest.raises(gate.GateError, match="manifest drift"):
         store.claim(identity(gate, review_bundle="security"), "attempt-three", expanded)
 
@@ -97,10 +128,25 @@ def test_receipt_identity_and_bundle_manifest_are_enforced(tmp_path: Path) -> No
 def test_predeclared_specialized_bundle_shares_one_candidate_manifest(tmp_path: Path) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
-    manifest = readiness()
-    manifest["review_bundles"] = ["composite", "security"]
-    assert store.claim(identity(gate), "attempt-one", manifest)["started"] is True
-    assert store.claim(identity(gate, review_bundle="security"), "attempt-two", manifest)["started"] is True
+    manifest = readiness(bundles=["composite", "security"])
+    composite = store.claim(identity(gate), "attempt-one", manifest)
+    security = store.claim(identity(gate, review_bundle="security"), "attempt-two", manifest)
+    assert composite["scope"] == ["full-composite-review"]
+    assert security["scope"] == ["specialized-security-review"]
+
+    state = store._read()
+    assert len(state["candidates"]) == 1
+    candidate = next(iter(state["candidates"].values()))
+    assert set(candidate["bundles"]) == {"composite", "security"}
+    metrics = store.metrics()
+    assert metrics["candidates"] == 1
+    assert metrics["review_bundles"] == 2
+    assert metrics["candidate_rounds"] == {"1": 1}
+
+    store.finalize(identity(gate), "attempt-one", "APPROVED", DIGEST)
+    assert store.candidate_status(identity(gate))["approved"] is False
+    store.finalize(identity(gate, review_bundle="security"), "attempt-two", "APPROVED", DIGEST)
+    assert store.candidate_status(identity(gate))["approved"] is True
 
 
 def test_same_sha_result_and_active_attempt_suppress_duplicate_review(tmp_path: Path) -> None:
@@ -110,14 +156,13 @@ def test_same_sha_result_and_active_attempt_suppress_duplicate_review(tmp_path: 
 
     first = store.claim(key, "attempt-one", readiness())
     assert first["started"] is True
-
-    active_duplicate = store.claim(key, "attempt-two", readiness())
-    assert active_duplicate == {"started": False, "reason": "attempt-active"}
+    assert store.claim(key, "attempt-two", readiness()) == {"started": False, "reason": "attempt-active"}
 
     store.finalize(key, "attempt-one", "REQUEST_CHANGES", DIGEST)
-    closed_duplicate = store.claim(key, "attempt-three", readiness())
-    assert closed_duplicate == {"started": False, "reason": "verdict-already-final"}
-
+    assert store.claim(key, "attempt-three", readiness()) == {
+        "started": False,
+        "reason": "verdict-already-final",
+    }
     metrics = store.metrics()
     assert metrics["duplicate_dispatches_suppressed"] == 2
     assert metrics["verdicts"]["REQUEST_CHANGES"] == 1
@@ -129,57 +174,62 @@ def test_incomplete_review_allows_one_narrow_recovery_only(tmp_path: Path) -> No
     key = identity(gate)
 
     store.claim(key, "attempt-one", readiness())
-    store.finalize(
-        key,
-        "attempt-one",
-        "INCOMPLETE",
-        DIGEST,
-        missing_evidence=["migration rollback probe"],
-    )
-
-    without_scope = store.claim(key, "attempt-two", readiness())
-    assert without_scope == {"started": False, "reason": "missing-recovery-scope"}
-
+    store.finalize(key, "attempt-one", "INCOMPLETE", DIGEST, missing_evidence=["migration rollback probe"])
+    assert store.claim(key, "attempt-two", readiness()) == {
+        "started": False,
+        "reason": "missing-recovery-scope",
+    }
     recovery = store.claim(
-        key,
-        "attempt-two",
-        readiness(),
-        missing_evidence=["migration rollback probe"],
+        key, "attempt-two", readiness(), missing_evidence=["migration rollback probe"]
     )
-    assert recovery["started"] is True
     assert recovery["scope"] == ["migration rollback probe"]
-
     store.finalize(key, "attempt-two", "INCOMPLETE", DIGEST, missing_evidence=["live rollback proof"])
-    exhausted = store.claim(
-        key,
-        "attempt-three",
-        readiness(),
-        missing_evidence=["live rollback proof"],
-    )
-    assert exhausted == {"started": False, "reason": "attempt-budget-exhausted"}
+    assert store.claim(
+        key, "attempt-three", readiness(), missing_evidence=["live rollback proof"]
+    ) == {"started": False, "reason": "attempt-budget-exhausted"}
     assert store.metrics()["narrow_recoveries_started"] == 1
 
 
-def test_new_sha_is_a_new_candidate_but_round_four_is_rejected(tmp_path: Path) -> None:
+def test_lineage_rounds_are_monotonic_unique_and_capped(tmp_path: Path) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
-    old = identity(gate, SHA_A, 1)
-    store.claim(old, "attempt-one", readiness(SHA_A))
-    store.finalize(old, "attempt-one", "REQUEST_CHANGES", DIGEST)
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "attempt-one", readiness(SHA_A, 1))
+    store.finalize(first, "attempt-one", "REQUEST_CHANGES", DIGEST)
 
-    new = identity(gate, SHA_B, 2)
-    assert store.claim(new, "attempt-two", readiness(SHA_B))["started"] is True
+    with pytest.raises(gate.GateError, match="already bound"):
+        store.claim(identity(gate, SHA_B, 1), "attempt-two", readiness(SHA_B, 1))
+    with pytest.raises(gate.GateError, match="next round"):
+        store.claim(identity(gate, SHA_B, 3), "attempt-three", readiness(SHA_B, 3))
 
-    same_sha_new_round = identity(gate, SHA_A, 2)
-    same_sha_receipt = readiness(SHA_A)
-    same_sha_receipt["round"] = 2
-    assert store.claim(same_sha_new_round, "attempt-three", same_sha_receipt) == {
+    second = identity(gate, SHA_B, 2)
+    assert store.claim(second, "attempt-four", readiness(SHA_B, 2))["started"] is True
+    store.finalize(second, "attempt-four", "REQUEST_CHANGES", DIGEST)
+
+    with pytest.raises(gate.GateError, match="already bound"):
+        store.claim(identity(gate, SHA_C, 2), "attempt-five", readiness(SHA_C, 2))
+    with pytest.raises(gate.GateError, match="regress"):
+        store.claim(identity(gate, SHA_C, 1), "attempt-six", readiness(SHA_C, 1))
+
+    third = identity(gate, SHA_C, 3)
+    assert store.claim(third, "attempt-seven", readiness(SHA_C, 3))["started"] is True
+    store.finalize(third, "attempt-seven", "REQUEST_CHANGES", DIGEST)
+
+    with pytest.raises(gate.GateError, match="Round 3"):
+        store.claim(identity(gate, SHA_D, 1), "attempt-eight", readiness(SHA_D, 1))
+    with pytest.raises(gate.GateError, match="round"):
+        identity(gate, SHA_D, 4)
+
+
+def test_same_sha_cannot_be_renamed_as_a_new_round(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    store.claim(identity(gate), "attempt-one", readiness())
+    changed_round = readiness(SHA_A, 2)
+    assert store.claim(identity(gate, SHA_A, 2), "attempt-two", changed_round) == {
         "started": False,
         "reason": "same-sha-round-reuse",
     }
-
-    with pytest.raises(gate.GateError, match="round"):
-        identity(gate, SHA_B, 4)
 
 
 def test_metrics_include_review_runtime_and_fresh_tokens(tmp_path: Path) -> None:
@@ -187,27 +237,134 @@ def test_metrics_include_review_runtime_and_fresh_tokens(tmp_path: Path) -> None
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
     key = identity(gate)
     store.claim(key, "attempt-one", readiness())
-    store.finalize(
-        key,
-        "attempt-one",
-        "APPROVED",
-        DIGEST,
-        runtime_seconds=12.5,
-        fresh_tokens=321,
-    )
+    store.finalize(key, "attempt-one", "APPROVED", DIGEST, runtime_seconds=12.5, fresh_tokens=321)
     metrics = store.metrics()
     assert metrics["review_runtime_seconds"] == 12.5
     assert metrics["review_fresh_tokens"] == 321
     assert metrics["candidate_rounds"]["1"] == 1
 
 
-def test_orphaned_pid_lock_is_recovered(tmp_path: Path) -> None:
+def test_kernel_lock_accepts_empty_and_malformed_persistent_files(tmp_path: Path) -> None:
     gate = load_gate()
     lock = tmp_path / "review-index.json.lock"
-    lock.write_text("99999999\n", encoding="ascii")
-    with gate._FileMutex(lock, timeout=0.1):
-        assert lock.exists()
-    assert not lock.exists()
+    for contents in ("", "not-a-pid\n", "99999999\n"):
+        lock.write_text(contents, encoding="ascii")
+        with gate._FileMutex(lock, timeout=0.1):
+            assert lock.exists()
+
+
+def test_cross_process_claim_is_atomic(tmp_path: Path) -> None:
+    state_path = tmp_path / "review-index.json"
+    receipt_path = tmp_path / "readiness.json"
+    receipt_path.write_text(json.dumps(readiness()), encoding="utf-8")
+    common = [
+        sys.executable,
+        str(SCRIPT),
+        "claim",
+        "--state",
+        str(state_path),
+        "--repository",
+        "DataNavAI/example",
+        "--pr",
+        "17",
+        "--lineage",
+        "issue-17",
+        "--round",
+        "1",
+        "--candidate-sha",
+        SHA_A,
+        "--base-sha",
+        BASE_A,
+        "--review-bundle",
+        "composite",
+        "--readiness",
+        str(receipt_path),
+    ]
+    children = [
+        subprocess.Popen(
+            common + ["--attempt-id", f"atomic-attempt-{index}"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for index in range(2)
+    ]
+    results = []
+    for child in children:
+        stdout, stderr = child.communicate(timeout=10)
+        assert child.returncode == 0, stderr
+        results.append(json.loads(stdout))
+    assert sum(bool(result["started"]) for result in results) == 1
+    assert {result.get("reason") for result in results if not result["started"]} == {
+        "attempt-active"
+    }
+
+
+def test_process_crash_releases_kernel_lock(tmp_path: Path) -> None:
+    gate = load_gate()
+    state_path = tmp_path / "review-index.json"
+    lock_path = state_path.with_suffix(".json.lock")
+    helper = """
+import importlib.util, pathlib, sys, time
+spec = importlib.util.spec_from_file_location('crash_gate', sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
+spec.loader.exec_module(module)
+with module._FileMutex(pathlib.Path(sys.argv[2]), timeout=2):
+    print('LOCKED', flush=True)
+    time.sleep(60)
+"""
+    child = subprocess.Popen(
+        [sys.executable, "-c", helper, str(SCRIPT), str(lock_path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert child.stdout is not None
+    assert child.stdout.readline().strip() == "LOCKED"
+    child.kill()
+    child.wait(timeout=5)
+    assert gate.ReviewGateStore(state_path).claim(
+        identity(gate), "post-crash-attempt", readiness()
+    )["started"]
+
+
+def test_state_publication_fsyncs_file_and_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    gate = load_gate()
+    calls: list[int] = []
+    real_fsync = os.fsync
+
+    def recording_fsync(fd: int) -> None:
+        calls.append(fd)
+        real_fsync(fd)
+
+    monkeypatch.setattr(gate.os, "fsync", recording_fsync)
+    gate.ReviewGateStore(tmp_path / "review-index.json").claim(
+        identity(gate), "attempt-one", readiness()
+    )
+    assert len(calls) >= 2
+
+
+def test_packaged_gate_is_python39_annotation_compatible_and_executable() -> None:
+    tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+    annotation_unions = []
+    for node in ast.walk(tree):
+        annotation = None
+        if isinstance(node, ast.arg):
+            annotation = node.annotation
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            annotation = node.returns
+        elif isinstance(node, ast.AnnAssign):
+            annotation = node.annotation
+        if annotation and any(
+            isinstance(item, ast.BinOp) and isinstance(item.op, ast.BitOr)
+            for item in ast.walk(annotation)
+        ):
+            annotation_unions.append(node)
+    assert not annotation_unions, "runtime-evaluated PEP 604 annotations break Python 3.9"
+    result = subprocess.run([sys.executable, str(SCRIPT), "--help"], text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    assert "Python 3.9+" in SCRIPT.read_text(encoding="utf-8")
 
 
 def test_orchestration_contracts_prevent_fragmented_reviews() -> None:
@@ -218,16 +375,9 @@ def test_orchestration_contracts_prevent_fragmented_reviews() -> None:
             "one reviewer per immutable candidate",
             "complete review-bundle manifest",
         ),
-        "delegation-reliability": (
-            "review-readiness receipt",
-            "atomic review index",
-            "same-SHA",
-        ),
-        "project-manager": (
-            "composite review",
-            "specialized reviewer",
-            "review-readiness receipt",
-        ),
+        "delegation-reliability": ("review-readiness receipt", "atomic review index", "same-bundle"),
+        "project-manager": ("composite review", "specialized reviewer", "review-readiness receipt"),
+        "coder": ("composite independent review", "review-readiness receipt"),
         "issue-monitor": (
             "composite review bundle",
             "review-readiness receipt",
@@ -240,20 +390,55 @@ def test_orchestration_contracts_prevent_fragmented_reviews() -> None:
         for phrase in phrases:
             assert phrase in text, f"{skill} missing {phrase!r}"
 
+    subagent = (SKILLS / "subagent-driven-development" / "SKILL.md").read_text(encoding="utf-8")
+    assert "### 4. Specification Review" not in subagent
+    assert "### 5. Quality Review" not in subagent
+    assert "Two independent read-only reviewers may run in parallel" not in subagent
+    assert "No quality approval before specification PASS" not in subagent
+
+    stale_fragments = (
+        "Only start code-quality review after contract compliance passes",
+        "independent spec review, ordinary code-quality review",
+        "Only after spec PASS, run a code-quality review",
+        "rerun spec review before quality review",
+        "repeat immutable specification and quality reviews",
+        "obtain independent pre-commit review.\n9. After commit, run immutable specification and quality reviews",
+        "Default to specification review before quality review",
+        "implementation → exact-head specification review → code-quality review",
+        "implementation → spec review → quality review",
+        "obtain specification PASS and quality APPROVED",
+        "Only after spec PASS proceed to a separate quality/security review",
+        "rerun specification review and then quality review",
+        "independent specification and quality/security reviews",
+        "re-dispatch specification and quality/security reviews",
+        "rerun specification then quality",
+    )
+    governed = (
+        "subagent-driven-development",
+        "coder",
+        "project-manager",
+        "delegation-reliability",
+        "spec-compliance-review",
+        "immutable-candidate-verification",
+    )
+    for skill in governed:
+        for path in (SKILLS / skill).rglob("*.md"):
+            text = path.read_text(encoding="utf-8")
+            for fragment in stale_fragments:
+                assert fragment not in text, f"{path} retains fragmented review instruction {fragment!r}"
+
 
 def test_evals_cover_readiness_dedup_composite_and_metrics() -> None:
-    for skill in (
-        "subagent-driven-development",
-        "delegation-reliability",
-        "project-manager",
-        "issue-monitor",
-    ):
+    for skill in ("subagent-driven-development", "delegation-reliability", "project-manager", "issue-monitor"):
         data = yaml.safe_load((SKILLS / skill / "EVAL.yaml").read_text(encoding="utf-8"))
         expectations = "\n".join(data["expectations"]).lower()
         assert "readiness" in expectations
         assert "composite" in expectations
         assert "duplicate" in expectations or "deduplic" in expectations
 
+    subagent = yaml.safe_load((SKILLS / "subagent-driven-development" / "EVAL.yaml").read_text(encoding="utf-8"))
+    text = (subagent["prompt"] + "\n" + "\n".join(subagent["expectations"])).lower()
+    assert "specification review before code-quality review" not in text
     issue = yaml.safe_load((SKILLS / "issue-monitor" / "EVAL.yaml").read_text(encoding="utf-8"))
     expectations = "\n".join(issue["expectations"]).lower()
     assert "metrics" in expectations

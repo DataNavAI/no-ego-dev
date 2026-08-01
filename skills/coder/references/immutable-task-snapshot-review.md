@@ -1,6 +1,6 @@
 # Immutable task snapshot code review
 
-Use this pattern when asked for a final code-quality review at an exact, already spec-approved commit.
+Use this pattern when asked for a final composite independent review at an exact immutable commit.
 
 ## Scope discovery
 
@@ -31,12 +31,12 @@ Probe setup mistakes that are corrected immediately are transient; record the su
 
 ## Gate sequencing and remediation
 
-Treat spec compliance and code quality as separate immutable gates:
+Treat specification compliance and quality/integration risk as evidence dimensions inside one immutable composite gate:
 
-1. Obtain a spec verdict against one exact SHA.
-2. Only after spec PASS, run a code-quality review against that same SHA.
-3. When either gate finds a blocker, implement the smallest strict-TDD remediation, commit it, and rerun **both** relevant immutable checks as needed; approval does not transfer across commits.
-4. Do not start the next implementation-plan task until the current task has spec PASS and quality APPROVED.
+1. Validate the review-readiness receipt against the exact SHA and current base.
+2. Run one composite review covering specification compliance and material quality/integration risk at that exact SHA.
+3. When the gate finds a blocker, implement the smallest strict-TDD remediation, commit it, and rerun the composite immutable review; approval does not transfer across commits.
+4. Do not start the next implementation-plan task until the current candidate has one complete `APPROVED` composite verdict and every predeclared specialist bundle, if any, is also approved.
 
 For destructive generators, reviewers should trace the complete ordering chain rather than stopping at the named validator: every fallible source parse, normalization, compatibility projection, and model construction must finish before the first delete, mkdir, copy, or write. For public projection functions, probe both traversed nested data and top-level collection boundaries; a safe recursive clone does not compensate for a permissive sparse/accessor-skipping array extractor.
 

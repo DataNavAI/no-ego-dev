@@ -43,7 +43,7 @@ Require the reviewer to report:
 - whether tests encode the drift;
 - smallest correction before quality review.
 
-Only start code-quality review after contract compliance passes.
+Start one composite independent review only after contract-compliance evidence is complete in the review-readiness receipt.
 
 ## Gate verdict decomposition
 

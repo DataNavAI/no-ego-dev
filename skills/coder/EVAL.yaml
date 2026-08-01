@@ -11,6 +11,8 @@ expectations:
   - "runs static analysis after every code change"
   - "fails closed on static analysis findings or unavailable required setup"
   - "does not weaken rules or add blanket suppressions"
+  - "requires a green review-readiness receipt and one composite independent review for an ordinary immutable candidate"
+  - "predeclares a separate specialist only for a named non-overlapping high-risk expertise gap"
 setupCommands: []
 teardownCommands: []
 parameters:

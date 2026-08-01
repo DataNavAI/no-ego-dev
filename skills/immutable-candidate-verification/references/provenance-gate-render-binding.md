@@ -130,7 +130,7 @@ Each blocking finding gets its own vertical TDD cycle:
 6. restore generated output;
 7. stage the complete exact scope and require no unstaged source remainder;
 8. run `git diff --cached --check`;
-9. re-dispatch specification and quality/security reviews against the new staged diff.
+9. re-dispatch one composite independent review against the new staged diff, plus only predeclared non-overlapping specialists.
 
 After dispatch, treat the shared checkout as read-only until every reviewer returns. Do not add and revert “one more” regression, restage, run generators, or clean output in that checkout while reviews are active: a reviewer can observe the transient dirty state even when the final state is restored, making its snapshot and cleanliness verdict inconsistent. If parallel experimentation is necessary, use a separate worktree or immutable copied snapshot and re-dispatch against the final exact tree.
 

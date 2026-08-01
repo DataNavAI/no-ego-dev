@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.13.0
+version: 1.14.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -40,7 +40,7 @@ Enforce **first-round completeness**. **Round 1** inspects the complete issue co
 
 #### Canonical round accounting
 
-**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all earlier commit-bound verdicts.
+**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates all earlier commit-bound verdicts.
 
 Scheduled controllers must assume delegated completion delivery is **not durable** across cron-run exit, gateway restart, or a fresh controller session. A review is reusable only when it leaves a controller-readable artifact bound to `(repository, PR, lineage, round, exact head SHA, complete required-review-kind set, review kind, attempt ID)`—for example one structured PR comment with a stable marker or an attempt-scoped JSON report outside every repository. The controller must read that artifact back before acting; a cache filename, delegation handle, lifecycle status, or child summary alone is not a merge gate.
 
@@ -57,7 +57,7 @@ Before dispatching any reviewer:
 
 For an ordinary candidate, use one **composite review bundle** covering specification, correctness, security, regression-test honesty, repository conventions, and operational risk. Add a distinct specialized kind only for a named high-consequence boundary—such as destructive migration, authorization/privacy, payments, cryptography, accessibility evidence, or broad infrastructure blast radius—that the composite reviewer cannot credibly cover. All required kinds share one frozen candidate and numbered round; collect the round before issuing one deduplicated correction packet.
 
-Use [`scripts/review_gate.py`](scripts/review_gate.py) as the executable local control when a monitor needs durable enforcement. Store its state outside the candidate repository. It validates receipt identity and the authorized review-bundle manifest, atomically claims `(repository, PR, lineage, round, exact SHA, review bundle)`, suppresses active and finalized same-SHA duplicates plus same-SHA round renaming, permits one missing-evidence-only recovery after `INCOMPLETE`, rejects Round 4, safely recovers a dead-owner lock, and emits review-efficiency metrics. Its index is operational metadata, not approval: the controller must still read back the durable tracker/report verdict and provider state.
+Use [`scripts/review_gate.py`](scripts/review_gate.py) as the executable local control when a monitor needs durable enforcement. Store its state outside the candidate repository. It validates receipt identity—including exact candidate and current base SHA—and the complete authorized review-bundle manifest, then atomically claims one candidate generation keyed by `(repository, PR, lineage, round, exact SHA, base SHA)`. Required bundles are nested under that generation so specialists do not double-count candidates. The gate suppresses active and finalized same-bundle duplicates plus same-candidate round renaming, permits one missing-evidence-only recovery after `INCOMPLETE`, uses process-owned advisory locking with file and parent-directory durability sync, rejects Round 4, and emits aggregate candidate/bundle metrics. The first generation is Round 1; each changed candidate advances exactly one round; skipped, reused, or regressed rounds fail closed. Its index is operational metadata, not approval: the controller must still read back the durable aggregate bundle verdict and provider state.
 
 Track at least: attempts started, duplicate dispatches suppressed, narrow recoveries, verdict counts, candidate generations, candidates reaching Round 3, aggregate reviewer runtime, and fresh reviewer tokens when the runtime exposes them. Daily reporting should stay silent when healthy but preserve these metrics for trend analysis.
 

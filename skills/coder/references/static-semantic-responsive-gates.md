@@ -55,5 +55,5 @@ Static selectors are necessary but not sufficient; browser viewport and performa
 
 - Reconstruct RED against the immutable parent in a disposable worktree when a delegated TDD worker times out before returning its transcript.
 - Run exact interface tests, affected feature tests, the bare canonical suite, and the bare build.
-- Restore only known generated output, commit exact authorized files, then obtain specification PASS and quality APPROVED at the same clean SHA.
-- Any remediation commit invalidates both reviews.
+- Restore only known generated output, commit exact authorized files, then obtain one composite independent `APPROVED` verdict at the same clean SHA.
+- Any remediation commit invalidates that review.

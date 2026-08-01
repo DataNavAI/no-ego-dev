@@ -49,7 +49,7 @@ This mode minimizes coordination duplication and is appropriate for a supervised
 ## Durable Kanban continuation architecture
 
 1. Keep GitHub, Linear, or the chosen issue system canonical. Kanban cards are thin execution records with canonical issue URL, idempotency key, dependency edges, worktree, assignee, retries, and evidence contract.
-2. Model implementation → spec review → quality review → integration/merge/QA as separate cards. Do not let a hook skip gates.
+2. Model implementation → composite independent review → integration/merge/QA as separate cards. Add a specialist only for a predeclared non-overlapping high-risk scope. Do not let a hook skip gates.
 3. Register a profile-local `subagent_stop` plugin or shell hook. Scope it by parent/task metadata when possible; otherwise make the invoked dispatcher safe when no relevant card is ready.
 4. Keep the callback short and non-blocking. It may log state and invoke one idempotent `hermes kanban ... dispatch` pass. It must not call an LLM, mutate issue specifications, infer success, merge, deploy, recursively create cron jobs, or spin in a polling loop.
 5. Rely on Kanban's atomic claim transaction and capacity limits so a hook racing the periodic gateway dispatcher cannot start the same card twice.

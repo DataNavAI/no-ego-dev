@@ -62,7 +62,7 @@ expectations:
   - "limits later round new feedback to remediation regressions unavailable evidence or material issues not reasonably discoverable in round one and records why"
   - "allows at most three total review rounds for one stable scope then blocks and escalates without round four or count reset"
   - "requires a green review-readiness receipt before independent review, defaults ordinary candidates to one composite review, and adds a specialized reviewer only for a named high-risk expertise gap"
-  - "suppresses duplicate same-SHA review through an atomic candidate index and tracks review attempts recoveries candidate generations runtime and token efficiency"
+  - "binds candidate and current base SHA, enforces monotonic candidate generations through Round 3, nests authorized specialist bundles under one generation, and tracks candidates bundles attempts recoveries runtime and token efficiency"
 setupCommands: []
 teardownCommands: []
 parameters:

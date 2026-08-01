@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.7.0
+version: 1.8.0
 platforms: [linux, macos, windows]
 metadata:
   hermes:

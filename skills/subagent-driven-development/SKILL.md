@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.11.0
+version: 1.12.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -53,7 +53,7 @@ Enforce **first-round completeness**. **Round 1** inspects the full authorized s
 
 ### Canonical round accounting
 
-**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all prior commit-bound verdicts.
+**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates all prior commit-bound verdicts.
 
 ### Review consolidation and readiness
 
@@ -156,49 +156,36 @@ For a staged candidate, record base `HEAD`, branch, `git write-tree`, staged bin
 
 Do not run generators or mutating checks in a shared checkout while a read-only reviewer is inspecting it. If a shared checkout moves but the requested commit remains available, materialize `git archive <sha>` into a reviewer-owned directory, verify extracted bytes against Git objects, and run checks with that directory as the explicit cwd. Never reset or restore someone else's checkout to make it reviewable.
 
-### 4. Specification Review
+### 4. Composite Independent Review
 
-Dispatch a fresh read-only leaf that did not author the candidate:
+Dispatch one fresh read-only leaf that did not author the ordinary candidate:
 
 ```python
 delegate_task(
-    goal="Review the frozen candidate for specification compliance",
+    goal="Review the frozen candidate comprehensively for material release blockers",
     context="""
     Include the exact candidate identity, absolute checkout, original contract,
-    allowed scope, evidence locations, and output schema. Do not edit. Return
-    PASS or REQUEST_CHANGES with evidence-backed material gaps only.
+    allowed scope, evidence locations, failure-class inventory, and output schema.
+    In one pass cover specification compliance, correctness, security, regression-
+    test honesty, repository conventions, integration, and operational risk. Do
+    not edit. Omit reversible nits. Return APPROVED, REQUEST_CHANGES, or INCOMPLETE
+    with one complete evidence-backed material finding set.
     """,
     role="leaf",
 )
 ```
 
-The reviewer checks both the local slice and governing artifacts. Preserve partial verdicts separately; never collapse selection, accessibility, security, or implementation states into one blanket PASS.
+The composite reviewer checks both the local slice and governing artifacts and returns all independently discoverable material findings in one result. Preserve distinct evidence states inside that single result; never collapse selection, accessibility, security, or implementation evidence into an unsupported blanket PASS.
 
-### 5. Quality Review
+Predeclare an additional specialized bundle in the readiness manifest only when a named hard-to-reverse boundary requires expertise the composite reviewer cannot credibly supply—for example cryptography, payments, destructive migrations, authorization/privacy, difficult accessibility evidence, or broad infrastructure blast radius. Every authorized bundle reviews the same frozen candidate and round, receives only its non-overlapping specialty scope, and completes before one consolidated correction matrix. Do not add separate specification and quality reviewers for ordinary changes, and do not split overlapping concerns merely to reduce latency.
 
-After specification PASS, dispatch a fresh quality leaf against the same frozen candidate. Review the complete realistic failure class touched by the change, not only one reproducer. Add a security specialist only for real trust boundaries such as auth, money, private data, credential issuance, untrusted execution/upload, public writes/admin, IAM, publication, or destructive operations.
-
-```python
-delegate_task(
-    goal="Review the frozen candidate for material quality and integration risks",
-    context="""
-    Include exact identity, files, test evidence, failure-class inventory, and
-    project conventions. Do not edit. Omit reversible nits. Return APPROVED or
-    REQUEST_CHANGES with Critical/Important or otherwise material findings.
-    """,
-    role="leaf",
-)
-```
-
-Two independent read-only reviewers may run in parallel against one frozen SHA when latency warrants it. Wait for both results before starting remediation and consolidate their findings into one correction matrix.
-
-### 6. Correct and Re-review
+### 5. Correct and Re-review
 
 Route one consolidated matrix to one fresh fixer. Add a behavioral RED for each correction, obtain GREEN, rerun affected checks, and freeze a new candidate. A test-only correction changes the commit SHA and can alter the asserted contract; **rerun every required exact-SHA review kind** against the final commit.
 
 A timeout, empty summary, or partial transcript is not approval. Recover the durable report before replacing a reviewer. If the full summary path is named, read it before counting findings.
 
-### 7. Final Integration and Completion
+### 6. Final Integration and Completion
 
 After all slices pass their gates, dispatch one fresh integration reviewer against the complete immutable result. Run canonical tests, static analysis, package checks, diff checks, and required security scans. Mark the plan complete only after every required verdict and check applies to the same final candidate.
 
@@ -222,7 +209,7 @@ Answer from contracts, repository evidence, or recorded defaults. Escalate only 
 - No production change without observed RED and GREEN evidence unless the user explicitly authorized an exception.
 - No overlapping writers or mutation of a review snapshot.
 - No self-review as a substitute for independent review.
-- No quality approval before specification PASS except the explicit frozen-SHA parallel fan-in mode.
+- No fragmented specification/quality reviewer chain for an ordinary candidate; use one composite independent verdict.
 - No downstream promotion from lifecycle `completed`; verify artifacts and verdicts.
 - Every terminal worker completion wakes scheduling reconciliation; callback code never directly dispatches or promotes a child.
 - No stale approval after any byte change.
