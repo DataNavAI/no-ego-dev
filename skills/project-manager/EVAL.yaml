@@ -45,6 +45,7 @@ expectations:
   - "when multiple active products share recipient cadence and timezone sends one aggregate portfolio status report email instead of separate per project emails unless separation is required"
   - "email status reports use HTML formatting with inline styles suitable for email clients"
   - "email status reports read like condensed executive summaries focused on product performance improving holding or regressing top-line product metrics wins risks customer signal next actions and evidence links"
+  - "service status single-product email and portfolio email templates all preserve Purpose Executive summary Action needed and Detailed information while keeping product impact ahead of technical evidence"
   - "email status reports are mentally lightweight readable in under two minutes ideally 300 to 600 words under two pages and avoid raw log dumps or dense project-detail overload"
   - "creates follow-up issues for missing instrumentation missing cost visibility or unhealthy product/devops signals"
   - "creates a fresh checkout worktree or branch for docs non-code and code repository artifact changes"

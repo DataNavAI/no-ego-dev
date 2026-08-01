@@ -1,7 +1,7 @@
 ---
 name: play-store-publisher
 description: "Publish Android apps to Google Play, including daily change detection, mandatory versionCode updates, closed-testing uploads, and Play Console UI fallback."
-version: 0.2.0
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -113,6 +113,15 @@ For every release candidate that will be uploaded:
 - On failure, preserve logs/artifacts, leave the last-successful baseline unchanged for retry, and avoid duplicate upload if Play already accepted the versionCode; reconcile Play state before rebuilding.
 - Alert only on a new release, a state transition, or a blocker requiring action. Healthy no-change runs should emit `[SILENT]`.
 
+**Daily release alert envelope:** every non-silent release, blocker, or state-transition alert must lead with product/tester impact and use:
+
+```text
+Purpose: <why this closed-testing update is being sent and which tester/release outcome it affects>
+Executive summary: <verified release/blocker state, user-visible impact, and what happens next>
+Action needed: <None and the monitor's next action, or one exact product/release decision with timing>
+Detailed information: <source/release SHAs, versionCode, AAB checksum, exact closed track, gate evidence, Play receipt/status, and verified links>
+```
+
 ## Google Play Console UI Workflow
 
 ### 1. Open the correct console and account
@@ -206,21 +215,18 @@ Use this report shape:
 
 ```text
 Google Play publishing report — <project> — <date/time + timezone>
-- App name:
-- Package ID:
-- Developer account:
-- Track:
-- Release/versionCode:
-- Artifact path/URL/checksum:
-- Build source commit/PR:
-- Store listing status:
-- Policy setup status:
-- Tester list / opt-in link:
-- Actions completed:
-- Current Play status:
-- Blockers:
-- Follow-up issues:
-- Evidence: <URLs, screenshots, console text, build logs>
+Purpose: <why this publishing report exists and which tester/release outcome it supports>
+Executive summary: <verified current Play status, tester impact, largest blocker/risk, and next state>
+Action needed: <None and the team's next action, or one exact product/release decision with timing>
+Detailed information:
+- App name / Package ID / Developer account:
+- Track / tester group / opt-in link:
+- Release / versionCode / current Play status:
+- Artifact path / URL / checksum:
+- Build source commit / PR:
+- Store listing / policy setup status:
+- Actions completed / blockers / follow-up issues:
+- Evidence: <verified URLs, screenshots, console text, build logs>
 ```
 
 ## EAS / Expo Notes

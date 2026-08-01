@@ -10,6 +10,7 @@ expectations:
   - "uses a fixed-argument uploader constrained to the configured package and exact closed testing track and rejects track override argument injection promotion metadata internal open and production"
   - "verifies the closed-testing release and persists source and release commits artifact checksum versionCode track and Play status only after read-back evidence"
   - "reconciles accepted uploads before retrying and prevents duplicate upload false success and release-only self-trigger loops"
+  - "every non-silent release blocker or transition alert uses Purpose Executive summary Action needed and Detailed information and leads with tester or release impact"
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable two-stage review."
-version: 1.9.0
+version: 1.10.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -33,7 +33,7 @@ For scheduled controllers, never rely on async completion reinjection. Dispatch 
 6. Correct one consolidated finding set and rerun every invalidated exact-SHA gate.
 7. Continue automatically to the next dependency-safe slice; finish with integration review and canonical verification.
 
-`delegate_task` returns immediately. The parent should finish the dispatch turn and continue when the asynchronous completion delivery re-enters the conversation. Do not poll a background child or promise that a batched delegation emits first-finisher callbacks.
+`delegate_task` returns immediately. A top-level `tasks=[...]` call creates **N independent background children**: each receives its own handle and each completion re-enters the parent as a separate message. The parent should finish the dispatch turn and reconcile each completion independently; do not poll background children. Use separate single-task calls only when the controller needs explicit per-call ownership, timing, retry, or capacity boundaries—not to manufacture completion behavior that a modern batch already provides.
 
 ## Upfront Requirement Confirmation and Automatic Continuation
 
@@ -97,7 +97,7 @@ A task excerpt does not override a higher-level contract. Resolve drift before R
 
 ### 1.6 Continuation Mode
 
-Prefer hook-only continuation when GitHub or Linear is canonical and the user rejects a duplicate queue. Dispatch continuation-sensitive work as separate single-task delegations. A `delegate_task(tasks=[...])` batch is consolidated fan-out, not a first-finisher event stream.
+Prefer hook-only continuation when GitHub or Linear is canonical and the user rejects a duplicate queue. A top-level `delegate_task(tasks=[...])` batch is independent fan-out: each child has its own handle and completion delivery, so the first verified finisher can wake dependency reconciliation without waiting for siblings. Use separate single-task calls when explicit per-call ownership or retry boundaries improve control.
 
 Hook-only mode is process-local. Use Hermes Kanban only when restart survival and unattended dependencies justify a durable second queue. Load `delegation-reliability`; observer hooks are wake signals, never acceptance or merge authority.
 

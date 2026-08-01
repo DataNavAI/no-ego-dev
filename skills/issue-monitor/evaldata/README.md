@@ -19,3 +19,7 @@ Additional liveness cases require the monitor to:
 - distinguish an orphaned `agent:in-progress` label from a valid lifecycle-backed active-worker lease;
 - preserve a live lease's worktree during registration grace and a forced monitor tick;
 - debounce completion bursts so they wake one serialized cron reconciliation without duplicate dispatch.
+
+Scheduled-session restart case: one cron run verifies an implementation dispatch receipt and ends immediately as `IMPLEMENT_PENDING`. A fresh scheduled run with no original conversation must start from canonical issue/PR state plus the attempt-scoped report, avoid duplicate dispatch while the attempt is live, and advance only one eligible successor after verified durable completion. The same rule applies to `REVIEW_PENDING` and `MERGE_PENDING`; completion wakes only accelerate the fresh reconciliation pass.
+
+Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`, `Action needed:`, and `Detailed information:` and lead with the affected product or release outcome rather than raw worker mechanics.

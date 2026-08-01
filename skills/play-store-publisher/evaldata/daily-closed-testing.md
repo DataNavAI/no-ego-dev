@@ -19,3 +19,5 @@ A passing response must reason through all state transitions below without treat
 11. **Supported-device-interface gate** — missing/stale `.projects/<project>/product/supported-device-interfaces.yaml`, an undecided Android interface, or missing/stale/failed/blocked exact-candidate evidence blocks upload.
 
 The service-account credential is absent during checkout, dependencies, static analysis, tests, QA, and build. It is injected only into the fixed upload/read-back process after the AAB checksum and allowed arguments are frozen. The monitor never uploads to production as a fallback.
+
+Every non-silent release, blocker, or state-transition alert uses `Purpose:`, `Executive summary:`, `Action needed:`, and `Detailed information:` and leads with the closed-testing or tester outcome. Healthy no-change runs remain `[SILENT]`.

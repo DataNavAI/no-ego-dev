@@ -39,6 +39,31 @@ def test_delegate_examples_use_current_hermes_api() -> None:
     assert "completion delivery" in subagent
 
 
+def test_modern_batch_delegation_delivers_each_child_independently() -> None:
+    subagent = skill_text("subagent-driven-development")
+    reliability = skill_text("delegation-reliability")
+    hook_reference = (
+        SKILLS
+        / "delegation-reliability"
+        / "references"
+        / "harness-completion-hooks.md"
+    ).read_text(encoding="utf-8")
+    kanban_reference = (
+        SKILLS
+        / "delegation-reliability"
+        / "references"
+        / "durable-kanban-continuation.md"
+    ).read_text(encoding="utf-8")
+
+    for content in (subagent, reliability, hook_reference, kanban_reference):
+        assert "each child" in content.lower()
+        assert "consolidated result only after all batch children finish" not in content
+        assert "batch drains before" not in content
+
+    assert "N independent background children" in subagent
+    assert "one handle and one completion delivery per child" in reliability
+
+
 def test_subagent_controller_is_compact_and_slice_oriented() -> None:
     content = skill_text("subagent-driven-development")
     assert "## Controller Contract" in content
@@ -97,6 +122,22 @@ def test_issue_monitor_aligns_real_runtime_budget_and_tracks_live_workers() -> N
     assert "positive timeout" in reference.read_text(encoding="utf-8")
     assert "effective runtime budget" in expectations
     assert "active-worker lease" in expectations
+
+
+def test_scheduled_issue_monitor_resumes_one_durable_stage_per_fresh_run() -> None:
+    content = skill_text("issue-monitor")
+    expectations = eval_expectations("issue-monitor")
+    fixture = (SKILLS / "issue-monitor" / "evaldata" / "README.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "one durable stage per tick" in content
+    assert "Do not launch one monolithic orchestrator" in content
+    assert "IMPLEMENT_PENDING" in content
+    assert "REVIEW_PENDING" in content
+    assert "MERGE_PENDING" in content
+    assert "fresh scheduled run" in expectations
+    assert "fresh scheduled run" in fixture
 
 
 def test_management_evals_preserve_material_round_one_scope() -> None:
@@ -211,6 +252,28 @@ def test_project_manager_message_templates_include_mandatory_envelope() -> None:
         assert "Executive summary:" in template
         assert "Action needed:" in template
         assert "Detailed information:" in template
+
+
+def test_all_changed_user_facing_templates_use_mandatory_envelope() -> None:
+    project = skill_text("project-manager")
+    service_template = project.split("Use this shape for each periodic checkup report:", 1)[
+        1
+    ].split("```", 2)[1]
+    single_email = project.split("Required shape:", 1)[1].split("```", 2)[1]
+    portfolio_email = project.split("Use this shape when reporting on more than one", 1)[
+        1
+    ].split("```", 2)[1]
+    issue = skill_text("issue-monitor")
+    play = skill_text("play-store-publisher")
+    play_report = play.split("Use this report shape:", 1)[1].split("```", 2)[1]
+
+    for template in (service_template, single_email, portfolio_email, issue, play_report):
+        assert "Purpose:" in template
+        assert "Executive summary:" in template
+        assert "Action needed:" in template
+        assert "Detailed information:" in template
+
+    assert "Daily release alert envelope" in play
 
 
 def test_subagent_skills_use_hermes_tracking_without_requiring_duplicate_ledger() -> None:

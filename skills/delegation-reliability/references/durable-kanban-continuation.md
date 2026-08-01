@@ -6,7 +6,7 @@ Use this reference when a user expects work to continue automatically after each
 
 | Primitive | Use for | Continuation semantics |
 |---|---|---|
-| `delegate_task` | Short reasoning, implementation, or review needed by the current parent | Process-local. A single child returns independently; a batch returns a consolidated result only after all batch children finish. Parent/gateway exit loses unfinished children. |
+| `delegate_task` | Short reasoning, implementation, or review needed by the current parent | Process-local. A top-level single call or batch returns immediately; each child has its own handle and completion delivery. Parent/gateway exit loses unfinished children. Nested orchestrator delegation is synchronous. |
 | `terminal(background=true, notify_on_complete=true)` | One bounded long-running command/build | Completion notification for that process; not a dependency-aware engineering queue. |
 | Cron | Time-based polling, reporting, watchdogs | Runs on a schedule, not task-completion events. Cron sessions must not recursively create more cron jobs. |
 | Kanban dispatcher | Durable issue graphs, role pipelines, automatic next-task dispatch | A worker completes a durable card; linked children become ready; the gateway dispatcher claims and spawns them when capacity is available. Survives conversation/gateway restarts. |
@@ -17,7 +17,7 @@ Use this reference when a user expects work to continue automatically after each
 
 Distinguish notification latency from durable scheduling correctness:
 
-- A standalone `delegate_task` result re-enters the parent conversation independently. A batch presents one consolidated parent result after all children finish, even though Hermes emits `subagent_stop` once per child.
+- A top-level standalone child or each child in a `tasks:[...]` fan-out re-enters the parent conversation independently. Hermes also emits `subagent_stop` once per child.
 - A `subagent_stop` plugin/shell hook can request an immediate Kanban dispatch pass after each delegated child stops. Make that pass idempotent and bounded; Kanban's atomic claims make it safe to race the gateway dispatcher.
 - `subagent_stop` observes `delegate_task` children only. A Kanban worker is a full process, not necessarily a delegated child. Kanban task completion, dependency promotion, and the gateway dispatcher remain the durable continuation mechanism; the hook is only a latency optimization.
 - Do not let an event hook infer that implementation succeeded from `child_status`. It may trigger reconciliation/dispatch, but a card completes only from verified branch/commit/PR/test evidence or the worker's durable Kanban completion contract.

@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.18.0
+version: 0.19.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -72,7 +72,7 @@ Require **first-round completeness**. **Round 1** is the comprehensive pass and 
 - Tasks link to PRDs/specs and have acceptance checks.
 - Completion requires evidence, not just a worker saying “done”.
 - A pending asynchronous review blocks only that branch's merge or production deployment. Keep the active milestone moving by dispatching another dependency-safe, non-overlapping child in an isolated branch/worktree when one exists; do not start a later milestone, overlap generated-output ownership, or ignore a late blocking verdict merely to avoid idle time.
-- When the user expects autonomous continuation after worker-state changes and prefers no duplicate queue, keep GitHub/Linear canonical and use hook-only continuation: separate single-task `delegate_task` calls, async completion delivery back into the parent session, direct evidence verification, live tracker reconciliation, then immediate kickoff of the next dependency-safe task. `subagent_stop` is observer-only; child status cannot complete work or release dependencies, and batched delegation is not a first-finisher event stream. State the process-local trade-off honestly: gateway/parent interruption can lose active children or their callback, so recover remote artifacts before resuming. Use Hermes Kanban only when unattended restart durability materially outweighs queue duplication and the user accepts it. Load `delegation-reliability` and follow `references/harness-completion-hooks.md`.
+- When the user expects autonomous continuation after worker-state changes and prefers no duplicate queue, keep GitHub/Linear canonical and use process-local completion: a top-level `tasks=[...]` fan-out creates independent children with separate handles and completion deliveries, while separate calls remain useful for explicit ownership or retry boundaries. After each delivery, verify evidence, reconcile the live tracker, and kick off at most one dependency-safe successor. `subagent_stop` is observer-only; child status cannot complete work or release dependencies. State the process-local trade-off honestly: gateway/parent interruption can lose active children or callbacks, so recover remote artifacts before resuming. Use Hermes Kanban only when unattended restart durability materially outweighs queue duplication and the user accepts it. Load `delegation-reliability` and follow `references/harness-completion-hooks.md`.
 - Scope hook-only continuation to an interactive parent that remains available to receive completion. A cron run or fresh scheduled session must instead require a durable attempt-scoped report or marked tracker comment, dispatch at most one reviewer per run, and reconcile that evidence on the next tick. Never create same-run reviewer retry fan-out because a result was not reinjected.
 - Deduplicate review work by exact candidate SHA and review kind. A valid negative verdict is complete and blocks that SHA; assign one remediation owner and review only the resulting new SHA. Budget every review, reserve time to close the report, reuse trustworthy exact-SHA CI, and preserve an explicit `INCOMPLETE` artifact when required evidence does not fit.
 - When GitHub, Linear, or another tracker already owns the issue backlog, do **not** maintain a second copy of issue bodies in Kanban. Keep external issues canonical and use thin idempotent Kanban cards for execution state, machine-readable dependency edges, worktree/assignee routing, retries, and evidence handoff. Workers re-read the live issue before editing and update the external issue/PR plus Kanban completion as one reconciled handoff. Follow [`references/canonical-issues-thin-kanban-queue.md`](references/canonical-issues-thin-kanban-queue.md).
@@ -477,12 +477,14 @@ Use this shape for each periodic checkup report:
 
 ```text
 Service status — <project> — <date/time + timezone>
-- Overall status: <healthy | watch | degraded | blocked>
+Purpose: <why this checkup is being sent now and which customer/product outcome it protects>
+Executive summary: <healthy | watch | degraded | blocked; product trend, largest risk/opportunity, and what happens next>
+Action needed: <None and the team's next action, or one explicit product/ops/cost decision with recommended default and timing>
+Detailed information:
 - Product-side update: <traffic/activation/retention/funnel changes plus feedback themes and channels checked>
 - Devops-side update: <CI/release, deployment, uptime/errors/latency/jobs/storage/integrations, hosting cost/run-rate/anomalies>
 - Actions created/updated: <issue IDs/links, owners, severity>
-- Decisions needed: <none or explicit product/ops/cost question>
-- Evidence: <dashboard links, logs, workflow URLs, billing/cost links, screenshots, queries>
+- Evidence: <verified dashboard links, logs, workflow URLs, billing/cost links, screenshots, queries>
 ```
 
 ### Email status report format
@@ -502,11 +504,12 @@ Subject: <Project> product performance — <date range>
 Preheader: <one-sentence state of the product and biggest next action>
 
 <div style="font-family: Arial, sans-serif; color:#111827; line-height:1.45; max-width:720px;">
+  <p><strong>Purpose:</strong> <why this report is being sent and which product outcome it supports></p>
   <h1 style="margin:0 0 8px; font-size:22px;">Product performance: <Project></h1>
   <p style="margin:0 0 16px; color:#6b7280;">Reporting period: <date range> • Overall: <healthy | watch | degraded | blocked></p>
 
   <section style="padding:14px 16px; border-radius:12px; background:#f9fafb; border:1px solid #e5e7eb; margin-bottom:16px;">
-    <h2 style="margin:0 0 8px; font-size:16px;">Executive summary</h2>
+    <h2 style="margin:0 0 8px; font-size:16px;">Executive summary:</h2>
     <p style="margin:0;"><strong><improving | holding | regressing>:</strong> <2-3 sentences covering product performance, biggest risk/opportunity, and what happens next.></p>
   </section>
 
@@ -530,7 +533,7 @@ Preheader: <one-sentence state of the product and biggest next action>
   </section>
 
   <section style="margin-bottom:16px;">
-    <h2 style="font-size:16px; margin:0 0 8px;">Next actions</h2>
+    <h2 style="font-size:16px; margin:0 0 8px;">Action needed:</h2>
     <ol style="margin:0; padding-left:20px;">
       <li><strong><owner>:</strong> <highest-leverage action, ETA/status, issue link if available></li>
       <li><strong><owner>:</strong> <second action only if important></li>
@@ -538,7 +541,7 @@ Preheader: <one-sentence state of the product and biggest next action>
     </ol>
   </section>
 
-  <p style="font-size:13px; color:#6b7280; margin-top:20px;">Evidence: <a href="<dashboard>">dashboard</a> · <a href="<issues>">issues</a> · <a href="<deploy/logs>">deploy/logs</a> · <a href="<billing>">billing</a></p>
+  <p style="font-size:13px; color:#6b7280; margin-top:20px;"><strong>Detailed information:</strong> <a href="<dashboard>">dashboard</a> · <a href="<issues>">issues</a> · <a href="<deploy/logs>">deploy/logs</a> · <a href="<billing>">billing</a></p>
 </div>
 ```
 
@@ -551,11 +554,12 @@ Subject: Product portfolio performance — <date range>
 Preheader: <portfolio-level state and biggest cross-product next action>
 
 <div style="font-family: Arial, sans-serif; color:#111827; line-height:1.45; max-width:760px;">
+  <p><strong>Purpose:</strong> <why this portfolio report is being sent and which cross-product outcome it supports></p>
   <h1 style="margin:0 0 8px; font-size:22px;">Product portfolio performance</h1>
   <p style="margin:0 0 16px; color:#6b7280;">Reporting period: <date range> • Products: <active count> • Overall: <healthy | watch | degraded | blocked></p>
 
   <section style="padding:14px 16px; border-radius:12px; background:#f9fafb; border:1px solid #e5e7eb; margin-bottom:16px;">
-    <h2 style="margin:0 0 8px; font-size:16px;">Portfolio summary</h2>
+    <h2 style="margin:0 0 8px; font-size:16px;">Executive summary:</h2>
     <p style="margin:0;"><strong><improving | holding | regressing>:</strong> <2-3 sentences covering cross-product performance, biggest risk/opportunity, and what happens next.></p>
   </section>
 
@@ -574,13 +578,13 @@ Preheader: <portfolio-level state and biggest cross-product next action>
   </section>
 
   <section style="margin-bottom:16px;">
-    <h2 style="font-size:16px; margin:0 0 8px;">Decisions / escalations</h2>
+    <h2 style="font-size:16px; margin:0 0 8px;">Action needed:</h2>
     <ol style="margin:0; padding-left:20px;">
       <li><strong><owner or user>:</strong> <one highest-priority decision or action across the portfolio></li>
     </ol>
   </section>
 
-  <p style="font-size:13px; color:#6b7280; margin-top:20px;">Evidence: <a href="<portfolio-dashboard>">dashboard</a> · <a href="<issues>">issues</a> · <a href="<deploy/logs>">deploy/logs</a> · <a href="<billing>">billing</a></p>
+  <p style="font-size:13px; color:#6b7280; margin-top:20px;"><strong>Detailed information:</strong> <a href="<portfolio-dashboard>">dashboard</a> · <a href="<issues>">issues</a> · <a href="<deploy/logs>">deploy/logs</a> · <a href="<billing>">billing</a></p>
 </div>
 ```
 
@@ -646,8 +650,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Email reports are mentally lightweight: readable in under two minutes, ideally 300-600 words, under two pages, and free of raw log dumps or dense project-detail overload.
 - [ ] Missing CI, health, analytics, or feedback instrumentation becomes explicit follow-up work instead of an assumed healthy status.
 - [ ] Progress updates were sent at phase start, phase completion, before subagent batches, and after subagent results.
-- [ ] Autonomous continuation uses the user-approved mode: hook-only with the canonical tracker and separate single-task callbacks, or durable Kanban by explicit trade-off.
-- [ ] The correct lifecycle source is used for each worker type; batch-drain behavior, process-local interruption risk, and recovery are documented.
+- [ ] Autonomous continuation uses the user-approved mode: process-local per-child completion with the canonical tracker, or durable Kanban by explicit trade-off.
+- [ ] The correct lifecycle source is used for each worker type; top-level batch children are reconciled independently, and process-local interruption risk and recovery are documented.
 - [ ] Hook-only completion was smoke-tested to re-enter the parent, verify evidence, reconcile the live tracker, and launch at most one dependency-safe next task without a duplicate queue.
 - [ ] Any observer hook is bounded/non-recursive and cannot promote failed, partial, timed-out, or unverified work.
 - [ ] Completed tasks have evidence.

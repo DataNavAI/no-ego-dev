@@ -17,7 +17,7 @@ Use this reference when work should continue automatically as workers stop, comp
 
 - `subagent_stop` fires once for each child created by `delegate_task`, with `child_status`, `child_summary`, duration, and parent identity.
 - It is an **observer hook**. Its return value is ignored, and `child_status=completed` says the child stopped normally—not that its requested artifact exists, tests passed, review approved, or a dependency can be released.
-- In current Hermes delegation, a `tasks:[...]` batch is drained before the parent receives the consolidated result; hook callbacks are marshalled on the parent thread. Do not assume a batch gives truly immediate first-finisher continuation. When the workflow must react independently to each child, launch separate single-task delegations (which may still be initiated in parallel) or put each work unit on Kanban.
+- In current Hermes delegation, a top-level `tasks:[...]` batch creates independent background children. Each child has its own handle, completion delivery, and `subagent_stop` event, so first-finisher reconciliation does not wait for siblings. Nested orchestrator delegation is the synchronous exception. Use separate single-task calls only when explicit per-call ownership, timing, or retry boundaries are useful.
 - `failed`, `error`, `interrupted`, and `timeout` are state changes worth sensing, but they usually trigger recovery/blocking—not downstream promotion.
 - A Kanban worker is not automatically a `delegate_task` child. Keep Kanban completion/dependency reconciliation as the authority for its lifecycle; the subagent hook is only a latency optimization for delegated children.
 
@@ -36,7 +36,7 @@ The callback must not call `delegate_task`, choose a task from child-controlled 
 Use this mode when the user explicitly prefers no duplicate execution queue and accepts that active `delegate_task` children are coupled to the current parent/gateway process.
 
 1. Keep GitHub, Linear, or the chosen tracker as the only task queue and specification source. Derive the next task from live dependency, label, milestone, PR, and review state after every callback.
-2. Launch each continuation-sensitive worker as a separate single-task `delegate_task` call. Independent calls may be initiated in parallel, but do not put them in one `tasks:[...]` batch when first-finisher reaction matters.
+2. Launch independent work either as one top-level `tasks:[...]` fan-out or as separate single-task calls. Both provide per-child completion at the top level; use separate calls only for explicit ownership, timing, capacity, or retry boundaries.
 3. Rely on Hermes's async delegation completion delivery to re-enter the parent session. The new parent turn verifies the stopped child's durable artifact and verdict, reconciles the canonical tracker, selects the next dependency-safe task, and immediately calls `delegate_task` again.
 4. Treat `subagent_stop` as a harness observation/wakeup signal only. The hook callback cannot call `delegate_task` through its ignored return value and must not infer acceptance. Any actual next-worker kickoff happens in the parent agent turn created by completion delivery.
 5. Keep only transient session todos for visibility; do not recreate issue bodies or a second persistent queue. Re-read the live tracker at every handoff because session todos can become stale.

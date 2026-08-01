@@ -31,7 +31,7 @@ Interpretation:
 
 Prefer an explicit expected-active registry maintained by the parent workflow. If none exists, scan dispatches newest-to-oldest and select the newest batch that has neither a matching completion marker nor authoritative all-child normal completion. Do not classify historical, completed, or explicitly interrupted IDs as expected-active.
 
-Consider only lines at or after the selected dispatch. A later completed dispatch does not erase an older unresolved batch; scanning for the newest *unresolved* batch avoids that blind spot. If all children ended normally but the consolidated completion payload has not arrived, classify it as `consolidation_pending`, not active or failed. A bounded delivery threshold may alert separately without claiming agents should still be running.
+Consider only lines at or after the selected dispatch. A later completed dispatch does not erase an older unresolved child; scan handles independently so one sibling's completion cannot hide another child's unknown state. If a child ended normally but its completion delivery has not arrived, classify that handle as `delivery_pending`, not active or failed. A bounded delivery threshold may alert separately without claiming the child should still be running.
 
 ## Child discovery
 

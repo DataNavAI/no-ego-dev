@@ -13,7 +13,7 @@ expectations:
   - "Requires specification review before code-quality review by default and keeps partial or missing verdicts fail-closed."
   - "Binds reviewers to one clean immutable SHA or explicit frozen snapshot and re-runs invalidated reviews after corrections."
   - "Finishes parent self-audit before reviewer dispatch, records a staged identity receipt, invalidates pending review on mutation, and uses a verified git archive with explicit cwd when a shared checkout moves."
-  - "Uses separate single-task delegations for continuation-sensitive work and does not claim a multi-child batch emits first-finisher callbacks."
+  - "Uses modern top-level batch semantics: each fan-out child has its own handle and completion delivery; separate calls are reserved for explicit ownership timing capacity or retry boundaries."
   - "Uses completion hooks or parent completion delivery to trigger scheduling reconciliation after every worker stop, while the hook remains content-free and never dispatches or promotes a child directly."
   - "Relies on Hermes's process-local active-child registry and completion events for ordinary attached delegation, gives users a queued runtime-status prompt, marks unverifiable liveness unknown, and does not require a duplicate lifecycle ledger."
   - "Keeps runnable dependency-safe work active while preserving writer isolation, immutable review targets, and dependency order."
