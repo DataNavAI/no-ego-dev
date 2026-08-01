@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.19.0
+version: 0.20.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -56,6 +56,12 @@ Require **first-round completeness**. **Round 1** is the comprehensive pass and 
 ### Canonical round accounting
 
 **One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all earlier commit-bound verdicts.
+
+### Composite review and readiness budget
+
+The default implementation gate is one **composite review** by a fresh independent reviewer covering specification, correctness, security, test honesty, repository conventions, and operational risk. Do not dispatch separate spec and quality reviewers for ordinary changes. Add a **specialized reviewer** only when a named hard-to-reverse domain requires expertise the composite reviewer cannot credibly provide; all required kinds inspect the same frozen candidate and produce one consolidated author packet.
+
+Before review, require a machine-readable **review-readiness receipt** bound to the exact candidate and base. It proves clean scope plus green static analysis, focused tests, canonical full tests, build, secret scan, provider checks, and controller self-audit. Incomplete candidates return to implementation without consuming a review round. An atomic candidate/review index suppresses active or finalized same-SHA duplicates, allows one missing-evidence-only recovery from `INCOMPLETE`, and records review runtime, fresh-token use when available, attempt counts, suppressions, candidate generations, and Round-3 frequency.
 
 ## Milestone Rules
 

@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
-description: "Execute plans through fresh Hermes leaf subagents with immutable two-stage review."
-version: 1.10.0
+description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
+version: 1.11.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -15,9 +15,9 @@ metadata:
 
 ## Overview
 
-Execute a plan as small dependency-safe slices. Each slice gets a fresh implementer, specification review, and quality review against an immutable candidate.
+Execute a plan as small dependency-safe slices. Each slice gets a fresh implementer and one composite independent reviewer against an immutable candidate by default.
 
-**Core principle:** fresh implementer + independent spec review + independent quality review.
+**Core principle:** fresh implementer + one independent composite review of specification, correctness, quality, security, and regression evidence. Split review kinds only for genuinely specialized, high-consequence boundaries that one qualified reviewer cannot credibly cover.
 
 **Bounded review principle:** Fresh context does not mean repeated execution of the same unchanged candidate. Every review stage has a fixed budget, a durable attempt-scoped result, and an exact `(candidate SHA, review kind)` identity. Reserve the final 20% for report closure. Reuse verified exact-SHA CI for broad coverage, run only missing focused/adversarial checks, and return `INCOMPLETE` rather than timing out without evidence. A valid negative verdict routes one fixer; it is not retried against the same SHA.
 
@@ -28,8 +28,8 @@ For scheduled controllers, never rely on async completion reinjection. Dispatch 
 1. Read the plan and governing artifacts once; create the tracked task list.
 2. Pass the timeout and contract preflights before the first delegation.
 3. Dispatch one fresh leaf implementer for one independently testable vertical slice.
-4. Freeze and verify the resulting candidate before review.
-5. Obtain specification approval, then quality approval by default.
+4. Freeze and verify the resulting candidate, then write and validate a review-readiness receipt before review.
+5. Dispatch one reviewer per immutable candidate using the composite review bundle by default. Add a specialized reviewer only for a named high-risk boundary and keep all required kinds in one shared round.
 6. Correct one consolidated finding set and rerun every invalidated exact-SHA gate.
 7. Continue automatically to the next dependency-safe slice; finish with integration review and canonical verification.
 
@@ -54,6 +54,14 @@ Enforce **first-round completeness**. **Round 1** inspects the full authorized s
 ### Canonical round accounting
 
 **One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all prior commit-bound verdicts.
+
+### Review consolidation and readiness
+
+Before spending independent reviewer capacity, the controller completes its own risk-weighted audit and validates one machine-readable **review-readiness receipt** bound to the candidate SHA and current base. It must prove a clean worktree, empty unintended/untracked scope, static analysis, focused tests, canonical full tests, build, secret scan, exact-SHA provider checks, and self-audit. Missing or negative evidence routes back to the implementer without starting review.
+
+For ordinary changes, dispatch one **composite independent reviewer** that covers specification, correctness, security, regression honesty, repository conventions, and operational risk in one complete pass. Use a separate specialized reviewer only for a clearly named hard-to-reverse domain—such as destructive migration, authorization/privacy, payments, cryptography, accessibility evidence, or broad infrastructure blast radius—that the composite reviewer is not qualified to assess. Required specialized kinds share the same frozen candidate and round; collect all results before one deduplicated correction packet.
+
+Use an atomic review index keyed by repository, PR/artifact, lineage, round, exact candidate SHA, and review bundle. One structurally valid `APPROVED` or `REQUEST_CHANGES` closes that bundle for the unchanged SHA; an active attempt suppresses another launch. An `INCOMPLETE` result permits at most one replacement restricted to its declared missing evidence. A changed SHA creates the next candidate round, never a retry of the old bytes.
 
 ## When to Use
 

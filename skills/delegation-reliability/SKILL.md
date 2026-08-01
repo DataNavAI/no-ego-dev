@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.12.0
+version: 1.13.0
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -29,9 +29,13 @@ Choose continuation mode explicitly instead of assuming every dependency graph n
 
 A top-level multi-child `delegate_task(tasks=[...])` call creates independent background children with **one handle and one completion delivery per child**. Reconcile the first finisher immediately without waiting for siblings. This is still process-local, and nested orchestrator delegation may be synchronous. Never infer PASS from `child_status=completed`; verify the exact SHA/PR/report, required checks, and review verdict before downstream kickoff.
 
-**Cron/scheduled mode is different from an interactive parent session.** Do not assume an async delegation completion will be reinjected into the cron run that launched it—or into the next fresh cron session. Before dispatch, require an attempt-scoped durable sink that a later run can read: a structured external report or a stable marked tracker comment bound to repository, PR, exact SHA, review kind, and attempt ID. A scheduled run dispatches at most one reviewer, ends as `REVIEW_PENDING` when no result is yet durable, and reconciles that sink before any retry on the next run.
+**Cron/scheduled mode is different from an interactive parent session.** Do not assume an async delegation completion will be reinjected into the cron run that launched it—or into the next fresh cron session. Before dispatch, require an attempt-scoped durable sink that a later run can read: a structured external report or a stable marked tracker comment bound to repository, PR, exact SHA, review kind, and attempt ID. Also validate a candidate-bound **review-readiness receipt** before spending reviewer capacity. A scheduled run dispatches at most one reviewer, ends as `REVIEW_PENDING` when no result is yet durable, and reconciles that sink before any retry on the next run.
 
 Deduplicate reviews by `(repository, PR, exact SHA, review kind)`. A structurally valid negative verdict is completed evidence, not a failed attempt: route its blockers to one fixer and suppress review of that same SHA until the candidate changes. On timeout, recover the attempt artifact first; re-dispatch only the missing evidence scope, preserve trustworthy exact-SHA CI and prior check evidence, and never repeat broad suites or stress loops merely because the summary delivery was lost.
+
+Enforce this through an **atomic review index**, not prompt memory. The index claims one `(repository, PR, lineage, round, exact SHA, review bundle)` before launch, records `IN_PROGRESS`, and closes on `APPROVED` or `REQUEST_CHANGES`. Active or finalized same-SHA attempts suppress duplicate dispatch. `INCOMPLETE` may open only one narrower replacement whose scope is a subset of the prior missing evidence. Count attempts, suppressions, narrow recoveries, verdicts, and rounds so review efficiency is measurable.
+
+Use one composite review bundle for ordinary candidates. Separate review kinds are justified only by named specialized high-risk boundaries; they remain one shared candidate round and their findings are aggregated before remediation. Do not split specification, quality, and routine security checks merely to manufacture independent sessions.
 
 If work is already running under another mechanism, do not duplicate it. Secure and verify its durable artifact first, then resume using the selected mode.
 

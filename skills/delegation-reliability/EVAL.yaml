@@ -7,6 +7,7 @@ expectations:
   - "Inspects the remote branch/commit/PR, shared checkout, isolated worker residue, and exact requested report/checksum paths before re-dispatching."
   - "Classifies completed-with-partial-deliverable and timed-out-with-recovered-artifact states separately from task verdicts."
   - "Verifies immutable identities, report bytes, checksums, and explicit verdicts before releasing dependencies."
+  - "Validates a candidate-bound review-readiness receipt, defaults ordinary work to one composite review bundle, and uses an atomic review index to suppress duplicate same-SHA dispatch."
   - "When a delivery is truncated or omits its middle, reads the complete saved summary before counting findings, planning remediation, or advancing a gate."
   - "Verifies repository bytes and collaboration metadata separately after interruption and completes only missing idempotent metadata instead of launching another writer for already-complete code."
   - "Uses unique attempt-scoped artifact paths and reconciles late results without overwriting evidence."

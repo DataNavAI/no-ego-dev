@@ -12,6 +12,8 @@ The canonical scenario requires:
 - explicit fail-closed `INCOMPLETE` outcomes when the time budget cannot satisfy every gate; and
 - fresh independent review only after remediation creates a new candidate SHA.
 
+The candidate also carries a machine-readable review-readiness receipt proving clean scope and green static analysis, focused/full tests, build, secret scan, provider checks, and self-audit. Ordinary risk uses one composite review bundle. A specialized reviewer is added only for a named high-consequence expertise gap. An external atomic review index suppresses active/finalized same-SHA duplicate launches, allows one narrowed missing-evidence recovery after `INCOMPLETE`, rejects Round 4, and records efficiency metrics.
+
 Additional liveness cases require the monitor to:
 
 - classify a worker ending exactly at its effective wall-clock or iteration limit as a runtime-budget problem before declaring a product blocker;
