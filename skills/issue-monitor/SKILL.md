@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.12.0
+version: 1.13.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -46,7 +46,7 @@ Scheduled controllers must assume delegated completion delivery is **not durable
 
 Before dispatching any reviewer:
 
-1. Query the current PR head and validate a machine-readable **review-readiness receipt** bound to that SHA and current base. Require clean scope plus green static analysis, focused tests, canonical full tests, build, secret scan, exact-SHA provider checks, and controller self-audit. Route an unready candidate back to implementation without spending a review round.
+1. Query the current PR head and validate a machine-readable **review-readiness receipt** bound to repository, PR, lineage, round, that SHA, current base, and the complete authorized review-bundle manifest. Require clean scope plus green static analysis, focused tests, canonical full tests, build, secret scan, exact-SHA provider checks, and controller self-audit. Only a genuinely absent provider check may be `PASS_OR_NOT_REQUIRED`; implementation evidence cannot be waived. Route an unready or foreign candidate back to implementation without spending a review round.
 2. Search for a structurally valid durable result for that exact SHA and review bundle.
 3. Treat a valid `REQUEST_CHANGES` as a completed review. Do not review the unchanged SHA again; route its complete blocking set to one fixer and wait for a new candidate SHA.
 4. Treat a valid `APPROVED` result as reusable only while the head, required-check identities, and repository policy remain unchanged.
@@ -57,7 +57,7 @@ Before dispatching any reviewer:
 
 For an ordinary candidate, use one **composite review bundle** covering specification, correctness, security, regression-test honesty, repository conventions, and operational risk. Add a distinct specialized kind only for a named high-consequence boundary—such as destructive migration, authorization/privacy, payments, cryptography, accessibility evidence, or broad infrastructure blast radius—that the composite reviewer cannot credibly cover. All required kinds share one frozen candidate and numbered round; collect the round before issuing one deduplicated correction packet.
 
-Use [`scripts/review_gate.py`](scripts/review_gate.py) as the executable local control when a monitor needs durable enforcement. Store its state outside the candidate repository. It validates the review-readiness receipt, atomically claims `(repository, PR, lineage, round, exact SHA, review bundle)`, suppresses active and finalized same-SHA duplicates, permits one missing-evidence-only recovery after `INCOMPLETE`, rejects Round 4, and emits review-efficiency metrics. Its index is operational metadata, not approval: the controller must still read back the durable tracker/report verdict and provider state.
+Use [`scripts/review_gate.py`](scripts/review_gate.py) as the executable local control when a monitor needs durable enforcement. Store its state outside the candidate repository. It validates receipt identity and the authorized review-bundle manifest, atomically claims `(repository, PR, lineage, round, exact SHA, review bundle)`, suppresses active and finalized same-SHA duplicates plus same-SHA round renaming, permits one missing-evidence-only recovery after `INCOMPLETE`, rejects Round 4, safely recovers a dead-owner lock, and emits review-efficiency metrics. Its index is operational metadata, not approval: the controller must still read back the durable tracker/report verdict and provider state.
 
 Track at least: attempts started, duplicate dispatches suppressed, narrow recoveries, verdict counts, candidate generations, candidates reaching Round 3, aggregate reviewer runtime, and fresh reviewer tokens when the runtime exposes them. Daily reporting should stay silent when healthy but preserve these metrics for trend analysis.
 

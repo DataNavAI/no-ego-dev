@@ -29,7 +29,7 @@ REQUIRED_CHECKS = {
     "github_checks",
     "self_audit",
 }
-PASS_VALUES = {"PASS", "PASS_OR_NOT_REQUIRED"}
+PASS_VALUES = {"PASS"}
 
 
 class GateError(ValueError):
@@ -79,6 +79,19 @@ def validate_readiness(payload: dict[str, Any], expected_sha: str) -> str:
         raise GateError("expected_sha must be a lowercase 40-character SHA")
     if payload.get("candidate_sha") != expected_sha:
         raise GateError("readiness candidate_sha does not match expected_sha")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", str(payload.get("repository", ""))):
+        raise GateError("readiness repository is invalid")
+    if not isinstance(payload.get("pr"), int) or payload["pr"] < 1:
+        raise GateError("readiness pr is invalid")
+    if not payload.get("lineage") or len(str(payload["lineage"])) > 160:
+        raise GateError("readiness lineage is invalid")
+    if payload.get("round") not in {1, 2, 3}:
+        raise GateError("readiness round must be 1, 2, or 3")
+    bundles = payload.get("review_bundles")
+    if not isinstance(bundles, list) or not bundles or len(bundles) != len(set(bundles)):
+        raise GateError("readiness review_bundles must be a non-empty unique list")
+    if any(not re.fullmatch(r"[a-z][a-z0-9_-]{2,63}", str(bundle)) for bundle in bundles):
+        raise GateError("readiness review bundle is invalid")
     if not SHA_RE.fullmatch(str(payload.get("base_sha", ""))):
         raise GateError("readiness base_sha is invalid")
     if payload.get("dirty_worktree") is not False:
@@ -92,7 +105,8 @@ def validate_readiness(payload: dict[str, Any], expected_sha: str) -> str:
     if missing:
         raise GateError("missing readiness checks: " + ", ".join(missing))
     for name in sorted(REQUIRED_CHECKS):
-        if checks.get(name) not in PASS_VALUES:
+        allowed = PASS_VALUES | ({"PASS_OR_NOT_REQUIRED"} if name == "github_checks" else set())
+        if checks.get(name) not in allowed:
             raise GateError(f"readiness check {name} is not PASS")
     return readiness_digest(payload)
 
@@ -111,6 +125,17 @@ class _FileMutex:
                 os.write(self.fd, f"{os.getpid()}\n".encode("ascii"))
                 return self
             except FileExistsError:
+                try:
+                    owner = int(self.path.read_text(encoding="ascii").strip())
+                    os.kill(owner, 0)
+                except ProcessLookupError:
+                    try:
+                        self.path.unlink()
+                    except FileNotFoundError:
+                        pass
+                    continue
+                except (ValueError, OSError):
+                    pass
                 if time.monotonic() >= deadline:
                     raise GateError(f"review index lock is busy: {self.path}")
                 time.sleep(0.05)
@@ -170,13 +195,36 @@ class ReviewGateStore:
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,96}", attempt_id):
             raise GateError("invalid attempt_id")
         readiness_hash = validate_readiness(readiness, identity.candidate_sha)
+        for field in ("repository", "pr", "lineage", "round"):
+            if readiness.get(field) != getattr(identity, field):
+                raise GateError(f"readiness {field} does not match review identity")
+        if identity.review_bundle not in readiness["review_bundles"]:
+            raise GateError("review bundle is not authorized by readiness manifest")
         requested_scope = [str(item).strip() for item in (missing_evidence or []) if str(item).strip()]
 
         with _FileMutex(self.lock_path):
             state = self._read()
+            for existing in state["candidates"].values():
+                prior = existing.get("identity", {})
+                same_candidate = all(
+                    prior.get(field) == getattr(identity, field)
+                    for field in ("repository", "pr", "lineage", "candidate_sha")
+                )
+                if same_candidate and prior.get("round") != identity.round:
+                    state["counters"]["duplicate_dispatches_suppressed"] += 1
+                    self._write(state)
+                    return {"started": False, "reason": "same-sha-round-reuse"}
+                if same_candidate and prior.get("round") == identity.round:
+                    if existing.get("readiness_digest") != readiness_hash:
+                        raise GateError("candidate readiness manifest drift")
             candidate = state["candidates"].setdefault(
                 identity.key,
-                {"identity": asdict(identity), "attempts": []},
+                {
+                    "identity": asdict(identity),
+                    "readiness_digest": readiness_hash,
+                    "review_bundles": list(readiness["review_bundles"]),
+                    "attempts": [],
+                },
             )
             attempts = candidate["attempts"]
             if any(a.get("attempt_id") == attempt_id for a in attempts):

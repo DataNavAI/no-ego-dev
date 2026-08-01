@@ -28,6 +28,9 @@ def readiness(sha: str = SHA_A) -> dict:
         "schema_version": 1,
         "repository": "DataNavAI/example",
         "pr": 17,
+        "lineage": "issue-17",
+        "round": 1 if sha == SHA_A else 2,
+        "review_bundles": ["composite"],
         "candidate_sha": sha,
         "base_sha": SHA_B,
         "dirty_worktree": False,
@@ -44,14 +47,14 @@ def readiness(sha: str = SHA_A) -> dict:
     }
 
 
-def identity(gate, sha: str = SHA_A, round_number: int = 1):
+def identity(gate, sha: str = SHA_A, round_number: int = 1, review_bundle: str = "composite"):
     return gate.ReviewIdentity(
         repository="DataNavAI/example",
         pr=17,
         lineage="issue-17",
         round=round_number,
         candidate_sha=sha,
-        review_bundle="composite",
+        review_bundle=review_bundle,
     )
 
 
@@ -66,6 +69,38 @@ def test_readiness_fails_closed_before_review() -> None:
     payload["dirty_worktree"] = True
     with pytest.raises(gate.GateError, match="dirty_worktree"):
         gate.validate_readiness(payload, expected_sha=SHA_A)
+
+    payload = readiness()
+    payload["checks"]["full_tests"] = "PASS_OR_NOT_REQUIRED"
+    with pytest.raises(gate.GateError, match="full_tests"):
+        gate.validate_readiness(payload, expected_sha=SHA_A)
+
+
+def test_receipt_identity_and_bundle_manifest_are_enforced(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    foreign = readiness()
+    foreign["repository"] = "OtherOwner/other-repo"
+    with pytest.raises(gate.GateError, match="repository"):
+        store.claim(identity(gate), "attempt-one", foreign)
+
+    with pytest.raises(gate.GateError, match="review bundle"):
+        store.claim(identity(gate, review_bundle="security"), "attempt-two", readiness())
+
+    store.claim(identity(gate), "attempt-base", readiness())
+    expanded = readiness()
+    expanded["review_bundles"] = ["composite", "security"]
+    with pytest.raises(gate.GateError, match="manifest drift"):
+        store.claim(identity(gate, review_bundle="security"), "attempt-three", expanded)
+
+
+def test_predeclared_specialized_bundle_shares_one_candidate_manifest(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    manifest = readiness()
+    manifest["review_bundles"] = ["composite", "security"]
+    assert store.claim(identity(gate), "attempt-one", manifest)["started"] is True
+    assert store.claim(identity(gate, review_bundle="security"), "attempt-two", manifest)["started"] is True
 
 
 def test_same_sha_result_and_active_attempt_suppress_duplicate_review(tmp_path: Path) -> None:
@@ -135,6 +170,14 @@ def test_new_sha_is_a_new_candidate_but_round_four_is_rejected(tmp_path: Path) -
     new = identity(gate, SHA_B, 2)
     assert store.claim(new, "attempt-two", readiness(SHA_B))["started"] is True
 
+    same_sha_new_round = identity(gate, SHA_A, 2)
+    same_sha_receipt = readiness(SHA_A)
+    same_sha_receipt["round"] = 2
+    assert store.claim(same_sha_new_round, "attempt-three", same_sha_receipt) == {
+        "started": False,
+        "reason": "same-sha-round-reuse",
+    }
+
     with pytest.raises(gate.GateError, match="round"):
         identity(gate, SHA_B, 4)
 
@@ -158,12 +201,22 @@ def test_metrics_include_review_runtime_and_fresh_tokens(tmp_path: Path) -> None
     assert metrics["candidate_rounds"]["1"] == 1
 
 
+def test_orphaned_pid_lock_is_recovered(tmp_path: Path) -> None:
+    gate = load_gate()
+    lock = tmp_path / "review-index.json.lock"
+    lock.write_text("99999999\n", encoding="ascii")
+    with gate._FileMutex(lock, timeout=0.1):
+        assert lock.exists()
+    assert not lock.exists()
+
+
 def test_orchestration_contracts_prevent_fragmented_reviews() -> None:
     required = {
         "subagent-driven-development": (
             "composite independent reviewer",
             "review-readiness receipt",
             "one reviewer per immutable candidate",
+            "complete review-bundle manifest",
         ),
         "delegation-reliability": (
             "review-readiness receipt",
