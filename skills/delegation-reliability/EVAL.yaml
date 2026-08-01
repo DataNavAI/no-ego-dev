@@ -12,6 +12,7 @@ expectations:
   - "Uses unique attempt-scoped artifact paths and reconciles late results without overwriting evidence."
   - "Uses hook-only continuation with the canonical external tracker because the user rejected a duplicate queue, while stating that this mode is process-local."
   - "Uses each worker completion as a scheduling-reconciliation wake, keeps hook payloads out of dispatch authority, debounces duplicate wakes, and lets only the authoritative parent/controller schedule the next eligible worker."
+  - "Keeps a handle/start/completion ledger, gives users a queued ledger-status prompt, marks unconfirmed liveness unknown, and does not use `/agents` as evidence of active delegate_task children."
   - "Keeps at least one real worker active when runnable dependency-safe work remains, without racing overlapping writers or mutating a frozen review target."
   - "Uses separate single-task delegations when each completion must trigger independent continuation rather than relying on batch first-finisher behavior."
   - "Does not recursively schedule agents from a cron watchdog and keeps healthy watchdog output silent."

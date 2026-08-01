@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable two-stage review."
-version: 1.8.0
+version: 1.9.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -104,6 +104,18 @@ Hook-only mode is process-local. Use Hermes Kanban only when restart survival an
 **Every worker completion must wake scheduling reconciliation.** In an attached interactive workflow, Hermes completion delivery re-enters the parent turn. In a durable workflow, a `subagent_stop` hook emits a content-free wake to the serialized Kanban or scheduled controller. The controller re-reads durable artifacts, dependencies, claims, candidate identity, and capacity, then schedules the next eligible worker immediately. **The hook never dispatches a child directly**, promotes a dependency from lifecycle status, or carries child-controlled text into executable arguments; it only triggers the authoritative reconciler. Keep a periodic fallback for lost wakeups and make duplicate wakes idempotent.
 
 **Work-conserving rule:** keep one real worker active while dependency-safe work exists. `in_progress` without a live worker is stale bookkeeping. Zero workers is valid only when every remaining item has an explicit dependency, access, safety, external-operation, or user-decision blocker.
+
+### Active Subagent Status for Users
+
+**Do not direct users to `/agents`** or `/tasks` to prove that delegated children are running; on gateway messaging surfaces that command is not an authoritative view of the in-process child registry. Maintain a controller ledger for every dispatch handle, goal, dispatch time, start evidence, completion delivery, and latest state.
+
+When the parent is busy, tell the user to queue this non-interrupting request:
+
+```text
+/queue Report the current subagent ledger: for each handle, goal, dispatched time, latest known state, and completion evidence. Do not use /agents. Mark unconfirmed liveness as unknown.
+```
+
+The controller answers from recorded dispatch/completion evidence and persistent lifecycle-hook or Kanban state when configured. A handle alone is `dispatched_unconfirmed`, not running. **Mark unconfirmed liveness as `unknown`** instead of making a progress claim. For an independently queryable operator view, install profile-scoped `subagent_start`/`subagent_stop` hooks that maintain a locked ledger; for durable Kanban work, use `hermes kanban list --status running --json` and inspect `hermes kanban runs <task_id> --json`. Load `delegation-reliability` and its active-visibility reference for the exact trust boundaries.
 
 ### 2. Implement One Vertical Slice
 

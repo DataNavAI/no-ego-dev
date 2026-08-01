@@ -186,3 +186,34 @@ def test_project_manager_communicates_product_impact_and_product_decisions() -> 
     assert "detailed-information links" in expectations
     assert "Database connection pool saturation" in fixture
     assert "customers" in fixture
+
+
+def test_subagent_skills_use_a_reliable_active_worker_check_instead_of_agents() -> None:
+    subagent = skill_text("subagent-driven-development")
+    reliability = skill_text("delegation-reliability")
+    expectations = "\n".join(
+        (
+            eval_expectations("subagent-driven-development"),
+            eval_expectations("delegation-reliability"),
+        )
+    ).lower()
+    reference = (
+        SKILLS
+        / "delegation-reliability"
+        / "references"
+        / "active-subagent-visibility.md"
+    )
+
+    for content in (subagent, reliability):
+        assert "Do not direct users to `/agents`" in content
+        assert "/queue Report the current subagent ledger" in content
+        assert "Mark unconfirmed liveness as `unknown`" in content
+    assert reference.is_file()
+    reference_text = reference.read_text(encoding="utf-8")
+    assert "no separate supported CLI command" in reference_text
+    assert "subagent_start" in reference_text
+    assert "subagent_stop" in reference_text
+    assert "hermes kanban list --status running --json" in reference_text
+    assert "hermes kanban runs <task_id> --json" in reference_text
+    assert "process-local" in reference_text
+    assert "does not use `/agents` as evidence" in expectations
