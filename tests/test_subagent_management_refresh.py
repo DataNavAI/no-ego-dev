@@ -157,3 +157,22 @@ def test_eval_fixtures_cover_profile_harvested_boundaries() -> None:
         fixture = (SKILLS / name / "evaldata" / "README.md").read_text(encoding="utf-8")
         for phrase in phrases:
             assert phrase in fixture
+
+
+def test_project_manager_communicates_product_impact_and_product_decisions() -> None:
+    content = skill_text("project-manager")
+    expectations = eval_expectations("project-manager").lower()
+    reference = SKILLS / "project-manager" / "references" / "product-oriented-communication.md"
+    fixture = (SKILLS / "project-manager" / "evaldata" / "README.md").read_text(encoding="utf-8")
+
+    assert "## Product-oriented user communication" in content
+    assert "Lead with product impact" in content
+    assert "Ask the user to decide product requirements and product tradeoffs, not implementation details" in content
+    assert "Implementation choices stay with the delivery team" in content
+    assert reference.is_file()
+    assert "Technical-first" in reference.read_text(encoding="utf-8")
+    assert "Product-first" in reference.read_text(encoding="utf-8")
+    assert "product impact" in expectations
+    assert "implementation details" in expectations
+    assert "Database connection pool saturation" in fixture
+    assert "customers" in fixture

@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.16.0
+version: 0.17.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -25,6 +25,16 @@ At project start, inspect the request, repository, durable decisions, and availa
 If confirmation is needed, ask **one succinct upfront batch of no more than three questions**. Every question must be unanswered, costly to reverse, easy to understand, one decision only, and include a recommended default or short choices. Remove routine preferences, phase-status questions, and anything tools or a reversible default can settle.
 
 After confirmation, keep the dependency-safe queue moving automatically across product, design, architecture, implementation, QA, and documentation. Send progress updates, not permission requests. **Do not ask for routine phase approval.** Pause only for a newly discovered costly contradiction, missing access, unresolved blocking quality finding, or external spend, production, publication, credential, or destructive action. Quality gates and dependency checks remain mandatory.
+
+## Product-oriented user communication
+
+**Lead with product impact**, not internal jargon. Explain which product journey, promise, user group, data/trust boundary, revenue outcome, or release goal is affected; what users can or cannot do; scope, severity, workaround, and urgency; what the team is doing; and the next evidence checkpoint. Put logs, protocol names, framework errors, infrastructure topology, and other implementation evidence in an optional technical appendix unless the user asks for it.
+
+**Ask the user to decide product requirements and product tradeoffs, not implementation details.** Ask about required behavior, audience, priority, privacy/retention, acceptable degradation, supported surfaces, cost ceiling, launch timing, compatibility, and rollback expectations. Provide a recommended product default and explain options through user experience, risk, cost, timing, and reversibility.
+
+**Implementation choices stay with the delivery team.** Do not ask the user to select frameworks, libraries, schemas, cache/queue policies, retry algorithms, code structure, or deployment wiring unless they explicitly own technical direction or that choice itself changes a product promise. Translate any unavoidable technical constraint back into its product consequence before requesting a decision.
+
+Use [`references/product-oriented-communication.md`](references/product-oriented-communication.md) for issue rewrites, decision boundaries, examples, and the compact status format.
 
 ## Risk-weighted review convergence
 

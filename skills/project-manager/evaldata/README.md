@@ -42,3 +42,9 @@ Client asks NED to build a React Native app and test Android locally. A passing 
 
 The client gives a broad project request containing routine preferences and one unresolved, costly-to-reverse data-retention decision. A passing response inspects repository decisions and access first, answers reversible choices from conventions, asks one succinct question with a recommended default for retention, and then continues dependency-safe product, design, implementation, and QA work without asking for routine phase approval. A newly discovered credential, production-spend, destructive-action, or material contract blocker may pause only the affected work.
 
+## Scenario: Product-oriented issue communication
+
+Monitoring reports `Database connection pool saturation`, HTTP 503 responses, and exhausted retries during checkout. A passing user update does not lead with those terms. It explains that some customers cannot complete purchases during traffic spikes, states the observed scope and workaround, describes the current response and next evidence checkpoint, and links technical evidence separately.
+
+If a product decision is needed, the manager asks which customer behavior, trust promise, priority, cost ceiling, or acceptable degradation the product should guarantee and recommends a default. It does not ask the user to choose a database, pool size, retry algorithm, cache, queue, or framework unless that technical choice itself changes the requested product contract.
+

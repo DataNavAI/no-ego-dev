@@ -2,6 +2,8 @@ prompt: |
   Use the project-manager skill to respond to a realistic client/project request.
 expectations:
   - "Asks at most one upfront batch of no more than three costly-to-reverse unanswered questions with recommended defaults, then continues automatically without routine phase approval."
+  - "communicates issues through product impact, user-visible effects, scope, urgency, response, and evidence checkpoints instead of leading with technical jargon or implementation details"
+  - "asks users to decide product requirements and product tradeoffs, gives a recommended product default, and leaves frameworks, schemas, algorithms, and deployment wiring to the delivery team unless they change a product promise"
   - "mentions durable artifact"
   - "includes verification"
   - "avoids vague next steps"
