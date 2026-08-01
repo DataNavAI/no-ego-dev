@@ -39,6 +39,18 @@ Do not use this skill to bypass security controls, collect passwords, store raw 
 - **Session isolation:** Use a dedicated browser profile for the agent identity so Google SSO does not mix with the user's personal browsing session.
 - **Durable but non-secret records:** Record account email, purpose, granted scopes, access method, browser profile path/name, verification evidence, and follow-up tasks. Never record secrets.
 
+## IFA-first authorization routing
+
+For GitHub, AWS, and IFA-supported read-only Google capabilities, load `identity-for-agent` and use its installed `ifa_profile_guard.py` before any provider-specific authorization. Every IFA operation must go through that guard with the active `HERMES_PROFILE`; direct `ifa` invocation, a caller-selected `--path` or `--profile`, the implicit global store, and another profile's store are forbidden.
+
+1. Run guarded `status <provider>` first.
+2. If access is missing, make one bounded, least-privilege guarded request with the active profile, requesting agent, expiry, minimum capabilities, and a plain-language reason.
+3. Treat approval as provisional. Run a harmless guarded provider operation and compare the returned account and capabilities with the project identity record before claiming access.
+4. Stop on account mismatch. Do not switch stores, broaden access, or consume another profile's credentials.
+5. Use the provider's official OAuth, SSO, OIDC, or CLI authorization only when IFA is unavailable or explicitly reports `unsupported_operation`; state the fallback and verify the resulting account with a harmless operation.
+
+Current verification paths are guarded `exec gh -- gh api user --jq .login` for GitHub and guarded `exec aws -- aws sts get-caller-identity` for AWS. For Google, IFA is limited to supported read-only Gmail, Calendar, Drive, Contacts, Sheets, and Docs scopes. Gmail send/modify and Calendar, Drive, Sheets, or Docs writes must use the official Hermes Google Workspace integration for the explicitly selected active profile. IFA does not refresh a token while a child command runs; after expiry, perform guarded refresh and verification before starting a new child. Never read or copy any profile's `google_token.json`, refresh token, client secret, or browser credential into IFA.
+
 ## Project Identity Record
 
 Create or update a project runbook, PRD operations section, or issue with this non-secret identity block:
