@@ -74,6 +74,24 @@ python "$IFA_GUARD" "$HERMES_PROFILE" run exec gh -- gh api user
 
 Never ask for passwords, cookies, raw long-lived tokens, backup codes, or recovery codes. Prefer OAuth/OAuth2, SSO, OIDC, delegated access, or official CLI login. Use least privilege and finite request expiry. Do not write env files unless unavoidable, and never commit one.
 
+## Hermes provider routing and verification
+
+Use guarded IFA status, request, and exec by default for GitHub, AWS, and supported read-only Google capabilities. Approval alone is not proof of access: verify the intended account and required capabilities with guarded `exec gh -- gh api user --jq .login`, guarded `exec aws -- aws sts get-caller-identity`, or guarded Google verify/scopes plus harmless Gmail profile and Calendar-list reads. Stop on an account mismatch; never switch profile stores or widen the request.
+
+Use an official provider flow only when IFA is unavailable or reports `unsupported_operation`, and say why the fallback is required. GitHub falls back to `gh auth login`; AWS falls back to AWS SSO; unsupported Google capabilities fall back to the official Hermes Google Workspace integration for the explicitly selected active profile. Verify the account after every fallback before reporting access ready.
+
+Google IFA support is read-only and does not cover Gmail send/modify or Calendar, Drive, Sheets, or Docs writes. It supplies one short-lived access token and does not refresh while a child command runs. On expiry, stop, perform guarded refresh and verification, then start a new child. Never consume or copy another profile's `google_token.json`, refresh token, client secret, or browser credential.
+
+Route Google refresh and revocation through the same installed guard:
+
+```bash
+python "$IFA_GUARD" "$HERMES_PROFILE" run google refresh
+python "$IFA_GUARD" "$HERMES_PROFILE" run google verify
+python "$IFA_GUARD" "$HERMES_PROFILE" run google scopes
+python "$IFA_GUARD" "$HERMES_PROFILE" run exec google -- <command>
+python "$IFA_GUARD" "$HERMES_PROFILE" run google revoke
+```
+
 ## Google profile binding
 
 `ned`, `nedxned`, `alphaned`, `alphaaoi`, and `kiaened` each require a separate Google authorization in their own guarded profile store. Google grants are never shareable. Before reporting access ready:
