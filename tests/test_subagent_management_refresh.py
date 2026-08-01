@@ -188,7 +188,7 @@ def test_project_manager_communicates_product_impact_and_product_decisions() -> 
     assert "customers" in fixture
 
 
-def test_subagent_skills_use_a_reliable_active_worker_check_instead_of_agents() -> None:
+def test_subagent_skills_use_hermes_tracking_without_requiring_duplicate_ledger() -> None:
     subagent = skill_text("subagent-driven-development")
     reliability = skill_text("delegation-reliability")
     expectations = "\n".join(
@@ -205,15 +205,15 @@ def test_subagent_skills_use_a_reliable_active_worker_check_instead_of_agents() 
     )
 
     for content in (subagent, reliability):
-        assert "Do not direct users to `/agents`" in content
-        assert "/queue Report the current subagent ledger" in content
+        assert "Prefer Hermes's in-process active-subagent registry" in content
+        assert "Do not require a duplicate lifecycle ledger" in content
+        assert "/queue Report active subagent status from Hermes runtime tracking" in content
         assert "Mark unconfirmed liveness as `unknown`" in content
     assert reference.is_file()
     reference_text = reference.read_text(encoding="utf-8")
-    assert "no separate supported CLI command" in reference_text
-    assert "subagent_start" in reference_text
-    assert "subagent_stop" in reference_text
+    assert "list_active_subagents()" in reference_text
+    assert "list_async_delegations()" in reference_text
+    assert "optional hook ledger" in reference_text.lower()
     assert "hermes kanban list --status running --json" in reference_text
-    assert "hermes kanban runs <task_id> --json" in reference_text
     assert "process-local" in reference_text
-    assert "does not use `/agents` as evidence" in expectations
+    assert "does not require a duplicate lifecycle ledger" in expectations

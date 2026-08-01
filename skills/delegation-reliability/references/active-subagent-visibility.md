@@ -2,43 +2,46 @@
 
 ## Product reason
 
-Users need to know whether the project is actively moving, waiting for evidence, or blocked. Do not make them interpret gateway process lists or assume that a dispatch receipt means a worker is still alive.
+Users need to know whether product work is moving, waiting for evidence, or blocked. The status should come from Hermes's runtime when possible, not from a second tracker that can drift.
 
-## Current Hermes boundary
+## What Hermes already tracks
 
-On messaging/gateway surfaces, `/agents` is not an authoritative view of `delegate_task` children. The gateway command reports top-level gateway agents, tracked terminal processes, and background gateway jobs, but it does not query the in-process `tools.delegate_tool.list_active_subagents()` registry.
+Hermes keeps active delegated children in process-local runtime registries:
 
-Hermes currently exposes no separate supported CLI command that can query another running gateway process's in-memory delegate-task registry. The TUI's `delegation.status` RPC and subagent overlay are process-local: a newly launched TUI cannot inspect children owned by an already-running Telegram or Discord gateway.
+- `tools.delegate_tool.list_active_subagents()` snapshots the currently running direct and nested child tree.
+- `tools.async_delegation.list_async_delegations()` reports background delegation records retained by that process.
+- completion events re-enter the owning parent session when children stop.
 
-Do not infer child liveness from:
+For ordinary attached delegation, these are the runtime authority. **Do not require a duplicate lifecycle ledger.** Keep a workflow checkpoint only for durable business context: returned handle, goal, expected artifact, immutable target, blocked successor, and required acceptance evidence.
 
-- the absence or output of `/agents` or `/tasks`;
-- a process listing;
-- a delegation handle by itself;
-- a todo marked `in_progress`;
-- the existence of a partial artifact.
+## Surface limitation
+
+On messaging/gateway surfaces, `/agents` may not expose the child registry. The gateway command can report top-level gateway agents, tracked terminal processes, and background gateway jobs without querying `list_active_subagents()`. Its output or absence is therefore not delegated-child evidence.
+
+The TUI's `delegation.status` RPC and subagent overlay are process-local. They can inspect children owned by that TUI gateway process; a newly launched TUI cannot inspect children already owned by a separate Telegram or Discord gateway.
+
+Hermes currently exposes no separate supported CLI command that can query another live gateway process's in-memory child registry. This is a visibility gap, not a reason to duplicate state for every workflow.
 
 ## User check on a messaging surface
 
-The controller must maintain a ledger from dispatch and completion events. When the parent is busy, the user can queue a non-interrupting status request:
+When the parent is busy, the user can queue a non-interrupting request:
 
 ```text
-/queue Report the current subagent ledger: for each handle, goal, dispatched time, latest known state, and completion evidence. Do not use /agents. Mark unconfirmed liveness as unknown.
+/queue Report active subagent status from Hermes runtime tracking and completion events. For each known handle, give its goal, verified state, and evidence source. Do not use /agents as authoritative evidence. Mark unconfirmed liveness as unknown.
 ```
 
-The response must distinguish:
+The response should use only states supported by runtime or durable evidence:
 
-- `dispatched_unconfirmed` — Hermes returned a handle, but no independent start evidence exists;
-- `running_confirmed` — a `subagent_start` event or same-process runtime observation confirms a live child;
+- `running_confirmed` — the owning runtime confirms a live child;
 - `completion_received` — a terminal completion delivery exists;
 - `interrupted_or_timed_out` — lifecycle evidence says the run stopped abnormally;
-- `unknown` — the controller cannot currently prove either active or stopped.
+- `unknown` — the current surface cannot query the owning registry and has no terminal event.
 
-Never relabel `dispatched_unconfirmed` as `running`. A truthful `unknown` is better than a false progress claim.
+A dispatch receipt proves acceptance, not continuing liveness. Mark unconfirmed liveness `unknown` instead of creating a shadow truth source.
 
-## Persistent out-of-band ledger
+## Optional hook ledger
 
-For operator-visible status independent of the parent conversation, install persistent profile-scoped hooks for both lifecycle events:
+Install an optional hook ledger only when operators need out-of-band, cross-surface, audit, or post-restart history that Hermes's process-local registries do not retain:
 
 ```yaml
 hooks:
@@ -48,37 +51,28 @@ hooks:
     - command: "/absolute/path/subagent-ledger update"
 ```
 
-The hook consumer should:
+This is an observability projection, not scheduling authority. It must be profile-scoped, locked or transactional, idempotent, generation-aware, and reconciled after crashes. It must not dispatch children, release dependencies, or override the owning runtime while that runtime is available.
 
-1. Read the hook JSON from stdin.
-2. Key children by `child_session_id`, with a documented fallback only when that identifier is absent.
-3. Record parent session, goal/role, start time, terminal state, and duration under a file lock or transactional database.
-4. Treat duplicate events idempotently.
-5. Mark old entries `unknown` after gateway shutdown or when the owning process generation changes without a matching stop event.
-6. Offer a read-only `status` command that prints active, terminal, and unknown rows.
-
-A hook is loaded at Hermes process startup and applies to every future child in that profile/process. Restart the corresponding CLI or gateway after installing it. Install it separately in each Hermes profile/process whose delegations need to be observed.
-
-Do not let the hook dispatch children or promote dependencies. It records lifecycle evidence and may emit a content-free wake to an authoritative reconciler.
+Hooks load at process startup. Restart the relevant CLI or gateway after installation, and install the hook separately in each profile/process that needs external observation.
 
 ## Durable Kanban workers
 
-When work is represented in Hermes Kanban, query durable board state instead of the delegate-task registry:
+When work is represented in Hermes Kanban, query durable board state rather than maintaining another delegate-task ledger:
 
 ```bash
 hermes kanban list --status running --json
 hermes kanban runs <task_id> --json
 ```
 
-The first command lists cards currently recorded as running. The second shows attempts for one task. Board state is durable but still requires stale-lease reconciliation after a crash; `running` is not proof of recent heartbeat unless the run evidence confirms it.
+Board state survives restarts, but `running` still requires lease/heartbeat reconciliation after a crash.
 
 ## Controller reporting contract
 
-Every user status update includes:
+Every user status update says:
 
 - `Purpose:` why status is being reported;
 - `Executive summary:` whether product work is moving, waiting, or blocked;
 - `Action needed:` the user's exact product decision/action, or `None`;
-- `Detailed information:` verified links and the subagent ledger rows/handles.
+- `Detailed information:` verified artifacts plus the status evidence source.
 
-State how the status was established: parent ledger, lifecycle-hook ledger, Kanban, completion artifact, or `unknown`. Never tell a user to use `/agents` as the source of truth.
+Name the source: owning Hermes runtime, completion delivery, Kanban, optional hook ledger, or `unknown`. Never present `/agents` output as authoritative child state when the gateway surface does not expose the child registry.

@@ -49,7 +49,7 @@ When a supposedly lost original returns after a replacement was dispatched:
 
 Read:
 - [`references/harness-completion-hooks.md`](references/harness-completion-hooks.md) for hook-only and durable modes, event semantics, batch-vs-single behavior, state routing, activation safety, non-invasive independent review, and smoke verification.
-- [`references/active-subagent-visibility.md`](references/active-subagent-visibility.md) for the user-facing queued ledger check, persistent start/stop hook ledger, process-local visibility boundary, and durable Kanban commands.
+- [`references/active-subagent-visibility.md`](references/active-subagent-visibility.md) for Hermes-owned runtime tracking, the queued runtime-status check, optional cross-surface hook projection, process-local visibility boundary, and durable Kanban commands.
 - [`references/recovered-review-artifact-integrity.md`](references/recovered-review-artifact-integrity.md) when a timed-out/interrupted reviewer may have left a report, checksum, or evidence directory; recompute final-byte integrity and route by the recovered verdict.
 - [`references/durable-kanban-continuation.md`](references/durable-kanban-continuation.md) only when the user accepts durable queue mode.
 
@@ -75,16 +75,18 @@ Treat worker capacity as a resource to keep productively occupied while the exec
 
 ### User-visible active-subagent check
 
-**Do not direct users to `/agents`** or `/tasks` as proof of child liveness. Record every delegation handle, goal, dispatch time, start evidence, completion delivery, and terminal state in the controller ledger. When the parent is busy, give the user this non-interrupting check:
+**Prefer Hermes's in-process active-subagent registry** and completion events while the owner is alive. Hermes already tracks direct and nested children. **Do not require a duplicate lifecycle ledger** for ordinary attached delegation. Keep a workflow checkpoint that maps each returned handle to its goal, expected artifact, and blocked successor, but do not turn that checkpoint into a competing runtime truth source.
+
+Because `/agents` or `/tasks` on a gateway messaging surface may not expose the child registry, give a busy user this non-interrupting check:
 
 ```text
-/queue Report the current subagent ledger: for each handle, goal, dispatched time, latest known state, and completion evidence. Do not use /agents. Mark unconfirmed liveness as unknown.
+/queue Report active subagent status from Hermes runtime tracking and completion events. For each known handle, give its goal, verified state, and evidence source. Do not use /agents as authoritative evidence. Mark unconfirmed liveness as unknown.
 ```
 
-Report `dispatched_unconfirmed`, `running_confirmed`, `completion_received`, `interrupted_or_timed_out`, or `unknown`—not an invented binary. **Mark unconfirmed liveness as `unknown`**. If operators need an out-of-band view, configure persistent profile-scoped `subagent_start` and `subagent_stop` hooks to maintain a locked ledger. For Kanban work, query `hermes kanban list --status running --json` and then `hermes kanban runs <task_id> --json`. See the active-visibility reference; a TUI opened in another process cannot inspect a gateway's in-memory children.
+Use `running_confirmed`, `completion_received`, `interrupted_or_timed_out`, or `unknown` only when the owning runtime or durable evidence supports it. **Mark unconfirmed liveness as `unknown`**. Configure an optional profile-scoped `subagent_start`/`subagent_stop` hook ledger only for cross-surface or post-restart history. For Kanban work, query `hermes kanban list --status running --json` and then `hermes kanban runs <task_id> --json`. See the active-visibility reference; a TUI opened in another process cannot inspect a gateway's in-memory children.
 
 1. **Dispatch with verifiable outputs.** Ask each child to return an exact verdict plus durable artifact path and digest. Pass every candidate path, expected digest, trust input, language, and immutability constraint in context.
-2. **Record the batch handle.** Put the handle in the controller ledger and tell the user how to queue the ledger-status request; do not claim a model/person identity or live state that the runtime does not expose.
+2. **Record the workflow checkpoint.** Associate the returned handle with its goal, expected artifact, immutable target, and blocked successor. Tell the user how to queue the runtime-status request; do not build a competing lifecycle ledger or claim a model/person identity or live state that the runtime does not expose.
 3. **Keep making independent progress.** Do not poll `delegate_task`. Work only on tasks that do not alter the immutable review target.
 4. **Resolve visibility discrepancies immediately.** If the user says no agents are visible, inspect the authoritative runtime log/state rather than assuming the UI is wrong. Distinguish:
    - dispatched and recently active;

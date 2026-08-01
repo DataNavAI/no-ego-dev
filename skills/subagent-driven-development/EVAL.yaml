@@ -15,7 +15,7 @@ expectations:
   - "Finishes parent self-audit before reviewer dispatch, records a staged identity receipt, invalidates pending review on mutation, and uses a verified git archive with explicit cwd when a shared checkout moves."
   - "Uses separate single-task delegations for continuation-sensitive work and does not claim a multi-child batch emits first-finisher callbacks."
   - "Uses completion hooks or parent completion delivery to trigger scheduling reconciliation after every worker stop, while the hook remains content-free and never dispatches or promotes a child directly."
-  - "Maintains a dispatch/completion ledger, gives users a queued ledger-status prompt, marks unconfirmed liveness unknown, and does not use `/agents` as evidence that delegate_task children are running."
+  - "Relies on Hermes's process-local active-child registry and completion events for ordinary attached delegation, gives users a queued runtime-status prompt, marks unverifiable liveness unknown, and does not require a duplicate lifecycle ledger."
   - "Keeps runnable dependency-safe work active while preserving writer isolation, immutable review targets, and dependency order."
   - "Recovers remote branches, commits, PRs, reports, and isolated residue before replacing a timed-out implementer or reviewer."
   - "Does not mutate a shared worktree while a writer or snapshot reviewer is using it."

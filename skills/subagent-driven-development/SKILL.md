@@ -107,15 +107,15 @@ Hook-only mode is process-local. Use Hermes Kanban only when restart survival an
 
 ### Active Subagent Status for Users
 
-**Do not direct users to `/agents`** or `/tasks` to prove that delegated children are running; on gateway messaging surfaces that command is not an authoritative view of the in-process child registry. Maintain a controller ledger for every dispatch handle, goal, dispatch time, start evidence, completion delivery, and latest state.
+**Prefer Hermes's in-process active-subagent registry** and completion events while the owning process is alive. Hermes already tracks live children internally. **Do not require a duplicate lifecycle ledger** for ordinary attached delegation. Keep only the workflow checkpoint needed to associate the returned handle with its goal, expected artifact, and blocked successor.
 
-When the parent is busy, tell the user to queue this non-interrupting request:
+On gateway messaging surfaces, `/agents` or `/tasks` may not expose that child registry, so do not use the command's output or absence as proof. When the parent is busy, tell the user to queue this non-interrupting request:
 
 ```text
-/queue Report the current subagent ledger: for each handle, goal, dispatched time, latest known state, and completion evidence. Do not use /agents. Mark unconfirmed liveness as unknown.
+/queue Report active subagent status from Hermes runtime tracking and completion events. For each known handle, give its goal, verified state, and evidence source. Do not use /agents as authoritative evidence. Mark unconfirmed liveness as unknown.
 ```
 
-The controller answers from recorded dispatch/completion evidence and persistent lifecycle-hook or Kanban state when configured. A handle alone is `dispatched_unconfirmed`, not running. **Mark unconfirmed liveness as `unknown`** instead of making a progress claim. For an independently queryable operator view, install profile-scoped `subagent_start`/`subagent_stop` hooks that maintain a locked ledger; for durable Kanban work, use `hermes kanban list --status running --json` and inspect `hermes kanban runs <task_id> --json`. Load `delegation-reliability` and its active-visibility reference for the exact trust boundaries.
+Report only what the owning runtime or a terminal completion establishes. **Mark unconfirmed liveness as `unknown`** instead of creating a shadow truth source. Use an optional profile-scoped `subagent_start`/`subagent_stop` hook ledger only when operators need cross-surface or post-restart history that Hermes's process-local registry cannot provide. For durable Kanban work, use `hermes kanban list --status running --json` and inspect `hermes kanban runs <task_id> --json`. Load `delegation-reliability` and its active-visibility reference for the exact boundary.
 
 ### 2. Implement One Vertical Slice
 
