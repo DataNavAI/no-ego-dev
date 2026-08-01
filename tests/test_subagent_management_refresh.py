@@ -188,6 +188,31 @@ def test_project_manager_communicates_product_impact_and_product_decisions() -> 
     assert "customers" in fixture
 
 
+def test_issue_monitor_increments_candidate_round_and_preserves_finding_dispositions() -> None:
+    content = skill_text("issue-monitor")
+    fix_loop = content.split("## Fix and Re-review Loop", 1)[1].split(
+        "## Post-merge Verification", 1
+    )[0]
+
+    assert "incrementing the candidate round" in fix_loop
+    assert "prior finding dispositions" in fix_loop
+    assert "preserving the lineage round number" not in fix_loop
+
+
+def test_project_manager_message_templates_include_mandatory_envelope() -> None:
+    content = skill_text("project-manager")
+    progress_template = content.split("Use this update shape:", 1)[1].split("```", 2)[1]
+    completion_template = content.split("Minimum completion-message shape:", 1)[1].split(
+        "```", 2
+    )[1]
+
+    for template in (progress_template, completion_template):
+        assert "Purpose:" in template
+        assert "Executive summary:" in template
+        assert "Action needed:" in template
+        assert "Detailed information:" in template
+
+
 def test_subagent_skills_use_hermes_tracking_without_requiring_duplicate_ledger() -> None:
     subagent = skill_text("subagent-driven-development")
     reliability = skill_text("delegation-reliability")

@@ -151,10 +151,13 @@ Use this update shape:
 
 ```text
 Progress update — Phase <N>: <phase name>
-- Completed: <what is now done / artifact paths / issue IDs>
-- Evidence: <tests, PRs, docs, screenshots, deploy URLs, logs>
-- In progress / next: <next concrete task or subagent batch>
-- Blockers / decisions needed: <none or explicit ask>
+- Purpose: <why this status, blocker, risk, or decision update is being sent now>
+- Executive summary:
+  - Completed: <what is now done / artifact paths / issue IDs>
+  - In progress / next: <next concrete task or subagent batch>
+  - Blockers: <none or concise product-impacting blocker>
+- Action needed: <None and what the team will do next, or the exact decision/action, recommended default, and timing>
+- Detailed information: <verified tests, PRs, docs, screenshots, deploy URLs, or logs>
 ```
 
 ## Repository STATUS.md Contract
@@ -209,10 +212,14 @@ Minimum completion-message shape:
 
 ```text
 Milestone complete — <name>
-- Outcome: <verified user/project result>
-- Evidence: <PR/commit/tests/QA/deploy links>
-- Project status: [STATUS.md](<user-accessible URL>) or <exact repo-relative and absolute paths for local-only repositories>
-- Next: <highest-priority next step or explicit none>
+- Purpose: completion and handoff for <milestone>
+- Executive summary:
+  - Outcome: <verified user/project result>
+  - Next: <highest-priority next step or explicit none>
+- Action needed: <None and what the team will do next, or the exact user decision/action, recommended default, and timing>
+- Detailed information:
+  - Evidence: <verified PR/commit/tests/QA/deploy links>
+  - Project status: [STATUS.md](<user-accessible URL>) or <exact repo-relative and absolute paths for local-only repositories>
 ```
 
 ## Workspace and Documentation Source-of-Truth Rules

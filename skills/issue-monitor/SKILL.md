@@ -308,7 +308,7 @@ When the reviewer requests changes:
 1. Keep the PR open and `agent:in-progress` applied.
 2. Spawn a fresh fixer leaf with only the findings, current SHA, issue contract, and relevant files.
 3. The fixer adds/updates tests as needed, makes only required changes, reruns checks, commits, and pushes.
-4. Spawn a fresh reviewer leaf to inspect the new SHA independently, while preserving the lineage round number and prior finding dispositions. Merge only if that exact-SHA review passes every gate, either immediately or via the bounded merge-only continuation.
+4. Spawn a fresh reviewer leaf to inspect the new SHA independently, preserving the lineage, incrementing the candidate round, and retaining prior finding dispositions. Merge only if that exact-SHA review passes every gate, either immediately or via the bounded merge-only continuation.
 5. Permit at most two fix/re-review cycles after the comprehensive Round 1, for three total review rounds.
 6. If Round 3 is still not approved, stop, label `agent:blocked`, and leave a precise issue/PR comment. No round 4; never merge by exhaustion.
 
