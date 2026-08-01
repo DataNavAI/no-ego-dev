@@ -68,14 +68,15 @@ Do not start uploading random artifacts. First verify:
 
 ## Daily Closed-Testing Release Loop
 
-Use this loop when the user wants ongoing mobile builds delivered to closed testing. It is an unattended release path, so configure it only after the repository, package ID, authoritative version file, signed-build command, Play credentials, exact closed testing track, tester group, and verification method are known. A browser-only login is not sufficient for reliable daily automation; if non-interactive Play access is unavailable, report the setup blocker instead of pretending the monitor can upload.
+Use this loop when the user wants ongoing mobile builds delivered to closed testing. It is an unattended release path, so configure it only after the repository, package ID, authoritative version file, signed-build command, exact closed testing track, tester group, and verification method are known. Use a **dedicated app-scoped service account without production-release permission**; also remove permissions for open/internal tracks, promotion, metadata, and unrelated apps when Play IAM supports that split. A browser-only login or broadly privileged publisher credential is not sufficient for safe daily automation; report the setup blocker instead of pretending the monitor can upload.
 
 ### 1. Schedule and serialize the monitor
 
 - Run once per day through Hermes cron or the project's CI scheduler, with a self-contained prompt and the mobile repository as `workdir`.
-- Attach `play-store-publisher`, `play-store-cli`, the applicable Android development skill, and project-specific release instructions.
+- Use `play-store-cli` only to provision and verify the constrained release identity. The scheduled job receives a fixed uploader interface, not the general-purpose Play CLI surface.
 - Use a package-scoped lock outside the repository so two runs cannot build or upload the same revision concurrently.
 - Persist release state outside git, including the last successful source commit, release commit, artifact checksum, uploaded versionCode, closed track, Play release ID/status, and verification timestamp.
+- Keep Play **credentials unavailable** during checkout, dependency installation, repository scripts, static analysis, tests, emulator QA, and AAB build. Inject the constrained credential only into the fixed upload/read-back process after the candidate and gates are frozen.
 
 ### 2. Detect a new releasable revision before bumping
 
@@ -97,9 +98,11 @@ For every release candidate that will be uploaded:
 
 ### 4. Gate, build, and upload only to closed testing
 
-- Run the repository's static analysis, tests, release build, and mandatory emulator QA before upload. A failed gate blocks the release and does not consume the source revision.
+- Read `.projects/<project>/product/supported-device-interfaces.yaml`, identify every supported Android interface and target required by its verification tier, and require current `PASS` evidence against the **exact release candidate**. A missing/stale registry, undecided support, missing case, or stale/failed/blocked required target blocks upload.
+- Run the repository's static analysis, tests, release build, and registry-required emulator/device QA before upload. A failed gate blocks the release and does not consume the source revision.
 - Generate release notes from changes since the prior successful source commit.
-- Upload through the configured service-account/API path to the exact **closed testing track** and tester group. **Never upload this daily build to production**, open testing, or internal testing as a fallback.
+- Upload through a **fixed-argument uploader** whose executable/configuration lives outside the repository and accepts only the frozen AAB path/checksum, configured package ID, and exact closed-track identifier. Reject repository-controlled arguments, environment overrides, track override, `production`, `open`, `internal`, promotion, staged rollout, and metadata operations before credential injection.
+- Upload through the constrained service-account/API path to the exact **closed testing track** and tester group. **Never upload this daily build to production**, open testing, or internal testing as a fallback.
 - If the configured track cannot be proven to be closed testing, fail closed without uploading.
 - Use the track's normal completed/in-review state when eligible. For a Play app that is still globally draft or blocked by policy setup, preserve a draft and report the exact blocker rather than claiming rollout.
 
