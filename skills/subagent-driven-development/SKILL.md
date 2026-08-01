@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable two-stage review."
-version: 1.7.0
+version: 1.8.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -100,6 +100,8 @@ A task excerpt does not override a higher-level contract. Resolve drift before R
 Prefer hook-only continuation when GitHub or Linear is canonical and the user rejects a duplicate queue. Dispatch continuation-sensitive work as separate single-task delegations. A `delegate_task(tasks=[...])` batch is consolidated fan-out, not a first-finisher event stream.
 
 Hook-only mode is process-local. Use Hermes Kanban only when restart survival and unattended dependencies justify a durable second queue. Load `delegation-reliability`; observer hooks are wake signals, never acceptance or merge authority.
+
+**Every worker completion must wake scheduling reconciliation.** In an attached interactive workflow, Hermes completion delivery re-enters the parent turn. In a durable workflow, a `subagent_stop` hook emits a content-free wake to the serialized Kanban or scheduled controller. The controller re-reads durable artifacts, dependencies, claims, candidate identity, and capacity, then schedules the next eligible worker immediately. **The hook never dispatches a child directly**, promotes a dependency from lifecycle status, or carries child-controlled text into executable arguments; it only triggers the authoritative reconciler. Keep a periodic fallback for lost wakeups and make duplicate wakes idempotent.
 
 **Work-conserving rule:** keep one real worker active while dependency-safe work exists. `in_progress` without a live worker is stale bookkeeping. Zero workers is valid only when every remaining item has an explicit dependency, access, safety, external-operation, or user-decision blocker.
 
@@ -202,6 +204,7 @@ Answer from contracts, repository evidence, or recorded defaults. Escalate only 
 - No self-review as a substitute for independent review.
 - No quality approval before specification PASS except the explicit frozen-SHA parallel fan-in mode.
 - No downstream promotion from lifecycle `completed`; verify artifacts and verdicts.
+- Every terminal worker completion wakes scheduling reconciliation; callback code never directly dispatches or promotes a child.
 - No stale approval after any byte change.
 - No unresolved Critical/Important or otherwise material finding at completion.
 

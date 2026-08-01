@@ -367,9 +367,9 @@ Leave evidence where maintainers can act: issue/PR comment, blocker label, faile
 15. **Preloading every worker skill into the cron controller.** Attach only the controller skill by default and make each child load its role-specific skills. Large repeated controller prompts cause continuation failures before useful work starts.
 16. **Reviewer check duplication.** Do not rerun equivalent full, race, lint, and stress suites when green exact-SHA CI already covers them. Spend the bounded budget on missing adversarial checks and report incomplete evidence fail-closed.
 
-## Completion-Triggered Continuation
+## Completion-triggered scheduling wake
 
-When the user wants workers kept active while eligible issues remain, retain the recurring cron as the durable fallback and optionally accelerate handoff with a profile-local lifecycle plugin. `subagent_start` creates a locked, non-secret active-worker lease; `subagent_stop` removes it and atomically debounces a delayed cron run. The hook is a wake signal only—the monitor must re-read durable GitHub, git, claim, and review state.
+When the user wants workers kept active while eligible issues remain, retain the recurring cron as the durable fallback and accelerate handoff with a profile-local lifecycle plugin. `subagent_start` creates a locked, non-secret active-worker lease; every terminal `subagent_stop` emits one content-free **completion-triggered scheduling wake** by atomically debouncing a delayed cron run. The hook never selects or dispatches a child itself. The awakened monitor re-reads durable GitHub, git, claim, review, dependency, and capacity state, then schedules exactly one eligible next-stage worker or records the precise blocker.
 
 A valid active-worker lease is an ownership signal, not approval. While one exists for the repository, preserve its worktree and claim and do not dispatch overlapping mutation work merely because no standalone OS process exists. With actionable work and no valid lease, dispatch exactly one next-stage worker or record a precise human-only blocker. Never restart a gateway to activate hooks while a process-local child is live.
 

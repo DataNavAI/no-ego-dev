@@ -21,6 +21,16 @@ Use this reference when work should continue automatically as workers stop, comp
 - `failed`, `error`, `interrupted`, and `timeout` are state changes worth sensing, but they usually trigger recovery/blocking—not downstream promotion.
 - A Kanban worker is not automatically a `delegate_task` child. Keep Kanban completion/dependency reconciliation as the authority for its lifecycle; the subagent hook is only a latency optimization for delegated children.
 
+## Required completion-to-scheduling chain
+
+1. Observe each terminal worker event through completion delivery, `subagent_stop`, or the worker type's native completion primitive.
+2. Emit one content-free, idempotent wake to the authoritative parent, scheduled controller, or Kanban dispatcher.
+3. Re-read durable task, artifact, verdict, claim, dependency, and capacity state; never promote from lifecycle status alone.
+4. Schedule the highest-priority eligible successor immediately, or persist the exact blocker when none is eligible.
+5. Debounce concurrent wakes under a lock and keep periodic reconciliation as lost-event fallback.
+
+The callback must not call `delegate_task`, choose a task from child-controlled payload, or mutate dependency state directly. In durable mode it may invoke one fixed-argument dispatcher pass; that dispatcher performs the authoritative reconciliation and claim before any child starts.
+
 ## Hook-only continuation without Kanban
 
 Use this mode when the user explicitly prefers no duplicate execution queue and accepts that active `delegate_task` children are coupled to the current parent/gateway process.

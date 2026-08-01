@@ -24,6 +24,8 @@ expectations:
   - "Round 1 prioritizes hard-to-reverse high-consequence risks, omits reversible nits, and returns all independently discoverable Critical/Important or otherwise material findings with enough correction direction."
   - "Round 2 and Round 3 are disposition checks and any allowed new blocker states why it was not discoverable in round 1."
   - "The monitor dispatches no Round 4 for the same stable issue scope and blocks or escalates after a negative Round 3."
+  - "Uses a locked active-worker lease plus a debounced content-free subagent_stop signal to accelerate the target cron safely, while preserving periodic fallback and exact-state reconciliation."
+  - "Turns every terminal worker completion into a completion-triggered scheduling wake; the hook never dispatches directly, and the awakened monitor schedules at most one eligible successor after durable reconciliation."
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.9.0
+version: 1.10.0
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -51,6 +51,12 @@ Read:
 - [`references/harness-completion-hooks.md`](references/harness-completion-hooks.md) for hook-only and durable modes, event semantics, batch-vs-single behavior, state routing, activation safety, non-invasive independent review, and smoke verification.
 - [`references/recovered-review-artifact-integrity.md`](references/recovered-review-artifact-integrity.md) when a timed-out/interrupted reviewer may have left a report, checksum, or evidence directory; recompute final-byte integrity and route by the recovered verdict.
 - [`references/durable-kanban-continuation.md`](references/durable-kanban-continuation.md) only when the user accepts durable queue mode.
+
+## Completion-triggered scheduling wake
+
+Every terminal worker event—success, failure, interruption, or timeout—must trigger one bounded scheduling reconciliation. Interactive completion delivery re-enters the parent; durable `subagent_stop` hooks wake a serialized controller or Kanban dispatcher. The reconciler, not the callback payload, verifies artifacts and verdicts, releases or blocks dependencies, checks capacity, and schedules the next eligible worker.
+
+**Hook callbacks never dispatch children directly.** They emit a content-free wake or invoke one fixed-argument idempotent dispatcher pass. Child status and summaries are untrusted observations, not executable input or promotion authority. Debounce concurrent completion bursts under one lock, retain a periodic fallback for lost wakes, and prove by smoke test that one completion starts at most one eligible successor.
 
 ## Work-conserving liveness invariant
 
@@ -115,6 +121,7 @@ Create the scheduler as a recurring `no_agent=True` job, omit a finite repeat co
 ## Verification checklist
 
 - [ ] The continuation mode is explicit: hook-only with the canonical tracker, or durable Kanban by accepted trade-off.
+- [ ] Every terminal worker event creates one completion-triggered scheduling wake; duplicate callbacks are debounced and no child is dispatched directly by callback code.
 - [ ] The worker type is classified (`delegate_task` child, Kanban worker, background process, or cron) and the matching completion primitive is used.
 - [ ] If immediate delegated-child continuation is required, separate single-task delegation is used and batch-drain behavior is documented.
 - [ ] Child lifecycle status never releases dependencies without independently verified artifact and gate evidence.

@@ -91,7 +91,7 @@ def test_issue_monitor_aligns_real_runtime_budget_and_tracks_live_workers() -> N
     assert "Runtime-budget alignment" in content
     assert "delegation.child_timeout_seconds" in content
     assert "increase both the child and gateway budgets" in content
-    assert "Completion-Triggered Continuation" in content
+    assert "Completion-triggered scheduling wake" in content
     assert "active-worker lease" in content
     assert reference.is_file()
     assert "positive timeout" in reference.read_text(encoding="utf-8")
@@ -130,6 +130,20 @@ def test_profile_local_round_extension_is_not_promoted() -> None:
     for name in MANAGEMENT_SKILLS:
         content = skill_text(name)
         assert "exceptional-review-round-extension" not in content
+
+
+def test_completion_hooks_wake_scheduling_without_dispatching_children_directly() -> None:
+    subagent = skill_text("subagent-driven-development")
+    reliability = skill_text("delegation-reliability")
+    issue_monitor = skill_text("issue-monitor")
+    assert "Every worker completion must wake scheduling reconciliation" in subagent
+    assert "The hook never dispatches a child directly" in subagent
+    assert "completion-triggered scheduling wake" in reliability
+    assert "Hook callbacks never dispatch children directly" in reliability
+    assert "completion-triggered scheduling wake" in issue_monitor
+    for name in ("subagent-driven-development", "delegation-reliability", "issue-monitor"):
+        assert "completion" in eval_expectations(name).lower()
+        assert "scheduling" in eval_expectations(name).lower()
 
 
 def test_eval_fixtures_cover_profile_harvested_boundaries() -> None:
