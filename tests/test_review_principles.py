@@ -59,6 +59,71 @@ def test_direct_reviewers_use_the_shared_risk_weighted_three_round_protocol() ->
         assert "maximum of **10 substantive" not in content
 
 
+def test_direct_reviewers_require_complete_prior_round_context_and_reconciliation() -> None:
+    required = (
+        "## Prior-round context continuity",
+        "prior exact review report",
+        "finding disposition ledger",
+        "remediation change map",
+        "contradiction check",
+        "New material findings",
+        "Why it was not discoverable in round 1",
+    )
+
+    for name in DIRECT_REVIEW_SKILLS:
+        content = skill_text(name)
+        for phrase in required:
+            assert phrase in content, f"{name} missing prior-round continuity rule {phrase!r}"
+
+        assert "Do not rely on a controller summary instead of the exact prior reports" in content
+        assert "Do not reopen a resolved finding" in content
+
+
+def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() -> None:
+    required = (
+        "prior exact review reports",
+        "finding disposition ledger",
+        "remediation change map",
+        "prior-context digest",
+        "contradiction check",
+        "New material findings",
+    )
+
+    for name in REVIEW_ORCHESTRATION_SKILLS:
+        content = skill_text(name)
+        for phrase in required:
+            assert phrase in content, f"{name} missing review-context handoff {phrase!r}"
+
+        expectations = eval_expectations(name)
+        for phrase in (
+            "prior exact review reports",
+            "finding disposition ledger",
+            "prior-context digest",
+            "contradict prior feedback",
+            "unrelated new findings",
+        ):
+            assert phrase in expectations, f"{name} eval missing review-context handoff {phrase!r}"
+
+
+def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_context() -> None:
+    for name in DIRECT_REVIEW_SKILLS:
+        expectations = eval_expectations(name)
+        fixture = (SKILLS / name / "evaldata" / "README.md").read_text(encoding="utf-8")
+        for phrase in (
+            "prior exact review reports",
+            "finding disposition ledger",
+            "contradict prior feedback",
+            "unrelated new findings",
+        ):
+            assert phrase in expectations, f"{name} eval missing {phrase!r}"
+        for phrase in (
+            "Missing prior-round context",
+            "Contradictory later-round feedback",
+            "Unrelated new finding",
+        ):
+            assert phrase in fixture, f"{name} fixture missing {phrase!r}"
+
+
 def test_orchestrators_enforce_complete_first_round_and_no_fourth_review() -> None:
     required = (
         "Risk-weighted review",

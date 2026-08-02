@@ -31,6 +31,9 @@ expectations:
   - "Turns every terminal worker completion into a completion-triggered scheduling wake; the hook never dispatches directly, and the awakened monitor schedules at most one eligible successor after durable reconciliation."
   - "Each fresh scheduled run reconciles canonical state and prior attempt evidence, advances at most one durable stage, and can resume IMPLEMENT_PENDING REVIEW_PENDING or MERGE_PENDING without the original conversation."
   - "Every non-silent user delivery uses Purpose Executive summary Action needed and Detailed information while leading with product or release impact."
+  - "For rounds two and three passes prior exact review reports a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
+  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
+  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
 setupCommands: []
 teardownCommands: []
 parameters:

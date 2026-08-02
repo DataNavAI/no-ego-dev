@@ -38,6 +38,7 @@ def readiness(
     round_number: int = 1,
     base_sha: str = BASE_A,
     bundles: list[str] | None = None,
+    prior_round_context: dict | None = None,
 ) -> dict:
     return {
         "schema_version": 1,
@@ -45,6 +46,7 @@ def readiness(
         "pr": 17,
         "lineage": "issue-17",
         "round": round_number,
+        "prior_round_context": prior_round_context,
         "review_bundles": bundles or ["composite"],
         "candidate_sha": sha,
         "base_sha": base_sha,
@@ -59,6 +61,22 @@ def readiness(
             "github_checks": "PASS",
             "self_audit": "PASS",
         },
+    }
+
+
+def prior_context(
+    round_number: int = 1,
+    candidate_sha: str = SHA_A,
+    base_sha: str = BASE_A,
+    report_digests: dict[str, str] | None = None,
+) -> dict:
+    return {
+        "round": round_number,
+        "candidate_sha": candidate_sha,
+        "base_sha": base_sha,
+        "report_digests": report_digests or {"composite": DIGEST},
+        "finding_disposition_digest": DIGEST,
+        "remediation_change_map_digest": DIGEST,
     }
 
 
@@ -214,19 +232,46 @@ def test_lineage_rounds_are_monotonic_unique_and_capped(tmp_path: Path) -> None:
     with pytest.raises(gate.GateError, match="already bound"):
         store.claim(identity(gate, SHA_B, 1), "attempt-two", readiness(SHA_B, 1))
     with pytest.raises(gate.GateError, match="next round"):
-        store.claim(identity(gate, SHA_B, 3), "attempt-three", readiness(SHA_B, 3))
+        store.claim(
+            identity(gate, SHA_B, 3),
+            "attempt-three",
+            readiness(
+                SHA_B,
+                3,
+                prior_round_context=prior_context(round_number=2),
+            ),
+        )
 
     second = identity(gate, SHA_B, 2)
-    assert store.claim(second, "attempt-four", readiness(SHA_B, 2))["started"] is True
+    assert store.claim(
+        second,
+        "attempt-four",
+        readiness(SHA_B, 2, prior_round_context=prior_context()),
+    )["started"] is True
     store.finalize(second, "attempt-four", "REQUEST_CHANGES", DIGEST)
 
     with pytest.raises(gate.GateError, match="already bound"):
-        store.claim(identity(gate, SHA_C, 2), "attempt-five", readiness(SHA_C, 2))
+        store.claim(
+            identity(gate, SHA_C, 2),
+            "attempt-five",
+            readiness(SHA_C, 2, prior_round_context=prior_context()),
+        )
     with pytest.raises(gate.GateError, match="regress"):
         store.claim(identity(gate, SHA_C, 1), "attempt-six", readiness(SHA_C, 1))
 
     third = identity(gate, SHA_C, 3)
-    assert store.claim(third, "attempt-seven", readiness(SHA_C, 3))["started"] is True
+    assert store.claim(
+        third,
+        "attempt-seven",
+        readiness(
+            SHA_C,
+            3,
+            prior_round_context=prior_context(
+                round_number=2,
+                candidate_sha=SHA_B,
+            ),
+        ),
+    )["started"] is True
     store.finalize(third, "attempt-seven", "REQUEST_CHANGES", DIGEST)
 
     with pytest.raises(gate.GateError, match="Round 3"):
@@ -241,29 +286,103 @@ def test_next_generation_waits_for_complete_terminal_prior_manifest(tmp_path: Pa
     first_manifest = readiness(bundles=["composite", "security"])
     first_composite = identity(gate)
     second = identity(gate, SHA_B, 2)
+    incomplete_prior = prior_context(report_digests={"composite": DIGEST})
 
     store.claim(first_composite, "round-one-composite", first_manifest)
     with pytest.raises(gate.GateError, match="prior generation.*terminal"):
-        store.claim(second, "round-two-active-composite", readiness(SHA_B, 2))
+        store.claim(
+            second,
+            "round-two-active-composite",
+            readiness(SHA_B, 2, prior_round_context=incomplete_prior),
+        )
 
     store.finalize(first_composite, "round-one-composite", "REQUEST_CHANGES", DIGEST)
     with pytest.raises(gate.GateError, match="prior generation.*terminal"):
-        store.claim(second, "round-two-security-not-started", readiness(SHA_B, 2))
+        store.claim(
+            second,
+            "round-two-security-not-started",
+            readiness(SHA_B, 2, prior_round_context=incomplete_prior),
+        )
 
     first_security = identity(gate, review_bundle="security")
     store.claim(first_security, "round-one-security", first_manifest)
     with pytest.raises(gate.GateError, match="prior generation.*terminal"):
-        store.claim(second, "round-two-active-security", readiness(SHA_B, 2))
+        store.claim(
+            second,
+            "round-two-active-security",
+            readiness(SHA_B, 2, prior_round_context=incomplete_prior),
+        )
 
     store.finalize(first_security, "round-one-security", "REQUEST_CHANGES", DIGEST)
-    assert store.claim(second, "round-two-after-terminal", readiness(SHA_B, 2))["started"] is True
+    complete_prior = prior_context(
+        report_digests={"composite": DIGEST, "security": DIGEST}
+    )
+    assert store.claim(
+        second,
+        "round-two-after-terminal",
+        readiness(SHA_B, 2, prior_round_context=complete_prior),
+    )["started"] is True
+
+
+def test_round_two_requires_complete_prior_round_context(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "round-one", readiness())
+    store.finalize(first, "round-one", "REQUEST_CHANGES", DIGEST)
+
+    second = identity(gate, SHA_B, 2)
+    with pytest.raises(gate.GateError, match="prior_round_context"):
+        store.claim(second, "round-two-missing", readiness(SHA_B, 2))
+
+    malformed = prior_context()
+    del malformed["finding_disposition_digest"]
+    with pytest.raises(gate.GateError, match="finding_disposition_digest"):
+        store.claim(
+            second,
+            "round-two-malformed",
+            readiness(SHA_B, 2, prior_round_context=malformed),
+        )
+
+
+def test_round_two_prior_context_matches_terminal_prior_reports(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "round-one", readiness())
+    store.finalize(first, "round-one", "REQUEST_CHANGES", DIGEST)
+
+    second = identity(gate, SHA_B, 2)
+    wrong_sha = prior_context(candidate_sha=SHA_C)
+    with pytest.raises(gate.GateError, match="prior candidate_sha"):
+        store.claim(
+            second,
+            "round-two-wrong-sha",
+            readiness(SHA_B, 2, prior_round_context=wrong_sha),
+        )
+
+    wrong_report = prior_context(report_digests={"composite": "e" * 64})
+    with pytest.raises(gate.GateError, match="prior report_digests"):
+        store.claim(
+            second,
+            "round-two-wrong-report",
+            readiness(SHA_B, 2, prior_round_context=wrong_report),
+        )
+
+    result = store.claim(
+        second,
+        "round-two-valid",
+        readiness(SHA_B, 2, prior_round_context=prior_context()),
+    )
+    assert result["started"] is True
+    assert result["prior_context_digest"]
 
 
 def test_same_sha_cannot_be_renamed_as_a_new_round(tmp_path: Path) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
     store.claim(identity(gate), "attempt-one", readiness())
-    changed_round = readiness(SHA_A, 2)
+    changed_round = readiness(SHA_A, 2, prior_round_context=prior_context())
     assert store.claim(identity(gate, SHA_A, 2), "attempt-two", changed_round) == {
         "started": False,
         "reason": "same-sha-round-reuse",

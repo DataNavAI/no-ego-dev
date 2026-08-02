@@ -13,6 +13,9 @@ expectations:
   - "does not weaken rules or add blanket suppressions"
   - "requires a green review-readiness receipt and one composite independent review for an ordinary immutable candidate"
   - "predeclares a separate specialist only for a named non-overlapping high-risk expertise gap"
+  - "For rounds two and three passes prior exact review reports a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
+  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
+  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
 setupCommands: []
 teardownCommands: []
 parameters:

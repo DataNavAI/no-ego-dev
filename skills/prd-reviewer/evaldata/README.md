@@ -21,3 +21,9 @@ Approval requires outcome-focused acceptance and learning: task usefulness/compl
 This is Round 1. The reviewer must return all independently discoverable product-decision defects now, prioritize hard-to-reverse audience/problem/journey/source-of-truth/privacy/rights commitments, and ignore reversible wording or formatting nits. The report must steer the author with evidence, user impact, required decision, and smallest correction. Re-review is limited to Rounds 2 and 3; new later feedback requires an explicit reason it was not discoverable in Round 1. There is no Round 4 for this stable PRD scope.
 
 Negative scenarios: Round 2 must reject drip-fed ordinary feedback that was reasonably discoverable from the Round 1 PRD and is unrelated to remediation or newly available evidence. A Round 4 request returns `ITERATION_LIMIT_REACHED` before substantive review; missing exact revision or lineage returns `BLOCKED`.
+
+Additional continuity scenarios:
+
+- **Missing prior-round context:** Round 2 lacks the prior exact review reports, finding disposition ledger, remediation change map, or prior-context digest; return `BLOCKED_MISSING_PRIOR_CONTEXT` without substantive review.
+- **Contradictory later-round feedback:** Round 2 demands the opposite of a resolved Round 1 direction without decisive new evidence; reject the contradiction unless it is labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and proof.
+- **Unrelated new finding:** Round 2 raises a material issue from unchanged evidence that was independently discoverable in Round 1 and unrelated to remediation; omit it rather than drip-feed another correction cycle.

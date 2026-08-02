@@ -18,6 +18,9 @@ expectations:
   - "later-round feedback is limited to prior findings correction-introduced regressions genuinely unavailable evidence or material issues that could not reasonably be found in round one."
   - "Requires every allowed new later-round blocker to explain why it was not discoverable in round one."
   - "Allows no more than three total review rounds for one stable scope and never dispatches round four."
+  - "For rounds two and three requires prior exact review reports a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review."
+  - "Reconciles every prior finding and performs a contradiction check so it does not contradict prior feedback without an explicit evidence-backed PRIOR_FEEDBACK_CORRECTION."
+  - "Rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one."
 setupCommands: []
 teardownCommands: []
 parameters:

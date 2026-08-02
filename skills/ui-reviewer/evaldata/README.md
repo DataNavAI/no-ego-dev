@@ -22,3 +22,9 @@ A passing `ui-reviewer` response should:
 This is Round 1. The reviewer must inspect the complete agreed desktop/mobile screen and state set and provide all independently discoverable findings in one prioritized revision checklist. It should focus on hard-to-reverse journey, navigation, accessibility-foundation, trust, and design-system decisions while ignoring safely reversible spacing/copy/style nits that can be fixed later. Rounds 2 and 3 verify dispositions and revision-introduced regressions; any new blocker explains why it was not discoverable in Round 1. The same design lineage receives no Round 4.
 
 Negative scenarios: if the canonical guideline is missing, return `BLOCKED_MISSING_UI_GUIDELINE` without creating one. Round 2 must reject ordinary visual feedback that was discoverable in Round 1 and is unrelated to revisions or new evidence. A Round 4 request returns `ITERATION_LIMIT_REACHED` before substantive review.
+
+Additional continuity scenarios:
+
+- **Missing prior-round context:** Round 2 lacks the prior exact review reports, finding disposition ledger, remediation change map, or prior-context digest; return `BLOCKED_MISSING_PRIOR_CONTEXT` without substantive review.
+- **Contradictory later-round feedback:** Round 2 demands the opposite of a resolved Round 1 direction without decisive new evidence; reject the contradiction unless it is labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and proof.
+- **Unrelated new finding:** Round 2 raises a material issue from unchanged evidence that was independently discoverable in Round 1 and unrelated to remediation; omit it rather than drip-feed another correction cycle.

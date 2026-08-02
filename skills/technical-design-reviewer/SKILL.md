@@ -1,7 +1,7 @@
 ---
 name: technical-design-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact technical design or tech-spec revision for integrity, minimal complexity, automatic testability, operability, and sustainable self-monitoring."
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -29,6 +29,27 @@ Ignore reversible nits that can safely be fixed later, such as naming taste, for
 **Round 1 is the comprehensive architecture review.** Present all independently discoverable findings in round one as much as possible. Walk the complete integrity, failure, security, testability, operability, migration, and rollback matrices; inspect every bounded sibling instance of a discovered defect class; and give one deduplicated correction packet with evidence, consequence, constraints, and a safe design direction. Do not stop at the first unsound boundary or reserve obvious comments for later.
 
 Rounds 2 and 3 are bounded disposition checks. Later-round feedback is limited to unresolved round-1 architecture defects, regressions introduced by the revision, genuinely new system evidence, or a material defect that could not reasonably have been identified from the first frozen packet. Any new later-round blocker must state `Why it was not discoverable in round 1: <cause>`. Do not introduce fresh preferences, reversible nits, or downstream implementation/tooling concerns as new architecture feedback.
+
+## Prior-round context continuity
+
+For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete prior-round context:
+
+- the prior candidate identity and every **prior exact review report** with its verified digest;
+- a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
+- a **remediation change map** from each finding ID to the changed artifact paths/sections and focused verification, plus any explicitly authorized scope change;
+- the original governing request/specification and the complete current candidate; and
+- a controller-computed **prior-context digest** binding the exact reports, ledger, and change map supplied to this fresh reviewer.
+
+Do not rely on a controller summary instead of the exact prior reports. Missing, unverifiable, mismatched, or internally inconsistent prior context is `BLOCKED_MISSING_PRIOR_CONTEXT`; do not perform a substantive later-round review.
+
+A fresh reviewer remains independent, but must begin with reconciliation rather than a new unconstrained review:
+
+1. Revalidate candidate and packet identities.
+2. Disposition every prior finding by stable ID against the current bytes and evidence.
+3. Perform a **contradiction check** against prior feedback and accepted dispositions. Do not reopen a resolved finding, reverse a prior required direction, or demand the opposite implementation unless current candidate evidence or newly available authoritative evidence proves the prior feedback invalid. Label such a correction `PRIOR_FEEDBACK_CORRECTION`, cite both statements and the decisive evidence, and explain why following the earlier direction is now unsafe or incorrect.
+4. Report **New material findings** only when they are caused by remediation, by an explicitly authorized scope change, by genuinely unavailable evidence, or by a material defect that could not reasonably have been discovered in Round 1. Each must state `Why it was not discoverable in round 1: <cause>` and identify the allowed category. Omit unrelated new findings and reversible preferences rather than extending the lineage.
+
+The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency; it must use the explicit exception path above so the apparent contradiction is auditable.
 
 ## Three-round maximum
 

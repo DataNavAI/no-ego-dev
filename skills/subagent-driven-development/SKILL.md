@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.1
+version: 1.12.2
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -50,6 +50,18 @@ Apply **Risk-weighted review** across specification, quality, domain, and integr
 Enforce **first-round completeness**. **Round 1** inspects the full authorized scope and returns all independently discoverable Critical/Important or otherwise material findings in one deduplicated correction matrix with evidence and enough direction to fix each bounded defect class. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** is final. Later-round feedback is limited to unresolved findings, correction-introduced regressions, genuinely unavailable evidence, or a material defect that could not reasonably have been found earlier; every new blocker states `Why it was not discoverable in round 1: <cause>`.
 
 **No round 4** is dispatched for the same stable scope or lineage. If Round 3 is not approved, keep the candidate blocked and escalate the unresolved risk or scope choice. Tests and scanners cannot waive the unresolved gate.
+
+### Prior-round context handoff
+
+For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+
+- prior candidate/base identity and the **prior exact review reports** plus verified report digests for every authorized bundle;
+- a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
+- a **remediation change map** mapping every prior finding to changed paths/sections and focused verification, with any authorized scope delta called out separately;
+- the original governing contract and complete current candidate; and
+- a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
+
+The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to the immediately prior terminal generation, or incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency; use the explicit auditable exception.
 
 ### Canonical round accounting
 

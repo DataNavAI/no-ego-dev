@@ -1,7 +1,7 @@
 ---
 name: immutable-candidate-verification
 description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, composite independent review, and reproducible evidence.
-version: 1.0.50
+version: 1.0.51
 ---
 
 # Immutable Candidate Verification
@@ -25,6 +25,18 @@ Use **Risk-weighted review** within every immutable gate. Prioritize hard-to-rev
 Enforce **first-round completeness** for each stable scope. **Round 1** is comprehensive: inspect the full frozen candidate and return all independently discoverable Critical/Important or otherwise material findings in one deduplicated finding set with evidence and enough direction to fix each defect class. **Round 2** verifies dispositions on the corrected exact SHA. **Round 3** is final and checks unresolved findings plus correction-introduced regressions. Later-round new feedback is allowed only for remediation changes, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must state `Why it was not discoverable in round 1: <cause>`.
 
 **No round 4** is permitted for the same stable scope or artifact lineage. Every correction still invalidates prior SHA-bound verdicts, but after a negative Round 3 the workflow must block and escalate rather than create and review another remediation SHA. Tests, scanners, renaming, reviewer replacement, or splitting review kinds cannot reset or waive the three-round maximum.
+
+### Prior-round context handoff
+
+For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+
+- prior candidate/base identity and the **prior exact review reports** plus verified report digests for every authorized bundle;
+- a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
+- a **remediation change map** mapping every prior finding to changed paths/sections and focused verification, with any authorized scope delta called out separately;
+- the original governing contract and complete current candidate; and
+- a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
+
+The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to the immediately prior terminal generation, or incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency; use the explicit auditable exception.
 
 ### Canonical round accounting
 
