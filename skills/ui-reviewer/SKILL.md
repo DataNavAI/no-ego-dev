@@ -1,7 +1,7 @@
 ---
 name: ui-reviewer
 description: "Use as a fresh read-only reviewer for frozen UI evidence, benchmarking comparable market leaders and giving prioritized design feedback against the canonical project UI guideline."
-version: 0.2.5
+version: 0.2.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -32,7 +32,7 @@ Rounds 2 and 3 are bounded disposition checks. Later-round feedback is limited t
 
 ## Prior-round context continuity
 
-Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing or changed summary digest blocks review for the stable lineage.
+Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. The authority-bearing gate must first parse the embedded closed-schema `pre_review_summary_artifact`, verify its lineage and canonical serialization, recompute the digest, and persist the verified bytes. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing, malformed, mismatched, or changed artifact blocks review for the stable lineage.
 
 For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
 

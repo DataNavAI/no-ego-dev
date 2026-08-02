@@ -77,6 +77,8 @@ def test_direct_reviewers_require_complete_prior_round_context_and_reconciliatio
         "complete cumulative context",
         "pre-review summary",
         "pre_review_summary_digest",
+        "pre_review_summary_artifact",
+        "recompute",
         "finding disposition ledger",
         "remediation change map",
         "contradiction check",
@@ -100,6 +102,8 @@ def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() 
         "every preceding generation",
         "pre-review summary",
         "pre_review_summary_digest",
+        "pre_review_summary_artifact",
+        "recompute",
         "finding disposition ledger",
         "remediation change map",
         "prior-context digest",
@@ -118,6 +122,8 @@ def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() 
             "prior exact review reports",
             "cumulative generation order",
             "pre-review summary",
+            "closed-schema canonical artifact",
+            "recompute",
             "finding disposition ledger",
             "prior-context digest",
             "contradict prior feedback",
@@ -134,7 +140,10 @@ def test_issue_monitor_documents_the_gate_digest_format_exactly() -> None:
     assert "exactly 64 lowercase hexadecimal characters" in reference
     assert "immutable pre-review summary" in reference
     assert "pre_review_summary_digest" in reference
-    assert "supply the exact artifact to every reviewer" in reference
+    assert "pre_review_summary_artifact" in reference
+    assert "exactly one trailing lf" in reference
+    assert "recomputes its digest" in reference
+    assert "supply the verified artifact to every reviewer" in reference
     assert "sha256:<" not in reference
 
 
@@ -149,6 +158,8 @@ def test_orchestrator_fixtures_exercise_cross_round_context_delivery() -> None:
             "material process escape",
             "missing cumulative round-3 history",
             "missing or changed pre-review summary",
+            "noncanonical",
+            "digest-mismatched",
         ):
             assert phrase in fixture, f"{name} fixture missing continuity case {phrase!r}"
 
@@ -166,6 +177,8 @@ def test_shared_implementation_convergence_reference_passes_complete_history() -
         "report_history",
         "pre-review summary",
         "pre_review_summary_digest",
+        "pre_review_summary_artifact",
+        "recompute",
         "finding disposition ledger",
         "remediation change map",
         "prior-context digest",
@@ -182,6 +195,8 @@ def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_cont
             "prior exact review reports",
             "cumulative generation order",
             "pre-review summary",
+            "closed-schema canonical artifact",
+            "recompute",
             "finding disposition ledger",
             "contradict prior feedback",
             "unrelated new findings",
@@ -195,6 +210,8 @@ def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_cont
             "Material process escape",
             "Missing cumulative Round-3 history",
             "Missing or changed pre-review summary",
+            "noncanonical",
+            "digest-mismatched",
         ):
             assert phrase in fixture, f"{name} fixture missing {phrase!r}"
 

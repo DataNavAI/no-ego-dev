@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
 import json
 import os
@@ -23,7 +24,31 @@ SHA_D = "d" * 40
 BASE_A = "e" * 40
 BASE_B = "f" * 40
 DIGEST = "d" * 64
-PRE_REVIEW_DIGEST = "a" * 64
+
+
+def canonical_pre_review_summary(lineage: str = "issue-17") -> str:
+    payload = {
+        "schema_version": 1,
+        "lineage": lineage,
+        "governing_request": ["authoritative request"],
+        "scope": {"in": ["review gate"], "out": ["automatic approval"]},
+        "acceptance_criteria": ["observable result"],
+        "intended_approach": ["factual implementation direction"],
+        "change_inventory": ["governed files"],
+        "risk_assumptions": ["reviewer-challengeable assumption"],
+        "hard_to_reverse_surfaces": ["durable gate state"],
+        "known_tradeoffs": ["fail closed on old state"],
+        "open_questions": ["none"],
+        "verification_matrix": ["claim -> exact evidence"],
+        "inherited_findings": ["none"],
+    }
+    return json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ) + "\n"
+
+
+PRE_REVIEW_ARTIFACT = canonical_pre_review_summary()
+PRE_REVIEW_DIGEST = hashlib.sha256(PRE_REVIEW_ARTIFACT.encode("utf-8")).hexdigest()
 
 
 def load_gate():
@@ -41,6 +66,7 @@ def readiness(
     bundles: list[str] | None = None,
     prior_round_context: dict | None = None,
     pre_review_summary_digest: str = PRE_REVIEW_DIGEST,
+    pre_review_summary_artifact: str = PRE_REVIEW_ARTIFACT,
 ) -> dict:
     return {
         "schema_version": 1,
@@ -49,6 +75,7 @@ def readiness(
         "lineage": "issue-17",
         "round": round_number,
         "pre_review_summary_digest": pre_review_summary_digest,
+        "pre_review_summary_artifact": pre_review_summary_artifact,
         "prior_round_context": prior_round_context,
         "review_bundles": bundles or ["composite"],
         "candidate_sha": sha,
@@ -153,15 +180,73 @@ def test_readiness_requires_pre_review_summary_before_round_one() -> None:
         )
 
 
+def test_readiness_rejects_missing_pre_review_summary_artifact() -> None:
+    gate = load_gate()
+    payload = readiness()
+    del payload["pre_review_summary_artifact"]
+    with pytest.raises(gate.GateError, match="pre_review_summary_artifact"):
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_readiness_rejects_pre_review_summary_digest_byte_mismatch() -> None:
+    gate = load_gate()
+    payload = readiness(pre_review_summary_digest="0" * 64)
+    with pytest.raises(gate.GateError, match="does not match"):
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_claim_rejects_unverified_pre_review_summary_without_persisting_state(
+    tmp_path: Path,
+) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    with pytest.raises(gate.GateError, match="does not match"):
+        store.claim(
+            identity(gate),
+            "forged-summary",
+            readiness(pre_review_summary_digest="0" * 64),
+        )
+    assert store._read()["candidates"] == {}
+
+
+@pytest.mark.parametrize(
+    "artifact",
+    [
+        pytest.param(json.dumps(json.loads(PRE_REVIEW_ARTIFACT), indent=2) + "\n", id="noncanonical"),
+        pytest.param("{not-json}\n", id="malformed"),
+        pytest.param(
+            json.dumps(
+                {**json.loads(PRE_REVIEW_ARTIFACT), "unexpected": True},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            id="extra-field",
+        ),
+    ],
+)
+def test_readiness_rejects_invalid_pre_review_summary_artifact(artifact: str) -> None:
+    gate = load_gate()
+    digest = hashlib.sha256(artifact.encode("utf-8")).hexdigest()
+    payload = readiness(
+        pre_review_summary_artifact=artifact,
+        pre_review_summary_digest=digest,
+    )
+    with pytest.raises(gate.GateError, match="pre_review_summary_artifact"):
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
 def test_claim_persists_and_returns_pre_review_summary_digest(tmp_path: Path) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
     result = store.claim(identity(gate), "pre-review-summary", readiness())
 
     assert result["pre_review_summary_digest"] == PRE_REVIEW_DIGEST
+    assert result["pre_review_summary_artifact"] == PRE_REVIEW_ARTIFACT
     state = store._read()
     candidate = next(iter(state["candidates"].values()))
     assert candidate["pre_review_summary_digest"] == PRE_REVIEW_DIGEST
+    assert candidate["pre_review_summary_artifact"] == PRE_REVIEW_ARTIFACT
 
 
 def test_changed_pre_review_summary_digest_is_rejected_within_lineage(tmp_path: Path) -> None:
@@ -171,7 +256,12 @@ def test_changed_pre_review_summary_digest_is_rejected_within_lineage(tmp_path: 
     store.claim(first, "summary-round-one", readiness())
     store.finalize(first, "summary-round-one", "REQUEST_CHANGES", DIGEST)
 
-    changed_digest = "b" * 64
+    changed_summary = json.loads(PRE_REVIEW_ARTIFACT)
+    changed_summary["acceptance_criteria"] = ["silently changed baseline"]
+    changed_artifact = (
+        json.dumps(changed_summary, sort_keys=True, separators=(",", ":")) + "\n"
+    )
+    changed_digest = hashlib.sha256(changed_artifact.encode("utf-8")).hexdigest()
     second = identity(gate, SHA_B, 2)
     changed_context = prior_context(pre_review_summary_digest=changed_digest)
     with pytest.raises(gate.GateError, match="changed within the review lineage"):
@@ -183,6 +273,7 @@ def test_changed_pre_review_summary_digest_is_rejected_within_lineage(tmp_path: 
                 2,
                 prior_round_context=changed_context,
                 pre_review_summary_digest=changed_digest,
+                pre_review_summary_artifact=changed_artifact,
             ),
         )
 
@@ -455,7 +546,8 @@ def test_documented_round_two_receipt_is_accepted_end_to_end(tmp_path: Path) -> 
         SKILLS / "issue-monitor" / "references" / "review-round-continuity.md"
     ).read_text(encoding="utf-8")
     examples = re.findall(r"```json\n(.*?)\n```", reference, re.DOTALL)
-    documented = json.loads(examples[1])["prior_round_context"]
+    documented_receipt = json.loads(examples[1])
+    documented = documented_receipt["prior_round_context"]
 
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
     first = identity(gate, SHA_A, 1, base_sha=SHA_B)
@@ -476,6 +568,12 @@ def test_documented_round_two_receipt_is_accepted_end_to_end(tmp_path: Path) -> 
             2,
             base_sha=SHA_B,
             prior_round_context=documented,
+            pre_review_summary_digest=documented_receipt[
+                "pre_review_summary_digest"
+            ],
+            pre_review_summary_artifact=documented_receipt[
+                "pre_review_summary_artifact"
+            ],
         ),
     )
     assert result["started"] is True

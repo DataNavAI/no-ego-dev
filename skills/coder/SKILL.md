@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.3.5
+version: 0.3.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -29,7 +29,7 @@ Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence cha
 
 ### Prior-round context handoff
 
-Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Canonicalize and digest it, bind `pre_review_summary_digest` in readiness, and provide the exact artifact to every reviewer in every round. The digest must remain unchanged throughout the stable lineage; changing it requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
 For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 

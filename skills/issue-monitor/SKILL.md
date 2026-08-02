@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.14.5
+version: 1.14.6
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -40,7 +40,7 @@ Enforce **first-round completeness**. **Round 1** inspects the complete issue co
 
 ### Prior-round context handoff
 
-Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Canonicalize and digest it, bind `pre_review_summary_digest` in readiness, and provide the exact artifact to every reviewer in every round. The digest must remain unchanged throughout the stable lineage; changing it requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
 For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 

@@ -43,6 +43,87 @@ class GateError(ValueError):
     """A fail-closed review-gate validation error."""
 
 
+PRE_REVIEW_SUMMARY_FIELDS = {
+    "schema_version",
+    "lineage",
+    "governing_request",
+    "scope",
+    "acceptance_criteria",
+    "intended_approach",
+    "change_inventory",
+    "risk_assumptions",
+    "hard_to_reverse_surfaces",
+    "known_tradeoffs",
+    "open_questions",
+    "verification_matrix",
+    "inherited_findings",
+}
+PRE_REVIEW_SUMMARY_LIST_FIELDS = PRE_REVIEW_SUMMARY_FIELDS - {
+    "schema_version",
+    "lineage",
+    "scope",
+}
+MAX_PRE_REVIEW_SUMMARY_BYTES = 65536
+
+
+def _validate_pre_review_summary(payload: Dict[str, Any]) -> str:
+    artifact = payload.get("pre_review_summary_artifact")
+    if not isinstance(artifact, str) or not artifact:
+        raise GateError("pre_review_summary_artifact must be exact canonical JSON text")
+    try:
+        encoded = artifact.encode("utf-8")
+    except UnicodeEncodeError:
+        raise GateError("pre_review_summary_artifact must be valid UTF-8 text")
+    if len(encoded) > MAX_PRE_REVIEW_SUMMARY_BYTES:
+        raise GateError("pre_review_summary_artifact exceeds 65536 UTF-8 bytes")
+    try:
+        summary = json.loads(artifact)
+    except (TypeError, ValueError):
+        raise GateError("pre_review_summary_artifact must be valid JSON")
+    if not isinstance(summary, dict) or set(summary) != PRE_REVIEW_SUMMARY_FIELDS:
+        raise GateError("pre_review_summary_artifact has an invalid schema")
+    if summary.get("schema_version") != 1:
+        raise GateError("pre_review_summary_artifact schema_version must be 1")
+    if summary.get("lineage") != payload.get("lineage"):
+        raise GateError("pre_review_summary_artifact lineage does not match readiness")
+    scope = summary.get("scope")
+    if not isinstance(scope, dict) or set(scope) != {"in", "out"}:
+        raise GateError("pre_review_summary_artifact scope has an invalid schema")
+    for field, value in (("scope.in", scope["in"]), ("scope.out", scope["out"])):
+        if not isinstance(value, list) or not all(
+            isinstance(item, str) and item.strip() for item in value
+        ):
+            raise GateError(
+                "pre_review_summary_artifact {0} must be a string list".format(field)
+            )
+    if not scope["in"]:
+        raise GateError("pre_review_summary_artifact scope.in must not be empty")
+    for field in PRE_REVIEW_SUMMARY_LIST_FIELDS:
+        value = summary.get(field)
+        if not isinstance(value, list) or not value or not all(
+            isinstance(item, str) and item.strip() for item in value
+        ):
+            raise GateError(
+                "pre_review_summary_artifact {0} must be a non-empty string list".format(
+                    field
+                )
+            )
+    canonical = json.dumps(
+        summary, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ) + "\n"
+    if artifact != canonical:
+        raise GateError(
+            "pre_review_summary_artifact must be compact sorted-key UTF-8 JSON "
+            "with exactly one trailing LF"
+        )
+    actual_digest = hashlib.sha256(encoded).hexdigest()
+    if actual_digest != payload.get("pre_review_summary_digest"):
+        raise GateError(
+            "pre_review_summary_digest does not match pre_review_summary_artifact bytes"
+        )
+    return artifact
+
+
 def _validate_metric(name: str, value: Any, *, integer: bool = False) -> None:
     if value is None:
         return
@@ -132,6 +213,7 @@ def validate_readiness(
         raise GateError("readiness round must be 1, 2, or 3")
     if not DIGEST_RE.fullmatch(str(payload.get("pre_review_summary_digest", ""))):
         raise GateError("pre_review_summary_digest must be a lowercase SHA-256 digest")
+    _validate_pre_review_summary(payload)
     prior_context = payload.get("prior_round_context")
     if payload["round"] == 1:
         if prior_context is not None:
@@ -395,19 +477,27 @@ class ReviewGateStore:
         if not isinstance(context, dict):
             raise GateError("prior_round_context is required for a changed candidate")
         expected_summary_digest = highest.get("pre_review_summary_digest")
+        expected_summary_artifact = highest.get("pre_review_summary_artifact")
         if not DIGEST_RE.fullmatch(str(expected_summary_digest or "")):
             raise GateError("prior generation pre_review_summary_digest is missing or invalid")
+        if not isinstance(expected_summary_artifact, str) or not expected_summary_artifact:
+            raise GateError("prior generation pre_review_summary_artifact is missing")
         if readiness.get("pre_review_summary_digest") != expected_summary_digest:
             raise GateError("pre_review_summary_digest changed within the review lineage")
+        if readiness.get("pre_review_summary_artifact") != expected_summary_artifact:
+            raise GateError("pre_review_summary_artifact changed within the review lineage")
         if context.get("pre_review_summary_digest") != expected_summary_digest:
             raise GateError(
                 "prior_round_context pre_review_summary_digest does not match the lineage"
             )
         if any(
             candidate.get("pre_review_summary_digest") != expected_summary_digest
+            or candidate.get("pre_review_summary_artifact") != expected_summary_artifact
             for candidate in lineage
         ):
-            raise GateError("pre_review_summary_digest is inconsistent across prior generations")
+            raise GateError(
+                "pre-review summary is inconsistent across prior generations"
+            )
         prior_identity = highest.get("identity", {})
         if context.get("round") != prior_identity.get("round"):
             raise GateError("prior round does not match the terminal prior generation")
@@ -545,6 +635,9 @@ class ReviewGateStore:
                     "identity": identity.generation_payload,
                     "readiness_digest": readiness_hash,
                     "pre_review_summary_digest": readiness["pre_review_summary_digest"],
+                    "pre_review_summary_artifact": readiness[
+                        "pre_review_summary_artifact"
+                    ],
                     "prior_context_digest": prior_context_hash,
                     "review_bundles": list(readiness["review_bundles"]),
                     "bundles": {},
@@ -611,6 +704,9 @@ class ReviewGateStore:
                 "scope": scope,
                 "readiness_digest": readiness_hash,
                 "pre_review_summary_digest": readiness["pre_review_summary_digest"],
+                "pre_review_summary_artifact": readiness[
+                    "pre_review_summary_artifact"
+                ],
                 "prior_context_digest": prior_context_hash,
             }
 

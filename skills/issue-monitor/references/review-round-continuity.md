@@ -8,7 +8,8 @@ Round 1 uses:
 
 ```json
 {
-  "pre_review_summary_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "pre_review_summary_digest": "eadd261fe5b9692753114a9c8b3f353f4a22af017a2222dfdfa011656332bb87",
+  "pre_review_summary_artifact": "{\"acceptance_criteria\":[\"observable result\"],\"change_inventory\":[\"governed files\"],\"governing_request\":[\"authoritative request\"],\"hard_to_reverse_surfaces\":[\"durable gate state\"],\"inherited_findings\":[\"none\"],\"intended_approach\":[\"factual implementation direction\"],\"known_tradeoffs\":[\"fail closed on old state\"],\"lineage\":\"issue-17\",\"open_questions\":[\"none\"],\"risk_assumptions\":[\"reviewer-challengeable assumption\"],\"schema_version\":1,\"scope\":{\"in\":[\"review gate\"],\"out\":[\"automatic approval\"]},\"verification_matrix\":[\"claim -> exact evidence\"]}\n",
   "prior_round_context": null
 }
 ```
@@ -17,7 +18,8 @@ Round 2 and Round 3 use:
 
 ```json
 {
-  "pre_review_summary_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "pre_review_summary_digest": "eadd261fe5b9692753114a9c8b3f353f4a22af017a2222dfdfa011656332bb87",
+  "pre_review_summary_artifact": "{\"acceptance_criteria\":[\"observable result\"],\"change_inventory\":[\"governed files\"],\"governing_request\":[\"authoritative request\"],\"hard_to_reverse_surfaces\":[\"durable gate state\"],\"inherited_findings\":[\"none\"],\"intended_approach\":[\"factual implementation direction\"],\"known_tradeoffs\":[\"fail closed on old state\"],\"lineage\":\"issue-17\",\"open_questions\":[\"none\"],\"risk_assumptions\":[\"reviewer-challengeable assumption\"],\"schema_version\":1,\"scope\":{\"in\":[\"review gate\"],\"out\":[\"automatic approval\"]},\"verification_matrix\":[\"claim -> exact evidence\"]}\n",
   "prior_round_context": {
     "round": 1,
     "candidate_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -35,14 +37,14 @@ Round 2 and Round 3 use:
         }
       }
     ],
-    "pre_review_summary_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "pre_review_summary_digest": "eadd261fe5b9692753114a9c8b3f353f4a22af017a2222dfdfa011656332bb87",
     "finding_disposition_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     "remediation_change_map_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
   }
 }
 ```
 
-`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. `report_history` is the ordered cumulative chain for every preceding generation, starting at Round 1 and ending at `round`; each entry binds that generation's round, candidate, base, complete bundle manifest, and terminal report digests. Therefore Round 2 contains one history entry and Round 3 contains two. `pre_review_summary_digest` is identical at the readiness top level and inside every later-round context packet. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
+`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. `report_history` is the ordered cumulative chain for every preceding generation, starting at Round 1 and ending at `round`; each entry binds that generation's round, candidate, base, complete bundle manifest, and terminal report digests. Therefore Round 2 contains one history entry and Round 3 contains two. `pre_review_summary_artifact` is the exact canonical JSON text embedded at readiness top level; `pre_review_summary_digest` is its verified identity and is repeated inside every later-round context packet. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
 
 ## Immutable pre-review summary
 
@@ -74,7 +76,7 @@ Canonical shape:
 }
 ```
 
-Canonicalize it as UTF-8 JSON with sorted keys and compact separators, hash it as a bare lowercase SHA-256 digest, and supply the exact artifact to every reviewer. The digest is mandatory in Round 1 readiness, is stored with each candidate generation, and must remain identical in all later readiness/context packets. A changed summary means the governing scope or assumptions changed and requires an explicitly new lineage; it cannot silently reset or steer an existing review. This summary supplements the exact contract, candidate, reports, and evidence—it never substitutes for them or narrows independent review.
+Canonicalize it as UTF-8 JSON with sorted keys, compact separators, unescaped Unicode (`ensure_ascii=false`), and **exactly one trailing LF**. Embed that exact text as `pre_review_summary_artifact`, hash those exact bytes as a bare lowercase SHA-256 digest, and supply the verified artifact to every reviewer. The authority-bearing gate parses the embedded artifact, requires the exact closed schema above, verifies its lineage and canonical bytes, recomputes its digest, and persists the verified text and identity. The digest is mandatory in Round 1 readiness and must remain identical with the exact artifact in all later generations/context packets. A changed summary means the governing scope or assumptions changed and requires an explicitly new lineage; it cannot silently reset or steer an existing review. This summary supplements the exact contract, candidate, reports, and evidence—it never substitutes for them or narrows independent review.
 
 ## Canonical context artifacts
 
@@ -92,7 +94,8 @@ Canonicalize the ledger and change map as UTF-8 JSON with sorted keys and compac
 
 Before dispatch, `review_gate.py claim` verifies:
 
-- every round includes a valid `pre_review_summary_digest`;
+- every round embeds a present, size-bounded `pre_review_summary_artifact` with the closed schema, matching lineage, and exact canonical serialization;
+- the gate recomputes the artifact's SHA-256 and requires it to equal `pre_review_summary_digest` before dispatch;
 - Round 2/3 includes a structurally valid context object with the same summary digest;
 - the summary digest remains identical across every candidate generation in the stable lineage;
 - prior round, candidate, and base match the immediately prior terminal generation;
