@@ -25,6 +25,26 @@ ned reset
 ned destroy --yes
 ```
 
+### Optional product telemetry
+
+Telemetry is **off by default**. NED only sends the small, versioned event schema in
+[`docs/ned-create/TELEMETRY_PRIVACY.md`](docs/ned-create/TELEMETRY_PRIVACY.md) after you provide a
+collector you control, link its published privacy policy, and affirm consent with `--yes`.
+
+```bash
+ned telemetry enable --yes \
+  --host https://us.i.posthog.com \
+  --project-key YOUR_PUBLIC_PROJECT_INGEST_KEY \
+  --privacy-policy https://your-domain.example/privacy
+ned telemetry status
+ned telemetry disable
+ned telemetry delete
+```
+
+The project ingest key is public ingestion configuration, not a PostHog personal/admin API key.
+Never provide an admin secret. `delete` removes the local random installation ID and collector
+configuration; the collector operator's published policy controls deletion of already-ingested data.
+
 The workspace stops after 15 idle minutes and archives after seven idle days. Stopped workspaces retain disk billing; archived containers retain restorable state without active sandbox billing. Model usage is billed separately by OpenRouter.
 
 See [`docs/ned-create/PRD.md`](docs/ned-create/PRD.md), [`CUJ.md`](docs/ned-create/CUJ.md), and [`TECH_SPEC.md`](docs/ned-create/TECH_SPEC.md) for the product and security contract.
