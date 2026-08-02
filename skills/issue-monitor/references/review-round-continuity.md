@@ -21,19 +21,29 @@ Round 2 and Round 3 use:
     "report_digests": {
       "composite": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
     },
+    "report_history": [
+      {
+        "round": 1,
+        "candidate_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "report_digests": {
+          "composite": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
+    ],
     "finding_disposition_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     "remediation_change_map_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
   }
 }
 ```
 
-`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
+`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. `report_history` is the ordered cumulative chain for every preceding generation, starting at Round 1 and ending at `round`; each entry binds that generation's round, candidate, base, complete bundle manifest, and terminal report digests. Therefore Round 2 contains one history entry and Round 3 contains two. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
 
 ## Canonical context artifacts
 
 Persist these outside the candidate checkout in the controller's attempt-scoped artifact store:
 
-1. Exact prior reviewer reports, unchanged and digest-verified.
+1. All exact prior reviewer reports from Round 1 onward, unchanged and digest-verified.
 2. A stable-ID finding disposition ledger. Each prior finding is one of `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and correction owner.
 3. A remediation change map from every prior finding ID to changed files/sections and focused verification. Record authorized scope additions separately.
 4. The original governing request/specification and complete current candidate evidence.
@@ -46,7 +56,8 @@ Before dispatch, `review_gate.py claim` verifies:
 
 - Round 2/3 includes a structurally valid context object;
 - prior round, candidate, and base match the immediately prior terminal generation;
-- report-bundle names and report digests exactly match terminal gate state; and
+- immediate report-bundle names and digests exactly match the immediately prior terminal generation;
+- `report_history` exactly matches every terminal prior generation from Round 1 onward, including candidate/base identities and all authorized bundle report digests; and
 - the gate records a digest of the complete `prior_round_context` object with the claim.
 
 The controller must then provide the digest-bound artifacts—not a summary—to the fresh reviewer. Reject a later-round result unless it contains:

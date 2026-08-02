@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.8.2
+version: 1.8.3
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -29,9 +29,9 @@ Rounds 2 and 3 are disposition and regression checks. Later-round feedback is li
 
 ## Prior-round context continuity
 
-For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete prior-round context:
+For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
 
-- the prior candidate identity and every **prior exact review report** with its verified digest;
+- every prior candidate/base identity and **all prior exact review reports** with verified digests, ordered by candidate generation from Round 1 onward;
 - a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
 - a **remediation change map** from each finding ID to the changed artifact paths/sections and focused verification, plus any explicitly authorized scope change;
 - the original governing request/specification and the complete current candidate; and

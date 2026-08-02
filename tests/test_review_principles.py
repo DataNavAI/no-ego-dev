@@ -74,6 +74,7 @@ def test_direct_reviewers_require_complete_prior_round_context_and_reconciliatio
     required = (
         "## Prior-round context continuity",
         "prior exact review report",
+        "complete cumulative context",
         "finding disposition ledger",
         "remediation change map",
         "contradiction check",
@@ -94,6 +95,7 @@ def test_direct_reviewers_require_complete_prior_round_context_and_reconciliatio
 def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() -> None:
     required = (
         "prior exact review reports",
+        "every preceding generation",
         "finding disposition ledger",
         "remediation change map",
         "prior-context digest",
@@ -110,6 +112,7 @@ def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() 
         expectations = eval_expectations(name)
         for phrase in (
             "prior exact review reports",
+            "cumulative generation order",
             "finding disposition ledger",
             "prior-context digest",
             "contradict prior feedback",
@@ -136,6 +139,7 @@ def test_orchestrator_fixtures_exercise_cross_round_context_delivery() -> None:
             "contradictory later-round feedback",
             "unrelated new finding",
             "material process escape",
+            "missing cumulative round-3 history",
         ):
             assert phrase in fixture, f"{name} fixture missing continuity case {phrase!r}"
 
@@ -150,6 +154,7 @@ def test_shared_implementation_convergence_reference_passes_complete_history() -
     ).read_text(encoding="utf-8").lower()
     for phrase in (
         "prior exact review reports",
+        "report_history",
         "finding disposition ledger",
         "remediation change map",
         "prior-context digest",
@@ -164,6 +169,7 @@ def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_cont
         fixture = (SKILLS / name / "evaldata" / "README.md").read_text(encoding="utf-8")
         for phrase in (
             "prior exact review reports",
+            "cumulative generation order",
             "finding disposition ledger",
             "contradict prior feedback",
             "unrelated new findings",
@@ -175,6 +181,7 @@ def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_cont
             "Contradictory later-round feedback",
             "Unrelated new finding",
             "Material process escape",
+            "Missing cumulative Round-3 history",
         ):
             assert phrase in fixture, f"{name} fixture missing {phrase!r}"
 

@@ -1,7 +1,7 @@
 ---
 name: prd-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact PRD revision for user-problem fit, ease, effectiveness, satisfaction, and base-product coherence."
-version: 0.4.2
+version: 0.4.3
 author: NoEgoDev
 license: MIT
 metadata:
@@ -32,9 +32,9 @@ Rounds 2 and 3 are bounded disposition checks. Later-round feedback is limited t
 
 ## Prior-round context continuity
 
-For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete prior-round context:
+For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
 
-- the prior candidate identity and every **prior exact review report** with its verified digest;
+- every prior candidate/base identity and **all prior exact review reports** with verified digests, ordered by candidate generation from Round 1 onward;
 - a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
 - a **remediation change map** from each finding ID to the changed artifact paths/sections and focused verification, plus any explicitly authorized scope change;
 - the original governing request/specification and the complete current candidate; and

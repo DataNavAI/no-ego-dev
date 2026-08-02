@@ -17,7 +17,7 @@ expectations:
   - "Keeps at least one real worker active when runnable dependency-safe work remains, without racing overlapping writers or mutating a frozen review target."
   - "Treats each top-level batch child as independently handled and delivered, reconciles the first finisher without waiting for siblings, and reserves separate calls for explicit ownership timing capacity or retry boundaries."
   - "Does not recursively schedule agents from a cron watchdog and keeps healthy watchdog output silent."
-  - "For rounds two and three passes prior exact review reports a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
+  - "For rounds two and three passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
   - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
