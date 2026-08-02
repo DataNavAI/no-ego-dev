@@ -75,8 +75,7 @@ Useful representative states include: an acronym-only group without an approved 
 
 - TDD RED → focused GREEN → related feature/metadata tests → bare canonical test.
 - Restore generated tracked output before staging.
-- Run specification review first. If it finds a semantic/copy issue, correct with TDD and rerun the full affected gates.
-- Run quality/security review across escaping, provenance, claim isolation, runtime compatibility, and amplification.
+- Run one composite independent review covering semantic/copy compliance plus escaping, provenance, claim isolation, runtime compatibility, and amplification. If it finds an issue, correct with TDD and rerun the complete gate on the new candidate.
 - After the first finding in a bounded failure class, inventory every sibling publication field and ask the next reviewer for one explicit convergence pass over that complete inventory. Do not patch and review one scalar at a time when the same defect can exist in adjacent fields.
 - Make boundary coverage tabular or data-driven where practical: each field should prove `limit` publishes and `limit + 1` fails closed across every route where it is repeated. Include scalar siblings outside otherwise bounded arrays.
-- Any source or test correction invalidates both earlier verdicts; rerun specification then quality before committing.
+- Any source or test correction invalidates the earlier verdict; rerun one composite independent review before committing.

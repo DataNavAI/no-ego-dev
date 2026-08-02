@@ -41,9 +41,9 @@ Require the reviewer to report:
 - exact mismatched field/state/error names;
 - file and line evidence;
 - whether tests encode the drift;
-- smallest correction before quality review.
+- smallest correction before freezing the next composite-review candidate.
 
-Only start code-quality review after contract compliance passes.
+Start one composite independent review only after contract-compliance evidence is complete in the review-readiness receipt.
 
 ## Gate verdict decomposition
 

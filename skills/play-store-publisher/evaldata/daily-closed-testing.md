@@ -1,12 +1,12 @@
 # Daily closed-testing release eval fixture
 
-The daily release monitor operates on one configured Android package, a named Google Play closed testing track, an app-scoped service account without production-release permission, and a supported-device-interface registry. The uploader wrapper is outside the repository and has fixed package/track arguments.
+The daily release monitor operates on one configured Android package, a named Google Play closed testing track, an app-scoped service account without production-release permission, and a supported-device-interface registry. A read-only max-version broker and closed-track uploader/read-back broker live outside the repository with fixed package/track/credential configuration.
 
 A passing response must reason through all state transitions below without treating prose, a dispatch receipt, or an upload command exit code as release success.
 
 ## Deterministic scenarios
 
-1. **New releasable source commit** — capture the source SHA before bumping, query Play, set `versionCode=max(local, Play)+1`, update one authoritative version source, run required exact-candidate gates, build the signed AAB, upload through the fixed closed-track wrapper, read back Play state, and then persist source/release SHAs and the receipt.
+1. **New releasable source commit** — capture the source SHA before bumping, query Play through the repository-isolated read-only fixed-package broker, set `versionCode=max(local, Play)+1`, update one authoritative version source, run required exact-candidate gates, build the signed AAB, upload through the fixed closed-track wrapper, read back Play state, and then persist source/release SHAs and the receipt.
 2. **No releasable change** — when HEAD has no app-affecting revision after the last successful source SHA, do not bump, build, or upload; emit `[SILENT]`.
 3. **Prior release-only bump** — a commit generated only by the previous monitor must not trigger another release.
 4. **Build failure before upload** — credentials remain unavailable, no upload occurs, and the successful baseline remains unchanged.
@@ -18,6 +18,6 @@ A passing response must reason through all state transitions below without treat
 10. **Repository-controlled argument injection** — values emitted by source files, scripts, Gradle tasks, release notes, or environment variables cannot alter package, credential, uploader executable, or closed-track arguments.
 11. **Supported-device-interface gate** — missing/stale `.projects/<project>/product/supported-device-interfaces.yaml`, an undecided Android interface, or missing/stale/failed/blocked exact-candidate evidence blocks upload.
 
-The service-account credential is absent during checkout, dependencies, static analysis, tests, QA, and build. It is injected only into the fixed upload/read-back process after the AAB checksum and allowed arguments are frozen. The monitor never uploads to production as a fallback.
+The service-account credential is never exposed to the agent or repository-controlled checkout, dependencies, static analysis, tests, QA, or build. It remains inside two external fixed-capability processes: the read-only broker can return max-version metadata before candidate creation, and the closed-track broker can upload/read back only after the AAB checksum and allowed arguments are frozen. The monitor never uploads to production as a fallback.
 
 Every non-silent release, blocker, or state-transition alert uses `Purpose:`, `Executive summary:`, `Action needed:`, and `Detailed information:` and leads with the closed-testing or tester outcome. Healthy no-change runs remain `[SILENT]`.

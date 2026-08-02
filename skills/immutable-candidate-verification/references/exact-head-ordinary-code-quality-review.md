@@ -1,4 +1,4 @@
-# Exact-head ordinary code-quality review
+# Exact-head ordinary composite review
 
 Use this recipe for a final read-only review of a PR or immutable commit after remediation work is complete.
 
@@ -15,9 +15,9 @@ Record the live PR head SHA, base SHA, draft/open state, and expected changed pa
 
 Treat every earlier review finding as a hypothesis to reproduce at the new head. Never copy an old verdict forward after any commit changes.
 
-## Ordinary quality dimensions
+## Composite specification and quality dimensions
 
-Read each changed production file and test file in full context. Inspect:
+Read the governing requirements plus each changed production and test file in full context. Verify specification compliance, correctness, security, regression-test honesty, repository conventions, integration, and operational risk. Inspect:
 
 - state invariants, identity uniqueness, capacity/backpressure, and retirement/history bounds;
 - async sequencing, stale post-await writes, queue poisoning, and promise rejection containment;

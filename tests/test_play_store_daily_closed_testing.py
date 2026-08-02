@@ -30,6 +30,9 @@ def test_daily_closed_testing_release_contract_is_complete() -> None:
     assert "persist the successful source commit" in skill.lower()
     assert "daily" in skill.lower()
     assert "dedicated app-scoped service account" in skill
+    assert "read-only max-version broker" in skill
+    assert "unavailable to the agent and every repository-controlled process" in skill
+    assert "returns only authenticated Play version metadata" in skill
     assert "without production-release permission" in skill
     assert "fixed-argument uploader" in skill
     assert "credentials unavailable" in skill
@@ -44,6 +47,8 @@ def test_daily_closed_testing_release_contract_is_complete() -> None:
     assert "no releasable changes" in lowered
     assert "track override" in lowered
     assert "supported-device-interface" in lowered
+    assert "read-only fixed-package broker" in lowered
+    assert "credentials unavailable" in lowered
 
     lowered_fixture = daily_fixture.lower()
     for scenario in (

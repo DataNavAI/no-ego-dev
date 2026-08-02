@@ -73,10 +73,10 @@ Use this loop when the user wants ongoing mobile builds delivered to closed test
 ### 1. Schedule and serialize the monitor
 
 - Run once per day through Hermes cron or the project's CI scheduler, with a self-contained prompt and the mobile repository as `workdir`.
-- Use `play-store-cli` only to provision and verify the constrained release identity. The scheduled job receives a fixed uploader interface, not the general-purpose Play CLI surface.
+- Use `play-store-cli` only to provision and verify the constrained release identity. The scheduled job receives two external fixed-capability interfaces—not the general-purpose Play CLI surface: a read-only max-version/read-back broker and a closed-track uploader/read-back broker.
 - Use a package-scoped lock outside the repository so two runs cannot build or upload the same revision concurrently.
 - Persist release state outside git, including the last successful source commit, release commit, artifact checksum, uploaded versionCode, closed track, Play release ID/status, and verification timestamp.
-- Keep Play **credentials unavailable** during checkout, dependency installation, repository scripts, static analysis, tests, emulator QA, and AAB build. Inject the constrained credential only into the fixed upload/read-back process after the candidate and gates are frozen.
+- Keep Play **credentials unavailable to the agent and every repository-controlled process** during checkout, dependency installation, scripts, static analysis, tests, emulator QA, and AAB build. Credentials remain inside the external brokers: the read-only broker may query Play before candidate creation without exposing credential material, while the closed-track upload broker becomes callable only after the candidate, checksum, and gates are frozen.
 
 ### 2. Detect a new releasable revision before bumping
 
@@ -90,7 +90,7 @@ Use this loop when the user wants ongoing mobile builds delivered to closed test
 For every release candidate that will be uploaded:
 
 1. Read the authoritative local `versionCode` from Gradle, Expo app config, or the project's declared version source.
-2. Query Google Play for the highest versionCode already uploaded to any track for this package.
+2. Invoke the repository-isolated, read-only max-version broker for the preconfigured package. It accepts no repository-controlled package, track, credential, executable, or environment override and returns only authenticated Play version metadata plus a query receipt.
 3. Set the next value to **`max(local versionCode, latest uploaded Play versionCode) + 1`**.
 4. Update the authoritative source file and any generated configuration through the framework's supported tooling. Never hand-edit two competing sources of truth.
 5. Commit the version update on the authorized release branch when repository policy permits, and record both source and release commits. Do not advance the successful-release baseline yet.
@@ -101,7 +101,7 @@ For every release candidate that will be uploaded:
 - Read `.projects/<project>/product/supported-device-interfaces.yaml`, identify every supported Android interface and target required by its verification tier, and require current `PASS` evidence against the **exact release candidate**. A missing/stale registry, undecided support, missing case, or stale/failed/blocked required target blocks upload.
 - Run the repository's static analysis, tests, release build, and registry-required emulator/device QA before upload. A failed gate blocks the release and does not consume the source revision.
 - Generate release notes from changes since the prior successful source commit.
-- Upload through a **fixed-argument uploader** whose executable/configuration lives outside the repository and accepts only the frozen AAB path/checksum, configured package ID, and exact closed-track identifier. Reject repository-controlled arguments, environment overrides, track override, `production`, `open`, `internal`, promotion, staged rollout, and metadata operations before credential injection.
+- Upload through a **fixed-argument uploader** whose executable/configuration, package ID, credential reference, and exact closed-track identifier live outside the repository. It accepts only a frozen AAB from the controlled output directory plus its checksum. Reject repository-controlled arguments, environment overrides, package or track override, `production`, `open`, `internal`, promotion, staged rollout, and metadata operations before broker execution.
 - Upload through the constrained service-account/API path to the exact **closed testing track** and tester group. **Never upload this daily build to production**, open testing, or internal testing as a fallback.
 - If the configured track cannot be proven to be closed testing, fail closed without uploading.
 - Use the track's normal completed/in-review state when eligible. For a Play app that is still globally draft or blocked by policy setup, preserve a draft and report the exact blocker rather than claiming rollout.

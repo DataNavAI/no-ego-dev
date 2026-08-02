@@ -4,9 +4,9 @@ prompt: |
   "Set up the daily Android release monitor for our configured app. A new source commit exists after the last verified release. Allocate a fresh versionCode, run the release gates, and upload only to our named Google Play closed-testing track. If no releasable change exists, stay silent. Do not expose Play credentials to repository-controlled build steps and never use production as a fallback."
 expectations:
   - "the daily monitor detects a new releasable source commit before creating any release-only version bump and stays silent with No releasable changes"
-  - "queries the latest uploaded Play versionCode and updates the authoritative project source to max local or Play plus one before rebuilding and verifying the AAB"
+  - "queries the latest uploaded Play versionCode through a repository-isolated read-only fixed-package broker before candidate creation and updates the authoritative source to max local or Play plus one before rebuilding and verifying the AAB"
   - "requires the supported-device-interface registry and current PASS evidence for every required Android target against the exact release candidate"
-  - "uses a dedicated app-scoped service account without production permission and keeps credentials unavailable during repository-controlled checkout build test and QA steps"
+  - "uses a dedicated app-scoped service account without production permission and keeps credentials unavailable to the agent and repository-controlled checkout build test and QA steps; only external fixed-capability brokers hold them"
   - "uses a fixed-argument uploader constrained to the configured package and exact closed testing track and rejects track override argument injection promotion metadata internal open and production"
   - "verifies the closed-testing release and persists source and release commits artifact checksum versionCode track and Play status only after read-back evidence"
   - "reconciles accepted uploads before retrying and prevents duplicate upload false success and release-only self-trigger loops"

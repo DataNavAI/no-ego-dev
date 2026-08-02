@@ -1,5 +1,5 @@
 prompt: |
-  Execute a six-task implementation plan with Hermes subagents. The tasks share a governing schema and UI brief, some are independent, and every completed implementation must pass specification and code-quality review. The gateway may restart, reviewers may time out, and no two writers may race on the same worktree.
+  Execute a six-task implementation plan with Hermes subagents. The tasks share a governing schema and UI brief, some are independent, and every completed implementation must pass one composite independent review for ordinary risk. The gateway may restart, reviewers may time out, and no two writers may race on the same worktree.
 
   Use the subagent-driven-development skill to describe and execute the workflow from contract preflight through final integration review, including recovery and continuation behavior.
 expectations:
@@ -10,8 +10,10 @@ expectations:
   - "Extracts the complete plan once, creates a tracked task list, and passes each child full task and governing-contract context rather than making it rediscover the plan."
   - "Freezes exact schema, route, enum, timestamp, error-code, UI, and terminology contracts before the first RED test."
   - "Uses a fresh implementer per task with focused RED-GREEN-refactor evidence and non-overlapping writer scopes."
-  - "Requires specification review before code-quality review by default and keeps partial or missing verdicts fail-closed."
+  - "Uses one composite independent reviewer for ordinary candidates, keeps partial or missing verdicts fail-closed, and prohibits a fragmented specification-then-quality chain."
   - "Binds reviewers to one clean immutable SHA or explicit frozen snapshot and re-runs invalidated reviews after corrections."
+  - "Requires a green machine-readable review-readiness receipt before dispatch and uses one composite reviewer per ordinary immutable candidate; specialized review is reserved for named high-risk expertise gaps."
+  - "Uses an atomic candidate review index to suppress active or finalized duplicate same-SHA review and permits only one missing-evidence-only recovery after INCOMPLETE."
   - "Finishes parent self-audit before reviewer dispatch, records a staged identity receipt, invalidates pending review on mutation, and uses a verified git archive with explicit cwd when a shared checkout moves."
   - "Uses modern top-level batch semantics: each fan-out child has its own handle and completion delivery; separate calls are reserved for explicit ownership timing capacity or retry boundaries."
   - "Uses completion hooks or parent completion delivery to trigger scheduling reconciliation after every worker stop, while the hook remains content-free and never dispatches or promotes a child directly."

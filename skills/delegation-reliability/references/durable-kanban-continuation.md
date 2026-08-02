@@ -36,7 +36,7 @@ For a custom event integration, prefer a small class-level plugin that registers
 4. Use one durable Kanban card per independently reviewable issue/PR. When GitHub/Linear is already canonical, keep the card thin: canonical issue URL/ID, repo/project, assignee/profile, workspace/branch, specialist skill, idempotency key, and completion evidence contract. Require the worker to read the live issue before editing; do not copy the whole issue body into a second independently maintained specification.
 5. Model real dependencies with Kanban links because the dispatcher needs machine-readable edges, but treat them as an execution index derived from the canonical issue tracker. Reconcile changed/closed issues before dispatch. Do not merely order card creation and assume that means dependency order.
 6. Use isolated `worktree`/project workspaces for repository writers. Keep one writer per overlapping path set.
-7. Encode implementation → exact-head specification review → code-quality review → integration/merge verification as dependent cards. A worker self-report never skips review.
+7. Encode implementation → exact-head composite independent review → integration/merge verification as dependent cards. Add a specialist card only for a predeclared non-overlapping high-risk scope. A worker self-report never skips review.
 8. Reserve capacity for review/integration. With three workers, a useful default is two non-overlapping implementation lanes plus one review/verification lane—not three writers that leave a review pile.
 9. Run `dispatch --dry-run` and inspect board/task readback before enabling execution. Confirm no unintended ready task will mutate production, merge, publish, or deploy.
 

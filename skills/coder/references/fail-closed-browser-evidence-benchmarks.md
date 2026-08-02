@@ -82,8 +82,8 @@ Product-specific semantic selectors can improve a generic scorer, but they creat
 5. Run the explicit benchmark and assert all cohort thresholds, route counts, inspection methods, frozen hashes, and evidence-selector classes.
 6. If benchmark honesty required a product-renderer correction, rerun prior affected static and browser suites; do not rely on pre-change evidence.
 7. Run canonical tests and build; restore only known generated output.
-8. Run `git diff --check`, stage exact authorized evidence/code paths, and obtain independent pre-commit review.
-9. After commit, run immutable specification and quality reviews at the same clean SHA. Any correction invalidates both gates.
+8. Run `git diff --check`, stage exact authorized evidence/code paths, and complete the review-readiness receipt.
+9. After commit, run one composite independent review at the same clean SHA. Any correction invalidates that verdict.
 
 ## Focused final read-only review
 

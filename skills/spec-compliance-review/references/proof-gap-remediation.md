@@ -27,7 +27,7 @@ Do not manufacture a RED by weakening, deleting, or changing correct production 
 5. Commit the proof remediation separately when practical, with exact changed paths and focused counts.
 6. Reconfirm local/remote/PR SHA parity and cleanliness.
 7. Dispatch a fresh independent reviewer against the new immutable head. Give it the prior findings and require a per-finding `resolved|unresolved` disposition plus new-gap scan.
-8. Only after spec PASS proceed to a separate quality/security review and final canonical verification.
+8. Return the disposition to the controller. For ordinary candidates the controller consumes it inside one composite verdict; a distinct specialist exists only when predeclared for a non-overlapping high-risk expertise gap.
 
 ## Test quality checks
 

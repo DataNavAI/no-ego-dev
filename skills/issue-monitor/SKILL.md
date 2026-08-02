@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.11.0
+version: 1.14.1
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -40,17 +40,26 @@ Enforce **first-round completeness**. **Round 1** inspects the complete issue co
 
 #### Canonical round accounting
 
-**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates all earlier commit-bound verdicts.
+**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates all earlier commit-bound verdicts. The gate rejects a new candidate until every authorized bundle in the prior generation has reached a terminal verdict.
 
 Scheduled controllers must assume delegated completion delivery is **not durable** across cron-run exit, gateway restart, or a fresh controller session. A review is reusable only when it leaves a controller-readable artifact bound to `(repository, PR, lineage, round, exact head SHA, complete required-review-kind set, review kind, attempt ID)`—for example one structured PR comment with a stable marker or an attempt-scoped JSON report outside every repository. The controller must read that artifact back before acting; a cache filename, delegation handle, lifecycle status, or child summary alone is not a merge gate.
 
 Before dispatching any reviewer:
 
-1. Query the current PR head and search for a structurally valid durable result for that exact SHA and review kind.
-2. Treat a valid `REQUEST_CHANGES` as a completed review. Do not review the unchanged SHA again; route its complete blocking set to one fixer and wait for a new candidate SHA.
-3. Treat a valid `APPROVED` result as reusable only while the head, required-check identities, and repository policy remain unchanged.
-4. If a prior attempt is still plausibly live, dispatch nothing. If it timed out, inspect its exact report/comment path before creating a replacement.
-5. Use one reviewer attempt per cron run. If no valid durable result is readable by the end of the run, report `REVIEW_PENDING`; the next run reconciles first and retries only if the prior attempt is confirmed stopped and its artifact is absent or malformed.
+1. Query the current PR head and validate a machine-readable **review-readiness receipt** bound to repository, PR, lineage, round, that SHA, current base, and the complete authorized review-bundle manifest. Require clean scope plus green static analysis, focused tests, canonical full tests, build, secret scan, exact-SHA provider checks, and controller self-audit. Only a genuinely absent provider check may be `PASS_OR_NOT_REQUIRED`; implementation evidence cannot be waived. Route an unready or foreign candidate back to implementation without spending a review round.
+2. Search for a structurally valid durable result for that exact SHA and review bundle.
+3. Treat a valid `REQUEST_CHANGES` as a completed review. Do not review the unchanged SHA again; route its complete blocking set to one fixer and wait for a new candidate SHA.
+4. Treat a valid `APPROVED` result as reusable only while the head, required-check identities, and repository policy remain unchanged.
+5. If a prior attempt is still plausibly live, dispatch nothing. If it timed out, inspect its exact report/comment path before creating a replacement.
+6. Use one reviewer attempt per cron run. If no valid durable result is readable by the end of the run, report `REVIEW_PENDING`; the next run reconciles first and retries only if the prior attempt is confirmed stopped and its artifact is absent or malformed.
+
+### Composite review bundle and executable gate
+
+For an ordinary candidate, use one **composite review bundle** covering specification, correctness, security, regression-test honesty, repository conventions, and operational risk. Add a distinct specialized kind only for a named high-consequence boundary—such as destructive migration, authorization/privacy, payments, cryptography, accessibility evidence, or broad infrastructure blast radius—that the composite reviewer cannot credibly cover. All required kinds share one frozen candidate and numbered round; collect the round before issuing one deduplicated correction packet.
+
+Use [`scripts/review_gate.py`](scripts/review_gate.py) as the executable local control when a monitor needs durable enforcement. Store its state outside the candidate repository. It validates receipt identity—including exact candidate and current base SHA—and the complete authorized review-bundle manifest, then atomically claims one candidate generation keyed by `(repository, PR, lineage, round, exact SHA, base SHA)`. Required bundles are nested under that generation so specialists do not double-count candidates. The gate suppresses active and finalized same-bundle duplicates plus same-candidate round renaming, permits one missing-evidence-only recovery after `INCOMPLETE`, uses process-owned advisory locking with file and parent-directory durability sync, rejects Round 4, and emits aggregate candidate/bundle metrics. The first generation is Round 1; each changed candidate advances exactly one round; skipped, reused, or regressed rounds fail closed. Its index is operational metadata, not approval: the controller must still read back the durable aggregate bundle verdict and provider state.
+
+Track at least: attempts started, duplicate dispatches suppressed, narrow recoveries, verdict counts, candidate generations, candidates reaching Round 3, aggregate reviewer runtime, and fresh reviewer tokens when the runtime exposes them. Daily reporting should stay silent when healthy but preserve these metrics for trend analysis.
 
 ### Durable approval continuation
 
@@ -282,15 +291,17 @@ It must independently:
 5. Query GitHub checks and branch protection. Never bypass, disable, dismiss, or weaken a required gate.
 6. Write and read back a compact durable result before returning: `REQUEST_CHANGES` with all independently discoverable Critical/Important or otherwise material findings and enough direction to correct the defect class in Round 1, `APPROVED` with commands/evidence, or `INCOMPLETE` naming the missing gate. Never let timeout erase the only verdict copy.
 7. After fixes, re-review the new commit from scratch. Never reuse an approval for an older SHA.
-8. Only on `APPROVED` for the current SHA and green required checks, execute the repository-approved merge command. If checks are pending, finalize `merge_pending: true` so a later merge-only executor can continue without duplicate review. Do not enable GitHub auto-merge. The normal merge command is:
+8. On `APPROVED` for the current SHA, finalize and read back the durable verdict. Set `merge_pending: true` whether checks are already green or still pending; the reviewer never merges. A later `MERGE` stage revalidates approval, head, checks, and policy before invoking the merge-only executor. Do not enable GitHub auto-merge.
+
+If the same GitHub identity cannot submit a formal approval on its own PR, do not fabricate approval. Record the independent agent verdict in a PR comment and merge only if repository policy permits. If human approval is required, leave the PR open with `agent:human-review`; do not arm GitHub auto-merge from an agent verdict.
+
+The merge-only executor receives only the PR identity, exact approved SHA, durable approval marker/digest, required-check identities, branch-protection policy, and approved merge method. It must re-read all of them, fail closed on drift, perform no code or review work, and merge at most once using the provider's atomic expected-head primitive (`gh pr merge --match-head-commit APPROVED_SHA` on GitHub). If no atomic expected-head merge operation is available, it must not merge. Its existence never authorizes the controller, reviewer, implementer, or fixer to merge.
+
+For the approved GitHub squash policy, the merge-only executor's command is:
 
 ```bash
 gh pr merge PR_NUMBER --repo OWNER/REPO --squash --delete-branch --match-head-commit APPROVED_SHA
 ```
-
-If the same GitHub identity cannot submit a formal approval on its own PR, do not fabricate approval. Record the independent agent verdict in a PR comment and merge only if repository policy permits. If human approval is required, leave the PR open with `agent:human-review`; do not arm GitHub auto-merge from an agent verdict.
-
-The merge-only executor receives only the PR identity, exact approved SHA, durable approval marker/digest, required-check identities, branch-protection policy, and approved merge method. It must re-read all of them, fail closed on drift, perform no code or review work, and merge at most once using the provider's atomic expected-head primitive (`gh pr merge --match-head-commit APPROVED_SHA` on GitHub). If no atomic expected-head merge operation is available, it must not merge. Its existence never authorizes the controller, orchestrator, implementer, or fixer to merge.
 
 ## Fix and Re-review Loop
 
@@ -299,7 +310,7 @@ When the reviewer requests changes:
 1. Keep the PR open and `agent:in-progress` applied.
 2. Spawn a fresh fixer leaf with only the findings, current SHA, issue contract, and relevant files.
 3. The fixer adds/updates tests as needed, makes only required changes, reruns checks, commits, and pushes.
-4. Spawn a fresh reviewer leaf to inspect the new SHA independently, preserving the lineage, incrementing the candidate round, and retaining prior finding dispositions. Merge only if that exact-SHA review passes every gate, either immediately or via the bounded merge-only continuation.
+4. On a later `REVIEW` stage, dispatch a fresh reviewer to inspect the new SHA independently, preserving the lineage, incrementing the candidate round, and retaining prior finding dispositions. A still-later `MERGE` stage may consume approval only if that exact-SHA review passes every gate.
 5. Permit at most two fix/re-review cycles after the comprehensive Round 1, for three total review rounds.
 6. If Round 3 is still not approved, stop, label `agent:blocked`, and leave a precise issue/PR comment. No round 4; never merge by exhaustion.
 
@@ -381,8 +392,8 @@ When packaging this skill into a Hermes profile distribution or syncing it acros
 - [ ] `gh auth status` passes with required repository scopes.
 - [ ] `target_repo`, absolute `workdir`, and default branch are verified.
 - [ ] Repository instructions and required checks are known.
-- [ ] Nested delegation is enabled with depth exactly 2 or greater.
-- [ ] Cron toolsets include `terminal`, `file`, and `delegation`.
+- [ ] No nested delegation requirement remains; the controller advances one durable stage per tick.
+- [ ] Cron toolsets include `terminal` and `file` plus only the toolset required by the chosen proven durable worker primitive; `delegation` is not treated as cron durability.
 - [ ] Cron prompt is fully self-contained.
 - [ ] Job is created with only this controller skill attached by default; role-specific skills are loaded by the child that needs them.
 - [ ] `cronjob(action="list")` shows the expected schedule, workdir, skills, and delivery.

@@ -136,6 +136,9 @@ def test_scheduled_issue_monitor_resumes_one_durable_stage_per_fresh_run() -> No
     assert "IMPLEMENT_PENDING" in content
     assert "REVIEW_PENDING" in content
     assert "MERGE_PENDING" in content
+    assert "the reviewer never merges" in content.lower()
+    assert "no nested delegation requirement remains" in content.lower()
+    assert "normally the merge action" not in content
     assert "fresh scheduled run" in expectations
     assert "fresh scheduled run" in fixture
 

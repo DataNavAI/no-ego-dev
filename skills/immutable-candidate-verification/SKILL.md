@@ -1,22 +1,22 @@
 ---
 name: immutable-candidate-verification
-description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, independent review, and reproducible evidence.
-version: 1.0.48
+description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, composite independent review, and reproducible evidence.
+version: 1.0.50
 ---
 
 # Immutable Candidate Verification
 
-Use when a plan requires each task to pass specification and code-quality gates at the same immutable commit before the next task may begin.
+Use when a plan requires each task to pass one composite independent gate at the same immutable commit before the next task may begin.
 
 ## Core invariant
 
-A task is complete only when every required gate names the same clean commit SHA: specification **PASS**, code-quality **APPROVED**, and any frozen domain gate such as editorial/provenance **ACCEPTED**. Any code, test, fixture, or evidence correction changes the SHA and invalidates every earlier immutable verdict.
+A task is complete only when the composite independent verdict is **APPROVED** for the same clean commit SHA and current base, every predeclared non-overlapping specialist bundle is also approved, and any frozen domain authority such as editorial/provenance is **ACCEPTED**. Any code, test, fixture, or evidence correction changes the SHA and invalidates every earlier immutable verdict.
 
-Do not build, push, stage, or deploy the candidate artifact after staged-diff/pre-commit reviews alone. Commit first, run every required immutable post-commit gate against that exact clean SHA, and only then construct the one-time artifact. Aggregate parallel verdicts fail-closed: any specification **FAIL**, quality **REQUEST_CHANGES**, domain **REJECTED**, timeout, provider interruption, missing verdict, or completed delegation whose verdict text was not preserved leaves the task and candidate incomplete even if a separate completion reviewer says **COMPLETE**. Revoke and clearly label any already-built or staged candidate discovered to lack these gates; preserve its digest and deployment evidence as rejected history, never as authorization for the next task or promotion.
+Do not build, push, stage, or deploy the candidate artifact after staged-diff/pre-commit review alone. Commit first, run every authorized immutable post-commit bundle against that exact clean SHA, and only then construct the one-time artifact. Aggregate verdicts fail-closed: any composite or specialist **REQUEST_CHANGES**, domain **REJECTED**, timeout, provider interruption, missing verdict, or completed delegation whose verdict text was not preserved leaves the task and candidate incomplete even if a separate completion reviewer says **COMPLETE**. Revoke and clearly label any already-built or staged candidate discovered to lack these gates; preserve its digest and deployment evidence as rejected history, never as authorization for the next task or promotion.
 
 Treat a late verdict and its findings separately. A verdict against an older SHA can never approve or reject the current candidate, but its reproducible findings remain useful hypotheses. Triage every late Blocking/High finding against the current exact tree instead of dismissing it as stale: reproduce it, add a regression when relevant, fix it if still present, rerun affected gates, and obtain fresh independent approval for the resulting SHA. When several reviewers finish out of order, preserve the newest exact-SHA verdict while still applying any older finding that the newest review missed.
 
-Index durable review evidence by candidate SHA **and review kind**. For an unchanged candidate, one structurally valid `FAIL`, `REQUEST_CHANGES`, or `REJECTED` result closes that gate negatively; it must route remediation and suppress duplicate review dispatch until a new SHA exists. Timeout, malformed output, or missing delivery may justify one replacement only after checking the attempt's durable artifact, and that replacement should cover missing evidence rather than rerunning verified exact-SHA checks. This deduplication never converts negative evidence into approval and never allows one review kind to substitute for another.
+Index durable review evidence by repository/artifact, lineage, round, candidate SHA, current base SHA, and authorized **review bundle**, nesting every bundle under one candidate generation. For an unchanged generation, one structurally valid `REQUEST_CHANGES` or `REJECTED` result closes that bundle negatively; it must route remediation and suppress duplicate review dispatch until a new generation exists. Timeout, malformed output, or missing delivery may justify one replacement only after checking the attempt's durable artifact, and that replacement should cover missing evidence rather than rerunning verified exact-SHA checks. This deduplication never converts negative evidence into approval and never allows one review kind to substitute for another.
 
 ## Risk-weighted review convergence
 
@@ -28,7 +28,7 @@ Enforce **first-round completeness** for each stable scope. **Round 1** is compr
 
 ### Canonical round accounting
 
-**One review round is one immutable candidate generation.** All required review kinds against that candidate **share the same round number**, whether sequential or parallel; timeout replacements remain in that round. Persist one receipt keyed by **lineage, round, candidate identity, and required review-kind set**, with per-kind outcomes. **A corrected candidate increments the round** and invalidates every earlier commit-bound verdict.
+**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates every earlier commit-bound verdict. Do not admit it until every authorized bundle in the prior generation has reached a terminal verdict.
 
 For journey analytics or domain events that claim retry/idempotency across reload, replay, or rollover, apply `references/persisted-journey-event-outbox-review.md`. Review activation and completion as one engine-owned persisted outbox: retain full envelopes and original keys until durable acknowledgement, exercise immediate-transition and route-close races at every awaited sink boundary, treat history caps as unresolved-first priority selection rather than newest-first truncation, and require bounded backpressure rather than pending-event eviction. Before re-review, run the complete global key-location matrix across active/history and activation/completion fields; reject cross-type or cross-payload ambiguity before persistence, preserve raw stored bytes on fail-closed recovery, protect acknowledged keys after reload, ensure stale async continuations cannot acknowledge/persist/render after cancellation, and ensure every browser-unavailable path installs `noindex`.
 
@@ -74,15 +74,14 @@ For product-source plus publication-hub workflows, follow `references/multi-repo
    - Commit only after pre-commit approval.
    - Record the exact SHA and verify the worktree is clean.
 
-7. **Run every immutable gate at that SHA**
-   - Specification reviewer: compare frozen requirements to the exact commit and return PASS/FAIL.
-   - Quality reviewer: inspect security, correctness, maintainability, tests, and regressions at the exact same commit and return APPROVED/REQUEST_CHANGES.
-   - Add each frozen domain reviewer required by the plan (for example editorial/provenance ACCEPTED/REJECTED) at that same commit.
+7. **Run the immutable composite gate at that SHA**
+   - One fresh independent composite reviewer compares frozen requirements to the exact commit and inspects correctness, security, maintainability, tests, regressions, and operational risk before returning `APPROVED`, `REQUEST_CHANGES`, or `INCOMPLETE`.
+   - Add a frozen specialist bundle only when the readiness plan predeclares a named, non-overlapping, hard-to-reverse expertise boundary (for example editorial provenance, cryptography, payments, or destructive migrations). Every authorized bundle reviews the same candidate generation.
    - Reviewers must not edit the repository. Every prompt must name the absolute checkout path and immutable identity independently.
 
-8. **Advance sequentially**
-   - Mark the task complete only after all required verdicts pass at the same SHA.
-   - Do not start Task N+1 while either gate is absent or stale.
+8. **Advance only after aggregate completion**
+   - Mark the task complete only after the composite verdict and every predeclared specialist verdict approve the same SHA.
+   - Do not start Task N+1 while any authorized bundle is absent, active, incomplete, or stale.
 
 ## Fail-closed rules
 
@@ -139,7 +138,7 @@ A delegation timeout is transport/process metadata, not the review verdict. Befo
 
 A broad green suite does not negate a deterministic exact-candidate adversarial reproducer. When a recovered or late report cites a blocking probe, inspect the probe as data, rerun it against the named immutable tree, and verify that it exercises the production contract and demonstrates a concrete consequence. If confirmed, add it as a regression and route the candidate back to remediation even when canonical tests pass.
 
-When re-dispatch is required, use a fresh reviewer at the same clean candidate, provide previously verified canonical evidence, prohibit redundant heavyweight/network/install/browser commands, ask it to write the complete report before optional probes, and keep the original specification/quality scope unchanged. A written report does not waive process-exit caveats in executable evidence: passing TAP text under a nonzero wrapper remains case-level evidence, not a clean command PASS. Check and restore any generated artifacts a timed-out reviewer may have left before trusting checkout cleanliness.
+When re-dispatch is required, use a fresh reviewer at the same clean candidate, provide previously verified canonical evidence, prohibit redundant heavyweight/network/install/browser commands, ask it to write the complete report before optional probes, and keep the original composite or predeclared specialist scope unchanged. A written report does not waive process-exit caveats in executable evidence: passing TAP text under a nonzero wrapper remains case-level evidence, not a clean command PASS. Check and restore any generated artifacts a timed-out reviewer may have left before trusting checkout cleanliness.
 
 ## Reference
 
@@ -153,7 +152,7 @@ See `references/recovering-detached-staged-tree.md` when the supplied immutable 
 
 See `references/exact-commit-review-after-checkout-advance.md` when a shared checkout advances during an exact-commit review. It covers blob-by-blob provenance triage, disposable `git archive` verification, served-response binding, selective probe invalidation, and static-app CDP/browser recovery without resetting concurrent work.
 
-See `references/exact-head-ordinary-code-quality-review.md` for final read-only PR reviews after state, Proxy, queue, or commit-semantics remediation. It covers disposable checkout isolation, old-finding reproduction, trusted-adapter limits, test non-vacuity, end-of-review PR identity revalidation, and no-comment/no-edit side-effect discipline.
+See `references/exact-head-ordinary-code-quality-review.md` for final read-only composite PR reviews after state, Proxy, queue, or commit-semantics remediation. It covers disposable checkout isolation, old-finding reproduction, trusted-adapter limits, test non-vacuity, end-of-review PR identity revalidation, and no-comment/no-edit side-effect discipline.
 
 See `references/exact-source-promotion-generated-site-audit.md` for read-only hub promotion reviews that independently bind a remotely recoverable source SHA to the build manifest, committed snapshot, clean rebuild, shared private-review runtime, protected hub subtrees, and final clean-state evidence.
 

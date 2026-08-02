@@ -16,7 +16,7 @@ skills/issue-monitor/
   scripts/             # when present
 ```
 
-The eval should exercise the class-level contract: absolute cron `workdir`, bounded issue selection, nested orchestrator depth, RED-before-code implementation, a distinct reviewer that owns merge, fail-closed CI/branch-protection behavior, and external post-merge verification. Update English/localized skill indexes when the distribution publishes a list of included skills.
+The eval should exercise the class-level contract: absolute cron `workdir`, bounded issue selection, one durable stage per fresh run, RED-before-code implementation, a distinct reviewer that writes an exact-SHA verdict, a later merge-only executor, fail-closed CI/branch-protection behavior, and external post-merge verification. Update English/localized skill indexes when the distribution publishes a list of included skills.
 
 Validate the final source state with frontmatter parsing, eval YAML parsing, fixture-path checks, `git diff --check`, and the distribution's full test command. Re-check the final files after tests before staging.
 

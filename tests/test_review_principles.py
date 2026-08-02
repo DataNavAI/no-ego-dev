@@ -128,9 +128,9 @@ def test_reversible_nits_are_omitted_not_reported_as_minor_feedback() -> None:
 def test_round_is_one_candidate_generation_shared_by_all_review_kinds() -> None:
     required = (
         "One review round is one immutable candidate generation",
-        "share the same round number",
-        "lineage, round, candidate identity, and required review-kind set",
-        "A corrected candidate increments the round",
+        "share one candidate generation and round number",
+        "candidate SHA, current base SHA, and complete authorized review-bundle manifest",
+        "A corrected candidate advances exactly one round",
     )
     for name in REVIEW_ORCHESTRATION_SKILLS:
         content = skill_text(name)

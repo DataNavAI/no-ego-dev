@@ -9,7 +9,7 @@ A coding delegation can time out after completing edits or while running the bro
 3. Run syntax checks and the smallest focused suite first. Preserve genuine RED evidence reported by the delegation; do not manufacture a second RED by reverting working code.
 4. If focused checks pass, run the canonical suite from the parent session with a sufficient foreground timeout.
 5. Restore only known generated-output trees, verify exact scope, and commit under the planned message.
-6. Re-dispatch immutable spec and quality review from the resulting SHA instead of asking another coder to reimplement the slice.
+6. Re-dispatch one composite independent review from the resulting immutable SHA instead of asking another coder to reimplement the slice.
 
 ## Isolated-worker and worktree recovery
 
@@ -24,9 +24,9 @@ A coding delegation can time out after completing edits or while running the bro
 - Broad suites may leave thousands of generated-file changes and drown the useful diff. Restore only the known generated-output tree before inspecting or committing; never clean arbitrary paths.
 - A timeout after generation is not a signal to restart. Check whether the intended source/test commit already exists, then run the smallest focused test from the controller.
 - Preserve genuine RED evidence from the worker. If the implementation is already green, do not manufacture a new RED by reverting it.
-- When specification review passes but quality review finds boundary flaws, keep the task blocked and add adversarial tests for the exact class: HTML script breakouts, inherited names, Symbols, Proxies/reflection traps, DOM accessors, stale session state, route-prefix drift, and partial instrumentation.
+- When the composite review finds boundary flaws, keep the task blocked and add adversarial tests for the exact class: HTML script breakouts, inherited names, Symbols, Proxies/reflection traps, DOM accessors, stale session state, route-prefix drift, and partial instrumentation.
 - For generated browser analytics, verify the actual lifecycle—not only extracted helpers: hydration, direct load, SPA replacement, back/forward, delegated events, route prefixes, and non-target pages.
 - Share one immutable generated fixture across lifecycle tests when generation is expensive; keep one end-to-end generation assertion and focused unit probes for hostile inputs.
-- After any production correction, rerun spec review before quality review. A reviewer timeout is no verdict; narrow and re-dispatch against the same immutable SHA.
+- After any production correction, rerun the composite independent review on the new immutable SHA. A reviewer timeout is no verdict; recover durable evidence and re-dispatch only the missing scope against the same immutable SHA.
 
 If focused checks fail, continue from the existing diff or re-dispatch with explicit context that the worktree contains partial uncommitted changes. Never let a second worker edit the same worktree concurrently. A timeout alone is not evidence that the implementation or tool is broken; the durable lesson is the recovery sequence.

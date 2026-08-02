@@ -172,4 +172,4 @@ Test through the real browser/runtime harness:
 12. Successful/already-owned URL intent is removed while unrelated query/hash state survives; failure retains it; unfollow plus re-authentication on the same page does not silently add it again.
 13. Exact-origin referrer is internal, a prefix-lookalike origin is external, and malformed/absent referrers follow the established direct/unknown rule.
 
-Run focused RED→GREEN, the complete feature file, the canonical suite, and the build. Restore only known generated output, commit exact authorized files, then repeat immutable specification and quality reviews at the final SHA.
+Run focused RED→GREEN, the complete feature file, the canonical suite, and the build. Restore only known generated output, commit exact authorized files, then repeat one composite independent review at the final SHA.
