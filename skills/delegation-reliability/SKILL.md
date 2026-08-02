@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.14.4
+version: 1.14.5
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -40,6 +40,8 @@ Use one composite review bundle for ordinary candidates. Separate review kinds a
 If work is already running under another mechanism, do not duplicate it. Secure and verify its durable artifact first, then resume using the selected mode.
 
 ### Prior-round context handoff
+
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Canonicalize and digest it, bind `pre_review_summary_digest` in readiness, and provide the exact artifact to every reviewer in every round. The digest must remain unchanged throughout the stable lineage; changing it requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
 For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 

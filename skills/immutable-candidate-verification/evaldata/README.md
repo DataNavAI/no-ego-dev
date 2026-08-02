@@ -12,3 +12,4 @@ A passing response must keep process state, tests, artifacts, and authorization 
 - **Unrelated new finding:** Ordinary feedback discoverable from unchanged Round-1 evidence is omitted rather than drip-fed.
 - **Material process escape:** A genuine late material defect that was reasonably discoverable earlier remains blocking as `MATERIAL_PROCESS_ESCAPE` and is escalated.
 - **Missing cumulative Round-3 history:** A Round-3 packet omits the Round-1 exact report or generation identity; block before substantive review instead of relying only on Round 2.
+- **Missing or changed pre-review summary:** Any round lacks the exact digest-bound neutral pre-review summary, or its digest changes inside the stable lineage; block before substantive review.

@@ -7,13 +7,17 @@ Use this contract when `review_gate.py` claims Round 2 or Round 3 for a changed 
 Round 1 uses:
 
 ```json
-"prior_round_context": null
+{
+  "pre_review_summary_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "prior_round_context": null
+}
 ```
 
 Round 2 and Round 3 use:
 
 ```json
 {
+  "pre_review_summary_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "prior_round_context": {
     "round": 1,
     "candidate_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -31,22 +35,56 @@ Round 2 and Round 3 use:
         }
       }
     ],
+    "pre_review_summary_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "finding_disposition_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     "remediation_change_map_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
   }
 }
 ```
 
-`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. `report_history` is the ordered cumulative chain for every preceding generation, starting at Round 1 and ending at `round`; each entry binds that generation's round, candidate, base, complete bundle manifest, and terminal report digests. Therefore Round 2 contains one history entry and Round 3 contains two. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
+`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. `report_history` is the ordered cumulative chain for every preceding generation, starting at Round 1 and ending at `round`; each entry binds that generation's round, candidate, base, complete bundle manifest, and terminal report digests. Therefore Round 2 contains one history entry and Round 3 contains two. `pre_review_summary_digest` is identical at the readiness top level and inside every later-round context packet. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
+
+## Immutable pre-review summary
+
+Before Round 1, create one neutral, evidence-linked summary for the stable lineage. It must contain:
+
+1. The governing request, in-scope and out-of-scope boundaries, and acceptance criteria.
+2. The intended implementation approach and factual change inventory, without arguing for approval.
+3. Risk assumptions, hard-to-reverse surfaces, known tradeoffs, and unresolved questions.
+4. The planned verification matrix and exact evidence/artifact locators available to reviewers.
+5. Any inherited historical finding IDs and dispositions when work was materially rescoped from an exhausted lineage.
+
+Canonical shape:
+
+```json
+{
+  "schema_version": 1,
+  "lineage": "stable-scope-identity",
+  "governing_request": ["authoritative request or artifact locator"],
+  "scope": {"in": ["bounded surface"], "out": ["explicit exclusion"]},
+  "acceptance_criteria": ["observable outcome"],
+  "intended_approach": ["factual implementation direction"],
+  "change_inventory": ["planned path or artifact class"],
+  "risk_assumptions": ["assumption requiring reviewer challenge"],
+  "hard_to_reverse_surfaces": ["auth, data, public contract, or other risk"],
+  "known_tradeoffs": ["accepted cost and rationale"],
+  "open_questions": ["unresolved decision or none"],
+  "verification_matrix": ["claim -> exact planned evidence locator"],
+  "inherited_findings": ["stable finding ID -> disposition or none"]
+}
+```
+
+Canonicalize it as UTF-8 JSON with sorted keys and compact separators, hash it as a bare lowercase SHA-256 digest, and supply the exact artifact to every reviewer. The digest is mandatory in Round 1 readiness, is stored with each candidate generation, and must remain identical in all later readiness/context packets. A changed summary means the governing scope or assumptions changed and requires an explicitly new lineage; it cannot silently reset or steer an existing review. This summary supplements the exact contract, candidate, reports, and evidence—it never substitutes for them or narrows independent review.
 
 ## Canonical context artifacts
 
 Persist these outside the candidate checkout in the controller's attempt-scoped artifact store:
 
-1. All exact prior reviewer reports from Round 1 onward, unchanged and digest-verified.
-2. A stable-ID finding disposition ledger. Each prior finding is one of `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and correction owner.
-3. A remediation change map from every prior finding ID to changed files/sections and focused verification. Record authorized scope additions separately.
-4. The original governing request/specification and complete current candidate evidence.
+1. The exact immutable pre-review summary whose digest is bound in readiness and later context.
+2. All exact prior reviewer reports from Round 1 onward, unchanged and digest-verified.
+3. A stable-ID finding disposition ledger. Each prior finding is one of `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and correction owner.
+4. A remediation change map from every prior finding ID to changed files/sections and focused verification. Record authorized scope additions separately.
+5. The original governing request/specification and complete current candidate evidence.
 
 Canonicalize the ledger and change map as UTF-8 JSON with sorted keys and compact separators before hashing. Record the SHA-256 result as exactly 64 lowercase hexadecimal characters, matching `review_gate.py`'s existing report-digest format.
 
@@ -54,7 +92,9 @@ Canonicalize the ledger and change map as UTF-8 JSON with sorted keys and compac
 
 Before dispatch, `review_gate.py claim` verifies:
 
-- Round 2/3 includes a structurally valid context object;
+- every round includes a valid `pre_review_summary_digest`;
+- Round 2/3 includes a structurally valid context object with the same summary digest;
+- the summary digest remains identical across every candidate generation in the stable lineage;
 - prior round, candidate, and base match the immediately prior terminal generation;
 - immediate report-bundle names and digests exactly match the immediately prior terminal generation;
 - `report_history` exactly matches every terminal prior generation from Round 1 onward, including candidate/base identities and all authorized bundle report digests; and

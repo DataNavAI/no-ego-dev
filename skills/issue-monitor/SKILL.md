@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.14.4
+version: 1.14.5
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -39,6 +39,8 @@ Enforce **first-round completeness**. **Round 1** inspects the complete issue co
 **No round 4** is dispatched for the same stable issue/PR scope. If Round 3 is not approved, leave the PR blocked and escalate the unresolved hard-to-reverse decision, risk, or scope choice. Renaming a branch, changing reviewers, or splitting review kinds does not reset the count.
 
 ### Prior-round context handoff
+
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Canonicalize and digest it, bind `pre_review_summary_digest` in readiness, and provide the exact artifact to every reviewer in every round. The digest must remain unchanged throughout the stable lineage; changing it requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
 For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 

@@ -22,6 +22,7 @@ expectations:
   - "requires every allowed new later-round blocker to explain why it was not discoverable in round one"
   - "allows no more than three total review rounds for one stable technical-design lineage and never dispatches round four"
   - "for rounds two and three requires all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review"
+  - "requires one neutral immutable pre-review summary and verified digest in every review round and blocks a missing or changed summary for the stable lineage"
   - "reconciles every prior finding and performs a contradiction check so it does not contradict prior feedback without an explicit evidence-backed PRIOR_FEEDBACK_CORRECTION"
   - "rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one"
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."

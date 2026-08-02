@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.3.4
+version: 0.3.5
 author: NoEgoDev
 license: MIT
 metadata:
@@ -28,6 +28,8 @@ Implement one focused task per branch. Write tests for the key path, keep the di
 Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence changes and omit safely reversible nits. Enforce **first-round completeness**: **Round 1** receives all independently discoverable Critical/Important or otherwise material findings in one complete evidence-backed correction set, **Round 2** verifies dispositions and correction regressions, and **Round 3** is final. Later new feedback is allowed only for remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been found earlier, and must state `Why it was not discoverable in round 1: <cause>`. **No round 4** is allowed for the same stable scope; a negative Round 3 keeps the candidate unmerged and routes scope/risk decisions to the owner without waiving exact-SHA approval.
 
 ### Prior-round context handoff
+
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Canonicalize and digest it, bind `pre_review_summary_digest` in readiness, and provide the exact artifact to every reviewer in every round. The digest must remain unchanged throughout the stable lineage; changing it requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
 For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 

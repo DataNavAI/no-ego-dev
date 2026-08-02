@@ -1,7 +1,7 @@
 ---
 name: immutable-candidate-verification
 description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, composite independent review, and reproducible evidence.
-version: 1.0.53
+version: 1.0.54
 ---
 
 # Immutable Candidate Verification
@@ -27,6 +27,8 @@ Enforce **first-round completeness** for each stable scope. **Round 1** is compr
 **No round 4** is permitted for the same stable scope or artifact lineage. Every correction still invalidates prior SHA-bound verdicts, but after a negative Round 3 the workflow must block and escalate rather than create and review another remediation SHA. Tests, scanners, renaming, reviewer replacement, or splitting review kinds cannot reset or waive the three-round maximum.
 
 ### Prior-round context handoff
+
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Canonicalize and digest it, bind `pre_review_summary_digest` in readiness, and provide the exact artifact to every reviewer in every round. The digest must remain unchanged throughout the stable lineage; changing it requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
 For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 

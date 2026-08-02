@@ -130,6 +130,8 @@ def validate_readiness(
         raise GateError("readiness lineage is invalid")
     if payload.get("round") not in {1, 2, 3}:
         raise GateError("readiness round must be 1, 2, or 3")
+    if not DIGEST_RE.fullmatch(str(payload.get("pre_review_summary_digest", ""))):
+        raise GateError("pre_review_summary_digest must be a lowercase SHA-256 digest")
     prior_context = payload.get("prior_round_context")
     if payload["round"] == 1:
         if prior_context is not None:
@@ -143,6 +145,7 @@ def validate_readiness(
             "base_sha",
             "report_digests",
             "report_history",
+            "pre_review_summary_digest",
             "finding_disposition_digest",
             "remediation_change_map_digest",
         }
@@ -210,11 +213,16 @@ def validate_readiness(
                     "prior_round_context immediate {0} must match report_history".format(field)
                 )
         for field in (
+            "pre_review_summary_digest",
             "finding_disposition_digest",
             "remediation_change_map_digest",
         ):
             if not DIGEST_RE.fullmatch(str(prior_context.get(field, ""))):
                 raise GateError("prior_round_context {0} is invalid".format(field))
+        if prior_context["pre_review_summary_digest"] != payload["pre_review_summary_digest"]:
+            raise GateError(
+                "prior_round_context pre_review_summary_digest does not match readiness"
+            )
     bundles = payload.get("review_bundles")
     if not isinstance(bundles, list) or not bundles or len(bundles) != len(set(bundles)):
         raise GateError("readiness review_bundles must be a non-empty unique list")
@@ -386,6 +394,20 @@ class ReviewGateStore:
         context = readiness.get("prior_round_context")
         if not isinstance(context, dict):
             raise GateError("prior_round_context is required for a changed candidate")
+        expected_summary_digest = highest.get("pre_review_summary_digest")
+        if not DIGEST_RE.fullmatch(str(expected_summary_digest or "")):
+            raise GateError("prior generation pre_review_summary_digest is missing or invalid")
+        if readiness.get("pre_review_summary_digest") != expected_summary_digest:
+            raise GateError("pre_review_summary_digest changed within the review lineage")
+        if context.get("pre_review_summary_digest") != expected_summary_digest:
+            raise GateError(
+                "prior_round_context pre_review_summary_digest does not match the lineage"
+            )
+        if any(
+            candidate.get("pre_review_summary_digest") != expected_summary_digest
+            for candidate in lineage
+        ):
+            raise GateError("pre_review_summary_digest is inconsistent across prior generations")
         prior_identity = highest.get("identity", {})
         if context.get("round") != prior_identity.get("round"):
             raise GateError("prior round does not match the terminal prior generation")
@@ -522,6 +544,7 @@ class ReviewGateStore:
                 {
                     "identity": identity.generation_payload,
                     "readiness_digest": readiness_hash,
+                    "pre_review_summary_digest": readiness["pre_review_summary_digest"],
                     "prior_context_digest": prior_context_hash,
                     "review_bundles": list(readiness["review_bundles"]),
                     "bundles": {},
@@ -587,6 +610,7 @@ class ReviewGateStore:
                 "started": True,
                 "scope": scope,
                 "readiness_digest": readiness_hash,
+                "pre_review_summary_digest": readiness["pre_review_summary_digest"],
                 "prior_context_digest": prior_context_hash,
             }
 

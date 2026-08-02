@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.8.3
+version: 1.8.4
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -28,6 +28,8 @@ Do not block on reversible nits that can safely be fixed later: naming preferenc
 Rounds 2 and 3 are disposition and regression checks. Later-round feedback is limited to unresolved round-1 findings, regressions or risks introduced by the correction, evidence that was genuinely unavailable in round 1, or a Critical/Important defect that could not reasonably have been discovered in the original frozen scope. Every newly raised later-round blocker must include `Why it was not discoverable in round 1: <cause>`. Do not introduce new preferences, reversible nits, or unrelated review surfaces after the author has followed the first report.
 
 ## Prior-round context continuity
+
+Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing or changed summary digest blocks review for the stable lineage.
 
 For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
 

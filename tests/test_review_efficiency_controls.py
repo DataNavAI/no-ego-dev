@@ -23,6 +23,7 @@ SHA_D = "d" * 40
 BASE_A = "e" * 40
 BASE_B = "f" * 40
 DIGEST = "d" * 64
+PRE_REVIEW_DIGEST = "a" * 64
 
 
 def load_gate():
@@ -39,6 +40,7 @@ def readiness(
     base_sha: str = BASE_A,
     bundles: list[str] | None = None,
     prior_round_context: dict | None = None,
+    pre_review_summary_digest: str = PRE_REVIEW_DIGEST,
 ) -> dict:
     return {
         "schema_version": 1,
@@ -46,6 +48,7 @@ def readiness(
         "pr": 17,
         "lineage": "issue-17",
         "round": round_number,
+        "pre_review_summary_digest": pre_review_summary_digest,
         "prior_round_context": prior_round_context,
         "review_bundles": bundles or ["composite"],
         "candidate_sha": sha,
@@ -70,6 +73,7 @@ def prior_context(
     base_sha: str = BASE_A,
     report_digests: dict[str, str] | None = None,
     report_history: list[dict] | None = None,
+    pre_review_summary_digest: str = PRE_REVIEW_DIGEST,
 ) -> dict:
     immediate_reports = report_digests or {"composite": DIGEST}
     if report_history is None:
@@ -97,6 +101,7 @@ def prior_context(
         "base_sha": base_sha,
         "report_digests": immediate_reports,
         "report_history": report_history,
+        "pre_review_summary_digest": pre_review_summary_digest,
         "finding_disposition_digest": DIGEST,
         "remediation_change_map_digest": DIGEST,
     }
@@ -136,6 +141,50 @@ def test_readiness_fails_closed_before_review() -> None:
     payload["checks"]["full_tests"] = "PASS_OR_NOT_REQUIRED"
     with pytest.raises(gate.GateError, match="full_tests"):
         gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_readiness_requires_pre_review_summary_before_round_one() -> None:
+    gate = load_gate()
+    payload = readiness()
+    del payload["pre_review_summary_digest"]
+    with pytest.raises(gate.GateError, match="pre_review_summary_digest"):
+        gate.validate_readiness(
+            payload, expected_sha=SHA_A, expected_base_sha=BASE_A
+        )
+
+
+def test_claim_persists_and_returns_pre_review_summary_digest(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    result = store.claim(identity(gate), "pre-review-summary", readiness())
+
+    assert result["pre_review_summary_digest"] == PRE_REVIEW_DIGEST
+    state = store._read()
+    candidate = next(iter(state["candidates"].values()))
+    assert candidate["pre_review_summary_digest"] == PRE_REVIEW_DIGEST
+
+
+def test_changed_pre_review_summary_digest_is_rejected_within_lineage(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate)
+    store.claim(first, "summary-round-one", readiness())
+    store.finalize(first, "summary-round-one", "REQUEST_CHANGES", DIGEST)
+
+    changed_digest = "b" * 64
+    second = identity(gate, SHA_B, 2)
+    changed_context = prior_context(pre_review_summary_digest=changed_digest)
+    with pytest.raises(gate.GateError, match="changed within the review lineage"):
+        store.claim(
+            second,
+            "summary-round-two",
+            readiness(
+                SHA_B,
+                2,
+                prior_round_context=changed_context,
+                pre_review_summary_digest=changed_digest,
+            ),
+        )
 
 
 @pytest.mark.parametrize("untracked_scope", [pytest.param(None, id="null"), pytest.param("omitted", id="omitted")])

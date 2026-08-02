@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.4
+version: 1.12.5
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -52,6 +52,8 @@ Enforce **first-round completeness**. **Round 1** inspects the full authorized s
 **No round 4** is dispatched for the same stable scope or lineage. If Round 3 is not approved, keep the candidate blocked and escalate the unresolved risk or scope choice. Tests and scanners cannot waive the unresolved gate.
 
 ### Prior-round context handoff
+
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Canonicalize and digest it, bind `pre_review_summary_digest` in readiness, and provide the exact artifact to every reviewer in every round. The digest must remain unchanged throughout the stable lineage; changing it requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
 For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 
