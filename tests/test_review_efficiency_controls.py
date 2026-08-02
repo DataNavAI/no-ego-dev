@@ -98,6 +98,19 @@ def test_readiness_fails_closed_before_review() -> None:
         gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
 
 
+@pytest.mark.parametrize("untracked_scope", [pytest.param(None, id="null"), pytest.param("omitted", id="omitted")])
+def test_readiness_requires_explicit_empty_untracked_scope(untracked_scope: object) -> None:
+    gate = load_gate()
+    payload = readiness()
+    if untracked_scope == "omitted":
+        del payload["untracked_scope"]
+    else:
+        payload["untracked_scope"] = untracked_scope
+
+    with pytest.raises(gate.GateError, match="untracked_scope"):
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
 def test_readiness_rejects_stale_base_with_unchanged_head(tmp_path: Path) -> None:
     gate = load_gate()
     stale = readiness(base_sha=BASE_A)
@@ -267,6 +280,61 @@ def test_metrics_include_review_runtime_and_fresh_tokens(tmp_path: Path) -> None
     assert metrics["review_runtime_seconds"] == 12.5
     assert metrics["review_fresh_tokens"] == 321
     assert metrics["candidate_rounds"]["1"] == 1
+
+
+@pytest.mark.parametrize(
+    ("runtime_seconds", "fresh_tokens"),
+    [
+        (float("nan"), 1),
+        (float("inf"), 1),
+        (float("-inf"), 1),
+        (True, 1),
+        (1.0, float("nan")),
+        (1.0, float("inf")),
+        (1.0, True),
+    ],
+)
+def test_finalize_rejects_non_finite_and_boolean_metrics(
+    tmp_path: Path, runtime_seconds: object, fresh_tokens: object
+) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    key = identity(gate)
+    store.claim(key, "attempt-one", readiness())
+
+    with pytest.raises(gate.GateError, match="runtime_seconds|fresh_tokens"):
+        store.finalize(
+            key,
+            "attempt-one",
+            "APPROVED",
+            DIGEST,
+            runtime_seconds=runtime_seconds,
+            fresh_tokens=fresh_tokens,
+        )
+
+
+@pytest.mark.parametrize("field,value", [("runtime_seconds", float("nan")), ("fresh_tokens", True)])
+def test_metrics_reject_invalid_persisted_values(tmp_path: Path, field: str, value: object) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    key = identity(gate)
+    store.claim(key, "attempt-one", readiness())
+    state = store._read()
+    attempt = next(iter(state["candidates"].values()))["bundles"]["composite"]["attempts"][0]
+    attempt[field] = value
+    store.path.write_text(json.dumps(state), encoding="utf-8")
+
+    with pytest.raises(gate.GateError, match=field):
+        store.metrics()
+
+
+def test_review_index_serialization_rejects_non_standard_json(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+
+    with pytest.raises(ValueError, match="JSON compliant"):
+        store._write({"bad_metric": float("nan")})
+    assert not store.path.exists()
 
 
 def test_kernel_lock_accepts_empty_and_malformed_persistent_files(tmp_path: Path) -> None:

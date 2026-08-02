@@ -11,6 +11,7 @@ import argparse
 import errno
 import hashlib
 import json
+import math
 import os
 import re
 import time
@@ -40,6 +41,16 @@ REQUIRED_CHECKS = {
 
 class GateError(ValueError):
     """A fail-closed review-gate validation error."""
+
+
+def _validate_metric(name: str, value: Any, *, integer: bool = False) -> None:
+    if value is None:
+        return
+    expected_type = int if integer else (int, float)
+    if isinstance(value, bool) or not isinstance(value, expected_type):
+        raise GateError("{0} must be a non-negative finite number".format(name))
+    if (isinstance(value, float) and not math.isfinite(value)) or value < 0:
+        raise GateError("{0} must be a non-negative finite number".format(name))
 
 
 @dataclass(frozen=True)
@@ -129,7 +140,7 @@ def validate_readiness(
         raise GateError("readiness review bundle is invalid")
     if payload.get("dirty_worktree") is not False:
         raise GateError("dirty_worktree must be false")
-    if payload.get("untracked_scope") not in ([], None):
+    if "untracked_scope" not in payload or payload["untracked_scope"] != []:
         raise GateError("untracked_scope must be empty")
     checks = payload.get("checks")
     if not isinstance(checks, dict):
@@ -243,7 +254,7 @@ class ReviewGateStore:
         )
         try:
             with tmp.open("w", encoding="utf-8") as handle:
-                handle.write(json.dumps(value, indent=2, sort_keys=True) + "\n")
+                handle.write(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n")
                 handle.flush()
                 os.fsync(handle.fileno())
             os.chmod(tmp, 0o600)
@@ -448,10 +459,8 @@ class ReviewGateStore:
             raise GateError("INCOMPLETE requires missing_evidence")
         if verdict != "INCOMPLETE" and missing:
             raise GateError("missing_evidence is valid only for INCOMPLETE")
-        if runtime_seconds is not None and runtime_seconds < 0:
-            raise GateError("runtime_seconds must be non-negative")
-        if fresh_tokens is not None and fresh_tokens < 0:
-            raise GateError("fresh_tokens must be non-negative")
+        _validate_metric("runtime_seconds", runtime_seconds)
+        _validate_metric("fresh_tokens", fresh_tokens, integer=True)
 
         with _FileMutex(self.lock_path):
             state = self._read()
@@ -515,8 +524,12 @@ class ReviewGateStore:
             for bundle in candidate.get("bundles", {}).values():
                 for attempt in bundle.get("attempts", []):
                     attempts_started += 1
-                    review_runtime_seconds += float(attempt.get("runtime_seconds") or 0)
-                    review_fresh_tokens += int(attempt.get("fresh_tokens") or 0)
+                    runtime_seconds = attempt.get("runtime_seconds")
+                    fresh_tokens = attempt.get("fresh_tokens")
+                    _validate_metric("runtime_seconds", runtime_seconds)
+                    _validate_metric("fresh_tokens", fresh_tokens, integer=True)
+                    review_runtime_seconds += float(runtime_seconds or 0)
+                    review_fresh_tokens += fresh_tokens or 0
                     if attempt.get("status") in verdicts:
                         verdicts[attempt["status"]] += 1
         return {
