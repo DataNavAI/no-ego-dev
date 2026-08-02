@@ -105,6 +105,14 @@ def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() 
             assert phrase in expectations, f"{name} eval missing review-context handoff {phrase!r}"
 
 
+def test_issue_monitor_documents_the_gate_digest_format_exactly() -> None:
+    reference = (
+        ROOT / "skills" / "issue-monitor" / "references" / "review-round-continuity.md"
+    ).read_text(encoding="utf-8").lower()
+    assert "exactly 64 lowercase hexadecimal characters" in reference
+    assert "sha256:<" not in reference
+
+
 def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_context() -> None:
     for name in DIRECT_REVIEW_SKILLS:
         expectations = eval_expectations(name)

@@ -18,10 +18,10 @@ Round 2 and Round 3 use:
   "candidate_sha": "<immediately-prior-candidate-sha>",
   "base_sha": "<immediately-prior-base-sha>",
   "report_digests": {
-    "composite": "sha256:<digest>"
+    "composite": "<64 lowercase hex>"
   },
-  "finding_disposition_digest": "sha256:<digest>",
-  "remediation_change_map_digest": "sha256:<digest>"
+  "finding_disposition_digest": "<64 lowercase hex>",
+  "remediation_change_map_digest": "<64 lowercase hex>"
 }
 ```
 
@@ -36,7 +36,7 @@ Persist these outside the candidate checkout in the controller's attempt-scoped 
 3. A remediation change map from every prior finding ID to changed files/sections and focused verification. Record authorized scope additions separately.
 4. The original governing request/specification and complete current candidate evidence.
 
-Canonicalize the ledger and change map as UTF-8 JSON with sorted keys and compact separators before hashing. Record the algorithm-qualified lowercase digest as `sha256:<64 hex>`.
+Canonicalize the ledger and change map as UTF-8 JSON with sorted keys and compact separators before hashing. Record the SHA-256 result as exactly 64 lowercase hexadecimal characters, matching `review_gate.py`'s existing report-digest format.
 
 ## Dispatch and result gates
 
