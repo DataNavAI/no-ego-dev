@@ -378,6 +378,39 @@ def test_round_two_prior_context_matches_terminal_prior_reports(tmp_path: Path) 
     assert result["prior_context_digest"]
 
 
+def test_documented_round_two_receipt_is_accepted_end_to_end(tmp_path: Path) -> None:
+    gate = load_gate()
+    reference = (
+        SKILLS / "issue-monitor" / "references" / "review-round-continuity.md"
+    ).read_text(encoding="utf-8")
+    examples = re.findall(r"```json\n(.*?)\n```", reference, re.DOTALL)
+    documented = json.loads(examples[1])["prior_round_context"]
+
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate, SHA_A, 1, base_sha=SHA_B)
+    store.claim(first, "documented-round-one", readiness(SHA_A, 1, base_sha=SHA_B))
+    store.finalize(
+        first,
+        "documented-round-one",
+        "REQUEST_CHANGES",
+        "c" * 64,
+    )
+
+    second = identity(gate, SHA_C, 2, base_sha=SHA_B)
+    result = store.claim(
+        second,
+        "documented-round-two",
+        readiness(
+            SHA_C,
+            2,
+            base_sha=SHA_B,
+            prior_round_context=documented,
+        ),
+    )
+    assert result["started"] is True
+    assert result["prior_context_digest"] == gate.readiness_digest(documented)
+
+
 def test_same_sha_cannot_be_renamed_as_a_new_round(tmp_path: Path) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")

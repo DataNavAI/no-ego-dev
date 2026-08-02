@@ -14,3 +14,11 @@ Boundary cases:
 - repository bytes are already committed and pushed but PR/tracker metadata is incomplete; finish only missing idempotent metadata rather than launching another writer;
 - plugin discoverability is newer than the running gateway; report activation pending without firing the hook or restarting over a live child;
 - child-controlled hook payload fields never enter executable argv, shell text, job identity, or profile selection.
+
+## Cross-round continuity scenarios
+
+- **Prior exact review reports:** Round 2 receives every prior report and verified digest, not a controller summary.
+- **Finding disposition ledger:** Stable finding IDs, current dispositions, and the remediation change map are passed with the bound prior-context digest.
+- **Contradictory later-round feedback:** A reversal requires `PRIOR_FEEDBACK_CORRECTION`, both statements, and decisive evidence.
+- **Unrelated new finding:** Ordinary feedback discoverable from unchanged Round-1 evidence is omitted rather than drip-fed.
+- **Material process escape:** A genuine late material defect that was reasonably discoverable earlier remains blocking as `MATERIAL_PROCESS_ESCAPE` and is escalated.

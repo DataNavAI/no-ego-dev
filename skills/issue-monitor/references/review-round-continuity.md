@@ -13,15 +13,17 @@ Round 1 uses:
 Round 2 and Round 3 use:
 
 ```json
-"prior_round_context": {
-  "round": 1,
-  "candidate_sha": "<immediately-prior-candidate-sha>",
-  "base_sha": "<immediately-prior-base-sha>",
-  "report_digests": {
-    "composite": "<64 lowercase hex>"
-  },
-  "finding_disposition_digest": "<64 lowercase hex>",
-  "remediation_change_map_digest": "<64 lowercase hex>"
+{
+  "prior_round_context": {
+    "round": 1,
+    "candidate_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "report_digests": {
+      "composite": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "finding_disposition_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "remediation_change_map_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  }
 }
 ```
 

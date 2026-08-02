@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.2
+version: 1.12.3
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -61,7 +61,7 @@ For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete cont
 - the original governing contract and complete current candidate; and
 - a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
 
-The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to the immediately prior terminal generation, or incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency; use the explicit auditable exception.
+The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to the immediately prior terminal generation, or incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency. When it was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently omitting it or treating it as ordinary later-round feedback.
 
 ### Canonical round accounting
 

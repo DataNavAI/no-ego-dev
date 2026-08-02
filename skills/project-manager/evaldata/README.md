@@ -50,3 +50,11 @@ If a product decision is needed, the manager asks which customer behavior, trust
 
 Every resulting message—including progress, blocker, service-status, single-product email, and portfolio-email templates—includes `Purpose:`, `Executive summary:`, `Action needed:` with either the exact product decision or `None`, and `Detailed information:` with verified user-accessible links. A missing or inaccessible link is reported honestly rather than invented. The message makes clear whether the project can continue autonomously or is waiting on the user.
 
+## Cross-round continuity scenarios
+
+- **Prior exact review reports:** Round 2 receives every prior report and verified digest, not a controller summary.
+- **Finding disposition ledger:** Stable finding IDs, current dispositions, and the remediation change map are passed with the bound prior-context digest.
+- **Contradictory later-round feedback:** A reversal requires `PRIOR_FEEDBACK_CORRECTION`, both statements, and decisive evidence.
+- **Unrelated new finding:** Ordinary feedback discoverable from unchanged Round-1 evidence is omitted rather than drip-fed.
+- **Material process escape:** A genuine late material defect that was reasonably discoverable earlier remains blocking as `MATERIAL_PROCESS_ESCAPE` and is escalated.
+

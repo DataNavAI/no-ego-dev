@@ -1,7 +1,7 @@
 ---
 name: ui-reviewer
 description: "Use as a fresh read-only reviewer for frozen UI evidence, benchmarking comparable market leaders and giving prioritized design feedback against the canonical project UI guideline."
-version: 0.2.2
+version: 0.2.3
 author: NoEgoDev
 license: MIT
 metadata:
@@ -49,7 +49,7 @@ A fresh reviewer remains independent, but must begin with reconciliation rather 
 3. Perform a **contradiction check** against prior feedback and accepted dispositions. Do not reopen a resolved finding, reverse a prior required direction, or demand the opposite implementation unless current candidate evidence or newly available authoritative evidence proves the prior feedback invalid. Label such a correction `PRIOR_FEEDBACK_CORRECTION`, cite both statements and the decisive evidence, and explain why following the earlier direction is now unsafe or incorrect.
 4. Report **New material findings** only when they are caused by remediation, by an explicitly authorized scope change, by genuinely unavailable evidence, or by a material defect that could not reasonably have been discovered in Round 1. Each must state `Why it was not discoverable in round 1: <cause>` and identify the allowed category. Omit unrelated new findings and reversible preferences rather than extending the lineage.
 
-The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency; it must use the explicit exception path above so the apparent contradiction is auditable.
+The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency. If it fits an allowed late-finding category, use that evidence-backed path. If it was reasonably discoverable earlier but was missed, record it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, preserve the evidence, keep the gate blocked, and escalate the review-process failure; do not silently omit it or launder it into ordinary drip-fed feedback.
 
 ## Three-round maximum
 

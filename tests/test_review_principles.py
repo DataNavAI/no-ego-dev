@@ -21,6 +21,10 @@ REVIEW_ORCHESTRATION_SKILLS = (
     "coder",
 )
 
+CROSS_ROUND_ORCHESTRATION_SKILLS = REVIEW_ORCHESTRATION_SKILLS + (
+    "delegation-reliability",
+)
+
 
 def skill_text(name: str) -> str:
     return (SKILLS / name / "SKILL.md").read_text(encoding="utf-8")
@@ -29,6 +33,13 @@ def skill_text(name: str) -> str:
 def eval_expectations(name: str) -> str:
     data = yaml.safe_load((SKILLS / name / "EVAL.yaml").read_text(encoding="utf-8"))
     return "\n".join(data["expectations"])
+
+
+def eval_fixture(name: str) -> str:
+    data = yaml.safe_load((SKILLS / name / "EVAL.yaml").read_text(encoding="utf-8"))
+    fixture = data.get("parameters", {}).get("fixture")
+    assert fixture, f"{name} eval must declare a fixture"
+    return (SKILLS / name / fixture).read_text(encoding="utf-8")
 
 
 def package_text(name: str) -> str:
@@ -68,6 +79,7 @@ def test_direct_reviewers_require_complete_prior_round_context_and_reconciliatio
         "contradiction check",
         "New material findings",
         "Why it was not discoverable in round 1",
+        "material process escape",
     )
 
     for name in DIRECT_REVIEW_SKILLS:
@@ -87,9 +99,10 @@ def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() 
         "prior-context digest",
         "contradiction check",
         "New material findings",
+        "material process escape",
     )
 
-    for name in REVIEW_ORCHESTRATION_SKILLS:
+    for name in CROSS_ROUND_ORCHESTRATION_SKILLS:
         content = skill_text(name)
         for phrase in required:
             assert phrase in content, f"{name} missing review-context handoff {phrase!r}"
@@ -101,6 +114,7 @@ def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() 
             "prior-context digest",
             "contradict prior feedback",
             "unrelated new findings",
+            "material process escape",
         ):
             assert phrase in expectations, f"{name} eval missing review-context handoff {phrase!r}"
 
@@ -113,6 +127,37 @@ def test_issue_monitor_documents_the_gate_digest_format_exactly() -> None:
     assert "sha256:<" not in reference
 
 
+def test_orchestrator_fixtures_exercise_cross_round_context_delivery() -> None:
+    for name in CROSS_ROUND_ORCHESTRATION_SKILLS:
+        fixture = eval_fixture(name).lower()
+        for phrase in (
+            "prior exact review reports",
+            "finding disposition ledger",
+            "contradictory later-round feedback",
+            "unrelated new finding",
+            "material process escape",
+        ):
+            assert phrase in fixture, f"{name} fixture missing continuity case {phrase!r}"
+
+
+def test_shared_implementation_convergence_reference_passes_complete_history() -> None:
+    reference = (
+        ROOT
+        / "skills"
+        / "project-manager"
+        / "references"
+        / "implementation-review-convergence.md"
+    ).read_text(encoding="utf-8").lower()
+    for phrase in (
+        "prior exact review reports",
+        "finding disposition ledger",
+        "remediation change map",
+        "prior-context digest",
+        "material process escape",
+    ):
+        assert phrase in reference
+
+
 def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_context() -> None:
     for name in DIRECT_REVIEW_SKILLS:
         expectations = eval_expectations(name)
@@ -122,12 +167,14 @@ def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_cont
             "finding disposition ledger",
             "contradict prior feedback",
             "unrelated new findings",
+            "material process escape",
         ):
             assert phrase in expectations, f"{name} eval missing {phrase!r}"
         for phrase in (
             "Missing prior-round context",
             "Contradictory later-round feedback",
             "Unrelated new finding",
+            "Material process escape",
         ):
             assert phrase in fixture, f"{name} fixture missing {phrase!r}"
 
