@@ -142,15 +142,15 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `product-manager`: turns fuzzy requests into product direction, target users, success criteria, and prototype scope.
 - `ui-designer`: designs practical screens, interaction flows, first-user experience, and visual QA notes.
 - `architect`: shapes the build plan and project structure without overcomplicating the approach.
-- `project-manager`: breaks work into tracked tasks, coordinates specialist subagents, and enforces risk-weighted first-round-complete reviews with a three-round maximum.
-- `issue-monitor`: runs scheduled issue/PR workflows with one bounded reviewer attempt, durable exact-SHA results, duplicate-review suppression, and no fourth review round.
+- `project-manager`: breaks work into tracked tasks, coordinates specialist subagents, and enforces risk-weighted first-round-complete reviews with no fixed round limit and approval-convergence mode from Round 4 onward.
+- `issue-monitor`: runs scheduled issue/PR workflows with one bounded reviewer attempt, durable exact-SHA results, duplicate-review suppression, and controller-derived approval-convergence mode for Round 4 and later.
 - `delegation-reliability`: supervises background subagents, verifies durable handoffs, and safely recovers interrupted or partial work.
 - `subagent-driven-development`: executes implementation plans with fresh focused subagents and risk-weighted immutable review gates.
 - `prd-reviewer`: independently reviews exact PRD revisions, prioritizing hard-to-reverse product choices and one complete first-round steering packet.
 - `technical-design-reviewer`: independently reviews exact architecture revisions for irreversible boundaries, safe migration/rollback, and bounded convergence.
 - `ui-reviewer`: independently reviews frozen UI evidence for durable journey/design-system risk while deferring reversible cosmetic nits.
-- `spec-compliance-review`: audits fixed candidates against authoritative plans, contracts, and acceptance matrices with complete first-round findings and no more than three rounds.
-- `immutable-candidate-verification`: keeps TDD, candidate identity, independent reviews, release evidence, and three-round review lineage bound to exact commits.
+- `spec-compliance-review`: audits fixed candidates against authoritative plans, contracts, and acceptance matrices with complete first-round findings and blocker-focused approval convergence after Round 3.
+- `immutable-candidate-verification`: keeps TDD, candidate identity, independent reviews, release evidence, and an unlimited monotonic review lineage bound to exact commits without automatic approval.
 - `coder`: builds product changes, provisions ecosystem-appropriate project-owned static analysis when absent, and reruns it after every code change plus final full verification.
 - `qa`: tests the user flow, catches regressions, and reports evidence.
 - `devops`: handles deployment, operational checks, domains, CI/CD, and basic observability.

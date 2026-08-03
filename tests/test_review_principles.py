@@ -422,3 +422,25 @@ def test_review_packages_remove_the_round_cap_without_weakening_material_gates()
             assert forbidden not in package_text(name), (
                 f"{name} retains superseded round-cap policy {forbidden!r}"
             )
+
+
+def test_published_root_docs_describe_unlimited_approval_convergence() -> None:
+    english = (ROOT / "README.md").read_text(encoding="utf-8")
+    korean = (ROOT / "README.ko.md").read_text(encoding="utf-8")
+
+    for forbidden in (
+        "three-round maximum",
+        "no fourth review round",
+        "no more than three rounds",
+        "three-round review lineage",
+        "최대 3라운드 제한",
+        "4번째 검토 금지",
+        "최대 3라운드만 허용",
+        "최대 3라운드 검토 계보",
+    ):
+        assert forbidden not in english + korean
+
+    assert "no fixed round limit" in english
+    assert "approval-convergence mode" in english
+    assert "고정된 라운드 제한 없이" in korean
+    assert "승인 수렴 모드" in korean
