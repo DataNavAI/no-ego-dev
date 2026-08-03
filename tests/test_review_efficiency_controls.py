@@ -21,6 +21,7 @@ SHA_A = "a" * 40
 SHA_B = "b" * 40
 SHA_C = "c" * 40
 SHA_D = "d" * 40
+SHA_E = "1" * 40
 BASE_A = "e" * 40
 BASE_B = "f" * 40
 DIGEST = "d" * 64
@@ -384,7 +385,9 @@ def test_incomplete_review_allows_one_narrow_recovery_only(tmp_path: Path) -> No
     assert store.metrics()["narrow_recoveries_started"] == 1
 
 
-def test_lineage_rounds_are_monotonic_unique_and_capped(tmp_path: Path) -> None:
+def test_lineage_rounds_are_monotonic_unique_and_enter_convergence_mode_after_three(
+    tmp_path: Path,
+) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
     first = identity(gate, SHA_A, 1)
@@ -436,10 +439,66 @@ def test_lineage_rounds_are_monotonic_unique_and_capped(tmp_path: Path) -> None:
     )["started"] is True
     store.finalize(third, "attempt-seven", "REQUEST_CHANGES", DIGEST)
 
-    with pytest.raises(gate.GateError, match="Round 3"):
-        store.claim(identity(gate, SHA_D, 1), "attempt-eight", readiness(SHA_D, 1))
-    with pytest.raises(gate.GateError, match="round"):
-        identity(gate, SHA_D, 4)
+    fourth_context = prior_context(
+        round_number=3,
+        candidate_sha=SHA_C,
+        report_history=[
+            {
+                "round": 1,
+                "candidate_sha": SHA_A,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": DIGEST},
+            },
+            {
+                "round": 2,
+                "candidate_sha": SHA_B,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": DIGEST},
+            },
+            {
+                "round": 3,
+                "candidate_sha": SHA_C,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": DIGEST},
+            },
+        ],
+    )
+    fourth = identity(gate, SHA_D, 4)
+    result = store.claim(
+        fourth,
+        "attempt-eight",
+        readiness(SHA_D, 4, prior_round_context=fourth_context),
+    )
+    assert result["started"] is True
+    assert result["review_mode"] == "approval_convergence"
+    persisted = store._read()["candidates"][fourth.generation_key]
+    assert persisted["review_mode"] == "approval_convergence"
+    assert store.candidate_status(fourth)["review_mode"] == "approval_convergence"
+    store.finalize(fourth, "attempt-eight", "REQUEST_CHANGES", DIGEST)
+
+    fifth_context = prior_context(
+        round_number=4,
+        candidate_sha=SHA_D,
+        report_history=[
+            {
+                "round": round_number,
+                "candidate_sha": candidate_sha,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": DIGEST},
+            }
+            for round_number, candidate_sha in enumerate(
+                (SHA_A, SHA_B, SHA_C, SHA_D), start=1
+            )
+        ],
+    )
+    fifth = identity(gate, SHA_E, 5)
+    result = store.claim(
+        fifth,
+        "attempt-nine",
+        readiness(SHA_E, 5, prior_round_context=fifth_context),
+    )
+    assert result["review_mode"] == "approval_convergence"
+    assert store.candidate_status(fifth)["review_mode"] == "approval_convergence"
 
 
 def test_next_generation_waits_for_complete_terminal_prior_manifest(tmp_path: Path) -> None:

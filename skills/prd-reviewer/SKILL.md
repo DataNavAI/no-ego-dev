@@ -1,7 +1,7 @@
 ---
 name: prd-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact PRD revision for user-problem fit, ease, effectiveness, satisfaction, and base-product coherence."
-version: 0.4.5
+version: 0.4.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -28,13 +28,13 @@ Ignore reversible nits that can safely be fixed later, including stylistic wordi
 
 **Round 1 is the comprehensive product review.** Present all independently discoverable findings in round one as much as possible. Review every rubric dimension, inspect sibling instances of each defect class, and return one deduplicated set with evidence, user consequence, decision needed, and the smallest direction that lets the author correct the product contract without guessing. Do not stop at the first blocker or save obvious feedback for later.
 
-Rounds 2 and 3 are bounded disposition checks. Later-round feedback is limited to unresolved round-1 product defects, product regressions introduced by revisions, genuinely new user/evidence inputs, or a material defect that could not reasonably have been found in the original artifact. Any new later-round blocker must state `Why it was not discoverable in round 1: <cause>`. Do not introduce new preferences, reversible nits, or downstream implementation concerns as fresh PRD feedback.
+Round 2 and later are disposition checks. Later-round feedback is limited to unresolved round-1 product defects, product regressions introduced by revisions, genuinely new user/evidence inputs, or a material defect that could not reasonably have been found in the original artifact. Any new later-round blocker must state `Why it was not discoverable in round 1: <cause>`. Do not introduce new preferences, reversible nits, or downstream implementation concerns as fresh PRD feedback.
 
 ## Prior-round context continuity
 
 Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. The authority-bearing gate must first parse the embedded closed-schema `pre_review_summary_artifact`, verify its lineage and canonical serialization, recompute the digest, and persist the verified bytes. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing, malformed, mismatched, or changed artifact blocks review for the stable lineage.
 
-For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
+For **Round 2 or later**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
 
 - every prior candidate/base identity and **all prior exact review reports** with verified digests, ordered by candidate generation from Round 1 onward;
 - a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
@@ -53,12 +53,11 @@ A fresh reviewer remains independent, but must begin with reconciliation rather 
 
 The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency. If it fits an allowed late-finding category, use that evidence-backed path. If it was reasonably discoverable earlier but was missed, record it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, preserve the evidence, keep the gate blocked, and escalate the review-process failure; do not silently omit it or launder it into ordinary drip-fed feedback.
 
-## Three-round maximum
+## Unbounded approval convergence
 
 - **Round 1:** complete risk-weighted product review with a detailed steering packet.
 - **Round 2:** verify the revised PRD against the round-1 dispositions.
-- **Round 3:** final review of unresolved product decisions and revision-introduced regressions.
-- **No round 4** for the same PRD lineage and stable product scope. If round 3 cannot approve, return `ITERATION_LIMIT_REACHED`, preserve the unresolved hard-to-reverse decisions and options, and require the user/owner to accept risk, simplify/split scope, or stop. Renaming a file, changing reviewers, or relabeling the same scope never resets the cap.
+- **Round 3:** continue review of unresolved product decisions and revision-introduced regressions.
 
 ## Mandatory Context Firewall
 
@@ -125,7 +124,6 @@ When `PRD revisions required: none`, the reviewer must not recommend another PRD
 
 ## Review Iteration Index
 
-Before reviewing, require the neutral packet or review index to state the PRD lineage, exact revision, and requested round number from 1 through 3. Missing or ambiguous lineage/count is `BLOCKED`. If the requested review is round 4 or higher for the same stable scope, return `ITERATION_LIMIT_REACHED` without another substantive review and route the round-3 unresolved decision packet to the user/owner.
 
 ## Required Review Method
 
@@ -286,3 +284,11 @@ For an **architecture-readiness** gate, distinguish missing launch work from mis
 - [ ] Acceptance verifies outcome, ease, regressions, and satisfaction—not controls alone.
 - [ ] Structured findings cite evidence and recommend the smallest correction.
 - [ ] Reviewer did not edit or externally change the canonical product artifacts.
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

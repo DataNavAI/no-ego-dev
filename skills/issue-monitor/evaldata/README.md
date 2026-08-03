@@ -12,7 +12,6 @@ The canonical scenario requires:
 - explicit fail-closed `INCOMPLETE` outcomes when the time budget cannot satisfy every gate; and
 - fresh independent review only after remediation creates a new candidate SHA.
 
-The candidate also carries a machine-readable review-readiness receipt proving clean scope and green static analysis, focused/full tests, build, secret scan, provider checks, and self-audit, all bound to the exact candidate and current base SHA. Ordinary risk uses one composite review bundle. A specialized reviewer is added only for a named high-consequence expertise gap. An external atomic review index enforces monotonic Round 1–3 candidate generations, nests every predeclared bundle under one generation, suppresses active/finalized same-bundle duplicate launches, allows one narrowed missing-evidence recovery after `INCOMPLETE`, rejects Round 4, requires aggregate approval, and records candidate/bundle/attempt review-efficiency metrics. For Round 2/3 the receipt additionally binds the immediately prior candidate, every prior exact report digest, a stable finding disposition ledger digest, and a remediation change-map digest. The fresh reviewer receives those exact artifacts, reconciles every prior finding, runs a contradiction check, and omits unrelated new findings.
 
 Additional liveness cases require the monitor to:
 
@@ -35,3 +34,7 @@ Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`,
 - **Material process escape:** A genuine late material defect that was reasonably discoverable earlier remains blocking as `MATERIAL_PROCESS_ESCAPE` and is escalated.
 - **Missing cumulative Round-3 history:** A Round-3 packet omits the Round-1 exact report or generation identity; block before substantive review instead of relying only on Round 2.
 - **Missing or changed pre-review summary:** The embedded exact artifact is absent, malformed, noncanonical, schema-invalid, digest-mismatched, or changed inside the stable lineage; block before substantive review.
+- **Executable gate durability:** The controller atomically persists the derived review mode, suppresses duplicate same-candidate dispatch, allows only one narrow `INCOMPLETE` recovery, and waits for the complete authorized bundle manifest before advancing a monotonic candidate generation.
+
+
+Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.

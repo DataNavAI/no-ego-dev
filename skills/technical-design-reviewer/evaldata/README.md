@@ -16,9 +16,7 @@ A strong review must run only in a fresh delegated leaf subagent and must not ed
 
 The review must include a complexity/redundancy ledger for every new moving part, automated testability matrix with concrete behavior/failure evidence, and operability/self-monitoring matrix with signals, thresholds, alerts, owners, runbooks, and recovery checks. It should require telemetry self-checks and simulated fault verification so missing monitoring does not look healthy. Approval is impossible while duplicated state, unsupported future-scale complexity, and untestable/unoperable failure modes remain.
 
-This is Round 1. The reviewer must surface the complete bounded architecture-defect set now, prioritizing hard-to-reverse service/data/schema/security/migration/provider/rollback decisions and ignoring reversible naming, formatting, and implementation-polish nits. The author needs one evidence-backed steering packet that addresses defect classes rather than serial symptoms. Rounds 2 and 3 may only disposition prior findings, correction regressions, genuinely unavailable evidence, or otherwise undiscoverable material defects and must explain any new blocker. No Round 4 is permitted for this stable design scope.
 
-Negative scenarios: Round 2 must reject drip-fed ordinary architecture feedback that was discoverable from the Round 1 design and is unrelated to corrections or new evidence. A Round 4 request returns `ITERATION_LIMIT_REACHED` before substantive review; missing exact revision or lineage returns `BLOCKED`.
 
 Additional continuity scenarios:
 
@@ -28,3 +26,8 @@ Additional continuity scenarios:
 - **Material process escape:** Round 2 discovers a genuine material safety/correctness defect that was reasonably discoverable in Round 1 but missed. Preserve it as `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently suppressing it or treating it as ordinary later-round feedback.
 - **Missing cumulative Round-3 history:** A Round-3 packet omits the Round-1 exact report or generation identity; block before substantive review instead of relying only on Round 2.
 - **Missing or changed pre-review summary:** The embedded exact artifact is absent, malformed, noncanonical, schema-invalid, digest-mismatched, or changed inside the stable lineage; block before substantive review.
+
+
+Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+Negative scenario: Round 2 and later must omit ordinary architecture feedback that was reasonably discoverable in Round 1 and unrelated to corrections or new evidence. Missing exact revision, lineage, or cumulative report history returns `BLOCKED` rather than a verdict.

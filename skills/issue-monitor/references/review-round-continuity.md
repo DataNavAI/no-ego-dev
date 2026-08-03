@@ -1,6 +1,6 @@
 # Review-round continuity packet
 
-Use this contract when `review_gate.py` claims Round 2 or Round 3 for a changed immutable candidate. The readiness receipt remains schema version 1, but later rounds now fail closed without `prior_round_context`.
+Use this contract when `review_gate.py` claims Round 2 or later for a changed immutable candidate. The readiness receipt remains schema version 1, but every round after Round 1 fails closed without `prior_round_context`.
 
 ## Receipt shape
 
@@ -14,7 +14,7 @@ Round 1 uses:
 }
 ```
 
-Round 2 and Round 3 use:
+Round 2 and later use this shape, with `report_history` extended through every preceding generation:
 
 ```json
 {
@@ -44,7 +44,7 @@ Round 2 and Round 3 use:
 }
 ```
 
-`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. `report_history` is the ordered cumulative chain for every preceding generation, starting at Round 1 and ending at `round`; each entry binds that generation's round, candidate, base, complete bundle manifest, and terminal report digests. Therefore Round 2 contains one history entry and Round 3 contains two. `pre_review_summary_artifact` is the exact canonical JSON text embedded at readiness top level; `pre_review_summary_digest` is its verified identity and is repeated inside every later-round context packet. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
+`round` is the immediately prior round. `report_digests` must exactly match the terminal report digest for every authorized bundle in that generation. `report_history` is the ordered cumulative chain for every preceding generation, starting at Round 1 and ending at `round`; each entry binds that generation's round, candidate, base, complete bundle manifest, and terminal report digests. Therefore a requested Round N contains exactly N-1 history entries. `pre_review_summary_artifact` is the exact canonical JSON text embedded at readiness top level; `pre_review_summary_digest` is its verified identity and is repeated inside every later-round context packet. The two controller-owned digests bind the finding ledger and remediation change map that the reviewer receives.
 
 ## Immutable pre-review summary
 
@@ -54,7 +54,7 @@ Before Round 1, create one neutral, evidence-linked summary for the stable linea
 2. The intended implementation approach and factual change inventory, without arguing for approval.
 3. Risk assumptions, hard-to-reverse surfaces, known tradeoffs, and unresolved questions.
 4. The planned verification matrix and exact evidence/artifact locators available to reviewers.
-5. Any inherited historical finding IDs and dispositions when work was materially rescoped from an exhausted lineage.
+5. Any inherited historical finding IDs and dispositions when work was materially rescoped from a prior lineage.
 
 Canonical shape:
 
@@ -96,12 +96,14 @@ Before dispatch, `review_gate.py claim` verifies:
 
 - every round embeds a present, size-bounded `pre_review_summary_artifact` with the closed schema, matching lineage, and exact canonical serialization;
 - the gate recomputes the artifact's SHA-256 and requires it to equal `pre_review_summary_digest` before dispatch;
-- Round 2/3 includes a structurally valid context object with the same summary digest;
+- Round 2 and later include a structurally valid context object with the same summary digest;
 - the summary digest remains identical across every candidate generation in the stable lineage;
 - prior round, candidate, and base match the immediately prior terminal generation;
 - immediate report-bundle names and digests exactly match the immediately prior terminal generation;
 - `report_history` exactly matches every terminal prior generation from Round 1 onward, including candidate/base identities and all authorized bundle report digests; and
-- the gate records a digest of the complete `prior_round_context` object with the claim.
+- the gate records a digest of the complete `prior_round_context` object with the claim;
+- Rounds 1 through 3 derive `review_mode=standard`; and
+- Round 4 and later derive `review_mode=approval_convergence` without accepting a caller override.
 
 The controller must then provide the digest-bound artifacts—not a summary—to the fresh reviewer. Reject a later-round result unless it contains:
 
@@ -110,4 +112,4 @@ The controller must then provide the digest-bound artifacts—not a summary—to
 - `New material findings`, even when empty; and
 - an explicit `PRIOR_FEEDBACK_CORRECTION` with both conflicting statements and decisive evidence whenever prior feedback is reversed.
 
-Unrelated new findings and reversible preferences do not extend the lineage. A real material safety or correctness defect may still be reported through the explicit late-discovery/correction path; continuity must never conceal a known defect.
+Unrelated new findings and reversible preferences do not extend the lineage. In approval-convergence mode, approve as soon as every prior material blocker is resolved and no new material defect remains. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect may still be reported through the explicit late-discovery/correction path; continuity and round count must never conceal a known defect or create automatic approval.

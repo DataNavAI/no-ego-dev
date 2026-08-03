@@ -29,22 +29,20 @@ Late arrival order is not priority. Candidate identity, report integrity, and re
 4. Require an early remote checkpoint. Split large corrections into non-overlapping branches and cherry-pick them into the original PR.
 5. After creating a worktree, run later commands with that worktree as explicit `workdir`; worktree creation does not change the shell directory.
 
-## Bounded correction loop
+## Monotonic correction loop
 
-Absolute maximum for one stable implementation scope: three total review rounds. Every changed SHA still requires fresh independent review within that cap before merge.
 
 One review round is one immutable candidate generation, not one reviewer invocation. Every required review kind against that candidate shares the same round number whether scheduled sequentially or concurrently; timeout replacements stay in that round. Persist the complete required-review-kind set and outcomes in a receipt keyed by lineage, round, and candidate SHA. A corrected candidate increments the round.
 
 For Round 1, create one neutral immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, tradeoffs, open questions, and planned evidence. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact` in readiness; the authority-bearing gate parses it, verifies lineage/serialization, recomputes the digest, and persists the verified artifact before dispatch. Supply that exact summary to every reviewer and keep both artifact and `pre_review_summary_digest` unchanged for the stable lineage; it is context, not advocacy or a substitute for independent review.
 
-For Round 2 or Round 3, the fresh reviewer must receive the complete continuity packet: the same exact pre-review summary, all **prior exact review reports** and verified digests represented as cumulative `report_history` from Round 1 onward, a stable-ID **finding disposition ledger**, the **remediation change map**, the original governing contract, complete current candidate evidence, and a canonical **prior-context digest**. Fresh means independently delegated, not history-blind. Missing or mismatched history blocks dispatch. The reviewer reconciles every prior finding and records contradiction/new-finding checks. If a genuine material safety/correctness defect was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate closed, and escalate rather than suppressing it or treating it as routine drip-fed feedback.
+For Round 2 or later, the fresh reviewer must receive the complete continuity packet: the same exact pre-review summary, all **prior exact review reports** and verified digests represented as cumulative `report_history` from Round 1 onward, a stable-ID **finding disposition ledger**, the **remediation change map**, the original governing contract, complete current candidate evidence, and a canonical **prior-context digest**. Fresh means independently delegated, not history-blind. Missing or mismatched history blocks dispatch. The reviewer reconciles every prior finding and records contradiction/new-finding checks. If a genuine material safety/correctness defect was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate closed, and escalate rather than suppressing it or treating it as routine drip-fed feedback.
 
 - **Round 1** reviews the immutable candidate comprehensively, prioritizes hard-to-reverse/high-consequence risk, follows bounded sibling instances of each defect class, and returns all independently discoverable findings in one closed correction matrix. Reversible nits do not block or create follow-up rounds.
 - Add one regression test per blocking finding and apply a bounded correction.
 - **Round 2** re-reviews the corrected immutable commit, dispositions the complete round-1 matrix, and actively reproduces prior attacks.
-- **Round 3** is the final review for unresolved findings and correction-introduced regressions.
+- **Round 3** completes the initial correction budget for unresolved findings and correction-introduced regressions. Round 4 and later use approval-convergence mode with no fixed round limit.
 - Later-round new blockers are allowed only for correction-introduced changes, genuinely unavailable evidence, or material defects that could not reasonably have been found in Round 1, and must state `Why it was not discoverable in round 1: <cause>`.
-- **No round 4.** If the final review finds another blocker, do not patch-and-merge and do not start another bounded cycle. Reproduce and record it, keep the candidate blocked, and escalate the complete hard-to-reverse decision, residual risk, or scope choice.
 - Never merge if the exploit still reproduces, residual uncertainty is material, or exact-commit evidence is missing; escalate instead.
 
 ## Public artifact security pattern
@@ -94,3 +92,11 @@ A frozen output does not repair a mutable-input time-of-check/time-of-use flaw. 
 - Expect independently green branches to expose integration REDs where contracts meet. Preserve semantic separation instead of weakening a new contract to fit old output.
 - Run targeted tests, the full canonical command, diff and clean-worktree checks, and remote SHA readback.
 - For direct-load claims, test real HTTP routes in addition to router unit tests.
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

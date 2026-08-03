@@ -60,14 +60,14 @@ expectations:
   - "enforces risk weighted review that prioritizes hard to reverse high consequence decisions and does not block on safely reversible nits"
   - "requires the first review round to return all independently discoverable Critical Important or otherwise material findings with evidence and enough author steering in one deduplicated packet"
   - "limits later round new feedback to remediation regressions unavailable evidence or material issues not reasonably discoverable in round one and records why"
-  - "allows at most three total review rounds for one stable scope then blocks and escalates without round four or count reset"
   - "requires a green review-readiness receipt before independent review, defaults ordinary candidates to one composite review, and adds a specialized reviewer only for a named high-risk expertise gap"
   - "binds candidate and current base SHA, enforces monotonic candidate generations through Round 3, nests authorized specialist bundles under one generation, and tracks candidates bundles attempts recoveries runtime and token efficiency"
-  - "For rounds two and three passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
+  - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
   - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
   - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
+  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
 setupCommands: []
 teardownCommands: []
 parameters:

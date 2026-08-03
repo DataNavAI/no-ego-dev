@@ -6,7 +6,6 @@ A passing response must establish a frozen candidate identity in a reviewer-owne
 
 Round 1 must prioritize hard-to-reverse/high-consequence contract, migration, security, data, and rollback risks; ignore safely reversible naming/formatting/polish nits; and return every independently discoverable Critical/Important or otherwise material finding in one deduplicated steering packet rather than stopping at the first failure. A later-round scenario may add a blocker only when the correction introduced it, required evidence was unavailable, or it could not reasonably have been discovered in round 1, and must say why. The same scope ends after Round 3 with approval or escalation—never Round 4.
 
-Negative scenarios: a Round 2 reviewer must omit an ordinary material comment that was reasonably discoverable from the unchanged Round 1 evidence and was not in the Round 1 report; it must not drip-feed it. A requested Round 4 must return `ITERATION_LIMIT_REACHED` before substantive review. Missing lineage, candidate identity, or required-review-kind data must return `BLOCKED_INVALID_LINEAGE` rather than a verdict.
 
 Additional continuity scenarios:
 
@@ -16,3 +15,8 @@ Additional continuity scenarios:
 - **Material process escape:** Round 2 discovers a genuine material safety/correctness defect that was reasonably discoverable in Round 1 but missed. Preserve it as `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently suppressing it or treating it as ordinary later-round feedback.
 - **Missing cumulative Round-3 history:** A Round-3 packet omits the Round-1 exact report or generation identity; block before substantive review instead of relying only on Round 2.
 - **Missing or changed pre-review summary:** The embedded exact artifact is absent, malformed, noncanonical, schema-invalid, digest-mismatched, or changed inside the stable lineage; block before substantive review.
+
+
+Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+Negative scenario: Round 2 and later must omit ordinary feedback that was reasonably discoverable in Round 1 and unrelated to remediation or new evidence. Missing lineage, immutable candidate identity, required review kinds, or cumulative report history returns `BLOCKED_INVALID_LINEAGE` rather than a verdict.

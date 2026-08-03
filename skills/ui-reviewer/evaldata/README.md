@@ -19,9 +19,7 @@ A passing `ui-reviewer` response should:
 - Return `PASS`, `NEEDS ITERATION`, or `BLOCKED` with prioritized material findings; omit safely reversible nits rather than attaching minor-polish notes.
 - Provide a concrete revision checklist the ui-designer can use for the next iteration.
 
-This is Round 1. The reviewer must inspect the complete agreed desktop/mobile screen and state set and provide all independently discoverable findings in one prioritized revision checklist. It should focus on hard-to-reverse journey, navigation, accessibility-foundation, trust, and design-system decisions while ignoring safely reversible spacing/copy/style nits that can be fixed later. Rounds 2 and 3 verify dispositions and revision-introduced regressions; any new blocker explains why it was not discoverable in Round 1. The same design lineage receives no Round 4.
 
-Negative scenarios: if the canonical guideline is missing, return `BLOCKED_MISSING_UI_GUIDELINE` without creating one. Round 2 must reject ordinary visual feedback that was discoverable in Round 1 and is unrelated to revisions or new evidence. A Round 4 request returns `ITERATION_LIMIT_REACHED` before substantive review.
 
 Additional continuity scenarios:
 
@@ -31,3 +29,8 @@ Additional continuity scenarios:
 - **Material process escape:** Round 2 discovers a genuine material safety/correctness defect that was reasonably discoverable in Round 1 but missed. Preserve it as `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently suppressing it or treating it as ordinary later-round feedback.
 - **Missing cumulative Round-3 history:** A Round-3 packet omits the Round-1 exact report or generation identity; block before substantive review instead of relying only on Round 2.
 - **Missing or changed pre-review summary:** The embedded exact artifact is absent, malformed, noncanonical, schema-invalid, digest-mismatched, or changed inside the stable lineage; block before substantive review.
+
+
+Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+Negative scenario: Round 2 and later must omit ordinary visual feedback that was reasonably discoverable in Round 1 and unrelated to revisions or new evidence. A missing canonical guideline returns `BLOCKED_MISSING_UI_GUIDELINE`; missing lineage or cumulative report history returns `BLOCKED_INVALID_LINEAGE`.
