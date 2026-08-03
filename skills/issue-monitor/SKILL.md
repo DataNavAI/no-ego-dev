@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.14.1
+version: 1.14.6
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -37,6 +37,22 @@ Use **Risk-weighted review**: spend the bounded reviewer budget on hard-to-rever
 Enforce **first-round completeness**. **Round 1** inspects the complete issue contract and full diff, follows every bounded sibling instance of a discovered defect class, and writes all independently discoverable findings in one deduplicated correction set with evidence and steering. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** is final. Later-round new feedback is limited to unresolved prior findings, remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been found earlier; every new blocker must include `Why it was not discoverable in round 1: <cause>`.
 
 **No round 4** is dispatched for the same stable issue/PR scope. If Round 3 is not approved, leave the PR blocked and escalate the unresolved hard-to-reverse decision, risk, or scope choice. Renaming a branch, changing reviewers, or splitting review kinds does not reset the count.
+
+### Prior-round context handoff
+
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
+
+For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+
+- all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
+- a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
+- a **remediation change map** mapping every prior finding to changed paths/sections and focused verification, with any authorized scope delta called out separately;
+- the original governing contract and complete current candidate; and
+- a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
+
+The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to any terminal prior generation, or cumulatively incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency. When it was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently omitting it or treating it as ordinary later-round feedback.
+
+Use [`references/review-round-continuity.md`](references/review-round-continuity.md) for the exact `prior_round_context` receipt schema, canonical digests, artifact handoff, and result validation contract.
 
 #### Canonical round accounting
 
@@ -290,7 +306,7 @@ It must independently:
 4. Run focused and high-risk checks missing from trustworthy exact-SHA CI. Do not duplicate broad suites already proven by green exact-SHA CI merely to make the review look independent; independently verify candidate identity, diff scope, test adequacy, and the CI binding instead.
 5. Query GitHub checks and branch protection. Never bypass, disable, dismiss, or weaken a required gate.
 6. Write and read back a compact durable result before returning: `REQUEST_CHANGES` with all independently discoverable Critical/Important or otherwise material findings and enough direction to correct the defect class in Round 1, `APPROVED` with commands/evidence, or `INCOMPLETE` naming the missing gate. Never let timeout erase the only verdict copy.
-7. After fixes, re-review the new commit from scratch. Never reuse an approval for an older SHA.
+7. After fixes, review the exact new commit with a fresh independent reviewer, but pass the complete prior-round continuity packet and require reconciliation; fresh personnel never means history-blind review. Never reuse an approval for an older SHA.
 8. On `APPROVED` for the current SHA, finalize and read back the durable verdict. Set `merge_pending: true` whether checks are already green or still pending; the reviewer never merges. A later `MERGE` stage revalidates approval, head, checks, and policy before invoking the merge-only executor. Do not enable GitHub auto-merge.
 
 If the same GitHub identity cannot submit a formal approval on its own PR, do not fabricate approval. Record the independent agent verdict in a PR comment and merge only if repository policy permits. If human approval is required, leave the PR open with `agent:human-review`; do not arm GitHub auto-merge from an agent verdict.

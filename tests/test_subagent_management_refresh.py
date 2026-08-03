@@ -240,6 +240,9 @@ def test_issue_monitor_increments_candidate_round_and_preserves_finding_disposit
 
     assert "incrementing the candidate round" in fix_loop
     assert "prior finding dispositions" in fix_loop
+    assert "prior exact review reports" in content
+    assert "finding disposition ledger" in content
+    assert "re-review the new commit from scratch" not in content
     assert "preserving the lineage round number" not in fix_loop
 
 

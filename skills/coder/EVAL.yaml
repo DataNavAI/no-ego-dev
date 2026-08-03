@@ -13,6 +13,11 @@ expectations:
   - "does not weaken rules or add blanket suppressions"
   - "requires a green review-readiness receipt and one composite independent review for an ordinary immutable candidate"
   - "predeclares a separate specialist only for a named non-overlapping high-risk expertise gap"
+  - "For rounds two and three passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
+  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
+  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
+  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
+  - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
 setupCommands: []
 teardownCommands: []
 parameters:

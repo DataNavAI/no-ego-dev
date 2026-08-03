@@ -21,6 +21,10 @@ REVIEW_ORCHESTRATION_SKILLS = (
     "coder",
 )
 
+CROSS_ROUND_ORCHESTRATION_SKILLS = REVIEW_ORCHESTRATION_SKILLS + (
+    "delegation-reliability",
+)
+
 
 def skill_text(name: str) -> str:
     return (SKILLS / name / "SKILL.md").read_text(encoding="utf-8")
@@ -29,6 +33,13 @@ def skill_text(name: str) -> str:
 def eval_expectations(name: str) -> str:
     data = yaml.safe_load((SKILLS / name / "EVAL.yaml").read_text(encoding="utf-8"))
     return "\n".join(data["expectations"])
+
+
+def eval_fixture(name: str) -> str:
+    data = yaml.safe_load((SKILLS / name / "EVAL.yaml").read_text(encoding="utf-8"))
+    fixture = data.get("parameters", {}).get("fixture")
+    assert fixture, f"{name} eval must declare a fixture"
+    return (SKILLS / name / fixture).read_text(encoding="utf-8")
 
 
 def package_text(name: str) -> str:
@@ -57,6 +68,152 @@ def test_direct_reviewers_use_the_shared_risk_weighted_three_round_protocol() ->
 
         assert "absolute maximum of **10" not in content
         assert "maximum of **10 substantive" not in content
+
+
+def test_direct_reviewers_require_complete_prior_round_context_and_reconciliation() -> None:
+    required = (
+        "## Prior-round context continuity",
+        "prior exact review report",
+        "complete cumulative context",
+        "pre-review summary",
+        "pre_review_summary_digest",
+        "pre_review_summary_artifact",
+        "recompute",
+        "finding disposition ledger",
+        "remediation change map",
+        "contradiction check",
+        "New material findings",
+        "Why it was not discoverable in round 1",
+        "material process escape",
+    )
+
+    for name in DIRECT_REVIEW_SKILLS:
+        content = skill_text(name)
+        for phrase in required:
+            assert phrase in content, f"{name} missing prior-round continuity rule {phrase!r}"
+
+        assert "Do not rely on a controller summary instead of the exact prior reports" in content
+        assert "Do not reopen a resolved finding" in content
+
+
+def test_orchestrators_pass_exact_prior_round_context_to_every_fresh_reviewer() -> None:
+    required = (
+        "prior exact review reports",
+        "every preceding generation",
+        "pre-review summary",
+        "pre_review_summary_digest",
+        "pre_review_summary_artifact",
+        "recompute",
+        "finding disposition ledger",
+        "remediation change map",
+        "prior-context digest",
+        "contradiction check",
+        "New material findings",
+        "material process escape",
+    )
+
+    for name in CROSS_ROUND_ORCHESTRATION_SKILLS:
+        content = skill_text(name)
+        for phrase in required:
+            assert phrase in content, f"{name} missing review-context handoff {phrase!r}"
+
+        expectations = eval_expectations(name)
+        for phrase in (
+            "prior exact review reports",
+            "cumulative generation order",
+            "pre-review summary",
+            "closed-schema canonical artifact",
+            "recompute",
+            "finding disposition ledger",
+            "prior-context digest",
+            "contradict prior feedback",
+            "unrelated new findings",
+            "material process escape",
+        ):
+            assert phrase in expectations, f"{name} eval missing review-context handoff {phrase!r}"
+
+
+def test_issue_monitor_documents_the_gate_digest_format_exactly() -> None:
+    reference = (
+        ROOT / "skills" / "issue-monitor" / "references" / "review-round-continuity.md"
+    ).read_text(encoding="utf-8").lower()
+    assert "exactly 64 lowercase hexadecimal characters" in reference
+    assert "immutable pre-review summary" in reference
+    assert "pre_review_summary_digest" in reference
+    assert "pre_review_summary_artifact" in reference
+    assert "exactly one trailing lf" in reference
+    assert "recomputes its digest" in reference
+    assert "supply the verified artifact to every reviewer" in reference
+    assert "sha256:<" not in reference
+
+
+def test_orchestrator_fixtures_exercise_cross_round_context_delivery() -> None:
+    for name in CROSS_ROUND_ORCHESTRATION_SKILLS:
+        fixture = eval_fixture(name).lower()
+        for phrase in (
+            "prior exact review reports",
+            "finding disposition ledger",
+            "contradictory later-round feedback",
+            "unrelated new finding",
+            "material process escape",
+            "missing cumulative round-3 history",
+            "missing or changed pre-review summary",
+            "noncanonical",
+            "digest-mismatched",
+        ):
+            assert phrase in fixture, f"{name} fixture missing continuity case {phrase!r}"
+
+
+def test_shared_implementation_convergence_reference_passes_complete_history() -> None:
+    reference = (
+        ROOT
+        / "skills"
+        / "project-manager"
+        / "references"
+        / "implementation-review-convergence.md"
+    ).read_text(encoding="utf-8").lower()
+    for phrase in (
+        "prior exact review reports",
+        "report_history",
+        "pre-review summary",
+        "pre_review_summary_digest",
+        "pre_review_summary_artifact",
+        "recompute",
+        "finding disposition ledger",
+        "remediation change map",
+        "prior-context digest",
+        "material process escape",
+    ):
+        assert phrase in reference
+
+
+def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_context() -> None:
+    for name in DIRECT_REVIEW_SKILLS:
+        expectations = eval_expectations(name)
+        fixture = (SKILLS / name / "evaldata" / "README.md").read_text(encoding="utf-8")
+        for phrase in (
+            "prior exact review reports",
+            "cumulative generation order",
+            "pre-review summary",
+            "closed-schema canonical artifact",
+            "recompute",
+            "finding disposition ledger",
+            "contradict prior feedback",
+            "unrelated new findings",
+            "material process escape",
+        ):
+            assert phrase in expectations, f"{name} eval missing {phrase!r}"
+        for phrase in (
+            "Missing prior-round context",
+            "Contradictory later-round feedback",
+            "Unrelated new finding",
+            "Material process escape",
+            "Missing cumulative Round-3 history",
+            "Missing or changed pre-review summary",
+            "noncanonical",
+            "digest-mismatched",
+        ):
+            assert phrase in fixture, f"{name} fixture missing {phrase!r}"
 
 
 def test_orchestrators_enforce_complete_first_round_and_no_fourth_review() -> None:

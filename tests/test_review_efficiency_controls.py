@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
 import json
 import os
@@ -25,6 +26,31 @@ BASE_B = "f" * 40
 DIGEST = "d" * 64
 
 
+def canonical_pre_review_summary(lineage: str = "issue-17") -> str:
+    payload = {
+        "schema_version": 1,
+        "lineage": lineage,
+        "governing_request": ["authoritative request"],
+        "scope": {"in": ["review gate"], "out": ["automatic approval"]},
+        "acceptance_criteria": ["observable result"],
+        "intended_approach": ["factual implementation direction"],
+        "change_inventory": ["governed files"],
+        "risk_assumptions": ["reviewer-challengeable assumption"],
+        "hard_to_reverse_surfaces": ["durable gate state"],
+        "known_tradeoffs": ["fail closed on old state"],
+        "open_questions": ["none"],
+        "verification_matrix": ["claim -> exact evidence"],
+        "inherited_findings": ["none"],
+    }
+    return json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ) + "\n"
+
+
+PRE_REVIEW_ARTIFACT = canonical_pre_review_summary()
+PRE_REVIEW_DIGEST = hashlib.sha256(PRE_REVIEW_ARTIFACT.encode("utf-8")).hexdigest()
+
+
 def load_gate():
     spec = importlib.util.spec_from_file_location("review_gate", SCRIPT)
     assert spec and spec.loader
@@ -38,6 +64,9 @@ def readiness(
     round_number: int = 1,
     base_sha: str = BASE_A,
     bundles: list[str] | None = None,
+    prior_round_context: dict | None = None,
+    pre_review_summary_digest: str = PRE_REVIEW_DIGEST,
+    pre_review_summary_artifact: str = PRE_REVIEW_ARTIFACT,
 ) -> dict:
     return {
         "schema_version": 1,
@@ -45,6 +74,9 @@ def readiness(
         "pr": 17,
         "lineage": "issue-17",
         "round": round_number,
+        "pre_review_summary_digest": pre_review_summary_digest,
+        "pre_review_summary_artifact": pre_review_summary_artifact,
+        "prior_round_context": prior_round_context,
         "review_bundles": bundles or ["composite"],
         "candidate_sha": sha,
         "base_sha": base_sha,
@@ -59,6 +91,46 @@ def readiness(
             "github_checks": "PASS",
             "self_audit": "PASS",
         },
+    }
+
+
+def prior_context(
+    round_number: int = 1,
+    candidate_sha: str = SHA_A,
+    base_sha: str = BASE_A,
+    report_digests: dict[str, str] | None = None,
+    report_history: list[dict] | None = None,
+    pre_review_summary_digest: str = PRE_REVIEW_DIGEST,
+) -> dict:
+    immediate_reports = report_digests or {"composite": DIGEST}
+    if report_history is None:
+        report_history = []
+        if round_number > 1:
+            report_history.append(
+                {
+                    "round": 1,
+                    "candidate_sha": SHA_A,
+                    "base_sha": BASE_A,
+                    "report_digests": {"composite": DIGEST},
+                }
+            )
+        report_history.append(
+            {
+                "round": round_number,
+                "candidate_sha": candidate_sha,
+                "base_sha": base_sha,
+                "report_digests": immediate_reports,
+            }
+        )
+    return {
+        "round": round_number,
+        "candidate_sha": candidate_sha,
+        "base_sha": base_sha,
+        "report_digests": immediate_reports,
+        "report_history": report_history,
+        "pre_review_summary_digest": pre_review_summary_digest,
+        "finding_disposition_digest": DIGEST,
+        "remediation_change_map_digest": DIGEST,
     }
 
 
@@ -96,6 +168,114 @@ def test_readiness_fails_closed_before_review() -> None:
     payload["checks"]["full_tests"] = "PASS_OR_NOT_REQUIRED"
     with pytest.raises(gate.GateError, match="full_tests"):
         gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_readiness_requires_pre_review_summary_before_round_one() -> None:
+    gate = load_gate()
+    payload = readiness()
+    del payload["pre_review_summary_digest"]
+    with pytest.raises(gate.GateError, match="pre_review_summary_digest"):
+        gate.validate_readiness(
+            payload, expected_sha=SHA_A, expected_base_sha=BASE_A
+        )
+
+
+def test_readiness_rejects_missing_pre_review_summary_artifact() -> None:
+    gate = load_gate()
+    payload = readiness()
+    del payload["pre_review_summary_artifact"]
+    with pytest.raises(gate.GateError, match="pre_review_summary_artifact"):
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_readiness_rejects_pre_review_summary_digest_byte_mismatch() -> None:
+    gate = load_gate()
+    payload = readiness(pre_review_summary_digest="0" * 64)
+    with pytest.raises(gate.GateError, match="does not match"):
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_claim_rejects_unverified_pre_review_summary_without_persisting_state(
+    tmp_path: Path,
+) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    with pytest.raises(gate.GateError, match="does not match"):
+        store.claim(
+            identity(gate),
+            "forged-summary",
+            readiness(pre_review_summary_digest="0" * 64),
+        )
+    assert store._read()["candidates"] == {}
+
+
+@pytest.mark.parametrize(
+    "artifact",
+    [
+        pytest.param(json.dumps(json.loads(PRE_REVIEW_ARTIFACT), indent=2) + "\n", id="noncanonical"),
+        pytest.param("{not-json}\n", id="malformed"),
+        pytest.param(
+            json.dumps(
+                {**json.loads(PRE_REVIEW_ARTIFACT), "unexpected": True},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            id="extra-field",
+        ),
+    ],
+)
+def test_readiness_rejects_invalid_pre_review_summary_artifact(artifact: str) -> None:
+    gate = load_gate()
+    digest = hashlib.sha256(artifact.encode("utf-8")).hexdigest()
+    payload = readiness(
+        pre_review_summary_artifact=artifact,
+        pre_review_summary_digest=digest,
+    )
+    with pytest.raises(gate.GateError, match="pre_review_summary_artifact"):
+        gate.validate_readiness(payload, expected_sha=SHA_A, expected_base_sha=BASE_A)
+
+
+def test_claim_persists_and_returns_pre_review_summary_digest(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    result = store.claim(identity(gate), "pre-review-summary", readiness())
+
+    assert result["pre_review_summary_digest"] == PRE_REVIEW_DIGEST
+    assert result["pre_review_summary_artifact"] == PRE_REVIEW_ARTIFACT
+    state = store._read()
+    candidate = next(iter(state["candidates"].values()))
+    assert candidate["pre_review_summary_digest"] == PRE_REVIEW_DIGEST
+    assert candidate["pre_review_summary_artifact"] == PRE_REVIEW_ARTIFACT
+
+
+def test_changed_pre_review_summary_digest_is_rejected_within_lineage(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate)
+    store.claim(first, "summary-round-one", readiness())
+    store.finalize(first, "summary-round-one", "REQUEST_CHANGES", DIGEST)
+
+    changed_summary = json.loads(PRE_REVIEW_ARTIFACT)
+    changed_summary["acceptance_criteria"] = ["silently changed baseline"]
+    changed_artifact = (
+        json.dumps(changed_summary, sort_keys=True, separators=(",", ":")) + "\n"
+    )
+    changed_digest = hashlib.sha256(changed_artifact.encode("utf-8")).hexdigest()
+    second = identity(gate, SHA_B, 2)
+    changed_context = prior_context(pre_review_summary_digest=changed_digest)
+    with pytest.raises(gate.GateError, match="changed within the review lineage"):
+        store.claim(
+            second,
+            "summary-round-two",
+            readiness(
+                SHA_B,
+                2,
+                prior_round_context=changed_context,
+                pre_review_summary_digest=changed_digest,
+                pre_review_summary_artifact=changed_artifact,
+            ),
+        )
 
 
 @pytest.mark.parametrize("untracked_scope", [pytest.param(None, id="null"), pytest.param("omitted", id="omitted")])
@@ -214,19 +394,46 @@ def test_lineage_rounds_are_monotonic_unique_and_capped(tmp_path: Path) -> None:
     with pytest.raises(gate.GateError, match="already bound"):
         store.claim(identity(gate, SHA_B, 1), "attempt-two", readiness(SHA_B, 1))
     with pytest.raises(gate.GateError, match="next round"):
-        store.claim(identity(gate, SHA_B, 3), "attempt-three", readiness(SHA_B, 3))
+        store.claim(
+            identity(gate, SHA_B, 3),
+            "attempt-three",
+            readiness(
+                SHA_B,
+                3,
+                prior_round_context=prior_context(round_number=2),
+            ),
+        )
 
     second = identity(gate, SHA_B, 2)
-    assert store.claim(second, "attempt-four", readiness(SHA_B, 2))["started"] is True
+    assert store.claim(
+        second,
+        "attempt-four",
+        readiness(SHA_B, 2, prior_round_context=prior_context()),
+    )["started"] is True
     store.finalize(second, "attempt-four", "REQUEST_CHANGES", DIGEST)
 
     with pytest.raises(gate.GateError, match="already bound"):
-        store.claim(identity(gate, SHA_C, 2), "attempt-five", readiness(SHA_C, 2))
+        store.claim(
+            identity(gate, SHA_C, 2),
+            "attempt-five",
+            readiness(SHA_C, 2, prior_round_context=prior_context()),
+        )
     with pytest.raises(gate.GateError, match="regress"):
         store.claim(identity(gate, SHA_C, 1), "attempt-six", readiness(SHA_C, 1))
 
     third = identity(gate, SHA_C, 3)
-    assert store.claim(third, "attempt-seven", readiness(SHA_C, 3))["started"] is True
+    assert store.claim(
+        third,
+        "attempt-seven",
+        readiness(
+            SHA_C,
+            3,
+            prior_round_context=prior_context(
+                round_number=2,
+                candidate_sha=SHA_B,
+            ),
+        ),
+    )["started"] is True
     store.finalize(third, "attempt-seven", "REQUEST_CHANGES", DIGEST)
 
     with pytest.raises(gate.GateError, match="Round 3"):
@@ -241,29 +448,284 @@ def test_next_generation_waits_for_complete_terminal_prior_manifest(tmp_path: Pa
     first_manifest = readiness(bundles=["composite", "security"])
     first_composite = identity(gate)
     second = identity(gate, SHA_B, 2)
+    incomplete_prior = prior_context(report_digests={"composite": DIGEST})
 
     store.claim(first_composite, "round-one-composite", first_manifest)
     with pytest.raises(gate.GateError, match="prior generation.*terminal"):
-        store.claim(second, "round-two-active-composite", readiness(SHA_B, 2))
+        store.claim(
+            second,
+            "round-two-active-composite",
+            readiness(SHA_B, 2, prior_round_context=incomplete_prior),
+        )
 
     store.finalize(first_composite, "round-one-composite", "REQUEST_CHANGES", DIGEST)
     with pytest.raises(gate.GateError, match="prior generation.*terminal"):
-        store.claim(second, "round-two-security-not-started", readiness(SHA_B, 2))
+        store.claim(
+            second,
+            "round-two-security-not-started",
+            readiness(SHA_B, 2, prior_round_context=incomplete_prior),
+        )
 
     first_security = identity(gate, review_bundle="security")
     store.claim(first_security, "round-one-security", first_manifest)
     with pytest.raises(gate.GateError, match="prior generation.*terminal"):
-        store.claim(second, "round-two-active-security", readiness(SHA_B, 2))
+        store.claim(
+            second,
+            "round-two-active-security",
+            readiness(SHA_B, 2, prior_round_context=incomplete_prior),
+        )
 
     store.finalize(first_security, "round-one-security", "REQUEST_CHANGES", DIGEST)
-    assert store.claim(second, "round-two-after-terminal", readiness(SHA_B, 2))["started"] is True
+    complete_prior = prior_context(
+        report_digests={"composite": DIGEST, "security": DIGEST}
+    )
+    assert store.claim(
+        second,
+        "round-two-after-terminal",
+        readiness(SHA_B, 2, prior_round_context=complete_prior),
+    )["started"] is True
+
+
+def test_round_two_requires_complete_prior_round_context(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "round-one", readiness())
+    store.finalize(first, "round-one", "REQUEST_CHANGES", DIGEST)
+
+    second = identity(gate, SHA_B, 2)
+    with pytest.raises(gate.GateError, match="prior_round_context"):
+        store.claim(second, "round-two-missing", readiness(SHA_B, 2))
+
+    malformed = prior_context()
+    del malformed["finding_disposition_digest"]
+    with pytest.raises(gate.GateError, match="finding_disposition_digest"):
+        store.claim(
+            second,
+            "round-two-malformed",
+            readiness(SHA_B, 2, prior_round_context=malformed),
+        )
+
+
+def test_round_two_prior_context_matches_terminal_prior_reports(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "round-one", readiness())
+    store.finalize(first, "round-one", "REQUEST_CHANGES", DIGEST)
+
+    second = identity(gate, SHA_B, 2)
+    wrong_sha = prior_context(candidate_sha=SHA_C)
+    with pytest.raises(gate.GateError, match="prior candidate_sha"):
+        store.claim(
+            second,
+            "round-two-wrong-sha",
+            readiness(SHA_B, 2, prior_round_context=wrong_sha),
+        )
+
+    wrong_report = prior_context(report_digests={"composite": "e" * 64})
+    with pytest.raises(gate.GateError, match="prior report_digests"):
+        store.claim(
+            second,
+            "round-two-wrong-report",
+            readiness(SHA_B, 2, prior_round_context=wrong_report),
+        )
+
+    result = store.claim(
+        second,
+        "round-two-valid",
+        readiness(SHA_B, 2, prior_round_context=prior_context()),
+    )
+    assert result["started"] is True
+    assert result["prior_context_digest"]
+
+
+def test_documented_round_two_receipt_is_accepted_end_to_end(tmp_path: Path) -> None:
+    gate = load_gate()
+    reference = (
+        SKILLS / "issue-monitor" / "references" / "review-round-continuity.md"
+    ).read_text(encoding="utf-8")
+    examples = re.findall(r"```json\n(.*?)\n```", reference, re.DOTALL)
+    documented_receipt = json.loads(examples[1])
+    documented = documented_receipt["prior_round_context"]
+
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    first = identity(gate, SHA_A, 1, base_sha=SHA_B)
+    store.claim(first, "documented-round-one", readiness(SHA_A, 1, base_sha=SHA_B))
+    store.finalize(
+        first,
+        "documented-round-one",
+        "REQUEST_CHANGES",
+        "c" * 64,
+    )
+
+    second = identity(gate, SHA_C, 2, base_sha=SHA_B)
+    result = store.claim(
+        second,
+        "documented-round-two",
+        readiness(
+            SHA_C,
+            2,
+            base_sha=SHA_B,
+            prior_round_context=documented,
+            pre_review_summary_digest=documented_receipt[
+                "pre_review_summary_digest"
+            ],
+            pre_review_summary_artifact=documented_receipt[
+                "pre_review_summary_artifact"
+            ],
+        ),
+    )
+    assert result["started"] is True
+    assert result["prior_context_digest"] == gate.readiness_digest(documented)
+
+
+def test_round_three_rejects_context_missing_round_one_report_history(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    digest_one = "1" * 64
+    digest_two = "2" * 64
+
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "history-round-one", readiness(SHA_A, 1))
+    store.finalize(first, "history-round-one", "REQUEST_CHANGES", digest_one)
+
+    second_context = prior_context(report_digests={"composite": digest_one})
+    second = identity(gate, SHA_B, 2)
+    store.claim(
+        second,
+        "history-round-two",
+        readiness(SHA_B, 2, prior_round_context=second_context),
+    )
+    store.finalize(second, "history-round-two", "REQUEST_CHANGES", digest_two)
+
+    missing_round_one = prior_context(
+        round_number=2,
+        candidate_sha=SHA_B,
+        report_digests={"composite": digest_two},
+        report_history=[
+            {
+                "round": 2,
+                "candidate_sha": SHA_B,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": digest_two},
+            }
+        ],
+    )
+    third = identity(gate, SHA_C, 3)
+    with pytest.raises(gate.GateError, match="report_history"):
+        store.claim(
+            third,
+            "history-round-three-missing",
+            readiness(SHA_C, 3, prior_round_context=missing_round_one),
+        )
+
+
+def test_round_three_accepts_complete_report_history(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    digest_one = "1" * 64
+    digest_two = "2" * 64
+
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "complete-history-round-one", readiness(SHA_A, 1))
+    store.finalize(first, "complete-history-round-one", "REQUEST_CHANGES", digest_one)
+
+    second = identity(gate, SHA_B, 2)
+    second_context = prior_context(report_digests={"composite": digest_one})
+    store.claim(
+        second,
+        "complete-history-round-two",
+        readiness(SHA_B, 2, prior_round_context=second_context),
+    )
+    store.finalize(second, "complete-history-round-two", "REQUEST_CHANGES", digest_two)
+
+    complete_history = prior_context(
+        round_number=2,
+        candidate_sha=SHA_B,
+        report_digests={"composite": digest_two},
+        report_history=[
+            {
+                "round": 1,
+                "candidate_sha": SHA_A,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": digest_one},
+            },
+            {
+                "round": 2,
+                "candidate_sha": SHA_B,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": digest_two},
+            },
+        ],
+    )
+    third = identity(gate, SHA_C, 3)
+    result = store.claim(
+        third,
+        "complete-history-round-three",
+        readiness(SHA_C, 3, prior_round_context=complete_history),
+    )
+    assert result["started"] is True
+    assert result["prior_context_digest"] == gate.readiness_digest(complete_history)
+
+
+def test_round_three_rejects_wrong_round_one_report_digest(tmp_path: Path) -> None:
+    gate = load_gate()
+    store = gate.ReviewGateStore(tmp_path / "review-index.json")
+    digest_one = "1" * 64
+    digest_two = "2" * 64
+
+    first = identity(gate, SHA_A, 1)
+    store.claim(first, "wrong-history-round-one", readiness(SHA_A, 1))
+    store.finalize(first, "wrong-history-round-one", "REQUEST_CHANGES", digest_one)
+
+    second = identity(gate, SHA_B, 2)
+    store.claim(
+        second,
+        "wrong-history-round-two",
+        readiness(
+            SHA_B,
+            2,
+            prior_round_context=prior_context(
+                report_digests={"composite": digest_one}
+            ),
+        ),
+    )
+    store.finalize(second, "wrong-history-round-two", "REQUEST_CHANGES", digest_two)
+
+    wrong_history = prior_context(
+        round_number=2,
+        candidate_sha=SHA_B,
+        report_digests={"composite": digest_two},
+        report_history=[
+            {
+                "round": 1,
+                "candidate_sha": SHA_A,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": "f" * 64},
+            },
+            {
+                "round": 2,
+                "candidate_sha": SHA_B,
+                "base_sha": BASE_A,
+                "report_digests": {"composite": digest_two},
+            },
+        ],
+    )
+    third = identity(gate, SHA_C, 3)
+    with pytest.raises(gate.GateError, match="report_history"):
+        store.claim(
+            third,
+            "wrong-history-round-three",
+            readiness(SHA_C, 3, prior_round_context=wrong_history),
+        )
 
 
 def test_same_sha_cannot_be_renamed_as_a_new_round(tmp_path: Path) -> None:
     gate = load_gate()
     store = gate.ReviewGateStore(tmp_path / "review-index.json")
     store.claim(identity(gate), "attempt-one", readiness())
-    changed_round = readiness(SHA_A, 2)
+    changed_round = readiness(SHA_A, 2, prior_round_context=prior_context())
     assert store.claim(identity(gate, SHA_A, 2), "attempt-two", changed_round) == {
         "started": False,
         "reason": "same-sha-round-reuse",

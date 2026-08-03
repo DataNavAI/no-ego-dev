@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.3.1
+version: 0.3.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -26,6 +26,20 @@ Implement one focused task per branch. Write tests for the key path, keep the di
 ## Risk-weighted review convergence
 
 Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence changes and omit safely reversible nits. Enforce **first-round completeness**: **Round 1** receives all independently discoverable Critical/Important or otherwise material findings in one complete evidence-backed correction set, **Round 2** verifies dispositions and correction regressions, and **Round 3** is final. Later new feedback is allowed only for remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been found earlier, and must state `Why it was not discoverable in round 1: <cause>`. **No round 4** is allowed for the same stable scope; a negative Round 3 keeps the candidate unmerged and routes scope/risk decisions to the owner without waiving exact-SHA approval.
+
+### Prior-round context handoff
+
+Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
+
+For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+
+- all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
+- a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
+- a **remediation change map** mapping every prior finding to changed paths/sections and focused verification, with any authorized scope delta called out separately;
+- the original governing contract and complete current candidate; and
+- a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
+
+The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to any terminal prior generation, or cumulatively incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency. When it was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently omitting it or treating it as ordinary later-round feedback.
 
 ### Canonical round accounting
 

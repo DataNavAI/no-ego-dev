@@ -19,3 +19,12 @@ The review must include a complexity/redundancy ledger for every new moving part
 This is Round 1. The reviewer must surface the complete bounded architecture-defect set now, prioritizing hard-to-reverse service/data/schema/security/migration/provider/rollback decisions and ignoring reversible naming, formatting, and implementation-polish nits. The author needs one evidence-backed steering packet that addresses defect classes rather than serial symptoms. Rounds 2 and 3 may only disposition prior findings, correction regressions, genuinely unavailable evidence, or otherwise undiscoverable material defects and must explain any new blocker. No Round 4 is permitted for this stable design scope.
 
 Negative scenarios: Round 2 must reject drip-fed ordinary architecture feedback that was discoverable from the Round 1 design and is unrelated to corrections or new evidence. A Round 4 request returns `ITERATION_LIMIT_REACHED` before substantive review; missing exact revision or lineage returns `BLOCKED`.
+
+Additional continuity scenarios:
+
+- **Missing prior-round context:** Round 2 lacks the prior exact review reports, finding disposition ledger, remediation change map, or prior-context digest; return `BLOCKED_MISSING_PRIOR_CONTEXT` without substantive review.
+- **Contradictory later-round feedback:** Round 2 demands the opposite of a resolved Round 1 direction without decisive new evidence; reject the contradiction unless it is labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and proof.
+- **Unrelated new finding:** Round 2 raises a material issue from unchanged evidence that was independently discoverable in Round 1 and unrelated to remediation; omit it rather than drip-feed another correction cycle.
+- **Material process escape:** Round 2 discovers a genuine material safety/correctness defect that was reasonably discoverable in Round 1 but missed. Preserve it as `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently suppressing it or treating it as ordinary later-round feedback.
+- **Missing cumulative Round-3 history:** A Round-3 packet omits the Round-1 exact report or generation identity; block before substantive review instead of relying only on Round 2.
+- **Missing or changed pre-review summary:** The embedded exact artifact is absent, malformed, noncanonical, schema-invalid, digest-mismatched, or changed inside the stable lineage; block before substantive review.

@@ -31,6 +31,11 @@ expectations:
   - "Turns every terminal worker completion into a completion-triggered scheduling wake; the hook never dispatches directly, and the awakened monitor schedules at most one eligible successor after durable reconciliation."
   - "Each fresh scheduled run reconciles canonical state and prior attempt evidence, advances at most one durable stage, and can resume IMPLEMENT_PENDING REVIEW_PENDING or MERGE_PENDING without the original conversation."
   - "Every non-silent user delivery uses Purpose Executive summary Action needed and Detailed information while leading with product or release impact."
+  - "For rounds two and three passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
+  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
+  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
+  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
+  - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
 setupCommands: []
 teardownCommands: []
 parameters:

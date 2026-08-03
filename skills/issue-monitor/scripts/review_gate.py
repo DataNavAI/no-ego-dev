@@ -43,6 +43,87 @@ class GateError(ValueError):
     """A fail-closed review-gate validation error."""
 
 
+PRE_REVIEW_SUMMARY_FIELDS = {
+    "schema_version",
+    "lineage",
+    "governing_request",
+    "scope",
+    "acceptance_criteria",
+    "intended_approach",
+    "change_inventory",
+    "risk_assumptions",
+    "hard_to_reverse_surfaces",
+    "known_tradeoffs",
+    "open_questions",
+    "verification_matrix",
+    "inherited_findings",
+}
+PRE_REVIEW_SUMMARY_LIST_FIELDS = PRE_REVIEW_SUMMARY_FIELDS - {
+    "schema_version",
+    "lineage",
+    "scope",
+}
+MAX_PRE_REVIEW_SUMMARY_BYTES = 65536
+
+
+def _validate_pre_review_summary(payload: Dict[str, Any]) -> str:
+    artifact = payload.get("pre_review_summary_artifact")
+    if not isinstance(artifact, str) or not artifact:
+        raise GateError("pre_review_summary_artifact must be exact canonical JSON text")
+    try:
+        encoded = artifact.encode("utf-8")
+    except UnicodeEncodeError:
+        raise GateError("pre_review_summary_artifact must be valid UTF-8 text")
+    if len(encoded) > MAX_PRE_REVIEW_SUMMARY_BYTES:
+        raise GateError("pre_review_summary_artifact exceeds 65536 UTF-8 bytes")
+    try:
+        summary = json.loads(artifact)
+    except (TypeError, ValueError):
+        raise GateError("pre_review_summary_artifact must be valid JSON")
+    if not isinstance(summary, dict) or set(summary) != PRE_REVIEW_SUMMARY_FIELDS:
+        raise GateError("pre_review_summary_artifact has an invalid schema")
+    if summary.get("schema_version") != 1:
+        raise GateError("pre_review_summary_artifact schema_version must be 1")
+    if summary.get("lineage") != payload.get("lineage"):
+        raise GateError("pre_review_summary_artifact lineage does not match readiness")
+    scope = summary.get("scope")
+    if not isinstance(scope, dict) or set(scope) != {"in", "out"}:
+        raise GateError("pre_review_summary_artifact scope has an invalid schema")
+    for field, value in (("scope.in", scope["in"]), ("scope.out", scope["out"])):
+        if not isinstance(value, list) or not all(
+            isinstance(item, str) and item.strip() for item in value
+        ):
+            raise GateError(
+                "pre_review_summary_artifact {0} must be a string list".format(field)
+            )
+    if not scope["in"]:
+        raise GateError("pre_review_summary_artifact scope.in must not be empty")
+    for field in PRE_REVIEW_SUMMARY_LIST_FIELDS:
+        value = summary.get(field)
+        if not isinstance(value, list) or not value or not all(
+            isinstance(item, str) and item.strip() for item in value
+        ):
+            raise GateError(
+                "pre_review_summary_artifact {0} must be a non-empty string list".format(
+                    field
+                )
+            )
+    canonical = json.dumps(
+        summary, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ) + "\n"
+    if artifact != canonical:
+        raise GateError(
+            "pre_review_summary_artifact must be compact sorted-key UTF-8 JSON "
+            "with exactly one trailing LF"
+        )
+    actual_digest = hashlib.sha256(encoded).hexdigest()
+    if actual_digest != payload.get("pre_review_summary_digest"):
+        raise GateError(
+            "pre_review_summary_digest does not match pre_review_summary_artifact bytes"
+        )
+    return artifact
+
+
 def _validate_metric(name: str, value: Any, *, integer: bool = False) -> None:
     if value is None:
         return
@@ -130,6 +211,100 @@ def validate_readiness(
         raise GateError("readiness lineage is invalid")
     if payload.get("round") not in {1, 2, 3}:
         raise GateError("readiness round must be 1, 2, or 3")
+    if not DIGEST_RE.fullmatch(str(payload.get("pre_review_summary_digest", ""))):
+        raise GateError("pre_review_summary_digest must be a lowercase SHA-256 digest")
+    _validate_pre_review_summary(payload)
+    prior_context = payload.get("prior_round_context")
+    if payload["round"] == 1:
+        if prior_context is not None:
+            raise GateError("Round 1 prior_round_context must be null")
+    else:
+        if not isinstance(prior_context, dict):
+            raise GateError("prior_round_context is required for Round 2 and Round 3")
+        required_prior_fields = {
+            "round",
+            "candidate_sha",
+            "base_sha",
+            "report_digests",
+            "report_history",
+            "pre_review_summary_digest",
+            "finding_disposition_digest",
+            "remediation_change_map_digest",
+        }
+        if set(prior_context) != required_prior_fields:
+            missing_prior = sorted(required_prior_fields - set(prior_context))
+            extra_prior = sorted(set(prior_context) - required_prior_fields)
+            if missing_prior:
+                raise GateError(
+                    "prior_round_context missing " + ", ".join(missing_prior)
+                )
+            raise GateError(
+                "prior_round_context has unknown fields: " + ", ".join(extra_prior)
+            )
+        if prior_context.get("round") != payload["round"] - 1:
+            raise GateError("prior_round_context round must be the immediately prior round")
+        for field in ("candidate_sha", "base_sha"):
+            if not SHA_RE.fullmatch(str(prior_context.get(field, ""))):
+                raise GateError("prior_round_context {0} is invalid".format(field))
+        report_digests = prior_context.get("report_digests")
+        if not isinstance(report_digests, dict) or not report_digests:
+            raise GateError("prior_round_context report_digests must be non-empty")
+        for bundle, digest in report_digests.items():
+            if not re.fullmatch(r"[a-z][a-z0-9_-]{2,63}", str(bundle)):
+                raise GateError("prior_round_context report bundle is invalid")
+            if not DIGEST_RE.fullmatch(str(digest)):
+                raise GateError("prior_round_context report digest is invalid")
+        report_history = prior_context.get("report_history")
+        if not isinstance(report_history, list) or len(report_history) != payload["round"] - 1:
+            raise GateError(
+                "prior_round_context report_history must contain every prior round"
+            )
+        for expected_round, generation in enumerate(report_history, start=1):
+            if not isinstance(generation, dict) or set(generation) != {
+                "round",
+                "candidate_sha",
+                "base_sha",
+                "report_digests",
+            }:
+                raise GateError("prior_round_context report_history entry is invalid")
+            if generation.get("round") != expected_round:
+                raise GateError("prior_round_context report_history rounds must be contiguous")
+            for field in ("candidate_sha", "base_sha"):
+                if not SHA_RE.fullmatch(str(generation.get(field, ""))):
+                    raise GateError(
+                        "prior_round_context report_history {0} is invalid".format(field)
+                    )
+            generation_reports = generation.get("report_digests")
+            if not isinstance(generation_reports, dict) or not generation_reports:
+                raise GateError(
+                    "prior_round_context report_history report_digests must be non-empty"
+                )
+            for bundle, digest in generation_reports.items():
+                if not re.fullmatch(r"[a-z][a-z0-9_-]{2,63}", str(bundle)):
+                    raise GateError(
+                        "prior_round_context report_history report bundle is invalid"
+                    )
+                if not DIGEST_RE.fullmatch(str(digest)):
+                    raise GateError(
+                        "prior_round_context report_history report digest is invalid"
+                    )
+        latest_history = report_history[-1]
+        for field in ("round", "candidate_sha", "base_sha", "report_digests"):
+            if prior_context.get(field) != latest_history.get(field):
+                raise GateError(
+                    "prior_round_context immediate {0} must match report_history".format(field)
+                )
+        for field in (
+            "pre_review_summary_digest",
+            "finding_disposition_digest",
+            "remediation_change_map_digest",
+        ):
+            if not DIGEST_RE.fullmatch(str(prior_context.get(field, ""))):
+                raise GateError("prior_round_context {0} is invalid".format(field))
+        if prior_context["pre_review_summary_digest"] != payload["pre_review_summary_digest"]:
+            raise GateError(
+                "prior_round_context pre_review_summary_digest does not match readiness"
+            )
     bundles = payload.get("review_bundles")
     if not isinstance(bundles, list) or not bundles or len(bundles) != len(set(bundles)):
         raise GateError("readiness review_bundles must be a non-empty unique list")
@@ -292,8 +467,88 @@ class ReviewGateStore:
                 return False
         return bool(candidate.get("review_bundles"))
 
+    @staticmethod
+    def _validate_prior_context(
+        lineage: List[Dict[str, Any]],
+        highest: Dict[str, Any],
+        readiness: Dict[str, Any],
+    ) -> str:
+        context = readiness.get("prior_round_context")
+        if not isinstance(context, dict):
+            raise GateError("prior_round_context is required for a changed candidate")
+        expected_summary_digest = highest.get("pre_review_summary_digest")
+        expected_summary_artifact = highest.get("pre_review_summary_artifact")
+        if not DIGEST_RE.fullmatch(str(expected_summary_digest or "")):
+            raise GateError("prior generation pre_review_summary_digest is missing or invalid")
+        if not isinstance(expected_summary_artifact, str) or not expected_summary_artifact:
+            raise GateError("prior generation pre_review_summary_artifact is missing")
+        if readiness.get("pre_review_summary_digest") != expected_summary_digest:
+            raise GateError("pre_review_summary_digest changed within the review lineage")
+        if readiness.get("pre_review_summary_artifact") != expected_summary_artifact:
+            raise GateError("pre_review_summary_artifact changed within the review lineage")
+        if context.get("pre_review_summary_digest") != expected_summary_digest:
+            raise GateError(
+                "prior_round_context pre_review_summary_digest does not match the lineage"
+            )
+        if any(
+            candidate.get("pre_review_summary_digest") != expected_summary_digest
+            or candidate.get("pre_review_summary_artifact") != expected_summary_artifact
+            for candidate in lineage
+        ):
+            raise GateError(
+                "pre-review summary is inconsistent across prior generations"
+            )
+        prior_identity = highest.get("identity", {})
+        if context.get("round") != prior_identity.get("round"):
+            raise GateError("prior round does not match the terminal prior generation")
+        if context.get("candidate_sha") != prior_identity.get("candidate_sha"):
+            raise GateError("prior candidate_sha does not match the terminal prior generation")
+        if context.get("base_sha") != prior_identity.get("base_sha"):
+            raise GateError("prior base_sha does not match the terminal prior generation")
+
+        expected_reports = {}
+        for bundle_name in highest.get("review_bundles", []):
+            attempts = highest.get("bundles", {}).get(bundle_name, {}).get("attempts", [])
+            if not attempts or attempts[-1].get("status") not in FINAL_VERDICTS:
+                raise GateError("prior generation review-bundle manifest must be terminal")
+            report_digest = attempts[-1].get("report_digest")
+            if not DIGEST_RE.fullmatch(str(report_digest or "")):
+                raise GateError("prior terminal report digest is missing or invalid")
+            expected_reports[bundle_name] = report_digest
+        if context.get("report_digests") != expected_reports:
+            raise GateError("prior report_digests do not match terminal prior reports")
+        expected_history = []
+        for candidate in sorted(
+            lineage, key=lambda item: int(item.get("identity", {}).get("round", 0))
+        ):
+            generation_identity = candidate.get("identity", {})
+            generation_reports = {}
+            for bundle_name in candidate.get("review_bundles", []):
+                attempts = candidate.get("bundles", {}).get(bundle_name, {}).get("attempts", [])
+                if not attempts or attempts[-1].get("status") not in FINAL_VERDICTS:
+                    raise GateError("prior report_history generation must be terminal")
+                report_digest = attempts[-1].get("report_digest")
+                if not DIGEST_RE.fullmatch(str(report_digest or "")):
+                    raise GateError("prior report_history digest is missing or invalid")
+                generation_reports[bundle_name] = report_digest
+            expected_history.append(
+                {
+                    "round": generation_identity.get("round"),
+                    "candidate_sha": generation_identity.get("candidate_sha"),
+                    "base_sha": generation_identity.get("base_sha"),
+                    "report_digests": generation_reports,
+                }
+            )
+        if context.get("report_history") != expected_history:
+            raise GateError("prior report_history does not match all terminal prior reports")
+        return readiness_digest(context)
+
     def _validate_generation(
-        self, state: Dict[str, Any], identity: ReviewIdentity, readiness_hash: str
+        self,
+        state: Dict[str, Any],
+        identity: ReviewIdentity,
+        readiness_hash: str,
+        readiness: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
         lineage = [
             candidate
@@ -338,6 +593,7 @@ class ReviewGateStore:
             raise GateError("round {0} is already bound to another candidate".format(identity.round))
         if identity.round != max_round + 1:
             raise GateError("changed candidate must use the next round: Round {0}".format(max_round + 1))
+        self._validate_prior_context(lineage, highest, readiness)
         return None
 
     def claim(
@@ -360,10 +616,17 @@ class ReviewGateStore:
         requested_scope = [
             str(item).strip() for item in (missing_evidence or []) if str(item).strip()
         ]
+        prior_context_hash = (
+            readiness_digest(readiness["prior_round_context"])
+            if identity.round > 1
+            else None
+        )
 
         with _FileMutex(self.lock_path):
             state = self._read()
-            suppressed = self._validate_generation(state, identity, readiness_hash)
+            suppressed = self._validate_generation(
+                state, identity, readiness_hash, readiness
+            )
             if suppressed:
                 return suppressed
             candidate = state["candidates"].setdefault(
@@ -371,6 +634,11 @@ class ReviewGateStore:
                 {
                     "identity": identity.generation_payload,
                     "readiness_digest": readiness_hash,
+                    "pre_review_summary_digest": readiness["pre_review_summary_digest"],
+                    "pre_review_summary_artifact": readiness[
+                        "pre_review_summary_artifact"
+                    ],
+                    "prior_context_digest": prior_context_hash,
                     "review_bundles": list(readiness["review_bundles"]),
                     "bundles": {},
                 },
@@ -435,6 +703,11 @@ class ReviewGateStore:
                 "started": True,
                 "scope": scope,
                 "readiness_digest": readiness_hash,
+                "pre_review_summary_digest": readiness["pre_review_summary_digest"],
+                "pre_review_summary_artifact": readiness[
+                    "pre_review_summary_artifact"
+                ],
+                "prior_context_digest": prior_context_hash,
             }
 
     def finalize(
