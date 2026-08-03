@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.8.5
+version: 1.8.6
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -25,13 +25,13 @@ Do not block on reversible nits that can safely be fixed later: naming preferenc
 
 **Round 1 is the comprehensive review.** Inspect the complete authorized scope and present all independently discoverable findings in round one as much as possible. Do not stop after the first blocker. Use the requirement/failure matrix, inspect related instances of every discovered defect class, deduplicate overlaps, and give the author one coherent correction set with evidence, impact, and the smallest safe direction—not a sequence of surprises.
 
-Rounds 2 and 3 are disposition and regression checks. Later-round feedback is limited to unresolved round-1 findings, regressions or risks introduced by the correction, evidence that was genuinely unavailable in round 1, or a Critical/Important defect that could not reasonably have been discovered in the original frozen scope. Every newly raised later-round blocker must include `Why it was not discoverable in round 1: <cause>`. Do not introduce new preferences, reversible nits, or unrelated review surfaces after the author has followed the first report.
+Round 2 and later are disposition and regression checks. Later-round feedback is limited to unresolved round-1 findings, regressions or risks introduced by the correction, evidence that was genuinely unavailable in round 1, or a Critical/Important defect that could not reasonably have been discovered in the original frozen scope. Every newly raised later-round blocker must include `Why it was not discoverable in round 1: <cause>`. Do not introduce new preferences, reversible nits, or unrelated review scope. If new evidence contradicts earlier feedback, label it `PRIOR_FEEDBACK_CORRECTION`, quote the superseded statement, and identify the decisive evidence; do not silently reverse prior guidance.
 
 ## Prior-round context continuity
 
 Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. The authority-bearing gate must first parse the embedded closed-schema `pre_review_summary_artifact`, verify its lineage and canonical serialization, recompute the digest, and persist the verified bytes. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing, malformed, mismatched, or changed artifact blocks review for the stable lineage.
 
-For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
+For **Round 2 or later**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
 
 - every prior candidate/base identity and **all prior exact review reports** with verified digests, ordered by candidate generation from Round 1 onward;
 - a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
@@ -50,16 +50,15 @@ A fresh reviewer remains independent, but must begin with reconciliation rather 
 
 The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency. If it fits an allowed late-finding category, use that evidence-backed path. If it was reasonably discoverable earlier but was missed, record it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, preserve the evidence, keep the gate blocked, and escalate the review-process failure; do not silently omit it or launder it into ordinary drip-fed feedback.
 
-## Three-round maximum
+## Unbounded approval convergence
 
 - **Round 1:** complete risk-weighted review and a sufficiently detailed correction map.
 - **Round 2:** verify dispositions on the corrected immutable candidate and report only allowed later-round findings.
-- **Round 3:** final independent verification of the remaining correction set and correction-introduced regressions.
-- **No round 4** for the same stable scope or artifact lineage. If round 3 cannot approve, keep the candidate blocked and escalate the unresolved hard-to-reverse decision, residual risk, or scope choice to the user/owner. Renaming the candidate, changing reviewers, or splitting the same findings across review kinds does not reset the count. Materially new requirements create a new scope only when the owner explicitly accepts that new review contract.
+- **Round 3:** independent verification of the remaining correction set and correction-introduced regressions.
 
 ## Mandatory review lineage gate
 
-**Before substantive review**, require an authenticated controller receipt containing `lineage`, requested round (`1`–`3`), `candidate_identity`, `review_kind`, and `required_review_kinds`. If any field is **missing or ambiguous**, return `BLOCKED_INVALID_LINEAGE` without reviewing. A requested **Round 4** returns `ITERATION_LIMIT_REACHED` without substantive review. Every durable result must repeat all receipt fields plus the verdict; all required review kinds for one candidate share its round number.
+**Before substantive review**, require an authenticated controller receipt containing `lineage`, a positive integer requested round, `candidate_identity`, `review_kind`, and `required_review_kinds`. If any field is **missing or ambiguous**, return `BLOCKED_INVALID_LINEAGE` without reviewing. For Round 4 and later, require controller-derived `approval_convergence` mode and the complete cumulative prior-report history. Every durable result must bind the receipt fields, evidence-generation identity, and verdict.
 
 ## Scope and immutability
 
@@ -298,3 +297,11 @@ A test failure is not required for `FAIL`; untested behavior that demonstrably v
 - Accepting type/schema values without required status evidence.
 - Running a canonical command that dirties tracked generated output during an immutable audit.
 - Forgetting the final SHA/cleanliness check.
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

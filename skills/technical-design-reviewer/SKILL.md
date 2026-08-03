@@ -1,7 +1,7 @@
 ---
 name: technical-design-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact technical design or tech-spec revision for integrity, minimal complexity, automatic testability, operability, and sustainable self-monitoring."
-version: 0.3.5
+version: 0.3.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -28,13 +28,13 @@ Ignore reversible nits that can safely be fixed later, such as naming taste, for
 
 **Round 1 is the comprehensive architecture review.** Present all independently discoverable findings in round one as much as possible. Walk the complete integrity, failure, security, testability, operability, migration, and rollback matrices; inspect every bounded sibling instance of a discovered defect class; and give one deduplicated correction packet with evidence, consequence, constraints, and a safe design direction. Do not stop at the first unsound boundary or reserve obvious comments for later.
 
-Rounds 2 and 3 are bounded disposition checks. Later-round feedback is limited to unresolved round-1 architecture defects, regressions introduced by the revision, genuinely new system evidence, or a material defect that could not reasonably have been identified from the first frozen packet. Any new later-round blocker must state `Why it was not discoverable in round 1: <cause>`. Do not introduce fresh preferences, reversible nits, or downstream implementation/tooling concerns as new architecture feedback.
+Round 2 and later are disposition checks. Later-round feedback is limited to unresolved round-1 architecture defects, regressions introduced by the revision, genuinely new system evidence, or a material defect that could not reasonably have been identified from the first frozen packet. Any new later-round blocker must state `Why it was not discoverable in round 1: <cause>`. Do not introduce fresh preferences, reversible nits, or downstream implementation/tooling concerns as new architecture feedback.
 
 ## Prior-round context continuity
 
 Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. The authority-bearing gate must first parse the embedded closed-schema `pre_review_summary_artifact`, verify its lineage and canonical serialization, recompute the digest, and persist the verified bytes. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing, malformed, mismatched, or changed artifact blocks review for the stable lineage.
 
-For **Round 2 or Round 3**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
+For **Round 2 or later**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
 
 - every prior candidate/base identity and **all prior exact review reports** with verified digests, ordered by candidate generation from Round 1 onward;
 - a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
@@ -53,12 +53,11 @@ A fresh reviewer remains independent, but must begin with reconciliation rather 
 
 The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency. If it fits an allowed late-finding category, use that evidence-backed path. If it was reasonably discoverable earlier but was missed, record it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, preserve the evidence, keep the gate blocked, and escalate the review-process failure; do not silently omit it or launder it into ordinary drip-fed feedback.
 
-## Three-round maximum
+## Unbounded approval convergence
 
 - **Round 1:** complete risk-weighted architecture review and detailed steering packet.
 - **Round 2:** verify dispositions on the corrected exact design.
-- **Round 3:** final review of unresolved architectural decisions and revision-introduced regressions.
-- **No round 4** for the same technical-design lineage and stable scope. If round 3 cannot approve, return `ITERATION_LIMIT_REACHED`, preserve the unresolved hard-to-reverse choices and options, and require owner/user disposition. Renaming, reviewer replacement, or review-kind splitting does not reset the cap.
+- **Round 3:** continue review of unresolved architectural decisions and revision-introduced regressions.
 
 ## Mandatory Context Firewall
 
@@ -112,7 +111,6 @@ When `Architecture revisions required: none`, do not recommend another technical
 
 ## Review Iteration Index
 
-Require the packet/index to state `tech_spec_lineage`, exact revision, and requested round number from 1 through 3. Missing/ambiguous lineage or round is `BLOCKED`; filename changes never reset it. If the requested review is round 4 or higher for the same stable scope, return `ITERATION_LIMIT_REACHED` without another substantive review. Reconstruct and deduplicate lineage before review using [`references/review-lineage-reconstruction.md`](references/review-lineage-reconstruction.md), and mark round 3 explicitly as final.
 
 ## Required Review Method
 
@@ -285,3 +283,11 @@ Every approval dimension must cite artifact or repository evidence. A list of te
 - [ ] Existing system conventions are reused and duplicate sources/paths are minimized.
 - [ ] Sustainability acceptance covers deploy, operate, diagnose, repair, and verify recovery.
 - [ ] Reviewer did not edit or externally change canonical artifacts or systems.
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

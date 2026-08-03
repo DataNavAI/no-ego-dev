@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.14.6
+version: 1.14.7
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -34,15 +34,14 @@ The scheduled agent is a durable-stage controller. Each fresh cron session recon
 
 Use **Risk-weighted review**: spend the bounded reviewer budget on hard-to-reverse or high-consequence changes—public contracts, destructive migrations, auth/security/privacy, payments, critical journeys, infrastructure commitments, broad blast radius, and missing rollback. Ignore reversible nits that can safely be fixed later; naming taste, cosmetic formatting, optional refactors, and minor polish are not blocking and do not justify another run.
 
-Enforce **first-round completeness**. **Round 1** inspects the complete issue contract and full diff, follows every bounded sibling instance of a discovered defect class, and writes all independently discoverable findings in one deduplicated correction set with evidence and steering. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** is final. Later-round new feedback is limited to unresolved prior findings, remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been found earlier; every new blocker must include `Why it was not discoverable in round 1: <cause>`.
+Enforce **first-round completeness**. **Round 1** inspects the complete issue contract and full diff, follows every bounded sibling instance of a discovered defect class, and writes all independently discoverable findings in one deduplicated correction set with evidence and steering. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** completes the initial correction budget. Later-round new feedback is limited to unresolved prior findings, remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been found earlier; every new blocker must include `Why it was not discoverable in round 1: <cause>`.
 
-**No round 4** is dispatched for the same stable issue/PR scope. If Round 3 is not approved, leave the PR blocked and escalate the unresolved hard-to-reverse decision, risk, or scope choice. Renaming a branch, changing reviewers, or splitting review kinds does not reset the count.
 
 ### Prior-round context handoff
 
 Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
-For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+For every Round 2 or later dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 
 - all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
 - a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
@@ -73,7 +72,10 @@ Before dispatching any reviewer:
 
 For an ordinary candidate, use one **composite review bundle** covering specification, correctness, security, regression-test honesty, repository conventions, and operational risk. Add a distinct specialized kind only for a named high-consequence boundary—such as destructive migration, authorization/privacy, payments, cryptography, accessibility evidence, or broad infrastructure blast radius—that the composite reviewer cannot credibly cover. All required kinds share one frozen candidate and numbered round; collect the round before issuing one deduplicated correction packet.
 
-Use [`scripts/review_gate.py`](scripts/review_gate.py) as the executable local control when a monitor needs durable enforcement. Store its state outside the candidate repository. It validates receipt identity—including exact candidate and current base SHA—and the complete authorized review-bundle manifest, then atomically claims one candidate generation keyed by `(repository, PR, lineage, round, exact SHA, base SHA)`. Required bundles are nested under that generation so specialists do not double-count candidates. The gate suppresses active and finalized same-bundle duplicates plus same-candidate round renaming, permits one missing-evidence-only recovery after `INCOMPLETE`, uses process-owned advisory locking with file and parent-directory durability sync, rejects Round 4, and emits aggregate candidate/bundle metrics. The first generation is Round 1; each changed candidate advances exactly one round; skipped, reused, or regressed rounds fail closed. Its index is operational metadata, not approval: the controller must still read back the durable aggregate bundle verdict and provider state.
+Use [`scripts/review_gate.py`](scripts/review_gate.py) as the executable local control when a monitor needs durable enforcement. Store its state outside the candidate repository. It validates exact candidate/base identity, the complete authorized review-bundle manifest, cumulative prior context, and the immutable pre-review summary; it enforces monotonic positive-integer rounds and derives `approval_convergence` mode for Round 4 and later.
+
+The gate uses process-owned locking and atomic durable state writes, suppresses duplicate same-candidate dispatch, permits at most one narrow recovery after an `INCOMPLETE` attempt, and requires every authorized review bundle to reach a terminal result before the next candidate generation. Its aggregate status exposes the persisted controller-derived review mode but remains operational metadata, never approval by itself.
+
 
 Track at least: attempts started, duplicate dispatches suppressed, narrow recoveries, verdict counts, candidate generations, candidates reaching Round 3, aggregate reviewer runtime, and fresh reviewer tokens when the runtime exposes them. Daily reporting should stay silent when healthy but preserve these metrics for trend analysis.
 
@@ -237,7 +239,7 @@ For this tick, execute **one durable stage per tick**:
 7. For `REVIEW`, first reuse trustworthy current-SHA CI and prior durable evidence. Dispatch at most one fresh reviewer attempt for the exact SHA and required review kind, with an attempt-scoped durable verdict sink, then end immediately as `REVIEW_PENDING` after verifying the dispatch receipt.
 8. For `MERGE`, require a durable exact-SHA `APPROVED` result, all required checks, unchanged policy/head, and an atomic expected-head operation such as `gh pr merge --match-head-commit APPROVED_SHA`. If a durable merge executor is needed, dispatch only that executor and end `MERGE_PENDING`. Never enable GitHub auto-merge.
 9. For `VERIFY`, read back the merge, issue closure/link, base-branch commit, labels, and cleanup. Only verified state may mark the workflow complete.
-10. For `BLOCK`, leave a precise issue/PR comment, replace `agent:in-progress` with `agent:blocked` or `agent:human-review`, and stop. Round 3 is terminal for one stable scope; no Round 4.
+10. For `BLOCK`, leave a precise issue/PR comment and route the smallest complete correction set. Preserve the lineage and schedule the next monotonic review after remediation; Round 4 and later use approval-convergence mode.
 11. Every fresh scheduled run starts again at step 1, consumes durable evidence from the prior stage, and advances at most one successor. A completion hook only accelerates this idempotent reconciliation pass.
 12. Deliver the result with this mandatory user-facing envelope:
 
@@ -327,8 +329,8 @@ When the reviewer requests changes:
 2. Spawn a fresh fixer leaf with only the findings, current SHA, issue contract, and relevant files.
 3. The fixer adds/updates tests as needed, makes only required changes, reruns checks, commits, and pushes.
 4. On a later `REVIEW` stage, dispatch a fresh reviewer to inspect the new SHA independently, preserving the lineage, incrementing the candidate round, and retaining prior finding dispositions. A still-later `MERGE` stage may consume approval only if that exact-SHA review passes every gate.
-5. Permit at most two fix/re-review cycles after the comprehensive Round 1, for three total review rounds.
-6. If Round 3 is still not approved, stop, label `agent:blocked`, and leave a precise issue/PR comment. No round 4; never merge by exhaustion.
+5. Permit as many monotonic fix/re-review cycles as required for exact-candidate approval; Round 4 and later use approval-convergence mode.
+6. If a candidate is still not approved, keep it unmerged, route one smallest complete blocking correction set, and continue to the next exact-SHA round. Never merge by exhaustion.
 
 ## Post-merge Verification
 
@@ -433,3 +435,11 @@ When packaging this skill into a Hermes profile distribution or syncing it acros
 - [ ] Blocked runs leave actionable comments and release/replace claims.
 - [ ] Delivery is quiet when idle and concise when work or blockers occur.
 - [ ] Cron history and delegation transcripts provide an auditable trail.
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

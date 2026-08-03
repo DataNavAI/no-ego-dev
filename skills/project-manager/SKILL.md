@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.21.6
+version: 0.21.7
 author: NoEgoDev
 license: MIT
 metadata:
@@ -49,15 +49,14 @@ Use [`references/product-oriented-communication.md`](references/product-oriented
 
 Every review workflow uses **Risk-weighted review**: prioritize hard-to-reverse or high-consequence decisions and defects, including public contracts, destructive migrations, security/privacy/authorization, money, critical journeys, infrastructure commitments, and weak rollback. Reversible nits, stylistic preferences, cosmetic polish, and optional refactors that can safely be fixed later are non-blocking and must not consume a review round.
 
-Require **first-round completeness**. **Round 1** is the comprehensive pass and returns all independently discoverable Critical/Important or otherwise material findings in one deduplicated, evidence-backed steering packet; reviewers inspect the complete authorized scope and bounded sibling instances instead of stopping at the first defect. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** is final. New later-round feedback is permitted only for unresolved prior findings, changes introduced by remediation, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must include `Why it was not discoverable in round 1: <cause>`.
+Require **first-round completeness**. **Round 1** is the comprehensive pass and returns all independently discoverable Critical/Important or otherwise material findings in one deduplicated, evidence-backed steering packet; reviewers inspect the complete authorized scope and bounded sibling instances instead of stopping at the first defect. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** completes the initial correction budget. New later-round feedback is permitted only for unresolved prior findings, changes introduced by remediation, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must include `Why it was not discoverable in round 1: <cause>`.
 
-**No round 4** is allowed for the same stable artifact lineage or implementation scope. If Round 3 cannot approve, preserve the exact unresolved hard-to-reverse decisions and options, block the candidate, and escalate to the user/owner. Do not reset the count by renaming, changing reviewer roles, splitting review kinds, or obtaining human authorization for another autonomous cycle. Materially new owner-approved requirements form a new scope; corrections to the same findings do not.
 
 ### Prior-round context handoff
 
 Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
-For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+For every Round 2 or later dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 
 - all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
 - a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
@@ -353,7 +352,7 @@ Always spawn focused subagents for directly asked actionable tasks and for tasks
 - UI guidelines / design systems / screen/state planning / UI bug triage → spawn an authoring subagent instructed to use `ui-designer`; once the guideline and frozen evidence are ready, dispatch a separate `ui-reviewer` fresh review-only leaf that did not author or edit the candidate.
 - React Native app setup / Expo or React Native CLI implementation / Metro / Android Studio + SDK setup / emulator testing → spawn a subagent instructed to use `react-native-app-dev` when that skill is available, otherwise use `coder` with explicit React Native mobile context.
 - Native Android app implementation / Gradle / Jetpack Compose / emulator testing / Play Store packaging/build artifacts → spawn a subagent instructed to use `android-app-dev` when that skill is available, otherwise use `coder` with explicit Android context.
-- Architecture / technical spec / system design / repo bootstrap decisions → spawn an authoring subagent instructed to use `architect`; once the design is frozen, dispatch a separate `technical-design-reviewer` fresh review-only leaf that did not author or edit the candidate. Before assigning another technical review, verify the durable lineage/round index, enforce the absolute maximum of three total review rounds for the stable technical-design scope, and inspect reviewer finding routing. If `Architecture revisions required: none`, route implementation/security/QA and BUILD_REQUIRED work to downstream issues and proceed to implementation; do not request another design review merely because code, staging, monitoring, or release evidence remains.
+- Architecture / technical spec / system design / repo bootstrap decisions → spawn an authoring subagent instructed to use `architect`; once frozen, dispatch a separate `technical-design-reviewer` fresh review-only leaf that did not author or edit the candidate. Verify the durable lineage, complete cumulative context, and approval-convergence mode for Round 4 and later before every re-review.
 - Browser/web game architecture, performant game engine selection, gameplay systems, engine-specific skill discovery/creation, or game performance planning → spawn a subagent instructed to use `web-game-dev`, usually paired with or before `architect` finalizes the tech spec.
 - Coding / tests / refactors / implementation / bug fixing → spawn one or more subagents instructed to use `coder`.
 - DevOps / CI/CD / deployment / observability / infrastructure / runbooks → spawn a subagent instructed to use `devops`.
@@ -380,7 +379,7 @@ For implementation review/fix loops, use [`references/implementation-review-conv
 - Pin every review to exact base/head SHAs and verify the remote head before acting.
 - Require early pushed checkpoints from long fix workers. If a worker times out, classify it as `interrupted`, inspect remote branches/PRs/commits/worktrees, and compare the branch SHA to its immutable base before claiming recovery. Continue an existing checkpoint; when no artifact exists, record that on the issue and split independently testable outcomes into dependency-ordered children instead of retrying the same oversized assignment.
 - Split oversized corrections into non-overlapping branches, integrate them into the original PR, and expect contract-boundary integration REDs even when each branch was independently green.
-- Allow at most three total review rounds for one stable implementation scope: the comprehensive initial review plus at most two correction re-reviews. Every correction creates a new SHA and requires fresh independent exact-SHA review before merge; that review must occur within the three-round cap. If Round 3 finds another blocker, do not patch-and-merge or dispatch Round 4: freeze the finding and escalate/block the candidate; tests or scanners never substitute for independent review of changed bytes.
+- Every correction creates a new SHA and requires fresh independent exact-SHA review before merge. Advance the same lineage by one monotonic round; Round 4 and later use approval-convergence mode with no fixed round limit; tests or scanners never substitute for independent review of changed bytes, and unresolved material defects remain blocking.
 - Never merge while an exploit still reproduces, exact-commit evidence is missing, or residual risk remains material.
 - For public artifact boundaries, require more than path/hash closure: semantically validate structured outputs, detect provider/generic credentials in text assets, reproduce reviewer attacks, and run an external secret scanner when available.
 - For generated images/exports or other security-sensitive outputs, reject caller-owned object graphs at the boundary when feasible: accept bounded primitive JSON text, parse once, validate/freeze one snapshot, derive bytes/filenames only from it, and regression-test alternating Proxies with zero trap invocation.
@@ -694,3 +693,10 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Before milestone completion, all linked open bugs were fixed, closed as invalid/obsolete/won't-fix with rationale, or explicitly deferred without compromising milestone acceptance.
 - [ ] Follow-up tasks exist for discovered gaps.
 
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

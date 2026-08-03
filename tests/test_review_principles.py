@@ -51,13 +51,13 @@ def package_text(name: str) -> str:
     )
 
 
-def test_direct_reviewers_use_the_shared_risk_weighted_three_round_protocol() -> None:
+def test_direct_reviewers_use_the_shared_risk_weighted_convergence_protocol() -> None:
     required = (
         "## Risk-weighted review priority",
         "## First-round completeness",
-        "## Three-round maximum",
+        "## Post-Round-3 approval convergence",
         "hard to reverse",
-        "No round 4",
+        "no fixed round limit",
         "Why it was not discoverable in round 1",
     )
 
@@ -216,14 +216,14 @@ def test_review_evals_and_fixtures_exercise_missing_and_contradictory_round_cont
             assert phrase in fixture, f"{name} fixture missing {phrase!r}"
 
 
-def test_orchestrators_enforce_complete_first_round_and_no_fourth_review() -> None:
+def test_orchestrators_enforce_complete_first_round_and_approval_convergence() -> None:
     required = (
         "Risk-weighted review",
         "first-round completeness",
         "Round 1",
         "Round 2",
         "Round 3",
-        "No round 4",
+        "approval-convergence mode",
         "Why it was not discoverable in round 1",
     )
 
@@ -244,7 +244,7 @@ def test_review_evals_cover_all_three_user_principles() -> None:
         "omits reversible nits entirely",
         "all independently discoverable findings in round one",
         "later-round feedback is limited",
-        "three total review rounds",
+        "approval-convergence mode",
     )
 
     for name in DIRECT_REVIEW_SKILLS:
@@ -295,7 +295,7 @@ def test_round_is_one_candidate_generation_shared_by_all_review_kinds() -> None:
             assert phrase in content, f"{name} missing canonical round rule {phrase!r}"
 
 
-def test_no_published_workflow_allows_round_four_or_unreviewed_risk_acceptance() -> None:
+def test_published_workflow_allows_convergence_but_not_unreviewed_risk_acceptance() -> None:
     published = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted(SKILLS.rglob("*.md"))
@@ -308,7 +308,9 @@ def test_no_published_workflow_allows_round_four_or_unreviewed_risk_acceptance()
     ):
         assert forbidden not in published
 
-    assert "No round 4" in skill_text("coder")
+    coder = skill_text("coder")
+    assert "Round 4 and later" in coder
+    assert "never treat review exhaustion as approval" in coder
 
 
 def test_all_required_exact_sha_gates_rerun_after_test_only_changes() -> None:
@@ -318,7 +320,7 @@ def test_all_required_exact_sha_gates_rerun_after_test_only_changes() -> None:
     assert "rerun every required exact-SHA review kind" in subagent
 
 
-def test_direct_reviewers_reject_missing_or_fourth_round_before_review_and_bind_receipts() -> None:
+def test_direct_reviewers_reject_missing_round_and_bind_later_round_receipts() -> None:
     for name in ("spec-compliance-review", "ui-reviewer"):
         content = skill_text(name)
         for phrase in (
@@ -383,10 +385,62 @@ def test_complete_domain_reviewer_packages_are_publishable() -> None:
         assert required <= actual
 
 
-def test_direct_reviewer_fixtures_reject_late_feedback_and_round_four() -> None:
+def test_direct_reviewer_fixtures_require_post_round_three_approval_convergence() -> None:
     for name in DIRECT_REVIEW_SKILLS:
         fixture = (SKILLS / name / "evaldata" / "README.md").read_text(encoding="utf-8")
         assert "Negative scenario" in fixture
         assert "Round 2" in fixture
-        assert "Round 4" in fixture
-        assert "ITERATION_LIMIT_REACHED" in fixture
+        assert "Round 4 and later" in fixture
+        assert "approval-convergence mode" in fixture
+        assert "ITERATION_LIMIT_REACHED" not in fixture
+
+
+def test_review_packages_remove_the_round_cap_without_weakening_material_gates() -> None:
+    for name in (*DIRECT_REVIEW_SKILLS, *REVIEW_ORCHESTRATION_SKILLS):
+        content = skill_text(name)
+        for phrase in (
+            "Round 4 and later",
+            "approval-convergence mode",
+            "no fixed round limit",
+            "material",
+            "APPROVED",
+        ):
+            assert phrase in content, f"{name} missing convergence policy {phrase!r}"
+        for forbidden in (
+            "No round 4",
+            "no Round 4",
+            "three-round cap",
+            "three-round maximum",
+            "three-round lineage",
+            "three total review rounds",
+            "Round 3 is final",
+            "Round 3 is the final",
+            "final permitted substantive review",
+            "ITERATION_LIMIT_REACHED",
+            "BLOCKED_AFTER_ROUND_3",
+        ):
+            assert forbidden not in package_text(name), (
+                f"{name} retains superseded round-cap policy {forbidden!r}"
+            )
+
+
+def test_published_root_docs_describe_unlimited_approval_convergence() -> None:
+    english = (ROOT / "README.md").read_text(encoding="utf-8")
+    korean = (ROOT / "README.ko.md").read_text(encoding="utf-8")
+
+    for forbidden in (
+        "three-round maximum",
+        "no fourth review round",
+        "no more than three rounds",
+        "three-round review lineage",
+        "최대 3라운드 제한",
+        "4번째 검토 금지",
+        "최대 3라운드만 허용",
+        "최대 3라운드 검토 계보",
+    ):
+        assert forbidden not in english + korean
+
+    assert "no fixed round limit" in english
+    assert "approval-convergence mode" in english
+    assert "고정된 라운드 제한 없이" in korean
+    assert "승인 수렴 모드" in korean

@@ -17,12 +17,12 @@ expectations:
   - "Presents all independently discoverable findings in round one with evidence and enough corrective direction instead of stopping at the first blocker."
   - "later-round feedback is limited to prior findings correction-introduced regressions genuinely unavailable evidence or material issues that could not reasonably be found in round one."
   - "Requires every allowed new later-round blocker to explain why it was not discoverable in round one."
-  - "Allows no more than three total review rounds for one stable scope and never dispatches round four."
-  - "For rounds two and three requires all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review."
+  - "For round two and later requires all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review."
   - "Requires one neutral immutable pre-review summary in every review round and blocks unless the authority-bearing gate parses the exact closed-schema canonical artifact verifies lineage recomputes its digest and persists verified bytes."
   - "Reconciles every prior finding and performs a contradiction check so it does not contradict prior feedback without an explicit evidence-backed PRIOR_FEEDBACK_CORRECTION."
   - "Rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
+  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
 setupCommands: []
 teardownCommands: []
 parameters:

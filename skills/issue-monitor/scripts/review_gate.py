@@ -151,8 +151,8 @@ class ReviewIdentity:
             raise GateError("pr must be a positive integer")
         if not self.lineage or len(self.lineage) > 160:
             raise GateError("invalid lineage")
-        if self.round not in {1, 2, 3}:
-            raise GateError("round must be 1, 2, or 3; Round 4 is prohibited")
+        if isinstance(self.round, bool) or not isinstance(self.round, int) or self.round < 1:
+            raise GateError("round must be a positive integer")
         if not SHA_RE.fullmatch(self.candidate_sha):
             raise GateError("candidate_sha must be a lowercase 40-character SHA")
         if not SHA_RE.fullmatch(self.base_sha):
@@ -209,8 +209,13 @@ def validate_readiness(
         raise GateError("readiness pr is invalid")
     if not payload.get("lineage") or len(str(payload["lineage"])) > 160:
         raise GateError("readiness lineage is invalid")
-    if payload.get("round") not in {1, 2, 3}:
-        raise GateError("readiness round must be 1, 2, or 3")
+    readiness_round = payload.get("round")
+    if (
+        isinstance(readiness_round, bool)
+        or not isinstance(readiness_round, int)
+        or readiness_round < 1
+    ):
+        raise GateError("readiness round must be a positive integer")
     if not DIGEST_RE.fullmatch(str(payload.get("pre_review_summary_digest", ""))):
         raise GateError("pre_review_summary_digest must be a lowercase SHA-256 digest")
     _validate_pre_review_summary(payload)
@@ -220,7 +225,7 @@ def validate_readiness(
             raise GateError("Round 1 prior_round_context must be null")
     else:
         if not isinstance(prior_context, dict):
-            raise GateError("prior_round_context is required for Round 2 and Round 3")
+            raise GateError("prior_round_context is required for Round 2 and later")
         required_prior_fields = {
             "round",
             "candidate_sha",
@@ -585,8 +590,6 @@ class ReviewGateStore:
             raise GateError(
                 "prior generation review-bundle manifest must be terminal before a new candidate"
             )
-        if max_round >= 3:
-            raise GateError("lineage exhausted after Round 3; Round 4 is prohibited")
         if identity.round < max_round:
             raise GateError("candidate round would regress lineage progression")
         if identity.round == max_round:
@@ -639,6 +642,9 @@ class ReviewGateStore:
                         "pre_review_summary_artifact"
                     ],
                     "prior_context_digest": prior_context_hash,
+                    "review_mode": (
+                        "approval_convergence" if identity.round > 3 else "standard"
+                    ),
                     "review_bundles": list(readiness["review_bundles"]),
                     "bundles": {},
                 },
@@ -708,6 +714,10 @@ class ReviewGateStore:
                     "pre_review_summary_artifact"
                 ],
                 "prior_context_digest": prior_context_hash,
+                "review_mode": candidate.get(
+                    "review_mode",
+                    "approval_convergence" if identity.round > 3 else "standard",
+                ),
             }
 
     def finalize(
@@ -776,6 +786,10 @@ class ReviewGateStore:
             "candidate_sha": identity.candidate_sha,
             "base_sha": identity.base_sha,
             "round": identity.round,
+            "review_mode": candidate.get(
+                "review_mode",
+                "approval_convergence" if identity.round > 3 else "standard",
+            ),
             "bundles": statuses,
             "complete": all(value in FINAL_VERDICTS for value in statuses.values()),
             "approved": bool(statuses) and all(value == "APPROVED" for value in statuses.values()),

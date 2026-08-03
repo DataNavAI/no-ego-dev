@@ -15,12 +15,12 @@ expectations:
   - "presents all independently discoverable findings in round one with evidence user impact and enough corrective direction"
   - "later-round feedback is limited to unresolved findings revision-introduced regressions genuinely new evidence or material issues not reasonably discoverable in round one"
   - "requires every allowed new later-round blocker to explain why it was not discoverable in round one"
-  - "allows no more than three total review rounds for one stable UI lineage and never dispatches round four"
-  - "for rounds two and three requires all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review"
+  - "for round two and later requires all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review"
   - "requires one neutral immutable pre-review summary in every review round and blocks unless the authority-bearing gate parses the exact closed-schema canonical artifact verifies lineage recomputes its digest and persists verified bytes"
   - "reconciles every prior finding and performs a contradiction check so it does not contradict prior feedback without an explicit evidence-backed PRIOR_FEEDBACK_CORRECTION"
   - "rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one"
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
+  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -18,9 +18,7 @@ The review should judge ease, accessibility, trust, loading/error/recovery, and 
 
 Approval requires outcome-focused acceptance and learning: task usefulness/completion, time-to-value, failure/recovery, base-product regression, supported interfaces, and a proportionate qualitative satisfaction signal. The output must follow the structured PRD review shape with severity, evidence, smallest correction, base-product fit, satisfaction boosters, unresolved decisions, and exact revision verdict.
 
-This is Round 1. The reviewer must return all independently discoverable product-decision defects now, prioritize hard-to-reverse audience/problem/journey/source-of-truth/privacy/rights commitments, and ignore reversible wording or formatting nits. The report must steer the author with evidence, user impact, required decision, and smallest correction. Re-review is limited to Rounds 2 and 3; new later feedback requires an explicit reason it was not discoverable in Round 1. There is no Round 4 for this stable PRD scope.
 
-Negative scenarios: Round 2 must reject drip-fed ordinary feedback that was reasonably discoverable from the Round 1 PRD and is unrelated to remediation or newly available evidence. A Round 4 request returns `ITERATION_LIMIT_REACHED` before substantive review; missing exact revision or lineage returns `BLOCKED`.
 
 Additional continuity scenarios:
 
@@ -30,3 +28,8 @@ Additional continuity scenarios:
 - **Material process escape:** Round 2 discovers a genuine material safety/correctness defect that was reasonably discoverable in Round 1 but missed. Preserve it as `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently suppressing it or treating it as ordinary later-round feedback.
 - **Missing cumulative Round-3 history:** A Round-3 packet omits the Round-1 exact report or generation identity; block before substantive review instead of relying only on Round 2.
 - **Missing or changed pre-review summary:** The embedded exact artifact is absent, malformed, noncanonical, schema-invalid, digest-mismatched, or changed inside the stable lineage; block before substantive review.
+
+
+Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+Negative scenario: Round 2 and later must omit ordinary product feedback that was reasonably discoverable in Round 1 and unrelated to remediation or new evidence. Missing exact revision, lineage, or cumulative report history returns `BLOCKED` rather than a verdict.

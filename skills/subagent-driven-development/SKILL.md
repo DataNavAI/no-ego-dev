@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.6
+version: 1.12.7
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -47,15 +47,14 @@ After confirmation, automatically dispatch the next dependency-safe implementer 
 
 Apply **Risk-weighted review** across specification, quality, domain, and integration gates. Spend depth on hard-to-reverse or high-consequence changes: public contracts, migrations, destructive data paths, authorization/privacy/security, payments, infrastructure commitments, critical journeys, and decisions without credible rollback. Omit reversible nits such as naming taste, cosmetic formatting, optional refactors, and minor polish.
 
-Enforce **first-round completeness**. **Round 1** inspects the full authorized scope and returns all independently discoverable Critical/Important or otherwise material findings in one deduplicated correction matrix with evidence and enough direction to fix each bounded defect class. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** is final. Later-round feedback is limited to unresolved findings, correction-introduced regressions, genuinely unavailable evidence, or a material defect that could not reasonably have been found earlier; every new blocker states `Why it was not discoverable in round 1: <cause>`.
+Enforce **first-round completeness**. **Round 1** inspects the full authorized scope and returns all independently discoverable Critical/Important or otherwise material findings in one deduplicated correction matrix with evidence and enough direction to fix each bounded defect class. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** completes the initial correction budget. Later-round feedback is limited to unresolved findings, correction-introduced regressions, genuinely unavailable evidence, or a material defect that could not reasonably have been found earlier; every new blocker states `Why it was not discoverable in round 1: <cause>`.
 
-**No round 4** is dispatched for the same stable scope or lineage. If Round 3 is not approved, keep the candidate blocked and escalate the unresolved risk or scope choice. Tests and scanners cannot waive the unresolved gate.
 
 ### Prior-round context handoff
 
 Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
-For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+For every Round 2 or later dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 
 - all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
 - a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
@@ -240,3 +239,11 @@ Load only the reference needed for the current risk:
 - [references/contract-alignment-gates.md](references/contract-alignment-gates.md) and [references/contract-drift-review.md](references/contract-drift-review.md) — governing-contract alignment.
 
 The context-budget and gates references are adapted from gsd-build/get-shit-done (MIT © 2025 Lex Christopherson).
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

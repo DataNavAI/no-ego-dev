@@ -1,7 +1,7 @@
 ---
 name: immutable-candidate-verification
 description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, composite independent review, and reproducible evidence.
-version: 1.0.55
+version: 1.0.56
 ---
 
 # Immutable Candidate Verification
@@ -22,15 +22,14 @@ Index durable review evidence by repository/artifact, lineage, round, candidate 
 
 Use **Risk-weighted review** within every immutable gate. Prioritize hard-to-reverse or high-consequence changes such as public contracts, destructive migrations, authorization/security/privacy, payments, critical journeys, infrastructure lock-in, broad blast radius, and changes without credible rollback. Reversible nits—naming taste, cosmetic formatting, optional refactors, or minor polish that can safely be fixed later—do not block and do not justify a new candidate/review round.
 
-Enforce **first-round completeness** for each stable scope. **Round 1** is comprehensive: inspect the full frozen candidate and return all independently discoverable Critical/Important or otherwise material findings in one deduplicated finding set with evidence and enough direction to fix each defect class. **Round 2** verifies dispositions on the corrected exact SHA. **Round 3** is final and checks unresolved findings plus correction-introduced regressions. Later-round new feedback is allowed only for remediation changes, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must state `Why it was not discoverable in round 1: <cause>`.
+Enforce **first-round completeness** for each stable scope. **Round 1** is comprehensive: inspect the full frozen candidate and return all independently discoverable Critical/Important or otherwise material findings in one deduplicated finding set with evidence and enough direction to fix each defect class. **Round 2** verifies dispositions on the corrected exact SHA. **Round 3** completes the initial correction budget and checks unresolved findings plus correction-introduced regressions. Later-round new feedback is allowed only for remediation changes, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must state `Why it was not discoverable in round 1: <cause>`.
 
-**No round 4** is permitted for the same stable scope or artifact lineage. Every correction still invalidates prior SHA-bound verdicts, but after a negative Round 3 the workflow must block and escalate rather than create and review another remediation SHA. Tests, scanners, renaming, reviewer replacement, or splitting review kinds cannot reset or waive the three-round maximum.
 
 ### Prior-round context handoff
 
 Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
 
-For every Round 2 or Round 3 dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
+For every Round 2 or later dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
 
 - all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
 - a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
@@ -102,7 +101,7 @@ For product-source plus publication-hub workflows, follow `references/multi-repo
 - Passing tests alone do not complete an immutable task.
 - When a corrected candidate claims a public-artifact boundary, independently mutate emitted allowlisted files and recompute their manifest digests/lengths before rerunning the checker. A path allowlist plus checksum closure proves byte identity, not semantic safety; named-marker regressions do not establish broad secret/private-byte exclusion. Apply `references/exact-commit-public-artifact-boundary-review.md` and fail closed if any recognizable synthetic provider credential or prohibited publication payload survives inside an otherwise valid allowlisted file.
 - A verdict against a dirty worktree is not an immutable gate.
-- A correction after review invalidates that review. The three-round cap is a stop/escalation boundary, never an approval waiver: if Round 3 finds a material issue, preserve the finding and keep the PR draft/unmerged. The owner may simplify, split, or stop the scope, but cannot authorize Round 4 or substitute risk acceptance, tests, or scanners for missing independent exact-SHA approval.
+- A correction after review invalidates that review. Continue with the next monotonic exact-SHA round; Round 4 and later use approval-convergence mode, while unresolved material findings remain blocking and tests or scanners never substitute for approval.
 - Copied `READY`, `PASS`, or Markdown labels are not evidence; derive decisions from structured data.
 - Matching two caller-controlled timestamps does not prove freshness. Separate artifact `generatedAt` from a trusted evaluation clock, enforce a bounded age/future-skew policy, bind every component timestamp to the report generation, and explicitly probe the paired-stale case. Document the evaluation-clock trust boundary: if an untrusted caller can choose both clocks, the check is not security-grade freshness.
 - Keep production and test trust boundaries distinct. A production report API should accept only a verified opaque candidate and derive evaluation time internally; deterministic clock/verifier seams must be unavailable to production imports. Capture test-mode eligibility and manifest trust anchors once during module initialization rather than consulting mutable environment variables at call time. Add a production-import regression that flips `NODE_ENV` afterward and proves both seams remain unavailable.
@@ -177,3 +176,11 @@ See `references/dynamic-rerender-media-continuity-review.md` when an async contr
 See `references/responsive-rerender-and-blocker-only-ui-gate.md` for exact-width element-bound clipping probes that distinguish intentional scrollers, focus assertions after follow/unfollow DOM replacement, route-by-route outcome rechecks, evidence reconciliation, and exact severity-filtered verdict output.
 
 See `references/staged-snapshot-adversarial-review.md` when reviewing an exact frozen staged set without modifying the checkout, especially when canonical tests generate tracked fixtures or hostile-object boundaries require late prototype-pollution probes.
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
+
+Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
+
+Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.
