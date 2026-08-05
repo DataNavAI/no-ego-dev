@@ -62,16 +62,28 @@ def _ensure_yaml() -> None:
         raise RuntimeError("PyYAML is required to load EVAL.yaml files")
 
 
+def _eval_package_dir(eval_path: Path) -> Path:
+    for candidate in (eval_path.parent, *eval_path.parent.parents):
+        if (candidate / "SKILL.md").is_file() or (candidate / "distribution.yaml").is_file():
+            return candidate.resolve()
+    return eval_path.parent.resolve()
+
+
 def _load_fixture(eval_path: Path, parameters: dict[str, Any]) -> tuple[Path | None, str | None]:
-    raw = parameters.get("fixture")
-    if raw is None:
+    if "fixture" not in parameters:
         return None, None
+    raw = parameters["fixture"]
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError(f"{eval_path} parameters.fixture must be a non-empty relative path")
     relative_path = Path(raw)
     if relative_path.is_absolute():
         raise ValueError(f"{eval_path} parameters.fixture must stay within the eval package")
-    package_dir = eval_path.parent.resolve()
+    if ".." in relative_path.parts:
+        raise ValueError(
+            f"{eval_path} parameters.fixture must stay within the eval package "
+            "and must not contain traversal components"
+        )
+    package_dir = _eval_package_dir(eval_path)
     fixture_path = (package_dir / relative_path).resolve()
     try:
         fixture_path.relative_to(package_dir)

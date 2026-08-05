@@ -51,6 +51,15 @@ def test_discovers_eval_yaml_files(tmp_path):
     assert found == [tmp_path / "a" / "EVAL.yaml"]
 
 
+def test_loads_every_tracked_repository_eval():
+    repo_root = Path(__file__).resolve().parents[1]
+    eval_files = discover_eval_files([repo_root])
+
+    assert len(eval_files) >= 29
+    for eval_path in eval_files:
+        load_eval(eval_path)
+
+
 def test_load_eval_validates_required_fields(tmp_path):
     path = tmp_path / "EVAL.yaml"
     path.write_text("prompt: Build it\nexpectations:\n  - result exists\nparameters:\n  repo: local\n")
@@ -78,6 +87,22 @@ def test_load_eval_rejects_fixture_path_escape(tmp_path):
         load_eval(eval_path)
 
 
+def test_load_eval_rejects_lexical_fixture_traversal_inside_package(tmp_path):
+    eval_dir = tmp_path / "skill"
+    (eval_dir / "subdir").mkdir(parents=True)
+    (eval_dir / "fixture.md").write_text("scenario")
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text(
+        "prompt: Inspect fixture\n"
+        "expectations: [safe]\n"
+        "parameters:\n"
+        "  fixture: subdir/../fixture.md\n"
+    )
+
+    with pytest.raises(ValueError, match="must not contain traversal"):
+        load_eval(eval_path)
+
+
 def test_load_eval_rejects_fixture_symlink_escape(tmp_path):
     eval_dir = tmp_path / "skill"
     fixture_dir = eval_dir / "evaldata"
@@ -97,7 +122,7 @@ def test_load_eval_rejects_fixture_symlink_escape(tmp_path):
         load_eval(eval_path)
 
 
-@pytest.mark.parametrize("fixture_yaml", ["123", "''"])
+@pytest.mark.parametrize("fixture_yaml", ["123", "''", "null"])
 def test_load_eval_rejects_non_string_or_empty_fixture_parameter(tmp_path, fixture_yaml):
     eval_path = tmp_path / "EVAL.yaml"
     eval_path.write_text(
