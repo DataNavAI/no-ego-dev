@@ -4,6 +4,7 @@ import dataclasses
 import html
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import time
@@ -24,6 +25,8 @@ class EvalSpec:
     setup_commands: list[str]
     teardown_commands: list[str]
     parameters: dict[str, Any]
+    fixture_path: Path | None
+    fixture_text: str | None
 
 
 @dataclasses.dataclass
@@ -59,6 +62,41 @@ def _ensure_yaml() -> None:
         raise RuntimeError("PyYAML is required to load EVAL.yaml files")
 
 
+def _eval_package_dir(eval_path: Path) -> Path:
+    for candidate in (eval_path.parent, *eval_path.parent.parents):
+        if (candidate / "SKILL.md").is_file() or (candidate / "distribution.yaml").is_file():
+            return candidate.resolve()
+    return eval_path.parent.resolve()
+
+
+def _load_fixture(eval_path: Path, parameters: dict[str, Any]) -> tuple[Path | None, str | None]:
+    if "fixture" not in parameters:
+        return None, None
+    raw = parameters["fixture"]
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(f"{eval_path} parameters.fixture must be a non-empty relative path")
+    relative_path = Path(raw)
+    if relative_path.is_absolute():
+        raise ValueError(f"{eval_path} parameters.fixture must stay within the eval package")
+    if ".." in relative_path.parts:
+        raise ValueError(
+            f"{eval_path} parameters.fixture must stay within the eval package "
+            "and must not contain traversal components"
+        )
+    package_dir = _eval_package_dir(eval_path)
+    fixture_path = (package_dir / relative_path).resolve()
+    try:
+        fixture_path.relative_to(package_dir)
+    except ValueError as exc:
+        raise ValueError(f"{eval_path} parameters.fixture must stay within the eval package") from exc
+    if not fixture_path.is_file():
+        raise ValueError(f"{eval_path} parameters.fixture must reference an existing file")
+    fixture_text = fixture_path.read_text(encoding="utf-8")
+    if not fixture_text.strip():
+        raise ValueError(f"{eval_path} parameters.fixture must reference a non-empty file")
+    return fixture_path, fixture_text
+
+
 def load_eval(path: str | Path) -> EvalSpec:
     _ensure_yaml()
     eval_path = Path(path).expanduser().resolve()
@@ -80,7 +118,17 @@ def load_eval(path: str | Path) -> EvalSpec:
         raise ValueError("teardownCommands must be a string array")
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be a map")
-    return EvalSpec(eval_path, prompt.strip(), [x.strip() for x in expectations], setup, teardown, parameters)
+    fixture_path, fixture_text = _load_fixture(eval_path, parameters)
+    return EvalSpec(
+        eval_path,
+        prompt.strip(),
+        [x.strip() for x in expectations],
+        setup,
+        teardown,
+        parameters,
+        fixture_path,
+        fixture_text,
+    )
 
 
 def _run_shell_commands(commands: list[str], cwd: Path, env: dict[str, str]) -> list[str]:
@@ -138,11 +186,28 @@ def _extract_json_object(text: str) -> dict[str, Any]:
     return data
 
 
+def _fixture_text(spec: EvalSpec) -> str | None:
+    return spec.fixture_text
+
+
+def _prompt_with_fixture(spec: EvalSpec) -> str:
+    fixture = _fixture_text(spec)
+    if fixture is None:
+        return spec.prompt
+    return (
+        f"{spec.prompt}\n\n"
+        "Eval fixture:\n"
+        "--- BEGIN EVAL FIXTURE ---\n"
+        f"{fixture}\n"
+        "--- END EVAL FIXTURE ---"
+    )
+
+
 def _judge_with_hermes(output: str, spec: EvalSpec, hermes_command: str, env: dict[str, str]) -> tuple[bool, list[str], str]:
     judge_prompt = f"""You are judging a NoEgoDev EVAL.yaml run.
 
 Eval prompt:
-{spec.prompt}
+{_prompt_with_fixture(spec)}
 
 Expectations, interpreted as semantic criteria rather than literal substrings:
 {json.dumps(spec.expectations, indent=2)}
@@ -153,7 +218,7 @@ Candidate output:
 Return only JSON with this exact schema:
 {{"passed": boolean, "failure_reasons": string[]}}
 """
-    command = f"{hermes_command} -z {json.dumps(judge_prompt)}"
+    command = f"{hermes_command} -z {shlex.quote(judge_prompt)}"
     proc = subprocess.run(command, cwd=Path(env["HERMES_HOME"]).parent, shell=True, text=True, capture_output=True, timeout=1800, env=env)
     judge_output = proc.stdout + proc.stderr
     if proc.returncode != 0:
@@ -185,11 +250,12 @@ def run_eval(eval_path: str | Path, output_root: str | Path = ".eval-runs", herm
     token_counts = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     try:
         output_parts.extend(_run_shell_commands(spec.setup_commands, spec.path.parent, env))
+        agent_prompt = _prompt_with_fixture(spec)
         prompt_file = run_dir / "prompt.txt"
-        prompt_file.write_text(spec.prompt)
+        prompt_file.write_text(agent_prompt)
         # Hermes one-shot mode uses the active HERMES_HOME as the isolated profile.
         # The historical shorthand is `hermes -z PROMPT`.
-        command = f"{hermes_command} -z {json.dumps(spec.prompt)}"
+        command = f"{hermes_command} -z {shlex.quote(agent_prompt)}"
         proc = subprocess.run(command, cwd=run_dir, shell=True, text=True, capture_output=True, timeout=1800, env=env)
         output_parts.append(proc.stdout + proc.stderr)
         if proc.returncode != 0:
