@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Create your NED</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="NED home"><span aria-hidden="true">N</span> NED</a>
+    <p>Private AI product partner</p>
+    <span class="secure"><span aria-hidden="true">●</span> Secure setup</span>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">Browser-first onboarding</p>
+      <h1 id="page-title">Create your NED</h1>
+      <p>Five focused actions. Compute access stays separate from your chosen model provider.</p>
+    </section>
+
+    <div class="journey">
+      <aside aria-label="Setup progress">
+        <ol class="steps">
+          <li class="active" data-action="sign-in"><span>1</span><div><strong>Sign in</strong><small>Confirm your identity</small></div></li>
+          <li data-action="connect-compute"><span>2</span><div><strong>Connect compute</strong><small>Authorize isolated runtime</small></div></li>
+          <li data-action="connect-model"><span>3</span><div><strong>Connect model provider</strong><small>Choose your provider</small></div></li>
+          <li data-action="create-ned"><span>4</span><div><strong>Create NED</strong><small>Provision safely</small></div></li>
+          <li data-action="first-request"><span>5</span><div><strong>Send first request</strong><small>Start building</small></div></li>
+        </ol>
+      </aside>
+
+      <section class="card" aria-live="polite">
+        <div id="notice" class="notice">No cloud resources are created until every required connection is ready.</div>
+
+        <section id="sign-in-panel">
+          <p class="step-label">Step 1 of 5</p>
+          <h2>Sign in to begin</h2>
+          <p>Your session owns every connection and provisioning job.</p>
+          <button id="sign-in-button" class="primary">Sign in securely</button>
+        </section>
+
+        <section id="compute-panel" hidden>
+          <p class="step-label">Step 2 of 5</p>
+          <h2>Connect compute</h2>
+          <p>This authorization controls the isolated runtime only. It never authorizes model inference.</p>
+          <button id="compute-button" class="primary">Connect Daytona compute</button>
+        </section>
+
+        <section id="model-panel" hidden>
+          <p class="step-label">Step 3 of 5</p>
+          <h2>Connect a model provider</h2>
+          <fieldset class="providers">
+            <legend class="sr-only">Model provider</legend>
+            <label><input type="radio" name="provider" value="openai" checked><span><strong>OpenAI</strong><small>Direct API</small></span></label>
+            <label><input type="radio" name="provider" value="anthropic"><span><strong>Anthropic</strong><small>Direct API</small></span></label>
+            <label><input type="radio" name="provider" value="gemini"><span><strong>Gemini</strong><small>Direct API</small></span></label>
+            <label><input type="radio" name="provider" value="openrouter"><span><strong>OpenRouter</strong><small>Delegated authorization</small></span></label>
+          </fieldset>
+          <div id="credential-fields">
+            <label for="model-credential">Provider credential</label>
+            <input id="model-credential" type="password" autocomplete="off" spellcheck="false" placeholder="Stored server-side, never in this browser">
+            <p class="hint">Submitted once over HTTPS. Never stored in URLs, browser storage, analytics, or logs.</p>
+          </div>
+          <p id="delegated-note" class="hint" hidden>OpenRouter uses delegated PKCE authorization. Its hosted callback is disabled until a public origin is approved.</p>
+          <button id="model-button" class="primary">Connect model provider</button>
+        </section>
+
+        <section id="create-panel" hidden>
+          <p class="step-label">Step 4 of 5</p>
+          <h2>Create your private NED</h2>
+          <p>The request is idempotent, session-bound, cancellable, and compensates on failure.</p>
+          <button id="create-button" class="primary">Create NED</button>
+          <button id="cancel-button" class="secondary" hidden>Cancel and clean up</button>
+        </section>
+
+        <section id="request-panel" hidden>
+          <p class="step-label">Step 5 of 5</p>
+          <h2>Send your first request</h2>
+          <label for="first-message">What should NED help you build?</label>
+          <textarea id="first-message" rows="4" maxlength="4000"></textarea>
+          <button id="request-button" class="primary" disabled>Send request</button>
+        </section>
+
+        <p id="status" class="status" role="status"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer>Credentials remain outside browser storage. No generic remote command API is exposed.</footer>
+</body>
+</html>

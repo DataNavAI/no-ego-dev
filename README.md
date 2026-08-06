@@ -8,7 +8,14 @@ NED is best for people who want to test an idea quickly with something real enou
 
 ## Create a private hosted NED
 
-Browser-first onboarding is the primary product direction and is being implemented under [issue #23](https://github.com/DataNavAI/no-ego-dev/issues/23). The CLI remains the tested provisioning primitive and advanced fallback.
+Browser-first onboarding is the primary product direction and is being implemented under [issue #23](https://github.com/DataNavAI/no-ego-dev/issues/23). The current browser slice provides the five-step UI plus authenticated/session-bound connection and create-job boundaries. Production startup is intentionally unavailable until hosted identity, encrypted durable storage, queue isolation, and deployment authority are selected.
+
+To inspect the local-only development simulation (no cloud resources or inference):
+
+```bash
+npm run web:dev
+# open http://127.0.0.1:4173
+```
 
 CLI requirements: Node.js 20+, a Daytona account, a Daytona API key with `write:sandboxes`, `delete:sandboxes`, and `manage:secrets`, and one authorized model provider. Keep credentials in a secret store or local shell—never paste them into chat or pass them in command arguments.
 

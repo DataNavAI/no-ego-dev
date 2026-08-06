@@ -60,10 +60,15 @@ export function listModelProviders() {
       id: provider.id,
       label: provider.label,
       delegatedAuthorization: { ...provider.delegatedAuthorization },
-      apiKeyFallback: {
-        status: 'available',
-        note: 'Accepted only through the secure server-side credential entry path.',
-      },
+      apiKeyFallback: provider.delegatedAuthorization.status === 'available'
+        ? {
+            status: 'disabled_when_delegated',
+            note: 'Use the supported delegated browser authorization instead of entering an API key.',
+          }
+        : {
+            status: 'available',
+            note: 'Accepted only through the secure server-side credential entry path.',
+          },
     };
   });
 }
