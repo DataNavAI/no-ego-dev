@@ -230,9 +230,10 @@ test('CLI create uses shell credentials without asking questions or printing sec
   });
 
   assert.equal(exitCode, 0);
-  assert.deepEqual(receivedCredentials, {
-    openRouterApiKey: 'openrouter-secret',
-  });
+  assert.equal(receivedCredentials.modelConnection.providerId, 'openrouter');
+  assert.equal(receivedCredentials.modelConnection.method, 'api-key');
+  assert.equal(JSON.stringify(receivedCredentials).includes('openrouter-secret'), false);
+  assert.equal(receivedCredentials.modelConnection.consumeCredential(), 'openrouter-secret');
   const combined = [...stdout, ...stderr].join('\n');
   assert.match(combined, /Your product partner is ready/);
   assert.equal(combined.includes('daytona-secret'), false);
@@ -252,7 +253,9 @@ test('CLI create uses OpenRouter PKCE when no OpenRouter key is in the shell', a
 
   assert.equal(exitCode, 0);
   assert.equal(oauthCalls, 1);
-  assert.equal(credentials.openRouterApiKey, 'oauth-openrouter-key');
+  assert.equal(credentials.modelConnection.providerId, 'openrouter');
+  assert.equal(credentials.modelConnection.method, 'oauth-pkce');
+  assert.equal(credentials.modelConnection.consumeCredential(), 'oauth-openrouter-key');
 });
 
 test('CLI chat accepts the product request as arguments and prints only NED output', async () => {
