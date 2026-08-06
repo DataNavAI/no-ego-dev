@@ -8,13 +8,13 @@ NED is best for people who want to test an idea quickly with something real enou
 
 ## Create a private hosted NED (CLI beta)
 
-Requirements: Node.js 20+, a Daytona account, and a Daytona API key with `write:sandboxes`, `delete:sandboxes`, and `manage:secrets`. Create the key at https://app.daytona.io/dashboard/keys and keep it in your local shell—never paste it into chat.
+On clean supported macOS/Linux x64 or arm64, install and start setup with one command:
 
 ```bash
-npm install --global no-ego-dev
-read -s DAYTONA_API_KEY && export DAYTONA_API_KEY
-ned create
+i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/install.sh -o "$i" && { echo "c864b3f28db58fda719932b3e4d50ba73f6efc019993e2dd2d816ed0aedcb1c4  $i" | sha256sum -c - 2>/dev/null || echo "c864b3f28db58fda719932b3e4d50ba73f6efc019993e2dd2d816ed0aedcb1c4  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
 ```
+
+No sudo, git, system Node.js, or system npm is required. The command verifies the downloaded installer’s exact SHA-256 before execution; the installer then verifies pinned private runtime and NED downloads, asks for the minimum Daytona key with hidden input, and runs `ned create`. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
 
 `ned create` asks no infrastructure questions. It opens OpenRouter authorization in your browser, creates one private persistent Daytona workspace, installs pinned Hermes and NED, and runs an inference health check.
 

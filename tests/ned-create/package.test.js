@@ -15,7 +15,7 @@ test('published npm package contains the NED distribution and excludes runtime s
   const manifest = JSON.parse(result.stdout)[0];
   const files = manifest.files.map((entry) => entry.path);
 
-  for (const required of ['distribution.yaml', 'SOUL.md', 'AGENTS.md', 'config.yaml']) {
+  for (const required of ['distribution.yaml', 'SOUL.md', 'AGENTS.md', 'config.yaml', 'scripts/install.sh']) {
     assert.ok(files.includes(required), `${required} missing from npm package`);
   }
   assert.ok(files.some((file) => file.startsWith('skills/coder/')));
