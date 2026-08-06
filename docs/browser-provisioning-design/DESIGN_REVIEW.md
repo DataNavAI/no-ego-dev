@@ -3,6 +3,7 @@
 > **Artifact:** `docs/browser-provisioning-design/DESIGN_REVIEW.md`
 > **Status:** `IN REVIEW` · `REVIEW_ONLY — DO NOT MERGE`
 > **Issue:** [#23](https://github.com/DataNavAI/no-ego-dev/issues/23)
+> **Review:** [draft PR #25](https://github.com/DataNavAI/no-ego-dev/pull/25)
 > **Candidate:** revision 3; identity frozen by `CANDIDATE_MANIFEST.sha256`
 > **Decision owner:** NED product owner
 > **Decision requested:** confirm `UI-01` plus the platform-managed limited-beta working assumption.
