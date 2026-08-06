@@ -69,7 +69,10 @@ test('browser shell renders the five-action provider-neutral onboarding journey 
       assert.match(html, new RegExp(`data-action="${action}"`));
     }
     for (const provider of ['OpenAI', 'Anthropic', 'Gemini', 'OpenRouter']) assert.match(html, new RegExp(provider));
-    assert.doesNotMatch(html, /localStorage|querySelector\([^)]*api[_-]?key/i);
+    const client = await fetch(`${context.baseUrl}/app.js`).then((result) => result.text());
+    assert.match(client, /operation: 'send_first_request'/);
+    assert.match(client, /output\.textContent = job\.output/);
+    assert.doesNotMatch(`${html}\n${client}`, /localStorage|sessionStorage|innerHTML|querySelector\([^)]*api[_-]?key/i);
   } finally { await context.close(); }
 });
 
@@ -150,6 +153,7 @@ test('compute connection is separate and create jobs are typed, session-bound, i
       user: { displayName: 'Test owner' },
       csrfToken: auth.csrfToken,
       connections: { compute: true, model: true },
+      nedReady: false,
       job: { id: 'job-1', operation: 'create_ned', status: 'queued' },
     });
     assert.equal(JSON.stringify(resumedSession.value).includes(auth.cookie), false);

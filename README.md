@@ -8,7 +8,7 @@ NED is best for people who want to test an idea quickly with something real enou
 
 ## Create a private hosted NED
 
-Browser-first onboarding is the primary product direction and is being implemented under [issue #23](https://github.com/DataNavAI/no-ego-dev/issues/23). The current browser slice provides the five-step UI plus authenticated/session-bound connection and create-job boundaries. Production startup is intentionally unavailable until hosted identity, encrypted durable storage, queue isolation, and deployment authority are selected.
+Browser-first onboarding is the primary product direction and is being implemented under [issue #23](https://github.com/DataNavAI/no-ego-dev/issues/23). The current browser slice provides the five-step UI plus authenticated/session-bound connection, create-job, and first-request job boundaries. Production startup and inference are intentionally unavailable until hosted identity, encrypted durable storage, queue isolation, and deployment authority are selected.
 
 To inspect the local-only development simulation (no cloud resources or inference):
 

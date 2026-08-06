@@ -3,6 +3,7 @@ const state = {
   currentStep: 1,
   jobId: null,
   createIdempotencyKey: null,
+  requestIdempotencyKey: null,
 };
 
 const status = document.getElementById('status');
@@ -106,8 +107,10 @@ document.getElementById('create-button').addEventListener('click', async () => {
     });
     state.jobId = job.id;
     document.getElementById('cancel-button').hidden = false;
-    if (job.status === 'succeeded') showStep(5);
-    else setStatus(`Create job ${job.status}. You can safely return to this session.`, 'warning');
+    if (job.status === 'succeeded') {
+      showStep(5);
+      document.getElementById('request-button').disabled = false;
+    } else setStatus(`Create job ${job.status}. You can safely return to this session.`, 'warning');
   } catch {
     createButton.disabled = false;
     setStatus('Provisioning is not enabled in this environment.', 'error');
@@ -126,6 +129,36 @@ document.getElementById('cancel-button').addEventListener('click', async () => {
   } catch { setStatus('Cancellation could not be confirmed.', 'error'); }
 });
 
+document.getElementById('request-button').addEventListener('click', async () => {
+  const requestButton = document.getElementById('request-button');
+  const message = document.getElementById('first-message');
+  const output = document.getElementById('first-response');
+  state.requestIdempotencyKey ||= crypto.randomUUID();
+  requestButton.disabled = true;
+  try {
+    setStatus('Sending your first typed request…');
+    const job = await api('/api/jobs', {
+      method: 'POST',
+      body: JSON.stringify({
+        operation: 'send_first_request', prompt: message.value,
+        idempotencyKey: state.requestIdempotencyKey,
+      }),
+    });
+    state.jobId = job.id;
+    if (job.status === 'succeeded') {
+      output.textContent = job.output;
+      output.hidden = false;
+      message.value = '';
+      setStatus('First request completed.');
+    } else {
+      setStatus(`First request ${job.status}. You can safely continue this session.`, 'warning');
+    }
+  } catch {
+    requestButton.disabled = false;
+    setStatus('The first request could not be completed.', 'error');
+  }
+});
+
 async function restoreSession() {
   try {
     const session = await api('/api/session');
@@ -133,8 +166,20 @@ async function restoreSession() {
     state.jobId = session.job?.id || null;
     if (!session.connections.compute) showStep(2);
     else if (!session.connections.model) showStep(3);
-    else if (session.job?.status === 'succeeded') showStep(5);
-    else {
+    else if (session.nedReady) {
+      showStep(5);
+      const requestButton = document.getElementById('request-button');
+      const firstResponse = document.getElementById('first-response');
+      const hasFirstRequest = session.job?.operation === 'send_first_request';
+      requestButton.disabled = hasFirstRequest;
+      if (typeof session.job?.output === 'string') {
+        firstResponse.textContent = session.job.output;
+        firstResponse.hidden = false;
+        setStatus('First request completed.');
+      } else if (hasFirstRequest) {
+        setStatus(`First request ${session.job.status}. You can safely continue this session.`, 'warning');
+      }
+    } else {
       showStep(4);
       document.getElementById('create-button').disabled = Boolean(state.jobId);
       document.getElementById('cancel-button').hidden = !state.jobId;

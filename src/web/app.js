@@ -8,6 +8,7 @@ const BODY_LIMIT_BYTES = 16 * 1024;
 const SESSION_TTL_MS = 60 * 60 * 1000;
 const MUTATION_LIMIT_PER_MINUTE = 30;
 const DEFAULT_MAX_ACTIVE_SESSIONS = 10_000;
+const JOB_OUTPUT_LIMIT_BYTES = 32 * 1024;
 const STATIC_FILES = Object.freeze({
   '/': { path: new URL('./public/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
   '/app.js': { path: new URL('./public/app.js', import.meta.url), type: 'text/javascript; charset=utf-8' },
@@ -114,11 +115,18 @@ function safeJob(value, fallbackOperation) {
     throw new Error('Job service returned an invalid job identity');
   }
   const statuses = new Set(['queued', 'running', 'succeeded', 'failed', 'cancelled', 'blocked']);
-  return {
+  const job = {
     id: value.id,
     operation: value.operation === fallbackOperation ? value.operation : fallbackOperation,
     status: statuses.has(value.status) ? value.status : 'queued',
   };
+  if (job.operation === 'send_first_request' && job.status === 'succeeded') {
+    if (typeof value.output !== 'string' || Buffer.byteLength(value.output) > JOB_OUTPUT_LIMIT_BYTES) {
+      throw new Error('Job service returned an invalid first-request output');
+    }
+    job.output = value.output;
+  }
+  return job;
 }
 
 export function createBrowserServer({
@@ -218,6 +226,7 @@ export function createBrowserServer({
           mutationCount: 0,
           computeConnectionId: null,
           modelConnectionId: null,
+          nedReady: false,
         };
         sessions.set(id, session);
         const secure = publicOrigin.startsWith('https:') ? '; Secure' : '';
@@ -242,7 +251,11 @@ export function createBrowserServer({
             compute: Boolean(session.computeConnectionId),
             model: Boolean(session.modelConnectionId),
           },
-          job: record ? { id: record.id, operation: record.operation, status: record.status } : null,
+          nedReady: session.nedReady,
+          job: record ? {
+            id: record.id, operation: record.operation, status: record.status,
+            ...(record.output === undefined ? {} : { output: record.output }),
+          } : null,
         });
         return;
       }
@@ -300,14 +313,26 @@ export function createBrowserServer({
       if (request.method === 'POST' && url.pathname === '/api/jobs') {
         protectMutation(request, session);
         const body = await readJson(request);
-        if (body.operation !== 'create_ned' || !/^[A-Za-z0-9_-]{8,128}$/.test(body.idempotencyKey || '')) {
+        if (!/^[A-Za-z0-9_-]{8,128}$/.test(body.idempotencyKey || '')) {
           throw new HttpError(400, 'unsupported_job');
         }
-        if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
-          throw new HttpError(400, 'unexpected_job_field');
-        }
-        if (!session.computeConnectionId || !session.modelConnectionId) {
-          throw new HttpError(409, 'connections_required');
+        if (body.operation === 'create_ned') {
+          if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
+            throw new HttpError(400, 'unexpected_job_field');
+          }
+          if (!session.computeConnectionId || !session.modelConnectionId) {
+            throw new HttpError(409, 'connections_required');
+          }
+        } else if (body.operation === 'send_first_request') {
+          if (Object.keys(body).some((key) => !['operation', 'idempotencyKey', 'prompt'].includes(key))) {
+            throw new HttpError(400, 'unexpected_job_field');
+          }
+          if (typeof body.prompt !== 'string' || body.prompt.trim().length === 0 || body.prompt.length > 4000) {
+            throw new HttpError(400, 'invalid_first_request');
+          }
+          if (!session.nedReady) throw new HttpError(409, 'ned_not_ready');
+        } else {
+          throw new HttpError(400, 'unsupported_job');
         }
         const idempotencyId = `${session.id}:${body.operation}:${body.idempotencyKey}`;
         if (idempotency.has(idempotencyId)) {
@@ -321,6 +346,7 @@ export function createBrowserServer({
           idempotencyKey: body.idempotencyKey,
           computeConnectionId: session.computeConnectionId,
           modelConnectionId: session.modelConnectionId,
+          ...(body.operation === 'send_first_request' ? { prompt: body.prompt } : {}),
         })).then((value) => safeJob(value, body.operation));
         idempotency.set(idempotencyId, jobPromise);
         let job;
@@ -333,6 +359,7 @@ export function createBrowserServer({
         const record = { ...job, ownerId: session.userId, sessionId: session.id };
         jobs.set(`${session.id}:${job.id}`, record);
         session.lastJobId = job.id;
+        if (job.operation === 'create_ned' && job.status === 'succeeded') session.nedReady = true;
         sendJson(response, 202, job);
         return;
       }
@@ -343,7 +370,10 @@ export function createBrowserServer({
         if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
           throw new HttpError(404, 'job_not_found');
         }
-        sendJson(response, 200, { id: record.id, operation: record.operation, status: record.status });
+        sendJson(response, 200, {
+          id: record.id, operation: record.operation, status: record.status,
+          ...(record.output === undefined ? {} : { output: record.output }),
+        });
         return;
       }
       if (request.method === 'DELETE' && jobMatch) {
@@ -356,7 +386,7 @@ export function createBrowserServer({
           jobId: record.id,
           ownerId: session.userId,
           sessionId: session.id,
-          compensate: true,
+          compensate: record.operation === 'create_ned',
         }), record.operation);
         jobs.set(`${session.id}:${record.id}`, { ...record, ...cancelled });
         sendJson(response, 200, cancelled);
