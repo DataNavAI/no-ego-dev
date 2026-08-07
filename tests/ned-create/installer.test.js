@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { chmod, lstat, mkdtemp, mkdir, readFile, readdir, readlink, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, cp, lstat, mkdtemp, mkdir, readFile, readdir, readlink, rm, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -38,7 +38,7 @@ async function snapshot(file) {
   return { type: 'file', mode: info.mode & 0o777, sha256: await sha256(file) };
 }
 
-async function makeHarness({ spaces = false } = {}) {
+async function makeHarness({ spaces = false, system = 'Linux', machine = process.arch === 'arm64' ? 'aarch64' : 'x86_64' } = {}) {
   const base = await mkdtemp(path.join(os.tmpdir(), 'ned-installer-test-'));
   const root = spaces ? path.join(base, 'space root') : base;
   if (spaces) await mkdir(root);
@@ -48,7 +48,8 @@ async function makeHarness({ spaces = false } = {}) {
   const tmpDir = path.join(root, 'tmp');
   await Promise.all([mkdir(home), mkdir(fixtures), mkdir(fakeBin), mkdir(tmpDir)]);
 
-  const nodeRoot = path.join(root, 'node-v-test-linux-x64');
+  const platform = `${system === 'Darwin' ? 'darwin' : 'linux'}-${machine === 'arm64' || machine === 'aarch64' ? 'arm64' : 'x64'}`;
+  const nodeRoot = path.join(root, `node-v-test-${platform}`);
   await mkdir(path.join(nodeRoot, 'bin'), { recursive: true });
   await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\n[[ "\$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "\$*" == *'create --dry-run --json'* ]]; then printf '{"dryRun":true}\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_CREATE_FAIL-} != 1 ]] || { echo synthetic-create-failure >&2; exit 43; }\nprintf 'ned-create:%s\\n' "\${2-}" >> "$HOME/create.log"\n`);
   await chmod(path.join(nodeRoot, 'bin', 'node'), 0o755);
@@ -62,8 +63,10 @@ async function makeHarness({ spaces = false } = {}) {
   await mkdir(path.join(sourceRoot, 'bin'), { recursive: true });
   await mkdir(path.join(sourceRoot, 'src'), { recursive: true });
   await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), '// synthetic fixture\n');
-  await writeFile(path.join(sourceRoot, 'src', 'cli.js'), '// synthetic runtime source\n');
-  await writeFile(path.join(sourceRoot, 'package.json'), '{"name":"no-ego-dev-test"}\n');
+  await cp(path.join(repoRoot, 'src', 'telegram.js'), path.join(sourceRoot, 'src', 'telegram.js'));
+  await mkdir(path.join(sourceRoot, 'src', 'web', 'public'), { recursive: true });
+  await cp(path.join(repoRoot, 'src', 'web', 'public', 'docs'), path.join(sourceRoot, 'src', 'web', 'public', 'docs'), { recursive: true });
+  await writeFile(path.join(sourceRoot, 'package.json'), '{"name":"no-ego-dev-test","type":"module"}\n');
   await writeFile(path.join(sourceRoot, 'package-lock.json'), '{"lockfileVersion":3}\n');
   const sourceArchive = path.join(fixtures, 'ned.tar.gz');
   result = spawnSync('tar', ['-czf', sourceArchive, '-C', root, path.basename(sourceRoot)], { encoding: 'utf8' });
@@ -73,10 +76,13 @@ async function makeHarness({ spaces = false } = {}) {
   const curl = path.join(fakeBin, 'curl');
   await writeFile(curl, `#!/usr/bin/env bash\nset -eu\nout=\nurl=\nwhile (( $# )); do\n  case "$1" in -o) out=$2; shift 2;; -*) shift;; *) url=$1; shift;; esac\ndone\nprintf '%s\\n' "$url" >> '${curlLog}'\nif [[ \${NED_TEST_CURL_DELAY-} == 1 ]]; then : >'${path.join(root, 'curl-started')}'; sleep 2; fi\ncase "$url" in https://fixtures/node) cp '${nodeArchive}' "$out";; https://fixtures/ned) cp '${sourceArchive}' "$out";; *) exit 22;; esac\n`);
   await chmod(curl, 0o755);
-  await writeFile(path.join(fakeBin, 'uname'), '#!/usr/bin/env bash\n[[ ${1-} == -s ]] && echo Linux || echo x86_64\n');
+  await writeFile(path.join(fakeBin, 'uname'), `#!/usr/bin/env bash\n[[ \${1-} == -s ]] && echo ${system} || echo ${machine}\n`);
   await chmod(path.join(fakeBin, 'uname'), 0o755);
   const nativeModeStat = process.platform === 'darwin' ? '/usr/bin/stat -f %Lp' : '/usr/bin/stat -c %a';
-  await writeFile(path.join(fakeBin, 'stat'), `#!/usr/bin/env bash\nset -eu\n[[ \${1-} == -c && \${2-} == %a ]] || exit 2\n${nativeModeStat} "\$3"\n`);
+  const expectedStatArgs = system === 'Darwin'
+    ? '[[ ${1-} == -f && ${2-} == %Lp ]] || exit 2'
+    : '[[ ${1-} == -c && ${2-} == %a ]] || exit 2';
+  await writeFile(path.join(fakeBin, 'stat'), `#!/usr/bin/env bash\nset -eu\n${expectedStatArgs}\n${nativeModeStat} "\$3"\n`);
   await chmod(path.join(fakeBin, 'stat'), 0o755);
   const profileTempModeLog = path.join(root, 'profile-temp-modes.log');
   await writeFile(path.join(fakeBin, 'mktemp'), `#!/usr/bin/env bash\nset -eu\ncreated=$(/usr/bin/mktemp "$@")\ncase "$created" in "$HOME/.profile.ned."*|"$HOME/.zprofile.ned."*|"$HOME/.bashrc.ned."*) mode=$(${nativeModeStat} "$created"); printf 'created:%s\\n' "$mode" >>'${profileTempModeLog}';; esac\nprintf '%s\\n' "$created"\n`);
@@ -88,7 +94,7 @@ async function makeHarness({ spaces = false } = {}) {
   text = text
     .replace(/node_url="[^"]+"/, 'node_url="https://fixtures/node"')
     .replace(/source_url="[^"]+"/, 'source_url="https://fixtures/ned"')
-    .replace(/linux-x64\) node_sha=[a-f0-9]{64}/, `linux-x64) node_sha=${await sha256(nodeArchive)}`)
+    .replace(new RegExp(`${platform.replace('-', '\\-')}\\) node_sha=[a-f0-9]{64}`), `${platform}) node_sha=${await sha256(nodeArchive)}`)
     .replace(/NED_SOURCE_SHA256=[a-f0-9]{64}/, `NED_SOURCE_SHA256=${await sha256(sourceArchive)}`)
     .replace("if [[ -t 0 && -r /dev/tty ]]; then", 'if true; then')
     .replace("IFS= read -r -s -p 'Daytona API key (input hidden): ' DAYTONA_API_KEY </dev/tty", 'IFS= read -r -s DAYTONA_API_KEY')
@@ -96,7 +102,7 @@ async function makeHarness({ spaces = false } = {}) {
   const installer = path.join(root, 'install-under-test.sh');
   await writeFile(installer, text, { mode: 0o700 });
 
-  return { root, home, curlLog, profileTempModeLog, installer, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
+  return { root, home, curlLog, profileTempModeLog, installer, platform, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
 }
 
 function runInstaller(harness, env = {}, input = `${syntheticSecret}\n`, installer = harness.installer) {
@@ -166,6 +172,55 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   });
   assert.equal(bash.status, 0, bash.stderr);
   assert.equal(bash.stdout.trim(), path.join(harness.home, '.local/bin/ned'));
+});
+
+test('clean macOS arm64 and Ubuntu amd64/arm64 installs and reruns preserve BotFather copy and CLI-linked docs', async () => {
+  for (const target of [
+    { name: 'macOS arm64', system: 'Darwin', machine: 'arm64' },
+    { name: 'Ubuntu amd64', system: 'Linux', machine: 'x86_64' },
+    { name: 'Ubuntu arm64', system: 'Linux', machine: 'aarch64' },
+  ]) {
+    const harness = await makeHarness(target);
+    const first = runInstaller(harness);
+    assert.equal(first.status, 0, `${target.name}: ${first.stderr}`);
+    const rerun = runInstaller(harness, {}, '');
+    assert.equal(rerun.status, 0, `${target.name}: stdout=${rerun.stdout} stderr=${rerun.stderr}`);
+    assert.match(rerun.stdout, /already installed/i, target.name);
+    assert.equal((await readFile(path.join(harness.home, 'create.log'), 'utf8')).trim().split('\n').length, 1, target.name);
+
+    const generation = await activeGeneration(harness);
+    const telegramModule = pathToFileURL(path.join(generation, 'app', 'src', 'telegram.js')).href;
+    const probe = spawnSync(process.execPath, ['--input-type=module', '-e', `
+      import { acquireTelegramConnection, QUICKSTART_DOCS_URL, TELEGRAM_DOCS_URL, CREDENTIALS_DOCS_URL } from ${JSON.stringify(telegramModule)};
+      const lines=[];
+      const token = '1'.repeat(10) + ':' + 'A'.repeat(35);
+      await acquireTelegramConnection({
+        platform: 'linux',
+        log: (line) => lines.push(line),
+        openExternal: async () => {},
+        promptHidden: async () => token,
+        fetchImpl: async () => ({ ok: true, json: async () => ({ ok: true, result: { id: 1, is_bot: true, username: 'clean_matrix_bot' } }) }),
+      });
+      console.log(JSON.stringify({ lines, urls: [QUICKSTART_DOCS_URL, TELEGRAM_DOCS_URL, CREDENTIALS_DOCS_URL] }));
+    `], { encoding: 'utf8' });
+    assert.equal(probe.status, 0, `${target.name}: ${probe.stderr}`);
+    const contract = JSON.parse(probe.stdout);
+    assert.deepEqual(contract.lines.slice(-5), [
+      '1. Open BotFather: https://t.me/BotFather',
+      '2. Send /newbot.',
+      '3. Choose a display name for the disposable bot.',
+      '4. Choose a unique username ending in bot.',
+      '5. Copy the token. NED will ask for it next with hidden input.',
+    ], target.name);
+    assert.deepEqual(contract.urls, [
+      'https://ned.datanav.app/docs/v1/quickstart/',
+      'https://ned.datanav.app/docs/v1/telegram/',
+      'https://ned.datanav.app/docs/v1/credentials/',
+    ], target.name);
+    for (const route of ['quickstart', 'telegram', 'credentials']) {
+      assert.equal(await exists(path.join(generation, 'app', 'src', 'web', 'public', 'docs', 'v1', route, 'index.html')), true, `${target.name}: ${route}`);
+    }
+  }
 });
 
 test('completed rerun repairs removed PATH blocks before returning without redownload or recreate', async () => {
@@ -252,7 +307,10 @@ test('caller umask 000 cannot make installer state, credentials, or profiles wor
 test('clean integrity failure leaves runtime, app, launcher, pointers, markers, profiles, and credential absent', async () => {
   const harness = await makeHarness();
   const before = await snapshot(harness.home);
-  const bad = await makeInstallerVariant(harness, [[/linux-x64\) node_sha=[a-f0-9]{64}/, `linux-x64) node_sha=${'0'.repeat(64)}`]]);
+  const bad = await makeInstallerVariant(harness, [[
+    new RegExp(`${harness.platform.replace('-', '\\-')}\\) node_sha=[a-f0-9]{64}`),
+    `${harness.platform}) node_sha=${'0'.repeat(64)}`,
+  ]]);
   const result = runInstaller(harness, {}, syntheticSecret, bad);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /integrity verification failed/i);
