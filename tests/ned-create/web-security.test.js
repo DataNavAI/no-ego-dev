@@ -6,10 +6,14 @@ import { createBrowserServer } from '../../src/web/app.js';
 function adapters(overrides = {}) {
   return {
     authenticate: async () => ({ userId: 'security-owner' }),
-    secretVault: { async put() { return { id: 'model-1' }; } },
+    secretVault: {
+      async put() { return { id: 'model-1' }; },
+      async delete({ id }) { return { id, status: 'deleted' }; },
+    },
     computeConnector: { async connect() { return { id: 'compute-1' }; } },
     jobService: {
       async create({ operation }) { return { id: 'job-1', operation, status: 'queued' }; },
+      async get({ jobId }) { return { id: jobId, operation: 'create_ned', status: 'queued' }; },
       async cancel({ jobId }) { return { id: jobId, operation: 'create_ned', status: 'cancelled' }; },
     },
     ...overrides,

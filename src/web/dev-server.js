@@ -21,6 +21,12 @@ function createEncryptedMemoryVault() {
       });
       return { id };
     },
+    async delete({ ownerId, id }) {
+      const record = records.get(id);
+      if (!record || record.ownerId !== ownerId) throw new Error('Development vault owner mismatch');
+      records.delete(id);
+      return { id, status: 'deleted' };
+    },
   };
 }
 
@@ -31,6 +37,7 @@ export function createDevelopmentServer({ env = process.env, port = 4173 } = {})
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid development port');
 
   const publicOrigin = `http://127.0.0.1:${port}`;
+  const jobs = new Map();
   const server = createBrowserServer({
     publicOrigin,
     authenticate: async () => ({ userId: 'local-development-owner', displayName: 'Local developer' }),
@@ -40,9 +47,28 @@ export function createDevelopmentServer({ env = process.env, port = 4173 } = {})
     },
     jobService: {
       async create({ operation }) {
-        return { id: `dev_job_${randomUUID().replaceAll('-', '')}`, operation, status: 'blocked' };
+        const id = `dev_job_${randomUUID().replaceAll('-', '')}`;
+        const job = { id, operation, status: 'queued', polls: 0 };
+        jobs.set(id, job);
+        return job;
       },
-      async cancel({ jobId }) { return { id: jobId, operation: 'create_ned', status: 'cancelled' }; },
+      async get({ jobId }) {
+        const job = jobs.get(jobId);
+        if (!job) return null;
+        job.polls += 1;
+        if (job.polls === 1) job.status = 'running';
+        if (job.polls >= 2) {
+          job.status = 'succeeded';
+          if (job.operation === 'send_first_request') job.output = 'Development simulation response.';
+        }
+        return job;
+      },
+      async cancel({ jobId }) {
+        const job = jobs.get(jobId);
+        if (!job) return null;
+        job.status = 'cancelled';
+        return job;
+      },
     },
   });
 

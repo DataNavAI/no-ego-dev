@@ -10,7 +10,10 @@ async function start() {
   const server = createBrowserServer({
     publicOrigin: ORIGIN,
     authenticate: async () => ({ userId: 'first-request-owner' }),
-    secretVault: { async put() { return { id: 'model-1' }; } },
+    secretVault: {
+      async put() { return { id: 'model-1' }; },
+      async delete({ id }) { return { id, status: 'deleted' }; },
+    },
     computeConnector: { async connect() { return { id: 'compute-1' }; } },
     jobService: {
       async create(value) {
@@ -22,6 +25,10 @@ async function start() {
           id: 'request-job', operation: value.operation, status: 'succeeded',
           output: `NED received: ${value.prompt}`,
         };
+      },
+      async get({ jobId }) {
+        if (jobId === 'create-job') return { id: jobId, operation: 'create_ned', status: 'succeeded' };
+        return { id: jobId, operation: 'send_first_request', status: 'succeeded', output: 'NED received: Help me plan a launch.' };
       },
       async cancel({ jobId }) { return { id: jobId, operation: 'create_ned', status: 'cancelled' }; },
     },

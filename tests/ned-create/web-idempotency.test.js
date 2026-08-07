@@ -14,7 +14,10 @@ test('concurrent duplicate create submissions execute one job-service call', asy
   const server = createBrowserServer({
     publicOrigin: ORIGIN,
     authenticate: async () => ({ userId: 'concurrent-owner' }),
-    secretVault: { async put() { return { id: 'model-1' }; } },
+    secretVault: {
+      async put() { return { id: 'model-1' }; },
+      async delete({ id }) { return { id, status: 'deleted' }; },
+    },
     computeConnector: { async connect() { return { id: 'compute-1' }; } },
     jobService: {
       async create({ operation }) {
@@ -22,6 +25,7 @@ test('concurrent duplicate create submissions execute one job-service call', asy
         await delay(30);
         return { id: 'job-1', status: 'queued', operation };
       },
+      async get({ jobId }) { return { id: jobId, status: 'queued', operation: 'create_ned' }; },
       async cancel({ jobId }) { return { id: jobId, status: 'cancelled', operation: 'create_ned' }; },
     },
   });

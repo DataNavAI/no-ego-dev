@@ -84,6 +84,11 @@
           <textarea id="first-message" rows="4" maxlength="4000"></textarea>
           <button id="request-button" class="primary" disabled>Send request</button>
           <div id="first-response" class="response" aria-live="polite" hidden></div>
+          <div class="lifecycle-actions">
+            <button id="resume-button" class="secondary" data-action="resume-ned" disabled>Resume NED</button>
+            <label class="destroy-confirm"><input id="destroy-confirm" type="checkbox"> I understand this permanently deletes the NED workspace.</label>
+            <button id="destroy-button" class="secondary danger" data-action="destroy-ned" disabled>Destroy NED permanently</button>
+          </div>
         </section>
 
         <p id="status" class="status" role="status"></p>

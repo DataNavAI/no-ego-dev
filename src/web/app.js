@@ -9,6 +9,15 @@ const SESSION_TTL_MS = 60 * 60 * 1000;
 const MUTATION_LIMIT_PER_MINUTE = 30;
 const DEFAULT_MAX_ACTIVE_SESSIONS = 10_000;
 const JOB_OUTPUT_LIMIT_BYTES = 32 * 1024;
+const TERMINAL_JOB_STATUSES = new Set(['succeeded', 'failed', 'cancelled', 'blocked']);
+const JOB_TRANSITIONS = Object.freeze({
+  queued: new Set(['running', 'succeeded', 'failed', 'cancelled', 'blocked']),
+  running: new Set(['succeeded', 'failed', 'cancelled', 'blocked']),
+  succeeded: new Set(),
+  failed: new Set(),
+  cancelled: new Set(),
+  blocked: new Set(),
+});
 const STATIC_FILES = Object.freeze({
   '/': { path: new URL('./public/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
   '/app.js': { path: new URL('./public/app.js', import.meta.url), type: 'text/javascript; charset=utf-8' },
@@ -115,10 +124,12 @@ function safeJob(value, fallbackOperation) {
     throw new Error('Job service returned an invalid job identity');
   }
   const statuses = new Set(['queued', 'running', 'succeeded', 'failed', 'cancelled', 'blocked']);
+  if (!statuses.has(value.status)) throw new Error('Job service returned an invalid status');
+  if (value.operation !== fallbackOperation) throw new Error('Job service returned an invalid operation');
   const job = {
     id: value.id,
-    operation: value.operation === fallbackOperation ? value.operation : fallbackOperation,
-    status: statuses.has(value.status) ? value.status : 'queued',
+    operation: value.operation,
+    status: value.status,
   };
   if (job.operation === 'send_first_request' && job.status === 'succeeded') {
     if (typeof value.output !== 'string' || Buffer.byteLength(value.output) > JOB_OUTPUT_LIMIT_BYTES) {
@@ -138,7 +149,7 @@ export function createBrowserServer({
   now = () => Date.now(),
   maxActiveSessions = DEFAULT_MAX_ACTIVE_SESSIONS,
 } = {}) {
-  if (!publicOrigin || !authenticate || !secretVault?.put || !computeConnector?.connect || !jobService?.create || !jobService?.cancel) {
+  if (!publicOrigin || !authenticate || !secretVault?.put || !secretVault?.delete || !computeConnector?.connect || !jobService?.create || !jobService?.get || !jobService?.cancel) {
     throw new Error('Browser server requires origin, identity, secret-vault, compute, and job adapters');
   }
   publicOrigin = validatePublicOrigin(publicOrigin);
@@ -150,17 +161,31 @@ export function createBrowserServer({
   const jobs = new Map();
   const idempotency = new Map();
 
-  function removeSession(sessionId) {
+  async function deleteSecret(ownerId, id) {
+    const receipt = await secretVault.delete({ ownerId, id });
+    if (receipt?.id !== id || receipt?.status !== 'deleted') throw new Error('Secret vault did not verify deletion');
+  }
+
+  async function revokeModelConnection(session) {
+    if (!session.modelConnectionId) return;
+    const id = session.modelConnectionId;
+    await deleteSecret(session.userId, id);
+    session.modelConnectionId = null;
+  }
+
+  async function removeSession(sessionId) {
+    const session = sessions.get(sessionId);
+    if (session) await revokeModelConnection(session);
     sessions.delete(sessionId);
     const prefix = `${sessionId}:`;
     for (const key of jobs.keys()) if (key.startsWith(prefix)) jobs.delete(key);
     for (const key of idempotency.keys()) if (key.startsWith(prefix)) idempotency.delete(key);
   }
 
-  function pruneExpiredSessions() {
+  async function pruneExpiredSessions() {
     const timestamp = now();
     for (const [sessionId, session] of sessions) {
-      if (session.expiresAt <= timestamp) removeSession(sessionId);
+      if (session.expiresAt <= timestamp) await removeSession(sessionId);
     }
   }
 
@@ -168,11 +193,11 @@ export function createBrowserServer({
     if (request.headers.origin !== publicOrigin) throw new HttpError(403, 'origin_rejected');
   }
 
-  function requireSession(request) {
+  async function requireSession(request) {
     const sessionId = parseCookies(request).get('__Host-ned_session') || parseCookies(request).get('ned_session');
     const session = sessionId ? sessions.get(sessionId) : null;
     if (!session || session.expiresAt <= now()) {
-      if (sessionId) removeSession(sessionId);
+      if (sessionId) await removeSession(sessionId);
       throw new HttpError(401, 'authentication_required');
     }
     return session;
@@ -190,9 +215,52 @@ export function createBrowserServer({
     if (session.mutationCount > MUTATION_LIMIT_PER_MINUTE) throw new HttpError(429, 'rate_limited');
   }
 
+  function publicJob(record) {
+    return {
+      id: record.id,
+      operation: record.operation,
+      status: record.status,
+      ...(record.output === undefined ? {} : { output: record.output }),
+    };
+  }
+
+  async function finalizeTransition(session, record, next) {
+    if (record.operation === 'create_ned') {
+      if (next.status === 'succeeded') session.nedReady = true;
+      if (['failed', 'cancelled', 'blocked'].includes(next.status)) {
+        await revokeModelConnection(session);
+        session.nedReady = false;
+      }
+    }
+    if (record.operation === 'resume_ned' && next.status === 'succeeded') session.nedReady = true;
+    if (record.operation === 'destroy_ned' && next.status === 'succeeded') {
+      await revokeModelConnection(session);
+      session.computeConnectionId = null;
+      session.nedReady = false;
+      session.lifecycle = 'destroyed';
+    }
+  }
+
+  async function reconcileJob(session, record) {
+    const next = safeJob(await jobService.get({
+      jobId: record.id,
+      ownerId: session.userId,
+      sessionId: session.id,
+    }), record.operation);
+    if (next.id !== record.id) throw new Error('Job service changed job identity');
+    if (next.status === record.status) return record;
+    if (!JOB_TRANSITIONS[record.status]?.has(next.status)) throw new Error('Job service returned an illegal state transition');
+    if (TERMINAL_JOB_STATUSES.has(next.status)) await finalizeTransition(session, record, next);
+    Object.assign(record, next);
+    return record;
+  }
+
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url, publicOrigin);
+      if (url.pathname.startsWith('/api/') && url.search !== '') {
+        throw new HttpError(400, 'query_not_allowed');
+      }
       const staticFile = request.method === 'GET' ? STATIC_FILES[url.pathname] : null;
       if (staticFile) {
         const body = await readFile(staticFile.path);
@@ -212,8 +280,9 @@ export function createBrowserServer({
 
       if (request.method === 'POST' && url.pathname === '/api/session') {
         requireOrigin(request);
-        await readJson(request);
-        pruneExpiredSessions();
+        const body = await readJson(request);
+        if (Object.keys(body).length !== 0) throw new HttpError(400, 'unexpected_session_field');
+        await pruneExpiredSessions();
         if (sessions.size >= maxActiveSessions) throw new HttpError(503, 'session_capacity_reached');
         const identity = safeIdentity(await authenticate(request));
         const id = token();
@@ -227,6 +296,7 @@ export function createBrowserServer({
           computeConnectionId: null,
           modelConnectionId: null,
           nedReady: false,
+          lifecycle: 'active',
         };
         sessions.set(id, session);
         const secure = publicOrigin.startsWith('https:') ? '; Secure' : '';
@@ -240,10 +310,11 @@ export function createBrowserServer({
         return;
       }
 
-      const session = requireSession(request);
+      const session = await requireSession(request);
 
       if (request.method === 'GET' && url.pathname === '/api/session') {
-        const record = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
+        let record = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
+        if (record) record = await reconcileJob(session, record);
         sendJson(response, 200, {
           user: { displayName: session.displayName },
           csrfToken: session.csrfToken,
@@ -252,11 +323,24 @@ export function createBrowserServer({
             model: Boolean(session.modelConnectionId),
           },
           nedReady: session.nedReady,
-          job: record ? {
-            id: record.id, operation: record.operation, status: record.status,
-            ...(record.output === undefined ? {} : { output: record.output }),
-          } : null,
+          job: record ? publicJob(record) : null,
         });
+        return;
+      }
+
+      if (request.method === 'DELETE' && url.pathname === '/api/session') {
+        protectMutation(request, session);
+        const body = await readJson(request);
+        if (Object.keys(body).length !== 0) throw new HttpError(400, 'unexpected_session_field');
+        await removeSession(session.id);
+        const secure = publicOrigin.startsWith('https:') ? '; Secure' : '';
+        const cookieName = secure ? '__Host-ned_session' : 'ned_session';
+        response.writeHead(204, {
+          ...securityHeaders('application/json; charset=utf-8'),
+          'Cache-Control': 'no-store',
+          'Set-Cookie': `${cookieName}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`,
+        });
+        response.end();
         return;
       }
 
@@ -267,6 +351,7 @@ export function createBrowserServer({
 
       if (request.method === 'POST' && url.pathname === '/api/compute-connections') {
         protectMutation(request, session);
+        if (session.lifecycle === 'destroyed') throw new HttpError(409, 'session_cleaned_up');
         const body = await readJson(request);
         if (body.providerId !== 'daytona' || Object.keys(body).some((key) => key !== 'providerId')) {
           throw new HttpError(400, 'unsupported_compute_connection');
@@ -280,6 +365,7 @@ export function createBrowserServer({
 
       if (request.method === 'POST' && url.pathname === '/api/model-connections') {
         protectMutation(request, session);
+        if (session.lifecycle === 'destroyed') throw new HttpError(409, 'session_cleaned_up');
         const body = await readJson(request);
         const provider = listModelProviders().find(({ id }) => id === body.providerId);
         if (!provider) throw new HttpError(400, 'unsupported_model_provider');
@@ -299,7 +385,23 @@ export function createBrowserServer({
           method: body.method,
           value: body.credential,
         });
-        const connectionId = safeExternalId(secret?.id, 'Secret vault');
+        const rawConnectionId = secret?.id;
+        let connectionId;
+        try {
+          connectionId = safeExternalId(rawConnectionId, 'Secret vault');
+        } catch (error) {
+          if (typeof rawConnectionId === 'string') await deleteSecret(session.userId, rawConnectionId);
+          throw error;
+        }
+        const supersededId = session.modelConnectionId;
+        if (supersededId) {
+          try {
+            await deleteSecret(session.userId, supersededId);
+          } catch (error) {
+            await deleteSecret(session.userId, connectionId);
+            throw error;
+          }
+        }
         session.modelConnectionId = connectionId;
         sendJson(response, 201, {
           id: connectionId,
@@ -316,6 +418,17 @@ export function createBrowserServer({
         if (!/^[A-Za-z0-9_-]{8,128}$/.test(body.idempotencyKey || '')) {
           throw new HttpError(400, 'unsupported_job');
         }
+        const idempotencyId = `${session.id}:${body.operation}:${body.idempotencyKey}`;
+        if (idempotency.has(idempotencyId)) {
+          sendJson(response, 202, await idempotency.get(idempotencyId));
+          return;
+        }
+        if (session.lifecycle === 'destroyed') throw new HttpError(409, 'session_cleaned_up');
+        let activeRecord = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
+        if (activeRecord && ['queued', 'running'].includes(activeRecord.status)) {
+          activeRecord = await reconcileJob(session, activeRecord);
+          if (['queued', 'running'].includes(activeRecord.status)) throw new HttpError(409, 'job_in_progress');
+        }
         if (body.operation === 'create_ned') {
           if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
             throw new HttpError(400, 'unexpected_job_field');
@@ -323,6 +436,7 @@ export function createBrowserServer({
           if (!session.computeConnectionId || !session.modelConnectionId) {
             throw new HttpError(409, 'connections_required');
           }
+          if (session.nedReady) throw new HttpError(409, 'ned_already_ready');
         } else if (body.operation === 'send_first_request') {
           if (Object.keys(body).some((key) => !['operation', 'idempotencyKey', 'prompt'].includes(key))) {
             throw new HttpError(400, 'unexpected_job_field');
@@ -331,13 +445,13 @@ export function createBrowserServer({
             throw new HttpError(400, 'invalid_first_request');
           }
           if (!session.nedReady) throw new HttpError(409, 'ned_not_ready');
+        } else if (body.operation === 'resume_ned' || body.operation === 'destroy_ned') {
+          if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
+            throw new HttpError(400, 'unexpected_job_field');
+          }
+          if (!session.nedReady) throw new HttpError(409, 'ned_not_ready');
         } else {
           throw new HttpError(400, 'unsupported_job');
-        }
-        const idempotencyId = `${session.id}:${body.operation}:${body.idempotencyKey}`;
-        if (idempotency.has(idempotencyId)) {
-          sendJson(response, 202, await idempotency.get(idempotencyId));
-          return;
         }
         const jobPromise = Promise.resolve(jobService.create({
           operation: body.operation,
@@ -357,39 +471,45 @@ export function createBrowserServer({
           throw error;
         }
         const record = { ...job, ownerId: session.userId, sessionId: session.id };
+        if (TERMINAL_JOB_STATUSES.has(record.status)) await finalizeTransition(session, record, record);
         jobs.set(`${session.id}:${job.id}`, record);
         session.lastJobId = job.id;
-        if (job.operation === 'create_ned' && job.status === 'succeeded') session.nedReady = true;
-        sendJson(response, 202, job);
+        sendJson(response, 202, publicJob(record));
         return;
       }
 
       const jobMatch = url.pathname.match(/^\/api\/jobs\/([A-Za-z0-9_-]{1,128})$/);
       if (request.method === 'GET' && jobMatch) {
-        const record = jobs.get(`${session.id}:${jobMatch[1]}`);
+        let record = jobs.get(`${session.id}:${jobMatch[1]}`);
         if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
           throw new HttpError(404, 'job_not_found');
         }
-        sendJson(response, 200, {
-          id: record.id, operation: record.operation, status: record.status,
-          ...(record.output === undefined ? {} : { output: record.output }),
-        });
+        record = await reconcileJob(session, record);
+        sendJson(response, 200, publicJob(record));
         return;
       }
       if (request.method === 'DELETE' && jobMatch) {
         protectMutation(request, session);
-        const record = jobs.get(`${session.id}:${jobMatch[1]}`);
+        const body = await readJson(request);
+        if (Object.keys(body).length !== 0) throw new HttpError(400, 'unexpected_job_field');
+        let record = jobs.get(`${session.id}:${jobMatch[1]}`);
         if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
           throw new HttpError(404, 'job_not_found');
         }
+        record = await reconcileJob(session, record);
+        if (!['queued', 'running'].includes(record.status)) throw new HttpError(409, 'job_not_cancellable');
         const cancelled = safeJob(await jobService.cancel({
           jobId: record.id,
           ownerId: session.userId,
           sessionId: session.id,
           compensate: record.operation === 'create_ned',
         }), record.operation);
-        jobs.set(`${session.id}:${record.id}`, { ...record, ...cancelled });
-        sendJson(response, 200, cancelled);
+        if (cancelled.id !== record.id || cancelled.status !== 'cancelled') {
+          throw new Error('Job service did not verify cancellation');
+        }
+        await finalizeTransition(session, record, cancelled);
+        Object.assign(record, cancelled);
+        sendJson(response, 200, publicJob(record));
         return;
       }
 

@@ -14,12 +14,18 @@ async function start(overrides = {}) {
     authenticate: async () => ({ userId: 'user-1', displayName: 'Test owner' }),
     secretVault: {
       async put(value) { secrets.push(value); return { id: `model-${secrets.length}` }; },
+      async delete({ id }) {
+        const index = Number(id.split('-').at(-1)) - 1;
+        if (index >= 0) secrets.splice(index, 1);
+        return { id, status: 'deleted' };
+      },
     },
     computeConnector: {
       async connect(value) { computeCalls.push(value); return { id: 'compute-1', providerId: 'daytona' }; },
     },
     jobService: {
       async create(value) { jobCalls.push(value); return { id: 'job-1', status: 'queued', operation: value.operation }; },
+      async get({ jobId }) { return { id: jobId, status: 'queued', operation: 'create_ned' }; },
       async cancel(value) { jobCalls.push({ cancel: value }); return { id: value.jobId, status: 'cancelled', operation: 'create_ned' }; },
     },
     ...overrides,
@@ -65,12 +71,16 @@ test('browser shell renders the five-action provider-neutral onboarding journey 
     assert.equal(response.status, 200);
     assert.match(response.headers.get('content-security-policy'), /default-src 'self'/);
     assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
-    for (const action of ['sign-in', 'connect-compute', 'connect-model', 'create-ned', 'first-request']) {
+    for (const action of ['sign-in', 'connect-compute', 'connect-model', 'create-ned', 'first-request', 'resume-ned', 'destroy-ned']) {
       assert.match(html, new RegExp(`data-action="${action}"`));
     }
     for (const provider of ['OpenAI', 'Anthropic', 'Gemini', 'OpenRouter']) assert.match(html, new RegExp(provider));
     const client = await fetch(`${context.baseUrl}/app.js`).then((result) => result.text());
     assert.match(client, /operation: 'send_first_request'/);
+    assert.match(client, /operation: 'resume_ned'/);
+    assert.match(client, /operation: 'destroy_ned'/);
+    assert.match(client, /async function waitForJob/);
+    assert.match(client, /api\(`\/api\/jobs\/\$\{encodeURIComponent\(job\.id\)\}`\)/);
     assert.match(client, /output\.textContent = job\.output/);
     assert.doesNotMatch(`${html}\n${client}`, /localStorage|sessionStorage|innerHTML|querySelector\([^)]*api[_-]?key/i);
   } finally { await context.close(); }
