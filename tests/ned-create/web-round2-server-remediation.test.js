@@ -460,3 +460,159 @@ test('expiry sweeper compensates a running create and leaves zero session or sec
     assert.equal((await fetch(`${context.baseUrl}/api/session`, { headers: { Cookie: auth.cookie } })).status, 401);
   } finally { await context.close(); }
 });
+
+function persistedSession(operation, key) {
+  const id = `restart-${operation}`;
+  return {
+    id,
+    userId: 'round2-owner',
+    displayName: 'Round 2 owner',
+    csrfToken: `csrf-${operation}`,
+    expiresAt: Date.now() + 3_600_000,
+    mutationMinute: Math.floor(Date.now() / 60_000),
+    mutationCount: 0,
+    computeConnectionId: 'compute-1',
+    modelConnectionId: 'model-1',
+    nedReady: operation !== 'create_ned',
+    lifecycle: 'active',
+    activeIntent: {
+      operation,
+      idempotencyId: `${id}:${operation}:${key}`,
+      jobId: `reserved-${operation}`,
+      submission: {
+        operation,
+        ownerId: 'round2-owner',
+        sessionId: id,
+        idempotencyKey: key,
+        computeConnectionId: 'compute-1',
+        modelConnectionId: 'model-1',
+      },
+    },
+    jobs: [],
+    idempotency: [],
+  };
+}
+
+function persistedAuth(operation) {
+  return { cookie: `ned_session=restart-${operation}`, csrfToken: `csrf-${operation}` };
+}
+
+test('restart recovers every persisted active intent before admitting same or different keys without replaying inference', async () => {
+  for (const operation of ['create_ned', 'send_first_request', 'resume_ned', 'destroy_ned']) {
+    const key = `${operation}-reserved-key`;
+    const lifecycleStore = memoryLifecycleStore();
+    await lifecycleStore.save(persistedSession(operation, key));
+    const authoritative = new Map();
+    let adapterCalls = 0;
+    let sideEffects = 0;
+    const jobService = {
+      async create(value) {
+        adapterCalls += 1;
+        assert.notEqual(operation, 'send_first_request', 'restart must not replay inference without a retained prompt');
+        const effectKey = `${value.operation}:${value.idempotencyKey}`;
+        if (!authoritative.has(effectKey)) {
+          sideEffects += 1;
+          authoritative.set(effectKey, { id: `recovered-${operation}`, operation, status: 'queued' });
+        }
+        return authoritative.get(effectKey);
+      },
+      async get({ jobId }) {
+        return [...authoritative.values()].find(({ id }) => id === jobId);
+      },
+      async cancel() { assert.fail('cancel must not run'); },
+    };
+    const context = await start({ lifecycleStore, jobService });
+    const auth = persistedAuth(operation);
+    try {
+      const restoredResponse = await fetch(`${context.baseUrl}/api/session`, { headers: { Cookie: auth.cookie } });
+      const restored = await restoredResponse.json();
+      assert.equal(restoredResponse.status, 200, operation);
+      assert.deepEqual(restored.job, operation === 'send_first_request'
+        ? { id: `reserved-${operation}`, operation, status: 'blocked' }
+        : { id: `recovered-${operation}`, operation, status: 'queued' }, operation);
+
+      const same = await submit(context, auth, operation, key,
+        operation === 'send_first_request' ? { prompt: 'Never persist or replay me.' } : {});
+      assert.equal(same.response.status, 202, `${operation}:same`);
+      assert.deepEqual(same.body, restored.job, `${operation}:same`);
+
+      const different = await submit(context, auth, operation, `${operation}-different-key`,
+        operation === 'send_first_request' ? { prompt: 'A different request.' } : {});
+      assert.equal(different.response.status, 409, `${operation}:different`);
+      assert.deepEqual(different.body, { error: 'job_in_progress' }, `${operation}:different`);
+      assert.equal(adapterCalls, operation === 'send_first_request' ? 0 : 1, `${operation}:adapter calls`);
+      assert.equal(sideEffects, operation === 'send_first_request' ? 0 : 1, `${operation}:side effects`);
+
+      const snapshotText = JSON.stringify([...lifecycleStore.records.values()][0]);
+      assert.equal(snapshotText.includes('Never persist or replay me.'), false, `${operation}:prompt privacy`);
+      assert.equal(snapshotText.includes('A different request.'), false, `${operation}:different prompt privacy`);
+    } finally { await context.close(); }
+  }
+});
+
+test('restart preserves durable job and receipt identity for every typed operation and exact-key first-request output readback', async () => {
+  for (const operation of ['create_ned', 'send_first_request', 'resume_ned', 'destroy_ned']) {
+    const key = `${operation}-completed-key`;
+    const lifecycleStore = memoryLifecycleStore();
+    const session = persistedSession(operation, key);
+    session.activeIntent = null;
+    await lifecycleStore.save(session);
+    const jobsByKey = new Map();
+    let adapterCalls = 0;
+    let sideEffects = 0;
+    const jobService = {
+      async create(value) {
+        adapterCalls += 1;
+        const effectKey = `${value.operation}:${value.idempotencyKey}`;
+        if (!jobsByKey.has(effectKey)) {
+          sideEffects += 1;
+          jobsByKey.set(effectKey, {
+            id: `${operation}-job-${sideEffects}`,
+            operation,
+            status: operation === 'send_first_request' ? 'succeeded' : 'queued',
+            ...(operation === 'send_first_request' ? { output: `exact-output-${sideEffects}` } : {}),
+          });
+        }
+        return jobsByKey.get(effectKey);
+      },
+      async get({ jobId }) {
+        return [...jobsByKey.values()].find(({ id }) => id === jobId);
+      },
+      async cancel() { assert.fail('cancel must not run'); },
+    };
+    const auth = persistedAuth(operation);
+    let context = await start({ lifecycleStore, jobService });
+    const first = await submit(context, auth, operation, key,
+      operation === 'send_first_request' ? { prompt: 'Private first prompt.' } : {});
+    assert.equal(first.response.status, 202, `${operation}:first`);
+    await context.close();
+
+    const durable = [...lifecycleStore.records.values()][0];
+    assert.equal(durable.jobs.length, 1, `${operation}:durable job`);
+    assert.equal(durable.idempotency.length, 1, `${operation}:durable receipt`);
+    assert.equal(JSON.stringify(durable).includes('Private first prompt.'), false, `${operation}:no prompt persistence`);
+    assert.equal(JSON.stringify(durable).includes('exact-output-1'), false, `${operation}:no output persistence`);
+
+    context = await start({ lifecycleStore, jobService });
+    try {
+      const restored = await fetch(`${context.baseUrl}/api/session`, { headers: { Cookie: auth.cookie } }).then((r) => r.json());
+      const same = await submit(context, auth, operation, key,
+        operation === 'send_first_request' ? { prompt: 'Private first prompt.' } : {});
+      assert.equal(same.response.status, 202, `${operation}:same status`);
+      assert.equal(same.body.id, first.body.id, `${operation}:same job identity`);
+      assert.deepEqual(same.body, restored.job, `${operation}:authoritative readback`);
+      if (operation === 'send_first_request') {
+        assert.equal(same.body.output, 'exact-output-1');
+        const different = await submit(context, auth, operation, `${operation}-different-key`, { prompt: 'New private prompt.' });
+        assert.equal(different.response.status, 202);
+        assert.equal(adapterCalls, 2, 'a different request is one new inference, not an exact-key replay');
+        assert.equal(sideEffects, 2);
+      } else {
+        const different = await submit(context, auth, operation, `${operation}-different-key`);
+        assert.equal(different.response.status, 409, `${operation}:different status`);
+        assert.equal(adapterCalls, 1, `${operation}:no duplicate adapter submission`);
+        assert.equal(sideEffects, 1, `${operation}:one side effect`);
+      }
+    } finally { await context.close(); }
+  }
+});

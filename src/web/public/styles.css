@@ -26,6 +26,7 @@ main { width: min(1100px, calc(100% - 40px)); margin: 0 auto; padding: 64px 0 56
 .eyebrow, .step-label { color: var(--accent); text-transform: uppercase; letter-spacing: .13em; font-size: 12px; font-weight: 750; }
 h1 { margin: 8px 0 12px; font-size: clamp(42px, 7vw, 68px); letter-spacing: -.055em; line-height: .98; }
 h2 { margin: 7px 0 12px; font-size: clamp(27px, 4vw, 38px); letter-spacing: -.03em; }
+h2[tabindex="-1"]:focus { outline: 3px solid var(--accent); outline-offset: 5px; border-radius: 4px; }
 p { line-height: 1.55; }
 .hero > p:last-child, .card section > p:not(.step-label), .hint { color: var(--muted); }
 .journey { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 28px; align-items: start; }

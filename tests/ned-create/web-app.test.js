@@ -86,6 +86,8 @@ test('browser shell renders the five-action provider-neutral onboarding journey 
     assert.match(client, /async function waitForJob/);
     assert.match(client, /api\(`\/api\/jobs\/\$\{encodeURIComponent\(job\.id\)\}`\)/);
     assert.match(client, /output\.textContent = job\.output/);
+    const styles = await fetch(`${context.baseUrl}/styles.css`).then((result) => result.text());
+    assert.match(styles, /h2\[tabindex="-1"\]:focus\s*\{[^}]*outline:\s*3px solid var\(--accent\)[^}]*outline-offset:\s*5px[^}]*\}/s);
     assert.doesNotMatch(`${html}\n${client}`, /localStorage|sessionStorage|innerHTML|querySelector\([^)]*api[_-]?key/i);
   } finally { await context.close(); }
 });

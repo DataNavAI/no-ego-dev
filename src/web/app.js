@@ -188,10 +188,10 @@ export function createBrowserServer({
       ...session,
       activeIntent: session.activeIntent ? structuredClone(session.activeIntent) : null,
       jobs: [...jobs.entries()]
-        .filter(([key, record]) => key.startsWith(prefix) && record.operation !== 'send_first_request')
+        .filter(([key]) => key.startsWith(prefix))
         .map(([, record]) => ({ ...record, output: undefined })),
       idempotency: [...idempotency.entries()]
-        .filter(([key, record]) => key.startsWith(prefix) && record.operation !== 'send_first_request')
+        .filter(([key]) => key.startsWith(prefix))
         .map(([key, record]) => ({ key, record: { ...record, output: undefined } })),
     };
   }
@@ -200,7 +200,35 @@ export function createBrowserServer({
     await durableLifecycleStore.save(lifecycleSnapshot(session));
   }
 
-  const hydration = Promise.resolve(durableLifecycleStore.loadAll()).then((snapshots) => {
+  async function recoverActiveIntent(session) {
+    const intent = session.activeIntent;
+    if (!intent) return null;
+    const retained = idempotency.get(intent.idempotencyId);
+    if (retained) return retained;
+
+    let record;
+    if (intent.operation === 'send_first_request') {
+      intent.jobId ||= token(18);
+      record = {
+        id: intent.jobId,
+        operation: intent.operation,
+        status: 'blocked',
+        ownerId: session.userId,
+        sessionId: session.id,
+      };
+    } else {
+      const recovered = safeJob(await jobService.create(intent.submission), intent.operation);
+      record = { ...recovered, ownerId: session.userId, sessionId: session.id };
+      session.activeIntent = null;
+    }
+    jobs.set(`${session.id}:${record.id}`, record);
+    idempotency.set(intent.idempotencyId, record);
+    session.lastJobId = record.id;
+    await persistSession(session);
+    return record;
+  }
+
+  const hydration = Promise.resolve(durableLifecycleStore.loadAll()).then(async (snapshots) => {
     if (!Array.isArray(snapshots)) throw new Error('Lifecycle store returned invalid sessions');
     for (const snapshot of snapshots) {
       if (!snapshot || typeof snapshot.id !== 'string' || typeof snapshot.userId !== 'string') {
@@ -209,7 +237,11 @@ export function createBrowserServer({
       const { jobs: storedJobs = [], idempotency: storedReceipts = [], ...session } = snapshot;
       sessions.set(session.id, session);
       for (const record of storedJobs) jobs.set(`${session.id}:${record.id}`, record);
-      for (const receipt of storedReceipts) idempotency.set(receipt.key, receipt.record);
+      for (const receipt of storedReceipts) {
+        const canonical = jobs.get(`${session.id}:${receipt.record.id}`) || receipt.record;
+        idempotency.set(receipt.key, canonical);
+      }
+      await recoverActiveIntent(session);
     }
   });
 
@@ -359,13 +391,22 @@ export function createBrowserServer({
   }
 
   async function reconcileJob(session, record) {
+    const requiresOutputRecovery = record.operation === 'send_first_request'
+      && record.status === 'succeeded' && record.output === undefined;
+    if (TERMINAL_JOB_STATUSES.has(record.status) && !requiresOutputRecovery) return record;
     const next = safeJob(await jobService.get({
       jobId: record.id,
       ownerId: session.userId,
       sessionId: session.id,
     }), record.operation);
     if (next.id !== record.id) throw new Error('Job service changed job identity');
-    if (next.status === record.status) return record;
+    if (next.status === record.status) {
+      if (requiresOutputRecovery) {
+        Object.assign(record, next);
+        await persistSession(session);
+      }
+      return record;
+    }
     if (!JOB_TRANSITIONS[record.status]?.has(next.status)) throw new Error('Job service returned an illegal state transition');
     if (TERMINAL_JOB_STATUSES.has(next.status)) await finalizeTransition(session, record, next);
     Object.assign(record, next);
@@ -435,6 +476,7 @@ export function createBrowserServer({
       if (request.method === 'GET' && url.pathname === '/api/session') {
         const payload = await withSessionLock(session.id, async () => {
           if (session.lifecycle === CLEANUP_PENDING_CODE) throw new HttpError(409, CLEANUP_PENDING_CODE);
+          await recoverActiveIntent(session);
           let record = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
           if (record) record = await reconcileJob(session, record);
           return {
@@ -556,11 +598,16 @@ export function createBrowserServer({
         const body = await readJson(request);
         const result = await withSessionLock(session.id, async () => {
           rejectUnavailableSession(session);
+          await recoverActiveIntent(session);
           if (!/^[A-Za-z0-9_-]{8,128}$/.test(body.idempotencyKey || '')) {
             throw new HttpError(400, 'unsupported_job');
           }
           const idempotencyId = `${session.id}:${body.operation}:${body.idempotencyKey}`;
-          if (idempotency.has(idempotencyId)) return publicJob(idempotency.get(idempotencyId));
+          if (idempotency.has(idempotencyId)) {
+            const retained = await reconcileJob(session, idempotency.get(idempotencyId));
+            return publicJob(retained);
+          }
+          if (session.activeIntent) throw new HttpError(409, 'job_in_progress');
           let activeRecord = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
           if (activeRecord && ['queued', 'running'].includes(activeRecord.status)) {
             activeRecord = await reconcileJob(session, activeRecord);
@@ -590,25 +637,29 @@ export function createBrowserServer({
           } else {
             throw new HttpError(400, 'unsupported_job');
           }
-          const submission = {
+          const durableSubmission = {
             operation: body.operation,
             ownerId: session.userId,
             sessionId: session.id,
             idempotencyKey: body.idempotencyKey,
             computeConnectionId: session.computeConnectionId,
             modelConnectionId: session.modelConnectionId,
+          };
+          const submission = {
+            ...durableSubmission,
             ...(body.operation === 'send_first_request' ? { prompt: body.prompt } : {}),
           };
-          if (body.operation !== 'send_first_request') {
-            session.activeIntent = { operation: body.operation, idempotencyId, submission };
-            await persistSession(session);
-          }
+          session.activeIntent = {
+            operation: body.operation,
+            idempotencyId,
+            jobId: token(18),
+            submission: durableSubmission,
+          };
+          await persistSession(session);
           let job;
           try {
             job = safeJob(await jobService.create(submission), body.operation);
           } catch (error) {
-            session.activeIntent = null;
-            await persistSession(session);
             throw error;
           }
           const record = { ...job, ownerId: session.userId, sessionId: session.id };
@@ -628,6 +679,7 @@ export function createBrowserServer({
       if (request.method === 'GET' && jobMatch) {
         const result = await withSessionLock(session.id, async () => {
           if (session.lifecycle === CLEANUP_PENDING_CODE) throw new HttpError(409, CLEANUP_PENDING_CODE);
+          await recoverActiveIntent(session);
           let record = jobs.get(`${session.id}:${jobMatch[1]}`);
           if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
             throw new HttpError(404, 'job_not_found');
@@ -644,6 +696,7 @@ export function createBrowserServer({
         if (Object.keys(body).length !== 0) throw new HttpError(400, 'unexpected_job_field');
         const result = await withSessionLock(session.id, async () => {
           rejectUnavailableSession(session);
+          await recoverActiveIntent(session);
           let record = jobs.get(`${session.id}:${jobMatch[1]}`);
           if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
             throw new HttpError(404, 'job_not_found');
