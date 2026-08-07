@@ -442,10 +442,9 @@ export function createBrowserServer({
       if (request.method === 'POST' && url.pathname === '/api/session') {
         requireOrigin(request);
         const body = await readJson(request);
-        if (Object.keys(body).length !== 0) throw new HttpError(400, 'unexpected_session_field');
         await pruneExpiredSessions();
         if (sessions.size >= maxActiveSessions) throw new HttpError(503, 'session_capacity_reached');
-        const identity = safeIdentity(await authenticate(request));
+        const identity = safeIdentity(await authenticate(request, body));
         const id = token();
         const session = {
           id,

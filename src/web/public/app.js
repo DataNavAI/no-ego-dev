@@ -120,13 +120,24 @@ function renderCompletedJob(job) {
 }
 
 document.getElementById('sign-in-button').addEventListener('click', async () => {
+  const passwordInput = document.getElementById('login-password');
   try {
     await sessionRestorePromise;
     setStatus('Starting a secure session…');
-    const session = await api('/api/session', { method: 'POST', body: '{}' });
+    const session = await api('/api/session', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('login-email').value,
+        password: passwordInput.value,
+      }),
+    });
     state.csrfToken = session.csrfToken;
     showStep(2);
-  } catch { setStatus('Sign-in is not configured for this environment.', 'error'); }
+  } catch {
+    setStatus('Sign-in failed. Verify your staging email and password.', 'error');
+  } finally {
+    passwordInput.value = '';
+  }
 });
 
 document.getElementById('compute-button').addEventListener('click', async () => {

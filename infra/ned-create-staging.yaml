@@ -1,0 +1,359 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Isolated staging infrastructure for browser-first ned create. Production is out of scope.
+
+Parameters:
+  ImageIdentifier:
+    Type: String
+    Description: Immutable ECR image URI with full source-SHA tag.
+    AllowedPattern: '^061039762362\.dkr\.ecr\.us-east-1\.amazonaws\.com/noegodev-ned-staging:[a-f0-9]{40}$'
+  DeploymentRevision:
+    Type: String
+    AllowedPattern: '^[a-f0-9]{40}$'
+  PublicOrigin:
+    Type: String
+    AllowedPattern: '^https://[A-Za-z0-9.-]+$'
+  ModelSecretPrefix:
+    Type: String
+    Default: noegodev-ned-staging/model
+    AllowedValues: [noegodev-ned-staging/model]
+
+Resources:
+  StagingEncryptionKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: noegodev-ned-staging secret encryption
+      EnableKeyRotation: true
+      PendingWindowInDays: 30
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AccountAdministration
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+      Tags:
+        - { Key: Project, Value: noegodev-ned }
+        - { Key: Environment, Value: staging }
+
+  StagingEncryptionAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/noegodev-ned-staging
+      TargetKeyId:
+        Ref: StagingEncryptionKey
+
+  LifecycleTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: noegodev-ned-staging-lifecycle
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId:
+          Fn::GetAtt: [StagingEncryptionKey, Arn]
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - { Key: Project, Value: noegodev-ned }
+        - { Key: Environment, Value: staging }
+
+  DaytonaCredential:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: noegodev-ned-staging/daytona
+      Description: Staging Daytona runtime credential; populated out of band from Keychain.
+      KmsKeyId:
+        Ref: StagingEncryptionKey
+      Tags:
+        - { Key: Project, Value: noegodev-ned }
+        - { Key: Environment, Value: staging }
+
+  StagingUserPool:
+    Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      UserPoolName: noegodev-ned-staging
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      MfaConfiguration: OPTIONAL
+      EnabledMfas: [SOFTWARE_TOKEN_MFA]
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - { Name: verified_email, Priority: 1 }
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 16
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+          TemporaryPasswordValidityDays: 1
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate: [email]
+      DeletionProtection: ACTIVE
+      UserPoolTags:
+        Project: noegodev-ned
+        Environment: staging
+
+  StagingUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: noegodev-ned-staging-web
+      UserPoolId:
+        Ref: StagingUserPool
+      GenerateSecret: false
+      EnableTokenRevocation: true
+      PreventUserExistenceErrors: ENABLED
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AccessTokenValidity: 15
+      IdTokenValidity: 15
+      RefreshTokenValidity: 1
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      ReadAttributes: [email, email_verified]
+
+  AppRunnerEcrAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: noegodev-ned-staging-apprunner-ecr-access
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: build.apprunner.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+      Tags:
+        - { Key: Project, Value: noegodev-ned }
+        - { Key: Environment, Value: staging }
+
+  AppRunnerInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: noegodev-ned-staging-apprunner-instance
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: tasks.apprunner.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: noegodev-ned-staging-runtime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: LifecycleTable
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:ConditionCheckItem
+                Resource:
+                  Fn::GetAtt: [LifecycleTable, Arn]
+              - Sid: ManagedConnectionSecrets
+                Effect: Allow
+                Action:
+                  - secretsmanager:CreateSecret
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DeleteSecret
+                  - secretsmanager:TagResource
+                Resource:
+                  - Ref: DaytonaCredential
+                  - Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ModelSecretPrefix}/*
+              - Sid: StagingKey
+                Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                  - kms:GenerateDataKey
+                  - kms:DescribeKey
+                Resource:
+                  Fn::GetAtt: [StagingEncryptionKey, Arn]
+              - Sid: Metrics
+                Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: NoEgoDev/NedCreateStaging
+      Tags:
+        - { Key: Project, Value: noegodev-ned }
+        - { Key: Environment, Value: staging }
+
+  StagingService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: noegodev-ned-staging-web
+      SourceConfiguration:
+        AutoDeploymentsEnabled: false
+        AuthenticationConfiguration:
+          AccessRoleArn:
+            Fn::GetAtt: [AppRunnerEcrAccessRole, Arn]
+        ImageRepository:
+          ImageRepositoryType: ECR
+          ImageIdentifier:
+            Ref: ImageIdentifier
+          ImageConfiguration:
+            Port: '8080'
+            RuntimeEnvironmentVariables:
+              NED_PUBLIC_ORIGIN:
+                Ref: PublicOrigin
+              NED_STAGE: staging
+              AWS_REGION:
+                Ref: AWS::Region
+              NED_COGNITO_USER_POOL_ID:
+                Ref: StagingUserPool
+              NED_COGNITO_CLIENT_ID:
+                Ref: StagingUserPoolClient
+              NED_LIFECYCLE_TABLE:
+                Ref: LifecycleTable
+              NED_SECRET_PREFIX:
+                Ref: ModelSecretPrefix
+              NED_KMS_KEY_ARN:
+                Fn::GetAtt: [StagingEncryptionKey, Arn]
+              NED_SWEEP_INTERVAL_MS: '60000'
+              NED_MAX_ACTIVE_SESSIONS: '10'
+              NED_MAX_JOBS_PER_DAY: '20'
+              NED_METRIC_NAMESPACE: NoEgoDev/NedCreateStaging
+              NED_DAYTONA_SECRET_ARN:
+                Ref: DaytonaCredential
+              NED_ALLOWED_MODEL_PROVIDERS: openai,anthropic,gemini
+              DEPLOYMENT_REVISION:
+                Ref: DeploymentRevision
+              PORT: '8080'
+            RuntimeEnvironmentSecrets:
+              DAYTONA_API_KEY:
+                Ref: DaytonaCredential
+      InstanceConfiguration:
+        Cpu: '256'
+        Memory: '512'
+        InstanceRoleArn:
+          Fn::GetAtt: [AppRunnerInstanceRole, Arn]
+      HealthCheckConfiguration:
+        Protocol: HTTP
+        Path: /healthz
+        Interval: 10
+        Timeout: 5
+        HealthyThreshold: 1
+        UnhealthyThreshold: 5
+      NetworkConfiguration:
+        IngressConfiguration:
+          IsPubliclyAccessible: true
+      Tags:
+        - { Key: Project, Value: noegodev-ned }
+        - { Key: Environment, Value: staging }
+
+  Service5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: noegodev-ned-staging-app-5xx
+      Namespace: AWS/AppRunner
+      MetricName: 5xxStatusResponses
+      Dimensions:
+        - Name: ServiceName
+          Value:
+            Fn::GetAtt: [StagingService, ServiceName]
+        - Name: ServiceID
+          Value:
+            Fn::GetAtt: [StagingService, ServiceId]
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  NoActiveInstanceAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: noegodev-ned-staging-no-active-instance
+      Namespace: AWS/AppRunner
+      MetricName: ActiveInstances
+      Dimensions:
+        - Name: ServiceName
+          Value:
+            Fn::GetAtt: [StagingService, ServiceName]
+        - Name: ServiceID
+          Value:
+            Fn::GetAtt: [StagingService, ServiceId]
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+
+  CleanupPendingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: noegodev-ned-staging-cleanup-pending
+      Namespace: NoEgoDev/NedCreateStaging
+      MetricName: CleanupPending
+      Dimensions:
+        - { Name: Environment, Value: staging }
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: breaching
+
+Outputs:
+  ServiceArn:
+    Value:
+      Fn::GetAtt: [StagingService, ServiceArn]
+  ServiceUrl:
+    Value:
+      Fn::Sub:
+        - https://${Url}
+        - Url:
+            Fn::GetAtt: [StagingService, ServiceUrl]
+  UserPoolId:
+    Value:
+      Ref: StagingUserPool
+  UserPoolClientId:
+    Value:
+      Ref: StagingUserPoolClient
+  LifecycleTableName:
+    Value:
+      Ref: LifecycleTable
+  DaytonaSecretArn:
+    Value:
+      Ref: DaytonaCredential
+  KmsKeyArn:
+    Value:
+      Fn::GetAtt: [StagingEncryptionKey, Arn]

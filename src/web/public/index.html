@@ -40,7 +40,12 @@
         <section id="sign-in-panel">
           <p class="step-label">Step 1 of 5</p>
           <h2 tabindex="-1">Sign in to begin</h2>
-          <p>Your session owns every connection and provisioning job.</p>
+          <p>Your Cognito-managed staging identity owns every connection and provisioning job.</p>
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" autocomplete="username" spellcheck="false" required>
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" autocomplete="current-password" required>
+          <p class="hint">Sent once over HTTPS. The browser does not retain your password.</p>
           <button id="sign-in-button" class="primary">Sign in securely</button>
         </section>
 

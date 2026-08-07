@@ -63,7 +63,7 @@ function createHarness({ width = 1440, fetchImpl, controlledTimers = false } = {
     panel.heading = add(`${id}-heading`, { tagName: 'H2' });
   }
   for (const id of [
-    'status', 'notice', 'sign-in-button', 'compute-button', 'credential-fields', 'delegated-note',
+    'status', 'notice', 'sign-in-button', 'login-email', 'login-password', 'compute-button', 'credential-fields', 'delegated-note',
     'model-button', 'model-credential', 'create-button', 'cancel-button', 'request-button',
     'first-response', 'first-message', 'resume-button', 'destroy-button', 'destroy-confirm',
   ]) add(id);

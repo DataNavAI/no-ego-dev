@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
 import {
@@ -7,6 +8,7 @@ import {
   createSecretsManagerVault,
   loadProductionConfig,
 } from '../../src/web/production-adapters.js';
+import { createBrowserServer } from '../../src/web/app.js';
 
 test('production config fails closed unless identity persistence secrets sweeper quotas monitoring and provider adapters are configured', () => {
   assert.throws(() => loadProductionConfig({}), /missing NED_PUBLIC_ORIGIN/);
@@ -24,11 +26,11 @@ test('production config fails closed unless identity persistence secrets sweeper
     NED_MAX_JOBS_PER_DAY: '20',
     NED_METRIC_NAMESPACE: 'NoEgoDev/NedCreateStaging',
     NED_DAYTONA_SECRET_ARN: 'arn:aws:secretsmanager:us-east-1:123456789012:secret:daytona',
-    NED_MODEL_PROVIDER: 'openai',
-    NED_MODEL_SECRET_ARN: 'arn:aws:secretsmanager:us-east-1:123456789012:secret:model',
+    NED_ALLOWED_MODEL_PROVIDERS: 'openai,anthropic,gemini',
     DEPLOYMENT_REVISION: 'a'.repeat(40),
   };
   assert.equal(loadProductionConfig(env).maxJobsPerDay, 20);
+  assert.deepEqual(loadProductionConfig(env).allowedModelProviders, ['openai', 'anthropic', 'gemini']);
   for (const name of ['NED_COGNITO_USER_POOL_ID', 'NED_LIFECYCLE_TABLE', 'NED_KMS_KEY_ARN', 'NED_METRIC_NAMESPACE', 'NED_DAYTONA_SECRET_ARN']) {
     const invalid = { ...env }; delete invalid[name];
     assert.throws(() => loadProductionConfig(invalid), new RegExp(`missing ${name}`));
@@ -77,4 +79,51 @@ test('Cognito identity adapter accepts only bounded email/password POST credenti
   });
   assert.equal(calls[0].AuthFlow, 'USER_PASSWORD_AUTH');
   assert.throws(() => authenticate(null, { email: 'owner@example.com', password: 'short', extra: true }), /invalid_login/);
+});
+
+test('production session passes login credentials directly to identity and never persists them', async () => {
+  const origin = 'https://staging.example.com';
+  const snapshots = [];
+  let received;
+  const server = createBrowserServer({
+    publicOrigin: origin,
+    authenticate: async (_request, body) => { received = structuredClone(body); return { userId: 'owner-sub', displayName: body.email }; },
+    lifecycleStore: {
+      async loadAll() { return []; },
+      async save(snapshot) { snapshots.push(structuredClone(snapshot)); },
+      async delete() {},
+    },
+    expirySweepIntervalMs: 60_000,
+    cleanupAlert() {},
+    secretVault: { async put() { return { id: 'model-1' }; }, async delete({ id }) { return { id, status: 'deleted' }; } },
+    computeConnector: { async connect() { return { id: 'compute-1' }; } },
+    jobService: {
+      async create({ operation }) { return { id: 'job-1', operation, status: 'queued' }; },
+      async get({ jobId }) { return { id: jobId, operation: 'create_ned', status: 'queued' }; },
+      async cancel({ jobId }) { return { id: jobId, operation: 'create_ned', status: 'cancelled' }; },
+    },
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/session`, {
+      method: 'POST',
+      headers: { Origin: origin, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'owner@example.com', password: 'correct horse battery staple' }),
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(received, { email: 'owner@example.com', password: 'correct horse battery staple' });
+    assert.equal(JSON.stringify(snapshots).includes('correct horse'), false);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('browser login collects Cognito email and password without browser persistence', async () => {
+  const html = await readFile(new URL('../../src/web/public/index.html', import.meta.url), 'utf8');
+  const runtime = await readFile(new URL('../../src/web/public/app.js', import.meta.url), 'utf8');
+  assert.match(html, /id="login-email"[^>]+autocomplete="username"/);
+  assert.match(html, /id="login-password"[^>]+autocomplete="current-password"/);
+  assert.match(runtime, /email:\s*document\.getElementById\('login-email'\)\.value/);
+  assert.match(runtime, /password:\s*passwordInput\.value/);
+  assert.doesNotMatch(runtime, /localStorage|sessionStorage/);
 });

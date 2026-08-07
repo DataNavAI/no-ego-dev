@@ -36,9 +36,10 @@ export function loadProductionConfig(env = process.env) {
   if (stage !== 'staging') throw new Error('This candidate permits staging only');
   const deploymentRevision = required(env, 'DEPLOYMENT_REVISION');
   if (!SHA.test(deploymentRevision)) throw new Error('Production configuration requires an immutable deployment revision');
-  const modelProvider = required(env, 'NED_MODEL_PROVIDER');
-  if (!['openai', 'anthropic', 'gemini', 'openrouter'].includes(modelProvider)) {
-    throw new Error('Production configuration has unsupported NED_MODEL_PROVIDER');
+  const allowedModelProviders = required(env, 'NED_ALLOWED_MODEL_PROVIDERS').split(',').map((value) => value.trim());
+  if (allowedModelProviders.length === 0 || new Set(allowedModelProviders).size !== allowedModelProviders.length
+    || allowedModelProviders.some((provider) => !['openai', 'anthropic', 'gemini'].includes(provider))) {
+    throw new Error('Production configuration has unsupported NED_ALLOWED_MODEL_PROVIDERS');
   }
   return Object.freeze({
     publicOrigin,
@@ -54,8 +55,7 @@ export function loadProductionConfig(env = process.env) {
     maxJobsPerDay: boundedInteger(env, 'NED_MAX_JOBS_PER_DAY', 1, 1_000),
     metricNamespace: required(env, 'NED_METRIC_NAMESPACE'),
     daytonaSecretArn: required(env, 'NED_DAYTONA_SECRET_ARN'),
-    modelProvider,
-    modelSecretArn: required(env, 'NED_MODEL_SECRET_ARN'),
+    allowedModelProviders,
     deploymentRevision,
   });
 }
