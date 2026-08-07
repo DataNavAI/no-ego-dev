@@ -1,5 +1,6 @@
 import { createNedApp } from './app.js';
 import { authorizeOpenRouter } from './auth/openrouter.js';
+import { createModelConnection, getModelProviderRuntime, selectModelCredential } from './model-providers.js';
 import { createDryRunPlan } from './plan.js';
 import { createProfileArchive } from './profile-archive.js';
 import { createDaytonaProvider } from './providers/daytona.js';
@@ -45,7 +46,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       'NED — private hosted product partner',
       '',
       'Usage:',
-      '  ned create [--dry-run --json]',
+      '  ned create [--model-provider <openai|anthropic|gemini|openrouter>] [--dry-run --json]',
       '  ned chat "What should NED build?"',
       '  ned doctor',
       '  ned reset',
@@ -98,7 +99,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
   }
 
   if (command === 'create' && flags.includes('--dry-run')) {
-    const plan = createDryRunPlan();
+    const plan = createDryRunPlan({ modelProvider: flagValue(flags, '--model-provider') || 'openrouter' });
     if (flags.includes('--json')) {
       io.log(JSON.stringify(plan));
     } else {
@@ -117,14 +118,27 @@ export async function runCli(argv, io = console, dependencies = {}) {
       return 2;
     }
     try {
-      let openRouterApiKey = env.OPENROUTER_API_KEY;
-      if (!openRouterApiKey) {
+      const providerId = flagValue(flags, '--model-provider') || 'openrouter';
+      const provider = getModelProviderRuntime(providerId);
+      let selectedCredential = selectModelCredential({ providerId, env });
+      if (!selectedCredential && providerId === 'openrouter') {
         io.log('Opening OpenRouter sign-in...');
-        openRouterApiKey = await getOpenRouterKey();
+        selectedCredential = {
+          providerId,
+          method: 'oauth-pkce',
+          value: await getOpenRouterKey(),
+        };
       }
+      if (!selectedCredential) {
+        capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
+        io.error(`${provider.label} authorization required. Use the secure model-provider connection for ${provider.label}, then rerun ned create --model-provider ${providerId}.`);
+        return 2;
+      }
+      const modelConnection = createModelConnection(selectedCredential);
+      io.log(`Connecting ${provider.label} as your model provider...`);
       io.log('Creating your private NED workspace...');
       const app = await appFactory({ env });
-      await app.create({ openRouterApiKey });
+      await app.create({ modelConnection });
       capture(telemetry, TELEMETRY_EVENTS.createCompleted, startedAt, 'success');
       io.log('✓ Your product partner is ready.');
       io.log('Start with: ned chat "What product should we build?"');

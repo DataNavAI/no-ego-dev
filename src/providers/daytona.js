@@ -1,5 +1,6 @@
 import { Daytona } from '@daytona/sdk';
 import { randomUUID } from 'node:crypto';
+import { createModelConnection, getModelProviderRuntime } from '../model-providers.js';
 
 const HERMES_COMMIT = '3ef6bbd201263d354fd83ec55b3c306ded2eb72a';
 
@@ -15,7 +16,7 @@ export function createDaytonaProvider({
   apiKey,
   DaytonaClass = Daytona,
   profileArchive,
-  secretNameFactory = () => `ned_openrouter_${randomUUID().replaceAll('-', '')}`,
+  secretNameFactory = (providerId) => `ned_model_${providerId}_${randomUUID().replaceAll('-', '')}`,
 } = {}) {
   if (!apiKey) {
     throw new Error('Daytona authorization is required. Set DAYTONA_API_KEY in your shell; do not paste it into chat.');
@@ -24,19 +25,26 @@ export function createDaytonaProvider({
 
   return {
     async createWorkspace(plan, credentials = {}) {
-      if (!credentials.openRouterApiKey) {
-        throw new Error('OpenRouter authorization is required. Set OPENROUTER_API_KEY in your shell; do not paste it into chat.');
+      const modelConnection = credentials.modelConnection || (credentials.openRouterApiKey
+        ? createModelConnection({ providerId: 'openrouter', method: 'api-key', value: credentials.openRouterApiKey })
+        : null);
+      if (!modelConnection) {
+        throw new Error('Model-provider authorization is required before compute can be created.');
       }
+      if (modelConnection.providerId !== plan.modelProvider) {
+        throw new Error('Model-provider connection does not match the provisioning plan');
+      }
+      const modelProvider = getModelProviderRuntime(modelConnection.providerId);
 
-      const secretName = secretNameFactory();
-      if (!/^ned_openrouter_[A-Za-z0-9]+$/.test(secretName)) {
+      const secretName = secretNameFactory(modelConnection.providerId);
+      if (!/^ned_(?:openrouter|model_[a-z]+)_[A-Za-z0-9]+$/.test(secretName)) {
         throw new Error('Invalid generated Daytona secret name');
       }
       const secret = await client.secret.create({
         name: secretName,
-        value: credentials.openRouterApiKey,
-        description: 'OpenRouter access for NED',
-        hosts: ['openrouter.ai'],
+        value: modelConnection.consumeCredential(),
+        description: `${modelProvider.label} access for NED`,
+        hosts: modelProvider.allowedHosts,
       });
 
       try {
@@ -51,13 +59,14 @@ export function createDaytonaProvider({
           autoArchiveInterval: plan.autoArchiveMinutes,
           autoDeleteInterval: -1,
           labels: { app: 'ned', managedBy: 'ned-cli' },
-          secrets: { OPENROUTER_API_KEY: secretName },
+          secrets: { [modelProvider.sandboxEnvironmentVariable]: secretName },
         }, { timeout: 300 });
         return {
           id: sandbox.id,
           name: sandbox.name,
           nedSecretId: secret.id,
           nedSecretName: secretName,
+          modelProvider: modelConnection.providerId,
         };
       } catch (error) {
         try {
@@ -94,8 +103,8 @@ export function createDaytonaProvider({
         'rm -rf /tmp/ned-profile && mkdir -p /tmp/ned-profile',
         'tar -xzf /tmp/ned-profile.tgz -C /tmp/ned-profile',
         `hermes profile install /tmp/ned-profile --name ${plan.profile} --force --yes`,
-        `hermes --profile ${plan.profile} config set model.provider openrouter`,
-        `hermes --profile ${plan.profile} config set model.default openai/gpt-5.5`,
+        `hermes --profile ${plan.profile} config set model.provider ${plan.hermesModelProvider || 'openrouter'}`,
+        `hermes --profile ${plan.profile} config set model.default ${plan.model || 'openai/gpt-5.5'}`,
         `hermes profile info ${plan.profile}`,
       ].join('\n');
       const result = await sandbox.process.executeCommand(command, undefined, undefined, 900);

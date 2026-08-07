@@ -6,17 +6,26 @@ NoEgoDev — NED for short — is a Hermes profile that turns a plain request in
 
 NED is best for people who want to test an idea quickly with something real enough to share with users, teammates, or customers.
 
-## Create a private hosted NED (CLI beta)
+## Create a private hosted NED
 
-Requirements: Node.js 20+, a Daytona account, and a Daytona API key with `write:sandboxes`, `delete:sandboxes`, and `manage:secrets`. Create the key at https://app.daytona.io/dashboard/keys and keep it in your local shell—never paste it into chat.
+Browser-first onboarding is the primary product direction and is being implemented under [issue #23](https://github.com/DataNavAI/no-ego-dev/issues/23). The current browser slice provides the five-step UI plus authenticated/session-bound connection, create-job, and first-request job boundaries. Production startup and inference are intentionally unavailable until hosted identity, encrypted durable storage, queue isolation, and deployment authority are selected.
+
+To inspect the local-only development simulation (no cloud resources or inference):
+
+```bash
+npm run web:dev
+# open http://127.0.0.1:4173
+```
+
+CLI requirements: Node.js 20+, a Daytona account, a Daytona API key with `write:sandboxes`, `delete:sandboxes`, and `manage:secrets`, and one authorized model provider. Keep credentials in a secret store or local shell—never paste them into chat or pass them in command arguments.
 
 ```bash
 npm install --global no-ego-dev
 read -s DAYTONA_API_KEY && export DAYTONA_API_KEY
-ned create
+ned create --model-provider openrouter
 ```
 
-`ned create` asks no infrastructure questions. It opens OpenRouter authorization in your browser, creates one private persistent Daytona workspace, installs pinned Hermes and NED, and runs an inference health check.
+`ned create` asks no infrastructure questions. Select `openai`, `anthropic`, `gemini`, or `openrouter` with `--model-provider`. OpenRouter retains its browser PKCE path; direct providers use their own securely injected API credential. NED creates one private persistent Daytona workspace, installs pinned Hermes and NED, and runs an inference health check.
 
 ```bash
 ned chat "Build the smallest useful version of my product idea"
