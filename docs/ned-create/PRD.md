@@ -1,6 +1,6 @@
 # PRD: One-command Daytona NED CLI
 
-Contract version: 4.0
+Contract version: 5.0
 Status: candidate implementation pending immutable lifecycle evidence and independent review
 Owner: NoEgoDev
 Last updated: 2026-08-07
@@ -15,10 +15,13 @@ A builder runs one checksum-verifiable bootstrap and receives one usable private
 2. The installer activates a pinned private runtime and invokes `ned create`.
 3. Daytona authorization comes from secure local state or hidden TTY input.
 4. NED securely reuses one compatible Hermes `openai-codex` OAuth credential when `HERMES_HOME/auth.json` is an owner-only, user-owned, non-symlink store. Otherwise NED opens one fixed ChatGPT device-authorization page and displays its short user code. There is no model chooser and no loopback callback.
-5. NED checks local ownership state and directly lists NED-managed Daytona Sandboxes before creating anything.
-6. NED creates one private persistent Daytona Sandbox, stores only the current ChatGPT access token as an egress-scoped Daytona Secret, installs checksum-pinned Hermes plus NED, configures Hermes provider `openai-codex`, runs inference health, and returns `ned chat`.
-7. Before `chat`, `doctor`, or `repair`, NED resolves or refreshes the local Hermes OAuth credential in-process and updates that exact Daytona Secret. The refresh token never crosses into Daytona.
-8. `destroy --yes` deletes the exact Sandbox and model Secret and succeeds only after direct absence readback.
+5. NED prints numbered BotFather actions, opens or links `https://t.me/BotFather`, and accepts a newly created disposable bot token only through hidden TTY input (or the named macOS Keychain item used for controlled verification).
+6. NED validates Telegram `getMe` in-process and shows only the verified username. Invalid/revoked tokens stop before compute mutation with a direct public recovery link.
+7. NED checks local ownership state and directly lists NED-managed Daytona Sandboxes before creating anything.
+8. NED creates one private persistent Daytona Sandbox, stores the current ChatGPT access token and Telegram token as separate egress-scoped installation-owned Daytona Secrets, installs checksum-pinned Hermes plus NED, configures Hermes provider `openai-codex`, starts and verifies the exact polling Telegram gateway, runs inference health, and prints owner-pairing actions.
+9. The owner opens the verified bot link, taps **Start**, sends `hello`, and, when required, approves the Hermes pairing code with `ned pair <code>`.
+10. Before `chat`, `doctor`, or `repair`, NED resolves or refreshes the local Hermes OAuth credential in-process and updates that exact model Secret. `repair` restores the gateway without replacing pairing state. The refresh token never crosses into Daytona.
+11. `destroy --yes` deletes the exact Sandbox plus model and Telegram Secrets and succeeds only after direct absence readback.
 
 Activation event: `instance_activation_completed` after remote install, health, and first inference health check succeed.
 Primary journey completion event: `chat_completed` after the first user-request inference succeeds.
@@ -29,8 +32,8 @@ Primary journey completion event: `chat_completed` after the first user-request 
 - Compute: one private persistent Ubuntu 24.04 Sandbox; 2 CPU, 4 GiB RAM, 10 GiB disk; automatic target; auto-stop after 15 minutes; auto-archive after seven days.
 - Default model authorization: ChatGPT OAuth using Hermes native provider `openai-codex` and default model `gpt-5.6-sol`.
 - Default onboarding: secure compatible-credential reuse, otherwise one ChatGPT device browser step. OpenRouter is not required and is not prompted.
-- Commands: `create`, `chat`, `doctor`, `repair` (`reset` compatibility alias), `destroy --yes`.
-- Local state: one owner-only `$HOME/.ned/state.json`, containing non-secret ownership metadata only.
+- Commands: `create`, `chat`, `doctor`, `pair`, `repair` (`reset` compatibility alias), `destroy --yes`.
+- Local state: one owner-only `$HOME/.ned/state.json`, containing non-secret ownership metadata for the exact Sandbox, both Secrets, and verified Telegram username/link.
 - No generic arbitrary-command API.
 
 ## Advanced provider policy
@@ -43,7 +46,8 @@ Hosted browser onboarding, AWS provisioning/deployment, dashboards, custom domai
 
 ## Security and failure contract
 
-- No access token, refresh token, device authorization ID, authorization code, verifier, Daytona key, prompt, or response in argv, credential-bearing URLs/query strings, normal logs, analytics, source, fixtures, screenshots, or PR comments.
+- No access token, refresh token, Telegram bot token, device authorization ID, authorization code, verifier, Daytona key, prompt, or response in argv, shell history, chat, credential-bearing URLs/query strings, normal logs, analytics, source, fixtures, screenshots, or PR comments.
+- Telegram bot tokens enter only through hidden TTY or named Keychain input, are validated with in-process `getMe`, and are stored in a separate installation-owned Daytona Secret restricted to `api.telegram.org`. Provider-mandated token-in-path requests are fully redacted.
 - ChatGPT device authorization opens only the fixed `https://auth.openai.com/codex/device` page. Provider-returned verification URLs are ignored. NED runs no callback listener, so hostile callback requests have no product endpoint.
 - Existing OAuth reuse is allowed only from a regular owner-only auth file under the user home with user-owned, non-writable, non-symlink parent directories. Ambiguous/malformed/unsafe credentials are not reused.
 - The official local Hermes-compatible auth store remains the refresh/revocation authority. Refresh rotation is atomically written with mode `0600`; no second plaintext credential copy is created.
@@ -54,7 +58,7 @@ Hosted browser onboarding, AWS provisioning/deployment, dashboards, custom domai
 - Local and remote ownership must agree before create. Unmanaged/mismatched resources block creation.
 - Provisioning failure compensates the exact Sandbox/Secret; failed compensation persists non-secret cleanup metadata.
 - Cancel, timeout, and failed OAuth leave no partial auth file. Rerun restarts the fixed device flow. Revocation/refresh failure stops before compute mutation.
-- Destroy clears local state only after direct Sandbox and Secret not-found readback.
+- Destroy clears local state only after direct Sandbox, model Secret, and Telegram Secret not-found readback.
 
 ## Event taxonomy
 

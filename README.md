@@ -16,14 +16,19 @@ i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev
 
 No sudo, git, system Node.js, or system npm is required. The command verifies the downloaded installer’s exact SHA-256 before execution; the installer then verifies pinned private runtime and NED downloads, reads the named macOS Keychain item or uses hidden TTY input for Daytona authorization, and runs `ned create`. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
 
-`ned create` asks no infrastructure or model-selection questions. It securely reuses a compatible existing Hermes ChatGPT OAuth credential when available; otherwise it opens one fixed ChatGPT device-authorization page. It then creates one private persistent Daytona Sandbox (the compute unit behind the user-facing “private NED VPS”), installs pinned Hermes and NED, configures native provider `openai-codex`, and runs an inference health check. OpenRouter is not required.
+`ned create` asks no infrastructure or model-selection questions. It securely reuses a compatible existing Hermes ChatGPT OAuth credential when available; otherwise it opens one fixed ChatGPT device-authorization page. It then guides the user through official [@BotFather](https://t.me/BotFather), receives the bot token only through the exact hidden prompt or named macOS Keychain item, validates Telegram `getMe`, and creates separate `chatgpt.com`- and `api.telegram.org`-scoped Daytona Secrets. One private persistent Daytona Sandbox runs pinned Hermes `openai-codex` plus its long-polling Telegram gateway. OpenRouter and a Telegram webhook are not required.
+
+After setup, open the verified bot link, tap **Start**, send `hello`, and approve any returned owner code:
 
 ```bash
-ned chat "Build the smallest useful version of my product idea"
+ned pair <8-character-code>
+ned chat "Build the smallest useful version of my product idea"  # optional terminal path
 ned doctor
 ned repair
 ned destroy --yes
 ```
+
+Public V1 guides: [quickstart](https://ned.datanav.app/docs/v1/quickstart/), [Telegram setup](https://ned.datanav.app/docs/v1/telegram/), and [credentials/revocation/destroy/troubleshooting](https://ned.datanav.app/docs/v1/credentials/). These stable routes are versioned in this repository; production availability is a separate deployment gate.
 
 ### Optional product telemetry
 

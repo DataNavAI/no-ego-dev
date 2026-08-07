@@ -14,6 +14,16 @@ function codexConnection(value = 'synthetic-codex-access') {
   return createModelConnection({ providerId: 'openai-codex', method: 'oauth-device-code', value });
 }
 
+function telegramConnection() {
+  let value = ['123456789', ':', 'A'.repeat(35)].join('');
+  return {
+    botUsername: 'ned_disposable_bot',
+    botUrl: 'https://t.me/ned_disposable_bot',
+    consumeToken() { const token = value; value = ''; return token; },
+    toJSON() { return { botUsername: this.botUsername, botUrl: this.botUrl }; },
+  };
+}
+
 function runNed(args, env = {}) {
   return spawnSync(process.execPath, ['bin/ned.js', ...args], {
     cwd: repoRoot,
@@ -85,7 +95,12 @@ test('create provisions, bootstraps, verifies, and persists only non-secret work
   const provider = {
     async createWorkspace(plan, credentials) {
       calls.push(['create', plan, credentials]);
-      return { id: 'sandbox-123', name: 'ned-product-partner', nedSecretName: 'ned_openrouter_test', nedSecretId: 'secret-1' };
+      return {
+        id: 'sandbox-123', name: 'ned-product-partner',
+        nedSecretName: 'ned_model_test', nedSecretId: 'secret-1',
+        telegramSecretName: 'ned_telegram_test', telegramSecretId: 'secret-2',
+        telegramBotUsername: 'ned_disposable_bot', telegramBotUrl: 'https://t.me/ned_disposable_bot',
+      };
     },
     async bootstrap(workspace, plan) {
       calls.push(['bootstrap', workspace.id, plan.profile]);
@@ -106,20 +121,25 @@ test('create provisions, bootstraps, verifies, and persists only non-secret work
   };
   const app = createNedApp({ provider, stateStore });
 
-  const result = await app.create({ daytonaApiKey: 'daytona-secret', openRouterApiKey: 'openrouter-secret' });
+  const result = await app.create({ modelConnection: codexConnection(), telegramConnection: telegramConnection() });
 
   assert.equal(result.ready, true);
   assert.deepEqual(calls.map(([name]) => name), ['create', 'bootstrap', 'doctor']);
   assert.deepEqual(calls[0][1], NED_PLAN);
   assert.deepEqual(savedState, {
-    schemaVersion: 1,
+    schemaVersion: 2,
     provider: 'daytona',
     workspaceId: 'sandbox-123',
     workspaceName: 'ned-product-partner',
     profile: 'ned',
     hermesVersion: 'v2026.7.20',
-    secretName: 'ned_openrouter_test',
+    secretName: 'ned_model_test',
     secretId: 'secret-1',
+    telegramSecretName: 'ned_telegram_test',
+    telegramSecretId: 'secret-2',
+    telegramBotUsername: 'ned_disposable_bot',
+    telegramBotUrl: 'https://t.me/ned_disposable_bot',
+    modelProvider: 'openai-codex',
   });
   const serializedState = JSON.stringify(savedState);
   assert.equal(serializedState.includes('openrouter-secret'), false);
@@ -265,6 +285,7 @@ test('CLI create uses a Hermes-compatible ChatGPT OAuth connection without print
   }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
     getModelConnection: async () => codexConnection('codex-secret'),
+    getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
       async create(credentials) {
         receivedCredentials = credentials;
@@ -280,6 +301,11 @@ test('CLI create uses a Hermes-compatible ChatGPT OAuth connection without print
   assert.equal(receivedCredentials.modelConnection.consumeCredential(), 'codex-secret');
   const combined = [...stdout, ...stderr].join('\n');
   assert.match(combined, /Your product partner is ready/);
+  assert.match(combined, /1\. Open https:\/\/t\.me\/ned_disposable_bot/);
+  assert.match(combined, /2\. Tap Start/);
+  assert.match(combined, /3\. Send hello/);
+  assert.match(combined, /4\. If the bot sends a pairing code, run: ned pair <code>/);
+  assert.match(combined, /https:\/\/ned\.datanav\.app\/docs\/v1\/quickstart\//);
   assert.equal(combined.includes('daytona-secret'), false);
   assert.equal(combined.includes('codex-secret'), false);
 });
@@ -290,6 +316,7 @@ test('CLI create invokes exactly one ChatGPT OAuth resolver when no credential i
   const exitCode = await runCli(['create'], { log() {}, error: assert.fail }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
     getModelConnection: async () => { oauthCalls += 1; return codexConnection('oauth-codex-access'); },
+    getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
       async create(value) { credentials = value; return { ready: true }; },
     }),
@@ -376,20 +403,83 @@ test('reset reinstalls and verifies NED without replacing the workspace', async 
   ]);
 });
 
+test('CLI refuses Telegram tokens through argv before authentication or provisioning', async () => {
+  const stderr = [];
+  const token = telegramConnection().consumeToken();
+  const exitCode = await runCli(['create', '--telegram-token', token], {
+    log: assert.fail,
+    error: (message) => stderr.push(message),
+  }, {
+    env: { DAYTONA_API_KEY: 'provider-test-value' },
+    getModelConnection: async () => assert.fail('argv secret must reject first'),
+    getTelegramConnection: async () => assert.fail('argv secret must reject first'),
+    appFactory: async () => assert.fail('argv secret must reject first'),
+  });
+
+  assert.equal(exitCode, 2);
+  assert.equal(stderr.join('\n').includes(token), false);
+  assert.match(stderr.join('\n'), /never accepts Telegram tokens through argv/);
+});
+
+test('CLI redacts Telegram token-shaped provider errors before output', async () => {
+  const stderr = [];
+  const token = telegramConnection().consumeToken();
+  const exitCode = await runCli(['create'], {
+    log() {},
+    error: (message) => stderr.push(message),
+  }, {
+    env: { DAYTONA_API_KEY: 'provider-test-value' },
+    getModelConnection: async () => codexConnection(),
+    getTelegramConnection: async () => telegramConnection(),
+    appFactory: async () => ({
+      async create() { throw new Error(`hostile provider error ${token}`); },
+    }),
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(stderr.join('\n').includes(token), false);
+  assert.match(stderr.join('\n'), /\[REDACTED\]/);
+});
+
+test('CLI pairing approves exactly one Hermes Telegram owner code in the saved workspace', async () => {
+  const calls = [];
+  const stdout = [];
+  const exitCode = await runCli(['pair', 'ABCD2345'], {
+    log: (message) => stdout.push(message),
+    error: assert.fail,
+  }, {
+    env: { DAYTONA_API_KEY: 'provider-test-value' },
+    appFactory: async () => ({
+      async pair(code) { calls.push(code); return { approved: true }; },
+    }),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(calls, ['ABCD2345']);
+  assert.match(stdout.join('\n'), /approved.*send hello again/i);
+});
+
 test('destroy deletes the remote workspace and its scoped secret before clearing local state', async () => {
   const calls = [];
   const stateStore = {
-    async load() { return { workspaceId: 'sandbox-123', secretName: 'ned_openrouter_test', secretId: 'secret-1' }; },
+    async load() {
+      return {
+        workspaceId: 'sandbox-123', secretName: 'ned_model_test', secretId: 'secret-1',
+        telegramSecretName: 'ned_telegram_test', telegramSecretId: 'secret-2',
+      };
+    },
     async clear() { calls.push(['clear']); },
   };
   const provider = {
-    async destroy(workspace) { calls.push(['destroy', workspace.id, workspace.secretId]); },
+    async destroy(workspace) {
+      calls.push(['destroy', workspace.id, workspace.secretId, workspace.telegramSecretId]);
+    },
   };
   const app = createNedApp({ provider, stateStore });
 
   await app.destroy();
 
-  assert.deepEqual(calls, [['destroy', 'sandbox-123', 'secret-1'], ['clear']]);
+  assert.deepEqual(calls, [['destroy', 'sandbox-123', 'secret-1', 'secret-2'], ['clear']]);
 });
 
 test('destroy succeeds idempotently when local state is already clear', async () => {

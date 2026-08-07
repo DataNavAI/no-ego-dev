@@ -171,6 +171,7 @@ test('CLI emits lifecycle events at activation and primary journey completion bo
   const dependencies = {
     env: { DAYTONA_API_KEY: 'daytona-public-test' },
     getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
+    getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
     telemetry,
     appFactory: async () => ({
       async create() { return { ready: true }; },
@@ -199,6 +200,7 @@ test('CLI telemetry delivery is detached from product completion', async () => {
   const command = runCli(['chat', 'private prompt'], { log() {}, error: assert.fail }, {
     env: { DAYTONA_API_KEY: 'test' },
     getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
+    getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
     telemetry,
     appFactory: async () => ({ async chat() { return 'done'; } }),
   });
@@ -216,6 +218,7 @@ test('CLI emits create and chat failure classes without error messages', async (
   const dependencies = {
     env: { DAYTONA_API_KEY: 'test' },
     getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
+    getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
     telemetry,
     appFactory: async () => ({
       async create() { throw new Error('workspace private-name failed'); },

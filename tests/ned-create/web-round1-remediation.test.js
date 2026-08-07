@@ -243,7 +243,7 @@ test('versioned governing contracts make the Daytona CLI lifecycle authoritative
   const paths = ['PRD.md', 'TECH_SPEC.md', 'CUJ.md'];
   const documents = await Promise.all(paths.map((name) => readFile(new URL(`../../docs/ned-create/${name}`, import.meta.url), 'utf8')));
   for (const [index, document] of documents.entries()) {
-    assert.match(document, /Contract version: 4\.0/, paths[index]);
+    assert.match(document, /Contract version: 5\.0/, paths[index]);
     assert.match(document, /Daytona/i, paths[index]);
     assert.match(document, /CLI/i, paths[index]);
     assert.match(document, /browser/i, paths[index]);
@@ -251,7 +251,7 @@ test('versioned governing contracts make the Daytona CLI lifecycle authoritative
     assert.match(document, /AWS/i, paths[index]);
   }
   const combined = documents.join('\n');
-  for (const command of ['create', 'chat', 'doctor', 'repair', 'destroy']) {
+  for (const command of ['create', 'chat', 'doctor', 'pair', 'repair', 'destroy']) {
     assert.match(combined, new RegExp(`\\b${command}\\b`));
   }
   for (const required of [

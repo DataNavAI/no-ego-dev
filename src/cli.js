@@ -6,6 +6,13 @@ import { createProfileArchive } from './profile-archive.js';
 import { createDaytonaProvider } from './providers/daytona.js';
 import { createFileStateStore } from './state.js';
 import { createFileTelemetry, TELEMETRY_EVENTS } from './telemetry.js';
+import {
+  acquireTelegramConnection,
+  CREDENTIALS_DOCS_URL,
+  QUICKSTART_DOCS_URL,
+  redactTelegramText,
+  TELEGRAM_DOCS_URL,
+} from './telegram.js';
 
 async function defaultAppFactory({ env }) {
   return createNedApp({
@@ -50,9 +57,16 @@ export async function runCli(argv, io = console, dependencies = {}) {
     io,
     ...options,
   }));
+  const getTelegramConnection = dependencies.getTelegramConnection
+    || (() => acquireTelegramConnection({ log: (message) => io.log(message) }));
   // Unit-level dependency injection must not accidentally use a developer's real telemetry config.
   const telemetry = dependencies.telemetry
     || (Object.keys(dependencies).length === 0 ? createFileTelemetry() : NOOP_TELEMETRY);
+
+  if (flags.some((flag) => flag === '--telegram-token' || flag.startsWith('--telegram-token='))) {
+    io.error(`NED never accepts Telegram tokens through argv, shell history, chat, URLs, logs, or analytics. Use hidden TTY input. See ${TELEGRAM_DOCS_URL}`);
+    return 2;
+  }
 
   if (['--help', '-h', 'help'].includes(command)) {
     io.log([
@@ -62,6 +76,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '  ned create [--dry-run --json]',
       '  ned chat "What should NED build?"',
       '  ned doctor',
+      '  ned pair <8-character-code>',
       '  ned repair',
       '  ned reset  # legacy alias for repair',
       '  ned destroy --yes',
@@ -107,7 +122,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       io.error('Usage: ned telemetry <status|enable|disable|delete>');
       return 2;
     } catch (error) {
-      io.error(`NED telemetry ${action || 'command'} failed: ${error.message}`);
+      io.error(`NED telemetry ${action || 'command'} failed: ${redactTelegramText(error.message)}`);
       return 2;
     }
   }
@@ -142,16 +157,22 @@ export async function runCli(argv, io = console, dependencies = {}) {
       const provider = getModelProviderRuntime(providerId);
       const modelConnection = await getModelConnection();
       io.log(`Connecting ${provider.label} as your model provider...`);
-      io.log('Creating your private NED workspace...');
+      const telegramConnection = await getTelegramConnection();
+      const botUrl = telegramConnection.botUrl;
+      io.log('Creating your private NED workspace and Telegram gateway...');
       const app = await appFactory({ env });
-      await app.create({ modelConnection });
+      await app.create({ modelConnection, telegramConnection });
       capture(telemetry, TELEMETRY_EVENTS.createCompleted, startedAt, 'success');
       io.log('✓ Your product partner is ready.');
-      io.log('Start with: ned chat "What product should we build?"');
+      io.log(`1. Open ${botUrl}.`);
+      io.log('2. Tap Start.');
+      io.log('3. Send hello.');
+      io.log('4. If the bot sends a pairing code, run: ned pair <code>');
+      io.log(`Quickstart and recovery: ${QUICKSTART_DOCS_URL}`);
       return 0;
     } catch (error) {
       capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'operation_error');
-      io.error(`NED create failed: ${error.message}`);
+      io.error(`NED create failed: ${redactTelegramText(error.message)}`);
       return 1;
     }
   }
@@ -178,7 +199,28 @@ export async function runCli(argv, io = console, dependencies = {}) {
       return 0;
     } catch (error) {
       capture(telemetry, TELEMETRY_EVENTS.chatFailed, startedAt, 'operation_error');
-      io.error(`NED chat failed: ${error.message}`);
+      io.error(`NED chat failed: ${redactTelegramText(error.message)}`);
+      return 1;
+    }
+  }
+
+  if (command === 'pair') {
+    if (!env.DAYTONA_API_KEY) {
+      io.error(`Daytona authorization required. Repair your local Daytona credential, then retry. See ${CREDENTIALS_DOCS_URL}`);
+      return 2;
+    }
+    const code = String(flags[0] || '').toUpperCase();
+    if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code) || flags.length !== 1) {
+      io.error(`Usage: ned pair <8-character-code>. Send hello to the bot for a fresh code. See ${TELEGRAM_DOCS_URL}`);
+      return 2;
+    }
+    try {
+      const app = await appFactory({ env });
+      await app.pair(code);
+      io.log('✓ Telegram owner approved. Return to the verified bot and send hello again.');
+      return 0;
+    } catch (error) {
+      io.error(`NED pairing failed: ${redactTelegramText(error.message)}`);
       return 1;
     }
   }
@@ -196,7 +238,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       return 2;
     }
     if (command === 'destroy' && !flags.includes('--yes')) {
-      io.error('Destroy permanently deletes the NED workspace. Rerun: ned destroy --yes');
+      io.error(`Destroy permanently deletes the NED workspace. Rerun: ned destroy --yes. See ${CREDENTIALS_DOCS_URL}`);
       return 2;
     }
     try {
@@ -215,14 +257,14 @@ export async function runCli(argv, io = console, dependencies = {}) {
       }
       await app.destroy();
       capture(telemetry, completedEvent, startedAt, 'success');
-      io.log('✓ NED workspace deleted.');
+      io.log(`✓ NED workspace deleted. Credential revocation and local cleanup: ${CREDENTIALS_DOCS_URL}`);
       return 0;
     } catch (error) {
-      io.error(`NED ${command} failed: ${error.message}`);
+      io.error(`NED ${command} failed: ${redactTelegramText(error.message)}`);
       return 1;
     }
   }
 
-  io.error('Usage: ned <create|chat|doctor|repair|destroy|telemetry>');
+  io.error('Usage: ned <create|chat|doctor|pair|repair|destroy|telemetry>');
   return 2;
 }

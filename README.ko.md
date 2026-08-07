@@ -16,14 +16,19 @@ i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev
 
 필수 조건은 Daytona 계정과 `write:sandboxes`, `delete:sandboxes`, `manage:secrets` 권한입니다. macOS에서는 서비스 `no-ego-dev/daytona`, 계정 `DAYTONA_API_KEY`인 Keychain 항목을 우선 사용하고, 그 외에는 숨김 터미널 입력을 사용합니다. 비밀값을 채팅이나 명령 인자에 붙여넣지 마세요.
 
-`ned create`는 호환되는 기존 Hermes ChatGPT OAuth 자격 증명을 안전하게 재사용하고, 없으면 고정된 ChatGPT 디바이스 인증 페이지를 한 번 엽니다. 그런 다음 고정 사양의 비공개 영구 Daytona Sandbox를 만들고, 고정 버전의 Hermes와 NED를 설치하고, 네이티브 `openai-codex` 공급자를 설정한 뒤 실제 추론 상태를 확인합니다. OpenRouter는 필요하지 않습니다. “비공개 NED VPS”는 사용자용 표현이며 Daytona API/과금 용어는 Sandbox입니다.
+`ned create`는 호환되는 기존 Hermes ChatGPT OAuth 자격 증명을 안전하게 재사용하고, 없으면 고정된 ChatGPT 디바이스 인증 페이지를 엽니다. 이어 공식 [@BotFather](https://t.me/BotFather)에서 일회용 봇을 만드는 번호 매긴 단계를 안내하고, 토큰은 정확한 숨김 프롬프트 또는 지정된 macOS Keychain 항목으로만 받습니다. Telegram `getMe` 검증 후 모델과 Telegram에 대해 각각 별도의 egress 제한 Daytona Secret을 만들며, 고정 Hermes 장기 폴링 게이트웨이를 시작하고 상태를 확인합니다. OpenRouter와 Telegram webhook은 필요하지 않습니다.
+
+설정 후 검증된 봇 링크를 열고 **Start**를 누른 뒤 `hello`를 보냅니다. 봇이 소유자 코드를 보내면 다음 명령으로 승인합니다.
 
 ```bash
-ned chat "내 제품 아이디어의 가장 작은 유용한 버전을 만들어줘"
+ned pair <8자리-코드>
+ned chat "내 제품 아이디어의 가장 작은 유용한 버전을 만들어줘"  # 선택적 터미널 경로
 ned doctor
 ned repair
 ned destroy --yes
 ```
+
+공개 V1 문서: [빠른 시작](https://ned.datanav.app/docs/v1/quickstart/), [Telegram 설정](https://ned.datanav.app/docs/v1/telegram/), [자격 증명·해지·삭제·문제 해결](https://ned.datanav.app/docs/v1/credentials/). 이 안정된 경로는 저장소에 포함되지만 실제 프로덕션 배포 여부는 별도 검증 대상입니다.
 
 Sandbox는 15분 동안 유휴 상태이면 중지되고 7일 뒤 아카이브됩니다. `chat`과 `doctor`는 중지된 Sandbox를 다시 시작합니다. OAuth 기반 모델 연결에는 ChatGPT 구독/사용 약관이 적용됩니다.
 

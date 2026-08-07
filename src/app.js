@@ -30,7 +30,7 @@ export function createNedApp({ provider, stateStore }) {
       } catch (error) {
         if (error.recoveryState) {
           const recoveryState = {
-            schemaVersion: 1,
+            schemaVersion: 2,
             provider: plan.provider,
             profile: plan.profile,
             hermesVersion: plan.hermesVersion,
@@ -49,7 +49,7 @@ export function createNedApp({ provider, stateStore }) {
         throw error;
       }
       const workspaceState = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         provider: plan.provider,
         workspaceId: workspace.id,
         workspaceName: workspace.name,
@@ -57,6 +57,10 @@ export function createNedApp({ provider, stateStore }) {
         hermesVersion: plan.hermesVersion,
         secretId: workspace.nedSecretId,
         secretName: workspace.nedSecretName,
+        telegramSecretId: workspace.telegramSecretId,
+        telegramSecretName: workspace.telegramSecretName,
+        telegramBotUsername: workspace.telegramBotUsername,
+        telegramBotUrl: workspace.telegramBotUrl,
       };
       if (credentials?.modelConnection) workspaceState.modelProvider = plan.modelProvider;
       try {
@@ -101,7 +105,7 @@ export function createNedApp({ provider, stateStore }) {
         throw new Error('A matching local ChatGPT OAuth connection is required.');
       }
       await provider.updateModelCredential(state, modelConnection);
-      await provider.start(state.workspaceId);
+      await provider.start(state.workspaceId, state.profile);
       return provider.chat(state.workspaceId, state.profile, prompt.trim());
     },
 
@@ -114,7 +118,7 @@ export function createNedApp({ provider, stateStore }) {
         throw new Error('A matching local ChatGPT OAuth connection is required.');
       }
       await provider.updateModelCredential(state, modelConnection);
-      await provider.start(state.workspaceId);
+      await provider.start(state.workspaceId, state.profile);
       const plan = createNedPlan({ modelProvider: state.modelProvider || 'openai-codex' });
       return provider.doctor({ id: state.workspaceId, name: state.workspaceName }, plan);
     },
@@ -130,9 +134,20 @@ export function createNedApp({ provider, stateStore }) {
       }
       await provider.updateModelCredential(state, modelConnection);
       const plan = createNedPlan({ modelProvider: state.modelProvider || 'openai-codex' });
-      await provider.start(state.workspaceId);
+      await provider.start(state.workspaceId, state.profile);
       await provider.bootstrap(workspace, plan);
       return provider.doctor(workspace, plan);
+    },
+
+    async pair(code) {
+      const normalized = String(code || '').toUpperCase();
+      if (!/^[A-HJ-NP-Z2-9]{8}$/.test(normalized)) {
+        throw new Error('Pairing code must be the 8 characters shown by the bot. See https://ned.datanav.app/docs/v1/telegram/');
+      }
+      const state = await stateStore.load();
+      if (!state?.workspaceId) throw new Error('No NED workspace found. Run ned create first.');
+      await provider.start(state.workspaceId, state.profile);
+      return provider.pair(state.workspaceId, state.profile, normalized);
     },
 
     async destroy() {
@@ -143,6 +158,8 @@ export function createNedApp({ provider, stateStore }) {
         name: state.workspaceName,
         secretId: state.secretId,
         secretName: state.secretName,
+        telegramSecretId: state.telegramSecretId,
+        telegramSecretName: state.telegramSecretName,
       });
       await stateStore.clear();
       return { destroyed: true, alreadyDeleted: false };
