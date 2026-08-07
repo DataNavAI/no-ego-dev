@@ -31,12 +31,17 @@
   "scripts": {
     "test": "node --test tests/ned-create/*.test.js",
     "test:all": "node --test tests/**/*.test.js && python -m pytest",
-    "check": "node --check bin/ned.js && node --check bin/ned-web.js && node --check src/app.js && node --check src/cli.js && node --check src/model-providers.js && node --check src/plan.js && node --check src/profile-archive.js && node --check src/state.js && node --check src/telemetry.js && node --check src/auth/openrouter.js && node --check src/providers/daytona.js && node --check src/web/app.js && node --check src/web/dev-server.js && node --check src/web/public/app.js",
+    "check": "node --check bin/ned.js && node --check bin/ned-web.js && node --check src/app.js && node --check src/cli.js && node --check src/model-providers.js && node --check src/plan.js && node --check src/profile-archive.js && node --check src/state.js && node --check src/telemetry.js && node --check src/auth/openrouter.js && node --check src/providers/daytona.js && node --check src/web/app.js && node --check src/web/dev-server.js && node --check src/web/production-adapters.js && node --check src/web/public/app.js",
     "web:dev": "NED_WEB_DEV_MODE=1 node bin/ned-web.js",
     "pack:check": "npm pack --dry-run"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "3.1105.0",
+    "@aws-sdk/client-dynamodb": "3.1105.0",
+    "@aws-sdk/client-secrets-manager": "3.1105.0",
+    "@aws-sdk/lib-dynamodb": "3.1105.0",
     "@daytona/sdk": "0.200.1",
+    "aws-jwt-verify": "5.1.0",
     "tar": "7.5.21"
   },
   "license": "MIT",
