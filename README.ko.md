@@ -11,7 +11,7 @@ NED는 아이디어를 빠르게 검증하고 싶은 사람에게 가장 잘 맞
 지원되는 깨끗한 macOS/Linux x64 또는 arm64 환경에서 아래 한 줄을 실행합니다. 운영체제의 `bash`, `curl`, `tar`, SHA-256 도구만 필요하며 sudo, git, 시스템 Node.js/npm은 필요하지 않습니다.
 
 ```bash
-i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/bd9ef97e1e5d75715b5aa8cae6a1530e71969650/scripts/install.sh -o "$i" && { echo "619c7de966a0731dce41e1e27eaf15f110cd80591d6b0b46a453de7119eb6dc1  $i" | sha256sum -c - 2>/dev/null || echo "619c7de966a0731dce41e1e27eaf15f110cd80591d6b0b46a453de7119eb6dc1  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
+i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/c6bdf2d6c5b34df7c22466e49a60628dd3f32bcf/scripts/install.sh -o "$i" && { echo "658c35c1f4b080039102fd531a705fb04b788a502a469ce5d61a3bdd0f5fb739  $i" | sha256sum -c - 2>/dev/null || echo "658c35c1f4b080039102fd531a705fb04b788a502a469ce5d61a3bdd0f5fb739  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
 ```
 
 필수 조건은 Daytona 계정과 `write:sandboxes`, `delete:sandboxes`, `manage:secrets` 권한입니다. macOS에서는 서비스 `no-ego-dev/daytona`, 계정 `DAYTONA_API_KEY`인 Keychain 항목을 우선 사용하고, 그 외에는 숨김 터미널 입력을 사용합니다. 비밀값을 채팅이나 명령 인자에 붙여넣지 마세요.
