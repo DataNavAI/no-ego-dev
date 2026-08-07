@@ -11,7 +11,7 @@ NED is best for people who want to test an idea quickly with something real enou
 On clean supported macOS/Linux x64 or arm64, install and start setup with one command:
 
 ```bash
-i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/install.sh -o "$i" && { echo "c864b3f28db58fda719932b3e4d50ba73f6efc019993e2dd2d816ed0aedcb1c4  $i" | sha256sum -c - 2>/dev/null || echo "c864b3f28db58fda719932b3e4d50ba73f6efc019993e2dd2d816ed0aedcb1c4  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
+i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/install.sh -o "$i" && { echo "f891ae0333fc1351b64545b9cf2912ee5b536bc885561f295dcdabea5a74a8f6  $i" | sha256sum -c - 2>/dev/null || echo "f891ae0333fc1351b64545b9cf2912ee5b536bc885561f295dcdabea5a74a8f6  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
 ```
 
 No sudo, git, system Node.js, or system npm is required. The command verifies the downloaded installer’s exact SHA-256 before execution; the installer then verifies pinned private runtime and NED downloads, asks for the minimum Daytona key with hidden input, and runs `ned create`. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
@@ -21,7 +21,7 @@ No sudo, git, system Node.js, or system npm is required. The command verifies th
 ```bash
 ned chat "Build the smallest useful version of my product idea"
 ned doctor
-ned reset
+ned repair
 ned destroy --yes
 ```
 

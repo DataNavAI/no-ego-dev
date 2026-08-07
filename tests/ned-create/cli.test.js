@@ -28,7 +28,7 @@ test('CLI help lists every supported lifecycle command', async () => {
   assert.equal(exitCode, 0);
   assert.equal(stderr.length, 0);
   const help = stdout.join('\n');
-  for (const command of ['create', 'chat', 'doctor', 'reset', 'destroy']) {
+  for (const command of ['create', 'chat', 'doctor', 'repair', 'destroy']) {
     assert.match(help, new RegExp(`ned ${command}`));
   }
 });
@@ -183,6 +183,22 @@ test('create directs a pending orphan through destroy before retrying', async ()
     stateStore: { async load() { return { cleanupPending: true, secretId: 'secret-recovery' }; } },
   });
   await assert.rejects(() => app.create({}), /ned destroy --yes/);
+});
+
+test('create fails closed before provisioning when Daytona already has a managed workspace without local ownership state', async () => {
+  const app = createNedApp({
+    provider: {
+      async listManagedWorkspaces() {
+        return [{ id: 'sandbox-orphan', name: 'ned-product-partner', state: 'stopped' }];
+      },
+      async createWorkspace() { assert.fail('must reconcile remote ownership before create'); },
+    },
+    stateStore: { async load() { return null; } },
+  });
+  await assert.rejects(
+    () => app.create({}),
+    /managed Daytona workspace already exists.*sandbox-orphan.*reconcile/i,
+  );
 });
 
 test('chat wakes the saved workspace and returns the NED response', async () => {
@@ -342,7 +358,7 @@ test('destroy succeeds idempotently when local state is already clear', async ()
   assert.deepEqual(await app.destroy(), { destroyed: false, alreadyDeleted: true });
 });
 
-test('CLI dispatches doctor, reset, and explicit destroy without infrastructure questions', async () => {
+test('CLI dispatches doctor, repair, legacy reset, and explicit destroy without infrastructure questions', async () => {
   const calls = [];
   const io = { log() {}, error: assert.fail };
   const dependencies = {
@@ -355,7 +371,8 @@ test('CLI dispatches doctor, reset, and explicit destroy without infrastructure 
   };
 
   assert.equal(await runCli(['doctor'], io, dependencies), 0);
+  assert.equal(await runCli(['repair'], io, dependencies), 0);
   assert.equal(await runCli(['reset'], io, dependencies), 0);
   assert.equal(await runCli(['destroy', '--yes'], io, dependencies), 0);
-  assert.deepEqual(calls, ['doctor', 'reset', 'destroy']);
+  assert.deepEqual(calls, ['doctor', 'reset', 'reset', 'destroy']);
 });

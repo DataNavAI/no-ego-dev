@@ -49,7 +49,8 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '  ned create [--model-provider <openai|anthropic|gemini|openrouter>] [--dry-run --json]',
       '  ned chat "What should NED build?"',
       '  ned doctor',
-      '  ned reset',
+      '  ned repair',
+      '  ned reset  # legacy alias for repair',
       '  ned destroy --yes',
       '  ned telemetry status',
       '  ned telemetry enable --yes --host <url> --project-key <public-key> --privacy-policy <url>',
@@ -176,10 +177,11 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
   }
 
-  if (['doctor', 'reset', 'destroy'].includes(command)) {
+  if (['doctor', 'repair', 'reset', 'destroy'].includes(command)) {
     const startedAt = Date.now();
     const completedEvent = {
       doctor: TELEMETRY_EVENTS.doctorCompleted,
+      repair: TELEMETRY_EVENTS.resetCompleted,
       reset: TELEMETRY_EVENTS.resetCompleted,
       destroy: TELEMETRY_EVENTS.destroyCompleted,
     }[command];
@@ -199,7 +201,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
         io.log(health.ok ? `✓ NED is healthy: ${health.checks.join(', ')}` : 'NED is not healthy.');
         return health.ok ? 0 : 1;
       }
-      if (command === 'reset') {
+      if (command === 'repair' || command === 'reset') {
         const health = await app.reset();
         capture(telemetry, completedEvent, startedAt, health.ok ? 'success' : 'health_check_failed');
         io.log(health.ok ? '✓ NED was reset and is healthy.' : 'NED reset completed but health checks failed.');
@@ -215,6 +217,6 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
   }
 
-  io.error('Usage: ned <create|chat|doctor|reset|destroy|telemetry>');
+  io.error('Usage: ned <create|chat|doctor|repair|destroy|telemetry>');
   return 2;
 }

@@ -1,101 +1,65 @@
-# Critical User Journey and Acceptance Contract
+# Critical User Journey and Acceptance Contract: Daytona CLI v1
 
-Contract version: 2.0
-Status: implementation candidate; external lifecycle evidence blocked
+Contract version: 3.0
+Status: external lifecycle and independent review pending
 Last updated: 2026-08-06
-Supersedes: CUJ v1 CLI-only acceptance. The CLI journey remains a backward compatibility fallback; browser-first provider-neutral acceptance is primary.
 
-The review-only design PR #25 is input, not approved journey authority. Issue #23, PRD v2.0, TECH_SPEC v2.0, and this CUJ govern acceptance.
+## CUJ-1: Checksum-verifiable one-line bootstrap
 
-## CUJ-1: Create a working NED from the browser
+Given supported clean macOS or Ubuntu 24.04 x64/arm64 with bash, curl, tar, and a SHA-256 utility,
+when the user runs the documented one-line command,
+then it downloads the installer, verifies the displayed exact digest before execution, installs private pinned runtime/source without sudo, system Node/npm, or git, and invokes `ned create`.
 
-Given a signed-in owner, separately authorized compute, and an authorized OpenAI, Anthropic, Gemini, or OpenRouter model connection,
-when the owner submits `create_ned`,
-then the server creates one session-owned idempotent job and the browser observes authoritative queued → running → succeeded progress across GET polling and refresh.
+Rerun revalidates the complete active generation, repairs exactly one PATH block, and does not repeat successful create. Interrupted or failed upgrades leave the previous generation active.
 
-Success requires remote health verification before readiness. Synchronous success is not the only acceptance path. The browser then enables `send_first_request`; activation is `instance_activation_completed`.
+## CUJ-2: Create one Daytona-backed private NED VPS
 
-Failure contract: failed/blocked/cancelled create verifies workspace compensation and owner-secret revocation before not-ready/cleanup state is committed. Retry creates no duplicate workspace and leaves zero orphaned secret records.
+Given valid Daytona authorization and OpenRouter PKCE approval or an already-authorized automation credential,
+when `ned create` runs,
+then NED checks `$HOME/.ned/state.json` and directly lists Daytona Sandboxes labeled `app=ned, managedBy=ned-cli` before mutation. With zero owned resources it creates one private persistent Daytona Sandbox using fixed defaults, creates one egress-scoped model secret, installs checksum-pinned Hermes plus NED, runs inference health, persists non-secret state, and returns `ned chat`.
 
-## CUJ-2: Complete first value
+If local/remote ownership differs, creation fails closed. Failed setup compensates exact resources; unverified cleanup remains recoverable in non-secret cleanup-pending state.
 
-Given authoritative create success,
-when the owner submits bounded `send_first_request`,
-then a typed job executes without a generic command surface and returns bounded output rendered as text. The prompt/response never enters URL, browser storage, logs, analytics, argv, source, fixtures, or screenshots.
+Activation: `instance_activation_completed` after remote health including inference succeeds.
 
-Primary journey completion is `browser_request_completed` only after authoritative success.
+## CUJ-3: Reach first value
 
-## CUJ-3: Refresh and resume the same NED
+Given a healthy saved NED,
+when the user runs `ned chat "<request>"`,
+then the saved Sandbox starts if stopped, one bounded Hermes inference runs, and only the response is printed. Prompt and response do not enter argv beyond the local CLI’s ordinary prompt argument boundary inside the user process, URLs, query strings, normal logs, analytics, state, source, fixtures, screenshots, or PR comments.
 
-Given a queued/running job or an existing stopped NED,
-when the browser refreshes or the owner returns,
-then `GET /api/session` and `GET /api/jobs/:id` reconcile authoritative status and preserve one owner/session-bound intent.
+Primary journey completion: `chat_completed` after the first successful user request.
 
-When the owner submits `resume_ned`, the same NED resumes; no duplicate resource is created. A second typed request can complete afterward.
+## CUJ-4: Diagnose and repair
 
-## CUJ-4: Cancel safely
+`ned doctor` starts the saved Sandbox if needed and checks Sandbox, Hermes, NED profile, and inference. `ned repair` reinstalls pinned configuration into the same Sandbox, preserves ownership identity, and reruns health. Legacy `ned reset` maps to repair.
 
-Given a queued/running create,
-when the owner invokes `cancel_job`,
-then the server first refreshes authoritative state, requests compensation, verifies `cancelled`, revokes the model connection, and only then commits not-ready.
+External acceptance exercises a direct Daytona stop, then `ned doctor` resume (or `ned repair`), health, and a distinct second inference marker without creating another Sandbox.
 
-If create already succeeded, cancellation returns `409 job_not_cancellable`; it does not destroy the NED or contradict readiness. Illegal job regressions fail closed.
+## CUJ-5: Destroy with proof
 
-## CUJ-5: Destroy and stop future resource use
+Given state-owned Sandbox and model-secret identifiers,
+when the user runs `ned destroy --yes`,
+then NED deletes exactly those resources, directly reads each identifier back, requires not-found for both, and only then clears `$HOME/.ned/state.json`.
 
-Given an existing NED,
-when the owner submits `destroy_ned`,
-then remote deletion is awaited and owner-scoped secret revocation is verified before readiness/connections clear.
+A second destroy with no local state is idempotent. The local Daytona authorization intentionally remains for a future create; the NED-owned OpenRouter Daytona Secret is gone. Final lifecycle evidence lists zero NED-managed test Sandboxes and zero test secrets directly from Daytona.
 
-After cleanup, `create_ned`, `send_first_request`, `resume_ned`, and `destroy_ned` requests on that cleaned session return `409 session_cleaned_up`. Direct production evidence must show zero Daytona resources and zero vault orphans.
+## CUJ-6: Keep secrets out of observable surfaces
 
-## CUJ-6: Reconnect, expire, or abandon without secret orphans
+- Daytona and model credentials never appear in argv, URLs/query strings, logs, output, source, committed fixtures, screenshots, or PR comments.
+- Hidden TTY/Keychain/environment reads occur in-process with tracing disabled.
+- Local sensitive files are owner-only even under caller umask 000.
+- Process-list, captured output, temporary file, installed tree, package, and repository scans contain no real credential bytes.
 
-- A replacement model connection revokes the superseded record.
-- An invalid post-write receipt or failed state commit compensates the provisional record.
-- Session expiry and explicit `DELETE /api/session` abandonment revoke the owner connection before session removal.
-- Failed/cancelled create and successful destroy revoke their owned connection.
-- Every delete uses owner ID plus record ID and requires a verified `deleted` receipt.
+## Required evidence matrix
 
-## CUJ-7: Fail closed on URL privacy boundary
+1. Focused RED→GREEN tests for remote preflight, installer checksum-before-execution, repair alias, and destroy readback.
+2. Canonical bare commands: static checks, Node suite, Python suite, package check, audit, leak scan, and diff check.
+3. Synthetic installer matrix: clean install, rerun, concurrent lock, signal rollback, failed upgrade rollback, spaces in HOME/TMPDIR, umask 000, corrupt generation repair, failed create retry, and no secret disclosure.
+4. Exact production installer in clean Ubuntu 24.04 x64 without system Node/npm/git/sudo and isolated macOS; rerun in both.
+5. Immutable real lifecycle: direct zero-resource preflight; unique non-secret candidate label; create; install; health; first unique inference marker; stop/resume or repair; health; second distinct marker; destroy; direct zero-resource/secret readback; local state cleanup semantics.
+6. Exact SHA, installer/source digests, commands/results, leak scans, and cleanup readback in the draft PR review packet.
 
-For every auth/session, provider, connection, and job API endpoint, any non-empty query string returns stable HTTP 400 `query_not_allowed` before authentication, body parsing, or adapter calls. Browser request constructors use path-only same-origin URLs. URL fragments are never used for credentials, OAuth material, prompts, or responses.
+## Parked
 
-## Browser acceptance evidence
-
-At desktop and mobile widths, use a real browser against an asynchronous synthetic adapter to verify:
-
-- queued → running → succeeded progression and refresh;
-- failure, retry, cancellation, and cancellation-after-success interleaving;
-- first request, refresh, `resume_ned`, second request, and `destroy_ned`;
-- zero horizontal overflow and usable controls;
-- no secrets/prompts/responses in URL, localStorage, sessionStorage, console, logs, analytics, or captured artifact metadata;
-- zero synthetic vault orphans after reconnect, expiry, abandonment, cancel, and destroy;
-- programmatic focus on the destination heading after sign-in, compute, model, terminal create/recovery, refresh restoration, and verified destroy, without focus theft during polling;
-- concise live-region announcements and delayed DELETE versus terminal GET reconciliation that renders authoritative ready/failure/polling state.
-
-Review-only prototype pixels may guide comparison but are not approved authority or production evidence.
-
-## Automated evidence
-
-Run each canonical command bare after the final edit:
-
-- changed-file syntax/static checks and `npm run check`
-- focused Node lifecycle/security tests and `npm test`
-- `python -m pytest`
-- `npm run pack:check`
-- clean tarball install plus installed `ned` dry-run and `ned-web` fail-closed/startup/health smoke
-- `npm audit --omit=dev`
-- `gitleaks detect --source . --log-opts='--all' --no-banner --redact`
-
-## Migration and backward compatibility journey
-
-Existing v1 CLI state without `modelProvider` behaves as OpenRouter. Existing `ned create/chat/doctor/reset/destroy` and OpenRouter PKCE remain supported. New state writes an allowlisted provider ID. Browser onboarding never requires CLI tooling or a Daytona raw key form.
-
-## Development simulation and production gate
-
-The development simulation is explicit, loopback-only, non-durable, and creates no cloud resource or model inference. It can prove browser behavior but cannot prove production readiness.
-
-Production remains blocked on identity/account recovery, durable encrypted owner-scoped stores, queue/workers, approved platform-managed quota-limited beta policy or verified delegated user-owned compute, hosting/region/spend, provider authorization, monitoring, rollback, and fresh independent exact-SHA review.
-
-Final external smoke for one immutable candidate: create → health → first request → stop/resume → second request → destroy → direct Daytona zero-resource readback plus zero orphaned secret readback. No merge/deploy/cloud creation is authorized without that evidence and approval.
+Browser onboarding and all AWS work are future scope. They are not accepted by this CUJ, are not deployed, and cannot substitute for Daytona CLI lifecycle evidence.

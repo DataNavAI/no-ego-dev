@@ -94,6 +94,9 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
 
   assert.deepEqual(observed.upload, { content: archive, destination: '/tmp/ned-profile.tgz' });
   assert.match(observed.execute.command, /3ef6bbd201263d354fd83ec55b3c306ded2eb72a/);
+  assert.match(observed.execute.command, /c5ba7e89627577fab914514736ecfb3359b66956ca00199bfef616ca35953cb9/);
+  assert.match(observed.execute.command, /sha256sum.*hermes-install\.sh|shasum -a 256.*hermes-install\.sh/);
+  assert.match(observed.execute.command, /Hermes installer checksum mismatch/);
   assert.match(observed.execute.command, /--non-interactive/);
   assert.match(observed.execute.command, /hermes profile install \/tmp\/ned-profile --name ned --force --yes/);
   assert.doesNotMatch(observed.execute.command, /hermes profile update/);
@@ -155,29 +158,67 @@ test('Daytona chat starts a suspended workspace and shell-quotes the one-shot pr
   assert.match(observed.command, /hermes --profile ned -z 'Ship user'"'"'s product'/);
 });
 
-test('Daytona destroy waits for workspace deletion and removes the scoped OpenRouter secret', async () => {
+test('Daytona destroy waits for deletion and proves workspace and secret absence by readback', async () => {
   const calls = [];
+  let workspaceDeleted = false;
+  let secretDeleted = false;
   const sandbox = {
-    async delete(timeout, wait) { calls.push(['sandbox', timeout, wait]); },
+    async delete(timeout, wait) { calls.push(['sandbox-delete', timeout, wait]); workspaceDeleted = true; },
   };
   class FakeDaytona {
-    constructor() { this.secret = { delete: async (id) => calls.push(['secret', id]) }; }
-    async get(id) { assert.equal(id, 'sandbox-123'); return sandbox; }
+    constructor() {
+      this.secret = {
+        delete: async (id) => { calls.push(['secret-delete', id]); secretDeleted = true; },
+        get: async (id) => {
+          calls.push(['secret-readback', id]);
+          if (secretDeleted) { const error = new Error('not found'); error.status = 404; throw error; }
+          return { id };
+        },
+      };
+    }
+    async get(id) {
+      calls.push(['sandbox-readback', id]);
+      if (workspaceDeleted) { const error = new Error('not found'); error.status = 404; throw error; }
+      return sandbox;
+    }
   }
-  const provider = createDaytonaProvider({ apiKey: 'daytona-secret', DaytonaClass: FakeDaytona });
+  const provider = createDaytonaProvider({ apiKey: 'daytona-test', DaytonaClass: FakeDaytona });
 
-  await provider.destroy({ id: 'sandbox-123', nedSecretId: 'secret-1' });
+  const receipt = await provider.destroy({ id: 'sandbox-123', nedSecretId: 'secret-1' });
 
   assert.deepEqual(calls, [
-    ['sandbox', 300, true],
-    ['secret', 'secret-1'],
+    ['sandbox-readback', 'sandbox-123'],
+    ['sandbox-delete', 300, true],
+    ['secret-delete', 'secret-1'],
+    ['sandbox-readback', 'sandbox-123'],
+    ['secret-readback', 'secret-1'],
+  ]);
+  assert.deepEqual(receipt, { workspaceAbsent: true, secretAbsent: true });
+});
+
+test('Daytona provider lists only NED-managed sandboxes for create preflight', async () => {
+  class FakeDaytona {
+    constructor() { this.secret = {}; }
+    async *list(query) {
+      assert.deepEqual(query, { labels: { app: 'ned', managedBy: 'ned-cli' } });
+      yield { id: 'sandbox-1', name: 'ned-product-partner', state: 'stopped' };
+    }
+  }
+  const provider = createDaytonaProvider({ apiKey: 'daytona-test', DaytonaClass: FakeDaytona });
+  assert.deepEqual(await provider.listManagedWorkspaces(), [
+    { id: 'sandbox-1', name: 'ned-product-partner', state: 'stopped' },
   ]);
 });
 
 test('Daytona destroy is recoverable when the workspace was already removed', async () => {
   const calls = [];
   class FakeDaytona {
-    constructor() { this.secret = { delete: async (id) => calls.push(id) }; }
+    constructor() {
+      this.secret = {
+        delete: async (id) => calls.push(id),
+        get: async () => { const error = new Error('not found'); error.status = 404; throw error; },
+      };
+    }
     async get() { const error = new Error('not found'); error.status = 404; throw error; }
   }
   const provider = createDaytonaProvider({ apiKey: 'daytona-secret', DaytonaClass: FakeDaytona });

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { createModelConnection, getModelProviderRuntime } from '../model-providers.js';
 
 const HERMES_COMMIT = '3ef6bbd201263d354fd83ec55b3c306ded2eb72a';
+const HERMES_INSTALLER_SHA256 = 'c5ba7e89627577fab914514736ecfb3359b66956ca00199bfef616ca35953cb9';
 
 function shellQuote(value) {
   return `'${String(value).replaceAll("'", `'"'"'`)}'`;
@@ -24,6 +25,14 @@ export function createDaytonaProvider({
   const client = new DaytonaClass({ apiKey });
 
   return {
+    async listManagedWorkspaces() {
+      const workspaces = [];
+      for await (const sandbox of client.list({ labels: { app: 'ned', managedBy: 'ned-cli' } })) {
+        workspaces.push({ id: sandbox.id, name: sandbox.name, state: sandbox.state });
+      }
+      return workspaces;
+    },
+
     async createWorkspace(plan, credentials = {}) {
       const modelConnection = credentials.modelConnection || (credentials.openRouterApiKey
         ? createModelConnection({ providerId: 'openrouter', method: 'api-key', value: credentials.openRouterApiKey })
@@ -98,6 +107,8 @@ export function createDaytonaProvider({
       const command = [
         'set -euo pipefail',
         `curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh -o /tmp/hermes-install.sh`,
+        `if command -v sha256sum >/dev/null 2>&1; then actual=$(sha256sum /tmp/hermes-install.sh | cut -d ' ' -f 1); else actual=$(shasum -a 256 /tmp/hermes-install.sh | cut -d ' ' -f 1); fi`,
+        `test "$actual" = ${HERMES_INSTALLER_SHA256} || { echo 'Hermes installer checksum mismatch' >&2; exit 1; }`,
         `bash /tmp/hermes-install.sh --skip-setup --skip-browser --non-interactive --commit ${HERMES_COMMIT}`,
         'export PATH="$HOME/.local/bin:$PATH"',
         'rm -rf /tmp/ned-profile && mkdir -p /tmp/ned-profile',
@@ -168,6 +179,29 @@ export function createDaytonaProvider({
           if (!isNotFound(error)) throw error;
         }
       }
+
+      let workspaceAbsent = !workspace.id;
+      if (workspace.id) {
+        try {
+          await client.get(workspace.id);
+        } catch (error) {
+          if (isNotFound(error)) workspaceAbsent = true;
+          else throw error;
+        }
+      }
+      let secretAbsent = !secretId;
+      if (secretId) {
+        try {
+          await client.secret.get(secretId);
+        } catch (error) {
+          if (isNotFound(error)) secretAbsent = true;
+          else throw error;
+        }
+      }
+      if (!workspaceAbsent || !secretAbsent) {
+        throw new Error('Daytona deletion readback did not prove all managed resources absent');
+      }
+      return { workspaceAbsent, secretAbsent };
     },
   };
 }

@@ -18,6 +18,12 @@ export function createNedApp({ provider, stateStore }) {
         throw new Error(`NED already exists in workspace ${existing.workspaceId}`);
       }
 
+      const managed = await provider.listManagedWorkspaces?.() || [];
+      if (managed.length > 0) {
+        const ids = managed.map((workspace) => workspace.id).join(', ');
+        throw new Error(`A managed Daytona workspace already exists (${ids}) but local ownership state is absent. Reconcile exact ownership before retrying create.`);
+      }
+
       let workspace;
       try {
         workspace = await provider.createWorkspace(plan, credentials);

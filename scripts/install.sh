@@ -91,7 +91,7 @@ credential_file="${HOME}/.config/ned/daytona-api-key"
 [[ -d "$generation" ]] || { printf 'NED: active installation is missing; rerun the installer.\n' >&2; exit 2; }
 needs_daytona=0
 case "${1-}" in
-  create|chat|doctor|reset|destroy) needs_daytona=1 ;;
+  create|chat|doctor|repair|reset|destroy) needs_daytona=1 ;;
 esac
 if [[ "${1-}" == create ]]; then
   for arg in "$@"; do
@@ -99,9 +99,12 @@ if [[ "${1-}" == create ]]; then
   done
 fi
 if [[ "$needs_daytona" == 1 ]] && [[ -z "${DAYTONA_API_KEY-}" ]]; then
-  if [[ -f "$credential_file" ]]; then
+  if [[ "$(uname -s)" == Darwin ]] && command -v security >/dev/null 2>&1; then
+    DAYTONA_API_KEY="$(security find-generic-password -s 'no-ego-dev/daytona' -a 'DAYTONA_API_KEY' -w 2>/dev/null || true)"
+  fi
+  if [[ -z "${DAYTONA_API_KEY-}" ]] && [[ -f "$credential_file" ]]; then
     IFS= read -r DAYTONA_API_KEY <"$credential_file"
-  else
+  elif [[ -z "${DAYTONA_API_KEY-}" ]]; then
     mkdir -p "${HOME}/.config/ned"
     chmod 700 "${HOME}/.config/ned"
     if [[ -t 0 && -r /dev/tty ]]; then
@@ -116,7 +119,7 @@ if [[ "$needs_daytona" == 1 ]] && [[ -z "${DAYTONA_API_KEY-}" ]]; then
     printf '%s\n' "$DAYTONA_API_KEY" >"$credential_file"
     chmod 600 "$credential_file"
   fi
-  [[ -n "$DAYTONA_API_KEY" ]] || { printf 'NED: stored Daytona API key is empty; delete %s and retry.\n' "$credential_file" >&2; exit 2; }
+  [[ -n "$DAYTONA_API_KEY" ]] || { printf 'NED: Daytona authorization was empty; repair the Keychain item or local credential file and retry.\n' >&2; exit 2; }
   export DAYTONA_API_KEY
 fi
 set +e

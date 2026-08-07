@@ -130,6 +130,12 @@ test('production installer contains no runtime test override or integrity bypass
   assert.doesNotMatch(text, /NED_INSTALLER_TEST|NED_NODE_URL|NED_NODE_SHA256|NED_SOURCE_URL|NED_TEST_SOURCE_SHA256|NED_INSTALLER_PLATFORM|NED_INSTALLER_DRY_RUN/);
 });
 
+test('macOS launcher reads the named Daytona Keychain item before file or hidden TTY fallback', async () => {
+  const text = await readFile(productionInstaller, 'utf8');
+  assert.match(text, /security find-generic-password -s 'no-ego-dev\/daytona' -a 'DAYTONA_API_KEY' -w/);
+  assert.match(text, /create\|chat\|doctor\|repair\|reset\|destroy/);
+});
+
 test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, stores credential safely, and runs create', async () => {
   const harness = await makeHarness();
   await writeFile(path.join(harness.home, '.profile'), '# Documentation: ~/.local/bin is intentionally not on PATH\n', { mode: 0o600 });
@@ -226,6 +232,20 @@ test('space-containing HOME and TMPDIR complete installation', async () => {
   const result = runInstaller(harness);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await exists(path.join(harness.home, '.local/bin/ned')), true);
+});
+
+test('caller umask 000 cannot make installer state, credentials, or profiles world-readable', async () => {
+  const harness = await makeHarness();
+  const result = spawnSync('/bin/bash', ['-c', 'umask 000; exec /bin/bash "$1"', 'installer', harness.installer], {
+    env: harness.env,
+    input: `${syntheticSecret}\n`,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal((await stat(path.join(harness.home, '.config/ned/daytona-api-key'))).mode & 0o777, 0o600);
+  for (const profile of ['.profile', '.zprofile', '.bashrc']) {
+    assert.equal((await stat(path.join(harness.home, profile))).mode & 0o777, 0o600);
+  }
 });
 
 test('clean integrity failure leaves runtime, app, launcher, pointers, markers, profiles, and credential absent', async () => {
