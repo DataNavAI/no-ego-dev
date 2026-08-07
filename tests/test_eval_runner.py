@@ -154,12 +154,13 @@ def _lingering_child_hermes_command(tmp_path: Path) -> str:
 def test_discovers_eval_yaml_files(tmp_path):
     (tmp_path / "a").mkdir()
     (tmp_path / "a" / "EVAL.yaml").write_text("prompt: hi\nexpectations: [done]\n")
+    (tmp_path / "a" / "EVAL.daily.yaml").write_text("prompt: daily\nexpectations: [done]\n")
     (tmp_path / "b").mkdir()
     (tmp_path / "b" / "EVAL.yml").write_text("prompt: bye\nexpectations: [done]\n")
 
     found = discover_eval_files([tmp_path])
 
-    assert found == [tmp_path / "a" / "EVAL.yaml"]
+    assert found == [tmp_path / "a" / "EVAL.daily.yaml", tmp_path / "a" / "EVAL.yaml"]
 
 
 def test_real_eval_default_restricts_hermes_to_skills_toolset():
@@ -178,8 +179,14 @@ def test_windows_oneshot_command_uses_windows_argument_quoting():
 def test_loads_every_tracked_repository_eval():
     repo_root = Path(__file__).resolve().parents[1]
     eval_files = discover_eval_files([repo_root])
+    tracked = {
+        repo_root / path
+        for path in subprocess.check_output(
+            ["git", "ls-files", "*EVAL*.yaml"], cwd=repo_root, text=True
+        ).splitlines()
+    }
 
-    assert len(eval_files) >= 29
+    assert set(eval_files) == tracked
     for eval_path in eval_files:
         load_eval(eval_path)
 

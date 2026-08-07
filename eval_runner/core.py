@@ -81,10 +81,10 @@ def discover_eval_files(paths: Iterable[str | Path]) -> list[Path]:
     found: list[Path] = []
     for raw in paths:
         path = Path(raw).expanduser().resolve()
-        if path.is_file() and path.name == "EVAL.yaml":
+        if path.is_file() and path.match("EVAL*.yaml"):
             found.append(path)
         elif path.is_dir():
-            found.extend(sorted(path.rglob("EVAL.yaml")))
+            found.extend(sorted(path.rglob("EVAL*.yaml")))
     return sorted(dict.fromkeys(found))
 
 
