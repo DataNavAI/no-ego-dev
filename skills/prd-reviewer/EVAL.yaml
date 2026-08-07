@@ -26,6 +26,9 @@ expectations:
   - "rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one"
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "when judging an old immutable revision for current acceptance separates historical byte assessment from current-authority reconciliation and checks original live governing sources before session history"
+  - "treats a later authoritative contradiction as potentially superseding current acceptance without retroactively falsifying a valid historical approval"
+  - "classifies genuinely later authority as new evidence but preserves a previously discoverable defect as MATERIAL_PROCESS_ESCAPE and requests one bounded reconciliation of stale active occurrences"
 setupCommands: []
 teardownCommands: []
 parameters:

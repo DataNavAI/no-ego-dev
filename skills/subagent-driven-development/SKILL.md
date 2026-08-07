@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.7
+version: 1.12.8
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -85,6 +85,18 @@ Use this workflow for multi-slice implementation where specification and quality
 ### 1. Parse and Track the Plan
 
 Read the plan once, extract every task with dependencies and governing context, and create a todo list. Children receive the complete slice and contract directly; do not make them rediscover the plan.
+
+### 1.1 Canonical dependency decomposition
+
+When the live tracker has no runnable implementation because one issue bundles a repository-safe seam with an external provider, credential, spend, destructive-migration, publication, or production gate, do not silently start the blocked parent and do not invent an off-tracker task.
+
+1. Audit the live issue bodies, milestone barriers, predecessors, open PRs, and current source to prove whether a dependency-safe vertical slice actually exists.
+2. If it does, create one focused canonical child under the existing parent/coordinator before implementation. Give it explicit closed predecessors, one testable outcome, allowed/excluded scope, verification commands, and the authority boundary that remains with the blocked parent.
+3. Update the parent dependency line, epic graph, and milestone/task counts in the same reconciliation so the new child does not make status artifacts immediately stale.
+4. Re-read the newly canonical child and live counts, create an isolated worktree from the verified current base, then dispatch its implementer.
+5. If issue creation or tracker mutation is not authorized, report the frontier as blocked; a read-only audit may recommend the child but must not treat its proposal as implementation authority.
+
+This decomposition must preserve sequencing: provider-independent or reversible mechanics may land disabled by default, while configured-state proof, retention deletion, rollback contraction, deployment, and publication remain behind their original gates.
 
 ### 1.4 Delegation Timeout Pre-flight
 
@@ -237,6 +249,7 @@ Load only the reference needed for the current risk:
 - [references/generated-browser-runtime-verification.md](references/generated-browser-runtime-verification.md) — generated/browser runtime evidence.
 - [references/timeout-recovery-and-semantic-review.md](references/timeout-recovery-and-semantic-review.md) — remote-first timeout recovery.
 - [references/contract-alignment-gates.md](references/contract-alignment-gates.md) and [references/contract-drift-review.md](references/contract-drift-review.md) — governing-contract alignment.
+- [references/acceptance-contract-closeout.md](references/acceptance-contract-closeout.md) — literal parent-issue acceptance audit, distinct review-kind evidence, merge-tree/blob binding, and child-before-parent authenticated closure.
 
 The context-budget and gates references are adapted from gsd-build/get-shit-done (MIT © 2025 Lex Christopherson).
 

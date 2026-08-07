@@ -1,7 +1,7 @@
 ---
 name: web-game-dev
 description: "Use when planning, architecting, implementing, or reviewing browser/web games. Research and choose a performant web game engine during architecture, document game architecture patterns, and find or create engine-specific skills for the chosen engine."
-version: 0.1.0
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -16,6 +16,14 @@ metadata:
 Build browser games with an explicit engine choice, a game-appropriate architecture, and performance constraints from the start. Web games are not ordinary CRUD apps with sprites: the tech spec must account for frame budget, asset loading, render pipeline, input latency, game loop timing, scene/state organization, audio, physics, persistence, deployment, and analytics for player behavior.
 
 This skill is especially important during the architect phase. The architect must research and recommend a performant web game engine before implementation begins, then either find an existing engine-specific skill or create/update one so coder agents do not improvise engine conventions from scratch.
+
+## Upfront Requirement Confirmation and Automatic Continuation
+
+Before engine selection, derive known constraints from the PRD, target devices/browsers, gameplay model, repository, licensing, deployment, persistence, and performance needs. Ask only about requirements whose later reversal would materially change 2D/3D architecture, multiplayer authority, engine/toolchain/licensing, persistence/economy trust, supported devices, or production workflow.
+
+If confirmation is needed, ask **one upfront batch of no more than three short questions**. Review every question before sending it: unanswered, costly to reverse, easy to understand, one decision only, and paired with a recommended default or compact choices. Remove gameplay polish and anything research or a reversible default can resolve.
+
+After confirmation, continue automatically only within the lifecycle scope the user authorized. A planning or architecture request proceeds through the requested plan/spec and engine-specific skill preparation, then stops before implementation; a review request remains read-only. Continue through implementation and QA only when the user requested implementation or explicitly authorized that broader scope. **Do not ask for routine phase approval inside the authorized scope.** Pause for a scope expansion, new costly contradiction, missing access, blocking performance/quality finding, or external spend/production/publication/credential/destructive authority.
 
 Research snapshot, 2026-07-01:
 
@@ -188,7 +196,7 @@ Use for progress, settings, achievements, inventory, purchases, or cloud sync.
 1. Read PRD, UI/design notes, existing repo, and target deployment constraints.
 2. Classify the game and list hard requirements: dimensions, target devices, FPS, multiplayer, physics, asset types, save model, analytics, and accessibility.
 3. Research engines/libraries using official docs and package metadata. Compare at least 2-4 viable options.
-4. Recommend a performant engine and architecture pattern set. Ask the user only when the choice materially changes cost, tooling, licensing, browser support, or production workflow.
+4. Recommend a performant engine and architecture pattern set. If engine choice materially changes cost, tooling, licensing, browser support, or production workflow, resolve it in the single upfront question batch; otherwise use the recommendation and proceed.
 5. Search skills for the chosen engine. If missing and reusable, create a focused engine skill or support file before coder implementation begins.
 6. Write the tech spec with engine choice, architecture, game loop, scenes/state, asset pipeline, input/audio, persistence, analytics, performance budgets, and tests.
 7. Spawn coder subagents with the chosen engine skill and exact conventions.

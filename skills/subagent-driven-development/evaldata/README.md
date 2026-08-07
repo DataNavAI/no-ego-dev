@@ -14,6 +14,10 @@ Boundary cases:
 - examples use the current `delegate_task` API and fresh `role="leaf"` workers;
 - a staged review receipt changes after restaging, so the pending verdict is stale;
 - a concurrently changing shared checkout is replaced by a verified `git archive` snapshot with explicit cwd.
+- a blocked parent combines reversible provider-independent mechanics with a credential-gated configured-state proof; create one canonical child only after proving the safe seam, keep it disabled by default, reconcile tracker counts, and leave configured-state/deployment authority on the parent;
+- tracker mutation is unavailable during the same decomposition; recommend the child but return the execution frontier as blocked rather than dispatching an off-tracker task;
+- merged implementation exists but one literal parent acceptance row requires a distinct independent product review; keep the parent open until that exact review and merge-tree/blob evidence are verified.
+- every acceptance row passes but the runner lacks tracker comment/closure authority; emit a read-only closeout packet and exact owner action without commenting on or closing any issue.
 
 ## Cross-round continuity scenarios
 
