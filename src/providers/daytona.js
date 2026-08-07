@@ -167,6 +167,18 @@ export function createDaytonaProvider({
       await sandbox.fs.uploadFile(archive, '/tmp/ned-profile.tgz');
       const command = [
         'set -euo pipefail',
+        'if ! command -v curl >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1 || ! command -v tar >/dev/null 2>&1; then',
+        '  command -v apt-get >/dev/null 2>&1 || { echo "Required bootstrap tools are missing and apt-get is unavailable" >&2; exit 1; }',
+        '  if [ "$(id -u)" -eq 0 ]; then',
+        '    apt-get update -qq',
+        '    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 tar',
+        '  elif command -v sudo >/dev/null 2>&1; then',
+        '    sudo apt-get update -qq',
+        '    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 tar',
+        '  else',
+        '    echo "Required bootstrap tools are missing and no root/sudo path is available" >&2; exit 1',
+        '  fi',
+        'fi',
         `curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh -o /tmp/hermes-install.sh`,
         `if command -v sha256sum >/dev/null 2>&1; then actual=$(sha256sum /tmp/hermes-install.sh | cut -d ' ' -f 1); else actual=$(shasum -a 256 /tmp/hermes-install.sh | cut -d ' ' -f 1); fi`,
         `test "$actual" = ${HERMES_INSTALLER_SHA256} || { echo 'Hermes installer checksum mismatch' >&2; exit 1; }`,
