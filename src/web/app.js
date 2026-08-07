@@ -219,6 +219,7 @@ export function createBrowserServer({
     } else {
       const recovered = safeJob(await jobService.create(intent.submission), intent.operation);
       record = { ...recovered, ownerId: session.userId, sessionId: session.id };
+      if (TERMINAL_JOB_STATUSES.has(record.status)) await finalizeTransition(session, record, record);
       session.activeIntent = null;
     }
     jobs.set(`${session.id}:${record.id}`, record);

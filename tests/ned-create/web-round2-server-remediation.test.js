@@ -497,6 +497,103 @@ function persistedAuth(operation) {
   return { cookie: `ned_session=restart-${operation}`, csrfToken: `csrf-${operation}` };
 }
 
+test('restart finalizes terminal non-inference intents before replay or new admission', async () => {
+  const terminalStatuses = ['succeeded', 'failed', 'cancelled', 'blocked'];
+  for (const operation of ['create_ned', 'resume_ned', 'destroy_ned']) {
+    for (const status of terminalStatuses) {
+      const key = `${operation}-${status}-reserved-key`;
+      const lifecycleStore = memoryLifecycleStore();
+      await lifecycleStore.save(persistedSession(operation, key));
+      const calls = { create: [], delete: [] };
+      const jobService = {
+        async create(value) {
+          calls.create.push(structuredClone(value));
+          return {
+            id: `${value.operation}-${value.idempotencyKey}`,
+            operation: value.operation,
+            status,
+          };
+        },
+        async get() { assert.fail('terminal recovery must not require status polling'); },
+        async cancel() { assert.fail('cancel must not run'); },
+      };
+      const secretVault = {
+        async put() { assert.fail('put must not run'); },
+        async delete(value) {
+          calls.delete.push(structuredClone(value));
+          return { id: value.id, status: 'deleted' };
+        },
+      };
+      const context = await start({ lifecycleStore, jobService, secretVault });
+      const auth = persistedAuth(operation);
+      try {
+        const restoredResponse = await fetch(`${context.baseUrl}/api/session`, { headers: { Cookie: auth.cookie } });
+        const restored = await restoredResponse.json();
+        assert.equal(restoredResponse.status, 200, `${operation}:${status}:session`);
+        assert.deepEqual(restored.job, {
+          id: `${operation}-${key}`,
+          operation,
+          status,
+        }, `${operation}:${status}:restored job`);
+
+        const snapshotAfterRecovery = structuredClone([...lifecycleStore.records.values()][0]);
+        assert.equal(snapshotAfterRecovery.activeIntent, null, `${operation}:${status}:intent cleared`);
+        assert.equal(snapshotAfterRecovery.jobs.length, 1, `${operation}:${status}:durable job`);
+        assert.equal(snapshotAfterRecovery.idempotency.length, 1, `${operation}:${status}:durable receipt`);
+        assert.equal(snapshotAfterRecovery.nedReady,
+          operation === 'create_ned' ? status === 'succeeded' : operation === 'destroy_ned' && status === 'succeeded' ? false : true,
+          `${operation}:${status}:readiness`);
+        assert.equal(snapshotAfterRecovery.lifecycle,
+          operation === 'destroy_ned' && status === 'succeeded' ? 'destroyed' : 'active',
+          `${operation}:${status}:lifecycle`);
+        assert.equal(snapshotAfterRecovery.computeConnectionId,
+          operation === 'destroy_ned' && status === 'succeeded' ? null : 'compute-1',
+          `${operation}:${status}:compute connection`);
+        const shouldRevokeModel = (operation === 'create_ned' && status !== 'succeeded')
+          || (operation === 'destroy_ned' && status === 'succeeded');
+        assert.equal(snapshotAfterRecovery.modelConnectionId, shouldRevokeModel ? null : 'model-1',
+          `${operation}:${status}:model connection`);
+        assert.equal(calls.delete.length, shouldRevokeModel ? 1 : 0, `${operation}:${status}:credential cleanup`);
+
+        const same = await submit(context, auth, operation, key);
+        if (operation === 'destroy_ned' && status === 'succeeded') {
+          assert.equal(same.response.status, 409, `${operation}:${status}:same status`);
+          assert.deepEqual(same.body, { error: 'session_cleaned_up' }, `${operation}:${status}:same tombstone`);
+        } else {
+          assert.equal(same.response.status, 202, `${operation}:${status}:same status`);
+          assert.deepEqual(same.body, restored.job, `${operation}:${status}:same receipt`);
+        }
+        assert.equal(calls.create.length, 1, `${operation}:${status}:exact key adapter count`);
+
+        const different = await submit(context, auth, operation, `${operation}-${status}-different-key`);
+        const rejectsDifferent = operation === 'create_ned' || (operation === 'destroy_ned' && status === 'succeeded');
+        if (rejectsDifferent) {
+          assert.equal(different.response.status, 409, `${operation}:${status}:different status`);
+          assert.deepEqual(different.body, {
+            error: operation === 'create_ned'
+              ? status === 'succeeded' ? 'ned_already_ready' : 'connections_required'
+              : 'session_cleaned_up',
+          }, `${operation}:${status}:different rejection`);
+          assert.equal(calls.create.length, 1, `${operation}:${status}:no duplicate adapter side effect`);
+        } else {
+          assert.equal(different.response.status, 202, `${operation}:${status}:different status`);
+          assert.equal(calls.create.length, 2, `${operation}:${status}:ordinary terminal admission preserved`);
+        }
+
+        const persisted = [...lifecycleStore.records.values()][0];
+        assert.equal(persisted.lifecycle,
+          operation === 'destroy_ned' && status === 'succeeded' ? 'destroyed' : 'active',
+          `${operation}:${status}:persisted lifecycle`);
+        assert.equal(persisted.nedReady,
+          operation === 'create_ned' ? status === 'succeeded' : operation === 'destroy_ned' && status === 'succeeded' ? false : true,
+          `${operation}:${status}:persisted readiness`);
+        assert.equal(JSON.stringify(persisted).includes('prompt'), false, `${operation}:${status}:no prompt persistence`);
+        assert.equal(JSON.stringify(persisted).includes('output'), false, `${operation}:${status}:no output persistence`);
+      } finally { await context.close(); }
+    }
+  }
+});
+
 test('restart recovers every persisted active intent before admitting same or different keys without replaying inference', async () => {
   for (const operation of ['create_ned', 'send_first_request', 'resume_ned', 'destroy_ned']) {
     const key = `${operation}-reserved-key`;
