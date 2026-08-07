@@ -24,6 +24,15 @@ function flagValue(flags, name) {
   return index >= 0 ? flags[index + 1] : undefined;
 }
 
+function validateV1ModelProvider(flags, io) {
+  const providerId = flagValue(flags, '--model-provider') || 'openrouter';
+  if (providerId !== 'openrouter') {
+    io.error('NED V1 supports only OpenRouter. Additional model providers are parked for a later release.');
+    return null;
+  }
+  return providerId;
+}
+
 function capture(telemetry, event, startedAt, resultClass) {
   try {
     void telemetry.capture(event, { durationMs: Date.now() - startedAt, resultClass }).catch(() => {});
@@ -46,7 +55,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       'NED — private hosted product partner',
       '',
       'Usage:',
-      '  ned create [--model-provider <openai|anthropic|gemini|openrouter>] [--dry-run --json]',
+      '  ned create [--dry-run --json]',
       '  ned chat "What should NED build?"',
       '  ned doctor',
       '  ned repair',
@@ -100,7 +109,9 @@ export async function runCli(argv, io = console, dependencies = {}) {
   }
 
   if (command === 'create' && flags.includes('--dry-run')) {
-    const plan = createDryRunPlan({ modelProvider: flagValue(flags, '--model-provider') || 'openrouter' });
+    const providerId = validateV1ModelProvider(flags, io);
+    if (!providerId) return 2;
+    const plan = createDryRunPlan({ modelProvider: providerId });
     if (flags.includes('--json')) {
       io.log(JSON.stringify(plan));
     } else {
@@ -113,13 +124,17 @@ export async function runCli(argv, io = console, dependencies = {}) {
   if (command === 'create') {
     const startedAt = Date.now();
     capture(telemetry, TELEMETRY_EVENTS.createStarted, startedAt, 'started');
+    const providerId = validateV1ModelProvider(flags, io);
+    if (!providerId) {
+      capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
+      return 2;
+    }
     if (!env.DAYTONA_API_KEY) {
       capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
       io.error('Daytona authorization required. Create an API key at https://app.daytona.io/dashboard/keys, set DAYTONA_API_KEY in your shell, then rerun ned create. Do not paste secrets into chat.');
       return 2;
     }
     try {
-      const providerId = flagValue(flags, '--model-provider') || 'openrouter';
       const provider = getModelProviderRuntime(providerId);
       let selectedCredential = selectModelCredential({ providerId, env });
       if (!selectedCredential && providerId === 'openrouter') {

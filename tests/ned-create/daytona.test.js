@@ -234,13 +234,19 @@ test('Daytona create removes its unique secret when sandbox creation fails', asy
     constructor() {
       this.secret = {
         async create() { return { id: 'secret-orphan' }; },
-        async delete(id) { calls.push(id); },
+        async delete(id) { calls.push(['delete', id]); },
+        async get(id) {
+          calls.push(['readback', id]);
+          const error = new Error('not found');
+          error.status = 404;
+          throw error;
+        },
       };
     }
     async create() { throw new Error('sandbox create failed'); }
   }
   const provider = createDaytonaProvider({
-    apiKey: 'daytona-secret',
+    apiKey: 'daytona-only',
     DaytonaClass: FakeDaytona,
     secretNameFactory: () => 'ned_openrouter_cleanup',
   });
@@ -249,7 +255,36 @@ test('Daytona create removes its unique secret when sandbox creation fails', asy
     () => provider.createWorkspace(NED_PLAN, { openRouterApiKey: 'openrouter-secret' }),
     /sandbox create failed/,
   );
-  assert.deepEqual(calls, ['secret-orphan']);
+  assert.deepEqual(calls, [
+    ['delete', 'secret-orphan'],
+    ['readback', 'secret-orphan'],
+  ]);
+});
+
+test('Daytona create records recovery state when secret delete resolves but readback still finds it', async () => {
+  class FakeDaytona {
+    constructor() {
+      this.secret = {
+        async create() { return { id: 'secret-still-present' }; },
+        async delete() {},
+        async get(id) { return { id }; },
+      };
+    }
+    async create() { throw new Error('sandbox create failed'); }
+  }
+  const provider = createDaytonaProvider({
+    apiKey: 'daytona-only',
+    DaytonaClass: FakeDaytona,
+    secretNameFactory: () => 'ned_openrouter_stillpresent',
+  });
+
+  await assert.rejects(
+    () => provider.createWorkspace(NED_PLAN, { openRouterApiKey: 'openrouter-secret' }),
+    (error) => error instanceof AggregateError
+      && /readback did not prove absence/.test(error.message)
+      && error.recoveryState.secretId === 'secret-still-present'
+      && error.recoveryState.secretName === 'ned_openrouter_stillpresent',
+  );
 });
 
 test('Daytona create exposes non-secret recovery metadata when secret cleanup also fails', async () => {

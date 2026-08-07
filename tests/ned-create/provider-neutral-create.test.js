@@ -22,44 +22,6 @@ test('create plan selects an allowlisted direct model provider without changing 
   });
 });
 
-test('CLI create selects OpenAI explicitly and passes a non-serializing model connection', async () => {
-  let credentials;
-  const output = [];
-  const exitCode = await runCli(['create', '--model-provider', 'openai'], {
-    log: (message) => output.push(message),
-    error: assert.fail,
-  }, {
-    env: { DAYTONA_API_KEY: 'daytona-test-value', OPENAI_API_KEY: 'openai-test-value' },
-    getOpenRouterKey: async () => assert.fail('OpenRouter OAuth must not run for OpenAI'),
-    appFactory: async () => ({
-      async create(value) { credentials = value; return { ready: true }; },
-    }),
-  });
-
-  assert.equal(exitCode, 0);
-  assert.equal(credentials.modelConnection.providerId, 'openai');
-  assert.equal(credentials.modelConnection.method, 'api-key');
-  assert.equal(JSON.stringify(credentials).includes('openai-test-value'), false);
-  assert.equal(credentials.modelConnection.consumeCredential(), 'openai-test-value');
-  assert.match(output.join('\n'), /OpenAI/);
-  assert.doesNotMatch(output.join('\n'), /Opening OpenRouter/);
-});
-
-test('CLI create fails closed when the selected direct provider has no authorization', async () => {
-  const errors = [];
-  const exitCode = await runCli(['create', '--model-provider', 'anthropic'], {
-    log() {},
-    error: (message) => errors.push(message),
-  }, {
-    env: { DAYTONA_API_KEY: 'daytona-test-value' },
-    appFactory: async () => assert.fail('create must not start without model authorization'),
-  });
-
-  assert.equal(exitCode, 2);
-  assert.match(errors.join('\n'), /Anthropic authorization required/);
-  assert.match(errors.join('\n'), /secure model-provider connection/);
-});
-
 test('Daytona provider injects the selected direct provider through its own egress allowlist', async () => {
   const observed = {};
   class FakeDaytona {

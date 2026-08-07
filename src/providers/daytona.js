@@ -78,9 +78,21 @@ export function createDaytonaProvider({
           modelProvider: modelConnection.providerId,
         };
       } catch (error) {
+        let cleanupError = null;
         try {
           await client.secret.delete(secret.id);
-        } catch (cleanupError) {
+        } catch (deleteError) {
+          if (!isNotFound(deleteError)) cleanupError = deleteError;
+        }
+        if (!cleanupError) {
+          try {
+            await client.secret.get(secret.id);
+            cleanupError = new Error('secret cleanup readback did not prove absence');
+          } catch (readbackError) {
+            if (!isNotFound(readbackError)) cleanupError = readbackError;
+          }
+        }
+        if (cleanupError) {
           const aggregate = new AggregateError(
             [error, cleanupError],
             `Daytona sandbox creation failed: ${error.message}; secret cleanup also failed: ${cleanupError.message}`,

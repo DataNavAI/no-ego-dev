@@ -55,6 +55,26 @@ test('ned create dry-run asks no questions and selects the complete opinionated 
   assert.equal(result.stderr, '');
 });
 
+test('v1 CLI fails closed when a non-OpenRouter model provider is requested', async () => {
+  const dryRun = runNed(['create', '--dry-run', '--json', '--model-provider', 'anthropic']);
+  assert.equal(dryRun.status, 2);
+  assert.equal(dryRun.stdout, '');
+  assert.match(dryRun.stderr, /V1 supports only OpenRouter/);
+
+  const stdout = [];
+  const stderr = [];
+  const exitCode = await runCli(['create', '--model-provider', 'gemini'], {
+    log: (message) => stdout.push(message),
+    error: (message) => stderr.push(message),
+  }, {
+    env: { DAYTONA_API_KEY: 'daytona-test-value', GEMINI_API_KEY: 'gemini-test-value' },
+    appFactory: async () => { throw new Error('must reject before provisioning'); },
+  });
+  assert.equal(exitCode, 2);
+  assert.equal(stdout.length, 0);
+  assert.match(stderr.join('\n'), /V1 supports only OpenRouter/);
+});
+
 test('create provisions, bootstraps, verifies, and persists only non-secret workspace state', async () => {
   const calls = [];
   const provider = {
