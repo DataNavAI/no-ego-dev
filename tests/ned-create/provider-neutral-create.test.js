@@ -10,7 +10,7 @@ test('create plan selects an allowlisted direct model provider without changing 
   assert.deepEqual(createNedPlan({ modelProvider: 'openai' }), {
     provider: 'daytona',
     region: 'auto',
-    resources: { cpu: 2, memory: 4, disk: 20 },
+    resources: { cpu: 2, memory: 4, disk: 10 },
     image: 'ubuntu:24.04',
     modelProvider: 'openai',
     hermesModelProvider: 'openai-api',
