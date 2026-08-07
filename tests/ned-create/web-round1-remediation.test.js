@@ -239,24 +239,25 @@ test('every API endpoint rejects query strings before auth, body, or adapters', 
   } finally { await context.close(); }
 });
 
-test('versioned governing contracts make browser-first provider-neutral lifecycle authoritative', async () => {
+test('versioned governing contracts make the Daytona CLI lifecycle authoritative and park browser work', async () => {
   const paths = ['PRD.md', 'TECH_SPEC.md', 'CUJ.md'];
   const documents = await Promise.all(paths.map((name) => readFile(new URL(`../../docs/ned-create/${name}`, import.meta.url), 'utf8')));
   for (const [index, document] of documents.entries()) {
-    assert.match(document, /Contract version: 2\.0/, paths[index]);
-    assert.match(document, /Supersedes:/, paths[index]);
-    assert.match(document, /browser-first/i, paths[index]);
-    assert.match(document, /provider-neutral/i, paths[index]);
-    assert.match(document, /review-only[^\n]+not[^\n]+authority/i, paths[index]);
+    assert.match(document, /Contract version: 3\.0/, paths[index]);
+    assert.match(document, /Daytona/i, paths[index]);
+    assert.match(document, /CLI/i, paths[index]);
+    assert.match(document, /browser/i, paths[index]);
+    assert.match(document, /parked|future scope/i, paths[index]);
+    assert.match(document, /AWS/i, paths[index]);
   }
   const combined = documents.join('\n');
-  for (const operation of ['create_ned', 'send_first_request', 'resume_ned', 'destroy_ned', 'cancel_job']) {
-    assert.match(combined, new RegExp(`\\b${operation}\\b`));
+  for (const command of ['create', 'chat', 'doctor', 'repair', 'destroy']) {
+    assert.match(combined, new RegExp(`\\b${command}\\b`));
   }
   for (const required of [
-    /OpenAI/, /Anthropic/, /Gemini/, /OpenRouter/, /migration/i, /backward compatibility/i,
-    /development simulation/i, /production/i, /platform-managed, quota-limited beta/i,
-    /exact-SHA/i, /zero-resource readback/i,
+    /OpenRouter/, /PKCE/, /private[^\n]+persistent[^\n]+Sandbox/i,
+    /checksum/i, /direct[^\n]+readback/i, /zero[^\n-]+resource/i,
+    /no generic arbitrary-command API/i,
   ]) assert.match(combined, required);
 });
 
