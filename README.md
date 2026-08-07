@@ -11,7 +11,7 @@ NED is best for people who want to test an idea quickly with something real enou
 On clean supported macOS/Linux x64 or arm64, install and start setup with one command:
 
 ```bash
-i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/233503775d9d4a2be7748c5e2e413400333e73ed/scripts/install.sh -o "$i" && { echo "e4c96f5d45aea3917a476ae50b5957fb72b56051f98c6a376c49d025ce12f58e  $i" | sha256sum -c - 2>/dev/null || echo "e4c96f5d45aea3917a476ae50b5957fb72b56051f98c6a376c49d025ce12f58e  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
+i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/bd9ef97e1e5d75715b5aa8cae6a1530e71969650/scripts/install.sh -o "$i" && { echo "619c7de966a0731dce41e1e27eaf15f110cd80591d6b0b46a453de7119eb6dc1  $i" | sha256sum -c - 2>/dev/null || echo "619c7de966a0731dce41e1e27eaf15f110cd80591d6b0b46a453de7119eb6dc1  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
 ```
 
 No sudo, git, system Node.js, or system npm is required. The command verifies the downloaded installer’s exact SHA-256 before execution; the installer then verifies pinned private runtime and NED downloads, reads the named macOS Keychain item or uses hidden TTY input for Daytona authorization, and runs `ned create`. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
