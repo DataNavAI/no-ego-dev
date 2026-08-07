@@ -1,7 +1,7 @@
 ---
 name: prd-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact PRD revision for user-problem fit, ease, effectiveness, satisfaction, and base-product coherence."
-version: 0.4.6
+version: 0.4.7
 author: NoEgoDev
 license: MIT
 metadata:
@@ -133,6 +133,17 @@ When `PRD revisions required: none`, the reviewer must not recommend another PRD
 - Read the complete PRD and source request.
 - Inspect linked base-product/CUJ/design evidence needed for the decision.
 - Return `BLOCKED` when the exact revision, target user/problem, or material base-product context is unavailable. Do not guess author intent.
+
+#### Historical bytes versus current acceptance
+
+When the user asks whether an old immutable product revision is acceptable **now**, lock the old bytes but also inspect the current governing source before judging current authority: live owner decisions, superseding issues/PRs, merged contract revisions, and active provider/region/privacy decisions. Keep these roles separate:
+
+1. **Historical byte assessment:** state what the exact candidate got right or wrong under the authority available when it was frozen.
+2. **Current-authority reconciliation:** identify any later explicit decision that supersedes the candidate. A later authoritative contradiction can make the old candidate fail current acceptance without implying that its earlier approval was fabricated or invalid at the time.
+3. **Correction classification:** label a later decision as genuinely new evidence and state why it was unavailable in the original round. If a defect was already present and reasonably discoverable, label it `MATERIAL_PROCESS_ESCAPE` rather than laundering it as new evidence.
+4. **Smallest convergent correction:** require one complete bounded reconciliation across every active occurrence of the stale authority; do not reopen unrelated settled scope or demand cosmetic modernization.
+
+Use the original source first for current state, with session history only as secondary context. Preserve the immutable checkout read-only and save the report outside it.
 
 ### 2. Target user and problem
 

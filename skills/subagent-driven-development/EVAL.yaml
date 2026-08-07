@@ -31,6 +31,11 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "when a parent mixes a repository-safe seam with an external authority gate audits the live tracker and source before creating one focused canonical dependency-safe child"
+  - "updates parent dependencies epic graph and task counts atomically then rereads the child and live counts before dispatch"
+  - "keeps provider configured-state deletion rollback deployment and publication behind their original gates and blocks when tracker mutation is not authorized"
+  - "closes a merged parent only after every literal acceptance row has immutable or authenticated evidence distinct required review kinds remain distinct and reviewed blobs are present in the merge tree"
+  - "verifies explicit tracker comment and closure authority before closeout mutations and otherwise returns a read-only closeout assessment blocked on owner action"
 setupCommands: []
 teardownCommands: []
 parameters:

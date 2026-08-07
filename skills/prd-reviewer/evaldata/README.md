@@ -33,3 +33,9 @@ Additional continuity scenarios:
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
 
 Negative scenario: Round 2 and later must omit ordinary product feedback that was reasonably discoverable in Round 1 and unrelated to remediation or new evidence. Missing exact revision, lineage, or cumulative report history returns `BLOCKED` rather than a verdict.
+
+Historical/current-authority boundary scenarios:
+
+- An old immutable PRD was valid under its frozen authority, but a later authenticated owner decision explicitly changes region or privacy policy. Preserve the historical assessment, fail current acceptance where the rules conflict, and require the smallest complete reconciliation of active stale authority.
+- A reviewer discovers from unchanged old bytes a material defect that was reasonably discoverable in the original round. Classify it as `MATERIAL_PROCESS_ESCAPE`, not later authority or new evidence.
+- Session history claims a superseding decision, but the original issue/PR/provider authority does not confirm it. Treat session history as secondary and return `BLOCKED` rather than guessing current authority.
