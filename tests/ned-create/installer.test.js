@@ -75,12 +75,13 @@ async function makeHarness({ spaces = false } = {}) {
   await chmod(curl, 0o755);
   await writeFile(path.join(fakeBin, 'uname'), '#!/usr/bin/env bash\n[[ ${1-} == -s ]] && echo Linux || echo x86_64\n');
   await chmod(path.join(fakeBin, 'uname'), 0o755);
-  await writeFile(path.join(fakeBin, 'stat'), '#!/usr/bin/env bash\nset -eu\n[[ ${1-} == -c && ${2-} == %a ]] || exit 2\n/usr/bin/stat -f %Lp "$3"\n');
+  const nativeModeStat = process.platform === 'darwin' ? '/usr/bin/stat -f %Lp' : '/usr/bin/stat -c %a';
+  await writeFile(path.join(fakeBin, 'stat'), `#!/usr/bin/env bash\nset -eu\n[[ \${1-} == -c && \${2-} == %a ]] || exit 2\n${nativeModeStat} "\$3"\n`);
   await chmod(path.join(fakeBin, 'stat'), 0o755);
   const profileTempModeLog = path.join(root, 'profile-temp-modes.log');
-  await writeFile(path.join(fakeBin, 'mktemp'), `#!/usr/bin/env bash\nset -eu\ncreated=$(/usr/bin/mktemp "$@")\ncase "$created" in "$HOME/.profile.ned."*|"$HOME/.zprofile.ned."*|"$HOME/.bashrc.ned."*) mode=$(/usr/bin/stat -f %Lp "$created"); printf 'created:%s\\n' "$mode" >>'${profileTempModeLog}';; esac\nprintf '%s\\n' "$created"\n`);
+  await writeFile(path.join(fakeBin, 'mktemp'), `#!/usr/bin/env bash\nset -eu\ncreated=$(/usr/bin/mktemp "$@")\ncase "$created" in "$HOME/.profile.ned."*|"$HOME/.zprofile.ned."*|"$HOME/.bashrc.ned."*) mode=$(${nativeModeStat} "$created"); printf 'created:%s\\n' "$mode" >>'${profileTempModeLog}';; esac\nprintf '%s\\n' "$created"\n`);
   await chmod(path.join(fakeBin, 'mktemp'), 0o755);
-  await writeFile(path.join(fakeBin, 'mv'), `#!/usr/bin/env bash\nset -eu\nsource=\${@: -2:1}\ndestination=\${@: -1}\ncase "$destination" in "$HOME/.profile"|"$HOME/.zprofile"|"$HOME/.bashrc") source_mode=$(/usr/bin/stat -f %Lp "$source"); if [[ -e "$destination" ]]; then destination_mode=$(/usr/bin/stat -f %Lp "$destination"); else destination_mode=600; fi; printf 'final:%s:%s\\n' "$source_mode" "$destination_mode" >>'${profileTempModeLog}'; [[ "$source_mode" == "$destination_mode" ]] || exit 91;; esac\nexec /bin/mv "$@"\n`);
+  await writeFile(path.join(fakeBin, 'mv'), `#!/usr/bin/env bash\nset -eu\nsource=\${@: -2:1}\ndestination=\${@: -1}\ncase "$destination" in "$HOME/.profile"|"$HOME/.zprofile"|"$HOME/.bashrc") source_mode=$(${nativeModeStat} "$source"); if [[ -e "$destination" ]]; then destination_mode=$(${nativeModeStat} "$destination"); else destination_mode=600; fi; printf 'final:%s:%s\\n' "$source_mode" "$destination_mode" >>'${profileTempModeLog}'; [[ "$source_mode" == "$destination_mode" ]] || exit 91;; esac\nexec /bin/mv "$@"\n`);
   await chmod(path.join(fakeBin, 'mv'), 0o755);
 
   let text = await readFile(productionInstaller, 'utf8');
