@@ -181,11 +181,13 @@ Examples of deployed work created through the NED workflow:
 
 ## Run evals
 
+The eval runner requires Python 3.11 or newer.
+
 ```bash
 python -m eval_runner.cli skills --markdown
 ```
 
-The eval runner discovers `EVAL.yaml`, creates isolated Hermes profile folders under `.eval-runs/`, optionally runs setup/teardown commands, invokes Hermes with the eval prompt when available, judges expectations into `result.json`, and aggregates HTML/Markdown reports.
+The eval runner discovers `EVAL.yaml`, creates permission-restricted isolated Hermes profile folders under `.eval-runs/`, optionally runs setup/teardown commands, invokes Hermes with the eval prompt and declared parameters/fixture, judges expectations into `result.json`, and aggregates HTML/Markdown reports. Use `--judge-command` to run judging through a separate Hermes-compatible command. Exit code `2` means a substantive eval failure; exit code `3` means runner/provider infrastructure failed and the eval result is inconclusive.
 The runner always invokes Hermes in one-shot mode; there is no offline/static pass mode because evals must verify the behavior of an actual isolated Hermes profile.
 
 ## License
