@@ -12,7 +12,7 @@ const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/ned-create/INSTALL.md');
 const syntheticSecret = 'synthetic-daytona-test-key';
-const revision = '3d2eac5ede1bebf7937e1aaa86db4f0bed1da94f';
+const revision = '99c0fb95821c9fe9eb82104e4caca64e88848e62';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
 
 async function sha256(file) {
