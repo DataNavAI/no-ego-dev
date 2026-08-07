@@ -89,7 +89,7 @@ export function createNedApp({ provider, stateStore }) {
       }
     },
 
-    async chat(prompt) {
+    async chat(prompt, modelConnection) {
       if (!prompt || !prompt.trim()) {
         throw new Error('A prompt is required: ned chat "What should NED build?"');
       }
@@ -97,27 +97,39 @@ export function createNedApp({ provider, stateStore }) {
       if (!state) {
         throw new Error('No NED workspace found. Run ned create first.');
       }
+      if (!modelConnection || modelConnection.providerId !== state.modelProvider) {
+        throw new Error('A matching local ChatGPT OAuth connection is required.');
+      }
+      await provider.updateModelCredential(state, modelConnection);
       await provider.start(state.workspaceId);
       return provider.chat(state.workspaceId, state.profile, prompt.trim());
     },
 
-    async doctor() {
+    async doctor(modelConnection) {
       const state = await stateStore.load();
       if (!state) {
         throw new Error('No NED workspace found. Run ned create first.');
       }
+      if (!modelConnection || modelConnection.providerId !== state.modelProvider) {
+        throw new Error('A matching local ChatGPT OAuth connection is required.');
+      }
+      await provider.updateModelCredential(state, modelConnection);
       await provider.start(state.workspaceId);
-      const plan = createNedPlan({ modelProvider: state.modelProvider || 'openrouter' });
+      const plan = createNedPlan({ modelProvider: state.modelProvider || 'openai-codex' });
       return provider.doctor({ id: state.workspaceId, name: state.workspaceName }, plan);
     },
 
-    async reset() {
+    async reset(modelConnection) {
       const state = await stateStore.load();
       if (!state) {
         throw new Error('No NED workspace found. Run ned create first.');
       }
       const workspace = { id: state.workspaceId, name: state.workspaceName };
-      const plan = createNedPlan({ modelProvider: state.modelProvider || 'openrouter' });
+      if (!modelConnection || modelConnection.providerId !== state.modelProvider) {
+        throw new Error('A matching local ChatGPT OAuth connection is required.');
+      }
+      await provider.updateModelCredential(state, modelConnection);
+      const plan = createNedPlan({ modelProvider: state.modelProvider || 'openai-codex' });
       await provider.start(state.workspaceId);
       await provider.bootstrap(workspace, plan);
       return provider.doctor(workspace, plan);

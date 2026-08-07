@@ -1,8 +1,20 @@
-# Technical Specification: Daytona NED CLI v1
+# Technical Specification: Daytona NED CLI V1
 
-Contract version: 3.0
-Status: release candidate pending immutable external verification
-Last updated: 2026-08-06
+Contract version: 4.0
+Status: candidate implementation pending exact lifecycle verification
+Last updated: 2026-08-07
+
+## Verified upstream contracts
+
+Design was checked against the current official Hermes provider documentation and exact pinned Hermes commit `3ef6bbd201263d354fd83ec55b3c306ded2eb72a` before implementation.
+
+- Hermes provider ID: `openai-codex`; API mode: Codex Responses; base URL: `https://chatgpt.com/backend-api/codex`.
+- Device start: `POST https://auth.openai.com/api/accounts/deviceauth/usercode` with Hermes Codex client ID.
+- Browser: fixed `https://auth.openai.com/codex/device`; user enters the short code.
+- Poll: `POST https://auth.openai.com/api/accounts/deviceauth/token` using `device_auth_id` and `user_code`.
+- Exchange/refresh: `POST https://auth.openai.com/oauth/token`; authorization-code exchange uses fixed `https://auth.openai.com/deviceauth/callback`; refresh grant may rotate the refresh token.
+- Hermes resolves singleton `providers.openai-codex.tokens` or compatible device-code pool entries, refreshes expiring JWT access tokens, and atomically persists rotated credentials.
+- Device authorization is not loopback OAuth. NED must not bind a callback port or trust a response-supplied verification URL.
 
 ## Architecture
 
@@ -10,76 +22,88 @@ Last updated: 2026-08-06
 checksum-pinned one-line command
   -> scripts/install.sh
      -> private pinned Node runtime + commit-addressed NED source
-     -> transactional generation + atomic current pointer + launcher
   -> ned CLI
-     -> OpenRouter loopback PKCE or injected headless credential
+     -> safe local Hermes-compatible auth resolver
+        -> reuse owner-only HERMES_HOME/auth.json when unambiguous
+        -> otherwise fixed ChatGPT device flow
+        -> refresh locally and atomically preserve rotation
      -> Daytona SDK 0.200.1
-        -> organization Secret (egress restricted to openrouter.ai)
-        -> private persistent Daytona Sandbox
-        -> checksum-pinned Hermes install + NED profile archive
-     -> $HOME/.ned/state.json (non-secret ownership only)
+        -> organization Secret: current access token, host chatgpt.com
+        -> Sandbox env: opaque Secret placeholder only
+        -> remote Hermes auth.json: placeholder + non-secret refresh sentinel
+        -> private persistent Sandbox
+        -> checksum-pinned Hermes + NED profile
+     -> $HOME/.ned/state.json (non-secret exact ownership only)
 ```
 
-Daytona names the compute unit a Sandbox. User-facing copy may call the resulting product a private NED VPS, provided this mapping remains explicit.
+The local official Hermes-compatible auth store is the sole refresh/revocation authority. NED sends no refresh token to Daytona. Before every remote inference/health/repair, it resolves a sufficiently fresh local access token and updates the exact Secret. The Sandbox never sees plaintext Secret value; Daytona substitutes its opaque placeholder only at egress to `chatgpt.com`.
 
 ## Fixed plan
 
-- Daytona SDK: `@daytona/sdk` 0.200.1 from the committed lockfile.
-- Image: `ubuntu:24.04`; language toolbox: TypeScript.
+- Daytona SDK: `@daytona/sdk` 0.200.1 from committed lockfile.
+- Image: `ubuntu:24.04`; TypeScript toolbox.
 - Resources: 2 CPU, 4 GiB memory, 20 GiB disk.
-- Target/region: Daytona automatic selection; no user choice in v1.
-- Private, persistent, non-ephemeral; auto-stop 15 minutes, auto-archive 10,080 minutes, auto-delete disabled.
-- Labels: `app=ned`, `managedBy=ned-cli`; lifecycle verification adds one unique non-secret candidate label without changing product defaults.
-- Hermes commit: `3ef6bbd201263d354fd83ec55b3c306ded2eb72a`; its installer bytes must match the source constant before execution.
-- Model: OpenRouter authorization, Hermes provider `openrouter`, pinned default model in the plan.
+- Automatic target; private, persistent, non-ephemeral; auto-stop 15 minutes; auto-archive 10,080 minutes; auto-delete disabled.
+- Labels: `app=ned`, `managedBy=ned-cli`; lifecycle adds a unique non-secret candidate label through its controlled harness.
+- Hermes commit: `3ef6bbd201263d354fd83ec55b3c306ded2eb72a`; installer bytes must match the pinned SHA-256 before execution.
+- Hermes provider/model: `openai-codex` / `gpt-5.6-sol`.
 
 ## CLI contract
 
-- `ned create [--dry-run --json]`: checks local state, lists NED-managed Daytona Sandboxes directly, authorizes OpenRouter, creates/bootstraps/verifies one instance, then atomically saves state.
-- `ned chat "prompt"`: validates non-empty prompt, starts the saved Sandbox if needed, executes one shell-quoted Hermes one-shot with a bounded timeout, and prints only model output.
-- `ned doctor`: starts if needed and verifies Sandbox, Hermes, profile, and inference.
-- `ned repair`: starts, reinstalls the pinned profile/runtime configuration, and reruns health. `ned reset` remains a compatibility alias.
-- `ned destroy --yes`: deletes the exact state-owned Sandbox and model secret, reads both back directly, and clears local state only after both return not found. Missing local state is idempotent success.
+- `ned create [--dry-run --json]`: default provider is `openai-codex`; checks ownership; resolves local OAuth; creates Secret/Sandbox; bootstraps; verifies; atomically saves state.
+- `ned chat "prompt"`: resolves/refreshes OAuth; updates exact Secret; starts the saved Sandbox; executes bounded Hermes one-shot.
+- `ned doctor`: resolves/refreshes OAuth; updates Secret; starts and checks Sandbox, Hermes, profile, inference.
+- `ned repair`: same credential preflight, reinstalls pinned profile/runtime configuration, reruns health. `reset` aliases repair.
+- `ned destroy --yes`: deletes exact Sandbox/Secret, directly proves both absent, then clears local state. No OAuth is required to destroy.
 
-There is no generic command, arbitrary host, arbitrary environment-variable name, or arbitrary model API.
+No generic command, arbitrary host, arbitrary environment-variable name, default model chooser, OpenRouter dependency, or default API-key prompt exists.
 
-## Secret boundaries
+## Local OAuth implementation
 
-- Daytona key: launcher environment only; macOS may source it from Keychain service `no-ego-dev/daytona`, account `DAYTONA_API_KEY`; otherwise use a pre-injected environment or hidden `/dev/tty` input. Never argv or URL.
-- OpenRouter: loopback callback bound to `127.0.0.1`, random callback path, S256 PKCE, bounded timeout, HTTPS code exchange, no key output. A pre-authorized environment key is automation fallback.
-- Daytona Secret: unique generated name, host allowlist `openrouter.ai`, identifier persisted only for exact cleanup. Plaintext is consumed in-process and never serialized.
-- State directory/file modes: `0700`/`0600`; write via same-directory temporary file and atomic rename.
+1. Candidate store is `HERMES_HOME/auth.json` when explicitly set; otherwise the normal Hermes auth path is considered. New device credentials use a dedicated Hermes-compatible local profile path.
+2. Reuse requires an auth file under user home that is regular, owner-owned, mode `0600` or stricter, with non-symlink user-owned parent directories that are not group/world writable.
+3. Reuse requires one unambiguous refreshable `openai-codex` credential. Unsafe, malformed, ambiguous, exhausted, or unsupported entries are not copied.
+4. Access JWTs expiring inside the bounded remote-operation window are refreshed at the official token endpoint. Rotated access/refresh tokens update the same auth record through a same-directory `0600` temporary file, fsync, and atomic rename under a NED authorization lock.
+5. New device flow opens only the fixed ChatGPT device URL. Response verification URLs are ignored; no listener exists. Cancel/timeout produces no auth file. Restart creates a new transaction.
+6. Raw tokens stay in closures and request bodies, are single-consumption values at the Daytona boundary, and are omitted from serialization/errors/output.
+
+## Remote Secret and placeholder implementation
+
+- Secret name: generated `ned_model_openai_codex_<random>`; exact ID/name stored locally for cleanup.
+- Secret host allowlist: only `chatgpt.com`.
+- Sandbox mapping: `NED_OPENAI_CODEX_ACCESS_TOKEN` references the Secret name and receives an opaque placeholder.
+- Bootstrap writes the environment placeholder—not plaintext—to `$HOME/.hermes/profiles/ned/auth.json` with mode `0600`, configures `openai-codex`, and sets a non-secret `ned-local-refresh-managed` sentinel as remote refresh token.
+- Opaque placeholders are not JWTs, so Hermes does not attempt proactive remote refresh. Local NED refreshes and calls `SecretService.update(secretId, {value, hosts})` before each remote operation. Identity and host scope are verified from the update result.
+- If a remote call receives authorization failure, it fails closed; no refresh token is available remotely.
+
+## Optional provider extension points
+
+Explicit advanced flags may later bind Claude Max (`anthropic` OAuth), Nous Portal (`nous`), or GitHub Copilot (`copilot`/`copilot-acp`) to the same `modelConnection` interface. Each needs its own safe local resolver, exact Daytona host scope, placeholder runtime contract, refresh/revocation tests, and destroy proof. Direct API-key fallback is allowed only through hidden input when safely supported. None is prompted during default first run.
+
+## Parked architecture
+
+Hosted browser onboarding, AWS provisioning/deployment, dashboards, domains, multi-cloud compute, and a default provider chooser remain future scope. Existing browser/AWS code is not a V1 deployment or acceptance surface.
 
 ## Installer invariants
 
 - Prerequisites: bash, curl, tar, and sha256sum or shasum only.
-- Supported: Darwin/Linux x64/arm64; fail closed elsewhere.
-- Download and verify all archives before mutating user-home installation state.
-- Pin Node version and all four archive digests; pin NED source revision/archive digest.
-- Invoke private npm with private Node first on PATH; lockfile install uses `npm ci --omit=dev --ignore-scripts`.
-- Serialize with a stable per-user lock independent of `TMPDIR`; publish lock ownership atomically.
-- Stage a complete generation on destination filesystem; validate runtime, app tree, lockfile, launcher, and manifest hashes; atomically switch `current`; roll back activation on failure.
-- HUP/INT/TERM cleanup owns only its lock and returns 129/130/143.
-- Profile rewrites use unpredictable same-directory `0600` temporary files, preserve exact prior mode, and atomically rename.
-- First-run create completion is separate from install completion, so a failed create retries without redownload.
+- Darwin/Linux x64/arm64; fail closed elsewhere.
+- Verify every archive before mutation; pin Node and NED source revisions/digests.
+- Private npm/Node only; `npm ci --omit=dev --ignore-scripts`.
+- Stable per-user lock, complete same-filesystem generation, manifest validation, atomic activation, rollback, signal-safe cleanup.
+- Owner-only credential/state files despite caller umask.
+- Failed create retries without redownload.
 
-## Daytona API behavior relied upon
+## Failure and cleanup
 
-SDK 0.200.1 exposes async `Daytona.list({labels})`, `create(...,{timeout})`, `get`, Sandbox `start/delete`, and organization `secret.create/get/delete`. List results expose ID, name, labels, state, and target. Daytona Secret values are write-only; Sandboxes receive an opaque placeholder and Daytona substitutes plaintext only for allowed hosts. Create/delete/start/command calls use explicit bounded timeouts.
-
-## Failure/recovery rules
-
-- Local state present: do not create another Sandbox; cleanup-pending state requires destroy first.
-- Local state absent but any NED-managed remote Sandbox present: fail closed and require exact ownership reconciliation.
-- Secret created but Sandbox create fails: delete and verify; if cleanup fails, persist non-secret secret ID/name as cleanup-pending.
-- Sandbox bootstrap/health fails: delete exact Sandbox/secret; persist cleanup-pending only when compensation fails.
-- Destroy must prove absence through direct `get` readback; delete completion alone is insufficient.
-- Local Daytona credential is not deleted by destroy; the user can create again. NED-owned OpenRouter Daytona Secret and `$HOME/.ned/state.json` are deleted.
-
-## Parked architecture
-
-Browser HTTP service, AWS adapters, hosted identity, Cognito, App Runner, dashboards, domains, multi-cloud, provider registry expansion, and browser secret vaults are outside v1 and must not be deployed or described as primary.
+- Local state present blocks duplicate create; cleanup-pending requires destroy.
+- Local absent plus any managed remote Sandbox blocks mutation.
+- Secret-created/Sandbox-create failure deletes and directly verifies exact Secret absence; unresolved cleanup saves non-secret recovery metadata.
+- Bootstrap/health failure compensates exact Sandbox/Secret.
+- Destroy requires direct `get` not-found for both resources before local clear.
+- OAuth cancel/timeout/restart cannot create compute or persist partial auth.
+- User revocation remains effective through the local Hermes auth authority; refresh failure blocks remote mutation.
 
 ## Verification
 
-Run bare after final edits: `npm run check`, `npm test`, `python -m pytest`, `npm run pack:check`, `npm audit --omit=dev`, `git diff --check`, and the repository leak scanner. Clean-environment and external lifecycle evidence must bind to one immutable committed candidate and include direct Daytona preflight/final readback.
+After final edits run bare: `npm run check`, `npm test`, `python -m pytest`, `npm run pack:check`, `npm audit --omit=dev`, `git diff --check`, Gitleaks, clean installers, CI, and one immutable Daytona lifecycle with direct preflight/final readback.

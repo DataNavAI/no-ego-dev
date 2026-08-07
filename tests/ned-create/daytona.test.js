@@ -2,8 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Daytona } from '@daytona/sdk';
 
+import { createModelConnection } from '../../src/model-providers.js';
 import { createDaytonaProvider } from '../../src/providers/daytona.js';
 import { NED_PLAN } from '../../src/plan.js';
+
+function codexConnection(value = 'synthetic-codex-access') {
+  return createModelConnection({ providerId: 'openai-codex', method: 'oauth-device-code', value });
+}
 
 test('installed Daytona SDK exposes the SecretService contract used for cleanup', () => {
   const client = new Daytona({ apiKey: 'contract-shape-only' });
@@ -12,7 +17,7 @@ test('installed Daytona SDK exposes the SecretService contract used for cleanup'
   assert.equal(typeof client.deleteSecret, 'undefined');
 });
 
-test('Daytona provider creates the fixed private persistent sandbox with an egress-scoped OpenRouter secret', async () => {
+test('Daytona provider creates the fixed private persistent sandbox with an egress-scoped ChatGPT OAuth secret', async () => {
   const observed = {};
   class FakeDaytona {
     constructor(config) {
@@ -33,21 +38,21 @@ test('Daytona provider creates the fixed private persistent sandbox with an egre
   const provider = createDaytonaProvider({
     apiKey: 'daytona-secret',
     DaytonaClass: FakeDaytona,
-    secretNameFactory: () => 'ned_openrouter_test',
+    secretNameFactory: () => 'ned_model_openai_codex_test',
   });
 
-  const workspace = await provider.createWorkspace(NED_PLAN, { openRouterApiKey: 'openrouter-secret' });
+  const workspace = await provider.createWorkspace(NED_PLAN, { modelConnection: codexConnection() });
 
   assert.equal(workspace.id, 'sandbox-123');
   assert.equal(workspace.name, 'ned-product-partner');
-  assert.equal(workspace.nedSecretName, 'ned_openrouter_test');
+  assert.equal(workspace.nedSecretName, 'ned_model_openai_codex_test');
   assert.equal(workspace.nedSecretId, 'secret-1');
   assert.deepEqual(observed.config, { apiKey: 'daytona-secret' });
   assert.deepEqual(observed.secret, {
-    name: 'ned_openrouter_test',
-    value: 'openrouter-secret',
-    description: 'OpenRouter access for NED',
-    hosts: ['openrouter.ai'],
+    name: 'ned_model_openai_codex_test',
+    value: 'synthetic-codex-access',
+    description: 'ChatGPT access for NED',
+    hosts: ['chatgpt.com'],
   });
   assert.deepEqual(observed.create, {
     name: 'ned-product-partner',
@@ -60,7 +65,32 @@ test('Daytona provider creates the fixed private persistent sandbox with an egre
     autoArchiveInterval: 10080,
     autoDeleteInterval: -1,
     labels: { app: 'ned', managedBy: 'ned-cli' },
-    secrets: { OPENROUTER_API_KEY: 'ned_openrouter_test' },
+    secrets: { NED_OPENAI_CODEX_ACCESS_TOKEN: 'ned_model_openai_codex_test' },
+  });
+});
+
+test('Daytona refreshes the exact owned OAuth Secret without changing its identity or host scope', async () => {
+  const observed = {};
+  class FakeDaytona {
+    constructor() {
+      this.secret = {
+        async update(id, params) {
+          observed.update = { id, params };
+          return { id, name: 'ned_model_openai_codex_test' };
+        },
+      };
+    }
+  }
+  const provider = createDaytonaProvider({ apiKey: 'daytona-only', DaytonaClass: FakeDaytona });
+  await provider.updateModelCredential({
+    secretId: 'secret-1',
+    secretName: 'ned_model_openai_codex_test',
+    modelProvider: 'openai-codex',
+  }, codexConnection('refreshed-codex-access'));
+
+  assert.deepEqual(observed.update, {
+    id: 'secret-1',
+    params: { value: 'refreshed-codex-access', hosts: ['chatgpt.com'] },
   });
 });
 
@@ -100,8 +130,10 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
   assert.match(observed.execute.command, /--non-interactive/);
   assert.match(observed.execute.command, /hermes profile install \/tmp\/ned-profile --name ned --force --yes/);
   assert.doesNotMatch(observed.execute.command, /hermes profile update/);
-  assert.match(observed.execute.command, /hermes --profile ned config set model\.provider openrouter/);
-  assert.match(observed.execute.command, /hermes --profile ned config set model\.default openai\/gpt-5\.5/);
+  assert.match(observed.execute.command, /hermes --profile ned config set model\.provider openai-codex/);
+  assert.match(observed.execute.command, /hermes --profile ned config set model\.default gpt-5\.6-sol/);
+  assert.match(observed.execute.command, /os\.environ\["NED_OPENAI_CODEX_ACCESS_TOKEN"\]/);
+  assert.doesNotMatch(observed.execute.command, /synthetic-codex-access/);
   assert.equal(observed.execute.timeout, 900);
   assert.deepEqual(result, { hermesVersion: 'v2026.7.20' });
 });
@@ -248,11 +280,11 @@ test('Daytona create removes its unique secret when sandbox creation fails', asy
   const provider = createDaytonaProvider({
     apiKey: 'daytona-only',
     DaytonaClass: FakeDaytona,
-    secretNameFactory: () => 'ned_openrouter_cleanup',
+    secretNameFactory: () => 'ned_model_openai_codex_cleanup',
   });
 
   await assert.rejects(
-    () => provider.createWorkspace(NED_PLAN, { openRouterApiKey: 'openrouter-secret' }),
+    () => provider.createWorkspace(NED_PLAN, { modelConnection: codexConnection() }),
     /sandbox create failed/,
   );
   assert.deepEqual(calls, [
@@ -275,15 +307,15 @@ test('Daytona create records recovery state when secret delete resolves but read
   const provider = createDaytonaProvider({
     apiKey: 'daytona-only',
     DaytonaClass: FakeDaytona,
-    secretNameFactory: () => 'ned_openrouter_stillpresent',
+    secretNameFactory: () => 'ned_model_openai_codex_stillpresent',
   });
 
   await assert.rejects(
-    () => provider.createWorkspace(NED_PLAN, { openRouterApiKey: 'openrouter-secret' }),
+    () => provider.createWorkspace(NED_PLAN, { modelConnection: codexConnection() }),
     (error) => error instanceof AggregateError
       && /readback did not prove absence/.test(error.message)
       && error.recoveryState.secretId === 'secret-still-present'
-      && error.recoveryState.secretName === 'ned_openrouter_stillpresent',
+      && error.recoveryState.secretName === 'ned_model_openai_codex_stillpresent',
   );
 });
 
@@ -300,13 +332,13 @@ test('Daytona create exposes non-secret recovery metadata when secret cleanup al
   const provider = createDaytonaProvider({
     apiKey: 'daytona-secret',
     DaytonaClass: FakeDaytona,
-    secretNameFactory: () => 'ned_openrouter_recovery',
+    secretNameFactory: () => 'ned_model_openai_codex_recovery',
   });
 
   await assert.rejects(
-    () => provider.createWorkspace(NED_PLAN, { openRouterApiKey: 'openrouter-secret' }),
+    () => provider.createWorkspace(NED_PLAN, { modelConnection: codexConnection() }),
     (error) => error instanceof AggregateError
       && error.recoveryState.secretId === 'secret-recovery'
-      && error.recoveryState.secretName === 'ned_openrouter_recovery',
+      && error.recoveryState.secretName === 'ned_model_openai_codex_recovery',
   );
 });

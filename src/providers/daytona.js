@@ -1,6 +1,6 @@
 import { Daytona } from '@daytona/sdk';
 import { randomUUID } from 'node:crypto';
-import { createModelConnection, getModelProviderRuntime } from '../model-providers.js';
+import { getModelProviderRuntime } from '../model-providers.js';
 
 const HERMES_COMMIT = '3ef6bbd201263d354fd83ec55b3c306ded2eb72a';
 const HERMES_INSTALLER_SHA256 = 'c5ba7e89627577fab914514736ecfb3359b66956ca00199bfef616ca35953cb9';
@@ -17,7 +17,7 @@ export function createDaytonaProvider({
   apiKey,
   DaytonaClass = Daytona,
   profileArchive,
-  secretNameFactory = (providerId) => `ned_model_${providerId}_${randomUUID().replaceAll('-', '')}`,
+  secretNameFactory = (providerId) => `ned_model_${providerId.replaceAll(/[^a-z0-9]/g, '_')}_${randomUUID().replaceAll('-', '')}`,
 } = {}) {
   if (!apiKey) {
     throw new Error('Daytona authorization is required. Set DAYTONA_API_KEY in your shell; do not paste it into chat.');
@@ -34,9 +34,7 @@ export function createDaytonaProvider({
     },
 
     async createWorkspace(plan, credentials = {}) {
-      const modelConnection = credentials.modelConnection || (credentials.openRouterApiKey
-        ? createModelConnection({ providerId: 'openrouter', method: 'api-key', value: credentials.openRouterApiKey })
-        : null);
+      const modelConnection = credentials.modelConnection || null;
       if (!modelConnection) {
         throw new Error('Model-provider authorization is required before compute can be created.');
       }
@@ -46,7 +44,7 @@ export function createDaytonaProvider({
       const modelProvider = getModelProviderRuntime(modelConnection.providerId);
 
       const secretName = secretNameFactory(modelConnection.providerId);
-      if (!/^ned_(?:openrouter|model_[a-z]+)_[A-Za-z0-9]+$/.test(secretName)) {
+      if (!/^ned_model_[a-z0-9_]+_[A-Za-z0-9]+$/.test(secretName)) {
         throw new Error('Invalid generated Daytona secret name');
       }
       const secret = await client.secret.create({
@@ -109,6 +107,24 @@ export function createDaytonaProvider({
       }
     },
 
+    async updateModelCredential(state, modelConnection) {
+      if (!state?.secretId || !state?.secretName) {
+        throw new Error('Saved NED state does not identify the exact model credential.');
+      }
+      if (modelConnection?.providerId !== state.modelProvider) {
+        throw new Error('Model-provider connection does not match saved NED ownership state.');
+      }
+      const modelProvider = getModelProviderRuntime(modelConnection.providerId);
+      const updated = await client.secret.update(state.secretId, {
+        value: modelConnection.consumeCredential(),
+        hosts: modelProvider.allowedHosts,
+      });
+      if (updated.id !== state.secretId || updated.name !== state.secretName) {
+        throw new Error('Daytona model credential update did not preserve exact owned identity.');
+      }
+      return { id: updated.id, name: updated.name };
+    },
+
     async bootstrap(workspace, plan) {
       if (!profileArchive) {
         throw new Error('NED profile archive builder is not configured');
@@ -126,8 +142,28 @@ export function createDaytonaProvider({
         'rm -rf /tmp/ned-profile && mkdir -p /tmp/ned-profile',
         'tar -xzf /tmp/ned-profile.tgz -C /tmp/ned-profile',
         `hermes profile install /tmp/ned-profile --name ${plan.profile} --force --yes`,
-        `hermes --profile ${plan.profile} config set model.provider ${plan.hermesModelProvider || 'openrouter'}`,
-        `hermes --profile ${plan.profile} config set model.default ${plan.model || 'openai/gpt-5.5'}`,
+        `hermes --profile ${plan.profile} config set model.provider ${plan.hermesModelProvider || 'openai-codex'}`,
+        `hermes --profile ${plan.profile} config set model.default ${plan.model || 'gpt-5.6-sol'}`,
+        `profile_dir="$HOME/.hermes/profiles/${plan.profile}"`,
+        'install -d -m 700 "$profile_dir"',
+        'NED_PROFILE_DIR="$profile_dir" python3 - <<\'PY\'',
+        'import json, os, pathlib, tempfile',
+        'root = pathlib.Path(os.environ["NED_PROFILE_DIR"])',
+        'token = os.environ["NED_OPENAI_CODEX_ACCESS_TOKEN"]',
+        'payload = {"version": 1, "active_provider": "openai-codex", "providers": {"openai-codex": {"tokens": {"access_token": token, "refresh_token": "ned-local-refresh-managed"}, "auth_mode": "chatgpt"}}}',
+        'fd, temporary = tempfile.mkstemp(prefix=".auth.json.ned-", dir=root)',
+        'try:',
+        '    os.fchmod(fd, 0o600)',
+        '    with os.fdopen(fd, "w", encoding="utf-8") as handle:',
+        '        json.dump(payload, handle, separators=(",", ":"))',
+        '        handle.write("\\n")',
+        '        handle.flush()',
+        '        os.fsync(handle.fileno())',
+        '    os.replace(temporary, root / "auth.json")',
+        'finally:',
+        '    try: os.unlink(temporary)',
+        '    except FileNotFoundError: pass',
+        'PY',
         `hermes profile info ${plan.profile}`,
       ].join('\n');
       const result = await sandbox.process.executeCommand(command, undefined, undefined, 900);

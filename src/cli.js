@@ -1,6 +1,6 @@
 import { createNedApp } from './app.js';
-import { authorizeOpenRouter } from './auth/openrouter.js';
-import { createModelConnection, getModelProviderRuntime, selectModelCredential } from './model-providers.js';
+import { authorizeOpenAICodex } from './auth/openai-codex.js';
+import { getModelProviderRuntime } from './model-providers.js';
 import { createDryRunPlan } from './plan.js';
 import { createProfileArchive } from './profile-archive.js';
 import { createDaytonaProvider } from './providers/daytona.js';
@@ -25,9 +25,9 @@ function flagValue(flags, name) {
 }
 
 function validateV1ModelProvider(flags, io) {
-  const providerId = flagValue(flags, '--model-provider') || 'openrouter';
-  if (providerId !== 'openrouter') {
-    io.error('NED V1 supports only OpenRouter. Additional model providers are parked for a later release.');
+  const providerId = flagValue(flags, '--model-provider') || 'openai-codex';
+  if (providerId !== 'openai-codex') {
+    io.error('NED V1 defaults to ChatGPT OAuth. Optional provider integrations are available only through documented advanced extension points.');
     return null;
   }
   return providerId;
@@ -45,7 +45,11 @@ export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
   const env = dependencies.env || process.env;
   const appFactory = dependencies.appFactory || defaultAppFactory;
-  const getOpenRouterKey = dependencies.getOpenRouterKey || authorizeOpenRouter;
+  const getModelConnection = dependencies.getModelConnection || ((options = {}) => authorizeOpenAICodex({
+    env,
+    io,
+    ...options,
+  }));
   // Unit-level dependency injection must not accidentally use a developer's real telemetry config.
   const telemetry = dependencies.telemetry
     || (Object.keys(dependencies).length === 0 ? createFileTelemetry() : NOOP_TELEMETRY);
@@ -136,21 +140,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
     try {
       const provider = getModelProviderRuntime(providerId);
-      let selectedCredential = selectModelCredential({ providerId, env });
-      if (!selectedCredential && providerId === 'openrouter') {
-        io.log('Opening OpenRouter sign-in...');
-        selectedCredential = {
-          providerId,
-          method: 'oauth-pkce',
-          value: await getOpenRouterKey(),
-        };
-      }
-      if (!selectedCredential) {
-        capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
-        io.error(`${provider.label} authorization required. Use the secure model-provider connection for ${provider.label}, then rerun ned create --model-provider ${providerId}.`);
-        return 2;
-      }
-      const modelConnection = createModelConnection(selectedCredential);
+      const modelConnection = await getModelConnection();
       io.log(`Connecting ${provider.label} as your model provider...`);
       io.log('Creating your private NED workspace...');
       const app = await appFactory({ env });
@@ -180,8 +170,9 @@ export async function runCli(argv, io = console, dependencies = {}) {
       return 2;
     }
     try {
+      const modelConnection = await getModelConnection();
       const app = await appFactory({ env });
-      const response = await app.chat(prompt);
+      const response = await app.chat(prompt, modelConnection);
       capture(telemetry, TELEMETRY_EVENTS.chatCompleted, startedAt, 'success');
       io.log(response);
       return 0;
@@ -211,13 +202,13 @@ export async function runCli(argv, io = console, dependencies = {}) {
     try {
       const app = await appFactory({ env });
       if (command === 'doctor') {
-        const health = await app.doctor();
+        const health = await app.doctor(await getModelConnection());
         capture(telemetry, completedEvent, startedAt, health.ok ? 'success' : 'health_check_failed');
         io.log(health.ok ? `✓ NED is healthy: ${health.checks.join(', ')}` : 'NED is not healthy.');
         return health.ok ? 0 : 1;
       }
       if (command === 'repair' || command === 'reset') {
-        const health = await app.reset();
+        const health = await app.reset(await getModelConnection());
         capture(telemetry, completedEvent, startedAt, health.ok ? 'success' : 'health_check_failed');
         io.log(health.ok ? '✓ NED was reset and is healthy.' : 'NED reset completed but health checks failed.');
         return health.ok ? 0 : 1;

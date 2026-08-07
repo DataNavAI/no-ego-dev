@@ -5,9 +5,14 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createNedApp } from '../../src/app.js';
 import { runCli } from '../../src/cli.js';
+import { createModelConnection } from '../../src/model-providers.js';
 import { NED_PLAN } from '../../src/plan.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+function codexConnection(value = 'synthetic-codex-access') {
+  return createModelConnection({ providerId: 'openai-codex', method: 'oauth-device-code', value });
+}
 
 function runNed(args, env = {}) {
   return spawnSync(process.execPath, ['bin/ned.js', ...args], {
@@ -45,7 +50,7 @@ test('ned create dry-run asks no questions and selects the complete opinionated 
     region: 'auto',
     resources: { cpu: 2, memory: 4, disk: 20 },
     image: 'ubuntu:24.04',
-    modelProvider: 'openrouter',
+    modelProvider: 'openai-codex',
     hermesVersion: 'v2026.7.20',
     profile: 'ned',
     autoStopMinutes: 15,
@@ -55,11 +60,11 @@ test('ned create dry-run asks no questions and selects the complete opinionated 
   assert.equal(result.stderr, '');
 });
 
-test('v1 CLI fails closed when a non-OpenRouter model provider is requested', async () => {
+test('v1 CLI keeps optional providers out of the default ChatGPT OAuth journey', async () => {
   const dryRun = runNed(['create', '--dry-run', '--json', '--model-provider', 'anthropic']);
   assert.equal(dryRun.status, 2);
   assert.equal(dryRun.stdout, '');
-  assert.match(dryRun.stderr, /V1 supports only OpenRouter/);
+  assert.match(dryRun.stderr, /defaults to ChatGPT OAuth/);
 
   const stdout = [];
   const stderr = [];
@@ -72,7 +77,7 @@ test('v1 CLI fails closed when a non-OpenRouter model provider is requested', as
   });
   assert.equal(exitCode, 2);
   assert.equal(stdout.length, 0);
-  assert.match(stderr.join('\n'), /V1 supports only OpenRouter/);
+  assert.match(stderr.join('\n'), /defaults to ChatGPT OAuth/);
 });
 
 test('create provisions, bootstraps, verifies, and persists only non-secret workspace state', async () => {
@@ -221,10 +226,14 @@ test('create fails closed before provisioning when Daytona already has a managed
   );
 });
 
-test('chat wakes the saved workspace and returns the NED response', async () => {
+test('chat refreshes the exact remote model credential, wakes the saved workspace, and returns the NED response', async () => {
   const calls = [];
-  const state = { workspaceId: 'sandbox-123', profile: 'ned' };
+  const state = {
+    workspaceId: 'sandbox-123', profile: 'ned', modelProvider: 'openai-codex',
+    secretId: 'secret-1', secretName: 'ned_model_openai_codex_test',
+  };
   const provider = {
+    async updateModelCredential(saved, connection) { calls.push(['refresh', saved.secretId, connection.providerId]); },
     async start(workspaceId) { calls.push(['start', workspaceId]); },
     async chat(workspaceId, profile, prompt) {
       calls.push(['chat', workspaceId, profile, prompt]);
@@ -236,16 +245,17 @@ test('chat wakes the saved workspace and returns the NED response', async () => 
     stateStore: { async load() { return state; } },
   });
 
-  const response = await app.chat('Build the smallest useful product.');
+  const response = await app.chat('Build the smallest useful product.', codexConnection());
 
   assert.equal(response, 'Shipped the smallest working slice.');
   assert.deepEqual(calls, [
+    ['refresh', 'secret-1', 'openai-codex'],
     ['start', 'sandbox-123'],
     ['chat', 'sandbox-123', 'ned', 'Build the smallest useful product.'],
   ]);
 });
 
-test('CLI create uses shell credentials without asking questions or printing secrets', async () => {
+test('CLI create uses a Hermes-compatible ChatGPT OAuth connection without printing secrets', async () => {
   const stdout = [];
   const stderr = [];
   let receivedCredentials;
@@ -253,10 +263,8 @@ test('CLI create uses shell credentials without asking questions or printing sec
     log: (message) => stdout.push(message),
     error: (message) => stderr.push(message),
   }, {
-    env: {
-      DAYTONA_API_KEY: 'daytona-secret',
-      OPENROUTER_API_KEY: 'openrouter-secret',
-    },
+    env: { DAYTONA_API_KEY: 'daytona-secret' },
+    getModelConnection: async () => codexConnection('codex-secret'),
     appFactory: async () => ({
       async create(credentials) {
         receivedCredentials = credentials;
@@ -266,22 +274,22 @@ test('CLI create uses shell credentials without asking questions or printing sec
   });
 
   assert.equal(exitCode, 0);
-  assert.equal(receivedCredentials.modelConnection.providerId, 'openrouter');
-  assert.equal(receivedCredentials.modelConnection.method, 'api-key');
-  assert.equal(JSON.stringify(receivedCredentials).includes('openrouter-secret'), false);
-  assert.equal(receivedCredentials.modelConnection.consumeCredential(), 'openrouter-secret');
+  assert.equal(receivedCredentials.modelConnection.providerId, 'openai-codex');
+  assert.equal(receivedCredentials.modelConnection.method, 'oauth-device-code');
+  assert.equal(JSON.stringify(receivedCredentials).includes('codex-secret'), false);
+  assert.equal(receivedCredentials.modelConnection.consumeCredential(), 'codex-secret');
   const combined = [...stdout, ...stderr].join('\n');
   assert.match(combined, /Your product partner is ready/);
   assert.equal(combined.includes('daytona-secret'), false);
-  assert.equal(combined.includes('openrouter-secret'), false);
+  assert.equal(combined.includes('codex-secret'), false);
 });
 
-test('CLI create uses OpenRouter PKCE when no OpenRouter key is in the shell', async () => {
+test('CLI create invokes exactly one ChatGPT OAuth resolver when no credential is injected', async () => {
   let oauthCalls = 0;
   let credentials;
   const exitCode = await runCli(['create'], { log() {}, error: assert.fail }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
-    getOpenRouterKey: async () => { oauthCalls += 1; return 'oauth-openrouter-key'; },
+    getModelConnection: async () => { oauthCalls += 1; return codexConnection('oauth-codex-access'); },
     appFactory: async () => ({
       async create(value) { credentials = value; return { ready: true }; },
     }),
@@ -289,9 +297,9 @@ test('CLI create uses OpenRouter PKCE when no OpenRouter key is in the shell', a
 
   assert.equal(exitCode, 0);
   assert.equal(oauthCalls, 1);
-  assert.equal(credentials.modelConnection.providerId, 'openrouter');
-  assert.equal(credentials.modelConnection.method, 'oauth-pkce');
-  assert.equal(credentials.modelConnection.consumeCredential(), 'oauth-openrouter-key');
+  assert.equal(credentials.modelConnection.providerId, 'openai-codex');
+  assert.equal(credentials.modelConnection.method, 'oauth-device-code');
+  assert.equal(credentials.modelConnection.consumeCredential(), 'oauth-codex-access');
 });
 
 test('CLI chat accepts the product request as arguments and prints only NED output', async () => {
@@ -302,6 +310,7 @@ test('CLI chat accepts the product request as arguments and prints only NED outp
     error: assert.fail,
   }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
+    getModelConnection: async () => codexConnection(),
     appFactory: async () => ({
       async chat(value) { prompt = value; return 'Working product delivered.'; },
     }),
@@ -314,8 +323,12 @@ test('CLI chat accepts the product request as arguments and prints only NED outp
 
 test('doctor wakes and verifies the saved NED workspace', async () => {
   const calls = [];
-  const state = { workspaceId: 'sandbox-123', profile: 'ned' };
+  const state = {
+    workspaceId: 'sandbox-123', profile: 'ned', modelProvider: 'openai-codex',
+    secretId: 'secret-1', secretName: 'ned_model_openai_codex_test',
+  };
   const provider = {
+    async updateModelCredential(saved, connection) { calls.push(['refresh', saved.secretId, connection.providerId]); },
     async start(id) { calls.push(['start', id]); },
     async doctor(workspace, plan) {
       calls.push(['doctor', workspace.id, plan.profile]);
@@ -324,16 +337,24 @@ test('doctor wakes and verifies the saved NED workspace', async () => {
   };
   const app = createNedApp({ provider, stateStore: { async load() { return state; } } });
 
-  const health = await app.doctor();
+  const health = await app.doctor(codexConnection());
 
   assert.equal(health.ok, true);
-  assert.deepEqual(calls, [['start', 'sandbox-123'], ['doctor', 'sandbox-123', 'ned']]);
+  assert.deepEqual(calls, [
+    ['refresh', 'secret-1', 'openai-codex'],
+    ['start', 'sandbox-123'],
+    ['doctor', 'sandbox-123', 'ned'],
+  ]);
 });
 
 test('reset reinstalls and verifies NED without replacing the workspace', async () => {
   const calls = [];
-  const state = { workspaceId: 'sandbox-123', workspaceName: 'ned-product-partner' };
+  const state = {
+    workspaceId: 'sandbox-123', workspaceName: 'ned-product-partner', modelProvider: 'openai-codex',
+    secretId: 'secret-1', secretName: 'ned_model_openai_codex_test',
+  };
   const provider = {
+    async updateModelCredential(saved, connection) { calls.push(['refresh', saved.secretId, connection.providerId]); },
     async start(id) { calls.push(['start', id]); },
     async bootstrap(workspace) { calls.push(['bootstrap', workspace.id]); },
     async doctor(workspace) { calls.push(['doctor', workspace.id]); return { ok: true }; },
@@ -344,10 +365,11 @@ test('reset reinstalls and verifies NED without replacing the workspace', async 
   };
   const app = createNedApp({ provider, stateStore });
 
-  const result = await app.reset();
+  const result = await app.reset(codexConnection());
 
   assert.equal(result.ok, true);
   assert.deepEqual(calls, [
+    ['refresh', 'secret-1', 'openai-codex'],
     ['start', 'sandbox-123'],
     ['bootstrap', 'sandbox-123'],
     ['doctor', 'sandbox-123'],
@@ -383,6 +405,7 @@ test('CLI dispatches doctor, repair, legacy reset, and explicit destroy without 
   const io = { log() {}, error: assert.fail };
   const dependencies = {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
+    getModelConnection: async () => codexConnection(),
     appFactory: async () => ({
       async doctor() { calls.push('doctor'); return { ok: true, checks: ['sandbox', 'hermes', 'ned-profile'] }; },
       async reset() { calls.push('reset'); return { ok: true }; },

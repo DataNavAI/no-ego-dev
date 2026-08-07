@@ -169,7 +169,8 @@ test('CLI emits lifecycle events at activation and primary journey completion bo
   const telemetry = { capture: async (event, properties) => events.push([event, properties.resultClass]) };
   const io = { log() {}, error() {} };
   const dependencies = {
-    env: { DAYTONA_API_KEY: 'daytona-public-test', OPENROUTER_API_KEY: 'openrouter-public-test' },
+    env: { DAYTONA_API_KEY: 'daytona-public-test' },
+    getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
     telemetry,
     appFactory: async () => ({
       async create() { return { ready: true }; },
@@ -197,6 +198,7 @@ test('CLI telemetry delivery is detached from product completion', async () => {
   const telemetry = { capture: async () => new Promise(() => {}) };
   const command = runCli(['chat', 'private prompt'], { log() {}, error: assert.fail }, {
     env: { DAYTONA_API_KEY: 'test' },
+    getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
     telemetry,
     appFactory: async () => ({ async chat() { return 'done'; } }),
   });
@@ -212,7 +214,8 @@ test('CLI emits create and chat failure classes without error messages', async (
   const events = [];
   const telemetry = { capture: async (event, properties) => events.push([event, properties]) };
   const dependencies = {
-    env: { DAYTONA_API_KEY: 'test', OPENROUTER_API_KEY: 'test' },
+    env: { DAYTONA_API_KEY: 'test' },
+    getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
     telemetry,
     appFactory: async () => ({
       async create() { throw new Error('workspace private-name failed'); },

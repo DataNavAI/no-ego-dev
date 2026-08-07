@@ -1,6 +1,6 @@
 import { getModelProviderRuntime } from './model-providers.js';
 
-export function createNedPlan({ modelProvider = 'openrouter' } = {}) {
+export function createNedPlan({ modelProvider = 'openai-codex' } = {}) {
   const runtime = getModelProviderRuntime(modelProvider);
   return {
     provider: 'daytona',

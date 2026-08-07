@@ -16,7 +16,7 @@ i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev
 
 필수 조건은 Daytona 계정과 `write:sandboxes`, `delete:sandboxes`, `manage:secrets` 권한입니다. macOS에서는 서비스 `no-ego-dev/daytona`, 계정 `DAYTONA_API_KEY`인 Keychain 항목을 우선 사용하고, 그 외에는 숨김 터미널 입력을 사용합니다. 비밀값을 채팅이나 명령 인자에 붙여넣지 마세요.
 
-`ned create`는 브라우저에서 OpenRouter PKCE 권한을 승인한 뒤 고정 사양의 비공개 영구 Daytona Sandbox를 만들고, 고정 버전의 Hermes와 NED를 설치하고, 실제 추론 상태를 확인합니다. “비공개 NED VPS”는 사용자용 표현이며 Daytona API/과금 용어는 Sandbox입니다.
+`ned create`는 호환되는 기존 Hermes ChatGPT OAuth 자격 증명을 안전하게 재사용하고, 없으면 고정된 ChatGPT 디바이스 인증 페이지를 한 번 엽니다. 그런 다음 고정 사양의 비공개 영구 Daytona Sandbox를 만들고, 고정 버전의 Hermes와 NED를 설치하고, 네이티브 `openai-codex` 공급자를 설정한 뒤 실제 추론 상태를 확인합니다. OpenRouter는 필요하지 않습니다. “비공개 NED VPS”는 사용자용 표현이며 Daytona API/과금 용어는 Sandbox입니다.
 
 ```bash
 ned chat "내 제품 아이디어의 가장 작은 유용한 버전을 만들어줘"
@@ -25,7 +25,7 @@ ned repair
 ned destroy --yes
 ```
 
-Sandbox는 15분 동안 유휴 상태이면 중지되고 7일 뒤 아카이브됩니다. `chat`과 `doctor`는 중지된 Sandbox를 다시 시작합니다. OpenRouter 모델 사용료는 별도입니다.
+Sandbox는 15분 동안 유휴 상태이면 중지되고 7일 뒤 아카이브됩니다. `chat`과 `doctor`는 중지된 Sandbox를 다시 시작합니다. OAuth 기반 모델 연결에는 ChatGPT 구독/사용 약관이 적용됩니다.
 
 제품 및 보안 계약은 [`docs/ned-create/PRD.md`](docs/ned-create/PRD.md), [`CUJ.md`](docs/ned-create/CUJ.md), [`TECH_SPEC.md`](docs/ned-create/TECH_SPEC.md)를 참고하세요.
 

@@ -16,7 +16,7 @@ i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev
 
 No sudo, git, system Node.js, or system npm is required. The command verifies the downloaded installer’s exact SHA-256 before execution; the installer then verifies pinned private runtime and NED downloads, reads the named macOS Keychain item or uses hidden TTY input for Daytona authorization, and runs `ned create`. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
 
-`ned create` asks no infrastructure questions. It opens OpenRouter authorization in your browser, creates one private persistent Daytona Sandbox (the compute unit behind the user-facing “private NED VPS”), installs pinned Hermes and NED, and runs an inference health check.
+`ned create` asks no infrastructure or model-selection questions. It securely reuses a compatible existing Hermes ChatGPT OAuth credential when available; otherwise it opens one fixed ChatGPT device-authorization page. It then creates one private persistent Daytona Sandbox (the compute unit behind the user-facing “private NED VPS”), installs pinned Hermes and NED, configures native provider `openai-codex`, and runs an inference health check. OpenRouter is not required.
 
 ```bash
 ned chat "Build the smallest useful version of my product idea"
@@ -45,7 +45,7 @@ The project ingest key is public ingestion configuration, not a PostHog personal
 Never provide an admin secret. `delete` removes the local random installation ID and collector
 configuration; the collector operator's published policy controls deletion of already-ingested data.
 
-The workspace stops after 15 idle minutes and archives after seven idle days. Stopped workspaces retain disk billing; archived containers retain restorable state without active sandbox billing. Model usage is billed separately by OpenRouter.
+The workspace stops after 15 idle minutes and archives after seven idle days. Stopped workspaces retain disk billing; archived containers retain restorable state without active sandbox billing. ChatGPT subscription/usage terms apply to the OAuth-backed model connection.
 
 See [`docs/ned-create/PRD.md`](docs/ned-create/PRD.md), [`CUJ.md`](docs/ned-create/CUJ.md), and [`TECH_SPEC.md`](docs/ned-create/TECH_SPEC.md) for the product and security contract.
 
