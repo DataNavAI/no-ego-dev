@@ -46,6 +46,8 @@ Primary journey completion: `browser_request_completed` after the first successf
 - Refresh-safe server-authoritative status; synchronous success alone is insufficient evidence.
 - Legal state transitions and session-owned idempotency.
 - Failure, retry, cancellation, resume, destroy, and session-abandonment cleanup.
+- Per-session single-flight admission across reconciliation, cleanup checks, idempotency, lifecycle reservation, and adapter submission.
+- Durable cleanup-pending retention and a production expiry sweeper independent of request traffic.
 - Mandatory owner-scoped secret deletion, supersession, expiry cleanup, and compensation of post-write failures.
 - Clear rejection after verified destroy/cleanup.
 
@@ -88,7 +90,7 @@ Development simulation is loopback-only, explicitly enabled, ephemeral, and bloc
 
 Automated: changed-file and full static checks, focused lifecycle/security tests, bare `npm run check`, bare `npm test`, Python `pytest`, `npm run pack:check`, clean package install/startup/health smoke, `npm audit --omit=dev`, and full-history gitleaks.
 
-Browser: real desktop and mobile evidence for queued/running/succeeded refresh, failure/retry/cancel, first request, resume, destroy, no horizontal overflow, and zero browser storage/URL leakage.
+Browser: real desktop and mobile evidence for queued/running/succeeded refresh, failure/retry/cancel including delayed cancel-versus-terminal-GET reconciliation, first request, resume, destroy, destination-heading keyboard focus, concise live status, no horizontal overflow, and zero browser storage/URL leakage.
 
 External production gate: exact-SHA create → health → first request → resume → second request → destroy plus direct Daytona zero-resource readback, zero orphaned secret records, monitoring/rollback evidence, and fresh independent exact-candidate approval.
 

@@ -39,21 +39,21 @@
 
         <section id="sign-in-panel">
           <p class="step-label">Step 1 of 5</p>
-          <h2>Sign in to begin</h2>
+          <h2 tabindex="-1">Sign in to begin</h2>
           <p>Your session owns every connection and provisioning job.</p>
           <button id="sign-in-button" class="primary">Sign in securely</button>
         </section>
 
         <section id="compute-panel" hidden>
           <p class="step-label">Step 2 of 5</p>
-          <h2>Connect compute</h2>
+          <h2 tabindex="-1">Connect compute</h2>
           <p>This authorization controls the isolated runtime only. It never authorizes model inference.</p>
           <button id="compute-button" class="primary">Connect Daytona compute</button>
         </section>
 
         <section id="model-panel" hidden>
           <p class="step-label">Step 3 of 5</p>
-          <h2>Connect a model provider</h2>
+          <h2 tabindex="-1">Connect a model provider</h2>
           <fieldset class="providers">
             <legend class="sr-only">Model provider</legend>
             <label><input type="radio" name="provider" value="openai" checked><span><strong>OpenAI</strong><small>Direct API</small></span></label>
@@ -72,7 +72,7 @@
 
         <section id="create-panel" hidden>
           <p class="step-label">Step 4 of 5</p>
-          <h2>Create your private NED</h2>
+          <h2 tabindex="-1">Create your private NED</h2>
           <p>The request is idempotent, session-bound, cancellable, and compensates on failure.</p>
           <button id="create-button" class="primary">Create NED</button>
           <button id="cancel-button" class="secondary" hidden>Cancel and clean up</button>
@@ -80,7 +80,7 @@
 
         <section id="request-panel" hidden>
           <p class="step-label">Step 5 of 5</p>
-          <h2>Send your first request</h2>
+          <h2 tabindex="-1">Send your first request</h2>
           <label for="first-message">What should NED help you build?</label>
           <textarea id="first-message" rows="4" maxlength="4000"></textarea>
           <button id="request-button" class="primary" disabled>Send request</button>

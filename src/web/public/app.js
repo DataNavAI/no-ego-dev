@@ -26,7 +26,7 @@ function setStatus(message, tone = 'normal') {
   status.classList.toggle('warning', tone === 'warning');
 }
 
-function showStep(step) {
+function showStep(step, { focus = true } = {}) {
   state.currentStep = step;
   panels.forEach((panel, index) => { panel.hidden = index !== step - 1; });
   steps.forEach((item, index) => {
@@ -34,6 +34,7 @@ function showStep(step) {
     item.classList.toggle('done', index < step - 1);
   });
   setStatus('');
+  if (focus) panels[step - 1]?.querySelector('h2')?.focus();
 }
 
 async function api(path, options = {}) {
@@ -103,6 +104,7 @@ function renderCompletedJob(job) {
       document.getElementById('destroy-button').disabled = true;
       document.getElementById('destroy-confirm').disabled = true;
       setStatus('NED destroyed and owned credentials revoked.');
+      panels[4].querySelector('h2')?.focus();
     } else {
       document.getElementById('destroy-button').disabled = false;
       state.destroyIdempotencyKey = null;
@@ -183,18 +185,36 @@ document.getElementById('create-button').addEventListener('click', async () => {
   }
 });
 
+async function reconcileAfterCancellationFailure(jobId) {
+  try {
+    const authoritative = await api(`/api/jobs/${encodeURIComponent(jobId)}`);
+    if (['queued', 'running'].includes(authoritative.status)) {
+      renderCompletedJob(await waitForJob(authoritative));
+    } else {
+      renderCompletedJob(authoritative);
+    }
+    return;
+  } catch {
+    await restoreSession();
+  }
+}
+
 document.getElementById('cancel-button').addEventListener('click', async () => {
   if (!state.jobId) return;
+  const jobId = state.jobId;
   try {
+    const cancelled = await api(`/api/jobs/${encodeURIComponent(jobId)}`, { method: 'DELETE', body: '{}' });
     state.pollGeneration += 1;
-    const cancelled = await api(`/api/jobs/${encodeURIComponent(state.jobId)}`, { method: 'DELETE', body: '{}' });
     state.jobId = null;
     state.createIdempotencyKey = null;
     document.getElementById('create-button').disabled = false;
     document.getElementById('cancel-button').hidden = true;
     showStep(3);
     setStatus(`Create ${cancelled.status}. Cleanup was verified; reconnect the model provider to retry.`, 'warning');
-  } catch { setStatus('Cancellation could not be confirmed.', 'error'); }
+  } catch {
+    setStatus('Reconciling authoritative provisioning state…', 'warning');
+    await reconcileAfterCancellationFailure(jobId);
+  }
 });
 
 document.getElementById('request-button').addEventListener('click', async () => {

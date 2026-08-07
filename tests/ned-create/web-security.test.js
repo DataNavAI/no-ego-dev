@@ -29,7 +29,7 @@ async function close(server) {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }
 
-test('browser server accepts only canonical HTTPS or loopback HTTP public origins', () => {
+test('browser server accepts only canonical origins and requires durable scheduled cleanup in production', () => {
   assert.throws(
     () => createBrowserServer({ publicOrigin: 'http://example.com', ...adapters() }),
     /HTTPS or loopback HTTP/,
@@ -38,7 +38,24 @@ test('browser server accepts only canonical HTTPS or loopback HTTP public origin
     () => createBrowserServer({ publicOrigin: 'https://example.com/setup?mode=test', ...adapters() }),
     /canonical origin/,
   );
-  assert.doesNotThrow(() => createBrowserServer({ publicOrigin: 'https://example.com', ...adapters() }));
+  assert.throws(
+    () => createBrowserServer({ publicOrigin: 'https://example.com', ...adapters() }),
+    /durable lifecycle store/,
+  );
+  const records = new Map();
+  const lifecycleStore = {
+    async loadAll() { return [...records.values()]; },
+    async save(value) { records.set(value.id, structuredClone(value)); },
+    async delete(id) { records.delete(id); },
+  };
+  const production = createBrowserServer({
+    publicOrigin: 'https://example.com',
+    lifecycleStore,
+    expirySweepIntervalMs: 60_000,
+    cleanupAlert() {},
+    ...adapters(),
+  });
+  production.close();
   assert.doesNotThrow(() => createBrowserServer({ publicOrigin: 'http://127.0.0.1:4173', ...adapters() }));
 });
 

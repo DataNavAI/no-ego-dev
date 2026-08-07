@@ -9,6 +9,7 @@ const SESSION_TTL_MS = 60 * 60 * 1000;
 const MUTATION_LIMIT_PER_MINUTE = 30;
 const DEFAULT_MAX_ACTIVE_SESSIONS = 10_000;
 const JOB_OUTPUT_LIMIT_BYTES = 32 * 1024;
+const CLEANUP_PENDING_CODE = 'cleanup_pending';
 const TERMINAL_JOB_STATUSES = new Set(['succeeded', 'failed', 'cancelled', 'blocked']);
 const JOB_TRANSITIONS = Object.freeze({
   queued: new Set(['running', 'succeeded', 'failed', 'cancelled', 'blocked']),
@@ -146,6 +147,9 @@ export function createBrowserServer({
   secretVault,
   computeConnector,
   jobService,
+  lifecycleStore,
+  expirySweepIntervalMs,
+  cleanupAlert,
   now = () => Date.now(),
   maxActiveSessions = DEFAULT_MAX_ACTIVE_SESSIONS,
 } = {}) {
@@ -153,6 +157,14 @@ export function createBrowserServer({
     throw new Error('Browser server requires origin, identity, secret-vault, compute, and job adapters');
   }
   publicOrigin = validatePublicOrigin(publicOrigin);
+  const productionOrigin = new URL(publicOrigin).protocol === 'https:';
+  if (productionOrigin && !lifecycleStore) throw new Error('Production browser server requires a durable lifecycle store');
+  if (productionOrigin && (!Number.isInteger(expirySweepIntervalMs) || expirySweepIntervalMs < 1 || expirySweepIntervalMs > 60_000)) {
+    throw new Error('Production browser server requires an expiry sweep interval of at most 60000ms');
+  }
+  if (productionOrigin && typeof cleanupAlert !== 'function') {
+    throw new Error('Production browser server requires a cleanup alert handler');
+  }
   if (!Number.isInteger(maxActiveSessions) || maxActiveSessions < 1 || maxActiveSessions > 100_000) {
     throw new Error('Browser server requires a bounded active-session capacity');
   }
@@ -160,6 +172,60 @@ export function createBrowserServer({
   const sessions = new Map();
   const jobs = new Map();
   const idempotency = new Map();
+  const sessionLocks = new Map();
+  const durableLifecycleStore = lifecycleStore || {
+    async loadAll() { return []; },
+    async save() {},
+    async delete() {},
+  };
+  if (!durableLifecycleStore.loadAll || !durableLifecycleStore.save || !durableLifecycleStore.delete) {
+    throw new Error('Lifecycle store requires loadAll, save, and delete');
+  }
+
+  function lifecycleSnapshot(session) {
+    const prefix = `${session.id}:`;
+    return {
+      ...session,
+      activeIntent: session.activeIntent ? structuredClone(session.activeIntent) : null,
+      jobs: [...jobs.entries()]
+        .filter(([key, record]) => key.startsWith(prefix) && record.operation !== 'send_first_request')
+        .map(([, record]) => ({ ...record, output: undefined })),
+      idempotency: [...idempotency.entries()]
+        .filter(([key, record]) => key.startsWith(prefix) && record.operation !== 'send_first_request')
+        .map(([key, record]) => ({ key, record: { ...record, output: undefined } })),
+    };
+  }
+
+  async function persistSession(session) {
+    await durableLifecycleStore.save(lifecycleSnapshot(session));
+  }
+
+  const hydration = Promise.resolve(durableLifecycleStore.loadAll()).then((snapshots) => {
+    if (!Array.isArray(snapshots)) throw new Error('Lifecycle store returned invalid sessions');
+    for (const snapshot of snapshots) {
+      if (!snapshot || typeof snapshot.id !== 'string' || typeof snapshot.userId !== 'string') {
+        throw new Error('Lifecycle store returned an invalid session');
+      }
+      const { jobs: storedJobs = [], idempotency: storedReceipts = [], ...session } = snapshot;
+      sessions.set(session.id, session);
+      for (const record of storedJobs) jobs.set(`${session.id}:${record.id}`, record);
+      for (const receipt of storedReceipts) idempotency.set(receipt.key, receipt.record);
+    }
+  });
+
+  async function withSessionLock(sessionId, action) {
+    const previous = sessionLocks.get(sessionId) || Promise.resolve();
+    let release;
+    const current = new Promise((resolve) => { release = resolve; });
+    sessionLocks.set(sessionId, current);
+    await previous.catch(() => {});
+    try {
+      return await action();
+    } finally {
+      release();
+      if (sessionLocks.get(sessionId) === current) sessionLocks.delete(sessionId);
+    }
+  }
 
   async function deleteSecret(ownerId, id) {
     const receipt = await secretVault.delete({ ownerId, id });
@@ -173,20 +239,65 @@ export function createBrowserServer({
     session.modelConnectionId = null;
   }
 
-  async function removeSession(sessionId) {
+  async function removeSession(sessionId, reason = 'abandonment') {
     const session = sessions.get(sessionId);
-    if (session) await revokeModelConnection(session);
-    sessions.delete(sessionId);
-    const prefix = `${sessionId}:`;
-    for (const key of jobs.keys()) if (key.startsWith(prefix)) jobs.delete(key);
-    for (const key of idempotency.keys()) if (key.startsWith(prefix)) idempotency.delete(key);
+    if (!session) return true;
+    session.lifecycle = CLEANUP_PENDING_CODE;
+    session.cleanupReason ||= reason;
+    await persistSession(session);
+    try {
+      let record = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
+      if (!record && session.activeIntent?.operation === 'create_ned') {
+        const recovered = safeJob(await jobService.create(session.activeIntent.submission), 'create_ned');
+        record = { ...recovered, ownerId: session.userId, sessionId: session.id };
+        jobs.set(`${session.id}:${record.id}`, record);
+        session.lastJobId = record.id;
+        session.activeIntent = null;
+        await persistSession(session);
+      }
+      if (record?.operation === 'create_ned' && ['queued', 'running'].includes(record.status)) {
+        record = await reconcileJob(session, record);
+        if (['queued', 'running'].includes(record.status)) {
+          const cancelled = safeJob(await jobService.cancel({
+            jobId: record.id,
+            ownerId: session.userId,
+            sessionId: session.id,
+            compensate: true,
+          }), record.operation);
+          if (cancelled.id !== record.id || cancelled.status !== 'cancelled') {
+            throw new Error('Job service did not verify cleanup compensation');
+          }
+          Object.assign(record, cancelled);
+          await persistSession(session);
+        }
+      }
+      if (record?.operation === 'create_ned' && !['cancelled', 'failed', 'blocked'].includes(record.status)) {
+        throw new Error('Create cleanup is not verified');
+      }
+      await revokeModelConnection(session);
+      await durableLifecycleStore.delete(sessionId);
+      sessions.delete(sessionId);
+      const prefix = `${sessionId}:`;
+      for (const key of jobs.keys()) if (key.startsWith(prefix)) jobs.delete(key);
+      for (const key of idempotency.keys()) if (key.startsWith(prefix)) idempotency.delete(key);
+      return true;
+    } catch {
+      await persistSession(session);
+      return false;
+    }
   }
 
   async function pruneExpiredSessions() {
     const timestamp = now();
+    const result = { examined: 0, cleaned: 0, pending: 0 };
     for (const [sessionId, session] of sessions) {
-      if (session.expiresAt <= timestamp) await removeSession(sessionId);
+      if (session.expiresAt > timestamp && !(session.lifecycle === CLEANUP_PENDING_CODE && session.cleanupReason === 'expiry')) continue;
+      result.examined += 1;
+      const cleaned = await withSessionLock(sessionId, () => removeSession(sessionId, 'expiry'));
+      if (cleaned) result.cleaned += 1;
+      else result.pending += 1;
     }
+    return result;
   }
 
   function requireOrigin(request) {
@@ -196,11 +307,17 @@ export function createBrowserServer({
   async function requireSession(request) {
     const sessionId = parseCookies(request).get('__Host-ned_session') || parseCookies(request).get('ned_session');
     const session = sessionId ? sessions.get(sessionId) : null;
-    if (!session || session.expiresAt <= now()) {
-      if (sessionId) await removeSession(sessionId);
+    if (!session) throw new HttpError(401, 'authentication_required');
+    if (session.expiresAt <= now()) {
+      await withSessionLock(sessionId, () => removeSession(sessionId, 'expiry'));
       throw new HttpError(401, 'authentication_required');
     }
     return session;
+  }
+
+  function rejectUnavailableSession(session) {
+    if (session.lifecycle === 'destroyed') throw new HttpError(409, 'session_cleaned_up');
+    if (session.lifecycle === CLEANUP_PENDING_CODE) throw new HttpError(409, CLEANUP_PENDING_CODE);
   }
 
   function protectMutation(request, session) {
@@ -252,11 +369,13 @@ export function createBrowserServer({
     if (!JOB_TRANSITIONS[record.status]?.has(next.status)) throw new Error('Job service returned an illegal state transition');
     if (TERMINAL_JOB_STATUSES.has(next.status)) await finalizeTransition(session, record, next);
     Object.assign(record, next);
+    await persistSession(session);
     return record;
   }
 
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     try {
+      await hydration;
       const url = new URL(request.url, publicOrigin);
       if (url.pathname.startsWith('/api/') && url.search !== '') {
         throw new HttpError(400, 'query_not_allowed');
@@ -299,6 +418,7 @@ export function createBrowserServer({
           lifecycle: 'active',
         };
         sessions.set(id, session);
+        await persistSession(session);
         const secure = publicOrigin.startsWith('https:') ? '; Secure' : '';
         const cookieName = secure ? '__Host-ned_session' : 'ned_session';
         sendJson(response, 201, {
@@ -313,18 +433,22 @@ export function createBrowserServer({
       const session = await requireSession(request);
 
       if (request.method === 'GET' && url.pathname === '/api/session') {
-        let record = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
-        if (record) record = await reconcileJob(session, record);
-        sendJson(response, 200, {
-          user: { displayName: session.displayName },
-          csrfToken: session.csrfToken,
-          connections: {
-            compute: Boolean(session.computeConnectionId),
-            model: Boolean(session.modelConnectionId),
-          },
-          nedReady: session.nedReady,
-          job: record ? publicJob(record) : null,
+        const payload = await withSessionLock(session.id, async () => {
+          if (session.lifecycle === CLEANUP_PENDING_CODE) throw new HttpError(409, CLEANUP_PENDING_CODE);
+          let record = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
+          if (record) record = await reconcileJob(session, record);
+          return {
+            user: { displayName: session.displayName },
+            csrfToken: session.csrfToken,
+            connections: {
+              compute: Boolean(session.computeConnectionId),
+              model: Boolean(session.modelConnectionId),
+            },
+            nedReady: session.nedReady,
+            job: record ? publicJob(record) : null,
+          };
         });
+        sendJson(response, 200, payload);
         return;
       }
 
@@ -332,7 +456,8 @@ export function createBrowserServer({
         protectMutation(request, session);
         const body = await readJson(request);
         if (Object.keys(body).length !== 0) throw new HttpError(400, 'unexpected_session_field');
-        await removeSession(session.id);
+        const cleaned = await withSessionLock(session.id, () => removeSession(session.id, 'abandonment'));
+        if (!cleaned) throw new HttpError(503, CLEANUP_PENDING_CODE);
         const secure = publicOrigin.startsWith('https:') ? '; Secure' : '';
         const cookieName = secure ? '__Host-ned_session' : 'ned_session';
         response.writeHead(204, {
@@ -351,165 +476,195 @@ export function createBrowserServer({
 
       if (request.method === 'POST' && url.pathname === '/api/compute-connections') {
         protectMutation(request, session);
-        if (session.lifecycle === 'destroyed') throw new HttpError(409, 'session_cleaned_up');
         const body = await readJson(request);
-        if (body.providerId !== 'daytona' || Object.keys(body).some((key) => key !== 'providerId')) {
-          throw new HttpError(400, 'unsupported_compute_connection');
-        }
-        const result = await computeConnector.connect({ ownerId: session.userId, providerId: 'daytona' });
-        const connectionId = safeExternalId(result?.id, 'Compute connector');
-        session.computeConnectionId = connectionId;
-        sendJson(response, 201, { id: connectionId, providerId: 'daytona', status: 'connected' });
+        const result = await withSessionLock(session.id, async () => {
+          rejectUnavailableSession(session);
+          if (body.providerId !== 'daytona' || Object.keys(body).some((key) => key !== 'providerId')) {
+            throw new HttpError(400, 'unsupported_compute_connection');
+          }
+          const connected = await computeConnector.connect({ ownerId: session.userId, providerId: 'daytona' });
+          const connectionId = safeExternalId(connected?.id, 'Compute connector');
+          session.computeConnectionId = connectionId;
+          await persistSession(session);
+          return { id: connectionId, providerId: 'daytona', status: 'connected' };
+        });
+        sendJson(response, 201, result);
         return;
       }
 
       if (request.method === 'POST' && url.pathname === '/api/model-connections') {
         protectMutation(request, session);
-        if (session.lifecycle === 'destroyed') throw new HttpError(409, 'session_cleaned_up');
         const body = await readJson(request);
-        const provider = listModelProviders().find(({ id }) => id === body.providerId);
-        if (!provider) throw new HttpError(400, 'unsupported_model_provider');
-        if (body.method !== 'api-key') throw new HttpError(400, 'unsupported_connection_method');
-        if (provider.delegatedAuthorization.status === 'available') {
-          throw new HttpError(409, 'delegated_authorization_required');
-        }
-        if (typeof body.credential !== 'string' || body.credential.length < 8) {
-          throw new HttpError(400, 'invalid_model_credential');
-        }
-        if (Object.keys(body).some((key) => !['providerId', 'method', 'credential'].includes(key))) {
-          throw new HttpError(400, 'unexpected_connection_field');
-        }
-        const secret = await secretVault.put({
-          ownerId: session.userId,
-          providerId: body.providerId,
-          method: body.method,
-          value: body.credential,
-        });
-        const rawConnectionId = secret?.id;
-        let connectionId;
-        try {
-          connectionId = safeExternalId(rawConnectionId, 'Secret vault');
-        } catch (error) {
-          if (typeof rawConnectionId === 'string') await deleteSecret(session.userId, rawConnectionId);
-          throw error;
-        }
-        const supersededId = session.modelConnectionId;
-        if (supersededId) {
+        const result = await withSessionLock(session.id, async () => {
+          rejectUnavailableSession(session);
+          const provider = listModelProviders().find(({ id }) => id === body.providerId);
+          if (!provider) throw new HttpError(400, 'unsupported_model_provider');
+          if (body.method !== 'api-key') throw new HttpError(400, 'unsupported_connection_method');
+          if (provider.delegatedAuthorization.status === 'available') {
+            throw new HttpError(409, 'delegated_authorization_required');
+          }
+          if (typeof body.credential !== 'string' || body.credential.length < 8) {
+            throw new HttpError(400, 'invalid_model_credential');
+          }
+          if (Object.keys(body).some((key) => !['providerId', 'method', 'credential'].includes(key))) {
+            throw new HttpError(400, 'unexpected_connection_field');
+          }
+          const secret = await secretVault.put({
+            ownerId: session.userId,
+            providerId: body.providerId,
+            method: body.method,
+            value: body.credential,
+          });
+          const rawConnectionId = secret?.id;
+          let connectionId;
           try {
-            await deleteSecret(session.userId, supersededId);
+            connectionId = safeExternalId(rawConnectionId, 'Secret vault');
           } catch (error) {
+            if (typeof rawConnectionId === 'string') await deleteSecret(session.userId, rawConnectionId);
+            throw error;
+          }
+          const supersededId = session.modelConnectionId;
+          if (supersededId) {
+            try {
+              await deleteSecret(session.userId, supersededId);
+            } catch (error) {
+              await deleteSecret(session.userId, connectionId);
+              throw error;
+            }
+          }
+          session.modelConnectionId = connectionId;
+          try {
+            await persistSession(session);
+          } catch (error) {
+            session.modelConnectionId = null;
             await deleteSecret(session.userId, connectionId);
             throw error;
           }
-        }
-        session.modelConnectionId = connectionId;
-        sendJson(response, 201, {
-          id: connectionId,
-          providerId: body.providerId,
-          method: body.method,
-          status: 'connected',
+          return {
+            id: connectionId,
+            providerId: body.providerId,
+            method: body.method,
+            status: 'connected',
+          };
         });
+        sendJson(response, 201, result);
         return;
       }
 
       if (request.method === 'POST' && url.pathname === '/api/jobs') {
         protectMutation(request, session);
         const body = await readJson(request);
-        if (!/^[A-Za-z0-9_-]{8,128}$/.test(body.idempotencyKey || '')) {
-          throw new HttpError(400, 'unsupported_job');
-        }
-        const idempotencyId = `${session.id}:${body.operation}:${body.idempotencyKey}`;
-        if (idempotency.has(idempotencyId)) {
-          sendJson(response, 202, await idempotency.get(idempotencyId));
-          return;
-        }
-        if (session.lifecycle === 'destroyed') throw new HttpError(409, 'session_cleaned_up');
-        let activeRecord = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
-        if (activeRecord && ['queued', 'running'].includes(activeRecord.status)) {
-          activeRecord = await reconcileJob(session, activeRecord);
-          if (['queued', 'running'].includes(activeRecord.status)) throw new HttpError(409, 'job_in_progress');
-        }
-        if (body.operation === 'create_ned') {
-          if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
-            throw new HttpError(400, 'unexpected_job_field');
+        const result = await withSessionLock(session.id, async () => {
+          rejectUnavailableSession(session);
+          if (!/^[A-Za-z0-9_-]{8,128}$/.test(body.idempotencyKey || '')) {
+            throw new HttpError(400, 'unsupported_job');
           }
-          if (!session.computeConnectionId || !session.modelConnectionId) {
-            throw new HttpError(409, 'connections_required');
+          const idempotencyId = `${session.id}:${body.operation}:${body.idempotencyKey}`;
+          if (idempotency.has(idempotencyId)) return publicJob(idempotency.get(idempotencyId));
+          let activeRecord = session.lastJobId ? jobs.get(`${session.id}:${session.lastJobId}`) : null;
+          if (activeRecord && ['queued', 'running'].includes(activeRecord.status)) {
+            activeRecord = await reconcileJob(session, activeRecord);
+            if (['queued', 'running'].includes(activeRecord.status)) throw new HttpError(409, 'job_in_progress');
           }
-          if (session.nedReady) throw new HttpError(409, 'ned_already_ready');
-        } else if (body.operation === 'send_first_request') {
-          if (Object.keys(body).some((key) => !['operation', 'idempotencyKey', 'prompt'].includes(key))) {
-            throw new HttpError(400, 'unexpected_job_field');
+          if (body.operation === 'create_ned') {
+            if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
+              throw new HttpError(400, 'unexpected_job_field');
+            }
+            if (!session.computeConnectionId || !session.modelConnectionId) {
+              throw new HttpError(409, 'connections_required');
+            }
+            if (session.nedReady) throw new HttpError(409, 'ned_already_ready');
+          } else if (body.operation === 'send_first_request') {
+            if (Object.keys(body).some((key) => !['operation', 'idempotencyKey', 'prompt'].includes(key))) {
+              throw new HttpError(400, 'unexpected_job_field');
+            }
+            if (typeof body.prompt !== 'string' || body.prompt.trim().length === 0 || body.prompt.length > 4000) {
+              throw new HttpError(400, 'invalid_first_request');
+            }
+            if (!session.nedReady) throw new HttpError(409, 'ned_not_ready');
+          } else if (body.operation === 'resume_ned' || body.operation === 'destroy_ned') {
+            if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
+              throw new HttpError(400, 'unexpected_job_field');
+            }
+            if (!session.nedReady) throw new HttpError(409, 'ned_not_ready');
+          } else {
+            throw new HttpError(400, 'unsupported_job');
           }
-          if (typeof body.prompt !== 'string' || body.prompt.trim().length === 0 || body.prompt.length > 4000) {
-            throw new HttpError(400, 'invalid_first_request');
+          const submission = {
+            operation: body.operation,
+            ownerId: session.userId,
+            sessionId: session.id,
+            idempotencyKey: body.idempotencyKey,
+            computeConnectionId: session.computeConnectionId,
+            modelConnectionId: session.modelConnectionId,
+            ...(body.operation === 'send_first_request' ? { prompt: body.prompt } : {}),
+          };
+          if (body.operation !== 'send_first_request') {
+            session.activeIntent = { operation: body.operation, idempotencyId, submission };
+            await persistSession(session);
           }
-          if (!session.nedReady) throw new HttpError(409, 'ned_not_ready');
-        } else if (body.operation === 'resume_ned' || body.operation === 'destroy_ned') {
-          if (Object.keys(body).some((key) => !['operation', 'idempotencyKey'].includes(key))) {
-            throw new HttpError(400, 'unexpected_job_field');
+          let job;
+          try {
+            job = safeJob(await jobService.create(submission), body.operation);
+          } catch (error) {
+            session.activeIntent = null;
+            await persistSession(session);
+            throw error;
           }
-          if (!session.nedReady) throw new HttpError(409, 'ned_not_ready');
-        } else {
-          throw new HttpError(400, 'unsupported_job');
-        }
-        const jobPromise = Promise.resolve(jobService.create({
-          operation: body.operation,
-          ownerId: session.userId,
-          sessionId: session.id,
-          idempotencyKey: body.idempotencyKey,
-          computeConnectionId: session.computeConnectionId,
-          modelConnectionId: session.modelConnectionId,
-          ...(body.operation === 'send_first_request' ? { prompt: body.prompt } : {}),
-        })).then((value) => safeJob(value, body.operation));
-        idempotency.set(idempotencyId, jobPromise);
-        let job;
-        try {
-          job = await jobPromise;
-        } catch (error) {
-          idempotency.delete(idempotencyId);
-          throw error;
-        }
-        const record = { ...job, ownerId: session.userId, sessionId: session.id };
-        if (TERMINAL_JOB_STATUSES.has(record.status)) await finalizeTransition(session, record, record);
-        jobs.set(`${session.id}:${job.id}`, record);
-        session.lastJobId = job.id;
-        sendJson(response, 202, publicJob(record));
+          const record = { ...job, ownerId: session.userId, sessionId: session.id };
+          if (TERMINAL_JOB_STATUSES.has(record.status)) await finalizeTransition(session, record, record);
+          jobs.set(`${session.id}:${job.id}`, record);
+          idempotency.set(idempotencyId, record);
+          session.lastJobId = job.id;
+          session.activeIntent = null;
+          await persistSession(session);
+          return publicJob(record);
+        });
+        sendJson(response, 202, result);
         return;
       }
 
       const jobMatch = url.pathname.match(/^\/api\/jobs\/([A-Za-z0-9_-]{1,128})$/);
       if (request.method === 'GET' && jobMatch) {
-        let record = jobs.get(`${session.id}:${jobMatch[1]}`);
-        if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
-          throw new HttpError(404, 'job_not_found');
-        }
-        record = await reconcileJob(session, record);
-        sendJson(response, 200, publicJob(record));
+        const result = await withSessionLock(session.id, async () => {
+          if (session.lifecycle === CLEANUP_PENDING_CODE) throw new HttpError(409, CLEANUP_PENDING_CODE);
+          let record = jobs.get(`${session.id}:${jobMatch[1]}`);
+          if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
+            throw new HttpError(404, 'job_not_found');
+          }
+          record = await reconcileJob(session, record);
+          return publicJob(record);
+        });
+        sendJson(response, 200, result);
         return;
       }
       if (request.method === 'DELETE' && jobMatch) {
         protectMutation(request, session);
         const body = await readJson(request);
         if (Object.keys(body).length !== 0) throw new HttpError(400, 'unexpected_job_field');
-        let record = jobs.get(`${session.id}:${jobMatch[1]}`);
-        if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
-          throw new HttpError(404, 'job_not_found');
-        }
-        record = await reconcileJob(session, record);
-        if (!['queued', 'running'].includes(record.status)) throw new HttpError(409, 'job_not_cancellable');
-        const cancelled = safeJob(await jobService.cancel({
-          jobId: record.id,
-          ownerId: session.userId,
-          sessionId: session.id,
-          compensate: record.operation === 'create_ned',
-        }), record.operation);
-        if (cancelled.id !== record.id || cancelled.status !== 'cancelled') {
-          throw new Error('Job service did not verify cancellation');
-        }
-        await finalizeTransition(session, record, cancelled);
-        Object.assign(record, cancelled);
-        sendJson(response, 200, publicJob(record));
+        const result = await withSessionLock(session.id, async () => {
+          rejectUnavailableSession(session);
+          let record = jobs.get(`${session.id}:${jobMatch[1]}`);
+          if (!record || record.sessionId !== session.id || record.ownerId !== session.userId) {
+            throw new HttpError(404, 'job_not_found');
+          }
+          record = await reconcileJob(session, record);
+          if (!['queued', 'running'].includes(record.status)) throw new HttpError(409, 'job_not_cancellable');
+          const cancelled = safeJob(await jobService.cancel({
+            jobId: record.id,
+            ownerId: session.userId,
+            sessionId: session.id,
+            compensate: record.operation === 'create_ned',
+          }), record.operation);
+          if (cancelled.id !== record.id || cancelled.status !== 'cancelled') {
+            throw new Error('Job service did not verify cancellation');
+          }
+          await finalizeTransition(session, record, cancelled);
+          Object.assign(record, cancelled);
+          await persistSession(session);
+          return publicJob(record);
+        });
+        sendJson(response, 200, result);
         return;
       }
 
@@ -523,4 +678,21 @@ export function createBrowserServer({
       sendJson(response, 500, { error: 'internal_error' });
     }
   });
+  server.sweepExpiredSessions = async () => {
+    await hydration;
+    return pruneExpiredSessions();
+  };
+  if (productionOrigin) {
+    const sweepTimer = setInterval(async () => {
+      try {
+        const result = await server.sweepExpiredSessions();
+        if (result.pending > 0) cleanupAlert({ type: 'cleanup_pending', ...result });
+      } catch {
+        cleanupAlert({ type: 'cleanup_sweep_failed' });
+      }
+    }, expirySweepIntervalMs);
+    sweepTimer.unref();
+    server.once('close', () => clearInterval(sweepTimer));
+  }
+  return server;
 }

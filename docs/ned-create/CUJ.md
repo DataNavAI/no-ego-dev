@@ -70,7 +70,9 @@ At desktop and mobile widths, use a real browser against an asynchronous synthet
 - first request, refresh, `resume_ned`, second request, and `destroy_ned`;
 - zero horizontal overflow and usable controls;
 - no secrets/prompts/responses in URL, localStorage, sessionStorage, console, logs, analytics, or captured artifact metadata;
-- zero synthetic vault orphans after reconnect, expiry, abandonment, cancel, and destroy.
+- zero synthetic vault orphans after reconnect, expiry, abandonment, cancel, and destroy;
+- programmatic focus on the destination heading after sign-in, compute, model, terminal create/recovery, refresh restoration, and verified destroy, without focus theft during polling;
+- concise live-region announcements and delayed DELETE versus terminal GET reconciliation that renders authoritative ready/failure/polling state.
 
 Review-only prototype pixels may guide comparison but are not approved authority or production evidence.
 

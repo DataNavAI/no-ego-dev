@@ -75,6 +75,7 @@ test('browser shell renders the five-action provider-neutral onboarding journey 
       assert.match(html, new RegExp(`data-action="${action}"`));
     }
     for (const provider of ['OpenAI', 'Anthropic', 'Gemini', 'OpenRouter']) assert.match(html, new RegExp(provider));
+    assert.equal((html.match(/<h2 tabindex="-1">/g) || []).length, 5);
     const statusIndex = html.indexOf('id="status"');
     assert.ok(statusIndex > html.indexOf('id="notice"'), 'status follows the global notice');
     assert.ok(statusIndex < html.indexOf('id="model-panel"'), 'status precedes long panels so failure and retry progress remain visible on mobile');

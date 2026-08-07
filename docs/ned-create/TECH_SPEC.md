@@ -81,6 +81,18 @@ delete({ ownerId, id }) -> { id, status: 'deleted' }
 
 `delete` is mandatory and owner-scoped. A put is provisional until its ID validates and session commit succeeds. Any post-write validation/commit failure deletes the provisional record and verifies the receipt. Reconnection deletes the superseded record; if that deletion fails, the new record is compensated and the old connection remains authoritative. Session expiry, explicit abandonment, failed/cancelled create, and destroy all verify deletion. Tests require zero orphaned records.
 
+## Atomic admission and lifecycle persistence
+
+Every session mutation runs through one session-scoped single-flight/CAS boundary. Reconciliation, cleaned/cleanup-pending checks, idempotency receipt lookup, active-intent reservation, adapter submission, cancellation, and final session commit are one ordered transition. A distinct key cannot bypass an active reservation; the adapter still receives the owner/session-bound idempotency key so a restart may safely recover an admitted submission without duplicating its side effect.
+
+Before a lifecycle adapter call, production persists a non-secret `activeIntent` containing the typed operation, owner/session IDs, connection references, and idempotency key. Prompts and outputs are excluded. After a verified adapter receipt, the job and receipt replace the reservation. Completed cleanup is checked before any ordinary idempotency replay; all four mutation operations then return `409 session_cleaned_up`, including exact old keys.
+
+## Session abandonment and expiry cleanup
+
+Explicit abandonment and expiry first mark the durable session `cleanup_pending`. If a create reservation has no job receipt after restart, the controller re-submits the exact idempotent create envelope to recover its authoritative job handle. Queued/running create is reconciled, compensated with `compensate:true`, and required to return the same job ID with terminal `cancelled`; only then may owner-secret revocation be verified and local session/job/receipt state deleted. A failed compensation or revocation returns/retains `cleanup_pending`, blocks ordinary reads and mutations, and is retried from the durable record. API readback never exposes secret or resource identifiers.
+
+Production adapters must provide durable `lifecycleStore.loadAll/save/delete` semantics and an isolated scheduler must call `server.sweepExpiredSessions()` at least once per minute, independently of request traffic. The sweep retries expired cleanup-pending records until both compensation and revocation verify, reports `{ examined, cleaned, pending }`, and must alert on non-zero/stale `pending`. The one-hour cookie/session TTL is not a cleanup scheduler; production startup remains fail-closed without this store, scheduler, retry/alert policy, and adapter idempotency guarantee.
+
 ## Provider authorization policy
 
 - OpenRouter: supported OAuth PKCE is preferred; environment key remains CLI/headless fallback.
