@@ -60,7 +60,7 @@ test('Daytona provider creates the fixed private persistent sandbox with an egre
     language: 'typescript',
     public: false,
     ephemeral: false,
-    resources: { cpu: 2, memory: 4, disk: 20 },
+    resources: { cpu: 2, memory: 4, disk: 10 },
     autoStopInterval: 15,
     autoArchiveInterval: 10080,
     autoDeleteInterval: -1,

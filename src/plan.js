@@ -5,7 +5,7 @@ export function createNedPlan({ modelProvider = 'openai-codex' } = {}) {
   return {
     provider: 'daytona',
     region: 'auto',
-    resources: { cpu: 2, memory: 4, disk: 20 },
+    resources: { cpu: 2, memory: 4, disk: 10 },
     image: 'ubuntu:24.04',
     modelProvider,
     hermesModelProvider: runtime.hermesProvider,

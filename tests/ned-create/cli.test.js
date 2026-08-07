@@ -48,7 +48,7 @@ test('ned create dry-run asks no questions and selects the complete opinionated 
     dryRun: true,
     provider: 'daytona',
     region: 'auto',
-    resources: { cpu: 2, memory: 4, disk: 20 },
+    resources: { cpu: 2, memory: 4, disk: 10 },
     image: 'ubuntu:24.04',
     modelProvider: 'openai-codex',
     hermesVersion: 'v2026.7.20',
