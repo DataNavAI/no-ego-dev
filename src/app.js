@@ -62,6 +62,7 @@ export function createNedApp({ provider, stateStore }) {
         telegramBotUsername: workspace.telegramBotUsername,
         telegramBotUrl: workspace.telegramBotUrl,
       };
+      if (workspace.createAttemptId) workspaceState.createAttemptId = workspace.createAttemptId;
       if (credentials?.modelConnection) workspaceState.modelProvider = plan.modelProvider;
       try {
         await provider.bootstrap(workspace, plan);
@@ -156,6 +157,7 @@ export function createNedApp({ provider, stateStore }) {
       await provider.destroy({
         id: state.workspaceId,
         name: state.workspaceName,
+        createAttemptId: state.createAttemptId,
         secretId: state.secretId,
         secretName: state.secretName,
         telegramSecretId: state.telegramSecretId,

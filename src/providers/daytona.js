@@ -19,6 +19,7 @@ export function createDaytonaProvider({
   profileArchive,
   secretNameFactory = (providerId) => `ned_model_${providerId.replaceAll(/[^a-z0-9]/g, '_')}_${randomUUID().replaceAll('-', '')}`,
   telegramSecretNameFactory = () => `ned_telegram_${randomUUID().replaceAll('-', '')}`,
+  createAttemptIdFactory = () => randomUUID().replaceAll('-', ''),
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
 } = {}) {
   if (!apiKey) {
@@ -35,6 +36,17 @@ export function createDaytonaProvider({
     }
     try {
       await client.secret.get(secretId);
+      return false;
+    } catch (error) {
+      if (isNotFound(error)) return true;
+      throw error;
+    }
+  }
+
+  async function deleteSandboxAndProveAbsence(sandbox) {
+    await sandbox.delete(300, true);
+    try {
+      await client.get(sandbox.id);
       return false;
     } catch (error) {
       if (isNotFound(error)) return true;
@@ -106,9 +118,11 @@ export function createDaytonaProvider({
 
       const secretName = secretNameFactory(modelConnection.providerId);
       const telegramSecretName = telegramSecretNameFactory();
+      const createAttemptId = createAttemptIdFactory();
       if (!/^ned_model_[a-z0-9_]+_[A-Za-z0-9]+$/.test(secretName)
-          || !/^ned_telegram_[A-Za-z0-9_]+$/.test(telegramSecretName)) {
-        throw new Error('Invalid generated Daytona secret name');
+          || !/^ned_telegram_[A-Za-z0-9_]+$/.test(telegramSecretName)
+          || !/^[A-Za-z0-9]{8,64}$/.test(createAttemptId)) {
+        throw new Error('Invalid generated Daytona resource identity');
       }
       const secret = await client.secret.create({
         name: secretName,
@@ -134,7 +148,7 @@ export function createDaytonaProvider({
           autoStopInterval: plan.autoStopMinutes,
           autoArchiveInterval: plan.autoArchiveMinutes,
           autoDeleteInterval: -1,
-          labels: { app: 'ned', managedBy: 'ned-cli' },
+          labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: createAttemptId },
           secrets: {
             [modelProvider.sandboxEnvironmentVariable]: secretName,
             TELEGRAM_BOT_TOKEN: telegramSecretName,
@@ -149,10 +163,30 @@ export function createDaytonaProvider({
           telegramSecretName,
           telegramBotUsername: telegramConnection.botUsername,
           telegramBotUrl: telegramConnection.botUrl,
+          createAttemptId,
           modelProvider: modelConnection.providerId,
         };
       } catch (error) {
         const cleanupErrors = [];
+        let unresolvedWorkspace = null;
+        if (typeof client.list === 'function') {
+          try {
+            const query = { labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: createAttemptId } };
+            for await (const acceptedSandbox of client.list(query)) {
+              try {
+                if (!(await deleteSandboxAndProveAbsence(acceptedSandbox))) {
+                  unresolvedWorkspace ||= acceptedSandbox;
+                  cleanupErrors.push(new Error(`sandbox cleanup readback did not prove absence for ${acceptedSandbox.id}`));
+                }
+              } catch (cleanupError) {
+                unresolvedWorkspace ||= acceptedSandbox;
+                cleanupErrors.push(cleanupError);
+              }
+            }
+          } catch (reconciliationError) {
+            cleanupErrors.push(new Error(`sandbox reconciliation failed for create attempt ${createAttemptId}: ${reconciliationError.message}`));
+          }
+        }
         for (const ownedSecret of [telegramSecret, secret]) {
           if (!ownedSecret) continue;
           try {
@@ -169,8 +203,9 @@ export function createDaytonaProvider({
             `Daytona sandbox creation failed and exact secret cleanup was incomplete: ${error.message}; ${cleanupErrors.map((item) => item.message).join('; ')}`,
           );
           aggregate.recoveryState = {
-            workspaceId: null,
-            workspaceName: null,
+            workspaceId: unresolvedWorkspace?.id || null,
+            workspaceName: unresolvedWorkspace?.name || null,
+            createAttemptId,
             secretId: secret.id,
             secretName,
             telegramSecretId: telegramSecret?.id || null,
@@ -359,6 +394,14 @@ export function createDaytonaProvider({
     },
 
     async destroy(workspace) {
+      if (!workspace.id && workspace.createAttemptId) {
+        const query = { labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: workspace.createAttemptId } };
+        for await (const sandbox of client.list(query)) {
+          if (!(await deleteSandboxAndProveAbsence(sandbox))) {
+            throw new Error(`Daytona deletion readback did not prove Sandbox ${sandbox.id} absent`);
+          }
+        }
+      }
       if (workspace.id) {
         try {
           const sandbox = await client.get(workspace.id);

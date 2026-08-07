@@ -50,6 +50,7 @@ test('Daytona provider creates the fixed private persistent sandbox with separat
     DaytonaClass: FakeDaytona,
     secretNameFactory: () => 'ned_model_openai_codex_test',
     telegramSecretNameFactory: () => 'ned_telegram_test',
+    createAttemptIdFactory: () => 'attempt123',
   });
 
   const workspace = await provider.createWorkspace(NED_PLAN, {
@@ -63,6 +64,7 @@ test('Daytona provider creates the fixed private persistent sandbox with separat
   assert.equal(workspace.nedSecretId, 'secret-1');
   assert.equal(workspace.telegramSecretName, 'ned_telegram_test');
   assert.equal(workspace.telegramSecretId, 'secret-2');
+  assert.equal(workspace.createAttemptId, 'attempt123');
   assert.equal(workspace.telegramBotUsername, 'ned_disposable_bot');
   assert.deepEqual(observed.config, { apiKey: 'provider-test-value', });
   assert.deepEqual(observed.secrets.map(({ name, description, hosts }) => ({ name, description, hosts })), [
@@ -87,7 +89,7 @@ test('Daytona provider creates the fixed private persistent sandbox with separat
     autoStopInterval: 15,
     autoArchiveInterval: 10080,
     autoDeleteInterval: -1,
-    labels: { app: 'ned', managedBy: 'ned-cli' },
+    labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: 'attempt123' },
     secrets: {
       NED_OPENAI_CODEX_ACCESS_TOKEN: 'ned_model_openai_codex_test',
       TELEGRAM_BOT_TOKEN: 'ned_telegram_test',
@@ -432,6 +434,74 @@ test('Daytona create removes its unique secret when sandbox creation fails', asy
     ['readback', 'telegram-orphan'],
     ['delete', 'model-orphan'],
     ['readback', 'model-orphan'],
+  ]);
+});
+
+test('Daytona create reconciles and deletes an accepted sandbox when the create response is lost', async () => {
+  const calls = [];
+  let secretCount = 0;
+  let sandboxPresent = false;
+  const sandbox = {
+    id: 'accepted-sandbox',
+    name: 'ned-product-partner',
+    async delete(timeout, wait) {
+      calls.push(['sandbox-delete', timeout, wait]);
+      sandboxPresent = false;
+    },
+  };
+  class FakeDaytona {
+    constructor() {
+      this.secret = {
+        async create() { secretCount += 1; return { id: `secret-${secretCount}` }; },
+        async delete(id) { calls.push(['secret-delete', id]); },
+        async get(id) {
+          calls.push(['secret-readback', id]);
+          const error = new Error('not found');
+          error.status = 404;
+          throw error;
+        },
+      };
+    }
+    async create(params) {
+      calls.push(['create-labels', params.labels]);
+      sandboxPresent = true;
+      throw new Error('create response lost');
+    }
+    async *list(query) {
+      calls.push(['reconcile-list', query]);
+      if (sandboxPresent) yield sandbox;
+    }
+    async get(id) {
+      calls.push(['sandbox-readback', id]);
+      if (sandboxPresent) return sandbox;
+      const error = new Error('not found');
+      error.status = 404;
+      throw error;
+    }
+  }
+  const provider = createDaytonaProvider({
+    apiKey: 'provider-test-value',
+    DaytonaClass: FakeDaytona,
+    createAttemptIdFactory: () => 'attempt123',
+    secretNameFactory: () => 'ned_model_openai_codex_accepted',
+    telegramSecretNameFactory: () => 'ned_telegram_accepted',
+  });
+
+  await assert.rejects(
+    () => provider.createWorkspace(NED_PLAN, {
+      modelConnection: codexConnection(), telegramConnection: telegramConnection(),
+    }),
+    /create response lost/,
+  );
+  assert.deepEqual(calls, [
+    ['create-labels', { app: 'ned', managedBy: 'ned-cli', createAttempt: 'attempt123' }],
+    ['reconcile-list', { labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: 'attempt123' } }],
+    ['sandbox-delete', 300, true],
+    ['sandbox-readback', 'accepted-sandbox'],
+    ['secret-delete', 'secret-2'],
+    ['secret-readback', 'secret-2'],
+    ['secret-delete', 'secret-1'],
+    ['secret-readback', 'secret-1'],
   ]);
 });
 
