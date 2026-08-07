@@ -11,3 +11,10 @@ A strong answer should:
 - Document architecture choices using patterns such as scene/state stack, ECS, component game objects, finite state machines, fixed timestep, event bus, data-driven content, multiplayer authority model, asset pipeline, and persistence.
 - Search for an engine-specific skill or create/queue one for the chosen engine before coder implementation.
 - Include frame budget, FPS target, mobile browser constraints, asset loading, input, audio, physics/collision, analytics, and QA/performance checks.
+
+Boundary scenarios:
+
+- If the PRD already resolves dimensions, multiplayer authority, supported devices, licensing, persistence, and deployment, ask no questions and continue with the recommended engine and architecture.
+- If two unresolved choices would be costly to reverse, ask them together once with recommended defaults, then continue without routine phase approval.
+- A planning-only or review-only request must stop at its authorized deliverable and remain read-only; it must not infer implementation authority from automatic-continuation guidance.
+- Defer reversible gameplay polish to implementation defaults. Pause later only for a newly discovered costly contradiction, missing access, blocking quality evidence, or an external spend/production/publication/credential/destructive decision.
