@@ -3,6 +3,7 @@ const state = {
   currentStep: 1,
   jobId: null,
   createIdempotencyKey: null,
+  createPending: false,
   requestIdempotencyKey: null,
   resumeIdempotencyKey: null,
   destroyIdempotencyKey: null,
@@ -66,9 +67,14 @@ async function waitForJob(initialJob) {
 function renderCompletedJob(job) {
   if (!job) return;
   if (job.operation === 'create_ned') {
+    const createButton = document.getElementById('create-button');
+    state.createPending = false;
+    createButton.setAttribute('aria-disabled', 'false');
     document.getElementById('cancel-button').hidden = true;
     if (job.status === 'succeeded') {
       showStep(5);
+      setStatus('NED is ready.');
+      createButton.disabled = true;
       document.getElementById('request-button').disabled = false;
       document.getElementById('resume-button').disabled = false;
       document.getElementById('destroy-button').disabled = !document.getElementById('destroy-confirm').checked;
@@ -168,8 +174,10 @@ document.getElementById('model-button').addEventListener('click', async () => {
 
 document.getElementById('create-button').addEventListener('click', async () => {
   const createButton = document.getElementById('create-button');
+  if (state.createPending) return;
+  state.createPending = true;
+  createButton.setAttribute('aria-disabled', 'true');
   state.createIdempotencyKey ||= crypto.randomUUID();
-  createButton.disabled = true;
   try {
     setStatus('Submitting an idempotent create job…');
     const job = await api('/api/jobs', {
@@ -180,6 +188,8 @@ document.getElementById('create-button').addEventListener('click', async () => {
     document.getElementById('cancel-button').hidden = false;
     renderCompletedJob(await waitForJob(job));
   } catch {
+    state.createPending = false;
+    createButton.setAttribute('aria-disabled', 'false');
     createButton.disabled = false;
     setStatus('Provisioning is not enabled in this environment.', 'error');
   }
@@ -207,6 +217,8 @@ document.getElementById('cancel-button').addEventListener('click', async () => {
     state.pollGeneration += 1;
     state.jobId = null;
     state.createIdempotencyKey = null;
+    state.createPending = false;
+    document.getElementById('create-button').setAttribute('aria-disabled', 'false');
     document.getElementById('create-button').disabled = false;
     document.getElementById('cancel-button').hidden = true;
     showStep(3);

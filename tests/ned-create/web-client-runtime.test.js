@@ -31,6 +31,7 @@ class FakeElement {
   }
   addEventListener(type, listener) { this.listeners.set(type, listener); }
   async dispatch(type, extra = {}) {
+    if (type === 'click') this.focus();
     return this.listeners.get(type)?.({ target: this, preventDefault() {}, ...extra });
   }
   focus() { this.ownerDocument.activeElement = this; }
@@ -153,6 +154,10 @@ for (const width of [1440, 390, 320]) {
     const pendingCreate = createButton.dispatch('click');
     await harness.flush();
     assert.equal(harness.document.activeElement, createButton, 'polling must not steal focus');
+    assert.equal(createButton.getAttribute('aria-disabled'), 'true');
+    const createSubmissions = requests.filter(({ path, options }) => path === '/api/jobs' && options?.method === 'POST').length;
+    await createButton.dispatch('click');
+    assert.equal(requests.filter(({ path, options }) => path === '/api/jobs' && options?.method === 'POST').length, createSubmissions, 'aria-disabled create cannot duplicate admission');
     createOutcome = 'succeeded';
     await harness.flushTimer();
     await pendingCreate;
