@@ -160,11 +160,13 @@ NED 워크플로를 통해 만들어진 배포 예시입니다.
 
 ## 평가 실행
 
+평가 러너에는 Python 3.11 이상이 필요합니다.
+
 ```bash
 python -m eval_runner.cli skills --markdown
 ```
 
-평가 러너는 `EVAL.yaml`을 발견하고, `.eval-runs/` 아래에 격리된 Hermes 프로필 폴더를 만들고, 필요한 경우 setup/teardown 명령을 실행하고, 평가 프롬프트가 있으면 Hermes를 호출하고, 기대 조건을 `result.json`으로 판정하고, HTML/Markdown 리포트를 집계합니다.
+평가 러너는 `EVAL.yaml`을 발견하고, `.eval-runs/` 아래에 권한이 제한된 격리 Hermes 프로필 폴더를 만들고, 필요한 경우 setup/teardown 명령을 실행하고, 선언된 매개변수와 fixture를 포함한 평가 프롬프트로 Hermes를 호출하고, 기대 조건을 `result.json`으로 판정하고, HTML/Markdown 리포트를 집계합니다. 별도의 Hermes 호환 명령으로 판정하려면 `--judge-command`를 사용합니다. 종료 코드 `2`는 평가 내용의 실패를, 종료 코드 `3`은 러너/프로바이더 인프라 실패로 인해 평가 결과를 확정할 수 없음을 뜻합니다.
 평가 러너는 항상 Hermes를 one-shot 모드로 호출합니다. 실제 격리 Hermes 프로필의 동작을 검증해야 하므로 오프라인/정적 통과 모드는 없습니다.
 
 ## 라이선스

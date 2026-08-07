@@ -1,4 +1,4 @@
-import { NED_PLAN } from './plan.js';
+import { NED_PLAN, createNedPlan } from './plan.js';
 
 export function createNedApp({ provider, stateStore }) {
   if (!provider || !stateStore) {
@@ -7,6 +7,9 @@ export function createNedApp({ provider, stateStore }) {
 
   return {
     async create(credentials) {
+      const plan = credentials?.modelConnection
+        ? createNedPlan({ modelProvider: credentials.modelConnection.providerId })
+        : NED_PLAN;
       const existing = await stateStore.load();
       if (existing) {
         if (existing.cleanupPending) {
@@ -17,14 +20,14 @@ export function createNedApp({ provider, stateStore }) {
 
       let workspace;
       try {
-        workspace = await provider.createWorkspace(NED_PLAN, credentials);
+        workspace = await provider.createWorkspace(plan, credentials);
       } catch (error) {
         if (error.recoveryState) {
           const recoveryState = {
             schemaVersion: 1,
-            provider: NED_PLAN.provider,
-            profile: NED_PLAN.profile,
-            hermesVersion: NED_PLAN.hermesVersion,
+            provider: plan.provider,
+            profile: plan.profile,
+            hermesVersion: plan.hermesVersion,
             ...error.recoveryState,
             cleanupPending: true,
           };
@@ -41,17 +44,18 @@ export function createNedApp({ provider, stateStore }) {
       }
       const workspaceState = {
         schemaVersion: 1,
-        provider: NED_PLAN.provider,
+        provider: plan.provider,
         workspaceId: workspace.id,
         workspaceName: workspace.name,
-        profile: NED_PLAN.profile,
-        hermesVersion: NED_PLAN.hermesVersion,
+        profile: plan.profile,
+        hermesVersion: plan.hermesVersion,
         secretId: workspace.nedSecretId,
         secretName: workspace.nedSecretName,
       };
+      if (credentials?.modelConnection) workspaceState.modelProvider = plan.modelProvider;
       try {
-        await provider.bootstrap(workspace, NED_PLAN);
-        const health = await provider.doctor(workspace, NED_PLAN);
+        await provider.bootstrap(workspace, plan);
+        const health = await provider.doctor(workspace, plan);
         if (!health.ok) {
           throw new Error('NED health check failed');
         }
@@ -97,7 +101,8 @@ export function createNedApp({ provider, stateStore }) {
         throw new Error('No NED workspace found. Run ned create first.');
       }
       await provider.start(state.workspaceId);
-      return provider.doctor({ id: state.workspaceId, name: state.workspaceName }, NED_PLAN);
+      const plan = createNedPlan({ modelProvider: state.modelProvider || 'openrouter' });
+      return provider.doctor({ id: state.workspaceId, name: state.workspaceName }, plan);
     },
 
     async reset() {
@@ -106,9 +111,10 @@ export function createNedApp({ provider, stateStore }) {
         throw new Error('No NED workspace found. Run ned create first.');
       }
       const workspace = { id: state.workspaceId, name: state.workspaceName };
+      const plan = createNedPlan({ modelProvider: state.modelProvider || 'openrouter' });
       await provider.start(state.workspaceId);
-      await provider.bootstrap(workspace, NED_PLAN);
-      return provider.doctor(workspace, NED_PLAN);
+      await provider.bootstrap(workspace, plan);
+      return provider.doctor(workspace, plan);
     },
 
     async destroy() {
