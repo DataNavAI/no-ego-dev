@@ -75,6 +75,9 @@ test('browser shell renders the five-action provider-neutral onboarding journey 
       assert.match(html, new RegExp(`data-action="${action}"`));
     }
     for (const provider of ['OpenAI', 'Anthropic', 'Gemini', 'OpenRouter']) assert.match(html, new RegExp(provider));
+    const statusIndex = html.indexOf('id="status"');
+    assert.ok(statusIndex > html.indexOf('id="notice"'), 'status follows the global notice');
+    assert.ok(statusIndex < html.indexOf('id="model-panel"'), 'status precedes long panels so failure and retry progress remain visible on mobile');
     const client = await fetch(`${context.baseUrl}/app.js`).then((result) => result.text());
     assert.match(client, /operation: 'send_first_request'/);
     assert.match(client, /operation: 'resume_ned'/);

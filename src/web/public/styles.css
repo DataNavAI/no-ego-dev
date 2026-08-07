@@ -54,7 +54,8 @@ label { display: block; font-size: 14px; font-weight: 700; }
 input[type="password"], textarea { width: 100%; margin: 8px 0 4px; padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: #0c1015; color: var(--text); }
 input:focus, textarea:focus, button:focus-visible { outline: 3px solid rgb(133 242 195 / 30%); outline-offset: 2px; border-color: var(--accent); }
 .hint { font-size: 12px; }
-.status { min-height: 24px; margin-top: 24px; color: var(--accent); }
+.status { min-height: 24px; margin: 16px 0 24px; color: var(--accent); }
+.status:empty { display: none; }
 .status.warning { color: #ffd48a; }
 .status.error { color: var(--danger); }
 .response { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #0c1015; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
