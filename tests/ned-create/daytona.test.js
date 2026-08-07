@@ -71,6 +71,16 @@ test('Daytona provider creates the fixed private persistent sandbox with an egre
 
 test('Daytona refreshes the exact owned OAuth Secret without changing its identity or host scope', async () => {
   const observed = {};
+  const sandbox = {
+    state: 'stopped',
+    async start(timeout) { observed.start = timeout; this.state = 'started'; },
+    process: {
+      async executeCommand(command, cwd, env, timeout) {
+        observed.sync = { command, cwd, env, timeout };
+        return { exitCode: 0, result: '' };
+      },
+    },
+  };
   class FakeDaytona {
     constructor() {
       this.secret = {
@@ -80,18 +90,27 @@ test('Daytona refreshes the exact owned OAuth Secret without changing its identi
         },
       };
     }
+    async get(id) { observed.get = id; return sandbox; }
   }
-  const provider = createDaytonaProvider({ apiKey: 'daytona-only', DaytonaClass: FakeDaytona });
+  const provider = createDaytonaProvider({ apiKey: 'synthetic-test-value', DaytonaClass: FakeDaytona });
   await provider.updateModelCredential({
     secretId: 'secret-1',
     secretName: 'ned_model_openai_codex_test',
     modelProvider: 'openai-codex',
+    workspaceId: 'sandbox-123',
+    profile: 'ned',
   }, codexConnection('refreshed-codex-access'));
 
   assert.deepEqual(observed.update, {
     id: 'secret-1',
     params: { value: 'refreshed-codex-access', hosts: ['chatgpt.com'] },
   });
+  assert.equal(observed.get, 'sandbox-123');
+  assert.equal(observed.start, 300);
+  assert.match(observed.sync.command, /NED_OPENAI_CODEX_ACCESS_TOKEN/);
+  assert.match(observed.sync.command, /auth\.json/);
+  assert.doesNotMatch(observed.sync.command, /refreshed-codex-access/);
+  assert.equal(observed.sync.timeout, 120);
 });
 
 test('Daytona provider uploads the bundled profile and installs pinned Hermes before health checks', async () => {

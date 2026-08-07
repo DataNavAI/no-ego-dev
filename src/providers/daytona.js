@@ -122,6 +122,39 @@ export function createDaytonaProvider({
       if (updated.id !== state.secretId || updated.name !== state.secretName) {
         throw new Error('Daytona model credential update did not preserve exact owned identity.');
       }
+      if (!state.workspaceId || !/^[a-z0-9-]+$/.test(state.profile || '')) {
+        throw new Error('Saved NED workspace identity is incomplete for credential synchronization.');
+      }
+      const sandbox = await client.get(state.workspaceId);
+      if (sandbox.state !== 'started') await sandbox.start(300);
+      const profileDir = `$HOME/.hermes/profiles/${state.profile}`;
+      const syncCommand = [
+        'set -euo pipefail',
+        `profile_dir="${profileDir}"`,
+        'test -n "${NED_OPENAI_CODEX_ACCESS_TOKEN:-}"',
+        'NED_PROFILE_DIR="$profile_dir" python3 - <<\'PY\'',
+        'import json, os, pathlib, tempfile',
+        'root = pathlib.Path(os.environ["NED_PROFILE_DIR"])',
+        'token = os.environ["NED_OPENAI_CODEX_ACCESS_TOKEN"]',
+        'payload = {"version": 1, "active_provider": "openai-codex", "providers": {"openai-codex": {"tokens": {"access_token": token, "refresh_token": "ned-local-refresh-managed"}, "auth_mode": "chatgpt"}}}',
+        'fd, temporary = tempfile.mkstemp(prefix=".auth.json.ned-", dir=root)',
+        'try:',
+        '    os.fchmod(fd, 0o600)',
+        '    with os.fdopen(fd, "w", encoding="utf-8") as handle:',
+        '        json.dump(payload, handle, separators=(",", ":"))',
+        '        handle.write("\\n")',
+        '        handle.flush()',
+        '        os.fsync(handle.fileno())',
+        '    os.replace(temporary, root / "auth.json")',
+        'finally:',
+        '    try: os.unlink(temporary)',
+        '    except FileNotFoundError: pass',
+        'PY',
+      ].join('\n');
+      const synced = await sandbox.process.executeCommand(syncCommand, undefined, undefined, 120);
+      if (synced.exitCode !== 0) {
+        throw new Error(`Daytona model credential synchronization failed: ${synced.result || 'unknown error'}`);
+      }
       return { id: updated.id, name: updated.name };
     },
 
