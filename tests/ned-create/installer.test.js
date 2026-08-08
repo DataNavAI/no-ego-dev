@@ -197,6 +197,7 @@ test('clean macOS arm64 and Ubuntu amd64/arm64 installs and reruns preserve BotF
       await acquireTelegramConnection({
         platform: 'linux',
         log: (line) => lines.push(line),
+        readStoredToken: async () => null,
         openExternal: async () => {},
         promptHidden: async () => token,
         fetchImpl: async () => ({ ok: true, json: async () => ({ ok: true, result: { id: 1, is_bot: true, username: 'clean_matrix_bot' } }) }),

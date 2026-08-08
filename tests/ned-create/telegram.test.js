@@ -31,6 +31,7 @@ test('Telegram setup opens BotFather when possible, prints numbered actions, and
 
   const connection = await acquireTelegramConnection({
     log: (line) => logs.push(line),
+    readStoredToken: async () => null,
     openExternal: async (url) => opened.push(url),
     promptHidden: async (prompt) => { prompts.push(prompt); return token; },
     fetchImpl: async (url, options) => { requested = { url, options }; return okGetMe(); },
@@ -80,6 +81,7 @@ test('Telegram getMe rejects invalid or revoked credentials with recovery copy a
   await assert.rejects(
     () => acquireTelegramConnection({
       log() {},
+      readStoredToken: async () => null,
       openExternal: async () => {},
       promptHidden: async () => token,
       fetchImpl: async () => ({
@@ -99,6 +101,7 @@ test('Telegram validation redacts token-in-path network failures and hostile bot
   await assert.rejects(
     () => acquireTelegramConnection({
       log() {},
+      readStoredToken: async () => null,
       openExternal: async () => {},
       promptHidden: async () => token,
       fetchImpl: async (url) => { throw new Error(`request failed: ${url}`); },
@@ -111,6 +114,7 @@ test('Telegram validation redacts token-in-path network failures and hostile bot
   await assert.rejects(
     () => acquireTelegramConnection({
       log() {},
+      readStoredToken: async () => null,
       openExternal: async () => {},
       promptHidden: async () => token,
       fetchImpl: async () => okGetMe(`bad name ${token}`),
@@ -125,6 +129,7 @@ test('Telegram setup handles hidden-input cancellation and validation timeout wi
   await assert.rejects(
     () => acquireTelegramConnection({
       log() {},
+      readStoredToken: async () => null,
       openExternal: async () => {},
       promptHidden: async () => '',
       fetchImpl: async () => assert.fail('empty token must not call Telegram'),
@@ -136,6 +141,7 @@ test('Telegram setup handles hidden-input cancellation and validation timeout wi
   await assert.rejects(
     () => acquireTelegramConnection({
       log() {},
+      readStoredToken: async () => null,
       openExternal: async () => {},
       promptHidden: async () => token,
       timeoutMs: 5,
