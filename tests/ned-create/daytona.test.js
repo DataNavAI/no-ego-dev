@@ -148,6 +148,10 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
     name: 'ned-product-partner',
     fs: {
       async uploadFile(content, destination) { observed.upload = { content, destination }; },
+      async downloadFile(path) {
+        assert.equal(path, '/tmp/ned-gateway-status.txt');
+        return Buffer.from(observed.gatewaySession ? 'Telegram: connected\n' : 'Telegram: disconnected\n');
+      },
     },
     process: {
       async executeCommand(command, cwd, env, timeout) {
@@ -208,6 +212,13 @@ test('Daytona doctor verifies the exact remote Hermes profile', async () => {
   const commands = [];
   const sandbox = {
     state: 'started',
+    fs: {
+      async downloadFile(path, timeout) {
+        assert.equal(path, '/tmp/ned-gateway-status.txt');
+        assert.equal(timeout, 30);
+        return Buffer.from('Telegram: connected\n');
+      },
+    },
     process: {
       async executeCommand(command) {
         commands.push(command);
@@ -230,10 +241,36 @@ test('Daytona doctor verifies the exact remote Hermes profile', async () => {
   assert.match(commands.at(-1), /hermes --profile ned -z 'Reply with exactly: ready'/);
 });
 
+test('Daytona health fails closed when the remote filesystem status contract is unavailable', async () => {
+  const sandbox = {
+    state: 'started',
+    process: {
+      async executeCommand(command) {
+        if (command.includes('gateway status')) return { exitCode: 0, result: 'Telegram: connected' };
+        return { exitCode: 0, result: 'ready' };
+      },
+    },
+  };
+  class FakeDaytona {
+    constructor() { this.secret = {}; }
+    async get() { return sandbox; }
+  }
+  const provider = createDaytonaProvider({ apiKey: 'provi...ue', DaytonaClass: FakeDaytona });
+  const health = await provider.doctor({ id: 'sandbox-123' }, NED_PLAN);
+  assert.equal(health.ok, false);
+  assert.deepEqual(health.checks, ['sandbox', 'hermes', 'ned-profile', 'inference']);
+});
+
 test('Daytona chat starts a suspended workspace and shell-quotes the one-shot prompt', async () => {
   const observed = { starts: 0 };
   const sandbox = {
     state: 'stopped',
+    fs: {
+      async downloadFile(path) {
+        assert.equal(path, '/tmp/ned-gateway-status.txt');
+        return Buffer.from('Telegram: connected\n');
+      },
+    },
     async start() { observed.starts += 1; this.state = 'started'; },
     process: {
       async executeCommand(command) {
@@ -261,6 +298,12 @@ test('Daytona restart recreates the exact polling gateway session without webhoo
   let gatewayReady = false;
   const sandbox = {
     state: 'stopped',
+    fs: {
+      async downloadFile(path) {
+        assert.equal(path, '/tmp/ned-gateway-status.txt');
+        return Buffer.from(gatewayReady ? 'Telegram: connected\n' : 'Telegram: disconnected\n');
+      },
+    },
     async start(timeout) { observed.started += 1; assert.equal(timeout, 300); this.state = 'started'; },
     process: {
       async executeCommand(command) {
@@ -302,6 +345,12 @@ test('Daytona pairing uses the exact pinned Hermes approval contract after gatew
   const commands = [];
   const sandbox = {
     state: 'started',
+    fs: {
+      async downloadFile(path) {
+        assert.equal(path, '/tmp/ned-gateway-status.txt');
+        return Buffer.from('Telegram: connected\n');
+      },
+    },
     process: {
       async executeCommand(command) {
         commands.push(command);

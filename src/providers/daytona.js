@@ -55,19 +55,28 @@ export function createDaytonaProvider({
   }
 
   async function telegramGatewayReady(sandbox, profile) {
+    const statusPath = '/tmp/ned-gateway-status.txt';
     const command = [
       'set -euo pipefail',
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
-      `status=$(hermes --profile ${profile} gateway status 2>&1 || true)`,
-      'if printf "%s\\n" "$status" | grep -Eiq "disconnected|not[[:space:]-]+connected"; then exit 7; fi',
-      'if printf "%s\\n" "$status" | grep -Eiq "telegram" && printf "%s\\n" "$status" | grep -Eiq "connected"; then exit 0; fi',
-      'exit 7',
+      `hermes --profile ${profile} gateway status >${statusPath} 2>&1 || true`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
-    const diagnostic = `NED_EXIT=${result.exitCode}`;
-    const ready = result.exitCode === 0;
-    return { ready, diagnostic };
+    if (typeof sandbox.fs?.downloadFile !== 'function') {
+      return { ready: false, diagnostic: `NED_STATUS_UNAVAILABLE=true NED_EXIT=${result.exitCode}` };
+    }
+    let statusText = '';
+    try {
+      statusText = (await sandbox.fs.downloadFile(statusPath, 30)).toString('utf8').slice(0, 16_384);
+    } catch {
+      return { ready: false, diagnostic: `NED_STATUS_UNAVAILABLE=true NED_EXIT=${result.exitCode}` };
+    }
+    const disconnected = /disconnected|not[[:space:]-]+connected/i.test(statusText);
+    const telegram = /telegram/i.test(statusText);
+    const connected = /connected/i.test(statusText);
+    const ready = !disconnected && telegram && connected;
+    return { ready, diagnostic: `NED_STATUS_TELEGRAM=${telegram} NED_STATUS_CONNECTED=${connected} NED_STATUS_DISCONNECTED=${disconnected}` };
   }
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
@@ -346,11 +355,11 @@ export function createDaytonaProvider({
       const result = await sandbox.process.executeCommand(command, undefined, undefined, 120);
       const inferenceReady = result.exitCode === 0;
       return {
-        ok: inferenceReady && gatewayReady,
+        ok: inferenceReady && gatewayReady.ready,
         checks: [
           'sandbox',
           ...(inferenceReady ? ['hermes', 'ned-profile', 'inference'] : []),
-          ...(gatewayReady ? ['telegram-gateway'] : []),
+          ...(gatewayReady.ready ? ['telegram-gateway'] : []),
         ],
         output: result.result || '',
       };

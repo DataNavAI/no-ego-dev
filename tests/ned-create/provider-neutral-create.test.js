@@ -76,10 +76,16 @@ test('Daytona bootstrap configures the selected Hermes provider and model', asyn
   let command;
   let gatewayStarted = false;
   const sandbox = {
-    fs: { async uploadFile() {} },
+    fs: {
+      async uploadFile() {},
+      async downloadFile(path) {
+        assert.equal(path, '/tmp/ned-gateway-status.txt');
+        return Buffer.from(gatewayStarted ? 'Telegram: connected\n' : 'Telegram: disconnected\n');
+      },
+    },
     process: {
       async executeCommand(value) {
-        if (value.includes('from gateway.status')) return { exitCode: gatewayStarted ? 0 : 1 };
+        if (value.includes('gateway status')) return { exitCode: 0 };
         command = value;
         return { exitCode: 0 };
       },
