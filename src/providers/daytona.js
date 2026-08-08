@@ -56,12 +56,17 @@ export function createDaytonaProvider({
 
   async function telegramGatewayReady(sandbox, profile) {
     const command = [
-      'set -euo pipefail',
+      'set -uo pipefail',
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
       'test -x "$HOME/.hermes/venv/bin/python"',
       `"$HOME/.hermes/venv/bin/python" - <<'PY'`,
-      'from gateway.status import read_runtime_status',
+      'try:',
+      '    from gateway.status import read_runtime_status',
+      'except Exception:',
+      '    print("NED_STATUS_IMPORT=failed")',
+      '    print("NED_READY=False")',
+      '    raise SystemExit(0)',
       'status = read_runtime_status() or {}',
       'telegram = (status.get("platforms") or {}).get("telegram") or {}',
       'print("NED_GATEWAY_STATE=" + str(status.get("gateway_state") or "unknown"))',
@@ -71,7 +76,7 @@ export function createDaytonaProvider({
       `hermes --profile ${profile} gateway status || true`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
-    const diagnostic = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(READY|GATEWAY|TELEGRAM)_STATE?=/.test(line)).join(' ');
+    const diagnostic = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(READY|STATUS_IMPORT|GATEWAY|TELEGRAM)/.test(line)).join(' ');
     const ready = diagnostic ? /NED_READY=True/.test(diagnostic) : result.exitCode === 0;
     return { ready, diagnostic };
   }
