@@ -151,8 +151,8 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
         return Buffer.from(observed.gatewaySession
-          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_API_HTTP=200\n'
-          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_API_HTTP=200\n');
+          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n'
+          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
       },
     },
     process: {
@@ -218,7 +218,7 @@ test('Daytona doctor verifies the exact remote Hermes profile', async () => {
       async downloadFile(path, timeout) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
         assert.equal(timeout, 30);
-        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_API_HTTP=200\n');
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
       },
     },
     process: {
@@ -270,7 +270,7 @@ test('Daytona chat starts a suspended workspace and shell-quotes the one-shot pr
     fs: {
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
-        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_API_HTTP=200\n');
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
       },
     },
     async start() { observed.starts += 1; this.state = 'started'; },
@@ -304,8 +304,8 @@ test('Daytona restart recreates the exact polling gateway session without webhoo
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
         return Buffer.from(gatewayReady
-          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_API_HTTP=200\n'
-          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_API_HTTP=200\n');
+          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n'
+          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
       },
     },
     async start(timeout) { observed.started += 1; assert.equal(timeout, 300); this.state = 'started'; },
@@ -352,7 +352,7 @@ test('Daytona pairing uses the exact pinned Hermes approval contract after gatew
     fs: {
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
-        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_API_HTTP=200\n');
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
       },
     },
     process: {

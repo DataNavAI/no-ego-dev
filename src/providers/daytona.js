@@ -64,6 +64,7 @@ export function createDaytonaProvider({
       `python3 - <<'PY' >${statusPath}
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -90,6 +91,7 @@ print("NED_STATUS_TELEGRAM=" + str(bool(telegram)).lower())
 print("NED_STATUS_CONNECTED=" + str(state == "connected").lower())
 print("NED_STATUS_DISCONNECTED=" + str(state == "disconnected").lower())
 print("NED_DIAG_TOKEN_PRESENT=" + str(bool(token)).lower())
+print("NED_DIAG_TOKEN_SHAPE=" + str(bool(re.fullmatch(r"\\d+:[A-Za-z0-9_-]+", token))).lower())
 print("NED_DIAG_API_HTTP=" + str(http_status))
 PY`,
     ].join('\n');
@@ -111,13 +113,14 @@ PY`,
     const connected = readMarker('NED_STATUS_CONNECTED');
     const disconnected = readMarker('NED_STATUS_DISCONNECTED');
     const tokenPresent = readMarker('NED_DIAG_TOKEN_PRESENT');
+    const tokenShape = readMarker('NED_DIAG_TOKEN_SHAPE');
     const apiHttpMatch = statusText.match(/^NED_DIAG_API_HTTP=(\d+)$/mi);
     const apiHttp = apiHttpMatch ? Number(apiHttpMatch[1]) : null;
-    if ([telegram, connected, disconnected, tokenPresent].some((value) => value === null) || apiHttp === null) {
+    if ([telegram, connected, disconnected, tokenPresent, tokenShape].some((value) => value === null) || apiHttp === null) {
       return { ready: false, diagnostic: 'NED_STATUS_UNAVAILABLE=true' };
     }
     const ready = telegram && connected && !disconnected && tokenPresent && apiHttp === 200;
-    return { ready, diagnostic: `NED_STATUS_TELEGRAM=${telegram} NED_STATUS_CONNECTED=${connected} NED_STATUS_DISCONNECTED=${disconnected} NED_DIAG_TOKEN_PRESENT=${tokenPresent} NED_DIAG_API_HTTP=${apiHttp}` };
+    return { ready, diagnostic: `NED_STATUS_TELEGRAM=${telegram} NED_STATUS_CONNECTED=${connected} NED_STATUS_DISCONNECTED=${disconnected} NED_DIAG_TOKEN_PRESENT=${tokenPresent} NED_DIAG_TOKEN_SHAPE=${tokenShape} NED_DIAG_API_HTTP=${apiHttp}` };
   }
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
