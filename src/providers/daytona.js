@@ -104,7 +104,7 @@ export function createDaytonaProvider({
       runAsync: true,
       suppressInputEcho: true,
     }, 30);
-    for (let attempt = 0; attempt < 30; attempt += 1) {
+    for (let attempt = 0; attempt < 90; attempt += 1) {
       await sleep(2_000);
       const status = await telegramGatewayReady(sandbox, profile);
       lastDiagnostic = status.diagnostic;
