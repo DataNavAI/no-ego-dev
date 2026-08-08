@@ -56,31 +56,15 @@ export function createDaytonaProvider({
 
   async function telegramGatewayReady(sandbox, profile) {
     const command = [
-      'set -uo pipefail',
+      'set -euo pipefail',
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
-      'test -x "$HOME/.hermes/venv/bin/python"',
-      `"$HOME/.hermes/venv/bin/python" - <<'PY'`,
-      'try:',
-      '    from gateway.status import read_runtime_status',
-      'except Exception:',
-      '    print("NED_STATUS_IMPORT=failed")',
-      '    raise SystemExit(8)',
-      'status = read_runtime_status() or {}',
-      'telegram = (status.get("platforms") or {}).get("telegram") or {}',
-      'print("NED_GATEWAY_STATE=" + str(status.get("gateway_state") or "unknown"))',
-      'print("NED_TELEGRAM_STATE=" + str(telegram.get("state") or "unknown"))',
-      'ready = status.get("gateway_state") == "running" and telegram.get("state") == "connected"',
-      'print("NED_READY=" + str(ready))',
-      'raise SystemExit(0 if ready else 7)',
-      'PY',
-      'probe_exit=$?',
-      `hermes --profile ${profile} gateway status >/dev/null 2>&1 || true`,
-      'exit "$probe_exit"',
+      `status=$(hermes --profile ${profile} gateway status 2>&1 || true)`,
+      'if printf "%s\\n" "$status" | grep -Eiq "telegram[^[:alnum:]]+connected|connected[^[:alnum:]]+telegram"; then exit 0; fi',
+      'exit 7',
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
-    const markers = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(READY|STATUS_IMPORT|GATEWAY|TELEGRAM)/.test(line)).join(' ');
-    const diagnostic = `NED_EXIT=${result.exitCode}${markers ? ` ${markers}` : ''}`;
+    const diagnostic = `NED_EXIT=${result.exitCode}`;
     const ready = result.exitCode === 0;
     return { ready, diagnostic };
   }
