@@ -150,7 +150,9 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
       async uploadFile(content, destination) { observed.upload = { content, destination }; },
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
-        return Buffer.from(observed.gatewaySession ? 'Telegram: connected\n' : 'Telegram: disconnected\n');
+        return Buffer.from(observed.gatewaySession
+          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\n'
+          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\n');
       },
     },
     process: {
@@ -216,7 +218,7 @@ test('Daytona doctor verifies the exact remote Hermes profile', async () => {
       async downloadFile(path, timeout) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
         assert.equal(timeout, 30);
-        return Buffer.from('Telegram: connected\n');
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\n');
       },
     },
     process: {
@@ -268,7 +270,7 @@ test('Daytona chat starts a suspended workspace and shell-quotes the one-shot pr
     fs: {
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
-        return Buffer.from('Telegram: connected\n');
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\n');
       },
     },
     async start() { observed.starts += 1; this.state = 'started'; },
@@ -301,7 +303,9 @@ test('Daytona restart recreates the exact polling gateway session without webhoo
     fs: {
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
-        return Buffer.from(gatewayReady ? 'Telegram: connected\n' : 'Telegram: disconnected\n');
+        return Buffer.from(gatewayReady
+          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\n'
+          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\n');
       },
     },
     async start(timeout) { observed.started += 1; assert.equal(timeout, 300); this.state = 'started'; },
@@ -348,7 +352,7 @@ test('Daytona pairing uses the exact pinned Hermes approval contract after gatew
     fs: {
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
-        return Buffer.from('Telegram: connected\n');
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\n');
       },
     },
     process: {

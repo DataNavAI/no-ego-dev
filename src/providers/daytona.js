@@ -67,6 +67,7 @@ export function createDaytonaProvider({
       'if printf "%s\\n" "$status" | grep -Eiq "telegram"; then telegram=true; fi',
       'if printf "%s\\n" "$status" | grep -Eiq "connected"; then connected=true; fi',
       'if printf "%s\\n" "$status" | grep -Eiq "disconnected|not[[:space:]-]+connected"; then disconnected=true; fi',
+      'if [ "$disconnected" = true ]; then connected=false; fi',
       `printf 'NED_STATUS_TELEGRAM=%s\\nNED_STATUS_CONNECTED=%s\\nNED_STATUS_DISCONNECTED=%s\\n' "$telegram" "$connected" "$disconnected" >${statusPath}`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
@@ -79,10 +80,17 @@ export function createDaytonaProvider({
     } catch {
       return { ready: false, diagnostic: `NED_STATUS_UNAVAILABLE=true NED_EXIT=${result.exitCode}` };
     }
-    const disconnected = /disconnected|not[[:space:]-]+connected/i.test(statusText);
-    const telegram = /telegram/i.test(statusText);
-    const connected = /connected/i.test(statusText);
-    const ready = !disconnected && telegram && connected;
+    const readMarker = (name) => {
+      const match = statusText.match(new RegExp(`^${name}=(true|false)$`, 'mi'));
+      return match ? match[1] === 'true' : null;
+    };
+    const telegram = readMarker('NED_STATUS_TELEGRAM');
+    const connected = readMarker('NED_STATUS_CONNECTED');
+    const disconnected = readMarker('NED_STATUS_DISCONNECTED');
+    if ([telegram, connected, disconnected].some((value) => value === null)) {
+      return { ready: false, diagnostic: 'NED_STATUS_UNAVAILABLE=true' };
+    }
+    const ready = telegram && connected && !disconnected;
     return { ready, diagnostic: `NED_STATUS_TELEGRAM=${telegram} NED_STATUS_CONNECTED=${connected} NED_STATUS_DISCONNECTED=${disconnected}` };
   }
 

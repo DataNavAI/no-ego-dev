@@ -80,7 +80,9 @@ test('Daytona bootstrap configures the selected Hermes provider and model', asyn
       async uploadFile() {},
       async downloadFile(path) {
         assert.equal(path, '/tmp/ned-gateway-status.txt');
-        return Buffer.from(gatewayStarted ? 'Telegram: connected\n' : 'Telegram: disconnected\n');
+        return Buffer.from(gatewayStarted
+          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\n'
+          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\n');
       },
     },
     process: {
