@@ -1,6 +1,8 @@
-# Browser-first `ned create` implementation plan
+# Browser-first `ned create` implementation plan — PARKED
 
-Status: IMPLEMENTING
+Status: FUTURE SCOPE AFTER DAYTONA CLI V1
+
+Do not deploy, extend, or treat this plan as the primary CUJ. AWS PR #28 was closed without deployment. The authoritative v1 contracts are PRD/CUJ/TECH_SPEC v3.0 for the one-command Daytona CLI.
 PR mode: MERGEABLE
 Issues: [#22](https://github.com/DataNavAI/no-ego-dev/issues/22), [#23](https://github.com/DataNavAI/no-ego-dev/issues/23)
 Design input only: review-only PR [#25](https://github.com/DataNavAI/no-ego-dev/pull/25); never merge it.

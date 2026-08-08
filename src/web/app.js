@@ -23,6 +23,10 @@ const STATIC_FILES = Object.freeze({
   '/': { path: new URL('./public/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
   '/app.js': { path: new URL('./public/app.js', import.meta.url), type: 'text/javascript; charset=utf-8' },
   '/styles.css': { path: new URL('./public/styles.css', import.meta.url), type: 'text/css; charset=utf-8' },
+  '/docs.css': { path: new URL('./public/docs.css', import.meta.url), type: 'text/css; charset=utf-8' },
+  '/docs/v1/quickstart/': { path: new URL('./public/docs/v1/quickstart/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
+  '/docs/v1/telegram/': { path: new URL('./public/docs/v1/telegram/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
+  '/docs/v1/credentials/': { path: new URL('./public/docs/v1/credentials/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
 });
 
 class HttpError extends Error {

@@ -6,26 +6,31 @@ NoEgoDev, 줄여서 NED는 간단한 요청을 작동하고 공개 가능한 제
 
 NED는 아이디어를 빠르게 검증하고 싶은 사람에게 가장 잘 맞습니다. 사용자, 팀원, 고객에게 실제로 보여줄 수 있는 무언가를 빠르게 만들 때 유용합니다.
 
-## 비공개 호스팅 NED 만들기 (CLI 베타)
+## 비공개 NED VPS 만들기 (Daytona CLI v1)
 
-요구사항은 Node.js 20 이상, Daytona 계정, 그리고 `write:sandboxes`, `delete:sandboxes`, `manage:secrets` 권한이 있는 Daytona API 키입니다. https://app.daytona.io/dashboard/keys 에서 키를 만든 뒤 로컬 셸에만 보관하세요. 채팅에는 붙여넣지 마세요.
+지원되는 깨끗한 macOS/Linux x64 또는 arm64 환경에서 아래 한 줄을 실행합니다. 운영체제의 `bash`, `curl`, `tar`, SHA-256 도구만 필요하며 sudo, git, 시스템 Node.js/npm은 필요하지 않습니다.
 
 ```bash
-npm install --global no-ego-dev
-read -s DAYTONA_API_KEY && export DAYTONA_API_KEY
-ned create
+i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/603dcff47a9c935cf5d9323f41942e9d0a530b43/scripts/install.sh -o "$i" && { echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | sha256sum -c - 2>/dev/null || echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
 ```
 
-`ned create`는 인프라를 묻지 않습니다. 브라우저에서 OpenRouter 권한을 승인하면 비공개 영구 Daytona 워크스페이스를 만들고, 고정 버전의 Hermes와 NED를 설치한 뒤 실제 추론 상태 확인을 실행합니다.
+필수 조건은 Daytona 계정과 `write:sandboxes`, `delete:sandboxes`, `manage:secrets` 권한입니다. macOS에서는 서비스 `no-ego-dev/daytona`, 계정 `DAYTONA_API_KEY`인 Keychain 항목을 우선 사용하고, 그 외에는 숨김 터미널 입력을 사용합니다. 비밀값을 채팅이나 명령 인자에 붙여넣지 마세요.
+
+`ned create`는 호환되는 기존 Hermes ChatGPT OAuth 자격 증명을 안전하게 재사용하고, 없으면 고정된 ChatGPT 디바이스 인증 페이지를 엽니다. 이어 공식 [@BotFather](https://t.me/BotFather)에서 일회용 봇을 만드는 번호 매긴 단계를 안내하고, 토큰은 정확한 숨김 프롬프트 또는 지정된 macOS Keychain 항목으로만 받습니다. Telegram `getMe` 검증 후 모델과 Telegram에 대해 각각 별도의 egress 제한 Daytona Secret을 만들며, 고정 Hermes 장기 폴링 게이트웨이를 시작하고 상태를 확인합니다. OpenRouter와 Telegram webhook은 필요하지 않습니다.
+
+설정 후 검증된 봇 링크를 열고 **Start**를 누른 뒤 `hello`를 보냅니다. 봇이 소유자 코드를 보내면 다음 명령으로 승인합니다.
 
 ```bash
-ned chat "내 제품 아이디어의 가장 작은 유용한 버전을 만들어줘"
+ned pair <8자리-코드>
+ned chat "내 제품 아이디어의 가장 작은 유용한 버전을 만들어줘"  # 선택적 터미널 경로
 ned doctor
-ned reset
+ned repair
 ned destroy --yes
 ```
 
-워크스페이스는 15분 동안 유휴 상태이면 중지되고 7일 뒤 아카이브됩니다. 중지 상태에서는 디스크 비용이 남지만, 아카이브된 컨테이너는 복원 가능한 상태를 유지하면서 활성 샌드박스 비용이 발생하지 않습니다. OpenRouter 모델 사용료는 별도입니다.
+공개 V1 문서: [빠른 시작](https://ned.datanav.app/docs/v1/quickstart/), [Telegram 설정](https://ned.datanav.app/docs/v1/telegram/), [자격 증명·해지·삭제·문제 해결](https://ned.datanav.app/docs/v1/credentials/). 이 안정된 경로는 저장소에 포함되지만 실제 프로덕션 배포 여부는 별도 검증 대상입니다.
+
+Sandbox는 15분 동안 유휴 상태이면 중지되고 7일 뒤 아카이브됩니다. `chat`과 `doctor`는 중지된 Sandbox를 다시 시작합니다. OAuth 기반 모델 연결에는 ChatGPT 구독/사용 약관이 적용됩니다.
 
 제품 및 보안 계약은 [`docs/ned-create/PRD.md`](docs/ned-create/PRD.md), [`CUJ.md`](docs/ned-create/CUJ.md), [`TECH_SPEC.md`](docs/ned-create/TECH_SPEC.md)를 참고하세요.
 

@@ -1,4 +1,15 @@
 const PROVIDERS = Object.freeze({
+  'openai-codex': Object.freeze({
+    id: 'openai-codex', label: 'ChatGPT',
+    environmentVariables: Object.freeze([]),
+    sandboxEnvironmentVariable: 'NED_OPENAI_CODEX_ACCESS_TOKEN',
+    allowedHosts: Object.freeze(['chatgpt.com']),
+    hermesProvider: 'openai-codex', defaultModel: 'gpt-5.6-sol',
+    delegatedAuthorization: Object.freeze({
+      status: 'available', method: 'oauth-device-code',
+      note: 'Uses Hermes-compatible ChatGPT device authorization; no API key is requested.',
+    }),
+  }),
   openai: Object.freeze({
     id: 'openai', label: 'OpenAI',
     environmentVariables: Object.freeze(['OPENAI_API_KEY']),
@@ -45,7 +56,7 @@ const PROVIDERS = Object.freeze({
   }),
 });
 
-const PROVIDER_ORDER = Object.freeze(['openai', 'anthropic', 'gemini', 'openrouter']);
+const PROVIDER_ORDER = Object.freeze(['openai-codex', 'openai', 'anthropic', 'gemini', 'openrouter']);
 
 function providerFor(providerId) {
   const provider = PROVIDERS[providerId];
@@ -100,10 +111,11 @@ export function createModelConnection({ providerId, method, value }) {
   if (typeof value !== 'string' || value.length === 0) {
     throw new Error(`${provider.label} credential is required`);
   }
-  if (method === 'oauth-pkce' && provider.delegatedAuthorization.status !== 'available') {
+  if (['oauth-pkce', 'oauth-device-code'].includes(method)
+      && provider.delegatedAuthorization.status !== 'available') {
     throw new Error(`${provider.label} delegated authorization is not available for browser API authorization`);
   }
-  if (!['api-key', 'oauth-pkce'].includes(method)) {
+  if (!['api-key', 'oauth-pkce', 'oauth-device-code'].includes(method)) {
     throw new Error(`Unsupported ${provider.label} connection method: ${method || 'missing'}`);
   }
 
