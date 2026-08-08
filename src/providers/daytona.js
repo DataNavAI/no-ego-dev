@@ -60,7 +60,8 @@ export function createDaytonaProvider({
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
       `status=$(hermes --profile ${profile} gateway status 2>&1 || true)`,
-      'if printf "%s\\n" "$status" | grep -Eiq "telegram[^[:alnum:]]+connected|connected[^[:alnum:]]+telegram"; then exit 0; fi',
+      'if printf "%s\\n" "$status" | grep -Eiq "disconnected|not[[:space:]-]+connected"; then exit 7; fi',
+      'if printf "%s\\n" "$status" | grep -Eiq "telegram" && printf "%s\\n" "$status" | grep -Eiq "connected"; then exit 0; fi',
       'exit 7',
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
