@@ -60,15 +60,8 @@ export function createDaytonaProvider({
       'set -euo pipefail',
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
-      `status=$(hermes --profile ${profile} gateway status 2>&1 || true)`,
-      'telegram=false',
-      'connected=false',
-      'disconnected=false',
-      'if printf "%s\\n" "$status" | grep -Eiq "telegram"; then telegram=true; fi',
-      'if printf "%s\\n" "$status" | grep -Eiq "connected"; then connected=true; fi',
-      'if printf "%s\\n" "$status" | grep -Eiq "disconnected|not[[:space:]-]+connected"; then disconnected=true; fi',
-      'if [ "$disconnected" = true ]; then connected=false; fi',
-      `printf 'NED_STATUS_TELEGRAM=%s\\nNED_STATUS_CONNECTED=%s\\nNED_STATUS_DISCONNECTED=%s\\n' "$telegram" "$connected" "$disconnected" >${statusPath}`,
+      `hermes --profile ${profile} gateway status >/dev/null 2>&1 || true`,
+      `python3 -c 'import json, os; p=os.path.expanduser("~/.hermes/gateway_state.json"); d=json.load(open(p, encoding="utf-8")); s=((d.get("platforms") or {}).get("telegram") or {}).get("state", "").lower(); t=bool((d.get("platforms") or {}).get("telegram")); print("NED_STATUS_TELEGRAM=" + str(t).lower()); print("NED_STATUS_CONNECTED=" + str(s == "connected").lower()); print("NED_STATUS_DISCONNECTED=" + str(s == "disconnected").lower())' >${statusPath}`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
     if (typeof sandbox.fs?.downloadFile !== 'function') {
