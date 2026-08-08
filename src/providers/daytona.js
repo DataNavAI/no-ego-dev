@@ -61,7 +61,37 @@ export function createDaytonaProvider({
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
       `hermes --profile ${profile} gateway status >/dev/null 2>&1 || true`,
-      `python3 -c 'import json, os; p=os.path.expanduser("~/.hermes/profiles/${profile}/gateway_state.json"); d=json.load(open(p, encoding="utf-8")); s=((d.get("platforms") or {}).get("telegram") or {}).get("state", "").lower(); t=bool((d.get("platforms") or {}).get("telegram")); print("NED_STATUS_TELEGRAM=" + str(t).lower()); print("NED_STATUS_CONNECTED=" + str(s == "connected").lower()); print("NED_STATUS_DISCONNECTED=" + str(s == "disconnected").lower())' >${statusPath}`,
+      `python3 - <<'PY' >${statusPath}
+import json
+import os
+import urllib.error
+import urllib.request
+
+profile_path = os.path.expanduser("~/.hermes/profiles/${profile}/gateway_state.json")
+try:
+    with open(profile_path, encoding="utf-8") as handle:
+        record = json.load(handle)
+except Exception:
+    record = {}
+telegram = (record.get("platforms") or {}).get("telegram") or {}
+state = str(telegram.get("state", "")).lower()
+token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+http_status = 0
+if token:
+    try:
+        request = urllib.request.Request("https://api.telegram.org/bot" + token + "/getMe")
+        with urllib.request.urlopen(request, timeout=8) as response:
+            http_status = int(response.status)
+    except urllib.error.HTTPError as error:
+        http_status = int(error.code)
+    except Exception:
+        http_status = 0
+print("NED_STATUS_TELEGRAM=" + str(bool(telegram)).lower())
+print("NED_STATUS_CONNECTED=" + str(state == "connected").lower())
+print("NED_STATUS_DISCONNECTED=" + str(state == "disconnected").lower())
+print("NED_DIAG_TOKEN_PRESENT=" + str(bool(token)).lower())
+print("NED_DIAG_API_HTTP=" + str(http_status))
+PY`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
     if (typeof sandbox.fs?.downloadFile !== 'function') {
@@ -80,11 +110,14 @@ export function createDaytonaProvider({
     const telegram = readMarker('NED_STATUS_TELEGRAM');
     const connected = readMarker('NED_STATUS_CONNECTED');
     const disconnected = readMarker('NED_STATUS_DISCONNECTED');
-    if ([telegram, connected, disconnected].some((value) => value === null)) {
+    const tokenPresent = readMarker('NED_DIAG_TOKEN_PRESENT');
+    const apiHttpMatch = statusText.match(/^NED_DIAG_API_HTTP=(\d+)$/mi);
+    const apiHttp = apiHttpMatch ? Number(apiHttpMatch[1]) : null;
+    if ([telegram, connected, disconnected, tokenPresent].some((value) => value === null) || apiHttp === null) {
       return { ready: false, diagnostic: 'NED_STATUS_UNAVAILABLE=true' };
     }
-    const ready = telegram && connected && !disconnected;
-    return { ready, diagnostic: `NED_STATUS_TELEGRAM=${telegram} NED_STATUS_CONNECTED=${connected} NED_STATUS_DISCONNECTED=${disconnected}` };
+    const ready = telegram && connected && !disconnected && tokenPresent && apiHttp === 200;
+    return { ready, diagnostic: `NED_STATUS_TELEGRAM=${telegram} NED_STATUS_CONNECTED=${connected} NED_STATUS_DISCONNECTED=${disconnected} NED_DIAG_TOKEN_PRESENT=${tokenPresent} NED_DIAG_API_HTTP=${apiHttp}` };
   }
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
