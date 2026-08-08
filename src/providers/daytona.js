@@ -77,7 +77,7 @@ export function createDaytonaProvider({
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
     const diagnostic = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(READY|STATUS_IMPORT|GATEWAY|TELEGRAM)/.test(line)).join(' ');
-    const ready = diagnostic ? /NED_READY=True/.test(diagnostic) : result.exitCode === 0;
+    const ready = /NED_READY=True/.test(diagnostic);
     return { ready, diagnostic };
   }
 

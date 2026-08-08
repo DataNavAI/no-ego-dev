@@ -153,7 +153,7 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
       async executeCommand(command, cwd, env, timeout) {
         if (command.includes('from gateway.status')) {
           observed.gatewayChecks = (observed.gatewayChecks || 0) + 1;
-          return { exitCode: observed.gatewaySession ? 0 : 1, result: '' };
+          return { exitCode: 0, result: `NED_GATEWAY_STATE=${observed.gatewaySession ? 'running' : 'starting'}\nNED_TELEGRAM_STATE=${observed.gatewaySession ? 'connected' : 'disconnected'}\nNED_READY=${observed.gatewaySession ? 'True' : 'False'}` };
         }
         observed.execute = { command, cwd, env, timeout };
         return { exitCode: 0, result: 'installed' };
@@ -266,7 +266,7 @@ test('Daytona restart recreates the exact polling gateway session without webhoo
       async executeCommand(command) {
         if (command.includes('from gateway.status')) {
           observed.checks += 1;
-          return { exitCode: gatewayReady ? 0 : 1 };
+          return { exitCode: 0, result: `NED_GATEWAY_STATE=${gatewayReady ? 'running' : 'starting'}\nNED_TELEGRAM_STATE=${gatewayReady ? 'connected' : 'disconnected'}\nNED_READY=${gatewayReady ? 'True' : 'False'}` };
         }
         return { exitCode: 0, result: 'Approved!' };
       },
@@ -305,7 +305,7 @@ test('Daytona pairing uses the exact pinned Hermes approval contract after gatew
     process: {
       async executeCommand(command) {
         commands.push(command);
-        if (command.includes('from gateway.status')) return { exitCode: 0 };
+        if (command.includes('from gateway.status')) return { exitCode: 0, result: 'NED_GATEWAY_STATE=running\nNED_TELEGRAM_STATE=connected\nNED_READY=True' };
         return { exitCode: 0, result: 'Approved!' };
       },
     },
