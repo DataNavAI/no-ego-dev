@@ -61,7 +61,7 @@ export function createDaytonaProvider({
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
       `hermes --profile ${profile} gateway status >/dev/null 2>&1 || true`,
-      `python3 -c 'import json, os; p=os.path.expanduser("~/.hermes/gateway_state.json"); d=json.load(open(p, encoding="utf-8")); s=((d.get("platforms") or {}).get("telegram") or {}).get("state", "").lower(); t=bool((d.get("platforms") or {}).get("telegram")); print("NED_STATUS_TELEGRAM=" + str(t).lower()); print("NED_STATUS_CONNECTED=" + str(s == "connected").lower()); print("NED_STATUS_DISCONNECTED=" + str(s == "disconnected").lower())' >${statusPath}`,
+      `python3 -c 'import json, os; p=os.path.expanduser("~/.hermes/profiles/${profile}/gateway_state.json"); d=json.load(open(p, encoding="utf-8")); s=((d.get("platforms") or {}).get("telegram") or {}).get("state", "").lower(); t=bool((d.get("platforms") or {}).get("telegram")); print("NED_STATUS_TELEGRAM=" + str(t).lower()); print("NED_STATUS_CONNECTED=" + str(s == "connected").lower()); print("NED_STATUS_DISCONNECTED=" + str(s == "disconnected").lower())' >${statusPath}`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
     if (typeof sandbox.fs?.downloadFile !== 'function') {
