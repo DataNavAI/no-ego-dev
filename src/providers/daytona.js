@@ -65,19 +65,23 @@ export function createDaytonaProvider({
       '    from gateway.status import read_runtime_status',
       'except Exception:',
       '    print("NED_STATUS_IMPORT=failed")',
-      '    print("NED_READY=False")',
-      '    raise SystemExit(0)',
+      '    raise SystemExit(8)',
       'status = read_runtime_status() or {}',
       'telegram = (status.get("platforms") or {}).get("telegram") or {}',
       'print("NED_GATEWAY_STATE=" + str(status.get("gateway_state") or "unknown"))',
       'print("NED_TELEGRAM_STATE=" + str(telegram.get("state") or "unknown"))',
-      'print("NED_READY=" + str(status.get("gateway_state") == "running" and telegram.get("state") == "connected"))',
+      'ready = status.get("gateway_state") == "running" and telegram.get("state") == "connected"',
+      'print("NED_READY=" + str(ready))',
+      'raise SystemExit(0 if ready else 7)',
       'PY',
-      `hermes --profile ${profile} gateway status || true`,
+      'probe_exit=$?',
+      `hermes --profile ${profile} gateway status >/dev/null 2>&1 || true`,
+      'exit "$probe_exit"',
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
-    const diagnostic = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(READY|STATUS_IMPORT|GATEWAY|TELEGRAM)/.test(line)).join(' ');
-    const ready = /NED_READY=True/.test(diagnostic);
+    const markers = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(READY|STATUS_IMPORT|GATEWAY|TELEGRAM)/.test(line)).join(' ');
+    const diagnostic = `NED_EXIT=${result.exitCode}${markers ? ` ${markers}` : ''}`;
+    const ready = result.exitCode === 0;
     return { ready, diagnostic };
   }
 
