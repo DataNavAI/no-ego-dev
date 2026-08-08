@@ -60,7 +60,14 @@ export function createDaytonaProvider({
       'set -euo pipefail',
       'export PATH="$HOME/.local/bin:$PATH"',
       'export HERMES_HOME="$HOME/.hermes"',
-      `hermes --profile ${profile} gateway status >${statusPath} 2>&1 || true`,
+      `status=$(hermes --profile ${profile} gateway status 2>&1 || true)`,
+      'telegram=false',
+      'connected=false',
+      'disconnected=false',
+      'if printf "%s\\n" "$status" | grep -Eiq "telegram"; then telegram=true; fi',
+      'if printf "%s\\n" "$status" | grep -Eiq "connected"; then connected=true; fi',
+      'if printf "%s\\n" "$status" | grep -Eiq "disconnected|not[[:space:]-]+connected"; then disconnected=true; fi',
+      `printf 'NED_STATUS_TELEGRAM=%s\\nNED_STATUS_CONNECTED=%s\\nNED_STATUS_DISCONNECTED=%s\\n' "$telegram" "$connected" "$disconnected" >${statusPath}`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
     if (typeof sandbox.fs?.downloadFile !== 'function') {
