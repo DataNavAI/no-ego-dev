@@ -64,16 +64,22 @@ export function createDaytonaProvider({
       'from gateway.status import read_runtime_status',
       'status = read_runtime_status() or {}',
       'telegram = (status.get("platforms") or {}).get("telegram") or {}',
+      'print("NED_GATEWAY_STATE=" + str(status.get("gateway_state") or "unknown"))',
+      'print("NED_TELEGRAM_STATE=" + str(telegram.get("state") or "unknown"))',
       'raise SystemExit(0 if status.get("gateway_state") == "running" and telegram.get("state") == "connected" else 1)',
       'PY',
       `hermes --profile ${profile} gateway status`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
-    return result.exitCode === 0;
+    const diagnostic = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(GATEWAY|TELEGRAM)_STATE=/.test(line)).join(' ');
+    return { ready: result.exitCode === 0, diagnostic };
   }
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
-    if (await telegramGatewayReady(sandbox, profile)) return;
+    let lastDiagnostic = '';
+    const existing = await telegramGatewayReady(sandbox, profile);
+    if (existing.ready) return;
+    lastDiagnostic = existing.diagnostic;
     const sessionId = 'ned-telegram-gateway';
     try {
       await sandbox.process.createSession(sessionId);
@@ -88,9 +94,11 @@ export function createDaytonaProvider({
     }, 30);
     for (let attempt = 0; attempt < 30; attempt += 1) {
       await sleep(2_000);
-      if (await telegramGatewayReady(sandbox, profile)) return;
+      const status = await telegramGatewayReady(sandbox, profile);
+      lastDiagnostic = status.diagnostic;
+      if (status.ready) return;
     }
-    throw new Error('Remote Hermes Telegram gateway did not reach connected polling state. See https://ned.datanav.app/docs/v1/telegram/');
+    throw new Error(`Remote Hermes Telegram gateway did not reach connected polling state${lastDiagnostic ? ` (${lastDiagnostic})` : ''}. See https://ned.datanav.app/docs/v1/telegram/`);
   }
 
   return {
