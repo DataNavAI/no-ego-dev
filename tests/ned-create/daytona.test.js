@@ -199,6 +199,7 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
   assert.equal(observed.gatewaySession.request.runAsync, true);
   assert.equal(observed.gatewaySession.request.suppressInputEcho, true);
   assert.match(observed.gatewaySession.request.command, /hermes --profile ned gateway run --replace/);
+  assert.match(observed.gatewaySession.request.command, /export HERMES_HOME=\"\$HOME\/\.hermes\/profiles\/ned\"/);
   assert.equal(observed.execute.timeout, 900);
   assert.deepEqual(result, { hermesVersion: 'v2026.7.20' });
 });
@@ -291,6 +292,7 @@ test('Daytona restart recreates the exact polling gateway session without webhoo
   assert.deepEqual(observed.sessions, ['ned-telegram-gateway']);
   assert.equal(observed.gatewayCommands.length, 1);
   assert.match(observed.gatewayCommands[0][1].command, /hermes --profile ned gateway run --replace/);
+  assert.match(observed.gatewayCommands[0][1].command, /export HERMES_HOME=\"\$HOME\/\.hermes\/profiles\/ned\"/);
   assert.equal(observed.gatewayCommands[0][1].runAsync, true);
   assert.doesNotMatch(observed.gatewayCommands[0][1].command, /webhook|TELEGRAM_BOT_TOKEN|bot\d+:/i);
   assert.equal(observed.checks >= 2, true);

@@ -82,7 +82,7 @@ export function createDaytonaProvider({
       await sandbox.process.createSession(sessionId);
     }
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: `export PATH="$HOME/.local/bin:$PATH"\nexec hermes --profile ${profile} gateway run --replace`,
+      command: `export PATH="$HOME/.local/bin:$PATH"\nexport HERMES_HOME="$HOME/.hermes/profiles/${profile}"\nexec hermes --profile ${profile} gateway run --replace`,
       runAsync: true,
       suppressInputEcho: true,
     }, 30);
