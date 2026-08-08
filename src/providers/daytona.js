@@ -58,7 +58,7 @@ export function createDaytonaProvider({
     const command = [
       'set -euo pipefail',
       'export PATH="$HOME/.local/bin:$PATH"',
-      `export HERMES_HOME="$HOME/.hermes/profiles/${profile}"`,
+      'export HERMES_HOME="$HOME/.hermes"',
       'test -x "$HOME/.hermes/venv/bin/python"',
       `"$HOME/.hermes/venv/bin/python" - <<'PY'`,
       'from gateway.status import read_runtime_status',
@@ -82,7 +82,7 @@ export function createDaytonaProvider({
       await sandbox.process.createSession(sessionId);
     }
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: `export PATH="$HOME/.local/bin:$PATH"\nexport HERMES_HOME="$HOME/.hermes/profiles/${profile}"\nexec hermes --profile ${profile} gateway run --replace`,
+      command: `export PATH="$HOME/.local/bin:$PATH"\nexport HERMES_HOME="$HOME/.hermes"\nexec hermes --profile ${profile} gateway run --replace`,
       runAsync: true,
       suppressInputEcho: true,
     }, 30);
