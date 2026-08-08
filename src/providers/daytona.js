@@ -66,13 +66,14 @@ export function createDaytonaProvider({
       'telegram = (status.get("platforms") or {}).get("telegram") or {}',
       'print("NED_GATEWAY_STATE=" + str(status.get("gateway_state") or "unknown"))',
       'print("NED_TELEGRAM_STATE=" + str(telegram.get("state") or "unknown"))',
-      'raise SystemExit(0 if status.get("gateway_state") == "running" and telegram.get("state") == "connected" else 1)',
+      'print("NED_READY=" + str(status.get("gateway_state") == "running" and telegram.get("state") == "connected"))',
       'PY',
-      `hermes --profile ${profile} gateway status`,
+      `hermes --profile ${profile} gateway status || true`,
     ].join('\n');
     const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
-    const diagnostic = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(GATEWAY|TELEGRAM)_STATE=/.test(line)).join(' ');
-    return { ready: result.exitCode === 0, diagnostic };
+    const diagnostic = String(result.result || '').split(/\r?\n/).filter((line) => /^NED_(READY|GATEWAY|TELEGRAM)_STATE?=/.test(line)).join(' ');
+    const ready = diagnostic ? /NED_READY=True/.test(diagnostic) : result.exitCode === 0;
+    return { ready, diagnostic };
   }
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
