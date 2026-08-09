@@ -82,7 +82,7 @@ test('Daytona provider creates the fixed private persistent sandbox with a model
     public: false,
     ephemeral: false,
     resources: { cpu: 2, memory: 4, disk: 10 },
-    autoStopInterval: 15,
+    autoStopInterval: 0,
     autoArchiveInterval: 10080,
     autoDeleteInterval: -1,
     labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: 'attempt123' },

@@ -43,7 +43,7 @@ The local official Hermes-compatible auth store is the sole model refresh/revoca
 - Daytona SDK: `@daytona/sdk` 0.200.1 from committed lockfile.
 - Image: `ubuntu:24.04`; TypeScript toolbox.
 - Resources: 2 CPU, 4 GiB memory, 10 GiB disk.
-- Automatic target; private, persistent, non-ephemeral; auto-stop 15 minutes; auto-archive 10,080 minutes; auto-delete disabled.
+- Automatic target; private, persistent, non-ephemeral; auto-stop disabled (`0`) so the messaging gateway remains available; auto-archive 10,080 minutes; auto-delete disabled.
 - Labels: `app=ned`, `managedBy=ned-cli`; lifecycle adds a unique non-secret candidate label through its controlled harness.
 - Hermes commit: `3ef6bbd201263d354fd83ec55b3c306ded2eb72a`; installer bytes must match the pinned SHA-256 before execution.
 - Hermes provider/model: `openai-codex` / `gpt-5.6-sol`.

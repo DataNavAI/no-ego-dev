@@ -29,7 +29,7 @@ Primary journey completion event: `chat_completed` after the first user-request 
 ## Fixed V1 scope
 
 - Compute provider: Daytona only.
-- Compute: one private persistent Ubuntu 24.04 Sandbox; 2 CPU, 4 GiB RAM, 10 GiB disk; automatic target; auto-stop after 15 minutes; auto-archive after seven days.
+- Compute: one private persistent Ubuntu 24.04 Sandbox; 2 CPU, 4 GiB RAM, 10 GiB disk; automatic target; always-on by default (`auto-stop=0`) so the messaging gateway can receive messages anytime; auto-archive after seven days.
 - Default model authorization: ChatGPT OAuth using Hermes native provider `openai-codex` and default model `gpt-5.6-sol`.
 - Default onboarding: secure compatible-credential reuse, otherwise one ChatGPT device browser step. OpenRouter is not required and is not prompted.
 - Commands: `create`, `chat`, `doctor`, `pair`, `repair` (`reset` compatibility alias), `destroy --yes`.

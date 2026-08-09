@@ -63,7 +63,7 @@ test('ned create dry-run asks no questions and selects the complete opinionated 
     modelProvider: 'openai-codex',
     hermesVersion: 'v2026.7.20',
     profile: 'ned',
-    autoStopMinutes: 15,
+    autoStopMinutes: 0,
     autoArchiveMinutes: 10080,
     questionsAsked: 0,
   });

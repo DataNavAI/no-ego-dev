@@ -12,7 +12,9 @@ export function createNedPlan({ modelProvider = 'openai-codex' } = {}) {
     model: runtime.defaultModel,
     hermesVersion: 'v2026.7.20',
     profile: 'ned',
-    autoStopMinutes: 15,
+    // Messaging is the default NED interface; keep the gateway available
+    // instead of stopping an idle sandbox and silently dropping messages.
+    autoStopMinutes: 0,
     autoArchiveMinutes: 10080,
   };
 }

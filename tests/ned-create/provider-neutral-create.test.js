@@ -30,7 +30,7 @@ test('create plan selects an allowlisted direct model provider without changing 
     model: 'gpt-5.4',
     hermesVersion: 'v2026.7.20',
     profile: 'ned',
-    autoStopMinutes: 15,
+    autoStopMinutes: 0,
     autoArchiveMinutes: 10080,
   });
 });
