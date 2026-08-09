@@ -18,14 +18,29 @@ export function createDaytonaProvider({
   DaytonaClass = Daytona,
   profileArchive,
   secretNameFactory = (providerId) => `ned_model_${providerId.replaceAll(/[^a-z0-9]/g, '_')}_${randomUUID().replaceAll('-', '')}`,
-  telegramSecretNameFactory = () => `ned_telegram_${randomUUID().replaceAll('-', '')}`,
   createAttemptIdFactory = () => randomUUID().replaceAll('-', ''),
+  runtimeTelegramTokenFactory = () => null,
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
 } = {}) {
   if (!apiKey) {
     throw new Error('Daytona authorization is required. Set DAYTONA_API_KEY in your shell; do not paste it into chat.');
   }
   const client = new DaytonaClass({ apiKey });
+  const runtimeTelegramTokens = new Map();
+
+  function runtimeTelegramEnv(workspaceId) {
+    const token = runtimeTelegramTokens.get(workspaceId) || runtimeTelegramTokenFactory(workspaceId);
+    if (!token) throw new Error('Verified Telegram runtime authorization is required for gateway start or health verification.');
+    return { TELEGRAM_BOT_TOKEN: token };
+  }
+
+  function consumeRuntimeTelegramToken(workspaceId, telegramConnection) {
+    const token = telegramConnection && typeof telegramConnection.consumeToken === 'function'
+      ? telegramConnection.consumeToken()
+      : (runtimeTelegramTokens.get(workspaceId) || runtimeTelegramTokenFactory(workspaceId));
+    if (typeof token !== 'string' || !token) throw new Error('Verified Telegram runtime authorization is required before compute can be created.');
+    runtimeTelegramTokens.set(workspaceId, token);
+  }
 
   async function deleteSecretAndProveAbsence(secretId) {
     if (!secretId) return true;
@@ -54,7 +69,7 @@ export function createDaytonaProvider({
     }
   }
 
-  async function telegramGatewayReady(sandbox, profile) {
+  async function telegramGatewayReady(sandbox, profile, workspaceId) {
     const statusPath = '/tmp/ned-gateway-status.txt';
     const command = [
       'set -euo pipefail',
@@ -95,7 +110,7 @@ print("NED_DIAG_TOKEN_SHAPE=" + str(bool(re.fullmatch(r"\\d+:[A-Za-z0-9_-]+", to
 print("NED_DIAG_API_HTTP=" + str(http_status))
 PY`,
     ].join('\n');
-    const result = await sandbox.process.executeCommand(command, undefined, undefined, 30);
+    const result = await sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspaceId), 30);
     if (typeof sandbox.fs?.downloadFile !== 'function') {
       return { ready: false, diagnostic: `NED_STATUS_UNAVAILABLE=true NED_EXIT=${result.exitCode}` };
     }
@@ -124,25 +139,16 @@ PY`,
   }
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
+    const workspaceId = sandbox.id;
     let lastDiagnostic = '';
-    const existing = await telegramGatewayReady(sandbox, profile);
+    const existing = await telegramGatewayReady(sandbox, profile, workspaceId);
     if (existing.ready) return;
     lastDiagnostic = existing.diagnostic;
-    const sessionId = 'ned-telegram-gateway';
-    try {
-      await sandbox.process.createSession(sessionId);
-    } catch {
-      try { await sandbox.process.deleteSession(sessionId); } catch {}
-      await sandbox.process.createSession(sessionId);
-    }
-    await sandbox.process.executeSessionCommand(sessionId, {
-      command: `export PATH="$HOME/.local/bin:$PATH"\nexport HERMES_HOME="$HOME/.hermes"\nexec hermes --profile ${profile} gateway run --replace`,
-      runAsync: true,
-      suppressInputEcho: true,
-    }, 30);
+    const gatewayCommand = `export PATH="$HOME/.local/bin:$PATH"\nexport HERMES_HOME="$HOME/.hermes"\nnohup hermes --profile ${profile} gateway run --replace >/dev/null 2>&1 </dev/null &`;
+    await sandbox.process.executeCommand(gatewayCommand, undefined, runtimeTelegramEnv(workspaceId), 30);
     for (let attempt = 0; attempt < 90; attempt += 1) {
       await sleep(2_000);
-      const status = await telegramGatewayReady(sandbox, profile);
+      const status = await telegramGatewayReady(sandbox, profile, workspaceId);
       lastDiagnostic = status.diagnostic;
       if (status.ready) return;
     }
@@ -173,10 +179,8 @@ PY`,
       const modelProvider = getModelProviderRuntime(modelConnection.providerId);
 
       const secretName = secretNameFactory(modelConnection.providerId);
-      const telegramSecretName = telegramSecretNameFactory();
       const createAttemptId = createAttemptIdFactory();
       if (!/^ned_model_[a-z0-9_]+_[A-Za-z0-9]+$/.test(secretName)
-          || !/^ned_telegram_[A-Za-z0-9_]+$/.test(telegramSecretName)
           || !/^[A-Za-z0-9]{8,64}$/.test(createAttemptId)) {
         throw new Error('Invalid generated Daytona resource identity');
       }
@@ -186,14 +190,7 @@ PY`,
         description: `${modelProvider.label} access for NED`,
         hosts: modelProvider.allowedHosts,
       });
-      let telegramSecret;
       try {
-        telegramSecret = await client.secret.create({
-          name: telegramSecretName,
-          value: telegramConnection.consumeToken(),
-          description: 'Telegram bot access for NED',
-          hosts: ['api.telegram.org'],
-        });
         const sandbox = await client.create({
           name: 'ned-product-partner',
           image: plan.image,
@@ -207,16 +204,14 @@ PY`,
           labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: createAttemptId },
           secrets: {
             [modelProvider.sandboxEnvironmentVariable]: secretName,
-            TELEGRAM_BOT_TOKEN: telegramSecretName,
           },
         }, { timeout: 300 });
+        consumeRuntimeTelegramToken(sandbox.id, telegramConnection);
         return {
           id: sandbox.id,
           name: sandbox.name,
           nedSecretId: secret.id,
           nedSecretName: secretName,
-          telegramSecretId: telegramSecret.id,
-          telegramSecretName,
           telegramBotUsername: telegramConnection.botUsername,
           telegramBotUrl: telegramConnection.botUrl,
           createAttemptId,
@@ -243,7 +238,7 @@ PY`,
             cleanupErrors.push(new Error(`sandbox reconciliation failed for create attempt ${createAttemptId}: ${reconciliationError.message}`));
           }
         }
-        for (const ownedSecret of [telegramSecret, secret]) {
+        for (const ownedSecret of [secret]) {
           if (!ownedSecret) continue;
           try {
             if (!(await deleteSecretAndProveAbsence(ownedSecret.id))) {
@@ -264,8 +259,6 @@ PY`,
             createAttemptId,
             secretId: secret.id,
             secretName,
-            telegramSecretId: telegramSecret?.id || null,
-            telegramSecretName: telegramSecret ? telegramSecretName : null,
           };
           throw aggregate;
         }
@@ -378,7 +371,7 @@ PY`,
         'PY',
         `hermes profile info ${plan.profile}`,
       ].join('\n');
-      const result = await sandbox.process.executeCommand(command, undefined, undefined, 900);
+      const result = await sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspace.id), 900);
       if (result.exitCode !== 0) {
         throw new Error(`Hermes/NED installation failed: ${result.result || 'unknown error'}`);
       }
@@ -388,7 +381,7 @@ PY`,
 
     async doctor(workspace, plan) {
       const sandbox = await client.get(workspace.id);
-      const gatewayReady = await telegramGatewayReady(sandbox, plan.profile);
+      const gatewayReady = await telegramGatewayReady(sandbox, plan.profile, workspace.id);
       const command = [
         'set -euo pipefail',
         'export PATH="$HOME/.local/bin:$PATH"',
@@ -396,7 +389,7 @@ PY`,
         `hermes profile info ${plan.profile}`,
         `hermes --profile ${plan.profile} -z 'Reply with exactly: ready'`,
       ].join('\n');
-      const result = await sandbox.process.executeCommand(command, undefined, undefined, 120);
+      const result = await sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspace.id), 120);
       const inferenceReady = result.exitCode === 0;
       return {
         ok: inferenceReady && gatewayReady.ready,
@@ -409,7 +402,8 @@ PY`,
       };
     },
 
-    async start(workspaceId, profile = 'ned') {
+    async start(workspaceId, profile = 'ned', telegramConnection) {
+      consumeRuntimeTelegramToken(workspaceId, telegramConnection);
       const sandbox = await client.get(workspaceId);
       if (sandbox.state !== 'started') {
         await sandbox.start(300);
@@ -417,7 +411,7 @@ PY`,
       await startAndVerifyTelegramGateway(sandbox, profile);
     },
 
-    async pair(workspaceId, profile, code) {
+    async pair(workspaceId, profile, code, telegramConnection) {
       if (!/^[a-z0-9-]+$/.test(profile) || !/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
         throw new Error('Invalid Telegram owner pairing request');
       }
@@ -429,7 +423,7 @@ PY`,
         'export PATH="$HOME/.local/bin:$PATH"',
         `hermes --profile ${profile} pairing approve telegram ${code}`,
       ].join('\n');
-      const result = await sandbox.process.executeCommand(command, undefined, undefined, 60);
+      const result = await sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspaceId), 60);
       if (result.exitCode !== 0 || !/Approved!/i.test(result.result || '')) {
         throw new Error('Telegram pairing approval failed. Send hello again for a fresh code, then retry. See https://ned.datanav.app/docs/v1/telegram/');
       }
@@ -467,9 +461,7 @@ PY`,
         }
       }
       const secretId = workspace.secretId || workspace.nedSecretId;
-      const telegramSecretId = workspace.telegramSecretId;
       const secretAbsent = await deleteSecretAndProveAbsence(secretId);
-      const telegramSecretAbsent = await deleteSecretAndProveAbsence(telegramSecretId);
 
       let workspaceAbsent = !workspace.id;
       if (workspace.id) {
@@ -480,10 +472,11 @@ PY`,
           else throw error;
         }
       }
-      if (!workspaceAbsent || !secretAbsent || !telegramSecretAbsent) {
-        throw new Error('Daytona deletion readback did not prove the exact Sandbox and both owned Secrets absent');
+      if (!workspaceAbsent || !secretAbsent) {
+        throw new Error('Daytona deletion readback did not prove the exact Sandbox and model Secret absent');
       }
-      return { workspaceAbsent, secretAbsent, telegramSecretAbsent };
+      runtimeTelegramTokens.delete(workspace.id);
+      return { workspaceAbsent, secretAbsent };
     },
   };
 }

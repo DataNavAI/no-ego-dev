@@ -4,7 +4,11 @@ import { test } from 'node:test';
 import { runCli } from '../../src/cli.js';
 import { createModelConnection } from '../../src/model-providers.js';
 import { createNedPlan } from '../../src/plan.js';
-import { createDaytonaProvider } from '../../src/providers/daytona.js';
+import { createDaytonaProvider as createProvider } from '../../src/providers/daytona.js';
+
+function createDaytonaProvider(options = {}) {
+  return createProvider({ runtimeTelegramTokenFactory: () => '123456789:' + 'A'.repeat(35), ...options });
+}
 
 function telegramConnection() {
   let value = ['123456789', ':', 'A'.repeat(35)].join('');
@@ -68,7 +72,6 @@ test('Daytona provider injects the selected direct provider through its own egre
   });
   assert.deepEqual(observed.create.secrets, {
     OPENAI_API_KEY: 'ned_model_openai_test',
-    TELEGRAM_BOT_TOKEN: observed.secrets[1].name,
   });
 });
 
@@ -86,8 +89,9 @@ test('Daytona bootstrap configures the selected Hermes provider and model', asyn
       },
     },
     process: {
-      async executeCommand(value) {
+      async executeCommand(value, cwd, env) {
         if (value.includes('gateway status')) return { exitCode: 0 };
+        if (value.includes('gateway run --replace')) { gatewayStarted = true; return { exitCode: 0 }; }
         command = value;
         return { exitCode: 0 };
       },

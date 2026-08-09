@@ -3,11 +3,15 @@ import { test } from 'node:test';
 import { Daytona } from '@daytona/sdk';
 
 import { createModelConnection } from '../../src/model-providers.js';
-import { createDaytonaProvider } from '../../src/providers/daytona.js';
+import { createDaytonaProvider as createProvider } from '../../src/providers/daytona.js';
 import { NED_PLAN } from '../../src/plan.js';
 
 function codexConnection(value = 'synthetic-codex-access') {
   return createModelConnection({ providerId: 'openai-codex', method: 'oauth-device-code', value });
+}
+
+function createDaytonaProvider(options = {}) {
+  return createProvider({ runtimeTelegramTokenFactory: () => '123456789:' + 'A'.repeat(35), ...options });
 }
 
 function telegramConnection() {
@@ -26,7 +30,7 @@ test('installed Daytona SDK exposes the SecretService contract used for cleanup'
   assert.equal(typeof client.deleteSecret, 'undefined');
 });
 
-test('Daytona provider creates the fixed private persistent sandbox with separate egress-scoped model and Telegram secrets', async () => {
+test('Daytona provider creates the fixed private persistent sandbox with a model Secret and runtime Telegram env boundary', async () => {
   const observed = {};
   class FakeDaytona {
     constructor(config) {
@@ -49,7 +53,6 @@ test('Daytona provider creates the fixed private persistent sandbox with separat
     apiKey: 'provider-test-value',
     DaytonaClass: FakeDaytona,
     secretNameFactory: () => 'ned_model_openai_codex_test',
-    telegramSecretNameFactory: () => 'ned_telegram_test',
     createAttemptIdFactory: () => 'attempt123',
   });
 
@@ -62,8 +65,6 @@ test('Daytona provider creates the fixed private persistent sandbox with separat
   assert.equal(workspace.name, 'ned-product-partner');
   assert.equal(workspace.nedSecretName, 'ned_model_openai_codex_test');
   assert.equal(workspace.nedSecretId, 'secret-1');
-  assert.equal(workspace.telegramSecretName, 'ned_telegram_test');
-  assert.equal(workspace.telegramSecretId, 'secret-2');
   assert.equal(workspace.createAttemptId, 'attempt123');
   assert.equal(workspace.telegramBotUsername, 'ned_disposable_bot');
   assert.deepEqual(observed.config, { apiKey: 'provider-test-value', });
@@ -72,11 +73,6 @@ test('Daytona provider creates the fixed private persistent sandbox with separat
       name: 'ned_model_openai_codex_test',
       description: 'ChatGPT access for NED',
       hosts: ['chatgpt.com'],
-    },
-    {
-      name: 'ned_telegram_test',
-      description: 'Telegram bot access for NED',
-      hosts: ['api.telegram.org'],
     },
   ]);
   assert.deepEqual(observed.create, {
@@ -92,7 +88,6 @@ test('Daytona provider creates the fixed private persistent sandbox with separat
     labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: 'attempt123' },
     secrets: {
       NED_OPENAI_CODEX_ACCESS_TOKEN: 'ned_model_openai_codex_test',
-      TELEGRAM_BOT_TOKEN: 'ned_telegram_test',
     },
   });
 });
@@ -161,6 +156,10 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
           observed.gatewayChecks = (observed.gatewayChecks || 0) + 1;
           return { exitCode: observed.gatewaySession ? 0 : 7, result: `NED_GATEWAY_STATE=${observed.gatewaySession ? 'running' : 'starting'}\nNED_TELEGRAM_STATE=${observed.gatewaySession ? 'connected' : 'disconnected'}\nNED_READY=${observed.gatewaySession ? 'True' : 'False'}` };
         }
+        if (command.includes('gateway run --replace')) {
+          observed.gatewaySession = { command, env, timeout };
+          return { exitCode: 0, result: '' };
+        }
         observed.execute = { command, cwd, env, timeout };
         return { exitCode: 0, result: 'installed' };
       },
@@ -200,12 +199,9 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
   assert.match(observed.execute.command, /os\.environ\["NED_OPENAI_CODEX_ACCESS_TOKEN"\]/);
   assert.doesNotMatch(observed.execute.command, /synthetic-codex-access/);
   assert.match(observed.execute.command, /display\.platforms\.telegram\.notifications important/);
-  assert.equal(observed.createdSession, 'ned-telegram-gateway');
-  assert.equal(observed.gatewaySession.id, 'ned-telegram-gateway');
-  assert.equal(observed.gatewaySession.request.runAsync, true);
-  assert.equal(observed.gatewaySession.request.suppressInputEcho, true);
-  assert.match(observed.gatewaySession.request.command, /hermes --profile ned gateway run --replace/);
-  assert.match(observed.gatewaySession.request.command, /export HERMES_HOME=\"\$HOME\/\.hermes\"/);
+  assert.match(observed.gatewaySession.command, /hermes --profile ned gateway run --replace/);
+  assert.match(observed.gatewaySession.command, /nohup/);
+  assert.equal(observed.gatewaySession.env.TELEGRAM_BOT_TOKEN, '123456789:' + 'A'.repeat(35));
   assert.equal(observed.execute.timeout, 900);
   assert.deepEqual(result, { hermesVersion: 'v2026.7.20' });
 });
@@ -310,10 +306,15 @@ test('Daytona restart recreates the exact polling gateway session without webhoo
     },
     async start(timeout) { observed.started += 1; assert.equal(timeout, 300); this.state = 'started'; },
     process: {
-      async executeCommand(command) {
+      async executeCommand(command, cwd, env) {
         if (command.includes('gateway status')) {
           observed.checks += 1;
           return { exitCode: gatewayReady ? 0 : 7, result: `NED_GATEWAY_STATE=${gatewayReady ? 'running' : 'starting'}\nNED_TELEGRAM_STATE=${gatewayReady ? 'connected' : 'disconnected'}\nNED_READY=${gatewayReady ? 'True' : 'False'}` };
+        }
+        if (command.includes('gateway run --replace')) {
+          observed.gatewayCommands.push({ command, env });
+          gatewayReady = true;
+          return { exitCode: 0, result: '' };
         }
         return { exitCode: 0, result: 'Approved!' };
       },
@@ -336,12 +337,10 @@ test('Daytona restart recreates the exact polling gateway session without webhoo
   await provider.start('sandbox-123', 'ned');
 
   assert.equal(observed.started, 1);
-  assert.deepEqual(observed.sessions, ['ned-telegram-gateway']);
   assert.equal(observed.gatewayCommands.length, 1);
-  assert.match(observed.gatewayCommands[0][1].command, /hermes --profile ned gateway run --replace/);
-  assert.match(observed.gatewayCommands[0][1].command, /export HERMES_HOME=\"\$HOME\/\.hermes\"/);
-  assert.equal(observed.gatewayCommands[0][1].runAsync, true);
-  assert.doesNotMatch(observed.gatewayCommands[0][1].command, /webhook|TELEGRAM_BOT_TOKEN|bot\d+:/i);
+  assert.match(observed.gatewayCommands[0].command, /hermes --profile ned gateway run --replace/);
+  assert.match(observed.gatewayCommands[0].command, /nohup/);
+  assert.equal(observed.gatewayCommands[0].env.TELEGRAM_BOT_TOKEN, '123456789:' + 'A'.repeat(35));
   assert.equal(observed.checks >= 2, true);
 });
 
@@ -400,7 +399,7 @@ test('Daytona destroy waits for deletion and proves exact workspace and both sec
   const provider = createDaytonaProvider({ apiKey: 'provider-test-value', DaytonaClass: FakeDaytona });
 
   const receipt = await provider.destroy({
-    id: 'sandbox-123', nedSecretId: 'secret-1', telegramSecretId: 'secret-2',
+    id: 'sandbox-123', nedSecretId: 'secret-1',
   });
 
   assert.deepEqual(calls, [
@@ -408,12 +407,10 @@ test('Daytona destroy waits for deletion and proves exact workspace and both sec
     ['sandbox-delete', 300, true],
     ['secret-delete', 'secret-1'],
     ['secret-readback', 'secret-1'],
-    ['secret-delete', 'secret-2'],
-    ['secret-readback', 'secret-2'],
     ['sandbox-readback', 'sandbox-123'],
   ]);
   assert.deepEqual(receipt, {
-    workspaceAbsent: true, secretAbsent: true, telegramSecretAbsent: true,
+    workspaceAbsent: true, secretAbsent: true,
   });
 });
 
@@ -449,15 +446,14 @@ test('Daytona destroy is recoverable when the workspace was already removed', as
   assert.deepEqual(calls, ['secret-1']);
 });
 
-test('Daytona create removes its unique secret when sandbox creation fails', async () => {
+test('Daytona create removes its unique model secret when sandbox creation fails', async () => {
   const calls = [];
   class FakeDaytona {
     constructor() {
       this.secret = {
         async create() {
-          const id = calls.some(([kind]) => kind === 'created') ? 'telegram-orphan' : 'model-orphan';
-          calls.push(['created', id]);
-          return { id };
+          calls.push(['created', 'model-orphan']);
+          return { id: 'model-orphan' };
         },
         async delete(id) { calls.push(['delete', id]); },
         async get(id) {
@@ -484,9 +480,6 @@ test('Daytona create removes its unique secret when sandbox creation fails', asy
   );
   assert.deepEqual(calls, [
     ['created', 'model-orphan'],
-    ['created', 'telegram-orphan'],
-    ['delete', 'telegram-orphan'],
-    ['readback', 'telegram-orphan'],
     ['delete', 'model-orphan'],
     ['readback', 'model-orphan'],
   ]);
@@ -539,7 +532,6 @@ test('Daytona create reconciles and deletes an accepted sandbox when the create 
     DaytonaClass: FakeDaytona,
     createAttemptIdFactory: () => 'attempt123',
     secretNameFactory: () => 'ned_model_openai_codex_accepted',
-    telegramSecretNameFactory: () => 'ned_telegram_accepted',
   });
 
   await assert.rejects(
@@ -553,8 +545,6 @@ test('Daytona create reconciles and deletes an accepted sandbox when the create 
     ['reconcile-list', { labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: 'attempt123' } }],
     ['sandbox-delete', 300, true],
     ['sandbox-readback', 'accepted-sandbox'],
-    ['secret-delete', 'secret-2'],
-    ['secret-readback', 'secret-2'],
     ['secret-delete', 'secret-1'],
     ['secret-readback', 'secret-1'],
   ]);

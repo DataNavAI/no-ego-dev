@@ -34,9 +34,9 @@ On macOS, a user-owned token may instead be read from Keychain service `no-ego-d
 
 Given valid Daytona, ChatGPT, and verified Telegram authorization,
 when `ned create` runs,
-then NED proves zero managed resources, creates separate installation-owned model and Telegram Daytona Secrets with `chatgpt.com` and `api.telegram.org` scopes respectively, and creates one private persistent Sandbox containing only opaque Secret placeholders.
+then NED proves zero managed resources, creates one installation-owned model Daytona Secret scoped to `chatgpt.com`, retains the validated Telegram token only in controller memory, and creates one private persistent Sandbox.
 
-NED installs checksum-pinned Hermes plus the NED profile, configures `openai-codex`/`gpt-5.6-sol`, starts pinned Hermes Telegram long polling with `gateway run --replace`, and requires runtime status `gateway_state=running` plus `platforms.telegram.state=connected`. It introduces no webhook/public ingress. Exact Sandbox and both Secret identities plus safe bot metadata are persisted in owner-only local state.
+NED installs checksum-pinned Hermes plus the NED profile, configures `openai-codex`/`gpt-5.6-sol`, starts pinned Hermes Telegram long polling with `gateway run --replace` and injects the token only through the Daytona SDK environment map, and requires runtime status `gateway_state=running` plus `platforms.telegram.state=connected`. It introduces no webhook/public ingress. Only the Sandbox/model Secret identity and safe bot metadata are persisted in owner-only local state.
 
 Activation: `instance_activation_completed` after inference and Telegram gateway health both succeed.
 
@@ -54,15 +54,15 @@ Primary journey completion: the first successful Telegram response. This is acce
 
 `ned doctor` and `ned repair` refresh the exact model Secret from local OAuth authority, start the saved Sandbox, recreate/verify the exact polling gateway session, and verify Sandbox, Hermes, profile, inference, and Telegram gateway readiness. `ned reset` remains a compatibility alias.
 
-Pairing state and Telegram Secret identity survive gateway/Sandbox restart. External acceptance performs direct Daytona stop, restart/repair, then a distinct second Telegram request/response marker without creating another Sandbox or Secret.
+Pairing state survives gateway/Sandbox restart. External acceptance performs direct Daytona stop, restart/repair with fresh runtime environment injection, then a distinct second Telegram request/response marker without creating another Sandbox or model Secret.
 
 ## CUJ-7: Destroy with direct proof
 
-Given exact state-owned Sandbox, model-Secret, and Telegram-Secret identifiers,
+Given exact state-owned Sandbox and model-Secret identifiers,
 when `ned destroy --yes` runs,
-then NED deletes exactly those resources, directly reads each identifier back, requires not-found for all three, and only then clears `$HOME/.ned/state.json`.
+then NED deletes exactly those resources, directly reads each identifier back, requires not-found for both, and only then clears `$HOME/.ned/state.json`.
 
-A second destroy is idempotent. Final evidence directly proves zero NED-managed Sandboxes, zero `ned_model_` Secrets, zero `ned_telegram_` Secrets, and absent local state. BotFather revocation and removal of the user-owned local Keychain item remain explicit human/local credential cleanup actions.
+A second destroy is idempotent. Final evidence directly proves zero NED-managed Sandboxes, zero `ned_model_` Secrets, no NED Telegram Secret was created, and absent local state. BotFather revocation and removal of the user-owned local Keychain item remain explicit human/local credential cleanup actions.
 
 ## Required evidence matrix
 

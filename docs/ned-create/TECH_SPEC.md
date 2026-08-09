@@ -28,15 +28,15 @@ checksum-pinned one-line command
         -> otherwise fixed ChatGPT device flow
         -> refresh locally and atomically preserve rotation
      -> Daytona SDK 0.200.1
-        -> organization Secret: current access token, host chatgpt.com
-        -> Sandbox env: opaque Secret placeholder only
+        -> organization Secret: current model access token, host chatgpt.com
+        -> runtime env map: Telegram token for gateway child only
         -> remote Hermes auth.json: placeholder + non-secret refresh sentinel
         -> private persistent Sandbox
         -> checksum-pinned Hermes + NED profile
      -> $HOME/.ned/state.json (non-secret exact ownership only)
 ```
 
-The local official Hermes-compatible auth store is the sole model refresh/revocation authority. NED sends no refresh token to Daytona. Before every remote inference/health/repair, it resolves a sufficiently fresh local access token and updates the exact model Secret. A separate installation-owned Telegram Secret is scoped to `api.telegram.org`. The Sandbox receives opaque placeholders; Daytona substitutes each value only at its allowed egress host.
+The local official Hermes-compatible auth store is the sole model refresh/revocation authority. NED sends no refresh token to Daytona. Before every remote inference/health/repair, it resolves a sufficiently fresh local access token and updates the exact model Secret. The validated Telegram token remains in controller memory and is passed only as `TELEGRAM_BOT_TOKEN` in the Daytona SDK process environment map; it is never persisted or placed in a command, URL, file, Secret, or diagnostic.
 
 ## Fixed plan
 
@@ -51,12 +51,12 @@ The local official Hermes-compatible auth store is the sole model refresh/revoca
 
 ## CLI contract
 
-- `ned create [--dry-run --json]`: default provider is `openai-codex`; checks ownership; resolves local OAuth; securely acquires and validates a Telegram bot; creates two scoped Secrets and one Sandbox; bootstraps; starts and verifies the polling gateway; atomically saves state.
+- `ned create [--dry-run --json]`: default provider is `openai-codex`; checks ownership; resolves local OAuth; securely acquires and validates a Telegram bot; creates one model Secret and one Sandbox; bootstraps; starts and verifies the polling gateway with runtime environment injection; atomically saves state.
 - `ned chat "prompt"`: resolves/refreshes OAuth; updates exact Secret; starts the saved Sandbox; executes bounded Hermes one-shot.
 - `ned doctor`: resolves/refreshes OAuth; updates Secret; starts and checks Sandbox, Hermes, profile, inference, and Telegram gateway.
 - `ned repair`: same credential preflight, reinstalls pinned profile/runtime configuration, recreates the gateway, and reruns health. `reset` aliases repair.
 - `ned pair <8-character-code>`: validates the pinned Hermes pairing alphabet and approves the exact Telegram sender in the saved profile.
-- `ned destroy --yes`: deletes the exact Sandbox, model Secret, and Telegram Secret; directly proves all three absent; then clears local state. No OAuth is required to destroy.
+- `ned destroy --yes`: deletes the exact Sandbox and model Secret; directly proves both absent; then clears local state. No OAuth is required to destroy.
 
 No generic command, arbitrary host, arbitrary environment-variable name, default model chooser, OpenRouter dependency, or default API-key prompt exists.
 
@@ -83,11 +83,11 @@ No generic command, arbitrary host, arbitrary environment-variable name, default
 1. Bot creation remains an unavoidable human action through official `@BotFather`. NED opens `https://t.me/BotFather` when possible and prints the exact numbered `/newbot`, display-name, unique `bot` username, copy-token journey.
 2. NED accepts the token only from macOS Keychain service `no-ego-dev/telegram`, account `TELEGRAM_BOT_TOKEN`, or the exact hidden-TTY prompt `Paste the Telegram bot token (input hidden):`. Argv, environment variables, URLs/query strings, chat, logs, analytics, screenshots, source, and persistent local state are not token inputs.
 3. Local validation performs Telegram Bot API `getMe` in-process with bounded timeout and redirect refusal. Provider-mandated token-in-path values and hostile response data never enter errors or output. Only a validated username and `https://t.me/<username>` are retained as safe metadata.
-4. Secret name `ned_telegram_<random>` is separately tracked by exact ID/name, mapped to `TELEGRAM_BOT_TOKEN`, and allowed only to `api.telegram.org`.
+4. The token is passed as `TELEGRAM_BOT_TOKEN` only through the Daytona SDK environment map for gateway start, replacement, health, pairing, repair, and inference. No Telegram Daytona Secret is created.
 5. Pinned Hermes reads that environment variable through `gateway.config`, enables Telegram, clears stale webhook state with `drop_pending_updates=False`, then uses resilient long polling. NED does not configure webhook mode.
-6. NED launches the exact profile with `hermes --profile ned gateway run --replace` in Daytona session `ned-telegram-gateway`. Health requires `gateway_state=running` and `platforms.telegram.state=connected` from the pinned runtime-status file.
+6. NED launches the exact profile with `nohup hermes --profile ned gateway run --replace` through Daytona process execution. Health requires `gateway_state=running` and `platforms.telegram.state=connected` from the pinned runtime-status file.
 7. Unauthorized Telegram DMs follow the pinned gateway's default owner-pairing behavior. The operator approves the restricted eight-character code with `hermes --profile ned pairing approve telegram <code>`. Pairing data lives in the profile and survives gateway/Sandbox restart.
-8. Start, doctor, and repair recreate/verify the polling session. Destroy removes the Sandbox-contained profile/config and both exact Daytona Secrets, with direct absence readback.
+8. Start, doctor, and repair recreate/verify the polling gateway with fresh environment injection. Destroy removes the Sandbox-contained profile/config and the exact model Secret, with direct absence readback.
 
 ## Optional provider extension points
 
@@ -111,9 +111,9 @@ Hosted browser onboarding, AWS provisioning/deployment, dashboards, domains, mul
 
 - Local state present blocks duplicate create; cleanup-pending requires destroy.
 - Local absent plus any managed remote Sandbox blocks mutation.
-- Secret-created/Sandbox-create failure deletes and directly verifies both exact Secret identities; unresolved cleanup saves non-secret recovery metadata.
-- Bootstrap/health failure compensates the exact Sandbox and both Secrets.
-- Destroy requires direct `get` not-found for the Sandbox and both Secrets before local clear.
+- Secret-created/Sandbox-create failure deletes and directly verifies the exact model Secret; unresolved cleanup saves non-secret recovery metadata.
+- Bootstrap/health failure compensates the exact Sandbox and model Secret; runtime Telegram memory is discarded.
+- Destroy requires direct `get` not-found for the Sandbox and model Secret before local clear.
 - OAuth cancel/timeout/restart cannot create compute or persist partial auth.
 - User revocation remains effective through the local Hermes auth authority; refresh failure blocks remote mutation.
 

@@ -98,7 +98,6 @@ test('create provisions, bootstraps, verifies, and persists only non-secret work
       return {
         id: 'sandbox-123', name: 'ned-product-partner',
         nedSecretName: 'ned_model_test', nedSecretId: 'secret-1',
-        telegramSecretName: 'ned_telegram_test', telegramSecretId: 'secret-2',
         telegramBotUsername: 'ned_disposable_bot', telegramBotUrl: 'https://t.me/ned_disposable_bot',
       };
     },
@@ -135,8 +134,6 @@ test('create provisions, bootstraps, verifies, and persists only non-secret work
     hermesVersion: 'v2026.7.20',
     secretName: 'ned_model_test',
     secretId: 'secret-1',
-    telegramSecretName: 'ned_telegram_test',
-    telegramSecretId: 'secret-2',
     telegramBotUsername: 'ned_disposable_bot',
     telegramBotUrl: 'https://t.me/ned_disposable_bot',
     modelProvider: 'openai-codex',
@@ -465,21 +462,20 @@ test('destroy deletes the remote workspace and its scoped secret before clearing
     async load() {
       return {
         workspaceId: 'sandbox-123', secretName: 'ned_model_test', secretId: 'secret-1',
-        telegramSecretName: 'ned_telegram_test', telegramSecretId: 'secret-2',
       };
     },
     async clear() { calls.push(['clear']); },
   };
   const provider = {
     async destroy(workspace) {
-      calls.push(['destroy', workspace.id, workspace.secretId, workspace.telegramSecretId]);
+      calls.push(['destroy', workspace.id, workspace.secretId]);
     },
   };
   const app = createNedApp({ provider, stateStore });
 
   await app.destroy();
 
-  assert.deepEqual(calls, [['destroy', 'sandbox-123', 'secret-1', 'secret-2'], ['clear']]);
+  assert.deepEqual(calls, [['destroy', 'sandbox-123', 'secret-1'], ['clear']]);
 });
 
 test('destroy succeeds idempotently when local state is already clear', async () => {

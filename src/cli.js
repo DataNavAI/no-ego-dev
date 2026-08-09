@@ -193,7 +193,8 @@ export async function runCli(argv, io = console, dependencies = {}) {
     try {
       const modelConnection = await getModelConnection();
       const app = await appFactory({ env });
-      const response = await app.chat(prompt, modelConnection);
+      const telegramConnection = await getTelegramConnection();
+      const response = await app.chat(prompt, modelConnection, telegramConnection);
       capture(telemetry, TELEMETRY_EVENTS.chatCompleted, startedAt, 'success');
       io.log(response);
       return 0;
@@ -216,7 +217,8 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
     try {
       const app = await appFactory({ env });
-      await app.pair(code);
+      const telegramConnection = await getTelegramConnection();
+      await app.pair(code, telegramConnection);
       io.log('✓ Telegram owner approved. Return to the verified bot and send hello again.');
       return 0;
     } catch (error) {
@@ -244,13 +246,15 @@ export async function runCli(argv, io = console, dependencies = {}) {
     try {
       const app = await appFactory({ env });
       if (command === 'doctor') {
-        const health = await app.doctor(await getModelConnection());
+        const telegramConnection = await getTelegramConnection();
+        const health = await app.doctor(await getModelConnection(), telegramConnection);
         capture(telemetry, completedEvent, startedAt, health.ok ? 'success' : 'health_check_failed');
         io.log(health.ok ? `✓ NED is healthy: ${health.checks.join(', ')}` : 'NED is not healthy.');
         return health.ok ? 0 : 1;
       }
       if (command === 'repair' || command === 'reset') {
-        const health = await app.reset(await getModelConnection());
+        const telegramConnection = await getTelegramConnection();
+        const health = await app.reset(await getModelConnection(), telegramConnection);
         capture(telemetry, completedEvent, startedAt, health.ok ? 'success' : 'health_check_failed');
         io.log(health.ok ? '✓ NED was reset and is healthy.' : 'NED reset completed but health checks failed.');
         return health.ok ? 0 : 1;
