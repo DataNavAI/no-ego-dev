@@ -335,6 +335,7 @@ test('CLI chat accepts the product request as arguments and prints only NED outp
   }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
     getModelConnection: async () => codexConnection(),
+    getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
       async chat(value) { prompt = value; return 'Working product delivered.'; },
     }),
@@ -446,6 +447,7 @@ test('CLI pairing approves exactly one Hermes Telegram owner code in the saved w
     error: assert.fail,
   }, {
     env: { DAYTONA_API_KEY: 'provider-test-value' },
+    getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
       async pair(code) { calls.push(code); return { approved: true }; },
     }),
@@ -492,6 +494,7 @@ test('CLI dispatches doctor, repair, legacy reset, and explicit destroy without 
   const dependencies = {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
     getModelConnection: async () => codexConnection(),
+    getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
       async doctor() { calls.push('doctor'); return { ok: true, checks: ['sandbox', 'hermes', 'ned-profile'] }; },
       async reset() { calls.push('reset'); return { ok: true }; },
