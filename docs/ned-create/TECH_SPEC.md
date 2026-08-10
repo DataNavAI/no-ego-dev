@@ -1,137 +1,122 @@
-# Technical Specification: Browser-first provider-neutral NED provisioning
+# Technical Specification: Daytona NED CLI V1
 
-Contract version: 2.0
-Status: implementation candidate; production adapters blocked
-Last updated: 2026-08-06
-Supersedes: TECH_SPEC v1 OpenRouter-only/CLI-first architecture and state schema. CLI compatibility remains explicitly supported below.
+Contract version: 5.0
+Status: candidate implementation pending exact lifecycle verification
+Last updated: 2026-08-07
 
-The review-only design PR #25 is input, not approved technical authority. This specification and its executable tests govern the browser service.
+## Verified upstream contracts
+
+Design was checked against the current official Hermes provider documentation and exact pinned Hermes commit `3ef6bbd201263d354fd83ec55b3c306ded2eb72a` before implementation.
+
+- Hermes provider ID: `openai-codex`; API mode: Codex Responses; base URL: `https://chatgpt.com/backend-api/codex`.
+- Device start: `POST https://auth.openai.com/api/accounts/deviceauth/usercode` with Hermes Codex client ID.
+- Browser: fixed `https://auth.openai.com/codex/device`; user enters the short code.
+- Poll: `POST https://auth.openai.com/api/accounts/deviceauth/token` using `device_auth_id` and `user_code`.
+- Exchange/refresh: `POST https://auth.openai.com/oauth/token`; authorization-code exchange uses fixed `https://auth.openai.com/deviceauth/callback`; refresh grant may rotate the refresh token.
+- Hermes resolves singleton `providers.openai-codex.tokens` or compatible device-code pool entries, refreshes expiring JWT access tokens, and atomically persists rotated credentials.
+- Device authorization is not loopback OAuth. NED must not bind a callback port or trust a response-supplied verification URL.
 
 ## Architecture
 
 ```text
-Browser UI
-  -> Node HTTP boundary: origin/query/auth/CSRF/body/rate validation
-  -> owner session + idempotency registry
-  -> typed job controller
-  -> authoritative durable job service (create/get/cancel)
-  -> compute adapter
-  -> owner-scoped transactional secret vault (put/delete)
-
-CLI fallback
-  -> provider-neutral core -> Daytona adapter -> local non-secret state
+checksum-pinned one-line command
+  -> scripts/install.sh
+     -> private pinned Node runtime + commit-addressed NED source
+  -> ned CLI
+     -> safe local Hermes-compatible auth resolver
+        -> reuse owner-only HERMES_HOME/auth.json when unambiguous
+        -> otherwise fixed ChatGPT device flow
+        -> refresh locally and atomically preserve rotation
+     -> Daytona SDK 0.200.1
+        -> organization Secret: current model access token, host chatgpt.com
+        -> runtime env map: Telegram token for gateway child only
+        -> remote Hermes auth.json: placeholder + non-secret refresh sentinel
+        -> private persistent Sandbox
+        -> checksum-pinned Hermes + NED profile
+     -> $HOME/.ned/state.json (non-secret exact ownership only)
 ```
 
-Production replaces every in-memory development adapter with durable isolated implementations. The loopback development simulation is not production, creates no cloud resources, and performs no inference.
+The local official Hermes-compatible auth store is the sole model refresh/revocation authority. NED sends no refresh token to Daytona. Before every remote inference/health/repair, it resolves a sufficiently fresh local access token and updates the exact model Secret. The validated Telegram token remains in controller memory and is passed only as `TELEGRAM_BOT_TOKEN` in the Daytona SDK process environment map; it is never persisted or placed in a command, URL, file, Secret, or diagnostic.
 
-## HTTP contract
+## Fixed plan
 
-All `/api/*` routes fail closed on non-empty query strings before authentication, body reads, or adapter calls: HTTP 400 `{ "error": "query_not_allowed" }`. Browser code constructs same-origin path-only requests; credentials, OAuth material, prompts, and responses are forbidden in URLs, browser storage, logs, analytics, argv, source, fixtures, and screenshots.
+- Daytona SDK: `@daytona/sdk` 0.200.1 from committed lockfile.
+- Image: `ubuntu:24.04`; TypeScript toolbox.
+- Resources: 2 CPU, 4 GiB memory, 10 GiB disk.
+- Automatic target; private, persistent, non-ephemeral; auto-stop disabled (`0`) so the messaging gateway remains available; auto-archive 10,080 minutes; auto-delete disabled.
+- Labels: `app=ned`, `managedBy=ned-cli`; lifecycle adds a unique non-secret candidate label through its controlled harness.
+- Hermes commit: `3ef6bbd201263d354fd83ec55b3c306ded2eb72a`; installer bytes must match the pinned SHA-256 before execution.
+- Hermes provider/model: `openai-codex` / `gpt-5.6-sol`.
+- Telegram transport: pinned Hermes polling adapter; no NED webhook or public ingress.
 
-| Method/path | Purpose |
-| --- | --- |
-| `POST /api/session` | authenticate and create owner session |
-| `GET /api/session` | refresh connections, authoritative last-job status, readiness |
-| `DELETE /api/session` | abandon session and verify owner-secret cleanup |
-| `GET /api/model-providers` | return finite provider capability registry |
-| `POST /api/compute-connections` | connect Daytona compute separately |
-| `POST /api/model-connections` | create/supersede owner-scoped provider connection |
-| `POST /api/jobs` | submit one typed operation |
-| `GET /api/jobs/:id` | reconcile from authoritative job service |
-| `DELETE /api/jobs/:id` | `cancel_job` for queued/running jobs only |
+## CLI contract
 
-Every mutation requires canonical same-origin, session ownership, CSRF, bounded JSON, per-session rate limit, and operation-specific closed fields. Jobs and idempotency keys are bound to owner plus session. No generic command operation exists.
+- `ned create [--dry-run --json]`: default provider is `openai-codex`; checks ownership; resolves local OAuth; securely acquires and validates a Telegram bot; creates one model Secret and one Sandbox; bootstraps; starts and verifies the polling gateway with runtime environment injection; atomically saves state.
+- `ned chat "prompt"`: resolves/refreshes OAuth; updates exact Secret; starts the saved Sandbox; executes bounded Hermes one-shot.
+- `ned doctor`: resolves/refreshes OAuth; updates Secret; starts and checks Sandbox, Hermes, profile, inference, and Telegram gateway.
+- `ned repair`: same credential preflight, reinstalls pinned profile/runtime configuration, recreates the gateway, and reruns health. `reset` aliases repair.
+- `ned pair <8-character-code>`: validates the pinned Hermes pairing alphabet and approves the exact Telegram sender in the saved profile.
+- `ned destroy --yes`: deletes the exact Sandbox and model Secret; directly proves both absent; then clears local state. No OAuth is required to destroy.
 
-## Typed operation allowlist
+No generic command, arbitrary host, arbitrary environment-variable name, default model chooser, OpenRouter dependency, or default API-key prompt exists.
 
-- `create_ned`: requires compute and model connections; cannot run when already ready or after cleanup.
-- `send_first_request`: requires ready NED; bounded prompt enters only the trusted job adapter body.
-- `resume_ned`: requires an existing ready NED and resumes the same resource.
-- `destroy_ned`: requires an existing NED; success is committed only after remote destroy and owner-secret revocation are verified.
-- `cancel_job`: represented by `DELETE /api/jobs/:id`; allowed only from queued/running. Create cancellation requests compensation and commits `cancelled` only after verification.
+## Local OAuth implementation
 
-## Job state machine
+1. Candidate store is `HERMES_HOME/auth.json` when explicitly set; otherwise the normal Hermes auth path is considered. New device credentials use a dedicated Hermes-compatible local profile path.
+2. Reuse requires an auth file under user home that is regular, owner-owned, mode `0600` or stricter, with non-symlink user-owned parent directories that are not group/world writable.
+3. Reuse requires one unambiguous refreshable `openai-codex` credential. Unsafe, malformed, ambiguous, exhausted, or unsupported entries are not copied.
+4. Access JWTs expiring inside the bounded remote-operation window are refreshed at the official token endpoint. Rotated access/refresh tokens update the same auth record through a same-directory `0600` temporary file, fsync, and atomic rename under a NED authorization lock.
+5. New device flow opens only the fixed ChatGPT device URL. Response verification URLs are ignored; no listener exists. Cancel/timeout produces no auth file. Restart creates a new transaction.
+6. Raw tokens stay in closures and request bodies, are single-consumption values at the Daytona boundary, and are omitted from serialization/errors/output.
 
-Legal transitions:
+## Remote Secret and placeholder implementation
 
-```text
-queued  -> running | succeeded | failed | cancelled | blocked
-running -> succeeded | failed | cancelled | blocked
-terminal: succeeded | failed | cancelled | blocked
-```
+- Secret name: generated `ned_model_openai_codex_<random>`; exact ID/name stored locally for cleanup.
+- Secret host allowlist: only `chatgpt.com`.
+- Sandbox mapping: `NED_OPENAI_CODEX_ACCESS_TOKEN` references the Secret name and receives an opaque placeholder.
+- Bootstrap writes the environment placeholder—not plaintext—to `$HOME/.hermes/profiles/ned/auth.json` with mode `0600`, configures `openai-codex`, and sets a non-secret `ned-local-refresh-managed` sentinel as remote refresh token.
+- Opaque placeholders are not JWTs, so Hermes does not attempt proactive remote refresh. Local NED refreshes and calls `SecretService.update(secretId, {value, hosts})` before each remote operation. Identity and host scope are verified from the update result.
+- If a remote call receives authorization failure, it fails closed; no refresh token is available remotely.
 
-Terminal states never transition. Before cancellation the controller refreshes authoritative status, preventing cancellation-after-success. Adapter job ID and operation must remain exact. Illegal regressions such as running → queued fail closed.
+## Telegram gateway contract
 
-Readiness rules:
+1. Bot creation remains an unavoidable human action through official `@BotFather`. NED opens `https://t.me/BotFather` when possible and prints the exact numbered `/newbot`, display-name, unique `bot` username, copy-token journey.
+2. NED accepts the token only from macOS Keychain service `no-ego-dev/telegram`, account `TELEGRAM_BOT_TOKEN`, or the exact hidden-TTY prompt `Paste the Telegram bot token (input hidden):`. Argv, environment variables, URLs/query strings, chat, logs, analytics, screenshots, source, and persistent local state are not token inputs.
+3. Local validation performs Telegram Bot API `getMe` in-process with bounded timeout and redirect refusal. Provider-mandated token-in-path values and hostile response data never enter errors or output. Only a validated username and `https://t.me/<username>` are retained as safe metadata.
+4. The token is passed as `TELEGRAM_BOT_TOKEN` only through the Daytona SDK environment map for gateway start, replacement, health, pairing, repair, and inference. No Telegram Daytona Secret is created.
+5. Pinned Hermes reads that environment variable through `gateway.config`, enables Telegram, clears stale webhook state with `drop_pending_updates=False`, then uses resilient long polling. NED does not configure webhook mode.
+6. NED launches the exact profile with `nohup hermes --profile ned gateway run --replace` through Daytona process execution. Health requires `gateway_state=running` and `platforms.telegram.state=connected` from the pinned runtime-status file.
+7. Unauthorized Telegram DMs follow the pinned gateway's default owner-pairing behavior. The operator approves the restricted eight-character code with `hermes --profile ned pairing approve telegram <code>`. Pairing data lives in the profile and survives gateway/Sandbox restart.
+8. Start, doctor, and repair recreate/verify the polling gateway with fresh environment injection. Destroy removes the Sandbox-contained profile/config and the exact model Secret, with direct absence readback.
 
-- `create_ned:succeeded` sets ready only after authoritative completion.
-- failed/blocked/cancelled create revokes the owner model connection after verified workspace compensation, then records not-ready.
-- `resume_ned:succeeded` preserves ready.
-- `destroy_ned:succeeded` clears readiness and compute/model references only after verified remote deletion and vault revocation.
-- requests after completed cleanup return stable `409 session_cleaned_up`.
+## Optional provider extension points
 
-## Secret lifecycle
+Explicit advanced flags may later bind Claude Max (`anthropic` OAuth), Nous Portal (`nous`), or GitHub Copilot (`copilot`/`copilot-acp`) to the same `modelConnection` interface. Each needs its own safe local resolver, exact Daytona host scope, placeholder runtime contract, refresh/revocation tests, and destroy proof. Direct API-key fallback is allowed only through hidden input when safely supported. None is prompted during default first run.
 
-Required vault interface:
+## Parked architecture
 
-```js
-put({ ownerId, providerId, method, value }) -> { id }
-delete({ ownerId, id }) -> { id, status: 'deleted' }
-```
+Hosted browser onboarding, AWS provisioning/deployment, dashboards, domains, multi-cloud compute, and a default provider chooser remain future scope. Existing browser/AWS code is not a V1 deployment or acceptance surface.
 
-`delete` is mandatory and owner-scoped. A put is provisional until its ID validates and session commit succeeds. Any post-write validation/commit failure deletes the provisional record and verifies the receipt. Reconnection deletes the superseded record; if that deletion fails, the new record is compensated and the old connection remains authoritative. Session expiry, explicit abandonment, failed/cancelled create, and destroy all verify deletion. Tests require zero orphaned records.
+## Installer invariants
 
-## Atomic admission and lifecycle persistence
+- Prerequisites: bash, curl, tar, and sha256sum or shasum only.
+- Darwin/Linux x64/arm64; fail closed elsewhere.
+- Verify every archive before mutation; pin Node and NED source revisions/digests.
+- Private npm/Node only; `npm ci --omit=dev --ignore-scripts`.
+- Stable per-user lock, complete same-filesystem generation, manifest validation, atomic activation, rollback, signal-safe cleanup.
+- Owner-only credential/state files despite caller umask.
+- Failed create retries without redownload.
 
-Every session mutation runs through one session-scoped single-flight/CAS boundary. Reconciliation, cleaned/cleanup-pending checks, idempotency receipt lookup, active-intent reservation, adapter submission, cancellation, and final session commit are one ordered transition. A distinct key cannot bypass an active reservation; the adapter still receives the owner/session-bound idempotency key so a restart may safely recover an admitted submission without duplicating its side effect.
+## Failure and cleanup
 
-Before a lifecycle adapter call, production persists a non-secret `activeIntent` containing the typed operation, owner/session IDs, connection references, and idempotency key. Prompts and outputs are excluded. After a verified adapter receipt, the job and receipt replace the reservation. Completed cleanup is checked before any ordinary idempotency replay; all four mutation operations then return `409 session_cleaned_up`, including exact old keys.
+- Local state present blocks duplicate create; cleanup-pending requires destroy.
+- Local absent plus any managed remote Sandbox blocks mutation.
+- Secret-created/Sandbox-create failure deletes and directly verifies the exact model Secret; unresolved cleanup saves non-secret recovery metadata.
+- Bootstrap/health failure compensates the exact Sandbox and model Secret; runtime Telegram memory is discarded.
+- Destroy requires direct `get` not-found for the Sandbox and model Secret before local clear.
+- OAuth cancel/timeout/restart cannot create compute or persist partial auth.
+- User revocation remains effective through the local Hermes auth authority; refresh failure blocks remote mutation.
 
-## Session abandonment and expiry cleanup
+## Verification
 
-Explicit abandonment and expiry first mark the durable session `cleanup_pending`. If a create reservation has no job receipt after restart, the controller re-submits the exact idempotent create envelope to recover its authoritative job handle. Queued/running create is reconciled, compensated with `compensate:true`, and required to return the same job ID with terminal `cancelled`; only then may owner-secret revocation be verified and local session/job/receipt state deleted. A failed compensation or revocation returns/retains `cleanup_pending`, blocks ordinary reads and mutations, and is retried from the durable record. API readback never exposes secret or resource identifiers.
-
-Production adapters must provide durable `lifecycleStore.loadAll/save/delete` semantics and an isolated scheduler must call `server.sweepExpiredSessions()` at least once per minute, independently of request traffic. The sweep retries expired cleanup-pending records until both compensation and revocation verify, reports `{ examined, cleaned, pending }`, and must alert on non-zero/stale `pending`. The one-hour cookie/session TTL is not a cleanup scheduler; production startup remains fail-closed without this store, scheduler, retry/alert policy, and adapter idempotency guarantee.
-
-## Provider authorization policy
-
-- OpenRouter: supported OAuth PKCE is preferred; environment key remains CLI/headless fallback.
-- OpenAI, Anthropic, Gemini: secure server-side API-key fallback is allowed because no unsupported product OAuth grant is promised.
-- OAuth/delegated authorization is preferred whenever an official supported grant exists.
-- Compute and model authorization remain separate.
-
-Provider registry maps finite provider IDs to fixed secret names, environment variables, egress hosts, Hermes provider IDs, and models. Caller-controlled hosts, environment names, shell commands, or model aliases are rejected.
-
-## State schema and migration
-
-Browser production state is owner-scoped and durable: session ID/expiry, compute connection ID, model connection ID, lifecycle, readiness, last job ID, and idempotency receipts. Secret values are stored only in the encrypted vault.
-
-CLI local non-secret state adds:
-
-```json
-{
-  "provider": "daytona",
-  "modelProvider": "openai|anthropic|gemini|openrouter",
-  "workspaceId": "non-secret identifier",
-  "workspaceName": "ned-product-partner",
-  "profile": "ned",
-  "hermesVersion": "pinned version",
-  "secretId": "non-secret resource identifier",
-  "secretName": "non-secret resource name",
-  "cleanupPending": false
-}
-```
-
-Migration/backward compatibility: missing `modelProvider` in v1 state means `openrouter`; v2 writes always persist an allowlisted ID. Existing CLI commands and OpenRouter defaults remain valid. Browser session/job state does not reuse local CLI files.
-
-## Compute ownership assumption
-
-The browser beta assumes platform-managed, quota-limited compute only as a working product boundary. It requires approved quotas, abuse policy, spend authority, and support before production. User-owned Daytona is future-compatible only after official third-party delegated OAuth is verified. A browser Daytona API-key form is prohibited.
-
-## Verification and release boundary
-
-Required local evidence: focused transition/interleaving/secret/query tests; bare static/full Node/Python/package/audit/leak commands; clean tarball install and startup/health; real mobile/desktop browser journeys against an asynchronous synthetic adapter.
-
-Required production evidence: exact-SHA create → health → first request → resume → second request → destroy, direct Daytona zero-resource readback, zero orphaned secrets, tenant isolation, monitoring, rollback, and fresh independent exact-SHA approval.
-
-No development simulation, synchronous-success fake, review-only design artifact, or self-review can satisfy production release evidence.
+After final edits run bare: `npm run check`, `npm test`, `python -m pytest`, public-doc HTTP/link checks, `npm run pack:check`, `npm audit --omit=dev`, `git diff --check`, Gitleaks, clean installers, CI, and one immutable two-message Daytona/Telegram lifecycle with direct preflight/final readback. The live lifecycle remains blocked until the user separately stores a disposable BotFather token in the exact Keychain item.

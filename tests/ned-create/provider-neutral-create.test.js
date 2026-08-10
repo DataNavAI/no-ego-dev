@@ -4,60 +4,35 @@ import { test } from 'node:test';
 import { runCli } from '../../src/cli.js';
 import { createModelConnection } from '../../src/model-providers.js';
 import { createNedPlan } from '../../src/plan.js';
-import { createDaytonaProvider } from '../../src/providers/daytona.js';
+import { createDaytonaProvider as createProvider } from '../../src/providers/daytona.js';
+
+function createDaytonaProvider(options = {}) {
+  return createProvider({ runtimeTelegramTokenFactory: () => '123456789:' + 'A'.repeat(35), ...options });
+}
+
+function telegramConnection() {
+  let value = ['123456789', ':', 'A'.repeat(35)].join('');
+  return {
+    botUsername: 'ned_disposable_bot',
+    botUrl: 'https://t.me/ned_disposable_bot',
+    consumeToken() { const token = value; value = ''; return token; },
+  };
+}
 
 test('create plan selects an allowlisted direct model provider without changing compute defaults', () => {
   assert.deepEqual(createNedPlan({ modelProvider: 'openai' }), {
     provider: 'daytona',
     region: 'auto',
-    resources: { cpu: 2, memory: 4, disk: 20 },
+    resources: { cpu: 2, memory: 4, disk: 10 },
     image: 'ubuntu:24.04',
     modelProvider: 'openai',
     hermesModelProvider: 'openai-api',
     model: 'gpt-5.4',
     hermesVersion: 'v2026.7.20',
     profile: 'ned',
-    autoStopMinutes: 15,
+    autoStopMinutes: 0,
     autoArchiveMinutes: 10080,
   });
-});
-
-test('CLI create selects OpenAI explicitly and passes a non-serializing model connection', async () => {
-  let credentials;
-  const output = [];
-  const exitCode = await runCli(['create', '--model-provider', 'openai'], {
-    log: (message) => output.push(message),
-    error: assert.fail,
-  }, {
-    env: { DAYTONA_API_KEY: 'daytona-test-value', OPENAI_API_KEY: 'openai-test-value' },
-    getOpenRouterKey: async () => assert.fail('OpenRouter OAuth must not run for OpenAI'),
-    appFactory: async () => ({
-      async create(value) { credentials = value; return { ready: true }; },
-    }),
-  });
-
-  assert.equal(exitCode, 0);
-  assert.equal(credentials.modelConnection.providerId, 'openai');
-  assert.equal(credentials.modelConnection.method, 'api-key');
-  assert.equal(JSON.stringify(credentials).includes('openai-test-value'), false);
-  assert.equal(credentials.modelConnection.consumeCredential(), 'openai-test-value');
-  assert.match(output.join('\n'), /OpenAI/);
-  assert.doesNotMatch(output.join('\n'), /Opening OpenRouter/);
-});
-
-test('CLI create fails closed when the selected direct provider has no authorization', async () => {
-  const errors = [];
-  const exitCode = await runCli(['create', '--model-provider', 'anthropic'], {
-    log() {},
-    error: (message) => errors.push(message),
-  }, {
-    env: { DAYTONA_API_KEY: 'daytona-test-value' },
-    appFactory: async () => assert.fail('create must not start without model authorization'),
-  });
-
-  assert.equal(exitCode, 2);
-  assert.match(errors.join('\n'), /Anthropic authorization required/);
-  assert.match(errors.join('\n'), /secure model-provider connection/);
 });
 
 test('Daytona provider injects the selected direct provider through its own egress allowlist', async () => {
@@ -65,7 +40,11 @@ test('Daytona provider injects the selected direct provider through its own egre
   class FakeDaytona {
     constructor() {
       this.secret = {
-        create: async (params) => { observed.secret = params; return { id: 'secret-openai' }; },
+        create: async (params) => {
+          observed.secrets ||= [];
+          observed.secrets.push(params);
+          return { id: `secret-${observed.secrets.length}` };
+        },
       };
     }
     async create(params) { observed.create = params; return { id: 'sandbox-openai', name: params.name }; }
@@ -79,31 +58,54 @@ test('Daytona provider injects the selected direct provider through its own egre
     providerId: 'openai', method: 'api-key', value: 'openai-test-value',
   });
 
-  const workspace = await provider.createWorkspace(createNedPlan({ modelProvider: 'openai' }), { modelConnection });
+  const workspace = await provider.createWorkspace(createNedPlan({ modelProvider: 'openai' }), {
+    modelConnection, telegramConnection: telegramConnection(),
+  });
 
   assert.equal(workspace.modelProvider, 'openai');
   assert.equal(workspace.nedSecretName, 'ned_model_openai_test');
-  assert.deepEqual(observed.secret, {
+  assert.deepEqual(observed.secrets[0], {
     name: 'ned_model_openai_test',
     value: 'openai-test-value',
     description: 'OpenAI access for NED',
     hosts: ['api.openai.com'],
   });
-  assert.deepEqual(observed.create.secrets, { OPENAI_API_KEY: 'ned_model_openai_test' });
+  assert.deepEqual(observed.create.secrets, {
+    OPENAI_API_KEY: 'ned_model_openai_test',
+  });
 });
 
 test('Daytona bootstrap configures the selected Hermes provider and model', async () => {
   let command;
+  let gatewayStarted = false;
   const sandbox = {
-    fs: { async uploadFile() {} },
-    process: { async executeCommand(value) { command = value; return { exitCode: 0 }; } },
+    fs: {
+      async uploadFile() {},
+      async downloadFile(path) {
+        assert.equal(path, '/tmp/ned-gateway-status.txt');
+        return Buffer.from(gatewayStarted
+          ? 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n'
+          : 'NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=false\nNED_STATUS_DISCONNECTED=true\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
+      },
+    },
+    process: {
+      async executeCommand(value, cwd, env) {
+        if (value.includes('gateway status')) return { exitCode: 0 };
+        if (value.includes('gateway run --replace')) { gatewayStarted = true; return { exitCode: 0 }; }
+        command = value;
+        return { exitCode: 0 };
+      },
+      async createSession() {},
+      async executeSessionCommand() { gatewayStarted = true; return { cmdId: 'gateway' }; },
+    },
   };
   class FakeDaytona {
     constructor() { this.secret = {}; }
     async get() { return sandbox; }
   }
   const provider = createDaytonaProvider({
-    apiKey: 'daytona-test-value', DaytonaClass: FakeDaytona, profileArchive: async () => Buffer.from('archive'),
+    apiKey: 'daytona-test-value', DaytonaClass: FakeDaytona,
+    profileArchive: async () => Buffer.from('archive'), sleep: async () => {},
   });
 
   await provider.bootstrap({ id: 'sandbox-openai' }, createNedPlan({ modelProvider: 'openai' }));

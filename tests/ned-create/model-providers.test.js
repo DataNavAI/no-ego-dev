@@ -10,8 +10,11 @@ import {
 test('public model-provider contract is provider-neutral and exposes truthful browser authorization availability', () => {
   const providers = listModelProviders();
 
-  assert.deepEqual(providers.map(({ id }) => id), ['openai', 'anthropic', 'gemini', 'openrouter']);
-  assert.deepEqual(providers.map(({ label }) => label), ['OpenAI', 'Anthropic', 'Gemini', 'OpenRouter']);
+  assert.deepEqual(providers.map(({ id }) => id), ['openai-codex', 'openai', 'anthropic', 'gemini', 'openrouter']);
+  assert.deepEqual(providers.map(({ label }) => label), ['ChatGPT', 'OpenAI', 'Anthropic', 'Gemini', 'OpenRouter']);
+  const codex = providers.find(({ id }) => id === 'openai-codex');
+  assert.equal(codex.delegatedAuthorization.method, 'oauth-device-code');
+  assert.equal(codex.apiKeyFallback.status, 'disabled_when_delegated');
   const openRouter = providers.find(({ id }) => id === 'openrouter');
   assert.equal(openRouter.delegatedAuthorization.status, 'available');
   assert.equal(openRouter.apiKeyFallback.status, 'disabled_when_delegated');
