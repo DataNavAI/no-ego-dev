@@ -55,3 +55,17 @@ The controller always runs `ned destroy --yes` in its cleanup path, including ti
 abort, failed repair, or interrupted acceptance. Do not treat readiness or a worker
 notification as response evidence. Store no bot token in shell arguments or files;
 the CLI obtains it through the approved hidden/keychain path.
+
+## Automated semi-verification
+
+When no Telegram user/client observer is available, run the lifecycle-only gate:
+
+```bash
+node scripts/qa/automated-telegram-lifecycle.js --confirm-lifecycle
+```
+
+This exercises real `ned create`, gateway health, runtime token reinjection through
+`ned repair`, a second health checkpoint, and `ned destroy --yes`, with direct provider
+and local-state readback performed separately. It is valid evidence for provisioning,
+health, recovery, and cleanup. It deliberately does **not** claim that a user-visible
+Telegram reply was delivered; that requires a Telegram client observer or a human.
