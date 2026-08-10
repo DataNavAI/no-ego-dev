@@ -123,12 +123,12 @@ async function makeInstallerVariant(harness, replacements) {
 }
 
 for (const file of [readme, installDoc]) {
-  test(`${path.relative(repoRoot, file)} one-liner verifies exact installer SHA-256 before execution`, async () => {
+  test(`${path.relative(repoRoot, file)} documents the short integrity-verifying installer bootstrap`, async () => {
     const expected = await sha256(productionInstaller);
     const text = await readFile(file, 'utf8');
     assert.match(text, new RegExp(expected));
-    assert.match(text, /curl[^\n]+-o[^\n]+&&[^\n]+(?:sha256sum|shasum)[^\n]+&&[^\n]+bash/);
-    assert.doesNotMatch(text, /curl[^\n]+\|\s*bash/);
+    assert.match(text, /curl -fsSL https:\/\/ned\.datanav\.app\/install\.sh \| bash/);
+    assert.match(text, /d83f398a3ac9877719718001064fbb4d1898ee9c/);
   });
 }
 

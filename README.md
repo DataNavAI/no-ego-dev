@@ -11,10 +11,10 @@ NED is best for people who want to test an idea quickly with something real enou
 On clean supported macOS/Linux x64 or arm64, install and start setup with one command:
 
 ```bash
-i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/d83f398a3ac9877719718001064fbb4d1898ee9c/scripts/install.sh -o "$i" && { echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | sha256sum -c 2>/dev/null || echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
+curl -fsSL https://ned.datanav.app/install.sh | bash
 ```
 
-No sudo, git, system Node.js, or system npm is required. The command verifies the downloaded installer’s exact SHA-256 before execution; the installer then verifies pinned private runtime and NED downloads, reads the named macOS Keychain item or uses hidden TTY input for Daytona authorization, and runs `ned create`. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
+No sudo, git, system Node.js, or system npm is required. The hosted bootstrap downloads the immutable installer at commit `d83f398a3ac9877719718001064fbb4d1898ee9c`, verifies SHA-256 `f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927` before execution, and the installer then verifies pinned private runtime and NED downloads. It reads the named macOS Keychain item or uses hidden TTY input for Daytona authorization, then runs `ned create`. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
 
 `ned create` asks no infrastructure or model-selection questions. It securely reuses a compatible existing Hermes ChatGPT OAuth credential when available; otherwise it opens one fixed ChatGPT device-authorization page. It then guides the user through official [@BotFather](https://t.me/BotFather), receives the bot token only through the exact hidden prompt or named macOS Keychain item, validates Telegram `getMe`, and injects the Telegram token only at runtime through the Daytona SDK environment channel. One private persistent Daytona Sandbox runs pinned Hermes `openai-codex` plus its long-polling Telegram gateway. OpenRouter and a Telegram webhook are not required.
 

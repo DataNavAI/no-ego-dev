@@ -3,10 +3,10 @@
 On a supported macOS or Linux x64/arm64 computer, open a terminal and run:
 
 ```bash
-i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/d83f398a3ac9877719718001064fbb4d1898ee9c/scripts/install.sh -o "$i" && { echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | sha256sum -c 2>/dev/null || echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
+curl -fsSL https://ned.datanav.app/install.sh | bash
 ```
 
-The command downloads first and executes only bytes matching the displayed installer SHA-256, so a changed mutable response cannot run. Only the operating system's `bash`, `curl`, `tar`, and SHA-256 utility are used. The installer does **not** use `sudo`, `git`, or a system Node.js/npm. It installs a private Node.js 22.14.0 runtime and NED revision `5d1bb2a30ad92227e9a811aa3c8c464e1ba675e9` under `~/.local/share/ned`, verifies both archives with pinned SHA-256 values, installs lockfile-pinned dependencies, manages an exact PATH block in `~/.profile`, `~/.zprofile`, and `~/.bashrc`, and starts `ned create`.
+The hosted bootstrap downloads the immutable installer at commit `d83f398a3ac9877719718001064fbb4d1898ee9c` and verifies SHA-256 `f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927` before execution. The installer then verifies pinned private runtime and NED downloads. Only the operating system's `bash`, `curl`, `tar`, and SHA-256 utility are used. The installer does **not** use `sudo`, `git`, or a system Node.js/npm. It installs a private Node.js 22.14.0 runtime and NED revision `5d1bb2a30ad92227e9a811aa3c8c464e1ba675e9` under `~/.local/share/ned`, verifies both archives with pinned SHA-256 values, installs lockfile-pinned dependencies, manages an exact PATH block in `~/.profile`, `~/.zprofile`, and `~/.bashrc`, and starts `ned create`.
 
 On macOS, the launcher first reads Keychain service `no-ego-dev/daytona`, account `DAYTONA_API_KEY`. Otherwise, enter a Daytona API key created at <https://app.daytona.io/dashboard/keys> with only `write:sandboxes`, `delete:sandboxes`, and `manage:secrets` through hidden TTY input. The key is never placed in command arguments or installer output; non-Keychain fallback storage is `~/.config/ned/daytona-api-key` with owner-only mode `600`.
 
@@ -14,7 +14,7 @@ Model access defaults to ChatGPT OAuth through Hermes provider `openai-codex`. N
 
 Telegram is the V1 user surface. NED explains that the user must perform BotFather legal/ownership actions, opens or links <https://t.me/BotFather>, and prints numbered instructions to send `/newbot`, choose a display name, choose a unique username ending in `bot`, and copy the issued token. It then prompts exactly `Paste the Telegram bot token (input hidden):` without echo. On macOS it first checks Keychain service `no-ego-dev/telegram`, account `TELEGRAM_BOT_TOKEN`.
 
-NED never accepts the Telegram token from argv, environment variables, shell history, chat, logs, analytics, screenshots, source, fixtures, or product-controlled URLs/query strings. It validates the bot through in-process Telegram `getMe`, stores only the verified username as safe metadata, and creates a separate exact Daytona Secret scoped only to `api.telegram.org`. Pinned Hermes uses long polling, not a NED webhook. After gateway health succeeds, open the verified bot URL, tap **Start**, send `hello`, and approve any returned owner code with `ned pair <code>`.
+NED never accepts the Telegram token from argv, environment variables, shell history, chat, logs, analytics, screenshots, source, fixtures, or product-controlled URLs/query strings. It validates the bot through in-process Telegram `getMe`, stores only the verified username as safe metadata, and injects the token only at runtime through the Daytona SDK environment channel. Pinned Hermes uses long polling, not a NED webhook. After gateway health succeeds, open the verified bot URL, tap **Start**, send `hello`, and approve any returned owner code with `ned pair <code>`.
 
 Public guides:
 
