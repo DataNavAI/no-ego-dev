@@ -3,7 +3,7 @@
 On a supported macOS or Linux x64/arm64 computer, open a terminal and run:
 
 ```bash
-i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/603dcff47a9c935cf5d9323f41942e9d0a530b43/scripts/install.sh -o "$i" && { echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | sha256sum -c - 2>/dev/null || echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
+i=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/d83f398a3ac9877719718001064fbb4d1898ee9c/scripts/install.sh -o "$i" && { echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | sha256sum -c 2>/dev/null || echo "f0d74d94a12116186da44ac6b322d4874ffe819f45179df2bb19c11361d1d927  $i" | shasum -a 256 -c -; } && bash "$i"; s=$?; rm -f "$i"; (exit "$s")
 ```
 
 The command downloads first and executes only bytes matching the displayed installer SHA-256, so a changed mutable response cannot run. Only the operating system's `bash`, `curl`, `tar`, and SHA-256 utility are used. The installer does **not** use `sudo`, `git`, or a system Node.js/npm. It installs a private Node.js 22.14.0 runtime and NED revision `5d1bb2a30ad92227e9a811aa3c8c464e1ba675e9` under `~/.local/share/ned`, verifies both archives with pinned SHA-256 values, installs lockfile-pinned dependencies, manages an exact PATH block in `~/.profile`, `~/.zprofile`, and `~/.bashrc`, and starts `ned create`.

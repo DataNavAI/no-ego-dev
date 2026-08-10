@@ -18,10 +18,10 @@ A builder runs one checksum-verifiable bootstrap and receives one usable private
 5. NED prints numbered BotFather actions, opens or links `https://t.me/BotFather`, and accepts a newly created disposable bot token only through hidden TTY input (or the named macOS Keychain item used for controlled verification).
 6. NED validates Telegram `getMe` in-process and shows only the verified username. Invalid/revoked tokens stop before compute mutation with a direct public recovery link.
 7. NED checks local ownership state and directly lists NED-managed Daytona Sandboxes before creating anything.
-8. NED creates one private persistent Daytona Sandbox, stores the current ChatGPT access token and Telegram token as separate egress-scoped installation-owned Daytona Secrets, installs checksum-pinned Hermes plus NED, configures Hermes provider `openai-codex`, starts and verifies the exact polling Telegram gateway, runs inference health, and prints owner-pairing actions.
+8. NED creates one private persistent Daytona Sandbox, stores the current ChatGPT access token as an egress-scoped installation-owned Daytona Secret, injects the Telegram token only at runtime through the Daytona SDK environment channel, installs checksum-pinned Hermes plus NED, configures Hermes provider `openai-codex`, starts and verifies the exact polling Telegram gateway, runs inference health, and prints owner-pairing actions.
 9. The owner opens the verified bot link, taps **Start**, sends `hello`, and, when required, approves the Hermes pairing code with `ned pair <code>`.
 10. Before `chat`, `doctor`, or `repair`, NED resolves or refreshes the local Hermes OAuth credential in-process and updates that exact model Secret. `repair` restores the gateway without replacing pairing state. The refresh token never crosses into Daytona.
-11. `destroy --yes` deletes the exact Sandbox plus model and Telegram Secrets and succeeds only after direct absence readback.
+11. `destroy --yes` deletes the exact Sandbox plus model Secret, proves direct absence readback, clears the in-memory runtime Telegram token, and removes local state only after cleanup succeeds.
 
 Activation event: `instance_activation_completed` after remote install, health, and first inference health check succeed.
 Primary journey completion event: `chat_completed` after the first user-request inference succeeds.
