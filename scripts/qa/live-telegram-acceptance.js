@@ -3,19 +3,16 @@ import readline from 'node:readline';
 import { spawn } from 'node:child_process';
 import { createAcceptanceController, ACCEPTANCE_COMMANDS } from './telegram-acceptance-controller.js';
 
-let activeChild;
-
 function runCli(args) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, ['bin/ned.js', ...args], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'inherit',
+      detached: true,
     });
-    activeChild = child;
     child.once('error', () => resolve(1));
     child.once('exit', (code, signal) => {
-      activeChild = undefined;
       resolve(typeof code === 'number' ? code : (signal ? 1 : 0));
     });
   });
@@ -24,8 +21,10 @@ function runCli(args) {
 function createCommandWaiter() {
   const input = readline.createInterface({ input: process.stdin, output: process.stdout });
   let abort;
+  let interrupted = false;
   return {
     waitForCommand(timeoutMs) {
+      if (interrupted) return Promise.resolve(ACCEPTANCE_COMMANDS.abort);
       return new Promise((resolve, reject) => {
         let timer;
         const finish = (callback, value) => {
@@ -50,6 +49,7 @@ function createCommandWaiter() {
       });
     },
     abort() {
+      interrupted = true;
       abort?.();
     },
     close() {
@@ -65,7 +65,6 @@ const controller = createAcceptanceController({
   write: (line) => console.log(line),
 });
 const interrupt = () => {
-  activeChild?.kill('SIGTERM');
   waiter.abort();
 };
 process.once('SIGINT', interrupt);

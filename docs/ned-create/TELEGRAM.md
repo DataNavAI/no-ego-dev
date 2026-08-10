@@ -52,9 +52,12 @@ accepts only these control words; it never reads or records message text:
 5. Enter `second-response-confirmed`.
 
 The controller always runs `ned destroy --yes` in its cleanup path, including timeout,
-abort, failed repair, or interrupted acceptance. Do not treat readiness or a worker
-notification as response evidence. Store no bot token in shell arguments or files;
-the CLI obtains it through the approved hidden/keychain path.
+abort, failed repair, or a SIGINT/SIGTERM abort. The CLI child is detached from the
+terminal signal so a transactional create can finish and persist ownership before
+cleanup runs. A forced process kill can still require provider-side reconciliation.
+Do not treat readiness or a worker notification as response evidence. Store no bot
+token in shell arguments or files; the CLI obtains it through the approved
+hidden/keychain path.
 
 ## Automated semi-verification
 
