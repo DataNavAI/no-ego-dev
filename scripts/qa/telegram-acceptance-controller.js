@@ -43,18 +43,22 @@ export function createAcceptanceController({
       let status = 'failed';
       let cleanupExitCode = 1;
       try {
-        if (await run(['create']) !== 0) return { status, cleanupExitCode };
-        write('READY_FOR_TELEGRAM @NEDTestBot');
-        const first = await boundedWait(waitForCommand, timeoutMs);
-        if (first === ACCEPTANCE_COMMANDS.abort) return { status: 'aborted', cleanupExitCode };
-        if (first !== ACCEPTANCE_COMMANDS.firstResponse) return { status, cleanupExitCode };
-
-        if (await run(['repair']) !== 0) return { status, cleanupExitCode };
-        write('READY_FOR_MARKER_B @NEDTestBot');
-        const second = await boundedWait(waitForCommand, timeoutMs);
-        if (second === ACCEPTANCE_COMMANDS.abort) return { status: 'aborted', cleanupExitCode };
-        if (second !== ACCEPTANCE_COMMANDS.secondResponse) return { status, cleanupExitCode };
-        status = 'complete';
+        const createExitCode = await run(['create']);
+        if (createExitCode === 0) {
+          write('READY_FOR_TELEGRAM @NEDTestBot');
+          const first = await boundedWait(waitForCommand, timeoutMs);
+          if (first === ACCEPTANCE_COMMANDS.abort) {
+            status = 'aborted';
+          } else if (first === ACCEPTANCE_COMMANDS.firstResponse) {
+            const repairExitCode = await run(['repair']);
+            if (repairExitCode === 0) {
+              write('READY_FOR_MARKER_B @NEDTestBot');
+              const second = await boundedWait(waitForCommand, timeoutMs);
+              if (second === ACCEPTANCE_COMMANDS.abort) status = 'aborted';
+              else if (second === ACCEPTANCE_COMMANDS.secondResponse) status = 'complete';
+            }
+          }
+        }
       } catch (error) {
         status = isTimeout(error) ? 'timed_out' : 'failed';
       } finally {

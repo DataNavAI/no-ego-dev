@@ -71,7 +71,31 @@ test('controller destroys when repair fails and exposes no success marker', asyn
     timeoutMs: 1000,
   }).run();
 
-  assert.deepEqual(result, { status: 'failed', cleanupExitCode: 1 });
+  assert.deepEqual(result, { status: 'failed', cleanupExitCode: 0 });
   assert.deepEqual(calls, [['create'], ['repair'], ['destroy', '--yes']]);
   assert.deepEqual(output, ['READY_FOR_TELEGRAM @NEDTestBot']);
+});
+
+test('controller reports successful cleanup when create fails', async () => {
+  const calls = [];
+  const result = await createAcceptanceController({
+    run: async (args) => { calls.push(args); return args[0] === 'create' ? 1 : 0; },
+    waitForCommand: async () => ACCEPTANCE_COMMANDS.abort,
+    timeoutMs: 1000,
+  }).run();
+
+  assert.deepEqual(result, { status: 'failed', cleanupExitCode: 0 });
+  assert.deepEqual(calls, [['create'], ['destroy', '--yes']]);
+});
+
+test('controller reports successful cleanup when the operator aborts', async () => {
+  const calls = [];
+  const result = await createAcceptanceController({
+    run: async (args) => { calls.push(args); return 0; },
+    waitForCommand: async () => ACCEPTANCE_COMMANDS.abort,
+    timeoutMs: 1000,
+  }).run();
+
+  assert.deepEqual(result, { status: 'aborted', cleanupExitCode: 0 });
+  assert.deepEqual(calls, [['create'], ['destroy', '--yes']]);
 });
