@@ -148,6 +148,7 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `project-manager`: breaks work into tracked tasks, coordinates specialist subagents, and enforces risk-weighted first-round-complete reviews with no fixed round limit and approval-convergence mode from Round 4 onward.
 - `issue-monitor`: runs scheduled issue/PR workflows with one bounded reviewer attempt, durable exact-SHA results, duplicate-review suppression, and controller-derived approval-convergence mode for Round 4 and later.
 - `delegation-reliability`: supervises background subagents, verifies durable handoffs, and safely recovers interrupted or partial work.
+- `serialized-catalog-publication`: converges evidence, media, rights, promotion, and deployment gates without tracker churn, and never counts staging as production publication.
 - `subagent-driven-development`: executes implementation plans with fresh focused subagents and risk-weighted immutable review gates.
 - `prd-reviewer`: independently reviews exact PRD revisions, prioritizing hard-to-reverse product choices and one complete first-round steering packet.
 - `technical-design-reviewer`: independently reviews exact architecture revisions for irreversible boundaries, safe migration/rollback, and bounded convergence.
