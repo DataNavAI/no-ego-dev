@@ -12,7 +12,7 @@ const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/ned-create/INSTALL.md');
 const syntheticSecret = 'synthetic-daytona-test-key';
-const revision = '5d1bb2a30ad92227e9a811aa3c8c464e1ba675e9';
+const revision = '72d65f36b7c400a4fc0da8ad38db8b1a8e4a65e1';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
 
 async function sha256(file) {
@@ -128,7 +128,7 @@ for (const file of [readme, installDoc]) {
     const text = await readFile(file, 'utf8');
     assert.match(text, new RegExp(expected));
     assert.match(text, /curl -fsSL https:\/\/ned\.datanav\.app\/install\.sh \| bash/);
-    assert.match(text, /d83f398a3ac9877719718001064fbb4d1898ee9c/);
+    assert.match(text, /72d65f36b7c400a4fc0da8ad38db8b1a8e4a65e1/);
   });
 }
 
@@ -143,7 +143,7 @@ test('macOS launcher reads the named Daytona Keychain item before file or hidden
   assert.match(text, /create\|chat\|doctor\|repair\|reset\|destroy/);
 });
 
-test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, stores credential safely, and runs create', async () => {
+test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to run create', async () => {
   const harness = await makeHarness();
   await writeFile(path.join(harness.home, '.profile'), '# Documentation: ~/.local/bin is intentionally not on PATH\n', { mode: 0o600 });
   await writeFile(path.join(harness.home, '.zprofile'), '# private zsh configuration\n', { mode: 0o640 });
@@ -151,9 +151,10 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   const result = runInstaller(harness);
   assert.equal(result.status, 0, result.stderr);
   assert.doesNotMatch(result.stdout + result.stderr, new RegExp(syntheticSecret));
-  assert.match(await readFile(path.join(harness.home, 'create.log'), 'utf8'), /ned-create:create/);
-  assert.equal((await stat(path.join(harness.home, '.config/ned/daytona-api-key'))).mode & 0o777, 0o600);
-  assert.equal(await readFile(path.join(harness.home, '.config/ned/daytona-api-key'), 'utf8'), `${syntheticSecret}\n`);
+  assert.match(result.stdout, /Next step: run `ned create`/);
+  assert.match(result.stdout, /--verbose/);
+  assert.equal(await exists(path.join(harness.home, 'create.log')), false);
+  assert.equal(await exists(path.join(harness.home, '.config/ned/daytona-api-key')), false);
   const generation = await activeGeneration(harness);
   assert.equal(await exists(path.join(generation, 'install-manifest')), true);
   for (const [profile, mode] of [['.profile', 0o600], ['.zprofile', 0o640], ['.bashrc', 0o644]]) {
@@ -186,7 +187,7 @@ test('clean macOS arm64 and Ubuntu amd64/arm64 installs and reruns preserve BotF
     const rerun = runInstaller(harness, {}, '');
     assert.equal(rerun.status, 0, `${target.name}: stdout=${rerun.stdout} stderr=${rerun.stderr}`);
     assert.match(rerun.stdout, /already installed/i, target.name);
-    assert.equal((await readFile(path.join(harness.home, 'create.log'), 'utf8')).trim().split('\n').length, 1, target.name);
+    assert.equal(await exists(path.join(harness.home, 'create.log')), false, target.name);
 
     const generation = await activeGeneration(harness);
     const telegramModule = pathToFileURL(path.join(generation, 'app', 'src', 'telegram.js')).href;
@@ -232,7 +233,7 @@ test('completed rerun repairs removed PATH blocks before returning without redow
   assert.equal(rerun.status, 0, rerun.stderr);
   assert.match(rerun.stdout, /already installed/i);
   assert.equal((await readFile(harness.curlLog, 'utf8')).trim().split('\n').length, 2);
-  assert.equal((await readFile(path.join(harness.home, 'create.log'), 'utf8')).trim().split('\n').length, 1);
+  assert.equal(await exists(path.join(harness.home, 'create.log')), false);
   assert.equal((await readFile(path.join(harness.home, '.bashrc'), 'utf8')).split(pathBlock).length - 1, 1);
 });
 
@@ -291,7 +292,7 @@ test('space-containing HOME and TMPDIR complete installation', async () => {
   assert.equal(await exists(path.join(harness.home, '.local/bin/ned')), true);
 });
 
-test('caller umask 000 cannot make installer state, credentials, or profiles world-readable', async () => {
+test('caller umask 000 cannot make installer state or profiles world-readable', async () => {
   const harness = await makeHarness();
   const result = spawnSync('/bin/bash', ['-c', 'umask 000; exec /bin/bash "$1"', 'installer', harness.installer], {
     env: harness.env,
@@ -299,7 +300,6 @@ test('caller umask 000 cannot make installer state, credentials, or profiles wor
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.equal((await stat(path.join(harness.home, '.config/ned/daytona-api-key'))).mode & 0o777, 0o600);
   for (const profile of ['.profile', '.zprofile', '.bashrc']) {
     assert.equal((await stat(path.join(harness.home, profile))).mode & 0o777, 0o600);
   }
@@ -355,20 +355,17 @@ test('reuse revalidates private Node, complete app tree, and launcher integrity 
   }
 });
 
-test('failed create keeps verified install retryable without redownloading or exposing credential', async () => {
+test('installer never asks for credentials or runs create', async () => {
   const harness = await makeHarness();
-  const failed = runInstaller(harness, { NED_TEST_CREATE_FAIL: '1' });
-  assert.equal(failed.status, 43);
-  assert.doesNotMatch(failed.stdout + failed.stderr, new RegExp(syntheticSecret));
-  const retry = runInstaller(harness, {}, '');
-  assert.equal(retry.status, 0, retry.stderr);
-  assert.equal((await readFile(harness.curlLog, 'utf8')).trim().split('\n').length, 2);
+  const result = runInstaller(harness, { NED_TEST_CREATE_FAIL: '1' }, '');
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout + result.stderr, /Daytona API key|credential-missing|synthetic-create-failure/i);
+  assert.equal(await exists(path.join(harness.home, 'create.log')), false);
 });
 
 test('installed launcher preserves credential-free create dry-run', async () => {
   const harness = await makeHarness();
   assert.equal(runInstaller(harness).status, 0);
-  await writeFile(path.join(harness.home, '.config/ned/daytona-api-key'), '');
   const result = spawnSync(path.join(harness.home, '.local/bin/ned'), ['create', '--dry-run', '--json'], {
     env: { HOME: harness.home, PATH: '/usr/bin:/bin' }, encoding: 'utf8',
   });

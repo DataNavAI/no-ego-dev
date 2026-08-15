@@ -1,6 +1,6 @@
 {
   "name": "no-ego-dev",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Create and run a private NED product partner on Daytona.",
   "type": "module",
   "bin": {

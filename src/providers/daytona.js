@@ -20,12 +20,37 @@ export function createDaytonaProvider({
   secretNameFactory = (providerId) => `ned_model_${providerId.replaceAll(/[^a-z0-9]/g, '_')}_${randomUUID().replaceAll('-', '')}`,
   createAttemptIdFactory = () => randomUUID().replaceAll('-', ''),
   runtimeTelegramTokenFactory = () => null,
+  verbose = false,
+  log = () => {},
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
 } = {}) {
   if (!apiKey) {
     throw new Error('Daytona authorization is required. Set DAYTONA_API_KEY in your shell; do not paste it into chat.');
   }
   const client = new DaytonaClass({ apiKey });
+  const debug = (message) => {
+    if (verbose) log(`[daytona] ${message}`);
+  };
+  const errorSummary = (error) => {
+    const status = error?.status || error?.statusCode || error?.response?.status;
+    const message = String(error?.message || error?.name || 'unknown error')
+      .replaceAll(/(?:bot)?\d{6,}:[A-Za-z0-9_-]{20,}/gi, '[REDACTED]')
+      .replaceAll(/(?:api[_ -]?key|token|secret|authorization)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
+      .replaceAll(/\b[A-Za-z0-9_-]{40,}\b/g, '[REDACTED]')
+      .slice(0, 240);
+    return status ? `${message} (HTTP ${status})` : message;
+  };
+  const runStage = async (name, operation) => {
+    debug(`${name}: started`);
+    try {
+      const result = await operation();
+      debug(`${name}: completed`);
+      return result;
+    } catch (error) {
+      debug(`${name}: failed — ${errorSummary(error)}`);
+      throw error;
+    }
+  };
   const runtimeTelegramTokens = new Map();
 
   function runtimeTelegramEnv(workspaceId) {
@@ -184,14 +209,14 @@ PY`,
           || !/^[A-Za-z0-9]{8,64}$/.test(createAttemptId)) {
         throw new Error('Invalid generated Daytona resource identity');
       }
-      const secret = await client.secret.create({
+      const secret = await runStage('create-model-secret', () => client.secret.create({
         name: secretName,
         value: modelConnection.consumeCredential(),
         description: `${modelProvider.label} access for NED`,
         hosts: modelProvider.allowedHosts,
-      });
+      }));
       try {
-        const sandbox = await client.create({
+        const sandbox = await runStage('create-sandbox', () => client.create({
           name: 'ned-product-partner',
           image: plan.image,
           language: 'typescript',
@@ -205,7 +230,7 @@ PY`,
           secrets: {
             [modelProvider.sandboxEnvironmentVariable]: secretName,
           },
-        }, { timeout: 300 });
+        }, { timeout: 300 }));
         consumeRuntimeTelegramToken(sandbox.id, telegramConnection);
         return {
           id: sandbox.id,
@@ -371,11 +396,11 @@ PY`,
         'PY',
         `hermes profile info ${plan.profile}`,
       ].join('\n');
-      const result = await sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspace.id), 900);
+      const result = await runStage('bootstrap-hermes-profile', () => sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspace.id), 900));
       if (result.exitCode !== 0) {
         throw new Error(`Hermes/NED installation failed: ${result.result || 'unknown error'}`);
       }
-      await startAndVerifyTelegramGateway(sandbox, plan.profile);
+      await runStage('verify-telegram-gateway', () => startAndVerifyTelegramGateway(sandbox, plan.profile));
       return { hermesVersion: plan.hermesVersion };
     },
 

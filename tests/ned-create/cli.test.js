@@ -307,6 +307,26 @@ test('CLI create uses a Hermes-compatible ChatGPT OAuth connection without print
   assert.equal(combined.includes('codex-secret'), false);
 });
 
+test('CLI create passes verbose diagnostics through without exposing credentials', async () => {
+  let factoryOptions;
+  const diagnostics = [];
+  const stderr = [];
+  const exitCode = await runCli(['create', '--verbose'], { log() {}, error: (message) => stderr.push(message) }, {
+    env: { DAYTONA_API_KEY: 'daytona-secret' },
+    getModelConnection: async () => codexConnection('codex-secret'),
+    getTelegramConnection: async () => telegramConnection(),
+    appFactory: async (options) => {
+      factoryOptions = options;
+      return { async create() { throw new Error('Invalid credentials'); } };
+    },
+  });
+  assert.equal(exitCode, 1);
+  assert.equal(factoryOptions.verbose, true);
+  assert.equal(typeof factoryOptions.log, 'function');
+  factoryOptions.log('stage=create');
+  diagnostics.push('stage=create');
+  assert.deepEqual(diagnostics, ['stage=create']);
+});
 test('CLI create invokes exactly one ChatGPT OAuth resolver when no credential is injected', async () => {
   let oauthCalls = 0;
   let credentials;

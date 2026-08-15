@@ -4,8 +4,8 @@ set +x
 umask 077
 
 NODE_VERSION=22.14.0
-NED_REVISION=5d1bb2a30ad92227e9a811aa3c8c464e1ba675e9
-NED_SOURCE_SHA256=c567b66478c7c0d5ddfae399e295bb438fd70762f1ddcb35bc7804c3778cc604
+NED_REVISION=72d65f36b7c400a4fc0da8ad38db8b1a8e4a65e1
+NED_SOURCE_SHA256=4688eda75c764c1e16b450ec4529768d71aafde90cf67cd0ab2eeaec0c961896
 readonly NODE_VERSION NED_REVISION NED_SOURCE_SHA256
 
 INSTALL_ROOT="${HOME:?HOME must be set}/.local/share/ned"
@@ -108,6 +108,7 @@ if [[ "$needs_daytona" == 1 ]] && [[ -z "${DAYTONA_API_KEY-}" ]]; then
     mkdir -p "${HOME}/.config/ned"
     chmod 700 "${HOME}/.config/ned"
     if [[ -t 0 && -r /dev/tty ]]; then
+      printf 'Daytona API key is needed to authorize NED to create and manage your private Sandbox. Get one at https://app.daytona.io/dashboard/keys, then grant only write:sandboxes, delete:sandboxes, and manage:secrets.\n' >/dev/tty 2>/dev/null || true
       IFS= read -r -s -p 'Daytona API key (input hidden): ' DAYTONA_API_KEY </dev/tty
       printf '\n' >/dev/tty
     else
@@ -228,11 +229,8 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/ned-install.XXXXXX")
 
 if installation_valid; then
   repair_path
-  if [[ -f "$CREATE_MARKER" ]] && [[ "$(<"$CREATE_MARKER")" == "$NED_REVISION" ]]; then
-    printf 'NED %s is already installed. Run: ned doctor\n' "$NED_REVISION"
-    exit 0
-  fi
-  install_ready=1
+  printf 'NED %s is already installed. Run: ned create\n' "$NED_REVISION"
+  exit 0
 else
   install_ready=0
   if [[ -e "$CURRENT" || -e "$BIN_DIR/ned" ]]; then
@@ -287,12 +285,9 @@ if [[ "$install_ready" != 1 ]]; then
   mv -f "$launcher_staging" "$BIN_DIR/ned"
   launcher_staging=
   activation_pending=0
-
-  printf 'NED installed under %s (no sudo or system Node.js used).\n' "$INSTALL_ROOT"
-  printf 'Credential file: %s (mode 600). Revoke the key in Daytona, then delete this file to disconnect.\n' "$CREDENTIAL_FILE"
 fi
 
-printf 'Starting ned create...\n'
-"$BIN_DIR/ned" create
-printf '%s\n' "$NED_REVISION" >"$CREATE_MARKER"
+printf 'NED installed under %s (no sudo or system Node.js used).\n' "$INSTALL_ROOT"
+printf 'Next step: run `ned create` to connect Daytona, ChatGPT, and Telegram and create your private workspace.\n'
+printf 'If `ned create` fails, rerun it with `--verbose` for redacted stage diagnostics.\n'
 printf 'Install complete. Open a new shell, or run: export PATH="$HOME/.local/bin:$PATH"\n'

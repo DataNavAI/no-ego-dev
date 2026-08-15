@@ -326,6 +326,7 @@ async function runDeviceLogin({
     throw new Error('ChatGPT device authorization response was incomplete.');
   }
 
+  io.log('ChatGPT OAuth connects NED to your model provider without asking you to paste an API key. Open the official device page and enter the displayed code to authorize access:');
   io.log('Continue with ChatGPT:');
   io.log(`  ${CHATGPT_DEVICE_URL}`);
   io.log(`  Enter code: ${device.user_code}`);

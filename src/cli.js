@@ -14,10 +14,12 @@ import {
   TELEGRAM_DOCS_URL,
 } from './telegram.js';
 
-async function defaultAppFactory({ env }) {
+async function defaultAppFactory({ env, verbose = false, log = () => {} }) {
   return createNedApp({
     provider: createDaytonaProvider({
       apiKey: env.DAYTONA_API_KEY,
+      verbose,
+      log,
       profileArchive: createProfileArchive,
     }),
     stateStore: createFileStateStore(),
@@ -48,9 +50,16 @@ function capture(telemetry, event, startedAt, resultClass) {
   }
 }
 
+function createVerboseLogger(io, enabled) {
+  if (!enabled) return () => {};
+  return (message) => io.log(`[verbose] ${redactTelegramText(String(message))}`);
+}
+
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
   const env = dependencies.env || process.env;
+  const verbose = flags.includes('--verbose');
+  const verboseLog = createVerboseLogger(io, verbose);
   const appFactory = dependencies.appFactory || defaultAppFactory;
   const getModelConnection = dependencies.getModelConnection || ((options = {}) => authorizeOpenAICodex({
     env,
@@ -73,7 +82,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       'NED — private hosted product partner',
       '',
       'Usage:',
-      '  ned create [--dry-run --json]',
+      '  ned create [--dry-run --json] [--verbose]',
       '  ned chat "What should NED build?"',
       '  ned doctor',
       '  ned pair <8-character-code>',
@@ -151,7 +160,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
     if (!env.DAYTONA_API_KEY) {
       capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
-      io.error('Daytona authorization required. Create an API key at https://app.daytona.io/dashboard/keys, set DAYTONA_API_KEY in your shell, then rerun ned create. Do not paste secrets into chat.');
+      io.error('Daytona API authorization is needed to create and manage your private Sandbox. Get a key at https://app.daytona.io/dashboard/keys, grant write:sandboxes, delete:sandboxes, and manage:secrets, set DAYTONA_API_KEY, then rerun ned create. Do not paste secrets into chat.');
       return 2;
     }
     try {
@@ -161,7 +170,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       const telegramConnection = await getTelegramConnection();
       const botUrl = telegramConnection.botUrl;
       io.log('Creating your private NED workspace and Telegram gateway...');
-      const app = await appFactory({ env });
+      const app = await appFactory({ env, verbose, log: verboseLog });
       await app.create({ modelConnection, telegramConnection });
       capture(telemetry, TELEMETRY_EVENTS.createCompleted, startedAt, 'success');
       io.log('✓ Your product partner is ready.');
@@ -182,7 +191,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
     const startedAt = Date.now();
     if (!env.DAYTONA_API_KEY) {
       capture(telemetry, TELEMETRY_EVENTS.chatFailed, startedAt, 'validation_error');
-      io.error('Daytona authorization required. Set DAYTONA_API_KEY in your shell, then rerun ned chat.');
+      io.error('Daytona API authorization is needed to access your existing private Sandbox. Set DAYTONA_API_KEY from a key created at https://app.daytona.io/dashboard/keys, then rerun ned chat.');
       return 2;
     }
     const prompt = flags.join(' ').trim();
@@ -237,7 +246,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       destroy: TELEMETRY_EVENTS.destroyCompleted,
     }[command];
     if (!env.DAYTONA_API_KEY) {
-      io.error(`Daytona authorization required. Set DAYTONA_API_KEY in your shell, then rerun ned ${command}.`);
+      io.error(`Daytona API authorization is needed to manage your private Sandbox. Set DAYTONA_API_KEY from a key created at https://app.daytona.io/dashboard/keys, then retry ned ${command}.`);
       return 2;
     }
     if (command === 'destroy' && !flags.includes('--yes')) {
