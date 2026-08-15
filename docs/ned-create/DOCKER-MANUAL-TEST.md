@@ -18,10 +18,21 @@ export DAYTONA_API_KEY='(load from your secret store; do not commit)'
 ./scripts/qa/docker-create-smoke.sh
 ```
 
-The runner persists the ChatGPT OAuth store at `~/.config/no-ego-dev/secrets/hermes_auth.json` (mode `600`) and mounts only that file into the disposable container. After the first authorization, later runs reuse or refresh the cached OAuth credential instead of asking again. The script builds `docker/ned-create.Dockerfile` from the current checkout, starts a fresh container, and runs:
+The runner persists the ChatGPT OAuth store at `~/.config/no-ego-dev/secrets/hermes_auth.json` (mode `600`) and mounts only that file into the disposable container. After first authorization, later runs reuse or refresh it. It also persists NED ownership state at `~/.config/no-ego-dev/secrets/state/` (mode `700`) so the workspace can be cleaned up after the disposable container exits.
+
+The script builds `docker/ned-create.Dockerfile` from the current checkout and runs:
 
 ```text
 ned create --verbose
+```
+
+After a successful create, clean up with:
+
+```bash
+docker run --rm --init \
+  --env DAYTONA_API_KEY \
+  --volume "$HOME/.config/no-ego-dev/secrets/state:/root/.ned:rw" \
+  no-ego-dev/ned-create-manual:local destroy --yes
 ```
 
 Complete ChatGPT OAuth and paste the disposable Telegram token only at:

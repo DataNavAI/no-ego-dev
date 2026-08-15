@@ -6,6 +6,7 @@ IMAGE="${NED_DOCKER_IMAGE:-no-ego-dev/ned-create-manual:local}"
 SECRETS_DIR="${NED_SECRETS_DIR:-$HOME/.config/no-ego-dev/secrets}"
 DAYTONA_KEY_FILE="$SECRETS_DIR/daytona_api_key"
 HERMES_AUTH_FILE="${NED_HERMES_AUTH_FILE:-$SECRETS_DIR/hermes_auth.json}"
+STATE_DIR="${NED_STATE_DIR:-$SECRETS_DIR/state}"
 
 if [[ -z "${DAYTONA_API_KEY:-}" && -r "$DAYTONA_KEY_FILE" ]]; then
   DAYTONA_API_KEY="$(<"$DAYTONA_KEY_FILE")"
@@ -20,6 +21,8 @@ fi
 umask 077
 mkdir -p "$SECRETS_DIR"
 chmod 700 "$SECRETS_DIR"
+mkdir -p "$STATE_DIR"
+chmod 700 "$STATE_DIR"
 if [[ ! -e "$HERMES_AUTH_FILE" ]]; then
   if [[ -f "$HOME/.hermes/auth.json" ]]; then
     cp "$HOME/.hermes/auth.json" "$HERMES_AUTH_FILE"
@@ -48,4 +51,5 @@ INFO
 exec docker run --rm --init --interactive --tty \
   --env DAYTONA_API_KEY \
   --volume "$HERMES_AUTH_FILE:/root/.hermes/auth.json:rw" \
+  --volume "$STATE_DIR:/root/.ned:rw" \
   "$IMAGE" create --verbose
