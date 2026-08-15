@@ -6,7 +6,7 @@ On a supported macOS or Linux x64/arm64 computer, open a terminal and run:
 curl -fsSL https://ned.datanav.app/install.sh | bash
 ```
 
-The hosted bootstrap downloads the immutable installer at commit `b59c000c3ce4422a5b157a24a62fb9dcf180ce97` and verifies SHA-256 `927cf723d8db74ead7d5c05d89733442d21d41602e6bd4e17cebe0542710ae3b` before execution. The installer then verifies pinned private runtime and NED downloads. It does not request credentials or provision a workspace; after installation, run `ned create`.
+The hosted bootstrap downloads the immutable installer at commit `cf4570b2ec46c22b90eb257e504c165c8edb5579` and verifies SHA-256 `581c433a990c1b29a427a9fb227736b482519e983044acd8ea83e3da1f187429` before execution. The installer then verifies pinned private runtime and NED downloads. It does not request credentials or provision a workspace; after installation, run `ned create`.
 
 On macOS, the launcher first reads Keychain service `no-ego-dev/daytona`, account `DAYTONA_API_KEY`. Otherwise, enter a Daytona API key created at <https://app.daytona.io/dashboard/keys> with only `write:sandboxes`, `delete:sandboxes`, and `manage:secrets` through hidden TTY input. The key is never placed in command arguments or installer output; non-Keychain fallback storage is `~/.config/ned/daytona-api-key` with owner-only mode `600`.
 
