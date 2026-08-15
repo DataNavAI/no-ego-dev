@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { createNedApp } from './app.js';
 import { authorizeOpenAICodex } from './auth/openai-codex.js';
 import { getModelProviderRuntime } from './model-providers.js';
@@ -13,6 +14,9 @@ import {
   redactTelegramText,
   TELEGRAM_DOCS_URL,
 } from './telegram.js';
+
+const require = createRequire(import.meta.url);
+const { version: NED_VERSION } = require('../package.json');
 
 async function defaultAppFactory({ env, verbose = false, log = () => {} }) {
   return createNedApp({
@@ -60,6 +64,10 @@ export async function runCli(argv, io = console, dependencies = {}) {
   const env = dependencies.env || process.env;
   const verbose = flags.includes('--verbose');
   const verboseLog = createVerboseLogger(io, verbose);
+  if (command === '--version' || command === 'version') {
+    io.log(NED_VERSION);
+    return 0;
+  }
   const appFactory = dependencies.appFactory || defaultAppFactory;
   const getModelConnection = dependencies.getModelConnection || ((options = {}) => authorizeOpenAICodex({
     env,
@@ -79,9 +87,11 @@ export async function runCli(argv, io = console, dependencies = {}) {
 
   if (['--help', '-h', 'help'].includes(command)) {
     io.log([
-      'NED — private hosted product partner',
+      `NED — private hosted product partner (version ${NED_VERSION})`,
       '',
       'Usage:',
+      '  ned --version',
+      '  ned version',
       '  ned create [--dry-run --json] [--verbose]',
       '  ned chat "What should NED build?"',
       '  ned doctor',

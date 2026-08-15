@@ -43,8 +43,18 @@ test('CLI help lists every supported lifecycle command', async () => {
   assert.equal(exitCode, 0);
   assert.equal(stderr.length, 0);
   const help = stdout.join('\n');
+  assert.match(help, /version 0\.2\.1/);
   for (const command of ['create', 'chat', 'doctor', 'repair', 'destroy']) {
     assert.match(help, new RegExp(`ned ${command}`));
+  }
+});
+
+test('CLI reports the installed version without requiring credentials', () => {
+  for (const args of [['--version'], ['version']]) {
+    const result = runNed(args, { DAYTONA_API_KEY: '' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.trim(), '0.2.1');
+    assert.equal(result.stderr, '');
   }
 });
 
