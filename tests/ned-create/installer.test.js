@@ -12,7 +12,7 @@ const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/ned-create/INSTALL.md');
 const syntheticSecret = 'synthetic-daytona-test-key';
-const revision = '4fc33888c6707274c095fac9e893f5ddeed3ecc0';
+const revision = 'b59c000c3ce4422a5b157a24a62fb9dcf180ce97';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
 
 async function sha256(file) {
@@ -128,7 +128,7 @@ for (const file of [readme, installDoc]) {
     const text = await readFile(file, 'utf8');
     assert.match(text, new RegExp(expected));
     assert.match(text, /curl -fsSL https:\/\/ned\.datanav\.app\/install\.sh \| bash/);
-    assert.match(text, /4fc33888c6707274c095fac9e893f5ddeed3ecc0/);
+    assert.match(text, /b59c000c3ce4422a5b157a24a62fb9dcf180ce97/);
   });
 }
 
