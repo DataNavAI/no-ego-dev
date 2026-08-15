@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import {
+  CENTRAL_TELEMETRY,
   DURATION_BUCKETS,
   TELEMETRY_EVENTS,
   createFileTelemetry,
@@ -27,6 +28,16 @@ test('telemetry is off by default and enable requires explicit complete consent'
     () => telemetry.enable({ host: 'https://us.i.posthog.com', projectKey: 'phc_public', privacyPolicy: 'https://example.com/privacy' }),
     /affirmative consent/i,
   );
+});
+
+test('centralized telemetry defaults require only explicit consent', async () => {
+  const home = await temporaryHome();
+  const telemetry = createFileTelemetry({ home, fetch: async () => ({ ok: true }) });
+
+  const status = await telemetry.enable({ consent: true });
+  assert.equal(status.enabled, true);
+  assert.equal(status.host, CENTRAL_TELEMETRY.host);
+  assert.equal(status.privacyPolicy, CENTRAL_TELEMETRY.privacyPolicy);
 });
 
 test('enable creates a random installation identity and disable preserves it without sending', async () => {

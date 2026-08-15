@@ -33,14 +33,12 @@ Public V1 guides: [quickstart](https://ned.datanav.app/docs/v1/quickstart/), [Te
 ### Optional product telemetry
 
 Telemetry is **off by default**. NED only sends the small, versioned event schema in
-[`docs/ned-create/TELEMETRY_PRIVACY.md`](docs/ned-create/TELEMETRY_PRIVACY.md) after you provide a
-collector you control, link its published privacy policy, and affirm consent with `--yes`.
+[`docs/ned-create/TELEMETRY_PRIVACY.md`](docs/ned-create/TELEMETRY_PRIVACY.md) after you affirm
+consent with `--yes`. The default destination is NED's centralized PostHog project; custom
+collector flags remain available for operators who need them.
 
 ```bash
-ned telemetry enable --yes \
-  --host https://us.i.posthog.com \
-  --project-key YOUR_PUBLIC_PROJECT_INGEST_KEY \
-  --privacy-policy https://your-domain.example/privacy
+ned telemetry enable --yes
 ned telemetry status
 ned telemetry disable
 ned telemetry delete

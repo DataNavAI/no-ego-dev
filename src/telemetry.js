@@ -8,6 +8,12 @@ const require = createRequire(import.meta.url);
 const { version: packageVersion } = require('../package.json');
 
 export const TELEMETRY_SCHEMA_VERSION = 1;
+export const CENTRAL_TELEMETRY = Object.freeze({
+  host: 'https://us.i.posthog.com',
+  // Public PostHog project ingest configuration; never use a personal/admin key here.
+  projectKey: ['phc_DbHJxjsZNgQTNF75xfLDUXJsNGUMVhJu5pYTfC8Lskx2'].join(''),
+  privacyPolicy: 'https://github.com/DataNavAI/no-ego-dev/blob/main/docs/ned-create/TELEMETRY_PRIVACY.md',
+});
 export const TELEMETRY_EVENTS = Object.freeze({
   createStarted: 'cli_create_started',
   createCompleted: 'cli_create_completed',
@@ -98,16 +104,21 @@ export function createFileTelemetry({
       };
     },
 
-    async enable(options) {
-      validateEnableOptions(options);
+    async enable(options = {}) {
+      const hasCustomCollector = ['host', 'projectKey', 'privacyPolicy'].some((key) => options[key] !== undefined);
+      const resolvedOptions = hasCustomCollector ? options : {
+        ...CENTRAL_TELEMETRY,
+        ...options,
+      };
+      validateEnableOptions(resolvedOptions);
       const existing = await load();
       const config = {
         schemaVersion: TELEMETRY_SCHEMA_VERSION,
         enabled: true,
         installationId: existing?.installationId || randomUUID(),
-        host: new URL(options.host).origin,
-        projectKey: options.projectKey,
-        privacyPolicy: new URL(options.privacyPolicy).href,
+        host: new URL(resolvedOptions.host).origin,
+        projectKey: resolvedOptions.projectKey,
+        privacyPolicy: new URL(resolvedOptions.privacyPolicy).href,
       };
       await save(config);
       return this.status();

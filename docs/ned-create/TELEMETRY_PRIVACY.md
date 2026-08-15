@@ -18,8 +18,10 @@ deletion process govern those records.
 
 ## Collector decision
 
-PostHog is the recommended low-operations collector, but the CLI is configured by the collector
-operator and does not ship an account or a real key. The reasons are:
+PostHog is the centralized NED collector. Its public project ingest configuration is shipped with
+the CLI; it is not a personal or admin credential. Users must still explicitly opt in with
+`ned telemetry enable --yes`. Custom collectors remain supported through the existing flags. The
+reasons for PostHog are:
 
 - its documented HTTP capture API accepts a project ingest key and supports PostHog Cloud or a
   self-hosted endpoint;

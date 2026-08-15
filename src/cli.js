@@ -81,7 +81,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '  ned reset  # legacy alias for repair',
       '  ned destroy --yes',
       '  ned telemetry status',
-      '  ned telemetry enable --yes --host <url> --project-key <public-key> --privacy-policy <url>',
+      '  ned telemetry enable --yes  # centralized NED metrics (custom collector flags are optional)',
       '  ned telemetry disable',
       '  ned telemetry delete',
     ].join('\n'));
@@ -100,12 +100,13 @@ export async function runCli(argv, io = console, dependencies = {}) {
         return 0;
       }
       if (action === 'enable') {
-        await telemetryStore.enable({
-          consent: flags.includes('--yes'),
-          host: flagValue(flags, '--host'),
-          projectKey: flagValue(flags, '--project-key'),
-          privacyPolicy: flagValue(flags, '--privacy-policy'),
-        });
+        const telemetryOptions = { consent: flags.includes('--yes') };
+        const optionNames = { host: 'host', 'project-key': 'projectKey', 'privacy-policy': 'privacyPolicy' };
+        for (const name of Object.keys(optionNames)) {
+          const value = flagValue(flags, `--${name}`);
+          if (value !== undefined) telemetryOptions[optionNames[name]] = value;
+        }
+        await telemetryStore.enable(telemetryOptions);
         io.log('Telemetry enabled with affirmative consent. No prompts, responses, or workspace identifiers are collected.');
         return 0;
       }
