@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.14.7
+version: 1.14.9
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -77,6 +77,8 @@ Every terminal worker event—success, failure, interruption, or timeout—must 
 
 **Hook callbacks never dispatch children directly.** They emit a content-free wake or invoke one fixed-argument idempotent dispatcher pass. Child status and summaries are untrusted observations, not executable input or promotion authority. Debounce concurrent completion bursts under one lock, retain a periodic fallback for lost wakes, and prove by smoke test that one completion starts at most one eligible successor.
 
+**A periodic tick is not evidence of a worker deficit.** A watchdog tick may reconcile a durable terminal event that was missed, but it must not blindly refill target capacity. Dispatch only after proving: the prior owner is no longer live or mutating, the expected artifact is absent or terminally verified, dependencies are ready, the product outcome remains eligible, and no active attempt already owns the same stream. A no-change tick is silent and mutation-free.
+
 ## Work-conserving liveness invariant
 
 Treat worker capacity as a resource to keep productively occupied while the execution queue has unfinished **runnable** work.
@@ -87,7 +89,16 @@ Treat worker capacity as a resource to keep productively occupied while the exec
 - If an `in_progress` task has no confirmed live worker and no durable completion result, classify liveness as `unknown` until lifecycle evidence establishes stopped or active; inspect recoverable artifacts and re-dispatch only after confirming the old writer cannot still mutate the target.
 - After dispatch, record the handle and expected output. If the runtime exposes no start after a short grace period, inspect lifecycle evidence and recover/re-dispatch rather than waiting for the user to notice.
 - It is valid to have zero workers only when every unfinished task is genuinely blocked by dependencies, missing auth, an explicit user decision, a safety gate, or an already-running external operation. Mark those tasks blocked/waiting with the concrete reason; do not manufacture busywork.
+- **Never use tracker-only work to fill capacity.** A status rewrite, blocked-checkpoint restatement, verifier hardening with no concrete release defect, or duplicate frontier audit is not a substitute for a runnable product slice. Preserve a blocked result once, then select an independent eligible outcome or report the real blocked capacity.
 - Before sending a status-only or final response, run this liveness check. Never end with a promise that a later hook will dispatch work when a runnable task can be dispatched now.
+
+### Material base-advance rule
+
+Exact identity remains mandatory at final promotion, but base movement must be handled proportionately. Classify whether the new base changes candidate files, shared schemas/contracts, generated outputs, dependencies, tests, mergeability, release authority, or another boundary the candidate relies on.
+
+**A documentation-only or tracker-only base advance does not by itself require a full rerun** when it is non-overlapping and a deterministic comparison proves the candidate patch and affected product tree are equivalent. Preserve trustworthy focused/full CI and prior findings; perform only the smallest delta/mergeability check needed. Batch or defer unrelated tracker merges so they do not repeatedly move the promotion base.
+
+If the base materially affects the candidate, rebase once at promotion, rerun only identity-invalidated checks, and obtain **one final exact current-base/current-head approval** before merge. Research/checkpoint branches may continue in parallel, but only the selected promotion candidate enters this final serialized gate. Never review every intermediate checkpoint as though it were the release candidate.
 
 ## Workflow
 

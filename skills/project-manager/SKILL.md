@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.21.7
+version: 0.21.8
 author: NoEgoDev
 license: MIT
 metadata:
@@ -190,6 +190,14 @@ Every active project repository must maintain a concise living `STATUS.md` at th
 3. Update `STATUS.md` after every **big task** or **milestone**. A big task materially changes product capability, architecture, design direction, delivery/release state, operations, security/data posture, or resolves a major incident/blocker. Do not churn the file for trivial subtasks that do not change the project snapshot.
 4. Update it in the same branch/PR/commit as the milestone when practical. Otherwise create an immediate linked follow-up update. If the status revision cannot be committed or included in the landing PR, send a blocker/progress message, keep the big task or milestone incomplete, and do **not** send a task/milestone-complete message until the gate passes.
 5. Treat the file as a current snapshot: rewrite stale sections, keep recent completed work concise, and move detailed chronology to issues, releases, or changelogs.
+
+### Material-transition tracker rule
+
+Repository status is durable product truth, not a worker heartbeat or scheduler ledger. Update and commit `STATUS.md` only for a material transition: released product capability, a verified production/staging/deployment state change, a major externally blocked outcome, an owner decision that changes execution, milestone completion, or a material risk/incident. **Do not create a repository commit or PR for a routine worker start, review start, pending CI run, lease refresh, no-change reconciliation, stale-base observation, or scheduler tick.** Keep transient leases, attempts, review state, and queue bookkeeping in the canonical external issue/project tracker or scheduler state.
+
+For continuous execution, prefer completion/PR/CI/deployment events. **Periodic reconciliation is a lost-event watchdog**, not proof that work must be launched and not permission to rewrite the tracker. On a tick, first verify actual active leases, durable terminal artifacts, dependency readiness, and a real worker deficit. Stay silent and make no repository mutation when nothing material changed. Never launch work merely to fill a configured slot, and never use tracker-only work as productive capacity.
+
+Measure controller effectiveness through **released product capability, not worker occupancy** or commit volume. Track product outcomes, median candidate-to-release time, no-op tick ratio, tracker-only PR count, stale/rebase ratio, and unfinished attempts. A scheduler response marked successful proves only that the controller returned, not that the project advanced.
 
 ### Required content
 

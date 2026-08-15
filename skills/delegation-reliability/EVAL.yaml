@@ -23,6 +23,9 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "does not invalidate all candidate evidence for an unrelated documentation-only base advance and instead proves patch or affected-tree equivalence with a bounded delta check"
+  - "requires one final exact current-base current-head approval for the selected promotion candidate while reusing trustworthy unaffected evidence"
+  - "does not refill capacity merely because a periodic controller tick occurred and never manufactures tracker-only work to occupy a slot"
 setupCommands: []
 teardownCommands: []
 parameters:
