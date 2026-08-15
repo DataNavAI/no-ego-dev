@@ -5,7 +5,7 @@ This is the live acceptance test for a complete `ned create` setup in a fresh co
 ## Preconditions
 
 - Docker Desktop is running.
-- `DAYTONA_API_KEY` is present in the host shell. Do not paste it into chat or commit it.
+- `DAYTONA_API_KEY` is present in the host shell, or stored at `~/.config/no-ego-dev/secrets/daytona_api_key`. The runner reads it without printing it and passes it only to the container runtime. Do not paste it into chat or commit it.
 - A disposable Telegram bot token is available from BotFather. Use NED's hidden prompt; do not pass it in argv, Docker `--env`, files, URLs, or logs.
 - ChatGPT OAuth can be completed interactively.
 

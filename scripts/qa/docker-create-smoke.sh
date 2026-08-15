@@ -3,9 +3,16 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 IMAGE="${NED_DOCKER_IMAGE:-no-ego-dev/ned-create-manual:local}"
+SECRETS_DIR="${NED_SECRETS_DIR:-$HOME/.config/no-ego-dev/secrets}"
+DAYTONA_KEY_FILE="$SECRETS_DIR/daytona_api_key"
+
+if [[ -z "${DAYTONA_API_KEY:-}" && -r "$DAYTONA_KEY_FILE" ]]; then
+  DAYTONA_API_KEY="$(<"$DAYTONA_KEY_FILE")"
+  export DAYTONA_API_KEY
+fi
 
 if [[ -z "${DAYTONA_API_KEY:-}" ]]; then
-  printf 'DAYTONA_API_KEY must be set in the host shell; it is passed only to the container runtime.\n' >&2
+  printf 'Set DAYTONA_API_KEY or store it at %s; it is passed only to the container runtime.\n' "$DAYTONA_KEY_FILE" >&2
   exit 2
 fi
 
