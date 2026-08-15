@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 IMAGE="${NED_DOCKER_IMAGE:-no-ego-dev/ned-create-manual:local}"
 SECRETS_DIR="${NED_SECRETS_DIR:-$HOME/.config/no-ego-dev/secrets}"
 DAYTONA_KEY_FILE="$SECRETS_DIR/daytona_api_key"
+HERMES_AUTH_FILE="${NED_HERMES_AUTH_FILE:-$SECRETS_DIR/hermes_auth.json}"
 
 if [[ -z "${DAYTONA_API_KEY:-}" && -r "$DAYTONA_KEY_FILE" ]]; then
   DAYTONA_API_KEY="$(<"$DAYTONA_KEY_FILE")"
@@ -14,6 +15,18 @@ fi
 if [[ -z "${DAYTONA_API_KEY:-}" ]]; then
   printf 'Set DAYTONA_API_KEY or store it at %s; it is passed only to the container runtime.\n' "$DAYTONA_KEY_FILE" >&2
   exit 2
+fi
+
+umask 077
+mkdir -p "$SECRETS_DIR"
+chmod 700 "$SECRETS_DIR"
+if [[ ! -e "$HERMES_AUTH_FILE" ]]; then
+  if [[ -f "$HOME/.hermes/auth.json" ]]; then
+    cp "$HOME/.hermes/auth.json" "$HERMES_AUTH_FILE"
+  else
+    printf '{}\n' > "$HERMES_AUTH_FILE"
+  fi
+  chmod 600 "$HERMES_AUTH_FILE"
 fi
 
 printf 'Building a fresh NED create test image: %s\n' "$IMAGE"
@@ -34,4 +47,5 @@ INFO
 
 exec docker run --rm --init --interactive --tty \
   --env DAYTONA_API_KEY \
+  --volume "$HERMES_AUTH_FILE:/root/.hermes/auth.json:rw" \
   "$IMAGE" create --verbose

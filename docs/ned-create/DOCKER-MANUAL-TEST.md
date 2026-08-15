@@ -18,7 +18,7 @@ export DAYTONA_API_KEY='(load from your secret store; do not commit)'
 ./scripts/qa/docker-create-smoke.sh
 ```
 
-The script builds `docker/ned-create.Dockerfile` from the current checkout, starts a fresh container, and runs:
+The runner persists the ChatGPT OAuth store at `~/.config/no-ego-dev/secrets/hermes_auth.json` (mode `600`) and mounts only that file into the disposable container. After the first authorization, later runs reuse or refresh the cached OAuth credential instead of asking again. The script builds `docker/ned-create.Dockerfile` from the current checkout, starts a fresh container, and runs:
 
 ```text
 ned create --verbose
