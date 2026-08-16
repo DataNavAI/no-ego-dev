@@ -12,7 +12,7 @@ const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/ned-create/INSTALL.md');
 const syntheticSecret = 'synthetic-daytona-test-key';
-const revision = '0b831f780d05f00b2501f0d25b15e33e168dcf02';
+const revision = '44931e5ca7cb28b0ef1e48f16fb198a1bc37053d';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
 
 async function sha256(file) {
@@ -65,6 +65,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), '// synthetic fixture\n');
   await cp(path.join(repoRoot, 'src', 'telegram.js'), path.join(sourceRoot, 'src', 'telegram.js'));
   await cp(path.join(repoRoot, 'bin', 'ned-launcher.js'), path.join(sourceRoot, 'bin', 'ned-launcher.js'));
+  await cp(path.join(repoRoot, 'src', 'launcher.js'), path.join(sourceRoot, 'src', 'launcher.js'));
   await mkdir(path.join(sourceRoot, 'src', 'web', 'public'), { recursive: true });
   await cp(path.join(repoRoot, 'src', 'web', 'public', 'docs'), path.join(sourceRoot, 'src', 'web', 'public', 'docs'), { recursive: true });
   await writeFile(path.join(sourceRoot, 'package.json'), '{"name":"no-ego-dev-test","type":"module"}\n');
