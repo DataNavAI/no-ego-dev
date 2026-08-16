@@ -84,7 +84,7 @@ write_launcher() {
   cat >"$destination" <<'LAUNCHER'
 #!/usr/bin/env bash
 set -euo pipefail
-exec "${HOME:?}/.local/share/ned/current/runtime/bin/node" "${HOME}/.local/share/ned/current/app/bin/ned-launcher.js" "$@"
+exec "${HOME:?}/.local/share/ned/current/runtime/bin/node" "${HOME}/.local/share/ned/ned-launcher.js" "$@"
 LAUNCHER
   chmod 755 "$destination"
 }
@@ -92,7 +92,7 @@ LAUNCHER
 installation_valid() {
   local generation manifest key value app_tree_actual
   local manifest_node= manifest_revision= manifest_runtime= manifest_app= manifest_app_tree= manifest_lock= manifest_launcher=
-  [[ -L "$CURRENT" && -x "$BIN_DIR/ned" ]] || return 1
+  [[ -L "$CURRENT" && -x "$BIN_DIR/ned" && -f "$INSTALL_ROOT/ned-launcher.js" ]] || return 1
   generation="$CURRENT"
   manifest="$generation/install-manifest"
   [[ -f "$manifest" && -x "$generation/runtime/bin/node" && -f "$generation/app/bin/ned.js" && -f "$generation/app/bin/ned-launcher.js" && -f "$generation/app/package-lock.json" ]] || return 1
@@ -155,6 +155,7 @@ rm -f "$lock_candidate"
 tmp=
 staging=
 launcher_staging=
+launcher_source_staging=
 activation_pending=0
 old_current=
 cleanup() {
@@ -171,6 +172,7 @@ cleanup() {
   fi
   [[ -n "$staging" ]] && rm -rf "$staging"
   [[ -n "$launcher_staging" ]] && rm -f "$launcher_staging"
+  [[ -n "$launcher_source_staging" ]] && rm -f "$launcher_source_staging"
   [[ -n "$tmp" ]] && rm -rf "$tmp"
   lock_pid=
   [[ -f "$LOCK_FILE" ]] && IFS= read -r lock_pid <"$LOCK_FILE"
@@ -214,6 +216,9 @@ if [[ "$install_ready" != 1 ]]; then
   )
 
   write_launcher "$staging/ned-launcher"
+  launcher_source_staging="$INSTALL_ROOT/.ned-launcher.$$"
+  cp "$staging/app/bin/ned-launcher.js" "$launcher_source_staging"
+  chmod 600 "$launcher_source_staging"
   runtime_sha=$(sha256_file "$staging/runtime/bin/node")
   app_sha=$(sha256_file "$staging/app/bin/ned.js")
   app_tree_sha=$(app_tree_sha256 "$staging/app" "$tmp/app-install.tar")
@@ -238,6 +243,8 @@ if [[ "$install_ready" != 1 ]]; then
   ln -s "generations/$generation_name" "$INSTALL_ROOT/.current.$$"
   activation_pending=1
   mv -f "$INSTALL_ROOT/.current.$$" "$CURRENT"
+  mv -f "$launcher_source_staging" "$INSTALL_ROOT/ned-launcher.js"
+  launcher_source_staging=
   mv -f "$launcher_staging" "$BIN_DIR/ned"
   launcher_staging=
   activation_pending=0
