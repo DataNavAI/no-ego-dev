@@ -3,10 +3,10 @@
 On a supported macOS or Linux x64/arm64 computer, open a terminal and run:
 
 ```bash
-curl -fsSL https://ned.datanav.app/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/install.sh | bash
 ```
 
-The hosted bootstrap downloads the immutable installer at commit `cf4570b2ec46c22b90eb257e504c165c8edb5579` and verifies SHA-256 `581c433a990c1b29a427a9fb227736b482519e983044acd8ea83e3da1f187429` before execution. The installer then verifies pinned private runtime and NED downloads. It does not request credentials or provision a workspace; after installation, run `ned create`.
+The command downloads the canonical installer directly from this repository's `main` branch. The installer verifies pinned private runtime and NED downloads before execution. It does not request credentials or provision a workspace; after installation, run `ned create`. For a reproducible installation, replace `main` with a full reviewed commit SHA.
 
 On macOS, the launcher first reads Keychain service `no-ego-dev/daytona`, account `DAYTONA_API_KEY`. Otherwise, enter a Daytona **Personal Access Key** created at <https://app.daytona.io/dashboard/keys> through hidden TTY input. In Daytona, create a new key and grant exactly `write:sandboxes`, `delete:sandboxes`, and `manage:secrets`; a Sandbox-only key is insufficient. The key is never placed in command arguments or installer output; non-Keychain fallback storage is `~/.config/ned/daytona-api-key` with owner-only mode `600`. `ned create` validates these permissions before prompting for ChatGPT or Telegram credentials and explains how to replace a rejected key.
 

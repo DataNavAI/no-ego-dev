@@ -11,10 +11,10 @@ NED is best for people who want to test an idea quickly with something real enou
 On clean supported macOS/Linux x64 or arm64, install and start setup with one command:
 
 ```bash
-curl -fsSL https://ned.datanav.app/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/install.sh | bash
 ```
 
-No sudo, git, system Node.js, or system npm is required. The hosted bootstrap downloads the immutable installer at commit `cf4570b2ec46c22b90eb257e504c165c8edb5579`, verifies SHA-256 `581c433a990c1b29a427a9fb227736b482519e983044acd8ea83e3da1f187429` before execution, and the installer then verifies pinned private runtime and NED downloads. It reads no cloud credentials and does not provision a workspace; after installation, run `ned create` yourself. See [one-line bootstrap security, cleanup, and pin details](docs/ned-create/INSTALL.md).
+No sudo, git, system Node.js, or system npm is required. This command executes the canonical installer in this repository; that installer verifies pinned private runtime and NED downloads before installation. It reads no cloud credentials and does not provision a workspace; after installation, run `ned create` yourself. The `main` URL intentionally tracks the latest repository installer; use a full commit SHA in the URL when you need a reproducible installation. See [installer security, cleanup, and pin details](docs/ned-create/INSTALL.md).
 
 `ned create` asks no infrastructure or model-selection questions. It securely reuses a compatible existing Hermes ChatGPT OAuth credential when available; otherwise it opens one fixed ChatGPT device-authorization page. It then guides the user through official [@BotFather](https://t.me/BotFather), receives the bot token only through the exact hidden prompt or named macOS Keychain item, validates Telegram `getMe`, and injects the Telegram token only at runtime through the Daytona SDK environment channel. One private persistent Daytona Sandbox runs pinned Hermes `openai-codex` plus its long-polling Telegram gateway. OpenRouter and a Telegram webhook are not required.
 

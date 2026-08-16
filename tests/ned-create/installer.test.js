@@ -123,12 +123,10 @@ async function makeInstallerVariant(harness, replacements) {
 }
 
 for (const file of [readme, installDoc]) {
-  test(`${path.relative(repoRoot, file)} documents the short integrity-verifying installer bootstrap`, async () => {
-    const expected = await sha256(productionInstaller);
+  test(`${path.relative(repoRoot, file)} documents the canonical repository installer`, async () => {
     const text = await readFile(file, 'utf8');
-    assert.match(text, new RegExp(expected));
-    assert.match(text, /curl -fsSL https:\/\/ned\.datanav\.app\/install\.sh \| bash/);
-    assert.match(text, /cf4570b2ec46c22b90eb257e504c165c8edb5579/);
+    assert.match(text, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
+    assert.match(text, /pinned private runtime and NED downloads/);
   });
 }
 
