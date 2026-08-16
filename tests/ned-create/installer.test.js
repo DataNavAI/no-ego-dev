@@ -64,6 +64,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   await mkdir(path.join(sourceRoot, 'src'), { recursive: true });
   await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), '// synthetic fixture\n');
   await cp(path.join(repoRoot, 'src', 'telegram.js'), path.join(sourceRoot, 'src', 'telegram.js'));
+  await cp(path.join(repoRoot, 'bin', 'ned-launcher.js'), path.join(sourceRoot, 'bin', 'ned-launcher.js'));
   await mkdir(path.join(sourceRoot, 'src', 'web', 'public'), { recursive: true });
   await cp(path.join(repoRoot, 'src', 'web', 'public', 'docs'), path.join(sourceRoot, 'src', 'web', 'public', 'docs'), { recursive: true });
   await writeFile(path.join(sourceRoot, 'package.json'), '{"name":"no-ego-dev-test","type":"module"}\n');
@@ -135,10 +136,12 @@ test('production installer contains no runtime test override or integrity bypass
   assert.doesNotMatch(text, /NED_INSTALLER_TEST|NED_NODE_URL|NED_NODE_SHA256|NED_SOURCE_URL|NED_TEST_SOURCE_SHA256|NED_INSTALLER_PLATFORM|NED_INSTALLER_DRY_RUN/);
 });
 
-test('macOS launcher reads the named Daytona Keychain item before file or hidden TTY fallback', async () => {
-  const text = await readFile(productionInstaller, 'utf8');
-  assert.match(text, /security find-generic-password -s 'no-ego-dev\/daytona' -a 'DAYTONA_API_KEY' -w/);
-  assert.match(text, /create\|chat\|doctor\|repair\|reset\|destroy/);
+test('Node launcher contains the credential boundary and delegates version without credentials', async () => {
+  const text = await readFile(path.join(repoRoot, 'src/launcher.js'), 'utf8');
+  assert.match(text, /DAYTONA_API_KEY/);
+  assert.match(text, /no-ego-dev\/daytona/);
+  assert.match(text, /--version/);
+  assert.doesNotMatch(text, /readline\.question\([^)]*DAYTONA_API_KEY/);
 });
 
 test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to run create', async () => {
