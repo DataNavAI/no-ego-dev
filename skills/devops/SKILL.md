@@ -1,7 +1,7 @@
 ---
 name: devops
 description: "Use when setting up CI/CD, deployments, environment management, or operational health checks."
-version: 0.5.1
+version: 0.6.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -25,6 +25,7 @@ Make the product shippable and observable. NED devops chooses boring, reliable a
 - Environment variable and secret handling.
 - Preview/staging/production environment strategy.
 - Monitoring, logs, health checks, hosting-cost visibility, and rollback plan.
+- Core backend latency telemetry and actionable production alert routing for every active product.
 - Chat-first provider account setup: use the configured primary Google account for SSO/account creation whenever practical, and minimize anything that requires the user to access the agent machine directly.
 - Per-project deployment and system monitoring documentation, including routine cost checks for hosted resources.
 
@@ -231,6 +232,22 @@ vercel projects ls
 
 ## Environment Strategy
 
+### Supported Device Interface Deployment Gate
+
+Before promoting staging, deploying production, submitting to an app store, or rolling out a release, read `.projects/<project>/product/supported-device-interfaces.yaml`. This is the canonical supported device interface release gate.
+
+DevOps must block deployment unless all of the following are true:
+
+- The registry exists, parses, names the exact release candidate, and has no unresolved `undecided` interface relevant to the release.
+- Every interface marked `supported` has at least one executable test case ID.
+- QA ran every supported interface against the same release candidate being deployed and recorded a separate `PASS` with durable evidence and concrete target details.
+- No supported-interface result is `not-run`, `fail`, `blocked`, or `stale`.
+- Any intentional interface omission or difference is recorded by product management rather than silently accepted by deployment automation.
+
+CI/CD should implement a deterministic registry validation/release-gate job where practical. It must fail closed on missing or malformed registry data, zero test cases for a supported interface, release-candidate mismatch, missing evidence, or non-PASS results. A manual production approval cannot waive this gate without an explicit, issue-linked user decision documenting affected users, risk, rollback, and follow-up QA.
+
+Record the registry path, validated release candidate, supported interface IDs, case IDs, per-interface evidence, gate result, and any exception decision in the deployment runbook/release record.
+
 Every deployable product must have at least two persistent environments:
 
 - **Staging**: production-like environment used for integration verification, demos, QA, migration rehearsals, and smoke tests.
@@ -343,6 +360,20 @@ Required contents:
 
 Prefer one concise, current runbook over scattered notes. If a provider generates its own docs or dashboard links, link them from the runbook and summarize the operational steps in-repo.
 
+## Core backend latency alerts
+
+Every active product with a backend, API, server-rendered critical path, worker, queue, or stateful service must have latency telemetry and actionable alerts for its core customer journeys. Identify those journeys from the PRD/CUJ and production routes rather than alerting every endpoint equally—for example authentication, checkout/payment, primary reads/writes, search, webhook processing, and time-sensitive background jobs.
+
+For each core journey:
+
+1. Measure p50, p95, and p99 duration by production environment, service, route/operation, region where relevant, and success/error outcome. Include request volume, error rate, timeout rate, queue age or job duration, and downstream/database latency when they are needed to localize user-visible delay.
+2. Derive the latency objective and alert thresholds from the product contract/SLO, user-visible latency budget, or a measured healthy baseline. Do not invent one universal millisecond threshold across products. If no SLO or baseline exists, create a task to establish one and deploy a documented conservative provisional threshold that is reviewed after enough representative traffic is collected.
+3. Configure warning and critical conditions with a sustained evaluation window, a minimum traffic threshold or a synthetic probe, and recovery criteria. Prefer multi-window SLO burn-rate alerts when the platform supports them. Suppress isolated low-volume percentile spikes without hiding synthetic failures, hard timeouts, or critical-journey outages.
+4. Production alerts route to an owned response destination with primary owner, escalation path, acknowledgement expectation, dashboard, runbook, environment/service/route, observed percentile, threshold/window, volume, errors/timeouts, and recent deploy correlation. Staging alerts are normally non-paging and validate instrumentation before production promotion.
+5. Generate a safe test alert through the provider's test function, a temporary non-customer threshold, or a controlled synthetic probe. Verify delivery, acknowledgement, task/incident linkage, recovery notification, dashboard query, and runbook usefulness; then restore the approved threshold and record evidence.
+
+Missing latency telemetry or alert routing is an operational gap. Create a canonical setup/remediation task, mark the affected product health signal as unknown or at-risk, and do not claim the active product has complete backend monitoring. Alert creation is not complete until the monitor is enabled in production, routed to an owned destination, exercised safely, and documented in `.projects/<project>/runbooks/deployment-and-monitoring.md`.
+
 ## Periodic System Checkup Cost Rules
 
 Every periodic system checkup must include hosting cost as a first-class signal, not an afterthought. For each staging and production environment, inspect available billing/usage dashboards or provider APIs/CLIs and report:
@@ -354,6 +385,66 @@ Every periodic system checkup must include hosting cost as a first-class signal,
 - recommended action: leave as-is, downgrade/resize, delete idle resources, add budget alerts, create an optimization task, or ask product/project manager for a cost-vs-growth decision.
 
 If cost data is unavailable, mark it as `missing cost visibility`, identify the provider/account/dashboard or API access needed, and create a setup task for budget alerts or billing access. Never claim a system is fully healthy when hosting cost cannot be checked for a live product.
+
+## User-Friendly Cron Naming
+
+A scheduled job's `name` is shown to the user. Make it short, familiar, and outcome-oriented.
+
+- Use 2–6 plain-language words, such as `Daily service health` or `<Product> uptime watch`.
+- Prefer the product or service display name; never expose repository slugs, hashes, paths, profile names, or cadence in the name.
+- Avoid technical jargon including `cron`, `Hermes`, `watchdog`, `reconciliation`, `controller`, `no_agent`, and `5m`.
+- Keep schedule, script path, state file, job ID, thresholds, and provider details in the runbook and scheduler metadata.
+- If an existing technical name is found, update/rename that job rather than creating a duplicate.
+
+## Service Monitoring Cronjobs
+
+When the user asks to monitor all deployed services, set up a recurring Hermes cronjob that runs every 5 minutes unless the user specifies a different cadence. Monitoring must be proactive and quiet-by-default: the job should send a message only when it detects an issue, cannot check a required signal, or recovers from a previously reported issue if recovery notifications are useful. This broad watchdog complements, and does not replace, the owned core-backend latency alerts required above for every active product.
+
+Default behavior:
+
+1. **Discover all deployed services and backends**
+   - Inspect the deployment/monitoring runbook, provider projects, CI environments, DNS/domain records, service manifests, and repo configuration to identify every deployed environment.
+   - Include frontend hosting, backend/API services, workers, queues/cron jobs, databases, storage, and any provider-managed services that can cause outages.
+   - Pay special attention to backend/API services because backend error spikes, high latency, and CPU/memory pressure are common precursors to outages.
+2. **Create a 5-minute silent watchdog**
+   - Use `cronjob(action='create', name='<Product> uptime watch', schedule='every 5m', no_agent=True, script=<script path>, deliver='origin')` for deterministic watchdogs when possible.
+   - The script must print nothing and exit 0 when everything is healthy. Empty stdout means silent success.
+   - Print a concise alert only when a threshold is breached, a health check fails, required metrics/log access is missing, or the script itself cannot determine safety.
+   - Avoid LLM-driven recurring jobs for simple metric polling unless interpretation/summarization is genuinely required.
+3. **Check health and backend risk signals**
+   - Check health endpoints, backend error counts/rates, the owned latency-alert state, CPU/memory above 90% for a sustained or repeated window, and database/storage/queue pressure where available.
+   - Do not replace the latency policy above with a generic threshold; reuse each core journey's approved SLO/baseline-derived warning and critical conditions.
+4. **Make alerts actionable**
+   - Include service/environment, failing signal, observed value, threshold, time window, provider/source, likely impact, and the first diagnostic or remediation command/link.
+   - Deduplicate alerts with a tiny state file outside the repo, such as `~/.hermes/tmp/<project>-monitor-state.json`, so an ongoing incident does not notify every five minutes.
+   - Send recovery messages only when they reduce ambiguity.
+5. **Document and verify**
+   - Record cronjob name/id, schedule, delivery target, script path, monitored services, thresholds, metric sources, state-file path, and pause/remove/run instructions in the deployment/monitoring runbook.
+   - Run the script manually, prove healthy output is empty, simulate a bounded failure, verify the concise alert, and list the cronjob after creation.
+   - If provider metric/log access is missing, alert on missing critical visibility and create one access/setup task rather than claiming health.
+
+Watchdog script requirements:
+
+```text
+healthy run: stdout empty, exit 0
+issue found: stdout contains alert text, exit 0
+script/config failure: stdout contains diagnostic alert, exit 0 unless the scheduler itself should report a broken watchdog
+secrets: read from provider CLI, environment, or secret store; never hard-code or commit them
+state: store under ~/.hermes/tmp/ or another non-repo profile-local path
+```
+
+## AWS eval/deployment-readiness guardrail
+
+When the user or eval specifically requests AWS deployment readiness for a simple Vite/static web app, do not stop at a generic access request. Before any mutating AWS action, inspect the repository's deployment requirements file when present, then report these concrete decisions and safety gates:
+
+- Evidence inspected: explicitly name `DEPLOYMENT_REQUIREMENTS.md` or equivalent deployment notes plus package/build files used to identify the stack.
+- Dedicated-account gate: ask the user to create or authorize a fresh dedicated eval AWS account and provide only scoped eval access; do not deploy to personal, production, default, shared, or unknown AWS accounts.
+- Non-mutating identity verification: `aws sts get-caller-identity --output json`, followed by comparing the account ID/ARN to the intended eval account before creating resources.
+- Minimum permissions: enough scoped access for S3 bucket/object management, CloudFront distribution/invalidation management, ACM certificate read/request in `us-east-1` when HTTPS/custom domain is in scope, Route53 hosted-zone record changes only if DNS is in scope, CloudWatch/log/status read, IAM role/passrole only if the chosen deploy path requires it, and read-only STS/account identity checks.
+- Preferred region: default to `us-east-1` for the eval unless requirements specify otherwise, because ACM certificates for CloudFront must be in `us-east-1` and static-site resources are simple to centralize there.
+- Hosting path: recommend S3 plus CloudFront for a Vite static app when the goal is AWS-native hosting, with rationale: low moving parts, cheap static hosting, CDN/TLS support, and easy teardown. Mention Amplify as an acceptable managed alternative if the user prefers Git-connected hosting.
+- Verification artifacts: build output, deployed URL, health check result, CloudFront/S3 status or logs, teardown commands/plan, and evidence placeholders while the dedicated eval account is unavailable.
+- Secret safety: commit only variable names, store paths, and placeholders; never commit real AWS keys, account secrets, `.env` values, or credentials.
 
 ## Workflow
 
@@ -370,8 +461,10 @@ If cost data is unavailable, mark it as `missing cost visibility`, identify the 
 11. Add a safe production deployment path with an explicit approval/tag/manual trigger unless the user asks for fully automatic production deploys.
 12. Document required secrets as names and store references/paths only; never commit secret values.
 13. Create or update the per-project deployment and system monitoring runbook at `.projects/<project>/runbooks/deployment-and-monitoring.md`.
-14. Add health checks, hosting-cost visibility, budget-alert expectations, and operational runbook details.
-15. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, and confirming the production deploy path, monitoring setup, and cost-check sources are documented.
+14. Validate `.projects/<project>/product/supported-device-interfaces.yaml`; require at least one test case and a current PASS/evidence row for every supported device interface against the exact release candidate, and block promotion/deployment/store submission when the gate is incomplete or failing.
+15. Add health checks, core backend latency telemetry and warning/critical production alerts, hosting-cost visibility, budget-alert expectations, and operational runbook details.
+16. When asked to monitor all deployed services, discover every service/backend and set up a quiet every-five-minute watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
+17. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, confirming the supported-interface release gate, generating a safe latency test alert, proving watchdog healthy output is silent and failure output alerts, and confirming production deployment, alert routing/recovery, and cost-check sources are documented.
 
 ## Verification Checklist
 
@@ -389,13 +482,19 @@ If cost data is unavailable, mark it as `missing cost visibility`, identify the 
 - [ ] Staging and production environments are configured or explicitly documented as required setup.
 - [ ] Staging auto-deploys from the integration branch after CI passes.
 - [ ] Production deploy is protected by manual approval, release tag, protected branch, or documented explicit command.
+- [ ] `.projects/<project>/product/supported-device-interfaces.yaml` exists, parses, names the exact release candidate, and every supported interface has a test case plus current PASS evidence for that candidate.
+- [ ] Promotion/deployment/store submission is blocked when that registry is missing, malformed, undecided, stale, failed, blocked, or incomplete.
 - [ ] Environment variables/secrets are separated by environment and documented by name only.
 - [ ] API keys and credentials are stored in a secret store rather than source files, chat, shell history, or committed `.env` files.
 - [ ] A local loader script exists (for example `scripts/load-secrets-from-store.sh`) and loads secrets from the store without printing values.
 - [ ] `.env.example` / `.env.secretstore.example` document variable names and store references only, with no raw secret values.
 - [ ] Per-project deployment and system monitoring doc exists at `.projects/<project>/runbooks/deployment-and-monitoring.md` or an equivalent documented path.
 - [ ] The deployment/monitoring doc includes environment inventory, deployment triggers, rollback, health checks, hosting cost/budget visibility, logs, dashboards/alerts, and operational procedures.
+- [ ] Core production backend journeys expose p50/p95/p99 latency with volume/error context and owned warning/critical alert routing.
+- [ ] Latency thresholds come from the product SLO/latency budget or a documented provisional baseline, include sustained windows plus minimum-traffic/synthetic safeguards, and were verified with a safe test alert and recovery evidence.
 - [ ] Periodic system checkups include current hosting spend, projected run-rate, plan limits, resource-usage cost drivers, renewal/trial dates, and cost anomalies or missing-cost-visibility tasks.
+- [ ] When all-service monitoring was requested, one plainly named five-minute watchdog was created; healthy output is empty, alerts are actionable/deduplicated, and simulated failure plus scheduler registration were verified.
+- [ ] The monitoring runbook records the job ID/name, schedule, delivery, script/state paths, services, metric sources, thresholds, and pause/remove/run instructions.
 - [ ] Secrets are documented but not committed.
 - [ ] Deploy path is reproducible.
 - [ ] Health/rollback docs exist.
