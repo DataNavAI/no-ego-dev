@@ -5,6 +5,7 @@
   "type": "module",
   "bin": {
     "ned": "./bin/ned.js",
+    "no-ego-dev": "./bin/ned.js",
     "ned-web": "./bin/ned-web.js"
   },
   "files": [

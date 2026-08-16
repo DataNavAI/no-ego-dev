@@ -95,7 +95,7 @@ installation_valid() {
   [[ -L "$CURRENT" && -x "$BIN_DIR/ned" ]] || return 1
   generation="$CURRENT"
   manifest="$generation/install-manifest"
-  [[ -f "$manifest" && -x "$generation/runtime/bin/node" && -f "$generation/app/bin/ned.js" && -f "$generation/app/package-lock.json" ]] || return 1
+  [[ -f "$manifest" && -x "$generation/runtime/bin/node" && -f "$generation/app/bin/ned.js" && -f "$generation/app/bin/ned-launcher.js" && -f "$generation/app/package-lock.json" ]] || return 1
   while IFS='=' read -r key value; do
     case "$key" in
       node_version) manifest_node=$value ;;
@@ -207,7 +207,7 @@ if [[ "$install_ready" != 1 ]]; then
   tar -xzf "$tmp/node.tar.gz" -C "$staging/runtime" --strip-components=1
   [[ "$("$staging/runtime/bin/node" --version)" == "v$NODE_VERSION" ]] || fail 'downloaded Node.js version did not match the pin.'
   tar -xzf "$tmp/ned.tar.gz" -C "$staging/app" --strip-components=1
-  [[ -f "$staging/app/package-lock.json" && -f "$staging/app/bin/ned.js" ]] || fail 'NED source archive is incomplete.'
+  [[ -f "$staging/app/package-lock.json" && -f "$staging/app/bin/ned.js" && -f "$staging/app/bin/ned-launcher.js" ]] || fail 'NED source archive is incomplete.'
   (
     cd "$staging/app"
     PATH="$staging/runtime/bin:$PATH" "$staging/runtime/bin/npm" ci --omit=dev --ignore-scripts --no-audit --no-fund

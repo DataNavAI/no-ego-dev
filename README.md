@@ -16,6 +16,13 @@ curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/i
 
 No sudo, git, system Node.js, or system npm is required. This command executes the canonical installer in this repository; that installer verifies pinned private runtime and NED downloads before installation. It reads no cloud credentials and does not provision a workspace; after installation, run `ned create` yourself. The `main` URL intentionally tracks the latest repository installer; use a full commit SHA in the URL when you need a reproducible installation. See [installer security, cleanup, and pin details](docs/ned-create/INSTALL.md).
 
+For a temporary, credential-free npm path, use the package directly:
+
+```bash
+npx --yes no-ego-dev --version
+npx --yes no-ego-dev create --dry-run --json
+```
+
 `ned create` asks no infrastructure or model-selection questions. It securely reuses a compatible existing Hermes ChatGPT OAuth credential when available; otherwise it opens one fixed ChatGPT device-authorization page. It then guides the user through official [@BotFather](https://t.me/BotFather), receives the bot token only through the exact hidden prompt or named macOS Keychain item, validates Telegram `getMe`, and injects the Telegram token only at runtime through the Daytona SDK environment channel. One private persistent Daytona Sandbox runs pinned Hermes `openai-codex` plus its long-polling Telegram gateway. OpenRouter and a Telegram webhook are not required.
 
 After setup, open the verified bot link, tap **Start**, send `hello`, and approve any returned owner code:
