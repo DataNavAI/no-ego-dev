@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const home = process.env.HOME;
-const appRoot = process.env.NED_APP_ROOT || join(home, '.local/share/ned/current/app');
-const { runLauncher } = await import(pathToFileURL(join(appRoot, 'src/launcher.js')).href);
+const launcherModule = process.env.NED_LAUNCHER_MODULE || join(home, '.local/share/ned/launcher-runtime.js');
+const { runLauncher } = await import(pathToFileURL(launcherModule).href);
 
 try {
   process.exitCode = await runLauncher(process.argv.slice(2));
