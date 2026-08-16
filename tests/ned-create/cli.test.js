@@ -337,6 +337,29 @@ test('CLI create passes verbose diagnostics through without exposing credentials
   diagnostics.push('stage=create');
   assert.deepEqual(diagnostics, ['stage=create']);
 });
+test('CLI reports rejected Daytona credentials before prompting for model or Telegram access', async () => {
+  const stderr = [];
+  let modelPrompted = false;
+  let telegramPrompted = false;
+  const exitCode = await runCli(['create'], { log() {}, error: (message) => stderr.push(message) }, {
+    env: { DAYTONA_API_KEY: 'sandbox-only-key' },
+    getModelConnection: async () => { modelPrompted = true; return codexConnection(); },
+    getTelegramConnection: async () => { telegramPrompted = true; return telegramConnection(); },
+    appFactory: async () => ({
+      async verifyAuthorization() {
+        throw new Error('Daytona API key was rejected (HTTP 403). Create a Personal Access Key at https://app.daytona.io/dashboard/keys with write:sandboxes, delete:sandboxes, and manage:secrets permissions. A Sandbox-only key cannot run ned create.');
+      },
+    }),
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(modelPrompted, false);
+  assert.equal(telegramPrompted, false);
+  assert.match(stderr.join('\\n'), /Personal Access Key/);
+  assert.match(stderr.join('\\n'), /write:sandboxes, delete:sandboxes, and manage:secrets/);
+  assert.match(stderr.join('\\n'), /Sandbox-only key cannot run ned create/);
+});
+
 test('CLI create invokes exactly one ChatGPT OAuth resolver when no credential is injected', async () => {
   let oauthCalls = 0;
   let credentials;

@@ -7,6 +7,16 @@ Canonical public page: https://ned.datanav.app/docs/v1/credentials/
 - ChatGPT OAuth refresh credentials stay local. Only the current short-lived runtime credential reaches its installation-owned Daytona Secret.
 - The Telegram token enters NED through hidden TTY input or macOS Keychain service `no-ego-dev/telegram`, account `TELEGRAM_BOT_TOKEN`. It is validated in-process, retained only in controller memory for the active lifecycle, and passed to gateway child processes only through the Daytona SDK environment map. It is never stored in a Daytona Secret, file, URL, command, log, or local state.
 - The Daytona credential remains local and is never uploaded as a Sandbox Secret.
+
+## Daytona API key permissions
+
+Create a **Personal Access Key** at <https://app.daytona.io/dashboard/keys> and grant:
+
+- `write:sandboxes`
+- `delete:sandboxes`
+- `manage:secrets`
+
+The read-only preflight runs before ChatGPT OAuth, Telegram setup, or resource creation. If Daytona rejects the key, NED reports that a Sandbox-only key is insufficient and points back to this key-creation page.
 - Logs, analytics, errors, state, screenshots, fixtures, and evidence contain no credential values.
 
 ## Revoke and destroy

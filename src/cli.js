@@ -175,12 +175,13 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
     try {
       const provider = getModelProviderRuntime(providerId);
+      const app = await appFactory({ env, verbose, log: verboseLog });
+      await app.verifyAuthorization?.();
       const modelConnection = await getModelConnection();
       io.log(`Connecting ${provider.label} as your model provider...`);
       const telegramConnection = await getTelegramConnection();
       const botUrl = telegramConnection.botUrl;
       io.log('Creating your private NED workspace and Telegram gateway...');
-      const app = await appFactory({ env, verbose, log: verboseLog });
       await app.create({ modelConnection, telegramConnection });
       capture(telemetry, TELEMETRY_EVENTS.createCompleted, startedAt, 'success');
       io.log('✓ Your product partner is ready.');

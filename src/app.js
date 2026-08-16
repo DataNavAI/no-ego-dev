@@ -6,6 +6,10 @@ export function createNedApp({ provider, stateStore }) {
   }
 
   return {
+    async verifyAuthorization() {
+      return provider.verifyAuthorization?.();
+    },
+
     async create(credentials) {
       const plan = credentials?.modelConnection
         ? createNedPlan({ modelProvider: credentials.modelConnection.providerId })

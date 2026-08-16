@@ -13,6 +13,12 @@ function isNotFound(error) {
   return error?.status === 404 || error?.statusCode === 404 || error?.response?.status === 404;
 }
 
+function isAuthorizationFailure(error) {
+  const status = error?.status || error?.statusCode || error?.response?.status;
+  return [401, 403].includes(status)
+    || /invalid credentials|unauthorized|forbidden|permission denied/i.test(String(error?.message || ''));
+}
+
 export function createDaytonaProvider({
   apiKey,
   DaytonaClass = Daytona,
@@ -187,6 +193,23 @@ PY`,
         workspaces.push({ id: sandbox.id, name: sandbox.name, state: sandbox.state });
       }
       return workspaces;
+    },
+
+    async verifyAuthorization() {
+      try {
+        // Read-only calls validate the key before OAuth, Telegram prompts, or resource creation.
+        for await (const _sandbox of client.list({ labels: { app: 'ned', managedBy: 'ned-cli' } })) break;
+        await client.secret.list();
+      } catch (error) {
+        if (isAuthorizationFailure(error)) {
+          const status = error?.status || error?.statusCode || error?.response?.status;
+          const suffix = status ? ` (HTTP ${status})` : '';
+          throw new Error(
+            `Daytona API key was rejected${suffix}. Create a Personal Access Key at https://app.daytona.io/dashboard/keys with write:sandboxes, delete:sandboxes, and manage:secrets permissions. A Sandbox-only key cannot run ned create.`,
+          );
+        }
+        throw error;
+      }
     },
 
     async createWorkspace(plan, credentials = {}) {
