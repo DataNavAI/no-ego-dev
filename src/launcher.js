@@ -67,6 +67,21 @@ async function defaultReadCredential(home) {
   return token;
 }
 
+async function runChild(node, appEntry, argv, env) {
+  const child = spawn(node, [appEntry, ...argv], {
+    env,
+    stdio: ['inherit', 'inherit', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr?.on('data', (chunk) => {
+    const text = chunk.toString();
+    stderr += text;
+    process.stderr.write(text);
+  });
+  const code = await new Promise((resolve) => child.once('exit', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
+  return { code, rejectedKey: /(?:HTTP\s+401|API key was rejected)/i.test(stderr) };
+}
+
 export async function runLauncher(argv, options = {}) {
   const env = options.env || process.env;
   const home = options.home || env.HOME;
@@ -76,15 +91,25 @@ export async function runLauncher(argv, options = {}) {
   if (!exists(generation)) throw new Error('NED: active installation is missing; rerun the installer.');
   const appEntry = join(generation, 'app/bin/ned.js');
   if (!exists(appEntry)) throw new Error('NED: active installation is incomplete; rerun the installer.');
-  const token = needsDaytona(argv)
-    ? await (options.readCredential || defaultReadCredential)(home)
-    : undefined;
-  const child = (options.spawn || spawn)(options.node || process.execPath, [appEntry, ...argv], {
-    env: buildLaunchEnvironment({ baseEnv: env, token }),
-    stdio: 'inherit',
-  });
-  if (options.spawn) return child.status ?? 0;
-  return await new Promise((resolve) => child.once('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0))));
+  const node = options.node || process.execPath;
+  const readCredential = options.readCredential || defaultReadCredential;
+  const promptCredential = options.promptCredential || promptHidden;
+  let token = needsDaytona(argv) ? await readCredential(home) : undefined;
+  if (options.spawn) {
+    const child = options.spawn(node, [appEntry, ...argv], {
+      env: buildLaunchEnvironment({ baseEnv: env, token }),
+      stdio: 'inherit',
+    });
+    return child.status ?? 0;
+  }
+  let result = await runChild(node, appEntry, argv, buildLaunchEnvironment({ baseEnv: env, token }));
+  if (token && result.rejectedKey) {
+    process.stderr.write('Daytona API key rejected. Enter a replacement key (input hidden):\n');
+    token = await promptCredential();
+    if (!token) throw new Error('NED: Daytona API key cannot be empty.');
+    result = await runChild(node, appEntry, argv, buildLaunchEnvironment({ baseEnv: env, token }));
+  }
+  return result.code;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
