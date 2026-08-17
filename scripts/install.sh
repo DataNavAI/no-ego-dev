@@ -247,7 +247,8 @@ if [[ "$install_ready" != 1 ]]; then
   if [[ -L "$CURRENT" ]]; then old_current=$(readlink "$CURRENT"); fi
   ln -s "generations/$generation_name" "$INSTALL_ROOT/.current.$$"
   activation_pending=1
-  mv -f "$INSTALL_ROOT/.current.$$" "$CURRENT"
+  rm -f "$CURRENT"
+  mv "$INSTALL_ROOT/.current.$$" "$CURRENT"
   mv -f "$launcher_source_staging" "$INSTALL_ROOT/ned-launcher.js"
   launcher_source_staging=
   mv -f "$launcher_runtime_staging" "$INSTALL_ROOT/launcher-runtime.js"
