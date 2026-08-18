@@ -175,14 +175,23 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
     try {
       const provider = getModelProviderRuntime(providerId);
+      verboseLog('create: initializing Daytona provider');
       const app = await appFactory({ env, verbose, log: verboseLog });
+      verboseLog('create: validating Daytona authorization');
       await app.verifyAuthorization?.();
+      verboseLog('create: Daytona authorization accepted');
+      verboseLog(`create: authorizing ${provider.label}`);
       const modelConnection = await getModelConnection();
+      verboseLog(`create: ${provider.label} authorization accepted`);
       io.log(`Connecting ${provider.label} as your model provider...`);
+      verboseLog('create: starting Telegram bot setup');
       const telegramConnection = await getTelegramConnection();
+      verboseLog(`create: Telegram bot validated as @${telegramConnection.botUsername}`);
       const botUrl = telegramConnection.botUrl;
       io.log('Creating your private NED workspace and Telegram gateway...');
+      verboseLog('create: provisioning Daytona workspace and gateway');
       await app.create({ modelConnection, telegramConnection });
+      verboseLog('create: workspace health verified and local state persisted');
       capture(telemetry, TELEMETRY_EVENTS.createCompleted, startedAt, 'success');
       io.log('✓ Your product partner is ready.');
       io.log(`1. Open ${botUrl}.`);
