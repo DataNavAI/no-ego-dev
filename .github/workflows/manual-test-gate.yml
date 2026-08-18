@@ -1,0 +1,27 @@
+name: Fresh manual test gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manual-test-gate:
+    name: manual-test-gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Verify fresh manual result
+        env:
+          MANUAL_TEST_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          MANUAL_TEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/verify-manual-test-result.mjs
