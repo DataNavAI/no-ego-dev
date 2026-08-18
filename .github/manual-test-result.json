@@ -1,12 +1,11 @@
 {
-  "candidate_sha": "ae26bdc435813094d42fb53febfaa8aa1ae896b5",
+  "candidate_sha": "6df4f5e5574147f7264c911e12f44a5424e18d49",
   "result": "pass",
-  "tested_at": "2026-08-18T06:32:45Z",
-  "environment": "fresh node:22-bookworm Docker container with a writable clean copy",
+  "tested_at": "2026-08-18T06:43:48Z",
+  "environment": "macOS isolated git worktree with Python 3.11.14",
   "commands": [
-    "bash scripts/install.sh",
-    "ned --version",
-    "ned create --dry-run --json"
+    "python3.11 -m pytest -q tests/test_coder_test_strategy.py",
+    "python3.11 -m pytest -q"
   ],
-  "observations": "Immutable source archive verified, NED 0.2.1 installed successfully, and credential-free create dry-run passed with autoStopMinutes 0."
+  "observations": "Coder test-layer policy regression passed; full repository suite passed with 230 tests and 3 documented skips."
 }
