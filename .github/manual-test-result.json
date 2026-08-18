@@ -1,0 +1,10 @@
+{
+  "candidate_sha": "5edb41c5fc8e2b0833653f95eab31f320143c9a8",
+  "result": "pass",
+  "tested_at": "2026-08-18T06:08:04Z",
+  "environment": "fresh node:22-bookworm Docker container",
+  "commands": [
+    "node --input-type=module -e import defaultReadCredential from src/launcher.js"
+  ],
+  "observations": "An explicit DAYTONA_API_KEY was trimmed and selected before stored credentials."
+}
