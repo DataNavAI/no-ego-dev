@@ -55,7 +55,8 @@ async function promptHidden() {
   }
 }
 
-async function defaultReadCredential(home) {
+export async function defaultReadCredential(home, env = process.env) {
+  if (env.DAYTONA_API_KEY?.trim()) return env.DAYTONA_API_KEY.trim();
   if (process.platform === 'darwin') {
     const keychain = readKeychainToken();
     if (keychain) return keychain;
@@ -92,7 +93,7 @@ export async function runLauncher(argv, options = {}) {
   const node = options.node || process.execPath;
   const readCredential = options.readCredential || defaultReadCredential;
   const promptCredential = options.promptCredential || promptHidden;
-  let token = needsDaytona(argv) ? await readCredential(home) : undefined;
+  let token = needsDaytona(argv) ? await readCredential(home, env) : undefined;
   if (options.spawn) {
     const child = options.spawn(node, [appEntry, ...argv], {
       env: buildLaunchEnvironment({ baseEnv: env, token }),
