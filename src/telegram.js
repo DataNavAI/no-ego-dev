@@ -1,4 +1,4 @@
-import { execFile, spawn } from 'node:child_process';
+import { execFile, spawn, spawnSync } from 'node:child_process';
 
 export const BOTFATHER_URL = 'https://t.me/BotFather';
 export const QUICKSTART_DOCS_URL = 'https://ned.datanav.app/docs/v1/quickstart/';
@@ -46,6 +46,8 @@ export async function readHiddenTelegramToken(prompt = 'Paste the Telegram bot t
   if (!process.stdin.isTTY || !process.stdin.setRawMode || !process.stderr.isTTY) {
     throw new Error(`Telegram setup needs an interactive TTY. See ${TELEGRAM_DOCS_URL}`);
   }
+  const ttyFd = process.stdin.fd ?? 0;
+  const echoDisabled = spawnSync('stty', ['-echo'], { stdio: ['ignore', ttyFd, ttyFd] }).status === 0;
   process.stderr.write(prompt);
   process.stdin.setEncoding('utf8');
   process.stdin.setRawMode(true);
@@ -57,6 +59,7 @@ export async function readHiddenTelegramToken(prompt = 'Paste the Telegram bot t
       process.stdin.off('data', onData);
       process.stdin.setRawMode(false);
       process.stdin.pause();
+      if (echoDisabled) spawnSync('stty', ['echo'], { stdio: ['ignore', ttyFd, ttyFd] });
       process.stderr.write('\n');
       if (error) reject(error);
       else resolve(value);
