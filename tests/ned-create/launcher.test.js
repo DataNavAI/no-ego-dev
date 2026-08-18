@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildLaunchEnvironment, needsDaytona, runLauncher } from '../../src/launcher.js';
+import { buildLaunchEnvironment, defaultReadCredential, needsDaytona, runLauncher } from '../../src/launcher.js';
 
 test('version and help never require Daytona authorization', () => {
   assert.equal(needsDaytona(['--version']), false);
@@ -32,4 +32,11 @@ test('version delegates directly to the Node CLI without credential lookup', asy
   assert.equal(status, 0);
   assert.equal(captured.args.at(-1), '--version');
   assert.equal(captured.options.env.DAYTONA_API_KEY, undefined);
+});
+
+test('an explicitly exported Daytona key takes precedence over stored credentials', async () => {
+  assert.equal(
+    await defaultReadCredential('/tmp/test-home', { DAYTONA_API_KEY: ' explicit-key ' }),
+    'explicit-key',
+  );
 });

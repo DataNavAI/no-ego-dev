@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "d02bba30ff022876ce0bc8c57df779d2aca86a8a",
+  "result": "pass",
+  "tested_at": "2026-08-18T06:12:00Z",
+  "environment": "fresh node:22-bookworm Docker container",
+  "commands": [
+    "bash scripts/install.sh",
+    "ned --version",
+    "ned create --dry-run --json"
+  ],
+  "observations": "NED 0.2.1 installed from the pinned source, reported version 0.2.1, and produced a credential-free dry-run with autoStopMinutes 0."
+}
