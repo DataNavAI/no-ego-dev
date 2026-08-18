@@ -19,6 +19,12 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "chooses the lowest reliable test layer by preferring deterministic unit tests then focused integration tests and keeping E2E coverage to the smallest irreducible critical journeys"
+  - "does not make a broad browser device or cross-environment E2E matrix an unconditional PR merge gate"
+  - "requires every E2E test to own a unique full-stack risk that lower layers cannot prove and removes redundant permutations to unit or integration coverage"
+  - "runs an irreducible critical E2E smoke test on a PR whenever that change can affect the unique full-stack journey the test owns"
+  - "does not mask flaky or slow E2E tests with blind retries sleeps or weaker assertions and permits temporary quarantine only with replacement coverage where possible an owner issue expiry and explicit residual risk"
+  - "never silently waives a critical safety data-loss payment authentication migration or publication boundary merely to accelerate PR merge"
 setupCommands: []
 teardownCommands: []
 parameters:
