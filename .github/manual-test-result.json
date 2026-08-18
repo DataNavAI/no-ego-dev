@@ -1,11 +1,12 @@
 {
-  "candidate_sha": "e057afe24dbbf249041fc8ee3d3e2033f5ed5fdd",
+  "candidate_sha": "ae26bdc435813094d42fb53febfaa8aa1ae896b5",
   "result": "pass",
-  "tested_at": "2026-08-18T06:25:52Z",
+  "tested_at": "2026-08-18T06:32:45Z",
   "environment": "fresh node:22-bookworm Docker container with a writable clean copy",
   "commands": [
-    "npm ci --ignore-scripts --no-audit --no-fund",
-    "node --test tests/ned-create/create.integration.test.js tests/ned-create/telegram.test.js"
+    "bash scripts/install.sh",
+    "ned --version",
+    "ned create --dry-run --json"
   ],
-  "observations": "Mocked Daytona and Telegram create journey passed with verbose stages; Telegram setup tests passed without exposing token input."
+  "observations": "Immutable source archive verified, NED 0.2.1 installed successfully, and credential-free create dry-run passed with autoStopMinutes 0."
 }
