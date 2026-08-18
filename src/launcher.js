@@ -74,9 +74,7 @@ async function runChild(node, appEntry, argv, env) {
   });
   let stderr = '';
   child.stderr?.on('data', (chunk) => {
-    const text = chunk.toString();
-    stderr += text;
-    process.stderr.write(text);
+    stderr += chunk.toString();
   });
   const code = await new Promise((resolve) => child.once('exit', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
   return { code, rejectedKey: /(?:HTTP\s+401|API key was rejected)/i.test(stderr) };
@@ -108,6 +106,9 @@ export async function runLauncher(argv, options = {}) {
     token = await promptCredential();
     if (!token) throw new Error('NED: Daytona API key cannot be empty.');
     result = await runChild(node, appEntry, argv, buildLaunchEnvironment({ baseEnv: env, token }));
+    if (result.stderr) process.stderr.write(result.stderr);
+  } else if (result.stderr) {
+    process.stderr.write(result.stderr);
   }
   return result.code;
 }
