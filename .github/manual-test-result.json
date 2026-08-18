@@ -1,10 +1,12 @@
 {
-  "candidate_sha": "5edb41c5fc8e2b0833653f95eab31f320143c9a8",
+  "candidate_sha": "d02bba30ff022876ce0bc8c57df779d2aca86a8a",
   "result": "pass",
-  "tested_at": "2026-08-18T06:08:04Z",
+  "tested_at": "2026-08-18T06:12:00Z",
   "environment": "fresh node:22-bookworm Docker container",
   "commands": [
-    "node --input-type=module -e import defaultReadCredential from src/launcher.js"
+    "bash scripts/install.sh",
+    "ned --version",
+    "ned create --dry-run --json"
   ],
-  "observations": "An explicit DAYTONA_API_KEY was trimmed and selected before stored credentials."
+  "observations": "NED 0.2.1 installed from the pinned source, reported version 0.2.1, and produced a credential-free dry-run with autoStopMinutes 0."
 }
