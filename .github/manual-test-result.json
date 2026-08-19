@@ -1,12 +1,11 @@
 {
-  "candidate_sha": "ba3a1984576de812be59ae43b87125ba2fb61331",
+  "candidate_sha": "4781792c5e749582ffcfafb5484d583239189e71",
   "result": "pass",
-  "tested_at": "2026-08-19T04:43:22Z",
-  "environment": "fresh node:22-bookworm Docker container with a writable clean copy",
+  "tested_at": "2026-08-19T14:10:49Z",
+  "environment": "local macOS verification",
   "commands": [
-    "bash scripts/install.sh",
-    "ned --version",
-    "ned create --dry-run --json"
+    "node --test tests/ned-create/launcher.test.js tests/ned-create/telegram.test.js tests/ned-create/create.integration.test.js",
+    "npm run check"
   ],
-  "observations": "Immutable source archive verified, NED 0.2.1 installed successfully, and credential-free create dry-run passed with autoStopMinutes 0."
+  "observations": "Launcher now streams child stderr live while retaining Daytona 401 detection; Telegram and mocked create integration tests passed."
 }
