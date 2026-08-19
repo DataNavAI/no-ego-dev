@@ -1,5 +1,5 @@
 import { openSync, closeSync, writeSync } from 'node:fs';
-import { execFile, spawn, spawnSync } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 
 export const BOTFATHER_URL = 'https://t.me/BotFather';
 export const QUICKSTART_DOCS_URL = 'https://ned.datanav.app/docs/v1/quickstart/';
@@ -15,20 +15,6 @@ export function redactTelegramText(value) {
     return '[REDACTED]';
   }
   return text;
-}
-
-export async function openBotFather(url = BOTFATHER_URL) {
-  const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'cmd' : 'xdg-open';
-  const args = process.platform === 'win32' ? ['/c', 'start', '', url] : [url];
-  await new Promise((resolve) => {
-    try {
-      const child = spawn(command, args, { detached: true, stdio: 'ignore' });
-      child.once('error', resolve);
-      child.once('spawn', () => { child.unref(); resolve(); });
-    } catch {
-      resolve();
-    }
-  });
 }
 
 export async function readTelegramTokenFromKeychain() {
@@ -98,7 +84,6 @@ function recoveryError(kind) {
 
 export async function acquireTelegramConnection({
   log = console.log,
-  openExternal = openBotFather,
   promptHidden = readHiddenTelegramToken,
   readStoredToken = readTelegramTokenFromKeychain,
   fetchImpl = globalThis.fetch,
@@ -112,7 +97,6 @@ export async function acquireTelegramConnection({
     log('3. Choose a display name for the disposable bot.');
     log('4. Choose a unique username ending in bot.');
     log('5. Copy the token. NED will ask for it next with hidden input.');
-    await openExternal(BOTFATHER_URL);
     token = await promptHidden('Paste the Telegram bot token (input hidden): ');
   }
   token = String(token ?? '').trim();
