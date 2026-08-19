@@ -1,11 +1,10 @@
 {
-  "candidate_sha": "6df4f5e5574147f7264c911e12f44a5424e18d49",
+  "candidate_sha": "72a7bac11f39f631af25f7e246150ea36f66dc03",
   "result": "pass",
-  "tested_at": "2026-08-18T06:43:48Z",
-  "environment": "macOS isolated git worktree with Python 3.11.14",
+  "tested_at": "2026-08-19T04:02:36Z",
+  "environment": "local macOS verification",
   "commands": [
-    "python3.11 -m pytest -q tests/test_coder_test_strategy.py",
-    "python3.11 -m pytest -q"
+    "node --test tests/ned-create/telegram.test.js tests/ned-create/create.integration.test.js tests/ned-create/launcher.test.js"
   ],
-  "observations": "Coder test-layer policy regression passed; full repository suite passed with 230 tests and 3 documented skips."
+  "observations": "Mocked Daytona and Telegram create journey, launcher credential boundary, and Telegram token setup passed. Telegram hidden input uses /dev/tty so it remains interactive when launcher captures child stderr."
 }
