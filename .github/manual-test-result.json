@@ -1,11 +1,11 @@
 {
-  "candidate_sha": "4781792c5e749582ffcfafb5484d583239189e71",
+  "candidate_sha": "317b0f27eecb37817f985d417111eab2d9fc74cc",
   "result": "pass",
-  "tested_at": "2026-08-19T14:10:49Z",
-  "environment": "local macOS verification",
+  "tested_at": "2026-08-19T15:47:04Z",
+  "environment": "local macOS verification; no Telegram, Daytona, Keychain, or lifecycle operation was invoked",
   "commands": [
-    "node --test tests/ned-create/launcher.test.js tests/ned-create/telegram.test.js tests/ned-create/create.integration.test.js",
+    "node --test tests/ned-create/launcher.test.js",
     "npm run check"
   ],
-  "observations": "Launcher now streams child stderr live while retaining Daytona 401 detection; Telegram and mocked create integration tests passed."
+  "observations": "A spawned child emitted a normal create error before exit while token-shaped Telegram Bot API stderr was redacted at the launcher boundary; raw stderr remained available only for Daytona 401 detection."
 }
