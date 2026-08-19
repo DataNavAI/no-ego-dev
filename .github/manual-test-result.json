@@ -1,7 +1,7 @@
 {
-  "candidate_sha": "1dac2bae0100589340698362d131c3ffb3a50ea0",
+  "candidate_sha": "ba3a1984576de812be59ae43b87125ba2fb61331",
   "result": "pass",
-  "tested_at": "2026-08-19T04:06:55Z",
+  "tested_at": "2026-08-19T04:43:22Z",
   "environment": "fresh node:22-bookworm Docker container with a writable clean copy",
   "commands": [
     "bash scripts/install.sh",
