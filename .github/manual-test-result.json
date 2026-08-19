@@ -1,10 +1,12 @@
 {
-  "candidate_sha": "72a7bac11f39f631af25f7e246150ea36f66dc03",
+  "candidate_sha": "1dac2bae0100589340698362d131c3ffb3a50ea0",
   "result": "pass",
-  "tested_at": "2026-08-19T04:02:36Z",
-  "environment": "local macOS verification",
+  "tested_at": "2026-08-19T04:06:55Z",
+  "environment": "fresh node:22-bookworm Docker container with a writable clean copy",
   "commands": [
-    "node --test tests/ned-create/telegram.test.js tests/ned-create/create.integration.test.js tests/ned-create/launcher.test.js"
+    "bash scripts/install.sh",
+    "ned --version",
+    "ned create --dry-run --json"
   ],
-  "observations": "Mocked Daytona and Telegram create journey, launcher credential boundary, and Telegram token setup passed. Telegram hidden input uses /dev/tty so it remains interactive when launcher captures child stderr."
+  "observations": "Immutable source archive verified, NED 0.2.1 installed successfully, and credential-free create dry-run passed with autoStopMinutes 0."
 }
