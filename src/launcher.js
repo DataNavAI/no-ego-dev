@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { redactTelegramText } from './telegram.js';
 
 const launcherRoot = dirname(fileURLToPath(import.meta.url));
 
@@ -74,11 +75,27 @@ async function runChild(node, appEntry, argv, env) {
     stdio: ['inherit', 'inherit', 'pipe'],
   });
   let stderr = '';
+  let pendingOutput = '';
+  const writeRedactedLines = (flush = false) => {
+    let newline;
+    while ((newline = pendingOutput.indexOf('\n')) !== -1) {
+      const line = pendingOutput.slice(0, newline + 1);
+      pendingOutput = pendingOutput.slice(newline + 1);
+      process.stderr.write(redactTelegramText(line));
+    }
+    if (flush && pendingOutput) {
+      process.stderr.write(redactTelegramText(pendingOutput));
+      pendingOutput = '';
+    }
+  };
   child.stderr?.on('data', (chunk) => {
-    stderr += chunk.toString();
-    process.stderr.write(chunk);
+    const text = chunk.toString();
+    stderr += text;
+    pendingOutput += text;
+    writeRedactedLines();
   });
-  const code = await new Promise((resolve) => child.once('exit', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
+  const code = await new Promise((resolve) => child.once('close', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
+  writeRedactedLines(true);
   return { code, rejectedKey: /(?:HTTP\s+401|API key was rejected)/i.test(stderr) };
 }
 
