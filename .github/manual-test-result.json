@@ -1,11 +1,11 @@
 {
-  "candidate_sha": "317b0f27eecb37817f985d417111eab2d9fc74cc",
+  "candidate_sha": "82e578f63a210b2c2098f0de7ff422c4400543df",
   "result": "pass",
-  "tested_at": "2026-08-19T15:47:04Z",
-  "environment": "local macOS verification; no Telegram, Daytona, Keychain, or lifecycle operation was invoked",
+  "tested_at": "2026-08-20T00:44:13Z",
+  "environment": "local macOS verification; synthetic child only; no Telegram, Daytona, Keychain, or lifecycle operation was invoked",
   "commands": [
     "node --test tests/ned-create/launcher.test.js",
     "npm run check"
   ],
-  "observations": "A spawned child emitted a normal create error before exit while token-shaped Telegram Bot API stderr was redacted at the launcher boundary; raw stderr remained available only for Daytona 401 detection."
+  "observations": "A spawned synthetic child streamed normal stderr before its exit-17 result while its injected DAYTONA_API_KEY value and Telegram-shaped stderr were redacted at every launcher terminal write; raw stderr remained available only for Daytona 401 detection."
 }
