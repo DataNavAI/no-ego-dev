@@ -44,15 +44,17 @@ test('an explicitly exported Daytona key takes precedence over stored credential
   );
 });
 
-test('spawned create errors stream before exit without exposing Telegram credentials', async () => {
+test('spawned create errors stream before exit without exposing child credentials', async () => {
   const root = await mkdtemp(join(tmpdir(), 'ned-launcher-stderr-'));
   const appEntry = join(root, 'app', 'bin', 'ned.js');
-  const token = `123456789:${'A'.repeat(35)}`;
+  const telegramToken = `123456789:${'A'.repeat(35)}`;
+  const daytonaKey = 'synthetic-daytona-api-key-for-stderr-redaction';
   await mkdir(join(root, 'app', 'bin'), { recursive: true });
   await writeFile(appEntry, [
     "process.stderr.write('NED create failed: normal child error\\n');",
     'setTimeout(() => {',
-    `  process.stderr.write('request https://api.telegram.org/bot${token}/getMe\\n');`,
+    `  process.stderr.write('request https://api.telegram.org/bot${telegramToken}/getMe\\n');`,
+    "  process.stderr.write(`DAYTONA_API_KEY=${process.env.DAYTONA_API_KEY}\\n`);",
     '  setTimeout(() => process.exit(17), 200);',
     '}, 50);',
   ].join('\n'));
@@ -72,7 +74,7 @@ test('spawned create errors stream before exit without exposing Telegram credent
       env: { HOME: root },
       generation: root,
       exists: () => true,
-      readCredential: async () => 'daytona-test-key',
+      readCredential: async () => daytonaKey,
     }).finally(() => { launcherSettled = true; });
     await Promise.race([
       normalOutput,
@@ -82,7 +84,8 @@ test('spawned create errors stream before exit without exposing Telegram credent
     assert.equal(await launcher, 17);
     assert.match(emitted, /NED create failed: normal child error/);
     assert.equal(/api\.telegram\.org\/bot/i.test(emitted), false, 'Telegram Bot API URL must be redacted');
-    assert.equal(emitted.includes(token), false, 'Telegram token must be redacted');
+    assert.equal(emitted.includes(telegramToken), false, 'Telegram token must be redacted');
+    assert.equal(emitted.includes(daytonaKey), false, 'Daytona API key must be redacted');
   } finally {
     process.stderr.write = originalWrite;
     await rm(root, { recursive: true, force: true });

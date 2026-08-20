@@ -7,6 +7,15 @@ import { redactTelegramText } from './telegram.js';
 
 const launcherRoot = dirname(fileURLToPath(import.meta.url));
 
+function redactStreamedStderr(value, credentials) {
+  let redacted = redactTelegramText(value);
+  for (const credential of credentials) {
+    const secret = String(credential ?? '');
+    if (secret) redacted = redacted.split(secret).join('[REDACTED]');
+  }
+  return redacted;
+}
+
 export function needsDaytona(argv) {
   const [command, ...flags] = argv;
   if (['--version', 'version', '--help', '-h', 'help'].includes(command)) return false;
@@ -74,29 +83,30 @@ async function runChild(node, appEntry, argv, env) {
     env,
     stdio: ['inherit', 'inherit', 'pipe'],
   });
-  let stderr = '';
+  let rawStderr = '';
   let pendingOutput = '';
+  const credentials = [env.DAYTONA_API_KEY];
   const writeRedactedLines = (flush = false) => {
     let newline;
     while ((newline = pendingOutput.indexOf('\n')) !== -1) {
       const line = pendingOutput.slice(0, newline + 1);
       pendingOutput = pendingOutput.slice(newline + 1);
-      process.stderr.write(redactTelegramText(line));
+      process.stderr.write(redactStreamedStderr(line, credentials));
     }
     if (flush && pendingOutput) {
-      process.stderr.write(redactTelegramText(pendingOutput));
+      process.stderr.write(redactStreamedStderr(pendingOutput, credentials));
       pendingOutput = '';
     }
   };
   child.stderr?.on('data', (chunk) => {
     const text = chunk.toString();
-    stderr += text;
+    rawStderr += text;
     pendingOutput += text;
     writeRedactedLines();
   });
   const code = await new Promise((resolve) => child.once('close', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
   writeRedactedLines(true);
-  return { code, rejectedKey: /(?:HTTP\s+401|API key was rejected)/i.test(stderr) };
+  return { code, rejectedKey: /(?:HTTP\s+401|API key was rejected)/i.test(rawStderr) };
 }
 
 export async function runLauncher(argv, options = {}) {
