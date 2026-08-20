@@ -22,9 +22,8 @@ function okGetMe(username = 'ned_disposable_bot') {
   };
 }
 
-test('Telegram setup opens BotFather when possible, prints numbered actions, and prompts exactly through hidden input', async () => {
+test('Telegram setup never opens BotFather, prints numbered actions, and prompts exactly through hidden input', async () => {
   const logs = [];
-  const opened = [];
   const prompts = [];
   const token = runtimeToken();
   let requested;
@@ -32,12 +31,10 @@ test('Telegram setup opens BotFather when possible, prints numbered actions, and
   const connection = await acquireTelegramConnection({
     log: (line) => logs.push(line),
     readStoredToken: async () => null,
-    openExternal: async (url) => opened.push(url),
     promptHidden: async (prompt) => { prompts.push(prompt); return token; },
     fetchImpl: async (url, options) => { requested = { url, options }; return okGetMe(); },
   });
 
-  assert.deepEqual(opened, [BOTFATHER_URL]);
   assert.deepEqual(prompts, ['Paste the Telegram bot token (input hidden): ']);
   assert.match(logs.join('\n'), /Telegram requires you to create a bot through its official @BotFather; NED cannot accept BotFather legal or ownership actions for you\./);
   assert.match(logs.join('\n'), /1\. Open BotFather/);
