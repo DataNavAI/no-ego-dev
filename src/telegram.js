@@ -1,4 +1,4 @@
-import { openSync, closeSync, writeSync } from 'node:fs';
+import { openSync, closeSync, readSync, writeSync } from 'node:fs';
 import { execFile, spawnSync } from 'node:child_process';
 
 export const BOTFATHER_URL = 'https://t.me/BotFather';
@@ -30,45 +30,34 @@ export async function readTelegramTokenFromKeychain() {
 }
 
 export async function readHiddenTelegramToken(prompt = 'Paste the Telegram bot token (input hidden): ') {
-  if (!process.stdin.isTTY || !process.stdin.setRawMode) {
-    throw new Error(`Telegram setup needs an interactive TTY. See ${TELEGRAM_DOCS_URL}`);
-  }
   let ttyFd;
+  let echoDisabled = false;
   try {
     ttyFd = openSync('/dev/tty', 'r+');
-  } catch {
-    throw new Error(`Telegram setup needs an interactive TTY. See ${TELEGRAM_DOCS_URL}`);
-  }
-  const echoDisabled = spawnSync('stty', ['-echo'], { stdio: [ttyFd, ttyFd, ttyFd] }).status === 0;
-  writeSync(ttyFd, prompt);
-  process.stdin.setEncoding('utf8');
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-
-  return new Promise((resolve, reject) => {
+    echoDisabled = spawnSync('stty', ['-echo'], { stdio: [ttyFd, ttyFd, ttyFd] }).status === 0;
+    writeSync(ttyFd, prompt);
+    const byte = Buffer.alloc(1);
     let value = '';
-    const finish = (error) => {
-      process.stdin.off('data', onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      if (echoDisabled) spawnSync('stty', ['echo'], { stdio: [ttyFd, ttyFd, ttyFd] });
-      writeSync(ttyFd, '\n');
-      closeSync(ttyFd);
-      if (error) reject(error);
-      else resolve(value);
-    };
-    const onData = (chunk) => {
-      for (const character of chunk) {
-        if (character === '\r' || character === '\n') return finish();
-        if (character === '\u0003' || character === '\u0004') {
-          return finish(new Error(`Telegram setup cancelled. See ${TELEGRAM_DOCS_URL}`));
-        }
-        if (character === '\u007f' || character === '\b') value = value.slice(0, -1);
-        else value += character;
+    while (true) {
+      const bytesRead = readSync(ttyFd, byte, 0, 1, null);
+      if (bytesRead === 0) break;
+      const character = byte.toString('utf8', 0, bytesRead);
+      if (character === '\r' || character === '\n') break;
+      if (character === '\u0003' || character === '\u0004') {
+        throw new Error(`Telegram setup cancelled. See ${TELEGRAM_DOCS_URL}`);
       }
-    };
-    process.stdin.on('data', onData);
-  });
+      if (character === '\u007f' || character === '\b') value = value.slice(0, -1);
+      else value += character;
+    }
+    writeSync(ttyFd, '\n');
+    return value;
+  } catch (error) {
+    if (error?.message?.includes('Telegram setup cancelled')) throw error;
+    throw new Error(`Telegram setup needs an interactive TTY. See ${TELEGRAM_DOCS_URL}`);
+  } finally {
+    if (echoDisabled) spawnSync('stty', ['echo'], { stdio: [ttyFd, ttyFd, ttyFd] });
+    if (ttyFd !== undefined) closeSync(ttyFd);
+  }
 }
 
 function recoveryError(kind) {
