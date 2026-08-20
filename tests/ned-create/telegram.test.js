@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   BOTFATHER_URL,
@@ -21,6 +26,105 @@ function okGetMe(username = 'ned_disposable_bot') {
     },
   };
 }
+
+test('hidden Telegram token reader fails closed when controlling-TTY echo suppression cannot be established', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ned-telegram-no-echo-'));
+  const stty = join(root, 'stty');
+  const moduleUrl = pathToFileURL(resolve('src/telegram.js')).href;
+  await writeFile(stty, '#!/bin/sh\nexit 1\n');
+  await chmod(stty, 0o755);
+
+  const childProgram = `
+    import { readHiddenTelegramToken } from ${JSON.stringify(moduleUrl)};
+    try {
+      await readHiddenTelegramToken();
+      console.log('RESULT:accepted');
+    } catch (error) {
+      console.log('ERROR:' + error.message);
+    }
+  `;
+  const ptyRunner = `
+import os, pty, select, sys
+pid, fd = pty.fork()
+if pid == 0:
+    os.execvpe(${JSON.stringify(process.execPath)}, ${JSON.stringify([process.execPath, '--input-type=module', '-e', childProgram])}, os.environ)
+output = b''
+sent = False
+while True:
+    ready, _, _ = select.select([fd], [], [], 1)
+    if ready:
+        try:
+            data = os.read(fd, 4096)
+        except OSError:
+            break
+        if not data:
+            break
+        output += data
+        if not sent and b'input hidden' in output:
+            os.write(fd, b'not-a-real-token\\n')
+            sent = True
+    else:
+        _, status = os.waitpid(pid, os.WNOHANG)
+        if status:
+            break
+_, status = os.waitpid(pid, 0)
+sys.stdout.buffer.write(output)
+sys.exit(os.waitstatus_to_exitcode(status))
+`;
+  const child = spawnSync('python3', ['-c', ptyRunner], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${root}:${process.env.PATH}` },
+  });
+
+  assert.equal(child.status, 0, child.stderr);
+  assert.match(child.stdout, /ERROR:Telegram setup needs an interactive TTY/);
+  assert.doesNotMatch(child.stdout, /RESULT:accepted/);
+});
+
+test('hidden Telegram token reader accepts input through a controlling TTY after echo is suppressed', () => {
+  const moduleUrl = pathToFileURL(resolve('src/telegram.js')).href;
+  const childProgram = `
+    import { readHiddenTelegramToken } from ${JSON.stringify(moduleUrl)};
+    try {
+      console.log('RESULT:' + await readHiddenTelegramToken());
+    } catch (error) {
+      console.log('ERROR:' + error.message);
+    }
+  `;
+  const ptyRunner = `
+import os, pty, select, sys
+pid, fd = pty.fork()
+if pid == 0:
+    os.execvpe(${JSON.stringify(process.execPath)}, ${JSON.stringify([process.execPath, '--input-type=module', '-e', childProgram])}, os.environ)
+output = b''
+sent = False
+while True:
+    ready, _, _ = select.select([fd], [], [], 1)
+    if ready:
+        try:
+            data = os.read(fd, 4096)
+        except OSError:
+            break
+        if not data:
+            break
+        output += data
+        if not sent and b'input hidden' in output:
+            os.write(fd, b'not-a-real-token\\n')
+            sent = True
+    else:
+        _, status = os.waitpid(pid, os.WNOHANG)
+        if status:
+            break
+_, status = os.waitpid(pid, 0)
+sys.stdout.buffer.write(output)
+sys.exit(os.waitstatus_to_exitcode(status))
+`;
+  const child = spawnSync('python3', ['-c', ptyRunner], { encoding: 'utf8' });
+
+  assert.equal(child.status, 0, child.stderr);
+  assert.match(child.stdout, /RESULT:not-a-real-token/);
+  assert.doesNotMatch(child.stdout, /ERROR:/);
+});
 
 test('Telegram setup never opens BotFather, prints numbered actions, and prompts exactly through hidden input', async () => {
   const logs = [];

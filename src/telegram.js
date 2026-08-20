@@ -35,6 +35,7 @@ export async function readHiddenTelegramToken(prompt = 'Paste the Telegram bot t
   try {
     ttyFd = openSync('/dev/tty', 'r+');
     echoDisabled = spawnSync('stty', ['-echo'], { stdio: [ttyFd, ttyFd, ttyFd] }).status === 0;
+    if (!echoDisabled) throw new Error('Could not disable terminal echo');
     writeSync(ttyFd, prompt);
     const byte = Buffer.alloc(1);
     let value = '';
