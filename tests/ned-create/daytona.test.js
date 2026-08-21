@@ -186,7 +186,8 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
 
   assert.deepEqual(observed.upload, { content: archive, destination: '/tmp/ned-profile.tgz' });
   assert.match(observed.execute.command, /apt-get install -y --no-install-recommends ca-certificates curl python3 tar xz-utils/);
-  assert(observed.execute.command.indexOf('apt-get install') < observed.execute.command.indexOf('curl -fsSL'));
+  assert(observed.execute.command.indexOf('apt-get install') < observed.execute.command.indexOf('curl --fail'));
+  assert.match(observed.execute.command, /curl --fail --show-error --location --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 --max-time 180/);
   assert.match(observed.execute.command, /3ef6bbd201263d354fd83ec55b3c306ded2eb72a/);
   assert.match(observed.execute.command, /c5ba7e89627577fab914514736ecfb3359b66956ca00199bfef616ca35953cb9/);
   assert.match(observed.execute.command, /sha256sum.*hermes-install\.sh|shasum -a 256.*hermes-install\.sh/);
