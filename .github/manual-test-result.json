@@ -1,11 +1,13 @@
 {
-  "candidate_sha": "82e578f63a210b2c2098f0de7ff422c4400543df",
+  "candidate_sha": "26dcae55a6c2c80aa93f86a3fdaaacb00184706e",
   "result": "pass",
-  "tested_at": "2026-08-20T00:44:13Z",
-  "environment": "local macOS verification; synthetic child only; no Telegram, Daytona, Keychain, or lifecycle operation was invoked",
+  "tested_at": "2026-08-21T17:54:08Z",
+  "environment": "local macOS policy verification against live DataNavAI/no-ego-dev GitHub metadata and exact main HEAD; no credentials or provider secrets recorded",
   "commands": [
-    "node --test tests/ned-create/launcher.test.js",
-    "npm run check"
+    "python3.11 -m pytest tests/test_devops_main_branch_ci.py -q",
+    "npm run check",
+    "gh repo view DataNavAI/no-ego-dev --json defaultBranchRef",
+    "gh run list --repo DataNavAI/no-ego-dev --commit a491a726fb97cb0c8acf1b337b9b286afbc54ab1 --limit 20 --json workflowName,event,status,conclusion,headSha,url"
   ],
-  "observations": "A spawned synthetic child streamed normal stderr before its exit-17 result while its injected DAYTONA_API_KEY value and Telegram-shaped stderr were redacted at every launcher terminal write; raw stderr remained available only for Daytona 401 detection."
+  "observations": "The policy regression passed. Live default branch main at exact SHA a491a726fb97cb0c8acf1b337b9b286afbc54ab1 had successful NED CLI and Smoke test push workflows; the PR-only manual-test-gate was correctly excluded from post-merge exact-head coverage. No CI incident issue was created because all applicable workflows were green."
 }
