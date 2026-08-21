@@ -1,7 +1,7 @@
 ---
 name: devops
 description: "Use when setting up CI/CD, deployments, environment management, or operational health checks."
-version: 0.6.0
+version: 0.7.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -25,6 +25,7 @@ Make the product shippable and observable. NED devops chooses boring, reliable a
 - Environment variable and secret handling.
 - Preview/staging/production environment strategy.
 - Monitoring, logs, health checks, hosting-cost visibility, and rollback plan.
+- Default-branch CI monitoring with immediate, issue-backed remediation when required workflows break.
 - Core backend latency telemetry and actionable production alert routing for every active product.
 - Chat-first provider account setup: use the configured primary Google account for SSO/account creation whenever practical, and minimize anything that requires the user to access the agent machine directly.
 - Per-project deployment and system monitoring documentation, including routine cost checks for hosted resources.
@@ -374,6 +375,48 @@ For each core journey:
 
 Missing latency telemetry or alert routing is an operational gap. Create a canonical setup/remediation task, mark the affected product health signal as unknown or at-risk, and do not claim the active product has complete backend monitoring. Alert creation is not complete until the monitor is enabled in production, routed to an owned destination, exercised safely, and documented in `.projects/<project>/runbooks/deployment-and-monitoring.md`.
 
+## Default-branch CI monitoring and immediate response
+
+For every actively maintained repository, monitor CI on the repository's **default branch**. Discover the branch through repository metadata instead of assuming it is named `main`. A green pull request is not enough: the post-merge default-branch commit must be checked independently because merge queues, branch-only jobs, scheduled dependencies, deployment gates, and repository settings can fail after merge.
+
+### Monitor the complete exact-head contract
+
+1. Resolve the current default branch and its **exact HEAD SHA**.
+2. Enumerate the repository's applicable default-branch workflow/check contract from enabled workflow triggers, branch protection or rulesets, deployment/release gates, and the deployment runbook. Query check runs and Actions runs for the exact HEAD SHA, not merely the most recent run by name. Respect event applicability: **do not require PR-only checks** on a post-merge push unless their workflow is also configured to run for that exact default-branch commit; retain their successful pre-merge evidence as merge-gate context instead.
+3. Require **all required workflows** and required checks for that exact HEAD SHA to reach an allowed successful conclusion. Do not infer health from one green workflow, an older green commit, or a branch-level aggregate that omits a required job.
+4. Treat the branch as broken when a required run/check concludes `failure, startup_failure, cancelled, timed_out, action_required, or stale`, or when there is **missing required workflow/check coverage** after the repository's documented startup/grace window. `requested`, `waiting`, `pending`, `queued`, and `in_progress` are pending—not green or broken—and require bounded polling. If the repository documents neither bound, use a 10-minute missing-run grace from commit visibility and a 60-minute maximum nonterminal runtime; crossing either fallback opens/updates the incident as missing or stuck CI visibility rather than waiting indefinitely.
+5. Record repository, default branch, exact HEAD SHA, workflow/check name, run and job IDs, attempt, event, conclusion, timestamps, and URLs. Monitoring should be **silent when healthy** and should alert only on a new incident, material change, blocked remediation, or verified recovery.
+
+Prefer event-driven GitHub notifications when they are already available. Otherwise use one plainly named deterministic watchdog, normally every five minutes for active products, with a profile-local state file outside the repository. Deduplicate by repository + default branch + failing workflow/check + incident head/attempt so repeated polls do not spam or create competing responders.
+
+### Open one durable incident record
+
+When the default branch is broken, **create or reuse one canonical GitHub issue** in the affected repository. Search open issues and linked pull requests first using the repository/branch/workflow fingerprint; **do not create duplicate issues** for repeated polls, reruns, or several failed jobs from the same root incident.
+
+The issue or immediate issue comment must contain:
+
+- exact failing HEAD SHA and first-observed time;
+- workflow/check names, conclusions, and the **failed run and job URLs**;
+- concise failure evidence from logs with secrets and user data redacted;
+- impact and blocked deployment/release paths;
+- current owner/worker, next action, and the verification required to close;
+- links to any remediation branch, pull request, replacement run, or external provider incident.
+
+Update the canonical issue when the failing SHA, attempt, diagnosis, owner, or recovery evidence changes. Keep historical failure evidence intact; do not erase it when a rerun passes.
+
+### Act immediately in the same monitoring run
+
+Creating an issue is the receipt, not the response. **Act immediately** after recording the incident:
+
+1. Check for an existing live worker, remediation branch, or pull request for the canonical issue and continue it rather than duplicating work.
+2. Fetch the failed run and job logs, reproduce the narrow failure locally when feasible, and classify it as code/test/config, dependency, credential/permission, runner/platform, quota, or external-service failure. Never print secrets or paste unredacted logs into the issue.
+3. For a repository defect, create or reuse a **dedicated isolated worktree** with its own remediation branch, write a failing regression first, make the smallest safe **test-driven** fix, run focused and required local checks, and open or update a pull request linked to the issue. Do not modify a shared or dirty primary checkout.
+4. For a credible transient runner/provider failure, preserve evidence and perform at most one bounded rerun of failed jobs when authorized. Do not hide deterministic failures with repeated reruns, retries, sleeps, weaker checks, or workflow bypasses.
+5. For missing credentials, permissions, quota, or external outages, take every safe non-secret remediation available immediately; otherwise mark the issue blocked with the exact owner action and unblock condition. Do not claim repair merely because the cause is external.
+6. After a fix/rerun, **verify the replacement run** on the exact remediation/default-branch SHA and require all required workflows/checks to pass. Comment with durable run/check URLs and close the issue only after exact default-branch readback proves every applicable required workflow/check is green. A separate owner-approved deployment exception may document accepted risk, but the CI incident stays open and must not be called repaired until this recovery proof exists.
+
+Do not deploy from a broken or incompletely observed default branch. If the monitor itself loses GitHub access or cannot enumerate the required contract, report `missing CI visibility`, create/reuse the canonical issue, and repair observability before claiming the branch healthy.
+
 ## Periodic System Checkup Cost Rules
 
 Every periodic system checkup must include hosting cost as a first-class signal, not an afterthought. For each staging and production environment, inspect available billing/usage dashboards or provider APIs/CLIs and report:
@@ -462,13 +505,18 @@ When the user or eval specifically requests AWS deployment readiness for a simpl
 12. Document required secrets as names and store references/paths only; never commit secret values.
 13. Create or update the per-project deployment and system monitoring runbook at `.projects/<project>/runbooks/deployment-and-monitoring.md`.
 14. Validate `.projects/<project>/product/supported-device-interfaces.yaml`; require at least one test case and a current PASS/evidence row for every supported device interface against the exact release candidate, and block promotion/deployment/store submission when the gate is incomplete or failing.
-15. Add health checks, core backend latency telemetry and warning/critical production alerts, hosting-cost visibility, budget-alert expectations, and operational runbook details.
-16. When asked to monitor all deployed services, discover every service/backend and set up a quiet every-five-minute watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
-17. Verify by running CI locally where possible, checking staging deployment status, testing store-backed secret loading without printing values, confirming the supported-interface release gate, generating a safe latency test alert, proving watchdog healthy output is silent and failure output alerts, and confirming production deployment, alert routing/recovery, and cost-check sources are documented.
+15. Add default-branch CI monitoring that verifies all required workflows/checks on the exact HEAD SHA, creates/reuses one canonical issue for breakage, and begins bounded remediation immediately.
+16. Add health checks, core backend latency telemetry and warning/critical production alerts, hosting-cost visibility, budget-alert expectations, and operational runbook details.
+17. When asked to monitor all deployed services, discover every service/backend and set up a quiet every-five-minute watchdog that alerts only on issues, missing critical visibility, or useful recoveries.
+18. Verify by running CI locally where possible, checking exact-head default-branch CI, checking staging deployment status, testing store-backed secret loading without printing values, confirming the supported-interface release gate, generating a safe latency test alert, proving watchdog healthy output is silent and failure output alerts, and confirming production deployment, alert routing/recovery, and cost-check sources are documented.
 
 ## Verification Checklist
 
 - [ ] CI runs tests/build on pull requests.
+- [ ] The current default-branch exact HEAD SHA has complete successful coverage from all required workflows/checks; older green runs or partial workflow success are not accepted.
+- [ ] Broken default-branch CI creates or reuses one canonical issue with failed run/job URLs and immediately starts a non-duplicative bounded remediation path.
+- [ ] Repository fixes use a dedicated isolated worktree and test-driven regression; transient reruns are bounded and never mask deterministic failures.
+- [ ] Recovery is proven by the replacement run on the exact repaired/default-branch SHA before the incident is closed.
 - [ ] For new projects, 3-5 viable hosting options were researched for the actual stack/product constraints and presented in a concise choice brief.
 - [ ] The user chose a hosting provider, or an explicit reversible default/assumption was recorded before account creation or architecture lock-in.
 - [ ] The hosting decision and rationale were recorded in the deployment/monitoring runbook or decision log.

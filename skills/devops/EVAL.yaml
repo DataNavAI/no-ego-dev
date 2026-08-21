@@ -38,6 +38,14 @@ expectations:
   - "configures warning and critical latency alerts for core production backend journeys with p50 p95 p99 volume errors timeouts sustained windows minimum traffic or synthetic safeguards owned routing and recovery criteria"
   - "derives thresholds from the product latency objective or measured baseline rather than inventing one universal number and records a conservative provisional threshold plus a baseline task when neither exists"
   - "verifies routing with a safe test alert and records acknowledgement recovery and runbook evidence while treating missing production latency visibility as an operational gap"
+  - "monitors the repository default branch and requires all required workflows and checks on the exact HEAD SHA rather than relying on an older or partial green run"
+  - "derive the applicable default branch contract from workflow triggers and do not require PR-only checks on a post-merge push"
+  - "treats terminal failures and missing required workflow check coverage as broken default branch CI while pending runs remain pending"
+  - "must create or reuse one canonical GitHub issue with failed run and job URLs and must not create duplicate issues for repeated polls or reruns"
+  - "must act immediately in the same run by continuing an existing worker or using a dedicated isolated worktree and a test-driven fix with bounded transient reruns"
+  - "treats requested waiting pending queued and in progress as nonterminal and uses bounded fallback grace and runtime limits when the repository documents none"
+  - "keeps the CI incident open despite any separate owner risk exception until exact default branch readback proves every applicable required workflow and check green"
+  - "must verify the replacement run and all required workflows on the exact repaired or default branch SHA before closing the incident"
 setupCommands: []
 teardownCommands: []
 parameters:
