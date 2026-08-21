@@ -27,103 +27,87 @@ function okGetMe(username = 'ned_disposable_bot') {
   };
 }
 
-test('hidden Telegram token reader fails closed when controlling-TTY echo suppression cannot be established', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'ned-telegram-no-echo-'));
-  const stty = join(root, 'stty');
+function runHiddenTokenPty(env = process.env) {
   const moduleUrl = pathToFileURL(resolve('src/telegram.js')).href;
-  await writeFile(stty, '#!/bin/sh\nexit 1\n');
-  await chmod(stty, 0o755);
-
   const childProgram = `
     import { readHiddenTelegramToken } from ${JSON.stringify(moduleUrl)};
     try {
-      await readHiddenTelegramToken();
-      console.log('RESULT:accepted');
+      const value = await readHiddenTelegramToken();
+      console.log(value === 'PTY_FIXTURE' ? 'RESULT:accepted' : 'RESULT:wrong');
     } catch (error) {
       console.log('ERROR:' + error.message);
     }
   `;
   const ptyRunner = `
-import os, pty, select, sys
-pid, fd = pty.fork()
+import fcntl, os, pty, select, sys, termios, time
+stdin_read, stdin_write = os.pipe()
+os.write(stdin_write, b'STDIN_DECOY\\n')
+master, slave = pty.openpty()
+pid = os.fork()
 if pid == 0:
+    os.setsid()
+    fcntl.ioctl(slave, termios.TIOCSCTTY, 0)
+    os.dup2(stdin_read, 0)
+    os.dup2(slave, 1)
+    os.dup2(slave, 2)
     os.execvpe(${JSON.stringify(process.execPath)}, ${JSON.stringify([process.execPath, '--input-type=module', '-e', childProgram])}, os.environ)
+os.close(stdin_read)
+os.close(stdin_write)
 output = b''
 sent = False
-while True:
-    ready, _, _ = select.select([fd], [], [], 1)
+echo_at_prompt = None
+deadline = time.monotonic() + 10
+while time.monotonic() < deadline:
+    ready, _, _ = select.select([master], [], [], 0.1)
     if ready:
         try:
-            data = os.read(fd, 4096)
+            data = os.read(master, 4096)
         except OSError:
             break
         if not data:
             break
         output += data
         if not sent and b'input hidden' in output:
-            os.write(fd, b'not-a-real-token\\n')
+            echo_at_prompt = bool(termios.tcgetattr(master)[3] & termios.ECHO)
+            os.write(master, b'PTY_FIXTURE\\n')
             sent = True
-    else:
-        _, status = os.waitpid(pid, os.WNOHANG)
-        if status:
-            break
-_, status = os.waitpid(pid, 0)
+    done, status = os.waitpid(pid, os.WNOHANG)
+    if done:
+        break
+else:
+    os.kill(pid, 9)
+    _, status = os.waitpid(pid, 0)
+echo_after_exit = bool(termios.tcgetattr(master)[3] & termios.ECHO)
 sys.stdout.buffer.write(output)
+print('ECHO_AT_PROMPT:' + ('none' if echo_at_prompt is None else str(int(echo_at_prompt))))
+print('ECHO_AFTER_EXIT:' + str(int(echo_after_exit)))
 sys.exit(os.waitstatus_to_exitcode(status))
 `;
-  const child = spawnSync('python3', ['-c', ptyRunner], {
-    encoding: 'utf8',
-    env: { ...process.env, PATH: `${root}:${process.env.PATH}` },
-  });
+  return spawnSync('python3', ['-c', ptyRunner], { encoding: 'utf8', env });
+}
+
+test('hidden Telegram token reader uses the controlling TTY, suppresses echo, and restores it', () => {
+  const child = runHiddenTokenPty();
+
+  assert.equal(child.status, 0, child.stderr);
+  assert.match(child.stdout, /RESULT:accepted/);
+  assert.doesNotMatch(child.stdout, /STDIN_DECOY|PTY_FIXTURE|ERROR:/);
+  assert.match(child.stdout, /ECHO_AT_PROMPT:0/);
+  assert.match(child.stdout, /ECHO_AFTER_EXIT:1/);
+});
+
+test('hidden Telegram token reader fails closed before prompting when echo suppression fails', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ned-telegram-no-echo-'));
+  const stty = join(root, 'stty');
+  await writeFile(stty, '#!/bin/sh\nexit 1\n');
+  await chmod(stty, 0o755);
+  const child = runHiddenTokenPty({ ...process.env, PATH: `${root}:${process.env.PATH}` });
 
   assert.equal(child.status, 0, child.stderr);
   assert.match(child.stdout, /ERROR:Telegram setup needs an interactive TTY/);
-  assert.doesNotMatch(child.stdout, /RESULT:accepted/);
-});
-
-test('hidden Telegram token reader accepts input through a controlling TTY after echo is suppressed', () => {
-  const moduleUrl = pathToFileURL(resolve('src/telegram.js')).href;
-  const childProgram = `
-    import { readHiddenTelegramToken } from ${JSON.stringify(moduleUrl)};
-    try {
-      console.log('RESULT:' + await readHiddenTelegramToken());
-    } catch (error) {
-      console.log('ERROR:' + error.message);
-    }
-  `;
-  const ptyRunner = `
-import os, pty, select, sys
-pid, fd = pty.fork()
-if pid == 0:
-    os.execvpe(${JSON.stringify(process.execPath)}, ${JSON.stringify([process.execPath, '--input-type=module', '-e', childProgram])}, os.environ)
-output = b''
-sent = False
-while True:
-    ready, _, _ = select.select([fd], [], [], 1)
-    if ready:
-        try:
-            data = os.read(fd, 4096)
-        except OSError:
-            break
-        if not data:
-            break
-        output += data
-        if not sent and b'input hidden' in output:
-            os.write(fd, b'not-a-real-token\\n')
-            sent = True
-    else:
-        _, status = os.waitpid(pid, os.WNOHANG)
-        if status:
-            break
-_, status = os.waitpid(pid, 0)
-sys.stdout.buffer.write(output)
-sys.exit(os.waitstatus_to_exitcode(status))
-`;
-  const child = spawnSync('python3', ['-c', ptyRunner], { encoding: 'utf8' });
-
-  assert.equal(child.status, 0, child.stderr);
-  assert.match(child.stdout, /RESULT:not-a-real-token/);
-  assert.doesNotMatch(child.stdout, /ERROR:/);
+  assert.doesNotMatch(child.stdout, /input hidden|RESULT:|STDIN_DECOY|PTY_FIXTURE/);
+  assert.match(child.stdout, /ECHO_AT_PROMPT:none/);
+  assert.match(child.stdout, /ECHO_AFTER_EXIT:1/);
 });
 
 test('Telegram setup never opens BotFather, prints numbered actions, and prompts exactly through hidden input', async () => {
