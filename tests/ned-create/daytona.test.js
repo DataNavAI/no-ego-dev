@@ -186,7 +186,8 @@ test('Daytona provider uploads the bundled profile and installs pinned Hermes be
 
   assert.deepEqual(observed.upload, { content: archive, destination: '/tmp/ned-profile.tgz' });
   assert.match(observed.execute.command, /apt-get install -y --no-install-recommends ca-certificates curl python3 tar xz-utils/);
-  assert(observed.execute.command.indexOf('apt-get install') < observed.execute.command.indexOf('curl -fsSL'));
+  assert(observed.execute.command.indexOf('apt-get install') < observed.execute.command.indexOf('curl --fail'));
+  assert.match(observed.execute.command, /curl --fail --show-error --location --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 --max-time 180/);
   assert.match(observed.execute.command, /3ef6bbd201263d354fd83ec55b3c306ded2eb72a/);
   assert.match(observed.execute.command, /c5ba7e89627577fab914514736ecfb3359b66956ca00199bfef616ca35953cb9/);
   assert.match(observed.execute.command, /sha256sum.*hermes-install\.sh|shasum -a 256.*hermes-install\.sh/);
@@ -237,6 +238,43 @@ test('Daytona doctor verifies the exact remote Hermes profile', async () => {
   assert.match(commands.at(-1), /hermes --version/);
   assert.match(commands.at(-1), /hermes profile info ned/);
   assert.match(commands.at(-1), /hermes --profile ned -z 'Reply with exactly: ready'/);
+});
+
+test('Daytona doctor retries transient post-bootstrap inference readiness', async () => {
+  let inferenceAttempts = 0;
+  const waits = [];
+  const sandbox = {
+    state: 'started',
+    fs: {
+      async downloadFile() {
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
+      },
+    },
+    process: {
+      async executeCommand(command) {
+        if (command.includes('gateway status')) return { exitCode: 0, result: '' };
+        inferenceAttempts += 1;
+        return inferenceAttempts === 1
+          ? { exitCode: 1, result: 'starting' }
+          : { exitCode: 0, result: 'ready' };
+      },
+    },
+  };
+  class FakeDaytona {
+    constructor() { this.secret = {}; }
+    async get() { return sandbox; }
+  }
+  const provider = createDaytonaProvider({
+    apiKey: 'contract-only',
+    DaytonaClass: FakeDaytona,
+    sleep: async (milliseconds) => { waits.push(milliseconds); },
+  });
+
+  const health = await provider.doctor({ id: 'sandbox-123' }, NED_PLAN);
+
+  assert.equal(health.ok, true);
+  assert.equal(inferenceAttempts, 2);
+  assert.deepEqual(waits, [5_000]);
 });
 
 test('Daytona health fails closed when the remote filesystem status contract is unavailable', async () => {
