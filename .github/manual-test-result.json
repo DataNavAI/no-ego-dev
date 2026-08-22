@@ -1,18 +1,12 @@
 {
-  "candidate_sha": "f8afa8a2abc850853f76f341faf070cbc7f5b517",
+  "candidate_sha": "1eb847606ccc8601b88a4c85ca63806488facc9c",
   "result": "pass",
-  "tested_at": "2026-08-22T04:22:39Z",
-  "environment": "macOS controlling-PTY runner with runtime-only credentials, a private Daytona Sandbox, cached ChatGPT OAuth, and disposable Telegram bot; no secret values recorded",
+  "tested_at": "2026-08-22T08:41:28Z",
+  "environment": "NED agent test: isolated synthetic installer harness plus direct GitHub codeload checksum verification; no credentials or runtime state recorded",
   "commands": [
-    "node --test tests/ned-create/telegram.test.js",
-    "node --test tests/ned-create/daytona.test.js",
-    "npm test",
-    "python -m pytest -q",
+    "node --test tests/ned-create/installer.test.js",
     "npm run check",
-    "ned create via controlling PTY against Daytona",
-    "ned repair via controlling PTY",
-    "ned pair via controlling PTY",
-    "ned destroy --yes via controlling PTY"
+    "curl codeload archive | shasum -a 256"
   ],
-  "observations": "The rebase preserved the live-tested NED source paths unchanged. Full CLI create reached ready, the user received the bot pairing response, repair and pairing completed, and destroy directly proved zero managed Sandboxes, zero NED model Secrets, absent local state, and no Telegram webhook. The post-pairing NED-LIVE-B reply was not confirmed before the bounded acceptance window closed, so this evidence does not claim that separate acceptance criterion."
+  "observations": "All 18 installer agent-test cases passed. The source archive pinned for the installer resolves to merged NED revision e4c569de4e13cd5c7bf40d90d44d06bbff790713 and its direct SHA-256 readback matched the committed pin."
 }
