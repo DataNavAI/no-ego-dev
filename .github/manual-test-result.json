@@ -1,13 +1,18 @@
 {
-  "candidate_sha": "26dcae55a6c2c80aa93f86a3fdaaacb00184706e",
+  "candidate_sha": "f8afa8a2abc850853f76f341faf070cbc7f5b517",
   "result": "pass",
-  "tested_at": "2026-08-21T17:54:08Z",
-  "environment": "local macOS policy verification against live DataNavAI/no-ego-dev GitHub metadata and exact main HEAD; no credentials or provider secrets recorded",
+  "tested_at": "2026-08-22T04:22:39Z",
+  "environment": "macOS controlling-PTY runner with runtime-only credentials, a private Daytona Sandbox, cached ChatGPT OAuth, and disposable Telegram bot; no secret values recorded",
   "commands": [
-    "python3.11 -m pytest tests/test_devops_main_branch_ci.py -q",
+    "node --test tests/ned-create/telegram.test.js",
+    "node --test tests/ned-create/daytona.test.js",
+    "npm test",
+    "python -m pytest -q",
     "npm run check",
-    "gh repo view DataNavAI/no-ego-dev --json defaultBranchRef",
-    "gh run list --repo DataNavAI/no-ego-dev --commit a491a726fb97cb0c8acf1b337b9b286afbc54ab1 --limit 20 --json workflowName,event,status,conclusion,headSha,url"
+    "ned create via controlling PTY against Daytona",
+    "ned repair via controlling PTY",
+    "ned pair via controlling PTY",
+    "ned destroy --yes via controlling PTY"
   ],
-  "observations": "The policy regression passed. Live default branch main at exact SHA a491a726fb97cb0c8acf1b337b9b286afbc54ab1 had successful NED CLI and Smoke test push workflows; the PR-only manual-test-gate was correctly excluded from post-merge exact-head coverage. No CI incident issue was created because all applicable workflows were green."
+  "observations": "The rebase preserved the live-tested NED source paths unchanged. Full CLI create reached ready, the user received the bot pairing response, repair and pairing completed, and destroy directly proved zero managed Sandboxes, zero NED model Secrets, absent local state, and no Telegram webhook. The post-pairing NED-LIVE-B reply was not confirmed before the bounded acceptance window closed, so this evidence does not claim that separate acceptance criterion."
 }
