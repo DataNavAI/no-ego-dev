@@ -437,8 +437,14 @@ PY`,
         `hermes profile info ${plan.profile}`,
         `hermes --profile ${plan.profile} -z 'Reply with exactly: ready'`,
       ].join('\n');
-      const result = await sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspace.id), 120);
-      const inferenceReady = result.exitCode === 0;
+      let inferenceReady = false;
+      let result = { exitCode: 1, result: '' };
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        result = await sandbox.process.executeCommand(command, undefined, runtimeTelegramEnv(workspace.id), 120);
+        inferenceReady = result.exitCode === 0;
+        if (inferenceReady || attempt === 5) break;
+        await sleep(5_000);
+      }
       return {
         ok: inferenceReady && gatewayReady.ready,
         checks: [

@@ -240,6 +240,43 @@ test('Daytona doctor verifies the exact remote Hermes profile', async () => {
   assert.match(commands.at(-1), /hermes --profile ned -z 'Reply with exactly: ready'/);
 });
 
+test('Daytona doctor retries transient post-bootstrap inference readiness', async () => {
+  let inferenceAttempts = 0;
+  const waits = [];
+  const sandbox = {
+    state: 'started',
+    fs: {
+      async downloadFile() {
+        return Buffer.from('NED_STATUS_TELEGRAM=true\nNED_STATUS_CONNECTED=true\nNED_STATUS_DISCONNECTED=false\nNED_DIAG_TOKEN_PRESENT=true\nNED_DIAG_TOKEN_SHAPE=true\nNED_DIAG_API_HTTP=200\n');
+      },
+    },
+    process: {
+      async executeCommand(command) {
+        if (command.includes('gateway status')) return { exitCode: 0, result: '' };
+        inferenceAttempts += 1;
+        return inferenceAttempts === 1
+          ? { exitCode: 1, result: 'starting' }
+          : { exitCode: 0, result: 'ready' };
+      },
+    },
+  };
+  class FakeDaytona {
+    constructor() { this.secret = {}; }
+    async get() { return sandbox; }
+  }
+  const provider = createDaytonaProvider({
+    apiKey: 'contract-only',
+    DaytonaClass: FakeDaytona,
+    sleep: async (milliseconds) => { waits.push(milliseconds); },
+  });
+
+  const health = await provider.doctor({ id: 'sandbox-123' }, NED_PLAN);
+
+  assert.equal(health.ok, true);
+  assert.equal(inferenceAttempts, 2);
+  assert.deepEqual(waits, [5_000]);
+});
+
 test('Daytona health fails closed when the remote filesystem status contract is unavailable', async () => {
   const sandbox = {
     state: 'started',
