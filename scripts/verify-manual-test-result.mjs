@@ -45,10 +45,9 @@ const testedAt = Date.parse(evidence.tested_at);
 if (!Number.isFinite(testedAt) || testedAt > Date.now() + 5 * 60 * 1000) {
   throw new Error(`Manual test gate: tested_at must be a valid non-future ISO timestamp`);
 }
-const latestCodeSha = execFileSync('git', ['log', '-1', '--format=%H', headSha, '--', ...codeChanges], { encoding: 'utf8' }).trim();
-if (!latestCodeSha) throw new Error('Manual test gate: could not identify the latest code-change commit');
-if (evidence.candidate_sha !== latestCodeSha) {
-  throw new Error(`Manual test gate: candidate_sha ${evidence.candidate_sha} does not match latest code-change commit ${latestCodeSha}; rerun the manual test after the latest code change`);
+const candidateSha = execFileSync('git', ['rev-parse', headSha], { encoding: 'utf8' }).trim();
+if (evidence.candidate_sha !== candidateSha) {
+  throw new Error(`Manual test gate: candidate_sha ${evidence.candidate_sha} does not match exact candidate SHA ${candidateSha}; rerun the manual test for the releasable candidate`);
 }
-console.log(`Manual test gate: PASS for ${latestCodeSha}`);
+console.log(`Manual test gate: PASS for ${candidateSha}`);
 console.log(`Changed code paths: ${codeChanges.join(', ')}`);
