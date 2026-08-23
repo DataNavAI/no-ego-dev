@@ -1,12 +1,13 @@
 {
-  "candidate_sha": "08fba0f5b5036b537ed5993fc0ff792bbf695ea8",
+  "candidate_sha": "1234fd4c7bded69208782ec41db29778293c1b50",
   "result": "pass",
-  "tested_at": "2026-08-23T06:03:26Z",
-  "environment": "NED agent test: isolated clean-home installer harness executing the installed launcher, plus direct pinned GitHub codeload checksum verification; no credentials or runtime state recorded",
+  "tested_at": "2026-08-23T06:10:00Z",
+  "environment": "NED agent test: real PTY controlling-TTY probe with echo-state inspection; no credentials supplied or retained",
   "commands": [
-    "node --test tests/ned-create/installer.test.js",
-    "npm run check",
-    "curl codeload archive | shasum -a 256"
+    "node --test tests/ned-create/launcher.test.js",
+    "node --test tests/ned-create/telegram.test.js",
+    "npm test",
+    "python -m pytest -q"
   ],
-  "observations": "All 18 installer cases passed. The installed launcher resolves dependencies from the active app generation, and the new source archive SHA-256 matches the installer pin."
+  "observations": "Daytona replacement-key input had echo disabled at the prompt and restored after exit; the unsafe stty path fails closed before accepting input. Full Node and Python suites passed."
 }

@@ -1,5 +1,4 @@
-import { existsSync, readFileSync, createReadStream } from 'node:fs';
-import { createInterface } from 'node:readline/promises';
+import { existsSync, readFileSync, openSync, closeSync, readSync, writeSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
@@ -47,21 +46,35 @@ function readFileToken(home) {
   }
 }
 
-async function promptHidden() {
-  if (!process.stdin.isTTY) throw new Error('NED: interactive terminal required to enter the Daytona API key.');
-  const tty = createReadStream('/dev/tty');
-  const readline = createInterface({ input: tty, output: process.stderr, terminal: true });
-  const ttyFd = tty.fd;
-  if (ttyFd === undefined) throw new Error('NED: interactive terminal required to enter the Daytona API key.');
-  spawnSync('stty', ['-echo'], { stdio: ['ignore', ttyFd, ttyFd] });
+export async function readHiddenDaytonaKey(prompt = 'Daytona API key (input hidden): ') {
+  let ttyFd;
+  let echoDisabled = false;
   try {
-    const value = await readline.question('Daytona API key (input hidden): ');
-    process.stderr.write('\n');
+    ttyFd = openSync('/dev/tty', 'r+');
+    echoDisabled = spawnSync('stty', ['-echo'], { stdio: [ttyFd, 'ignore', 'ignore'] }).status === 0;
+    if (!echoDisabled) throw new Error('Could not disable terminal echo');
+    writeSync(ttyFd, prompt);
+    const byte = Buffer.alloc(1);
+    let value = '';
+    while (true) {
+      const bytesRead = readSync(ttyFd, byte, 0, 1, null);
+      if (bytesRead === 0) break;
+      const character = byte.toString('utf8', 0, bytesRead);
+      if (character === '\r' || character === '\n') break;
+      if (character === '\u0003' || character === '\u0004') {
+        throw new Error('Daytona API key entry cancelled.');
+      }
+      if (character === '\u007f' || character === '\b') value = value.slice(0, -1);
+      else value += character;
+    }
+    writeSync(ttyFd, '\n');
     return value;
+  } catch (error) {
+    if (error?.message === 'Daytona API key entry cancelled.') throw error;
+    throw new Error('NED: interactive terminal with hidden input is required to enter the Daytona API key.');
   } finally {
-    spawnSync('stty', ['echo'], { stdio: ['ignore', ttyFd, ttyFd] });
-    readline.close();
-    tty.destroy();
+    if (echoDisabled) spawnSync('stty', ['echo'], { stdio: [ttyFd, 'ignore', 'ignore'] });
+    if (ttyFd !== undefined) closeSync(ttyFd);
   }
 }
 
@@ -73,7 +86,7 @@ export async function defaultReadCredential(home, env = process.env) {
   }
   const stored = readFileToken(home);
   if (stored) return stored;
-  const token = await promptHidden();
+  const token = await readHiddenDaytonaKey();
   if (!token) throw new Error('NED: Daytona API key cannot be empty.');
   return token;
 }
@@ -120,7 +133,7 @@ export async function runLauncher(argv, options = {}) {
   if (!exists(appEntry)) throw new Error('NED: active installation is incomplete; rerun the installer.');
   const node = options.node || process.execPath;
   const readCredential = options.readCredential || defaultReadCredential;
-  const promptCredential = options.promptCredential || promptHidden;
+  const promptCredential = options.promptCredential || readHiddenDaytonaKey;
   let token = needsDaytona(argv) ? await readCredential(home, env) : undefined;
   if (options.spawn) {
     const child = options.spawn(node, [appEntry, ...argv], {
