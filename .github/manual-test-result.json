@@ -1,11 +1,12 @@
 {
-  "candidate_sha": "2db984e135e073b4eb7ea09cc9b283d0ba5dd67c",
+  "candidate_sha": "08fba0f5b5036b537ed5993fc0ff792bbf695ea8",
   "result": "pass",
-  "tested_at": "2026-08-23T05:59:21Z",
-  "environment": "NED agent test: isolated clean-home installer harness executing the installed `ned --help` launcher; no credentials or runtime state recorded",
+  "tested_at": "2026-08-23T06:03:26Z",
+  "environment": "NED agent test: isolated clean-home installer harness executing the installed launcher, plus direct pinned GitHub codeload checksum verification; no credentials or runtime state recorded",
   "commands": [
     "node --test tests/ned-create/installer.test.js",
-    "npm run check"
+    "npm run check",
+    "curl codeload archive | shasum -a 256"
   ],
-  "observations": "All 18 installer cases passed. The clean-home installation invokes the installed launcher successfully; it imports the active generation's src/launcher.js, which resolves its colocated telegram.js dependency."
+  "observations": "All 18 installer cases passed. The installed launcher resolves dependencies from the active app generation, and the new source archive SHA-256 matches the installer pin."
 }
