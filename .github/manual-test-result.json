@@ -1,12 +1,11 @@
 {
-  "candidate_sha": "00b0a131e74ee6365fb9a6383d36b4e76d4180d0",
+  "candidate_sha": "2db984e135e073b4eb7ea09cc9b283d0ba5dd67c",
   "result": "pass",
-  "tested_at": "2026-08-23T00:56:14Z",
-  "environment": "NED agent test: isolated synthetic installer and merge-gate harnesses plus direct GitHub codeload checksum verification; no credentials or runtime state recorded",
+  "tested_at": "2026-08-23T05:59:21Z",
+  "environment": "NED agent test: isolated clean-home installer harness executing the installed `ned --help` launcher; no credentials or runtime state recorded",
   "commands": [
-    "node --test tests/ned-create/manual-test-gate.test.js tests/ned-create/installer.test.js",
-    "npm run check",
-    "curl codeload archive | shasum -a 256"
+    "node --test tests/ned-create/installer.test.js",
+    "npm run check"
   ],
-  "observations": "All 19 agent-test cases passed. The gate accepts an evidence-only follow-up commit bound to final code candidate 00b0a131e74ee6365fb9a6383d36b4e76d4180d0 and rejects a later candidate advance. The installer source archive SHA-256 directly matched its committed pin."
+  "observations": "All 18 installer cases passed. The clean-home installation invokes the installed launcher successfully; it imports the active generation's src/launcher.js, which resolves its colocated telegram.js dependency."
 }
