@@ -172,6 +172,12 @@ Use the keyword-to-page map. Score each cluster using available evidence:
 
 Document the formula and raw evidence. Do not convert unknowns into fake precision. A practical priority is `expected impact × confidence ÷ effort`, but the components must remain visible.
 
+### 2.4 Include AI search without creating a separate fiction
+
+Google documents AI Overviews and AI Mode as using its core Search ranking and quality systems. Apply the same helpful, reliable, people-first standard: make content uniquely useful, factually supported, accessible in rendered pages, and easy for users and search systems to understand. Do not manufacture AI-only doorway pages, rewrite pages merely to imitate generated answers, or trade first-hand value for commodity summaries.
+
+Do not claim that `llms.txt`, special “AI markup,” artificial content chunking, or fabricated third-party mentions improve Google visibility. Use normal crawlability, indexability, structured data supported by visible content, and strong page experience. If Search Console exposes its Generative AI performance report for the property, use it as an additional measured view with dated filters and the same aggregation/privacy caveats—not as a substitute for query-page, analytics, conversion, or controlled rank evidence.
+
 ## Phase 3 — Build the Keyword-to-Page Map
 
 A **keyword-to-page map** assigns one primary intent cluster to one intentional canonical target page while allowing secondary queries that share the same intent.

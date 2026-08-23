@@ -127,6 +127,22 @@ def test_seo_growth_has_truth_safety_and_search_spam_guardrails():
         assert phrase in text
 
 
+def test_seo_growth_handles_ai_search_without_invented_optimization_shortcuts():
+    skill = _skill_text().lower()
+    reference = (PACKAGE / "references" / "tooling-and-data-sources.md").read_text(encoding="utf-8").lower()
+    required_skill_phrases = [
+        "ai overviews",
+        "ai mode",
+        "core search",
+        "llms.txt",
+        "ai markup",
+        "generative ai performance report",
+    ]
+    for phrase in required_skill_phrases:
+        assert phrase in skill
+    assert "https://developers.google.com/search/docs/fundamentals/ai-optimization-guide" in reference
+
+
 def test_seo_growth_names_durable_operating_artifacts():
     text = _skill_text()
     required_paths = [

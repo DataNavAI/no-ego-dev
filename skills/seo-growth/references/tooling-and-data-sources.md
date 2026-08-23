@@ -18,6 +18,7 @@ Official anchors:
 - Google Search Essentials: `https://developers.google.com/search/docs/essentials`
 - SEO Starter Guide: `https://developers.google.com/search/docs/fundamentals/seo-starter-guide`
 - Helpful, reliable, people-first content: `https://developers.google.com/search/docs/fundamentals/creating-helpful-content`
+- AI features and website optimization: `https://developers.google.com/search/docs/fundamentals/ai-optimization-guide`
 - Search spam policies: `https://developers.google.com/search/docs/essentials/spam-policies`
 - Search Console performance data: `https://support.google.com/webmasters/answer/7576553`
 - Search Analytics API: `https://developers.google.com/webmaster-tools/v1/searchanalytics/query`
