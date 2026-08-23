@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const home = process.env.HOME;
-const launcherModule = process.env.NED_LAUNCHER_MODULE || join(home, '.local/share/ned/launcher-runtime.js');
+const launcherModule = process.env.NED_LAUNCHER_MODULE || join(home, '.local/share/ned/current/app/src/launcher.js');
 const { runLauncher } = await import(pathToFileURL(launcherModule).href);
 
 try {

@@ -51,7 +51,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const platform = `${system === 'Darwin' ? 'darwin' : 'linux'}-${machine === 'arm64' || machine === 'aarch64' ? 'arm64' : 'x64'}`;
   const nodeRoot = path.join(root, `node-v-test-${platform}`);
   await mkdir(path.join(nodeRoot, 'bin'), { recursive: true });
-  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\n[[ "\$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "\$*" == *'create --dry-run --json'* ]]; then printf '{"dryRun":true}\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_CREATE_FAIL-} != 1 ]] || { echo synthetic-create-failure >&2; exit 43; }\nprintf 'ned-create:%s\\n' "\${2-}" >> "$HOME/create.log"\n`);
+  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\nif [[ "\${1-}" == *'/ned-launcher.js' || "\${1-}" == *'/launcher-runtime.js' || "\${1-}" == *'/app/src/launcher.js' ]]; then exec ${JSON.stringify(process.execPath)} "\$@"; fi\n[[ "\$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "\$*" == *'create --dry-run --json'* ]]; then printf '{"dryRun":true}\\n'; exit 0; fi\nif [[ "\$*" == *' --help'* ]]; then printf 'NED help\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_CREATE_FAIL-} != 1 ]] || { echo synthetic-create-failure >&2; exit 43; }\nprintf 'ned-create:%s\\n' "\${2-}" >> "$HOME/create.log"\n`);
   await chmod(path.join(nodeRoot, 'bin', 'node'), 0o755);
   await writeFile(path.join(nodeRoot, 'bin', 'npm'), '#!/usr/bin/env bash\nset -eu\n[[ ${1-} == ci ]]\n[[ $(command -v node) == "${BASH_SOURCE[0]%/*}/node" ]] || { echo system-node-used >&2; exit 42; }\ntouch .dependencies-installed\n');
   await chmod(path.join(nodeRoot, 'bin', 'npm'), 0o755);
@@ -62,7 +62,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const sourceRoot = path.join(root, 'no-ego-dev-test');
   await mkdir(path.join(sourceRoot, 'bin'), { recursive: true });
   await mkdir(path.join(sourceRoot, 'src'), { recursive: true });
-  await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), '// synthetic fixture\n');
+  await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), `if (process.argv.includes('create') && process.argv.includes('--dry-run') && process.argv.includes('--json')) console.log(JSON.stringify({ dryRun: true }));\n`);
   await cp(path.join(repoRoot, 'src', 'telegram.js'), path.join(sourceRoot, 'src', 'telegram.js'));
   await cp(path.join(repoRoot, 'bin', 'ned-launcher.js'), path.join(sourceRoot, 'bin', 'ned-launcher.js'));
   await cp(path.join(repoRoot, 'src', 'launcher.js'), path.join(sourceRoot, 'src', 'launcher.js'));
@@ -175,6 +175,11 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   });
   assert.equal(bash.status, 0, bash.stderr);
   assert.equal(bash.stdout.trim(), path.join(harness.home, '.local/bin/ned'));
+  const installedHelp = spawnSync(path.join(harness.home, '.local/bin/ned'), ['--help'], {
+    env: { ...harness.env, PATH: `${path.join(harness.home, '.local/bin')}:${harness.env.PATH}` }, encoding: 'utf8',
+  });
+  assert.equal(installedHelp.status, 0, installedHelp.stderr);
+  assert.equal(installedHelp.stderr, '');
 });
 
 test('clean macOS arm64 and Ubuntu amd64/arm64 installs and reruns preserve BotFather copy and CLI-linked docs', async () => {
