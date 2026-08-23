@@ -45,9 +45,14 @@ const testedAt = Date.parse(evidence.tested_at);
 if (!Number.isFinite(testedAt) || testedAt > Date.now() + 5 * 60 * 1000) {
   throw new Error(`Manual test gate: tested_at must be a valid non-future ISO timestamp`);
 }
-const candidateSha = execFileSync('git', ['rev-parse', headSha], { encoding: 'utf8' }).trim();
+const candidateSha = execFileSync('git', ['rev-parse', `${headSha}^`], { encoding: 'utf8' }).trim();
+const evidenceCommitPaths = execFileSync('git', ['diff-tree', '--no-commit-id', '--name-only', '-r', headSha], { encoding: 'utf8' })
+  .split('\n').map((path) => path.trim()).filter(Boolean);
+if (evidenceCommitPaths.length !== 1 || evidenceCommitPaths[0] !== evidencePath) {
+  throw new Error(`Manual test gate: the PR head must be an evidence-only follow-up commit touching ${evidencePath}; rerun the agent test for the final code candidate, then commit its evidence separately`);
+}
 if (evidence.candidate_sha !== candidateSha) {
-  throw new Error(`Manual test gate: candidate_sha ${evidence.candidate_sha} does not match exact candidate SHA ${candidateSha}; rerun the manual test for the releasable candidate`);
+  throw new Error(`Manual test gate: candidate_sha ${evidence.candidate_sha} does not match exact final code candidate SHA ${candidateSha}; rerun the agent test for that candidate`);
 }
 console.log(`Manual test gate: PASS for ${candidateSha}`);
 console.log(`Changed code paths: ${codeChanges.join(', ')}`);

@@ -13,7 +13,7 @@ function git(directory, args) {
   return execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
 }
 
-test('manual test gate rejects evidence for a prior code commit when the PR candidate is newer', async (t) => {
+test('manual test gate accepts evidence bound to the final code candidate and rejects a later candidate advance', async (t) => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'ned-manual-test-gate-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
 
@@ -45,12 +45,23 @@ test('manual test gate rejects evidence for a prior code commit when the PR cand
   git(directory, ['commit', '--quiet', '-m', 'record manual evidence']);
   const headSha = git(directory, ['rev-parse', 'HEAD']);
 
-  const result = spawnSync(process.execPath, ['scripts/verify-manual-test-result.mjs'], {
+  const verified = spawnSync(process.execPath, ['scripts/verify-manual-test-result.mjs'], {
     cwd: directory,
     encoding: 'utf8',
     env: { ...process.env, MANUAL_TEST_BASE_SHA: baseSha, MANUAL_TEST_HEAD_SHA: headSha },
   });
+  assert.equal(verified.status, 0, verified.stderr);
 
-  assert.notEqual(result.status, 0, `expected stale evidence to be rejected, got stdout: ${result.stdout}`);
-  assert.match(result.stderr, /candidate_sha .* does not match exact candidate SHA/);
+  await writeFile(path.join(directory, 'app.js'), 'export const version = 3;\n');
+  git(directory, ['add', 'app.js']);
+  git(directory, ['commit', '--quiet', '-m', 'later candidate advance']);
+  const advancedHeadSha = git(directory, ['rev-parse', 'HEAD']);
+  const result = spawnSync(process.execPath, ['scripts/verify-manual-test-result.mjs'], {
+    cwd: directory,
+    encoding: 'utf8',
+    env: { ...process.env, MANUAL_TEST_BASE_SHA: baseSha, MANUAL_TEST_HEAD_SHA: advancedHeadSha },
+  });
+
+  assert.notEqual(result.status, 0, `expected later candidate advance to be rejected, got stdout: ${result.stdout}`);
+  assert.match(result.stderr, /head must be an evidence-only follow-up commit/);
 });
