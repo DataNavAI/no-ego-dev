@@ -1,12 +1,12 @@
 {
-  "candidate_sha": "1eb847606ccc8601b88a4c85ca63806488facc9c",
+  "candidate_sha": "00b0a131e74ee6365fb9a6383d36b4e76d4180d0",
   "result": "pass",
-  "tested_at": "2026-08-22T08:41:28Z",
-  "environment": "NED agent test: isolated synthetic installer harness plus direct GitHub codeload checksum verification; no credentials or runtime state recorded",
+  "tested_at": "2026-08-23T00:56:14Z",
+  "environment": "NED agent test: isolated synthetic installer and merge-gate harnesses plus direct GitHub codeload checksum verification; no credentials or runtime state recorded",
   "commands": [
-    "node --test tests/ned-create/installer.test.js",
+    "node --test tests/ned-create/manual-test-gate.test.js tests/ned-create/installer.test.js",
     "npm run check",
     "curl codeload archive | shasum -a 256"
   ],
-  "observations": "All 18 installer agent-test cases passed. The source archive pinned for the installer resolves to merged NED revision e4c569de4e13cd5c7bf40d90d44d06bbff790713 and its direct SHA-256 readback matched the committed pin."
+  "observations": "All 19 agent-test cases passed. The gate accepts an evidence-only follow-up commit bound to final code candidate 00b0a131e74ee6365fb9a6383d36b4e76d4180d0 and rejects a later candidate advance. The installer source archive SHA-256 directly matched its committed pin."
 }
