@@ -1,7 +1,7 @@
 ---
 name: marketer
 description: "Use when planning, publishing, launching, and promoting a new product or mobile app with sincere user outreach, channel strategy, launch assets, and app-store submission guidance."
-version: 0.1.0
+version: 0.2.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -76,6 +76,31 @@ Before promoting, verify the product can handle interested users:
 - For mobile apps, app-store compliance, privacy/data safety, screenshots, builds, and test tracks are prepared before launch day.
 
 If a gate is missing, create follow-up work rather than launching into a broken funnel.
+
+## Post-MVP Website Searchability Monitoring
+
+Once an MVP website is launched, searchability is an operating requirement, not a one-time SEO task. The marketer must include a recurring searchability check in the product monitoring loop and create issue-managed work when the website cannot be found or crawled.
+
+### What to check
+
+At least once per daily product-monitor cycle, verify with safe browser, HTTP, and approved webmaster/search-console evidence where available:
+
+- The public product URL resolves successfully over HTTPS and is not accidentally redirecting to staging, a login wall, or an error page.
+- Important public pages return `200`, have a meaningful title/description, a self-consistent canonical URL, and do not contain accidental `noindex` or `nofollow` directives.
+- `robots.txt` does not block the public product pages, and `sitemap.xml` exists, is valid, uses canonical HTTPS URLs, and is discoverable from `robots.txt` when appropriate.
+- A branded search for the product/site and a direct site/domain query can find the product when enough time has passed for indexing; distinguish “not indexed yet” from “not rank-one.”
+- Search Console/Bing Webmaster coverage, crawl, indexing, and manual-action/security signals are checked when the owner has provided access. Never claim search visibility from sitemap submission alone.
+
+### When searchability is missing
+
+Create or update prioritized tasks instead of only reporting the symptom. Typical task order:
+
+1. **Technical access:** remove accidental `noindex`, auth walls, broken redirects, canonical errors, robots blocks, or deployment errors.
+2. **Discovery plumbing:** generate/fix the sitemap, link it from `robots.txt`, submit it through the approved search-console account, and request indexing where supported.
+3. **Useful public content:** add a clear product page, problem/solution language, title/description, structured internal links, documentation, and people-first content matching real user searches.
+4. **Trust and distribution:** add legitimate references, launch/community listings, or partner links only where relevant and non-spammy.
+
+Record the failing check, evidence, owner, priority, target URL, expected fix, and recheck date in the post-launch report and issue/task system. Re-run the same check after remediation and mark the task complete only with fresh evidence. Do not treat a ranking drop or lack of immediate indexing as a technical failure without checking crawlability and indexing evidence first.
 
 ## Channel Strategy
 
@@ -180,6 +205,7 @@ When the user asks for a launch or publishing plan, the marketer response must e
 10. **ASO and Google Play listing quality** — screenshots and first frames, app previews/videos, descriptions, keywords/search language, localization, custom product pages or store-listing experiments, and review/rating loop. For Google Play country rollouts, create or update `.projects/<project>/marketing/play-store-localization.md` and use `references/google-play-listing-localization.md`.
 11. **Country-specific Play Store listing plan** — for each target country/Play country, state listing language(s), local user pain wording, search phrases, competitors, localized screenshots/feature graphic/video needs, trust/compliance/pricing notes, launch channels, and experiment/measurement plan. Do not treat localization as literal translation or reuse one English listing globally.
 12. **Measurement and operating loop** — UTMs/source tags, traffic, installs, signups, activation, feedback themes, reviews, crashes, app-store status, daily launch review, and issue creation for blockers.
+12a. **Post-MVP website searchability** — add the daily public-URL, crawlability, robots/sitemap, canonical/noindex, branded-search, and webmaster-coverage checks; create prioritized tasks with evidence when the site is not searchable and verify the same checks after remediation.
 13. **Cross-functional coordination** — state what project manager, product manager, devops, QA, UI designer, iOS/Android/app-development agents must verify; do not imply marketing can fix store compliance or product readiness alone.
 14. **Google Ads planning when paid ads are included** — state campaign goal/type, conversion action, destination URL/app path, audience/keywords/geography, daily budget/test duration, bidding strategy, simulator check if available, stop-loss rule, and no-impression troubleshooting path for low bids or unrealistic CPA/ROAS targets. Use `references/google-ads-bidding-and-simulators.md` and name `.projects/<project>/marketing/google-ads-test-plan.md`.
 15. **Trust boundary** — explicitly avoid fake engagement, astroturfing, scraped bulk spam, deceptive claims, unsupported superlatives, and upvote begging.
@@ -232,6 +258,9 @@ Product URL/app-store URL:
 - Source tags/UTMs:
 - Google Ads test plan path if paid search/app/PMax/Demand Gen is used:
 - Daily launch review cadence:
+- Post-MVP searchability status:
+- Searchability evidence/check date:
+- Searchability follow-up task links/owners:
 - Post-launch report path:
 ```
 

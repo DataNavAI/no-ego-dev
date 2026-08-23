@@ -1,0 +1,32 @@
+name: mvp-planning
+prompt: |
+  Plan a new MVP for independent home-care nurses who lose time coordinating daily patient visits across texts and spreadsheets. Stakeholders have requested route optimization, a team chat, payroll, a CRM, AI visit summaries, patient billing, inventory, analytics dashboards, native iOS and Android apps, and a web admin portal. Produce the smallest coherent MVP scope, UX direction, and QA/test strategy.
+expectations:
+  - "states one key user problem for one specific target user and context"
+  - "selects exactly one primary critical user journey and no more than two necessary supporting critical user journeys"
+  - "defines the shortest end to end path and observable value moment for every selected CUJ"
+  - "maps every must ship capability to a selected CUJ step failure or trust requirement"
+  - "ruthlessly cuts or parks extraneous requests such as broad payroll CRM billing chat analytics inventory extra platforms or speculative AI unless a selected CUJ truly requires them"
+  - "separates must ship manual or internal MVP operations and not in MVP parking lot scope"
+  - "limits supported interfaces to those needed to validate the key problem and marks other interfaces planned or intentionally unsupported"
+  - "designs screens and states from CUJ steps rather than from a feature inventory"
+  - "records or minimizes user visible actions from entry to value with one primary job per screen strong defaults progressive disclosure and minimum necessary copy"
+  - "preserves essential loading empty error success accessibility trust privacy and recovery states instead of treating missing fundamentals as simplicity"
+  - "creates a CUJ traceability matrix linking acceptance criteria to automated coverage manual release QA supported interfaces and evidence"
+  - "prioritizes executable automated coverage for the primary CUJ and critical business persistence permission recovery or integration logic"
+  - "defines a zero context manual smoke case and release blocking PASS FAIL or BLOCKED evidence for each supported interface"
+  - "blocks launch when primary CUJ coverage is absent stale failed or blocked"
+  - "defines a real serviceable environment including persistence monitoring support feedback rollback and ownership where applicable"
+  - "saves the durable MVP plan under .projects project product mvp-plan.md and cross links existing PRD CUJ UI tech task and QA artifacts or names explicit planned paths and owners for missing artifacts"
+  - "prevents parked features from re entering design architecture implementation or launch without explicit CUJ justification and scope approval"
+  - "makes DAU daily new and newly churned users and D1 D7 new user cohort retention the three primary MVP analytics groups while keeping the dashboard internal and minimal"
+  - "distinguishes prototype PoC and MVP by purpose storage expectations and exit evidence"
+  - "requires MVP user and business data to live in a deployment-persistent database or equivalent durable store surviving redeployments restarts and instance replacement"
+  - "allows ephemeral or local storage only for disposable prototype or PoC data and prevents those shortcuts from silently carrying into MVP"
+  - "adds a persistence-readiness task for prototype or PoC promotion covering migrations backups restore monitoring ownership and rollback"
+  - "defines qualifying activity activation churn inactivity threshold privacy safe identity timezone cohorts late events reactivation incomplete windows and internal or bot exclusions"
+parameters:
+  fixture: evaldata/README.md
+  template: templates/mvp-plan.md
+setupCommands: []
+teardownCommands: []

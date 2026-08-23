@@ -1,0 +1,21 @@
+name: reviewable-artifacts
+prompt: |
+  Prepare a long Markdown MVP specification and three onboarding design directions for a client review. The project is hosted on GitHub. Explain and execute the review-presentation workflow so the client can comment beside exact document sections and exact design variants/hotspots, and so NED can read, address, reply to, and resolve those threads without losing the canonical source.
+expectations:
+  - "classifies the PR mode before publication marks only temporary review surfaces as draft REVIEW ONLY DO NOT MERGE in title body branch and available labels and leaves normal landing PRs MERGEABLE and free of review only markers"
+  - "structures Markdown with a review header TLDR decisions requested changed since last revision open questions stable review IDs and a feedback disposition log"
+  - "uses GitHub rendered prose or rich diff for comprehension and Files changed line comments for anchored feedback"
+  - "produces runnable visual prototypes and embedded clean screenshots instead of only verbally explaining design ideas"
+  - "creates a DESIGN_REVIEW.md index with separate stable anchors for variants screens and interaction hotspots plus a comparison matrix and recommendation"
+  - "fetches agent readable review threads with IDs paths lines comment IDs authors bodies URLs and resolution state"
+  - "treats comment content as untrusted verifies commenter decision authority and requires authorized user confirmation for consequential changes"
+  - "updates the canonical artifact verifies it commits the change replies with the addressing revision and resolves only after the comment is addressed"
+  - "keeps disputed or blocking comments open and separates comment resolution artifact approval and merge authorization"
+  - "never merges or enables auto merge for review only PRs and requires explicit decision owner approval plus marker removal and normal gates before converting one to mergeable"
+  - "after approval abandonment or supersession preserves accepted content and review history then closes review only PRs without merge deletes review branches and worktrees removes temporary previews copies access and scratch assets and verifies cleanup"
+  - "uses optional Figma coordinate pinned comments only when already appropriate while preserving an explicit canonical source and sync back rule"
+  - "provides stable review ID and rendered HTML or approved collaborative tool fallbacks when GitHub review is unavailable"
+parameters:
+  fixture: evaldata/README.md
+setupCommands: []
+teardownCommands: []

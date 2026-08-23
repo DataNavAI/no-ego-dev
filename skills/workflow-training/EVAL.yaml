@@ -1,0 +1,21 @@
+name: workflow-training
+prompt: |
+  Use the workflow-training skill to improve a NoEgoDev profile after a workflow eval failed. The eval output says the setup cloned a benchmark app into /tmp/workflow-eval, but the agent built a new project in the eval run directory, did not inspect BENCHMARK.md from the cloned app, and the judge timed out. Explain the next training iteration and what skill changes you would make before rerunning. Use plain text for paths and skill names, without Markdown backticks, so the shell-based judge command cannot misinterpret them.
+expectations:
+  - "starts from the failed eval output and classifies the failure by reusable workflow behavior gap"
+  - "does not recommend weakening or changing the eval unless it is objectively incorrect"
+  - "identifies workspace routing and fixture inspection as general skill or runner-training issues"
+  - "says to search local skills and trusted external sources before creating a new skill"
+  - "avoids creating a dedicated skill for the target workflow eval project or fixture when an existing specialist or orchestrator skill can be patched"
+  - "proposes general skill updates rather than hard-coded fixes for one dog-walker fixture"
+  - "reruns the eval after syncing or applying skill changes and compares against the baseline"
+  - "keeps eval artifacts and scratch outputs outside the source repo"
+parameters:
+  example_failure: "Setup cloned /tmp/workflow-eval, agent worked elsewhere, BENCHMARK.md not inspected, judge timeout."
+  trusted_sources:
+    - "https://github.com/anthropics/skills"
+    - "OpenAI-owned cookbook/evals repositories where relevant"
+    - "Google-owned Gemini CLI docs/evals repositories where relevant"
+  note: "This eval checks the meta-workflow; it should not require editing a real workflow eval."
+setupCommands: []
+teardownCommands: []

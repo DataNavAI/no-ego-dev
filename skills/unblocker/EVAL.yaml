@@ -1,0 +1,25 @@
+name: unblocker
+prompt: |
+  Use the unblocker skill for a blocked task in a repository. The task's CI run failed because a stale task-owned lock file is preventing the test workspace from starting. Diagnose the blocker from the task record and logs, prove the lock owner is gone, remove only the stale task-owned lock, verify the workspace can start, trigger the canonical CI retry, and continue bounded recovery until the task completes or reaches the 10-round limit. Explain the round receipt and stop conditions.
+expectations:
+  - "confirms the canonical task or CI state is blocked before acting"
+  - "attempts to codify a code-reproducible blocker as the smallest durable regression test fixture script or command"
+  - "captures failing RED evidence before applying the remediation"
+  - "when reproduction is impossible records NON_REPRODUCIBLE rationale and the closest repeatable probe instead of fabricating a test"
+  - "re-runs the same reproduction after the fix and requires RED to change to PASS"
+  - "preserves the reproduction and commands so another implementer or reviewer can independently verify the fix"
+  - "identifies the stale task-owned lock from exact owner and no-live-process evidence"
+  - "uses one bounded low-risk remediation in the round and does not delete shared or unknown locks"
+  - "verifies the workspace prerequisite independently before requesting the retry"
+  - "triggers the canonical CI retry rather than merely recommending a retry"
+  - "verifies a new CI run or attempt identifier and its outcome"
+  - "maintains a durable receipt with round blocker action verification retry and next state"
+  - "enforces a hard maximum of 10 rounds and stops immediately on completion"
+  - "escalates authentication permission ambiguity security production or human-review blockers"
+  - "does not weaken tests change acceptance criteria expose secrets or create duplicate work"
+  - "reports the exact blocker evidence action verification retry identifier and next step"
+parameters:
+  fixture: evaldata/README.md
+  max_rounds: 10
+setupCommands: []
+teardownCommands: []
