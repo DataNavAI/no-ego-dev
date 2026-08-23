@@ -1,13 +1,13 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.21.9
+version: 0.22.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development, artifact-review]
-    related_skills: [reviewable-artifacts]
+    related_skills: [reviewable-artifacts, seo-growth]
 ---
 
 # Project Manager
@@ -354,6 +354,7 @@ Always spawn focused subagents for directly asked actionable tasks and for tasks
 
 - Product management / PRD / user story / scope decisions → spawn an authoring subagent instructed to use `product-manager`; once the PRD is frozen, dispatch a separate `prd-reviewer` fresh review-only leaf that did not author or edit the candidate.
 - Marketing / launch planning / channel strategy / sincere outreach / app-store listing copy, ASO, localization, or ads → spawn a subagent instructed to use `marketer`.
+- Website SEO strategy, technical SEO, organic keyword research, keyword-to-page mapping, on-page implementation, rank monitoring, or iterative organic-search growth → spawn a subagent instructed to use `seo-growth`; coordinate code and deployment work with `coder`, `qa`, and `devops` rather than reducing SEO to generic launch copy.
 - Agent/project identity, Gmail/Google account setup, OAuth/delegated access, signed-in browser SSO, or email identity for communications → spawn a subagent instructed to use `agent-identity-and-access`.
 - Google Play Console UI publishing / AAB upload / internal testing / tester lists / rollout status → spawn a subagent instructed to use `play-store-publisher` when that skill is available; coordinate with `marketer` only for listing/ad/user-acquisition work.
 - Google Play CLI/API automation / fastlane supply / EAS Submit / Gradle Play Publisher / Play service account setup → spawn a subagent instructed to use `play-store-cli` when that skill is available; coordinate with `devops` for CI secret storage and pipelines.

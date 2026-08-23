@@ -18,6 +18,7 @@ expectations:
   - "verifies the remote default branch contains the updated STATUS.md before linking it and uses the exact pushed PR branch or commit while awaiting merge"
   - "runs the fail closed status handoff packet validator when available and blocks completion for uncommitted stale malformed inaccessible revision mismatched or declared-kind versus URL-ref mismatched handoffs"
   - "delegates product, marketing, architecture, coding, devops, UI design, or QA work to specialist subagents"
+  - "delegates website SEO keyword to page mapping technical and on page implementation rank monitoring and iterative organic search growth to a seo-growth specialist coordinated with coder QA and devops"
   - "for browser or web game projects delegates web-game engine selection and game architecture planning to web-game-dev during the architecture phase"
   - "invokes agent-identity-and-access during new project onboarding to set up or confirm the agent identity OAuth delegated access signed-in browser SSO and email access status"
   - "creates a follow-up agent identity setup issue when account OAuth browser SSO or email access is missing and blocks identity-dependent work until verified"

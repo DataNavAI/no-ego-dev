@@ -1,0 +1,30 @@
+prompt: |
+  Use the seo-growth skill to execute a strategic SEO growth plan for this realistic website request:
+
+  "Improve organic search traffic for CloudLedger, a US/UK B2B SaaS website for finance teams. We can edit the Next.js repository and deploy through its normal PR workflow. We have Google Search Console and GA4 exports, a small fixed rank tracker, and read-only Bing Webmaster Tools access. The site has a homepage, pricing, product pages, integration pages, comparison pages, templates, blog posts, and documentation. Several URLs receive impressions for 'automated month end close', 'financial close checklist', and competitor-alternative queries, but rankings and conversions are uneven. Research high-potential keywords, decide which existing pages should target them, make a prioritized implementation plan, describe the code/content changes and production verification, and establish a monitoring/iteration loop. Do not invent data or use spam tactics."
+expectations:
+  - "creates or names durable strategy keyword page map technical audit experiment log and weekly report artifacts"
+  - "establishes business audience conversion geography language and authorization scope before optimizing"
+  - "audits actual website pages from crawl sitemap Search Console analytics and rendered mobile evidence"
+  - "uses first party Search Console analytics Bing and observed SERP evidence before third party estimates"
+  - "does not invent search volume keyword difficulty rankings traffic conversions or competitor evidence"
+  - "clusters queries by search intent and inspects target country language device and SERP result type"
+  - "scores opportunity from demand attainability business value user value momentum effort risk and confidence"
+  - "builds a keyword to page map that prioritizes suitable existing pages before justified new pages"
+  - "detects cannibalization and defines consolidation differentiation canonical or redirect decisions"
+  - "covers robots txt XML sitemap statuses redirects canonical noindex rendering mobile Core Web Vitals internal links and structured data"
+  - "defines people first page changes for accurate title meta description H1 content evidence UX CTA and internal links"
+  - "coordinates implementation through repository project tests QA deployment and production rendered HTML verification"
+  - "records baseline cohort hypothesis change date release metrics confounders rollback and experiment isolation"
+  - "monitors query page impressions clicks CTR average position fixed rank tracking organic conversions indexation and Core Web Vitals"
+  - "segments evidence by page cluster intent country device brand and change cohort where relevant"
+  - "uses weekly and 28 day reviews and allows an evidence appropriate 6 to 12 week observation window"
+  - "makes keep improve expand consolidate or rollback decisions without claiming causality from noise"
+  - "accounts for seasonality tracking changes releases SERP features competitors and algorithm volatility"
+  - "avoids keyword stuffing doorway pages cloaking link schemes scaled content abuse and fabricated authority"
+  - "does not guarantee ranking or claim indexed traffic or ranking improvement before production search evidence"
+  - "protects credentials requires explicit authorization for sensitive or destructive actions and documents remaining access limits"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
