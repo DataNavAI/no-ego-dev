@@ -1,13 +1,15 @@
 {
-  "candidate_sha": "1234fd4c7bded69208782ec41db29778293c1b50",
+  "candidate_sha": "fee5643c1e45f74c2a0ca585a7efe9ae3a85ce50",
   "result": "pass",
-  "tested_at": "2026-08-23T06:10:00Z",
-  "environment": "NED agent test: real PTY controlling-TTY probe with echo-state inspection; no credentials supplied or retained",
+  "tested_at": "2026-08-23T06:53:48Z",
+  "environment": "macOS isolated git worktree rebased onto origin/main; Python 3.11; pinned npm dependencies from package-lock; isolated Hermes eval profile under a non-repository scratch directory; no credentials or runtime state recorded",
   "commands": [
-    "node --test tests/ned-create/launcher.test.js",
-    "node --test tests/ned-create/telegram.test.js",
+    "python3.11 -m pytest -q",
     "npm test",
-    "python -m pytest -q"
+    "npm run check",
+    "npm run pack:check",
+    "gitleaks git --redact --no-banner --log-opts=origin/main..HEAD",
+    "python3.11 -m eval_runner.cli skills/seo-growth/EVAL.yaml --output-root /Users/moonk/.hermes/tmp/seo-growth-eval-20260822-r5 --report /Users/moonk/.hermes/tmp/seo-growth-eval-20260822-r5/report --markdown --hermes-command '<working Hermes Python 3.11 launcher> -t skills'"
   ],
-  "observations": "Daytona replacement-key input had echo disabled at the prompt and restored after exit; the unsafe stty path fails closed before accepting input. Full Node and Python suites passed."
+  "observations": "The final candidate passed 240 Python tests with 3 skips, 151 Node tests, syntax and package checks, and gitleaks with no leaks. The isolated SEO specialist eval passed all 21 expectations in 118.93 seconds. Current official AI-search guidance is included: AI Overviews and AI Mode remain grounded in core Search systems, while llms.txt or invented AI markup are not presented as Google ranking shortcuts."
 }
