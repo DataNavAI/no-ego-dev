@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -9,6 +10,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_DIR = ROOT / "skills" / "profile-skill-harvester"
 SCRIPT = SKILL_DIR / "scripts" / "inventory.py"
+LEASE_SCRIPT = SKILL_DIR / "scripts" / "lease_lock.py"
 
 
 def _module():
@@ -53,6 +55,87 @@ def test_profile_skill_harvester_package_contract():
     ):
         assert marker in skill or marker in "\n".join(evaluation["expectations"])
     assert SCRIPT.is_file()
+
+
+def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inventory():
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    reference_path = SKILL_DIR / "references" / "self-unblocking-publication.md"
+
+    assert reference_path.is_file()
+    contract = f"{skill}\n{reference_path.read_text(encoding='utf-8')}".lower()
+    for marker in (
+        "resume-before-inventory",
+        "classify_failed_check",
+        "repair_candidate",
+        "write_evidence_commit",
+        "guarded_merge",
+        "post_merge_ci",
+        "rollout",
+        "release_lock",
+        "manual-test-gate",
+        "--match-head-commit",
+        "bounded retry",
+        "lease ttl",
+    ):
+        assert marker in contract
+
+    release_index = contract.index("release_lock")
+    assert "every terminal path" in contract[release_index - 500 : release_index + 1000]
+    assert "new inventory" in contract
+    assert "existing pr" in contract
+
+
+def test_lease_lock_requires_exact_token_release_and_cleans_up(tmp_path):
+    lock_dir = tmp_path / "harvest.lock"
+    keeper = subprocess.Popen(
+        [sys.executable, str(LEASE_SCRIPT), "hold", "--lock-dir", str(lock_dir),
+         "--lease-seconds", "30", "--session-id", "pytest"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert keeper.stdout is not None
+        acquired = json.loads(keeper.stdout.readline())
+        assert acquired["status"] == "acquired"
+        owner = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
+        assert owner["pid"] == keeper.pid
+        assert owner["token"] == acquired["token"]
+        assert acquired["token"].startswith("lock_")
+        assert owner["expires_at"] > owner["started_at"]
+
+        wrong = subprocess.run(
+            [sys.executable, str(LEASE_SCRIPT), "release", "--lock-dir", str(lock_dir),
+             "--pid", str(keeper.pid), "--token", "wrong-token"],
+            capture_output=True, text=True, timeout=10,
+        )
+        assert wrong.returncode != 0
+        assert lock_dir.is_dir()
+
+        released = subprocess.run(
+            [sys.executable, str(LEASE_SCRIPT), "release", "--lock-dir", str(lock_dir),
+             "--pid", str(keeper.pid), "--token", acquired["token"]],
+            capture_output=True, text=True, timeout=10,
+        )
+        assert released.returncode == 0, released.stderr
+        keeper.wait(timeout=10)
+        assert not lock_dir.exists()
+    finally:
+        if keeper.poll() is None:
+            keeper.terminate()
+            keeper.wait(timeout=10)
+
+
+def test_lease_lock_self_expires(tmp_path):
+    lock_dir = tmp_path / "expiring.lock"
+    completed = subprocess.run(
+        [sys.executable, str(LEASE_SCRIPT), "hold", "--lock-dir", str(lock_dir),
+         "--lease-seconds", "1", "--session-id", "pytest-expiry"],
+        capture_output=True, text=True, timeout=10,
+    )
+    assert completed.returncode == 124
+    assert json.loads(completed.stdout.splitlines()[0])["status"] == "acquired"
+    assert not lock_dir.exists()
 
 
 def test_inventory_detects_divergent_complete_packages(tmp_path):

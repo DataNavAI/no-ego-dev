@@ -13,3 +13,13 @@ Three live profiles independently changed one canonical skill:
 The repository checkout is dirty with unrelated work. Each live package may also contain `EVAL.yaml`, `evaldata/`, references, scripts, or templates.
 
 A passing response must build explicit lifecycle applicability and precedence instead of selecting the newest file or blending contradictory bullets into vague prose. It must keep the repository checkout untouched by using an isolated worktree, preserve complete skill packages, add branch and boundary eval cases, reject secrets/runtime state, validate and test before publication, and leave unresolved same-scope contradictions blocked rather than guessed.
+
+## Interrupted-publication continuation
+
+The prior run has an open automation PR. The remote PR head fails only `manual-test-gate` because the required evidence-only child was never created. A clean isolated worktree is several commits ahead of that stale remote head; the narrowed code candidate has completed deterministic validation and has a matching exact-SHA approval receipt. Its detached lock keeper remains alive even though the scheduled agent session ended.
+
+This fixture does not provide an authenticated disposable repository, real PR coordinates, or a process that may be signaled. A passing response must not fabricate execution. It produces a deterministic state-transition trace and exact production command shapes for resume-before-inventory: orphan proof before exact PID/token cleanup, preservation of local-ahead commits, failed-job-log inspection, candidate/review identity verification, immutable-code exercise, evidence-only child creation, existing-PR update, required-check wait, exact-head guarded merge, applicable default-branch CI, selective state advancement, merged-byte rollout, and lock release. Candidate-byte changes require fresh tests and review; proven external transients get at most one bounded retry. In a real scheduled run with verified coordinates, these are mandatory actions rather than a terminal report.
+
+The trace includes a cleanup matrix covering success, no-change, validation failure, repeated/unrecoverable CI failure, rollout failure, timeout or budget cutoff, cancellation or exception, and irreducible authorization. Every terminal row performs exact PID/token release and verifies keeper disposition plus lock absence; finite TTL is only crash containment.
+
+The simulation also states that external inventory state is absent and that several profile-only packages are ambiguous bundled/global copies. The passing response treats the missing state as initial enrollment baseline only and excludes ambiguous packages unless reusable NoEgoDev provenance and complete eval-backed ownership are established.
