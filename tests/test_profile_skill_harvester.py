@@ -68,6 +68,7 @@ def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inv
         "classify_failed_check",
         "repair_candidate",
         "write_evidence_commit",
+        "review_final_tree",
         "guarded_merge",
         "post_merge_ci",
         "rollout",
@@ -81,6 +82,12 @@ def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inv
 
     release_index = contract.index("release_lock")
     assert "every terminal path" in contract[release_index - 500 : release_index + 1000]
+    evidence_index = contract.index("write_evidence_commit")
+    final_review_index = contract.index("review_final_tree")
+    guarded_merge_index = contract.index("guarded_merge")
+    assert evidence_index < final_review_index < guarded_merge_index
+    assert "code-only approval" in contract
+    assert "does not approve" in contract
     assert "new inventory" in contract
     assert "existing pr" in contract
 
@@ -136,6 +143,47 @@ def test_lease_lock_self_expires(tmp_path):
     assert completed.returncode == 124
     assert json.loads(completed.stdout.splitlines()[0])["status"] == "acquired"
     assert not lock_dir.exists()
+
+
+def test_lease_lock_never_signals_an_unverified_live_pid(tmp_path):
+    lock_dir = tmp_path / "harvest.lock"
+    lock_dir.mkdir()
+    sleeper = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        (lock_dir / "owner.json").write_text(
+            json.dumps(
+                {
+                    "pid": sleeper.pid,
+                    "token": "lock_foreign-process",
+                    "session_id": "stale-session",
+                    "expires_at": "2000-01-01T00:00:00Z",
+                }
+            ),
+            encoding="utf-8",
+        )
+        released = subprocess.run(
+            [
+                sys.executable,
+                str(LEASE_SCRIPT),
+                "release",
+                "--lock-dir",
+                str(lock_dir),
+                "--pid",
+                str(sleeper.pid),
+                "--token",
+                "lock_foreign-process",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        assert released.returncode == 0, released.stderr
+        assert sleeper.poll() is None
+        assert not lock_dir.exists()
+    finally:
+        if sleeper.poll() is None:
+            sleeper.terminate()
+        sleeper.wait(timeout=5)
 
 
 def test_inventory_detects_divergent_complete_packages(tmp_path):

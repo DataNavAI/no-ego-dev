@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
 import os
 import secrets
 import signal
+import socket
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -69,6 +71,17 @@ def cleanup_owned(lock_dir: Path, pid: int, token: str) -> bool:
     return not lock_dir.exists()
 
 
+def lease_is_expired(owner: dict[str, Any]) -> bool:
+    value = owner.get("expires_at")
+    if not isinstance(value, str):
+        return False
+    try:
+        expires = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return expires <= datetime.now(timezone.utc)
+
+
 def hold(args: argparse.Namespace) -> int:
     lock_dir = Path(args.lock_dir).expanduser().resolve()
     if not 1 <= args.lease_seconds <= MAX_LEASE_SECONDS:
@@ -88,11 +101,23 @@ def hold(args: argparse.Namespace) -> int:
 
     pid = os.getpid()
     token = "lock_" + secrets.token_urlsafe(24)
+    control = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    control.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        control.bind(("127.0.0.1", 0))
+        control.listen(1)
+        control.settimeout(0.25)
+    except Exception:
+        control.close()
+        cleanup_owned(lock_dir, pid, token)
+        raise
     started = datetime.now(timezone.utc)
     expires = started + timedelta(seconds=args.lease_seconds)
     owner = {
         "pid": pid,
         "token": token,
+        "control_host": "127.0.0.1",
+        "control_port": control.getsockname()[1],
         "started_at": utc_text(started),
         "expires_at": utc_text(expires),
         "lease_seconds": args.lease_seconds,
@@ -109,6 +134,7 @@ def hold(args: argparse.Namespace) -> int:
     try:
         write_json_atomic(lock_dir / "owner.json", owner)
     except Exception:
+        control.close()
         cleanup_owned(lock_dir, pid, token)
         raise
 
@@ -142,8 +168,21 @@ def hold(args: argparse.Namespace) -> int:
             if remaining <= 0:
                 expired = True
                 break
-            time.sleep(min(0.25, remaining))
+            control.settimeout(min(0.25, remaining))
+            try:
+                connection, _address = control.accept()
+            except socket.timeout:
+                continue
+            with connection:
+                connection.settimeout(1.0)
+                supplied = connection.recv(512).strip().decode("utf-8", errors="replace")
+                if hmac.compare_digest(supplied, token):
+                    connection.sendall(b"OK\n")
+                    stopped = True
+                else:
+                    connection.sendall(b"DENIED\n")
     finally:
+        control.close()
         cleanup_ok = cleanup_owned(lock_dir, pid, token)
 
     if not cleanup_ok:
@@ -180,7 +219,30 @@ def release(args: argparse.Namespace) -> int:
         print("owner process is not signalable", file=sys.stderr)
         return OWNER_MISMATCH
 
-    os.kill(args.pid, signal.SIGTERM)
+    host = owner.get("control_host")
+    port = owner.get("control_port")
+    if host != "127.0.0.1" or not isinstance(port, int) or not (1 <= port <= 65_535):
+        if lease_is_expired(owner) and cleanup_owned(lock_dir, args.pid, args.token):
+            print(json.dumps({"status": "reclaimed_expired_owner", "pid": args.pid}, sort_keys=True))
+            return 0
+        print("live PID lacks a verified lock control channel; refusing to signal it", file=sys.stderr)
+        return OWNER_MISMATCH
+
+    try:
+        with socket.create_connection((host, port), timeout=min(args.wait_seconds, 2.0)) as connection:
+            connection.settimeout(min(args.wait_seconds, 2.0))
+            connection.sendall(args.token.encode("utf-8") + b"\n")
+            response = connection.recv(64).strip()
+    except OSError as exc:
+        if lease_is_expired(owner) and cleanup_owned(lock_dir, args.pid, args.token):
+            print(json.dumps({"status": "reclaimed_expired_owner", "pid": args.pid}, sort_keys=True))
+            return 0
+        print(f"verified lock control channel unavailable; refusing process signal: {exc}", file=sys.stderr)
+        return OWNER_MISMATCH
+    if response != b"OK":
+        print("lock control channel rejected the token", file=sys.stderr)
+        return OWNER_MISMATCH
+
     deadline = time.monotonic() + args.wait_seconds
     while time.monotonic() < deadline:
         if not lock_dir.exists():

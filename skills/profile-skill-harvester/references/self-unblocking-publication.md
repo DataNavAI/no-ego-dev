@@ -30,22 +30,26 @@ Persist the exact state outside the repository after every transition. Use these
 4. `write_evidence_commit`
    - When `manual-test-gate` requires a separate evidence-only child, exercise the exact approved code commit, write `.github/manual-test-result.json` with `candidate_sha` equal to that code commit, verify it with the repository script, and commit only that evidence file.
    - Never ask a user to create routine evidence that the autonomous harvest can generate from its own completed checks.
-5. `guarded_merge`
+5. `review_final_tree`
+   - Obtain independent approval bound to the complete final PR head after the evidence-only child exists. Code-only approval does not approve later evidence bytes, even when the evidence names the approved code parent.
+   - Verify the final review receipt names the exact evidence-child SHA, its parent is the exercised code candidate, and the evidence file is the only child change. Any later byte or parentage change invalidates this approval.
+6. `guarded_merge`
    - Push without overwriting concurrent remote work, wait for required checks, and merge directly with `gh pr merge ... --match-head-commit <verified-pr-head>`.
+   - The guarded SHA must equal the independently approved complete final-tree SHA, not the earlier code-only candidate.
    - Do not arm unguarded auto-merge from an external review verdict.
-6. `post_merge_ci`
+7. `post_merge_ci`
    - Fetch the remote default branch, prove the merge commit is reachable, discover workflows applicable to that exact SHA, and wait for their terminal results.
    - A broken exact default-branch run starts bounded remediation; it is not a successful publication report.
-7. `rollout`
+8. `rollout`
    - Export packages from the verified merge commit, not a mutable checkout. Follow the transactional sibling-rollout contract and verify each target independently.
-8. `release_lock`
+9. `release_lock`
    - Release the exact PID/token-owned lock and prove both keeper exit and lock absence on every terminal path: success, no-change, blocked package, failed check, timeout reserve, exception, cancellation, or external-action boundary.
 
 ## Failed-check decision table
 
 | Classification | Autonomous action |
 |---|---|
-| Expected evidence gate | Complete exact-candidate tests/review, create the evidence-only child, push, and continue CI. |
+| Expected evidence gate | Complete exact-code tests/review, create and verify the evidence-only child, obtain fresh independent approval of the complete final PR head, push/wait checks, and continue only with that reviewed head. |
 | Candidate defect | Fix or narrow with TDD, revalidate, invalidate stale approvals, obtain fresh exact-SHA approval, then continue. |
 | External transient before candidate code ran | Rerun only the failed job once as a bounded retry; require the same SHA to pass. |
 | Default branch advanced | Rebase/integrate without discarding either side, regenerate stale evidence, revalidate, and re-review the new SHA. |
@@ -82,7 +86,8 @@ python3 scripts/lease_lock.py release \
 - The active run may heartbeat the lease only while it still owns productive work.
 - The keeper must self-terminate and token-safely remove its own lock when the lease TTL expires.
 - Normal completion must explicitly enter `release_lock`; TTL is crash containment, not normal cleanup.
-- A fresh run may reclaim an expired keeper only after matching PID/token/command and proving no productive child, review, publication, or rollout remains.
+- A live keeper accepts release only through its token-authenticated loopback control channel. Never send a process signal based only on a PID from owner metadata; PID reuse could terminate unrelated work.
+- A fresh run may reclaim a dead or expired owner's lock after matching PID/token metadata and proving no productive child, review, publication, or rollout remains. Reclaim the lock only; do not signal an unverified live PID.
 - Never delete the lock directory while a live owner remains.
 
 ## Budget discipline

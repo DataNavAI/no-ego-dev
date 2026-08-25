@@ -28,7 +28,8 @@ expectations:
   - "Advances external inventory state only after merge or an explicit stable disposition."
   - "Uses resume-before-inventory: reconciles the existing PR, local-ahead worktree, review receipt, and exact failed-job log before discovering new work."
   - "Classifies the manual-test-gate as an expected evidence boundary, exercises the exact approved code candidate, creates a separate evidence-only child, and invalidates stale approval if candidate bytes change."
-  - "For this non-mutating simulation, emits exact production command shapes and evidence gates for push/check wait, exact-head guarded merge, applicable exact default-branch CI, and authorized transactional rollout without fabricating success."
+  - "Requires fresh independent review of the complete final evidence-child tree, explicitly rejects code-only approval as approval of later evidence bytes, and binds the merge guard to that reviewed final PR head."
+  - "For this non-mutating simulation, emits exact production command shapes and evidence gates for push/check wait, exact-head guarded merge of the independently reviewed final tree, applicable exact default-branch CI, and authorized transactional rollout without fabricating success."
   - "Uses bounded retry only for a proven external transient and does not loop, repeatedly rerun, or ask the user to perform routine evidence/CI repair within the harvester's authority."
   - "Releases the exact PID/token-owned lock on every terminal path and requires a finite lease TTL as crash containment rather than leaving an immortal keeper."
 setupCommands: []
