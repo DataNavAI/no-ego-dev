@@ -234,6 +234,8 @@ For every selected skill:
 7. Update `evaldata/` with lifecycle/use-case scenarios, especially where conflicts were scoped.
 8. Include support files referenced by the resulting `SKILL.md`.
 9. Ensure related-skill references resolve or are clearly optional.
+
+When a behavioral eval covers lock, auth, or ownership-sensitive behavior, keep exact private mechanics in deterministic tests and use redaction-safe state labels for orchestration semantics. Do not make model output reproduce secret-shaped helper arguments that the eval runner will scrub before persistence or judging. Follow [`references/redaction-safe-behavioral-evals.md`](references/redaction-safe-behavioral-evals.md).
 10. Do not import profile-local absolute paths, account identities, tokens, session IDs, issue IDs, or transient operational state.
 
 If a live package has no eval, do not automatically reject useful guidance. Import the guidance only after creating an eval and fixture in the canonical package.

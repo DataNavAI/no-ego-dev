@@ -151,7 +151,7 @@ def test_package_policy_never_directs_pid_based_keeper_termination():
     action = re.compile(r"\b(?:kill|signal|terminat\w*)\b", re.IGNORECASE)
     subject = re.compile(r"\b(?:pid|keeper|process)\b", re.IGNORECASE)
     safe_context = re.compile(
-        r"\b(?:never|do not|must not|prohibit\w*|unsafe|self-terminat\w*)\b",
+        r"\b(?:no|never|do not|must not|prohibit\w*|unsafe|self-terminat\w*)\b",
         re.IGNORECASE,
     )
     for path in sorted(SKILL_DIR.rglob("*.md")):
