@@ -323,6 +323,36 @@ def test_stale_initialization_reclamation_is_bounded_and_fail_closed(tmp_path):
     assert symlink_owner.is_symlink()
 
 
+def test_stale_malformed_claim_discards_itself_when_canonical_owner_is_replaced(tmp_path, monkeypatch):
+    module = _lease_module()
+    lock_dir = tmp_path / "stale-race.lock"
+    lock_dir.mkdir()
+    owner_path = lock_dir / "owner.json"
+    owner_path.write_text("not-json", encoding="utf-8")
+    old = time.time() - module.MAX_LEASE_SECONDS - 120
+    os.utime(owner_path, (old, old))
+    os.utime(lock_dir, (old, old))
+    replacement = {"pid": 999, "token": "replacement"}
+    original_read = module._read_owner_file
+
+    def replace_after_validation(path):
+        try:
+            return original_read(path)
+        finally:
+            owner_path.write_text(json.dumps(replacement), encoding="utf-8")
+
+    monkeypatch.setattr(module, "_read_owner_file", replace_after_validation)
+
+    assert not module.reclaim_stale_initialization(lock_dir)
+    assert json.loads(owner_path.read_text(encoding="utf-8")) == replacement
+    assert sorted(path.name for path in lock_dir.iterdir()) == ["owner.json"]
+    assert not list(tmp_path.glob(".lease-owner-backup-*"))
+
+    monkeypatch.setattr(module, "_read_owner_file", original_read)
+    assert module.cleanup_owned(lock_dir, 999, "replacement")
+    assert not lock_dir.exists()
+
+
 def _unsafe_policy_sentence(sentence: str) -> bool:
     action = re.compile(
         r"\b(?:kill(?:s|ed|ing)?|signal(?:s|ed|ing)?|terminat\w*|stop(?!-)(?:s|ped|ping)?|send\s+(?:a\s+)?sig(?:term|kill)|shut(?:s|ting)?\s+down)\b",

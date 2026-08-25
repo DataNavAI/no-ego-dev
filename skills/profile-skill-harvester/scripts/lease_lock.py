@@ -97,6 +97,26 @@ def _restore_claim(source: Path, destination: Path, claim_dir: Path) -> bool:
     return True
 
 
+def _restore_or_discard_stale_claim(source: Path, destination: Path, claim_dir: Path) -> bool:
+    if not _entry_exists(destination):
+        return _restore_claim(source, destination, claim_dir)
+    backup_path = claim_dir.parent.parent / f".lease-owner-backup-{os.getpid()}-{secrets.token_hex(16)}"
+    try:
+        os.link(source, backup_path, follow_symlinks=False)
+        source.unlink()
+        claim_dir.rmdir()
+    except OSError:
+        if not _entry_exists(destination) and _entry_exists(backup_path):
+            if not _restore_no_overwrite(backup_path, destination):
+                return False
+        backup_path.unlink(missing_ok=True)
+        return False
+    if not _entry_exists(destination) and not _restore_no_overwrite(backup_path, destination):
+        return False
+    backup_path.unlink(missing_ok=True)
+    return True
+
+
 def cleanup_owned(lock_dir: Path, pid: int, token: str) -> bool:
     owner_path = lock_dir / "owner.json"
     claim_dir = lock_dir / f".cleanup-{pid}-{secrets.token_hex(16)}"
@@ -223,14 +243,14 @@ def reclaim_stale_initialization(lock_dir: Path) -> bool:
     except OSError:
         claim_is_only_entry = False
     if not claim_is_only_entry:
-        _restore_claim(claim_path, owner_path, claim_dir)
+        _restore_or_discard_stale_claim(claim_path, owner_path, claim_dir)
         return False
 
     backup_path = lock_dir.parent / f".lease-owner-backup-{os.getpid()}-{secrets.token_hex(16)}"
     try:
         os.link(claim_path, backup_path, follow_symlinks=False)
     except OSError:
-        _restore_claim(claim_path, owner_path, claim_dir)
+        _restore_or_discard_stale_claim(claim_path, owner_path, claim_dir)
         return False
     try:
         claim_path.unlink()
