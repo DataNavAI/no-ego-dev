@@ -1,14 +1,14 @@
 # Critical User Journey and Acceptance Contract: Daytona CLI V1
 
-Contract version: 5.0
+Contract version: 6.0
 Status: Telegram lifecycle and independent review pending
-Last updated: 2026-08-07
+Last updated: 2026-08-25
 
 ## CUJ-1: Checksum-verifiable one-line bootstrap
 
 Given supported clean macOS or Ubuntu 24.04 x64/arm64 with bash, curl, tar, and a SHA-256 utility,
 when the user runs the documented one-line command,
-then it verifies the displayed exact digest before execution, installs private pinned runtime/source without sudo, system Node/npm, or Git, and invokes `ned create`.
+then it verifies the displayed exact digest before execution and installs private pinned runtime/source without sudo, system Node/npm, or Git. The user runs `ned create` after installation to provision the workspace.
 
 Rerun revalidates the active generation, repairs exactly one PATH block, and does not repeat successful create. Interrupted or failed upgrades leave the previous generation active.
 
@@ -16,9 +16,9 @@ Rerun revalidates the active generation, repairs exactly one PATH block, and doe
 
 Given valid Daytona authorization,
 when `ned create` starts,
-then NED reuses a compatible `openai-codex` OAuth credential only from a safe explicit Hermes auth store. Otherwise it opens only `https://auth.openai.com/codex/device`, displays the short device code, and polls the verified Hermes/OpenAI device contract with a bounded timeout.
+then NED uses ChatGPT OAuth as the default model authorization: it reuses a compatible `openai-codex` OAuth credential only from a safe explicit Hermes auth store. Otherwise it opens only `https://auth.openai.com/codex/device`, displays the short device code, and polls the verified Hermes/OpenAI device contract with a bounded timeout.
 
-There is no default model chooser, OpenRouter requirement, callback server, credential-bearing browser URL, or remote refresh token. Revoked/failed refresh stops before compute mutation.
+There is no default model chooser; OpenRouter is not required. There is also no callback server, credential-bearing browser URL, or remote refresh token. Revoked/failed refresh stops before compute mutation.
 
 ## CUJ-3: Create and verify a disposable Telegram bot
 
@@ -34,7 +34,7 @@ On macOS, a user-owned token may instead be read from Keychain service `no-ego-d
 
 Given valid Daytona, ChatGPT, and verified Telegram authorization,
 when `ned create` runs,
-then NED proves zero managed resources, creates one installation-owned model Daytona Secret scoped to `chatgpt.com`, retains the validated Telegram token only in controller memory, and creates one private persistent Sandbox.
+then NED proves zero managed resources, creates one installation-owned model Daytona Secret scoped to `chatgpt.com`, retains the validated Telegram token only in controller memory, and creates one private persistent always-on Sandbox (`auto-stop=0`).
 
 NED installs checksum-pinned Hermes plus the NED profile, configures `openai-codex`/`gpt-5.6-sol`, starts pinned Hermes Telegram long polling with `gateway run --replace` and injects the token only through the Daytona SDK environment map, and requires runtime status `gateway_state=running` plus `platforms.telegram.state=connected`. It introduces no webhook/public ingress. Only the Sandbox/model Secret identity and safe bot metadata are persisted in owner-only local state.
 
@@ -73,6 +73,6 @@ A second destroy is idempotent. Final evidence directly proves zero NED-managed 
 5. Immutable real lifecycle, only after the user supplies a disposable BotFather token through the exact Keychain item: direct zero baseline; create; gateway health; pair; Telegram response marker A; direct stop/restart; response marker B; destroy in `finally`; direct zero-resource/local-state readback.
 6. Exact SHA, runtime/wrapper/source/archive digests, CI, commands/results, redacted leak scans, and cleanup readback in the draft PR and linked issues.
 
-## Parked
+## V2 and non-goals
 
-Browser onboarding and AWS remain future scope. They cannot substitute for the Daytona CLI and Telegram lifecycle evidence.
+V2, not V1, may add browser-hosted AWS onboarding. It cannot substitute for the Daytona CLI and Telegram lifecycle evidence. V1 has no browser onboarding, AWS provisioning, dashboard, custom domain, multi-cloud, default provider chooser, webhook, or generic remote-command endpoint.

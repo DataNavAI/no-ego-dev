@@ -14,7 +14,7 @@ Model access defaults to ChatGPT OAuth through Hermes provider `openai-codex`. N
 
 Telegram is the V1 user surface. NED explains that the user must perform BotFather legal/ownership actions, opens or links <https://t.me/BotFather>, and prints numbered instructions to send `/newbot`, choose a display name, choose a unique username ending in `bot`, and copy the issued token. It then prompts exactly `Paste the Telegram bot token (input hidden):` without echo. On macOS it first checks Keychain service `no-ego-dev/telegram`, account `TELEGRAM_BOT_TOKEN`.
 
-NED never accepts the Telegram token from argv, environment variables, shell history, chat, logs, analytics, screenshots, source, fixtures, or product-controlled URLs/query strings. It validates the bot through in-process Telegram `getMe`, stores only the verified username as safe metadata, and injects the token only at runtime through the Daytona SDK environment channel. Pinned Hermes uses long polling, not a NED webhook. After gateway health succeeds, open the verified bot URL, tap **Start**, send `hello`, and approve any returned owner code with `ned pair <code>`.
+NED never accepts the Telegram token from argv, environment variables, shell history, chat, logs, analytics, screenshots, source, fixtures, or product-controlled URLs/query strings. It validates the bot through in-process Telegram `getMe`, stores only the verified username as safe metadata, and injects the token only at runtime through the Daytona SDK environment channel. It creates no Telegram Daytona Secret. Pinned Hermes uses long polling, not a NED webhook. The Sandbox is always-on by default (`auto-stop=0`); provider outages and quotas are not an uptime SLA. After gateway health succeeds, open the verified bot URL, tap **Start**, send `hello`, and approve any returned owner code with `ned pair <code>`.
 
 Public guides:
 
@@ -54,3 +54,7 @@ node --test tests/ned-create/installer.test.js
 ```
 
 Live hosted lifecycle verification remains gated on separately authorized Daytona credentials and is not part of the deterministic installer suite.
+
+## V1 boundary
+
+V1 is the Daytona-only CLI journey: install with the exact one-line command above, then run `ned create`, reach the value moment when the verified Telegram bot replies to `hello`, and use `ned doctor`, `ned repair`, or `ned destroy --yes` for its lifecycle. Hosted browser onboarding and AWS provisioning are V2, not V1.

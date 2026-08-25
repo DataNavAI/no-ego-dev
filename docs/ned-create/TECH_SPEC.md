@@ -1,8 +1,8 @@
 # Technical Specification: Daytona NED CLI V1
 
-Contract version: 5.0
+Contract version: 6.0
 Status: candidate implementation pending exact lifecycle verification
-Last updated: 2026-08-07
+Last updated: 2026-08-25
 
 ## Verified upstream contracts
 
@@ -46,7 +46,7 @@ The local official Hermes-compatible auth store is the sole model refresh/revoca
 - Automatic target; private, persistent, non-ephemeral; auto-stop disabled (`0`) so the messaging gateway remains available; auto-archive 10,080 minutes; auto-delete disabled.
 - Labels: `app=ned`, `managedBy=ned-cli`; lifecycle adds a unique non-secret candidate label through its controlled harness.
 - Hermes commit: `3ef6bbd201263d354fd83ec55b3c306ded2eb72a`; installer bytes must match the pinned SHA-256 before execution.
-- Hermes provider/model: `openai-codex` / `gpt-5.6-sol`.
+- Hermes provider/model: ChatGPT OAuth by default through `openai-codex` / `gpt-5.6-sol`.
 - Telegram transport: pinned Hermes polling adapter; no NED webhook or public ingress.
 
 ## CLI contract
@@ -58,7 +58,7 @@ The local official Hermes-compatible auth store is the sole model refresh/revoca
 - `ned pair <8-character-code>`: validates the pinned Hermes pairing alphabet and approves the exact Telegram sender in the saved profile.
 - `ned destroy --yes`: deletes the exact Sandbox and model Secret; directly proves both absent; then clears local state. No OAuth is required to destroy.
 
-No generic command, arbitrary host, arbitrary environment-variable name, default model chooser, OpenRouter dependency, or default API-key prompt exists.
+No generic command, arbitrary host, arbitrary environment-variable name, default model chooser, or default API-key prompt exists. OpenRouter is not required.
 
 ## Local OAuth implementation
 
@@ -95,7 +95,7 @@ Explicit advanced flags may later bind Claude Max (`anthropic` OAuth), Nous Port
 
 ## Parked architecture
 
-Hosted browser onboarding, AWS provisioning/deployment, dashboards, domains, multi-cloud compute, and a default provider chooser remain future scope. Existing browser/AWS code is not a V1 deployment or acceptance surface.
+V2, not V1, may add hosted browser onboarding and AWS provisioning/deployment. Dashboards, domains, multi-cloud compute, and a default provider chooser remain future scope. Existing browser/AWS code is not a V1 deployment or acceptance surface.
 
 ## Installer invariants
 

@@ -1,15 +1,15 @@
-# Browser-first `ned create` implementation plan — PARKED
+# V2 browser-hosted AWS onboarding implementation plan — PARKED
 
-Status: FUTURE SCOPE AFTER DAYTONA CLI V1
+Status: V2 FUTURE SCOPE AFTER DAYTONA-ONLY CLI V1
 
-Do not deploy, extend, or treat this plan as the primary CUJ. AWS PR #28 was closed without deployment. The authoritative v1 contracts are PRD/CUJ/TECH_SPEC v3.0 for the one-command Daytona CLI.
+Do not deploy, extend, or treat this plan as the primary CUJ. AWS PR #28 was closed without deployment. This is V2, not V1. The authoritative V1 contracts are PRD/CUJ/TECH_SPEC v6.0 for the Daytona-only CLI.
 PR mode: MERGEABLE
 Issues: [#22](https://github.com/DataNavAI/no-ego-dev/issues/22), [#23](https://github.com/DataNavAI/no-ego-dev/issues/23)
 Design input only: review-only PR [#25](https://github.com/DataNavAI/no-ego-dev/pull/25); never merge it.
 
 ## TL;DR
 
-The smallest dependency-safe vertical slice is a provider-neutral model connection contract shared by the existing provisioning core and a browser-facing API. It keeps Daytona compute authorization separate, supports OpenAI, Anthropic, Gemini, and OpenRouter, preserves the existing OpenRouter PKCE CLI path, and does not create paid resources without model authorization. A deployable browser service follows on the same branch, but production promotion remains blocked on identity, hosting/region, managed-compute authority, model authorization, and exact-SHA independent approval.
+This V2 exploration is not an implementation plan for V1. It considers a browser-facing API and hosted AWS lifecycle only after V1; no V2 provider decision changes V1's ChatGPT OAuth default, optional advanced providers, or no-OpenRouter requirement.
 
 ## Product contract
 
