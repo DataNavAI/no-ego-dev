@@ -40,8 +40,8 @@ test('clean local HTTP validation serves every stable V1 page and all internal l
       const body = await response.text();
       assert.match(body, /<h1>/);
       if (route === '/docs/v1/quickstart/') {
-        assert.match(body, /sha256sum -c/);
-        assert.match(body, /shasum -a 256 -c/);
+        assert.match(body, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
+        assert.match(body, /<pre><code>ned create<\/code><\/pre>/);
       }
       if (route === '/docs/v1/telegram/') {
         assert.match(body, /Telegram requires you to create a bot through its official @BotFather/);
@@ -54,6 +54,26 @@ test('clean local HTTP validation serves every stable V1 page and all internal l
       const response = await fetch(`${context.baseUrl}${link}`);
       assert.equal(response.status, 200, link);
     }
+  } finally {
+    await context.close();
+  }
+});
+
+test('served V1 quickstart separates installation from Daytona provisioning', async () => {
+  const context = await startDocsServer();
+  try {
+    const response = await fetch(`${context.baseUrl}/docs/v1/quickstart/`);
+    assert.equal(response.status, 200);
+    const body = await response.text();
+
+    assert.match(body, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
+    assert.match(body, /does not provision a workspace; after installation, run <code>ned create<\/code>/);
+    assert.match(body, /<h2>2\. Create your Daytona Sandbox<\/h2>/);
+    assert.match(body, /<pre><code>ned create<\/code><\/pre>/);
+    assert.match(body, /Daytona-only CLI/);
+    assert.match(body, /always-on by default \(<code>auto-stop=0<\/code>\)/);
+    assert.doesNotMatch(body, /One local command creates a private persistent Daytona Sandbox/);
+    assert.doesNotMatch(body, /b850f8cdf167b5f6f9ce7c79d0a2415ac9fe182c/);
   } finally {
     await context.close();
   }

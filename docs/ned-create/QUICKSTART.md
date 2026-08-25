@@ -4,7 +4,7 @@ Canonical public page: https://ned.datanav.app/docs/v1/quickstart/
 
 ## Outcome
 
-The installer creates one private, persistent Daytona Sandbox; connects ChatGPT with Hermes-native OAuth; validates a new Telegram bot; starts the pinned Hermes Telegram gateway; and verifies both inference and gateway readiness.
+The installer prepares the Daytona-only CLI. `ned create` then creates one private, persistent Daytona Sandbox; connects ChatGPT with Hermes-native OAuth; validates a new Telegram bot; starts the pinned Hermes Telegram gateway; and verifies both inference and gateway readiness. The Sandbox is always-on by default (`auto-stop=0`). OpenRouter is not required or prompted.
 
 ## Journey
 
@@ -14,6 +14,8 @@ The installer creates one private, persistent Daytona Sandbox; connects ChatGPT 
 4. Enter the Telegram token only at `Paste the Telegram bot token (input hidden): `.
 5. Open the verified bot link, tap **Start**, and send `hello`.
 6. If Hermes returns an owner-pairing code, run `ned pair <code>` and send `hello` again.
+
+The value moment is the first response from the verified Telegram bot. The Telegram token is injected only at runtime through the Daytona SDK environment channel; it is not saved as a Daytona Secret. V1 has no browser onboarding or AWS provisioning: those are V2 scope.
 
 ## Recovery
 

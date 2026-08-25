@@ -243,11 +243,11 @@ test('versioned governing contracts make the Daytona CLI lifecycle authoritative
   const paths = ['PRD.md', 'TECH_SPEC.md', 'CUJ.md'];
   const documents = await Promise.all(paths.map((name) => readFile(new URL(`../../docs/ned-create/${name}`, import.meta.url), 'utf8')));
   for (const [index, document] of documents.entries()) {
-    assert.match(document, /Contract version: 5\.0/, paths[index]);
+    assert.match(document, /Contract version: 6\.0/, paths[index]);
     assert.match(document, /Daytona/i, paths[index]);
     assert.match(document, /CLI/i, paths[index]);
     assert.match(document, /browser/i, paths[index]);
-    assert.match(document, /parked|future scope/i, paths[index]);
+    assert.match(document, /V2, not V1/i, paths[index]);
     assert.match(document, /AWS/i, paths[index]);
   }
   const combined = documents.join('\n');

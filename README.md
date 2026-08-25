@@ -6,7 +6,7 @@ NoEgoDev — NED for short — is a Hermes profile that turns a plain request in
 
 NED is best for people who want to test an idea quickly with something real enough to share with users, teammates, or customers.
 
-## Create a private hosted NED
+## Create a private hosted NED — V1 Daytona-only CLI
 
 On clean supported macOS/Linux x64 or arm64, install and start setup with one command:
 

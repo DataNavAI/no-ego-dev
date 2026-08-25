@@ -9,7 +9,7 @@ Hermes can load platform plugins from a profile, but a plugin is only useful whe
 - Kakao Talk Message is an outbound, user-initiated feature for users/friends within the same service. It is not an arbitrary bot inbox.
 - Kakao Talk Channel webhooks notify a service when a user adds or blocks a channel; they do not deliver 1:1 conversation messages.
 - Wider messaging requires a Biz App/Business Channel, matching business identity, permissions/review, approved templates or commercial products, and a public HTTPS service.
-- An on-demand Daytona container with auto-stop cannot reliably receive webhooks. A shared always-on gateway must receive, authenticate, queue, and wake the user workspace.
+- V1 uses an always-on Daytona Sandbox (`auto-stop=0`) with Telegram long polling. Kakao nevertheless needs separate public shared gateway infrastructure for supported webhook delivery.
 - Personal-account automation, desktop scraping, or reverse-engineered protocols would be brittle and unsafe and will not be used.
 
 ## Product-compatible future architecture
