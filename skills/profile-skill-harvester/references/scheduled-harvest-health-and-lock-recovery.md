@@ -26,7 +26,7 @@ A repeated `BUSY`, an immediate `[SILENT]` after only lock preflight, or unchang
 
 ## Distinguish contention from an orphan
 
-A live PID is necessary but not sufficient proof that a lock still owns useful work. Never kill it merely because it is old. Before terminating a live lock keeper, prove all of the following:
+A live PID is necessary but not sufficient proof that a lock still owns useful work. Never kill it merely because it is old. Before requesting release of a live lock keeper through the packaged helper, prove all of the following:
 
 - the exact PID and token match the lock owner record;
 - the process command is the dedicated lock keeper, not a worker or unrelated process;
@@ -37,7 +37,7 @@ A live PID is necessary but not sufficient proof that a lock still owns useful w
 
 If proof is incomplete, report the lock as blocked and do not mutate it.
 
-When orphanhood is proven, send a graceful termination to the exact PID, let its token-aware cleanup remove the lock, and verify both process exit and lock absence. Do not delete the lock directory first while its owner remains alive.
+When orphanhood is proven, reread the current owner record and invoke `scripts/lease_lock.py release` with its exact PID/token. A live keeper may exit only after the token-authenticated loopback handshake succeeds. Never send a direct process signal based on owner metadata. For a dead or expired owner, reclaim only the matching lock without signaling any live PID. Verify keeper disposition and lock absence; do not delete the lock directory first while its owner remains alive.
 
 ## Recovery verification
 

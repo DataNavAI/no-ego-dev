@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -143,6 +144,24 @@ def test_lease_lock_self_expires(tmp_path):
     assert completed.returncode == 124
     assert json.loads(completed.stdout.splitlines()[0])["status"] == "acquired"
     assert not lock_dir.exists()
+
+
+def test_package_policy_never_directs_pid_based_keeper_termination():
+    unsafe = []
+    action = re.compile(r"\b(?:kill|signal|terminat\w*)\b", re.IGNORECASE)
+    subject = re.compile(r"\b(?:pid|keeper|process)\b", re.IGNORECASE)
+    safe_context = re.compile(
+        r"\b(?:never|do not|must not|prohibit\w*|unsafe|self-terminat\w*)\b",
+        re.IGNORECASE,
+    )
+    for path in sorted(SKILL_DIR.rglob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            for sentence in re.split(r"(?<=[.!?])\s+", line):
+                if action.search(sentence) and subject.search(sentence) and not safe_context.search(sentence):
+                    unsafe.append(f"{path.relative_to(SKILL_DIR)}:{line_number}: {sentence}")
+
+    assert unsafe == [], "Direct PID/keeper termination guidance:\n" + "\n".join(unsafe)
 
 
 def test_lease_lock_never_signals_an_unverified_live_pid(tmp_path):
