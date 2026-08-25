@@ -1,17 +1,14 @@
 {
-  "candidate_sha": "fc0ba9da70ea78f60d09cea240fd451550eba9e1",
+  "candidate_sha": "3d2a0611aae56039abc1208daa33d703baa10cce",
+  "tested_at": "2026-08-25T17:07:26.824816Z",
+  "environment": "Independent macOS host acceptance run: isolated owner-only HOME/TMPDIR; existing owner-only QA credential boundary; real Daytona provider and disposable Telegram QA bot.",
   "result": "pass",
-  "tested_at": "2026-08-25T03:00:34Z",
-  "environment": "macOS isolated git worktree; Python 3.12 via ephemeral uv environment with pytest and PyYAML; Node.js 22 CI-compatible project toolchain; isolated Hermes behavioral eval output under /Users/moonk/.hermes/tmp; no credentials or runtime state recorded",
   "commands": [
-    "PYTHONPATH=\"$PWD\" uv run --with pytest --with pyyaml pytest tests/test_profile_skill_harvester.py -q",
-    "PYTHONPATH=\"$PWD\" uv run --with pytest --with pyyaml pytest -q",
-    "npm test",
-    "npm run check",
-    "npm run pack:check",
-    "gitleaks git --log-opts '0c243771a390e9082af8d51ac75737b1ed62e4be..fc0ba9da70ea78f60d09cea240fd451550eba9e1' --redact --no-banner",
-    "python3.11 -m py_compile skills/profile-skill-harvester/scripts/lease_lock.py",
-    "python3.11 -m eval_runner.cli skills/profile-skill-harvester/EVAL.yaml --output-root /Users/moonk/.hermes/tmp/harvester-self-unblock-eval-r22 --report /Users/moonk/.hermes/tmp/harvester-self-unblock-eval-r22-report --markdown --hermes-command '<working Hermes Python 3.11 launcher> -t skills'"
+    "bash scripts/install.sh",
+    "ned create --verbose",
+    "ned doctor",
+    "ned repair",
+    "ned destroy --yes"
   ],
-  "observations": "Exact code candidate fc0ba9da70ea78f60d09cea240fd451550eba9e1 passed 20 focused lease/policy tests, 257 full Python tests with 3 skips, 151 Node tests, syntax/check/package validation, and gitleaks with no leaks. Behavioral profile-skill-harvester EVAL r22 passed. GitHub PR checks install-profile, macos-smoke, Node 20, Node 22, and windows-eval-runner passed. An independent complete BASE..CANDIDATE exact-SHA review returned APPROVED with no material blockers."
+  "observations": "The pinned candidate installed successfully. A real non-dry-run create passed Daytona authorization, reused the secure ChatGPT OAuth session, validated the disposable Telegram QA bot, provisioned and health-verified the workspace, then reported ready. Doctor and repair both succeeded. Destroy succeeded and local lifecycle state was absent after cleanup. Credential values, token filenames, and resource identifiers were not recorded."
 }
