@@ -71,6 +71,21 @@ def cleanup_owned(lock_dir: Path, pid: int, token: str) -> bool:
     return not lock_dir.exists()
 
 
+def cleanup_initializing(lock_dir: Path, pid: int, token: str) -> bool:
+    """Remove only state created by this failed acquisition attempt."""
+    if cleanup_owned(lock_dir, pid, token):
+        return True
+    try:
+        if any(lock_dir.iterdir()):
+            return False
+        lock_dir.rmdir()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        return False
+    return not lock_dir.exists()
+
+
 def lease_is_expired(owner: dict[str, Any]) -> bool:
     value = owner.get("expires_at")
     if not isinstance(value, str):
@@ -101,15 +116,17 @@ def hold(args: argparse.Namespace) -> int:
 
     pid = os.getpid()
     token = "lock_" + secrets.token_urlsafe(24)
-    control = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    control.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    control = None
     try:
+        control = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        control.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         control.bind(("127.0.0.1", 0))
         control.listen(1)
         control.settimeout(0.25)
     except Exception:
-        control.close()
-        cleanup_owned(lock_dir, pid, token)
+        if control is not None:
+            control.close()
+        cleanup_initializing(lock_dir, pid, token)
         raise
     started = datetime.now(timezone.utc)
     expires = started + timedelta(seconds=args.lease_seconds)
@@ -135,7 +152,7 @@ def hold(args: argparse.Namespace) -> int:
         write_json_atomic(lock_dir / "owner.json", owner)
     except Exception:
         control.close()
-        cleanup_owned(lock_dir, pid, token)
+        cleanup_initializing(lock_dir, pid, token)
         raise
 
     print(

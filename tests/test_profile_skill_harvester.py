@@ -4,7 +4,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 import yaml
 
 
@@ -21,6 +23,29 @@ def _module():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _lease_module():
+    spec = importlib.util.spec_from_file_location("profile_skill_lease_lock", LEASE_SCRIPT)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _lease_args(lock_dir: Path) -> SimpleNamespace:
+    return SimpleNamespace(
+        lock_dir=str(lock_dir),
+        lease_seconds=30,
+        session_id="pytest-init",
+        controller_profile=None,
+        provider=None,
+        model=None,
+        worktree=None,
+        branch=None,
+        pr=None,
+    )
 
 
 def _package(root: Path, name: str, body: str = "base") -> Path:
@@ -146,19 +171,99 @@ def test_lease_lock_self_expires(tmp_path):
     assert not lock_dir.exists()
 
 
-def test_package_policy_never_directs_pid_based_keeper_termination():
-    unsafe = []
-    action = re.compile(r"\b(?:kill|signal|terminat\w*)\b", re.IGNORECASE)
-    subject = re.compile(r"\b(?:pid|keeper|process)\b", re.IGNORECASE)
-    safe_context = re.compile(
-        r"\b(?:no|never|do not|must not|prohibit\w*|unsafe|self-terminat\w*)\b",
+def test_lease_lock_socket_creation_failure_removes_new_unowned_directory(tmp_path, monkeypatch):
+    module = _lease_module()
+    lock_dir = tmp_path / "socket-failure.lock"
+
+    def fail_socket(*_args):
+        raise OSError("forced socket creation failure")
+
+    monkeypatch.setattr(module.socket, "socket", fail_socket)
+    with pytest.raises(OSError, match="forced socket creation failure"):
+        module.hold(_lease_args(lock_dir))
+    assert not lock_dir.exists()
+
+
+def test_lease_lock_bind_failure_removes_new_unowned_directory(tmp_path, monkeypatch):
+    module = _lease_module()
+    lock_dir = tmp_path / "bind-failure.lock"
+
+    class FailingSocket:
+        def setsockopt(self, *_args):
+            return None
+
+        def bind(self, *_args):
+            raise OSError("forced bind failure")
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(module.socket, "socket", lambda *_args: FailingSocket())
+    with pytest.raises(OSError, match="forced bind failure"):
+        module.hold(_lease_args(lock_dir))
+    assert not lock_dir.exists()
+
+
+def test_lease_lock_owner_write_failure_removes_new_unowned_directory(tmp_path, monkeypatch):
+    module = _lease_module()
+    lock_dir = tmp_path / "write-failure.lock"
+
+    def fail_write(*_args, **_kwargs):
+        raise OSError("forced owner write failure")
+
+    monkeypatch.setattr(module, "write_json_atomic", fail_write)
+    with pytest.raises(OSError, match="forced owner write failure"):
+        module.hold(_lease_args(lock_dir))
+    assert not lock_dir.exists()
+
+
+def _unsafe_policy_sentence(sentence: str) -> bool:
+    action = re.compile(
+        r"\b(?:kill|signal\w*|terminat\w*|stop(?!-)|send\s+(?:a\s+)?sig(?:term|kill)|shut\s+down)\b",
         re.IGNORECASE,
     )
+    subject = re.compile(r"\b(?:pid|keeper|process|worker|owner\s+record)\b", re.IGNORECASE)
+    safe_before = re.compile(
+        r"\b(?:no|never|do(?:es)?\s+not|must\s+not|prohibit\w*|unsafe|without|rather\s+than|instead\s+of|may\s+be|pid\s+reuse\s+could)\b",
+        re.IGNORECASE,
+    )
+    for clause in re.split(r"[;,]", sentence):
+        if not subject.search(clause):
+            continue
+        for match in action.finditer(clause):
+            if clause[max(0, match.start() - 5) : match.start()].lower().endswith("self-"):
+                continue
+            prefix = clause[: match.start()]
+            if not safe_before.search(prefix):
+                return True
+    return False
+
+
+def test_policy_contradiction_classifier_rejects_adversarial_direct_signaling():
+    unsafe = (
+        "Stop the keeper using its recorded PID.",
+        "Send SIGTERM to the keeper PID.",
+        "Never log the token; terminate the keeper process directly.",
+        "Terminate the keeper process because leaving it is unsafe.",
+        "Kill the worker referenced by the owner record.",
+    )
+    safe = (
+        "Never signal a PID from owner metadata.",
+        "Do not send SIGTERM to the keeper PID.",
+        "The keeper may self-terminate after authenticated release.",
+        "No process is signaled from stale PID metadata.",
+    )
+    assert all(_unsafe_policy_sentence(sentence) for sentence in unsafe)
+    assert not any(_unsafe_policy_sentence(sentence) for sentence in safe)
+
+
+def test_package_policy_never_directs_pid_based_keeper_termination():
+    unsafe = []
     for path in sorted(SKILL_DIR.rglob("*.md")):
         text = path.read_text(encoding="utf-8")
         for line_number, line in enumerate(text.splitlines(), start=1):
             for sentence in re.split(r"(?<=[.!?])\s+", line):
-                if action.search(sentence) and subject.search(sentence) and not safe_context.search(sentence):
+                if _unsafe_policy_sentence(sentence):
                     unsafe.append(f"{path.relative_to(SKILL_DIR)}:{line_number}: {sentence}")
 
     assert unsafe == [], "Direct PID/keeper termination guidance:\n" + "\n".join(unsafe)
