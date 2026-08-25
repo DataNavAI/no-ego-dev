@@ -10,6 +10,7 @@ import os
 import secrets
 import signal
 import socket
+import stat
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -42,10 +43,19 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def read_owner(lock_dir: Path) -> dict[str, Any]:
-    owner_path = lock_dir / "owner.json"
+def _read_owner_file(owner_path: Path) -> dict[str, Any]:
     try:
-        payload = json.loads(owner_path.read_text(encoding="utf-8"))
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(owner_path, flags)
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                raise RuntimeError("lock owner must be a regular file")
+            with os.fdopen(fd, "r", encoding="utf-8") as handle:
+                fd = -1
+                payload = json.load(handle)
+        finally:
+            if fd >= 0:
+                os.close(fd)
     except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
         raise RuntimeError(f"cannot read lock owner: {exc}") from exc
     if not isinstance(payload, dict):
@@ -53,15 +63,41 @@ def read_owner(lock_dir: Path) -> dict[str, Any]:
     return payload
 
 
+def read_owner(lock_dir: Path) -> dict[str, Any]:
+    return _read_owner_file(lock_dir / "owner.json")
+
+
 def cleanup_owned(lock_dir: Path, pid: int, token: str) -> bool:
-    try:
-        owner = read_owner(lock_dir)
-    except RuntimeError:
-        return not lock_dir.exists()
-    if owner.get("pid") != pid or owner.get("token") != token:
-        return False
     owner_path = lock_dir / "owner.json"
-    owner_path.unlink(missing_ok=True)
+    claim_dir = lock_dir / f".cleanup-{pid}-{secrets.token_hex(16)}"
+    try:
+        claim_dir.mkdir(mode=0o700)
+    except (FileNotFoundError, FileExistsError, OSError):
+        return not lock_dir.exists()
+    claim_path = claim_dir / "owner.json"
+    try:
+        os.replace(owner_path, claim_path)
+    except OSError:
+        try:
+            claim_dir.rmdir()
+        except OSError:
+            pass
+        return not lock_dir.exists()
+
+    try:
+        owner = _read_owner_file(claim_path)
+    except RuntimeError:
+        owner = None
+    if not isinstance(owner, dict) or owner.get("pid") != pid or owner.get("token") != token:
+        try:
+            os.link(claim_path, owner_path, follow_symlinks=False)
+        except OSError:
+            return False
+        claim_path.unlink()
+        claim_dir.rmdir()
+        return False
+    claim_path.unlink()
+    claim_dir.rmdir()
     try:
         lock_dir.rmdir()
     except FileNotFoundError:

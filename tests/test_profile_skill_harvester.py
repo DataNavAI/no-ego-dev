@@ -217,6 +217,38 @@ def test_lease_lock_owner_write_failure_removes_new_unowned_directory(tmp_path, 
     assert not lock_dir.exists()
 
 
+def test_initialization_cleanup_preserves_owner_replaced_after_validation(tmp_path, monkeypatch):
+    module = _lease_module()
+    lock_dir = tmp_path / "owner-race.lock"
+    lock_dir.mkdir()
+    owner_path = lock_dir / "owner.json"
+    owner_path.write_text(json.dumps({"pid": 123, "token": "ours"}), encoding="utf-8")
+    original_read = module._read_owner_file
+
+    def replace_after_read(path):
+        owner = original_read(path)
+        owner_path.write_text(json.dumps({"pid": 999, "token": "unknown"}), encoding="utf-8")
+        return owner
+
+    monkeypatch.setattr(module, "_read_owner_file", replace_after_read)
+
+    assert not module.cleanup_initializing(lock_dir, 123, "ours")
+    assert json.loads(owner_path.read_text(encoding="utf-8")) == {"pid": 999, "token": "unknown"}
+
+
+def test_cleanup_owned_restores_unknown_owner_without_claim_artifacts(tmp_path):
+    module = _lease_module()
+    lock_dir = tmp_path / "unknown-owner.lock"
+    lock_dir.mkdir()
+    owner_path = lock_dir / "owner.json"
+    unknown = {"pid": 999, "token": "unknown"}
+    owner_path.write_text(json.dumps(unknown), encoding="utf-8")
+
+    assert not module.cleanup_owned(lock_dir, 123, "ours")
+    assert json.loads(owner_path.read_text(encoding="utf-8")) == unknown
+    assert sorted(path.name for path in lock_dir.iterdir()) == ["owner.json"]
+
+
 def _unsafe_policy_sentence(sentence: str) -> bool:
     action = re.compile(
         r"\b(?:kill|signal(?:s|ed|ing)?|terminat\w*|stop(?!-)|send\s+(?:a\s+)?sig(?:term|kill)|shut\s+down)\b",
@@ -224,13 +256,14 @@ def _unsafe_policy_sentence(sentence: str) -> bool:
     )
     subject = re.compile(r"\b(?:pid|keeper|process|worker|owner\s+record)\b", re.IGNORECASE)
     safe_before = re.compile(
-        r"\b(?:never|do(?:es)?\s+not|must\s+not|prohibit\w*|unsafe|without|rather\s+than|instead\s+of|may\s+be|pid\s+reuse\s+could)\b",
+        r"\b(?:never|do(?:es)?\s+not|must\s+not|prohibit\w*|unsafe|without|rather\s+than|instead\s+of|pid\s+reuse\s+could)\b",
         re.IGNORECASE,
     )
     no_subject_before = re.compile(
         r"\bno\s+(?:live\s+)?(?:pid|keeper|process|worker)\b(?:\s+\w+){0,4}\s*$",
         re.IGNORECASE,
     )
+
     for clause in re.split(r"[;,]", sentence):
         if not subject.search(clause):
             continue
@@ -256,6 +289,7 @@ def test_policy_contradiction_classifier_rejects_adversarial_direct_signaling():
         "Terminate the keeper process because leaving it is unsafe.",
         "Kill the worker referenced by the owner record.",
         "If no productive work remains terminate the keeper process with SIGTERM.",
+        "The keeper process may be terminated directly.",
     )
     safe = (
         "Never signal a PID from owner metadata.",
