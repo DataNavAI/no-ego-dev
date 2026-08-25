@@ -1,14 +1,14 @@
 {
-  "candidate_sha": "3d2a0611aae56039abc1208daa33d703baa10cce",
-  "tested_at": "2026-08-25T17:07:26.824816Z",
-  "environment": "Independent macOS host acceptance run: isolated owner-only HOME/TMPDIR; existing owner-only QA credential boundary; real Daytona provider and disposable Telegram QA bot.",
+  "candidate_sha": "de37393c33af489fe12bcc3eba4b1bbec0f83158",
+  "tested_at": "2026-08-25T20:19:14.013543Z",
+  "environment": "Owner-authorized macOS host acceptance: installed launcher, owner-only live-QA credential boundary, real Daytona provider, reusable local ChatGPT OAuth cache, and disposable Telegram QA bot.",
   "result": "pass",
   "commands": [
     "bash scripts/install.sh",
-    "ned create --verbose",
-    "ned doctor",
-    "ned repair",
-    "ned destroy --yes"
+    "installed ned create --verbose",
+    "installed ned doctor",
+    "installed ned repair",
+    "installed ned destroy --yes"
   ],
-  "observations": "The pinned candidate installed successfully. A real non-dry-run create passed Daytona authorization, reused the secure ChatGPT OAuth session, validated the disposable Telegram QA bot, provisioned and health-verified the workspace, then reported ready. Doctor and repair both succeeded. Destroy succeeded and local lifecycle state was absent after cleanup. Credential values, token filenames, and resource identifiers were not recorded."
+  "observations": "A real non-dry-run installed lifecycle passed. Create validated the disposable Telegram bot, provisioned and health-verified the private workspace, and reported ready. Doctor and repair both passed; destroy passed; local ownership state was absent after cleanup. The hidden Telegram prompt was used for create, doctor, and repair. Credential values, filenames, workspace identifiers, and transcripts were not recorded."
 }
