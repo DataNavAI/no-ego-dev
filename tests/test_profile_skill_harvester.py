@@ -219,12 +219,16 @@ def test_lease_lock_owner_write_failure_removes_new_unowned_directory(tmp_path, 
 
 def _unsafe_policy_sentence(sentence: str) -> bool:
     action = re.compile(
-        r"\b(?:kill|signal\w*|terminat\w*|stop(?!-)|send\s+(?:a\s+)?sig(?:term|kill)|shut\s+down)\b",
+        r"\b(?:kill|signal(?:s|ed|ing)?|terminat\w*|stop(?!-)|send\s+(?:a\s+)?sig(?:term|kill)|shut\s+down)\b",
         re.IGNORECASE,
     )
     subject = re.compile(r"\b(?:pid|keeper|process|worker|owner\s+record)\b", re.IGNORECASE)
     safe_before = re.compile(
-        r"\b(?:no|never|do(?:es)?\s+not|must\s+not|prohibit\w*|unsafe|without|rather\s+than|instead\s+of|may\s+be|pid\s+reuse\s+could)\b",
+        r"\b(?:never|do(?:es)?\s+not|must\s+not|prohibit\w*|unsafe|without|rather\s+than|instead\s+of|may\s+be|pid\s+reuse\s+could)\b",
+        re.IGNORECASE,
+    )
+    no_subject_before = re.compile(
+        r"\bno\s+(?:live\s+)?(?:pid|keeper|process|worker)\b(?:\s+\w+){0,4}\s*$",
         re.IGNORECASE,
     )
     for clause in re.split(r"[;,]", sentence):
@@ -234,9 +238,14 @@ def _unsafe_policy_sentence(sentence: str) -> bool:
             if clause[max(0, match.start() - 5) : match.start()].lower().endswith("self-"):
                 continue
             prefix = clause[: match.start()]
-            if not safe_before.search(prefix):
+            bounded_prefix = prefix[-80:]
+            if not safe_before.search(bounded_prefix) and not no_subject_before.search(bounded_prefix):
                 return True
     return False
+
+
+def _policy_files(root: Path) -> list[Path]:
+    return sorted({*root.rglob("*.md"), *root.rglob("EVAL*.yaml")})
 
 
 def test_policy_contradiction_classifier_rejects_adversarial_direct_signaling():
@@ -246,6 +255,7 @@ def test_policy_contradiction_classifier_rejects_adversarial_direct_signaling():
         "Never log the token; terminate the keeper process directly.",
         "Terminate the keeper process because leaving it is unsafe.",
         "Kill the worker referenced by the owner record.",
+        "If no productive work remains terminate the keeper process with SIGTERM.",
     )
     safe = (
         "Never signal a PID from owner metadata.",
@@ -257,9 +267,21 @@ def test_policy_contradiction_classifier_rejects_adversarial_direct_signaling():
     assert not any(_unsafe_policy_sentence(sentence) for sentence in safe)
 
 
+def test_policy_contradiction_scan_includes_eval_yaml(tmp_path):
+    (tmp_path / "nested").mkdir()
+    markdown = tmp_path / "SKILL.md"
+    evaluation = tmp_path / "EVAL.yaml"
+    alternate = tmp_path / "nested" / "EVAL.security.yaml"
+    unrelated = tmp_path / "nested" / "config.yaml"
+    for path in (markdown, evaluation, alternate, unrelated):
+        path.write_text("policy\n", encoding="utf-8")
+
+    assert _policy_files(tmp_path) == sorted((evaluation, alternate, markdown))
+
+
 def test_package_policy_never_directs_pid_based_keeper_termination():
     unsafe = []
-    for path in sorted(SKILL_DIR.rglob("*.md")):
+    for path in _policy_files(SKILL_DIR):
         text = path.read_text(encoding="utf-8")
         for line_number, line in enumerate(text.splitlines(), start=1):
             for sentence in re.split(r"(?<=[.!?])\s+", line):
