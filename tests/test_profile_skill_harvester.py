@@ -1,8 +1,10 @@
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -249,9 +251,81 @@ def test_cleanup_owned_restores_unknown_owner_without_claim_artifacts(tmp_path):
     assert sorted(path.name for path in lock_dir.iterdir()) == ["owner.json"]
 
 
+def test_cleanup_owned_restores_authenticated_owner_when_extra_artifact_blocks_removal(tmp_path):
+    module = _lease_module()
+    lock_dir = tmp_path / "extra-artifact.lock"
+    lock_dir.mkdir()
+    owner = {"pid": 123, "token": "ours", "expires_at": "2026-08-24T00:00:00Z"}
+    owner_path = lock_dir / "owner.json"
+    owner_path.write_text(json.dumps(owner), encoding="utf-8")
+    (lock_dir / "unexpected.log").write_text("preserve", encoding="utf-8")
+
+    assert not module.cleanup_owned(lock_dir, 123, "ours")
+    assert json.loads(owner_path.read_text(encoding="utf-8")) == owner
+    assert (lock_dir / "unexpected.log").read_text(encoding="utf-8") == "preserve"
+    assert sorted(path.name for path in lock_dir.iterdir()) == ["owner.json", "unexpected.log"]
+    assert not list(tmp_path.glob(".lease-owner-backup-*"))
+
+
+def test_stale_initialization_reclamation_is_bounded_and_fail_closed(tmp_path):
+    module = _lease_module()
+    fresh = tmp_path / "fresh.lock"
+    fresh.mkdir()
+    assert not module.reclaim_stale_initialization(fresh)
+    assert fresh.exists()
+
+    old = time.time() - module.MAX_LEASE_SECONDS - 120
+    stale_empty = tmp_path / "stale-empty.lock"
+    stale_empty.mkdir()
+    os.utime(stale_empty, (old, old))
+    assert module.reclaim_stale_initialization(stale_empty)
+    assert not stale_empty.exists()
+
+    stale_malformed = tmp_path / "stale-malformed.lock"
+    stale_malformed.mkdir()
+    malformed = stale_malformed / "owner.json"
+    malformed.write_text("not-json", encoding="utf-8")
+    os.utime(malformed, (old, old))
+    os.utime(stale_malformed, (old, old))
+    assert module.reclaim_stale_initialization(stale_malformed)
+    assert not stale_malformed.exists()
+
+    stale_valid = tmp_path / "stale-valid.lock"
+    stale_valid.mkdir()
+    valid_owner = stale_valid / "owner.json"
+    valid_owner.write_text(json.dumps({"pid": 1, "token": "valid"}), encoding="utf-8")
+    os.utime(valid_owner, (old, old))
+    os.utime(stale_valid, (old, old))
+    assert not module.reclaim_stale_initialization(stale_valid)
+    assert json.loads(valid_owner.read_text(encoding="utf-8")) == {"pid": 1, "token": "valid"}
+
+    stale_with_extra = tmp_path / "stale-extra.lock"
+    stale_with_extra.mkdir()
+    malformed_extra = stale_with_extra / "owner.json"
+    malformed_extra.write_text("not-json", encoding="utf-8")
+    extra = stale_with_extra / "unknown"
+    extra.write_text("preserve", encoding="utf-8")
+    os.utime(malformed_extra, (old, old))
+    os.utime(extra, (old, old))
+    os.utime(stale_with_extra, (old, old))
+    assert not module.reclaim_stale_initialization(stale_with_extra)
+    assert malformed_extra.read_text(encoding="utf-8") == "not-json"
+    assert extra.read_text(encoding="utf-8") == "preserve"
+
+    stale_symlink = tmp_path / "stale-symlink.lock"
+    stale_symlink.mkdir()
+    target = tmp_path / "target.json"
+    target.write_text("not-json", encoding="utf-8")
+    symlink_owner = stale_symlink / "owner.json"
+    symlink_owner.symlink_to(target)
+    os.utime(stale_symlink, (old, old))
+    assert not module.reclaim_stale_initialization(stale_symlink)
+    assert symlink_owner.is_symlink()
+
+
 def _unsafe_policy_sentence(sentence: str) -> bool:
     action = re.compile(
-        r"\b(?:kill|signal(?:s|ed|ing)?|terminat\w*|stop(?!-)|send\s+(?:a\s+)?sig(?:term|kill)|shut\s+down)\b",
+        r"\b(?:kill(?:s|ed|ing)?|signal(?:s|ed|ing)?|terminat\w*|stop(?!-)(?:s|ped|ping)?|send\s+(?:a\s+)?sig(?:term|kill)|shut(?:s|ting)?\s+down)\b",
         re.IGNORECASE,
     )
     subject = re.compile(r"\b(?:pid|keeper|process|worker|owner\s+record)\b", re.IGNORECASE)
@@ -302,6 +376,8 @@ def test_policy_contradiction_classifier_rejects_adversarial_direct_signaling():
         "Without exposing the token terminate the keeper process directly.",
         "The owner record may be stale so terminate the keeper process with SIGTERM.",
         "Instead of deleting the log terminate the keeper process directly.",
+        "Without exposing the token the keeper process can be killed directly.",
+        "Without exposing the token the keeper process can be stopped directly.",
     )
     safe = (
         "Never signal a PID from owner metadata.",

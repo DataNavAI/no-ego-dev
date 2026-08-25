@@ -21,6 +21,7 @@ BUSY = 73
 OWNER_MISMATCH = 74
 LEASE_EXPIRED = 124
 MAX_LEASE_SECONDS = 86_399
+STALE_INITIALIZATION_GRACE_SECONDS = 60
 
 
 def utc_text(value: datetime) -> str:
@@ -67,6 +68,35 @@ def read_owner(lock_dir: Path) -> dict[str, Any]:
     return _read_owner_file(lock_dir / "owner.json")
 
 
+def _restore_no_overwrite(source: Path, destination: Path) -> bool:
+    try:
+        os.link(source, destination, follow_symlinks=False)
+    except OSError:
+        return False
+    return True
+
+
+def _entry_exists(path: Path) -> bool:
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
+def _restore_claim(source: Path, destination: Path, claim_dir: Path) -> bool:
+    if not _restore_no_overwrite(source, destination):
+        return False
+    try:
+        source.unlink()
+        claim_dir.rmdir()
+    except OSError:
+        return False
+    return True
+
+
 def cleanup_owned(lock_dir: Path, pid: int, token: str) -> bool:
     owner_path = lock_dir / "owner.json"
     claim_dir = lock_dir / f".cleanup-{pid}-{secrets.token_hex(16)}"
@@ -89,21 +119,34 @@ def cleanup_owned(lock_dir: Path, pid: int, token: str) -> bool:
     except RuntimeError:
         owner = None
     if not isinstance(owner, dict) or owner.get("pid") != pid or owner.get("token") != token:
-        try:
-            os.link(claim_path, owner_path, follow_symlinks=False)
-        except OSError:
-            return False
+        _restore_claim(claim_path, owner_path, claim_dir)
+        return False
+
+    backup_path = lock_dir.parent / f".lease-owner-backup-{pid}-{secrets.token_hex(16)}"
+    try:
+        os.link(claim_path, backup_path, follow_symlinks=False)
+    except OSError:
+        _restore_claim(claim_path, owner_path, claim_dir)
+        return False
+
+    try:
         claim_path.unlink()
         claim_dir.rmdir()
+    except OSError:
+        if not _entry_exists(owner_path) and not _restore_no_overwrite(backup_path, owner_path):
+            return False
+        backup_path.unlink(missing_ok=True)
         return False
-    claim_path.unlink()
-    claim_dir.rmdir()
     try:
         lock_dir.rmdir()
     except FileNotFoundError:
         pass
     except OSError:
+        if not _entry_exists(owner_path) and not _restore_no_overwrite(backup_path, owner_path):
+            return False
+        backup_path.unlink(missing_ok=True)
         return False
+    backup_path.unlink(missing_ok=True)
     return not lock_dir.exists()
 
 
@@ -119,6 +162,86 @@ def cleanup_initializing(lock_dir: Path, pid: int, token: str) -> bool:
         pass
     except OSError:
         return False
+    return not lock_dir.exists()
+
+
+def reclaim_stale_initialization(lock_dir: Path) -> bool:
+    """Reclaim only an old empty or single-malformed-owner initialization lock."""
+    cutoff = time.time() - MAX_LEASE_SECONDS - STALE_INITIALIZATION_GRACE_SECONDS
+    try:
+        directory_stat = lock_dir.stat()
+        entries = list(lock_dir.iterdir())
+    except (FileNotFoundError, OSError):
+        return not lock_dir.exists()
+    if directory_stat.st_mtime > cutoff:
+        return False
+    if not entries:
+        try:
+            lock_dir.rmdir()
+        except OSError:
+            return False
+        return not lock_dir.exists()
+    if len(entries) != 1 or entries[0].name != "owner.json":
+        return False
+
+    owner_path = entries[0]
+    try:
+        owner_stat = owner_path.lstat()
+    except OSError:
+        return False
+    if not stat.S_ISREG(owner_stat.st_mode) or owner_stat.st_mtime > cutoff:
+        return False
+
+    claim_dir = lock_dir / f".stale-{os.getpid()}-{secrets.token_hex(16)}"
+    claim_path = claim_dir / "owner.json"
+    try:
+        claim_dir.mkdir(mode=0o700)
+        os.replace(owner_path, claim_path)
+    except OSError:
+        try:
+            claim_dir.rmdir()
+        except OSError:
+            pass
+        return False
+
+    try:
+        _read_owner_file(claim_path)
+    except RuntimeError:
+        malformed = True
+    else:
+        malformed = False
+    try:
+        claimed_owner_is_old = claim_path.stat().st_mtime <= cutoff
+    except OSError:
+        claimed_owner_is_old = False
+    if not malformed or not claimed_owner_is_old:
+        _restore_claim(claim_path, owner_path, claim_dir)
+        return False
+
+    try:
+        claim_is_only_entry = sorted(path.name for path in lock_dir.iterdir()) == [claim_dir.name]
+    except OSError:
+        claim_is_only_entry = False
+    if not claim_is_only_entry:
+        _restore_claim(claim_path, owner_path, claim_dir)
+        return False
+
+    backup_path = lock_dir.parent / f".lease-owner-backup-{os.getpid()}-{secrets.token_hex(16)}"
+    try:
+        os.link(claim_path, backup_path, follow_symlinks=False)
+    except OSError:
+        _restore_claim(claim_path, owner_path, claim_dir)
+        return False
+    try:
+        claim_path.unlink()
+        claim_dir.rmdir()
+        lock_dir.rmdir()
+    except OSError:
+        if not _entry_exists(owner_path) and not _restore_no_overwrite(backup_path, owner_path):
+            return False
+        backup_path.unlink(missing_ok=True)
+        return False
+    backup_path.unlink(missing_ok=True)
     return not lock_dir.exists()
 
 
@@ -147,6 +270,8 @@ def hold(args: argparse.Namespace) -> int:
             existing = read_owner(lock_dir)
         except RuntimeError:
             existing = None
+        if existing is None and reclaim_stale_initialization(lock_dir):
+            return hold(args)
         print(json.dumps({"status": "busy", "owner": existing}, sort_keys=True), flush=True)
         return BUSY
 
