@@ -255,8 +255,13 @@ def _unsafe_policy_sentence(sentence: str) -> bool:
         re.IGNORECASE,
     )
     subject = re.compile(r"\b(?:pid|keeper|process|worker|owner\s+record)\b", re.IGNORECASE)
-    safe_before = re.compile(
-        r"\b(?:never|do(?:es)?\s+not|must\s+not|prohibit\w*|unsafe|without|rather\s+than|instead\s+of|pid\s+reuse\s+could)\b",
+    direct_negation_before = re.compile(
+        r"\b(?:never|do(?:es)?\s+not|must\s+not|prohibit\w*)\b"
+        r"(?:\s+(?:send|sends|use|restart|or|a|an|the|any|direct|directly|live|recorded|stale|owner|keeper|process|worker|pid|from|by|based|only|on|metadata|to)){0,8}\s*$",
+        re.IGNORECASE,
+    )
+    action_modifier_before = re.compile(
+        r"(?:\b(?:without|instead\s+of)\s*|\brather\s+than(?:\s+blindly\s+calling\s+os\.)?\s*|\bunsafe(?:\s+(?:direct|pid|keeper|process)){0,3}\s*|\bpid\s+reuse\s+could\s*)$",
         re.IGNORECASE,
     )
     no_subject_before = re.compile(
@@ -271,8 +276,12 @@ def _unsafe_policy_sentence(sentence: str) -> bool:
             if clause[max(0, match.start() - 5) : match.start()].lower().endswith("self-"):
                 continue
             prefix = clause[: match.start()]
-            bounded_prefix = prefix[-80:]
-            if not safe_before.search(bounded_prefix) and not no_subject_before.search(bounded_prefix):
+            bounded_prefix = prefix[-120:]
+            if (
+                not direct_negation_before.search(bounded_prefix)
+                and not action_modifier_before.search(bounded_prefix)
+                and not no_subject_before.search(bounded_prefix)
+            ):
                 return True
     return False
 
@@ -290,6 +299,9 @@ def test_policy_contradiction_classifier_rejects_adversarial_direct_signaling():
         "Kill the worker referenced by the owner record.",
         "If no productive work remains terminate the keeper process with SIGTERM.",
         "The keeper process may be terminated directly.",
+        "Without exposing the token terminate the keeper process directly.",
+        "The owner record may be stale so terminate the keeper process with SIGTERM.",
+        "Instead of deleting the log terminate the keeper process directly.",
     )
     safe = (
         "Never signal a PID from owner metadata.",
@@ -323,6 +335,35 @@ def test_package_policy_never_directs_pid_based_keeper_termination():
                     unsafe.append(f"{path.relative_to(SKILL_DIR)}:{line_number}: {sentence}")
 
     assert unsafe == [], "Direct PID/keeper termination guidance:\n" + "\n".join(unsafe)
+
+
+def test_review_policy_has_no_fixed_round_cap():
+    policy_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in _policy_files(SKILL_DIR)
+    ).lower()
+    for forbidden in ("no round 4", "final allowed review", "final bounded negative review"):
+        assert forbidden not in policy_text
+    assert "there is no fixed round limit" in policy_text
+    assert "round 4 and later" in policy_text
+    assert "approval-convergence mode" in policy_text
+
+
+def test_mvp_analytics_is_stage_scoped_not_unconditionally_required():
+    mvp_dir = ROOT / "skills" / "mvp-planning"
+    policy_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted({*mvp_dir.rglob("*.md"), *mvp_dir.rglob("EVAL*.yaml")})
+    ).lower()
+    assert "analytics is required infrastructure" not in policy_text
+    assert "must make these the primary product-health outputs" not in policy_text
+    for required in (
+        "not required yet",
+        "minimal measurement",
+        "growing-product controls",
+        "structured analytics is not mandatory",
+    ):
+        assert required in policy_text
 
 
 def test_lease_lock_never_signals_an_unverified_live_pid(tmp_path):

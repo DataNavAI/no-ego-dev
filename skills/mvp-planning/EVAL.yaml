@@ -19,12 +19,12 @@ expectations:
   - "defines a real serviceable environment including persistence monitoring support feedback rollback and ownership where applicable"
   - "saves the durable MVP plan under .projects project product mvp-plan.md and cross links existing PRD CUJ UI tech task and QA artifacts or names explicit planned paths and owners for missing artifacts"
   - "prevents parked features from re entering design architecture implementation or launch without explicit CUJ justification and scope approval"
-  - "makes DAU daily new and newly churned users and D1 D7 new user cohort retention the three primary MVP analytics groups while keeping the dashboard internal and minimal"
+  - "does not require structured analytics for every MVP and explicitly chooses not required minimal measurement or growing product controls from the product contract and named learning decision"
   - "distinguishes prototype PoC and MVP by purpose storage expectations and exit evidence"
   - "requires MVP user and business data to live in a deployment-persistent database or equivalent durable store surviving redeployments restarts and instance replacement"
   - "allows ephemeral or local storage only for disposable prototype or PoC data and prevents those shortcuts from silently carrying into MVP"
   - "adds a persistence-readiness task for prototype or PoC promotion covering migrations backups restore monitoring ownership and rollback"
-  - "defines qualifying activity activation churn inactivity threshold privacy safe identity timezone cohorts late events reactivation incomplete windows and internal or bot exclusions"
+  - "when structured analytics is selected defines only the needed qualifying activity activation churn identity timezone cohort and exclusion semantics without creating a broad dashboard"
 parameters:
   fixture: evaldata/README.md
   template: templates/mvp-plan.md

@@ -130,15 +130,21 @@ Common default cuts unless the primary CUJ truly requires them:
 
 Do not quietly reintroduce parked scope in architecture, design, implementation, QA, launch, or marketing work.
 
-## MVP Analytics: Three Primary Metric Groups
+## MVP Measurement: Stage-Appropriate Learning
 
-Analytics is required infrastructure, but a broad analytics dashboard is not MVP scope. The smallest honest MVP analytics plan must make these the primary product-health outputs:
+Structured product analytics is not universal MVP infrastructure. First choose and justify one measurement posture:
+
+- **Not required yet:** use primary-CUJ manual evidence, direct user feedback, and an explicit learning decision when instrumentation would not change the first release decision.
+- **Minimal measurement:** instrument only the event or outcome needed to evaluate the MVP's named assumption or product contract.
+- **Growing-product controls:** add durable analytics, cohort reporting, and broader regression controls when the product enters the growing stage or the governing contract already requires them.
+
+Do not turn analytics into a default dashboard or a prerequisite for every MVP. When structured product-health analytics is actually required, the following groups are a useful default rather than a universal mandate:
 
 1. **Daily active users (DAU):** unique users performing the explicitly defined qualifying value-bearing activity per reporting day.
 2. **Daily new and newly churned users:** new users enter once at the explicit activation event; newly churned users cross the documented inactivity threshold that day. Reactivated users are not new.
 3. **New-user retention:** cohort-based D1 and D7 retention by default, with W1/W4 added only when the usage cycle and cohort maturity make them meaningful. Exclude incomplete cohort windows from mature-rate comparisons.
 
-Record stable privacy-safe identity, anonymous-to-known merge policy, timezone/day boundary, cohort denominator, late-event handling, churn window, deletion/retention policy, and bot/internal-user exclusions. Keep acquisition, funnel, conversion/revenue, error, and feature metrics as secondary diagnostics unless the product contract requires them. Do not build an end-user analytics UI merely to measure the MVP; use the smallest internal dashboard or report that computes and verifies these metrics.
+For any selected structured analytics, record stable privacy-safe identity, anonymous-to-known merge policy, timezone/day boundary, cohort denominator, late-event handling, churn window, deletion/retention policy, and bot/internal-user exclusions. Keep acquisition, funnel, conversion/revenue, error, and feature metrics as secondary diagnostics unless the product contract requires them. Do not build an end-user analytics UI merely to measure the MVP; use the smallest internal report that answers the named learning decision.
 
 ## MVP UX: Shortest Intuitive Path
 

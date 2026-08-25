@@ -161,7 +161,12 @@ For <specific target user in context>, the MVP solves <single painful problem> s
 
 ## 8. Measurement and Learning
 
-### Primary MVP product health
+### Measurement posture
+- Decision (`not required yet` / `minimal measurement` / `growing-product controls`):
+- Product-contract or learning-decision reason:
+- Smallest evidence needed for the next release decision:
+
+### Conditional structured product health (complete only when required)
 - DAU and qualifying activity:
 - Daily new users and activation/cohort event:
 - Daily newly churned users and inactivity window:

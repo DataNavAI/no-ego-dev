@@ -26,4 +26,4 @@ Use this when a profile distribution's implementation/coder skill must guarantee
 
 ## Review-policy interaction
 
-When this change is bundled with review-convergence corrections, treat one round as one immutable candidate generation shared by every required review kind. A test-only/static-analysis-policy correction changes the commit SHA and invalidates every commit-bound verdict. No owner waiver, scanner pass, or static-analysis pass substitutes for exact-SHA semantic approval, and no Round 4 is authorized for the same stable scope.
+When this change is bundled with review-convergence corrections, treat one round as one immutable candidate generation shared by every required review kind. A test-only/static-analysis-policy correction changes the commit SHA and invalidates every commit-bound verdict. No owner waiver, scanner pass, or static-analysis pass substitutes for exact-SHA semantic approval. There is no fixed round cap: Round 4 and later follow approval-convergence mode and continue the monotonic lineage until one exact candidate has no unresolved material blocker.
