@@ -1,15 +1,17 @@
 {
-  "candidate_sha": "fee5643c1e45f74c2a0ca585a7efe9ae3a85ce50",
+  "candidate_sha": "fc0ba9da70ea78f60d09cea240fd451550eba9e1",
   "result": "pass",
-  "tested_at": "2026-08-23T06:53:48Z",
-  "environment": "macOS isolated git worktree rebased onto origin/main; Python 3.11; pinned npm dependencies from package-lock; isolated Hermes eval profile under a non-repository scratch directory; no credentials or runtime state recorded",
+  "tested_at": "2026-08-25T03:00:34Z",
+  "environment": "macOS isolated git worktree; Python 3.12 via ephemeral uv environment with pytest and PyYAML; Node.js 22 CI-compatible project toolchain; isolated Hermes behavioral eval output under /Users/moonk/.hermes/tmp; no credentials or runtime state recorded",
   "commands": [
-    "python3.11 -m pytest -q",
+    "PYTHONPATH=\"$PWD\" uv run --with pytest --with pyyaml pytest tests/test_profile_skill_harvester.py -q",
+    "PYTHONPATH=\"$PWD\" uv run --with pytest --with pyyaml pytest -q",
     "npm test",
     "npm run check",
     "npm run pack:check",
-    "gitleaks git --redact --no-banner --log-opts=origin/main..HEAD",
-    "python3.11 -m eval_runner.cli skills/seo-growth/EVAL.yaml --output-root /Users/moonk/.hermes/tmp/seo-growth-eval-20260822-r5 --report /Users/moonk/.hermes/tmp/seo-growth-eval-20260822-r5/report --markdown --hermes-command '<working Hermes Python 3.11 launcher> -t skills'"
+    "gitleaks git --log-opts '0c243771a390e9082af8d51ac75737b1ed62e4be..fc0ba9da70ea78f60d09cea240fd451550eba9e1' --redact --no-banner",
+    "python3.11 -m py_compile skills/profile-skill-harvester/scripts/lease_lock.py",
+    "python3.11 -m eval_runner.cli skills/profile-skill-harvester/EVAL.yaml --output-root /Users/moonk/.hermes/tmp/harvester-self-unblock-eval-r22 --report /Users/moonk/.hermes/tmp/harvester-self-unblock-eval-r22-report --markdown --hermes-command '<working Hermes Python 3.11 launcher> -t skills'"
   ],
-  "observations": "The final candidate passed 240 Python tests with 3 skips, 151 Node tests, syntax and package checks, and gitleaks with no leaks. The isolated SEO specialist eval passed all 21 expectations in 118.93 seconds. Current official AI-search guidance is included: AI Overviews and AI Mode remain grounded in core Search systems, while llms.txt or invented AI markup are not presented as Google ranking shortcuts."
+  "observations": "Exact code candidate fc0ba9da70ea78f60d09cea240fd451550eba9e1 passed 20 focused lease/policy tests, 257 full Python tests with 3 skips, 151 Node tests, syntax/check/package validation, and gitleaks with no leaks. Behavioral profile-skill-harvester EVAL r22 passed. GitHub PR checks install-profile, macos-smoke, Node 20, Node 22, and windows-eval-runner passed. An independent complete BASE..CANDIDATE exact-SHA review returned APPROVED with no material blockers."
 }
