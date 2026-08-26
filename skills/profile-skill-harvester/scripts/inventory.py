@@ -21,6 +21,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
+import yaml
+
+CANONICAL_PROFILE_NAMES = frozenset({"ned", "alphaned", "kiaened", "nedxned", "newsned"})
 IGNORED_DIRS = {
     ".git",
     ".hg",
@@ -98,6 +101,44 @@ def hash_package(package_dir: Path) -> tuple[str, int, str]:
     return digest.hexdigest(), count, when
 
 
+def validate_eval_package(package_dir: Path) -> list[str]:
+    eval_path = package_dir / "EVAL.yaml"
+    if not eval_path.is_file() or eval_path.is_symlink():
+        return ["missing regular EVAL.yaml"]
+    try:
+        evaluation = yaml.safe_load(eval_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+        return [f"invalid EVAL.yaml: {exc}"]
+    if not isinstance(evaluation, dict):
+        return ["EVAL.yaml must be a mapping"]
+
+    errors: list[str] = []
+    prompt = evaluation.get("prompt")
+    if not isinstance(prompt, str) or not prompt.strip():
+        errors.append("EVAL.yaml requires a non-empty prompt")
+    expectations = evaluation.get("expectations")
+    if not isinstance(expectations, list) or not expectations or not all(
+        isinstance(item, str) and item.strip() for item in expectations
+    ):
+        errors.append("EVAL.yaml requires non-empty string expectations")
+    parameters = evaluation.get("parameters", {})
+    if not isinstance(parameters, dict):
+        errors.append("EVAL.yaml parameters must be a mapping")
+        return errors
+    for key, value in parameters.items():
+        if "fixture" not in str(key).lower() or not isinstance(value, str):
+            continue
+        candidate = (package_dir / value).resolve()
+        try:
+            candidate.relative_to(package_dir.resolve())
+        except ValueError:
+            errors.append(f"EVAL.yaml {key} escapes the package: {value}")
+            continue
+        if not candidate.is_file() or candidate.is_symlink():
+            errors.append(f"EVAL.yaml {key} is not a regular packaged file: {value}")
+    return errors
+
+
 def discover(skills_root: Path) -> tuple[dict[str, Package], list[str]]:
     packages: dict[str, Package] = {}
     errors: list[str] = []
@@ -113,6 +154,9 @@ def discover(skills_root: Path) -> tuple[dict[str, Package], list[str]]:
                     f"duplicate skill name {name!r}: {packages[name].path} and {skill_md.parent}"
                 )
             package_dir = skill_md.parent
+            eval_errors = validate_eval_package(package_dir)
+            if eval_errors:
+                raise ValueError("; ".join(f"{package_dir}: {message}" for message in eval_errors))
             digest, count, newest = hash_package(package_dir)
             packages[name] = Package(
                 name=name,
@@ -154,13 +198,16 @@ def atomic_json_write(path: Path, value: dict) -> None:
 
 
 def parse_profile(value: str) -> tuple[str, Path]:
-    if "=" not in value:
-        raise argparse.ArgumentTypeError("profile must be NAME=/absolute/profile/path")
-    name, raw_path = value.split("=", 1)
+    name, separator, raw_path = value.partition("=")
     path = Path(raw_path).expanduser()
-    if not name or not path.is_absolute():
+    if not separator or not name or not path.is_absolute():
         raise argparse.ArgumentTypeError("profile must be NAME=/absolute/profile/path")
     return name, path
+
+
+def canonical_profile_roots() -> dict[str, str]:
+    base = Path.home() / ".hermes" / "profiles"
+    return {name: str((base / name).resolve()) for name in sorted(CANONICAL_PROFILE_NAMES)}
 
 
 def git_output(repo: Path, *args: str) -> str:
@@ -352,8 +399,8 @@ def main() -> int:
             parser.error("--initialize requires --canonical-remote-url")
         if args.state.expanduser().exists() or prior:
             raise SystemExit("refusing to replace an existing inventory with --initialize")
-        if not profiles:
-            raise SystemExit("refusing to initialize without at least one configured profile")
+        if profile_roots != canonical_profile_roots():
+            raise SystemExit("refusing to initialize without the exact canonical five profile roots")
         if errors:
             raise SystemExit("refusing to initialize an inventory with discovery errors")
         try:
@@ -376,11 +423,20 @@ def main() -> int:
             raise SystemExit("refusing to record before explicit --initialize enrollment")
         enrolled_remote = prior.get("canonical_remote_url")
         enrolled_roots = prior.get("profile_roots")
-        if not isinstance(enrolled_remote, str) or not isinstance(enrolled_roots, dict):
+        enrolled_branch = prior.get("default_branch")
+        if (
+            not isinstance(enrolled_remote, str)
+            or not isinstance(enrolled_roots, dict)
+            or not isinstance(enrolled_branch, str)
+        ):
             raise SystemExit("refusing to record state without enrolled remote/profile trust anchors")
         if normalize_remote_url(args.canonical_remote_url) != enrolled_remote:
             raise SystemExit("refusing to change the enrolled canonical remote during --record")
-        if set(profiles) != set(prior_profiles) or profile_roots != enrolled_roots:
+        if (
+            profile_roots != canonical_profile_roots()
+            or set(profiles) != set(prior_profiles)
+            or profile_roots != enrolled_roots
+        ):
             raise SystemExit("refusing to record an incomplete or substituted configured profile set")
         if errors:
             raise SystemExit("refusing to record an inventory with discovery errors")
@@ -392,7 +448,14 @@ def main() -> int:
             )
         except ValueError as exc:
             raise SystemExit(f"refusing to record: {exc}") from exc
-        unresolved = [candidate for candidate in candidates if candidate["newly_observed"]]
+        if default_branch != enrolled_branch:
+            raise SystemExit("refusing to change the enrolled symbolic default branch during --record")
+        unresolved = [
+            candidate
+            for candidate in candidates
+            if candidate["classification"] in {"divergent", "missing"}
+            or candidate["newly_observed"]
+        ]
         if unresolved:
             names = ", ".join(
                 sorted(f"{item['profile']}:{item['skill']}" for item in unresolved)

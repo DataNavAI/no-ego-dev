@@ -617,22 +617,47 @@ def _publish_test_repo(repo: Path, remote: Path) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
+def _canonical_test_profiles(home: Path, body: str) -> dict[str, Path]:
+    roots = {
+        name: home / ".hermes" / "profiles" / name
+        for name in ("ned", "alphaned", "kiaened", "nedxned", "newsned")
+    }
+    for root in roots.values():
+        _package(root, "example", body)
+    return roots
+
+
+def _run_inventory(command: list[str], home: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env={**os.environ, "HOME": str(home)},
+    )
+
+
 def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_path):
     repo = tmp_path / "repo"
-    profile = tmp_path / "profile"
+    home = tmp_path / "home"
+    profiles = _canonical_test_profiles(home, "merged")
+    profile = profiles["ned"]
     _package(repo, "example", "merged")
-    _package(profile, "example", "merged")
     remote = tmp_path / "remote.git"
     sha = _publish_test_repo(repo, remote)
 
     state = tmp_path / "state.json"
+    profile_args = [
+        item
+        for name, root in sorted(profiles.items())
+        for item in ("--profile", f"{name}={root}")
+    ]
     common = [
         sys.executable,
         str(SCRIPT),
         "--repo",
         str(repo),
-        "--profile",
-        f"ned={profile}",
+        *profile_args,
         "--state",
         str(state),
         "--canonical-remote-url",
@@ -644,16 +669,14 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
         "--verified-remote-default-sha",
         sha,
     ]
-    unenrolled = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    unenrolled = _run_inventory(command, home)
     assert unenrolled.returncode != 0
     assert "before explicit --initialize enrollment" in unenrolled.stderr
     assert not state.exists()
 
-    initialized = subprocess.run(
-        [*common, "--initialize"], capture_output=True, text=True, timeout=10
-    )
+    initialized = _run_inventory([*common, "--initialize"], home)
     assert initialized.returncode == 0, initialized.stderr
-    recorded = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    recorded = _run_inventory(command, home)
     assert recorded.returncode == 0, recorded.stderr
     saved = json.loads(state.read_text(encoding="utf-8"))
     assert saved["record_mode"] == "verified_remote_default_merge"
@@ -661,7 +684,7 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
 
     previous_state = state.read_bytes()
 
-    omitted = subprocess.run(
+    omitted = _run_inventory(
         [
             sys.executable,
             str(SCRIPT),
@@ -675,9 +698,7 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
             "--verified-remote-default-sha",
             sha,
         ],
-        capture_output=True,
-        text=True,
-        timeout=10,
+        home,
     )
     assert omitted.returncode != 0
     assert "incomplete or substituted configured profile set" in omitted.stderr
@@ -687,17 +708,15 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
     _package(substitute, "example", "merged")
     substituted_common = list(common)
     substituted_common[substituted_common.index(f"ned={profile}")] = f"ned={substitute}"
-    substituted = subprocess.run(
+    substituted = _run_inventory(
         [*substituted_common, "--record", "--verified-remote-default-sha", sha],
-        capture_output=True,
-        text=True,
-        timeout=10,
+        home,
     )
     assert substituted.returncode != 0
     assert "incomplete or substituted configured profile set" in substituted.stderr
     assert state.read_bytes() == previous_state
 
-    duplicate = subprocess.run(
+    duplicate = _run_inventory(
         [
             *common,
             "--profile",
@@ -706,9 +725,7 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
             "--verified-remote-default-sha",
             sha,
         ],
-        capture_output=True,
-        text=True,
-        timeout=10,
+        home,
     )
     assert duplicate.returncode != 0
     assert "discovery errors" in duplicate.stderr
@@ -716,19 +733,15 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
 
     wrong_remote_common = list(common)
     wrong_remote_common[wrong_remote_common.index(str(remote))] = str(tmp_path / "other.git")
-    wrong_remote = subprocess.run(
+    wrong_remote = _run_inventory(
         [*wrong_remote_common, "--record", "--verified-remote-default-sha", sha],
-        capture_output=True,
-        text=True,
-        timeout=10,
+        home,
     )
     assert wrong_remote.returncode != 0
     assert "change the enrolled canonical remote" in wrong_remote.stderr
     assert state.read_bytes() == previous_state
 
-    wrong_sha = subprocess.run(
-        [*command[:-1], "0" * 40], capture_output=True, text=True, timeout=10
-    )
+    wrong_sha = _run_inventory([*command[:-1], "0" * 40], home)
     assert wrong_sha.returncode != 0
     assert "does not match both origin" in wrong_sha.stderr
     assert state.read_bytes() == previous_state
@@ -737,7 +750,7 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
         "---\nname: example\ndescription: test\n---\n\n# example\n\nunpublished\n",
         encoding="utf-8",
     )
-    refused = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    refused = _run_inventory(command, home)
     assert refused.returncode != 0
     assert "refusing to baseline unpublished or unrolled candidates" in refused.stderr
     assert state.read_bytes() == previous_state
@@ -746,20 +759,20 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
     for child in package.iterdir():
         child.unlink()
     package.rmdir()
-    missing_scan = subprocess.run(common, capture_output=True, text=True, timeout=10)
+    missing_scan = _run_inventory(common, home)
     assert missing_scan.returncode == 0, missing_scan.stderr
     missing_snapshot = json.loads(missing_scan.stdout)
     assert any(
         item["skill"] == "example" and item["classification"] == "missing"
         for item in missing_snapshot["candidates"]
     )
-    missing_record = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    missing_record = _run_inventory(command, home)
     assert missing_record.returncode != 0
     assert "refusing to baseline unpublished or unrolled candidates" in missing_record.stderr
     assert state.read_bytes() == previous_state
 
     (repo / "untracked.txt").write_text("dirty\n", encoding="utf-8")
-    dirty = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    dirty = _run_inventory(command, home)
     assert dirty.returncode != 0
     assert "worktree is not clean" in dirty.stderr
     assert state.read_bytes() == previous_state
@@ -767,19 +780,23 @@ def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_
 
 def test_inventory_initial_enrollment_is_explicit_and_nonrepeatable(tmp_path):
     repo = tmp_path / "repo"
-    profile = tmp_path / "profile"
+    home = tmp_path / "home"
+    profiles = _canonical_test_profiles(home, "preexisting-profile-drift")
     _package(repo, "example", "canonical")
-    _package(profile, "example", "preexisting-profile-drift")
     remote = tmp_path / "remote.git"
     _publish_test_repo(repo, remote)
     state = tmp_path / "state.json"
+    profile_args = [
+        item
+        for name, root in sorted(profiles.items())
+        for item in ("--profile", f"{name}={root}")
+    ]
     command = [
         sys.executable,
         str(SCRIPT),
         "--repo",
         str(repo),
-        "--profile",
-        f"ned={profile}",
+        *profile_args,
         "--state",
         str(state),
         "--canonical-remote-url",
@@ -787,16 +804,126 @@ def test_inventory_initial_enrollment_is_explicit_and_nonrepeatable(tmp_path):
         "--initialize",
     ]
 
-    initialized = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    initialized = _run_inventory(command, home)
     assert initialized.returncode == 0, initialized.stderr
     saved = json.loads(state.read_text(encoding="utf-8"))
     assert saved["record_mode"] == "initial_enrollment"
     first_bytes = state.read_bytes()
 
-    repeated = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    repeated = _run_inventory(command, home)
     assert repeated.returncode != 0
     assert "refusing to replace an existing inventory" in repeated.stderr
     assert state.read_bytes() == first_bytes
+
+
+def test_inventory_record_refuses_unchanged_divergence_after_source_merge(tmp_path):
+    repo = tmp_path / "repo"
+    home = tmp_path / "home"
+    profiles = _canonical_test_profiles(home, "version-a")
+    _package(repo, "example", "version-a")
+    remote = tmp_path / "remote.git"
+    _publish_test_repo(repo, remote)
+    state = tmp_path / "state.json"
+    profile_args = [
+        item
+        for name, root in sorted(profiles.items())
+        for item in ("--profile", f"{name}={root}")
+    ]
+    common = [
+        sys.executable,
+        str(SCRIPT),
+        "--repo",
+        str(repo),
+        *profile_args,
+        "--state",
+        str(state),
+        "--canonical-remote-url",
+        str(remote),
+    ]
+    initialized = _run_inventory([*common, "--initialize"], home)
+    assert initialized.returncode == 0, initialized.stderr
+    old_state = state.read_bytes()
+
+    (repo / "skills" / "example" / "SKILL.md").write_text(
+        "---\nname: example\ndescription: test\n---\n\n# example\n\nversion-b\n",
+        encoding="utf-8",
+    )
+    _git(repo, "add", "skills/example/SKILL.md")
+    _git(repo, "commit", "-qm", "publish version b")
+    _git(repo, "push", "-q", "origin", "main")
+    merged_sha = _git(repo, "rev-parse", "HEAD")
+
+    scan = _run_inventory(common, home)
+    assert scan.returncode == 0, scan.stderr
+    candidates = json.loads(scan.stdout)["candidates"]
+    assert candidates
+    assert all(item["classification"] == "divergent" for item in candidates)
+    assert all(item["newly_observed"] is False for item in candidates)
+
+    refused = _run_inventory(
+        [*common, "--record", "--verified-remote-default-sha", merged_sha], home
+    )
+    assert refused.returncode != 0
+    assert "refusing to baseline unpublished or unrolled candidates" in refused.stderr
+    assert state.read_bytes() == old_state
+
+
+def test_inventory_record_refuses_changed_enrolled_default_branch(tmp_path):
+    repo = tmp_path / "repo"
+    home = tmp_path / "home"
+    profiles = _canonical_test_profiles(home, "merged")
+    _package(repo, "example", "merged")
+    remote = tmp_path / "remote.git"
+    sha = _publish_test_repo(repo, remote)
+    state = tmp_path / "state.json"
+    profile_args = [
+        item
+        for name, root in sorted(profiles.items())
+        for item in ("--profile", f"{name}={root}")
+    ]
+    common = [
+        sys.executable,
+        str(SCRIPT),
+        "--repo",
+        str(repo),
+        *profile_args,
+        "--state",
+        str(state),
+        "--canonical-remote-url",
+        str(remote),
+    ]
+    initialized = _run_inventory([*common, "--initialize"], home)
+    assert initialized.returncode == 0, initialized.stderr
+    old_state = state.read_bytes()
+
+    _git(repo, "checkout", "-qb", "replacement-default")
+    _git(repo, "push", "-q", "origin", "HEAD:replacement-default")
+    _git(remote, "symbolic-ref", "HEAD", "refs/heads/replacement-default")
+    _git(repo, "fetch", "-q", "origin", "replacement-default")
+    refused = _run_inventory(
+        [*common, "--record", "--verified-remote-default-sha", sha], home
+    )
+    assert refused.returncode != 0
+    assert "change the enrolled symbolic default branch" in refused.stderr
+    assert state.read_bytes() == old_state
+
+
+def test_inventory_requires_valid_eval_backing_and_packaged_fixtures(tmp_path):
+    module = _module()
+    root = tmp_path / "profile"
+    package = _package(root, "example")
+    (package / "EVAL.yaml").unlink()
+    packages, errors = module.discover(root / "skills")
+    assert "example" not in packages
+    assert any("missing regular EVAL.yaml" in error for error in errors)
+
+    (package / "EVAL.yaml").write_text(
+        "prompt: test\nexpectations: [test]\nparameters:\n  fixture: evaldata/missing.txt\n",
+        encoding="utf-8",
+    )
+    packages, errors = module.discover(root / "skills")
+    assert "example" not in packages
+    assert any("is not a regular packaged file" in error for error in errors)
 
 
 def test_inventory_rejects_duplicate_frontmatter_names(tmp_path):

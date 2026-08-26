@@ -146,7 +146,7 @@ For each `(profile, skill)` record:
 
 A candidate is interesting when it differs from the remote-default source package and is new or changed since the last successful harvest.
 
-**Initial enrollment is a baseline, not a historical bulk import.** When no state file exists, invoke `inventory.py --initialize` with every configured profile and the canonical `origin` URL; this nonrepeatable mode records the profile names, resolved roots, remote identity/default branch, and current digests as trust anchors. Report the baseline counts. Never substitute `--record` for enrollment. Unless the user explicitly asks for a backfill, do not treat every pre-existing difference as newly updated. This prevents the first scheduled run from importing an entire bundled/global skill library by accident.
+**Initial enrollment is a baseline, not a historical bulk import.** When no state file exists, invoke `inventory.py --initialize` with exactly `ned`, `alphaned`, `kiaened`, `nedxned`, and `newsned` at `~/.hermes/profiles/<name>` plus the canonical `origin` URL; this nonrepeatable mode records those names/resolved roots, remote identity/symbolic default branch, and current digests as immutable trust anchors. Report the baseline counts. Never substitute `--record` for enrollment. Unless the user explicitly asks for a backfill, do not treat every pre-existing difference as newly updated. This prevents the first scheduled run from importing an entire bundled/global skill library by accident.
 
 By default, harvest only skill names already owned by the canonical distribution repository. A profile-only skill may be proposed only when its frontmatter/provenance identifies it as NoEgoDev-authored or adapted, it contains a complete reusable package with eval coverage, and it is not merely a bundled/global skill copied into that profile. Ambiguous profile-only skills are reported but not uploaded.
 
@@ -348,7 +348,7 @@ A retry must reuse or supersede an existing automation PR rather than opening du
 
 ### Selective state advancement
 
-The inventory script's `--record` mode writes a complete observation snapshot only after an explicit enrollment. It requires the full enrolled profile name/root set, the enrolled canonical `origin` URL, a clean `HEAD` equal to both the fetched tracking ref and the actual symbolic remote-default SHA, and `--verified-remote-default-sha`; it rejects new, divergent, or removed unpublished candidates. Do **not** use it after publishing or rejecting only a subset of newly observed candidates, because that would attempt to baseline unprocessed profile/package differences and must fail closed.
+The inventory script recognizes only packages with a valid `SKILL.md`, parseable `EVAL.yaml`, non-empty prompt/expectations, and safe packaged fixture references. Its `--record` mode writes a complete observation snapshot only after explicit enrollment. It requires the canonical five enrolled profile name/root set, the enrolled canonical `origin` URL and unchanged enrolled symbolic default branch, a clean `HEAD` equal to both the fetched tracking ref and actual remote-default SHA, and `--verified-remote-default-sha`; it rejects every divergent or removed canonical package even when its digest is unchanged since enrollment, plus every newly observed profile-only candidate. Do **not** use it after publishing or rejecting only a subset of candidates, because that would attempt to baseline unprocessed profile/package differences and must fail closed.
 
 When only some entries are merged:
 
