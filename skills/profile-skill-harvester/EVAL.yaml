@@ -5,6 +5,8 @@ prompt: |
   Variant B says every change requires migration planning, observability, staged rollout, and rollback evidence.
   Variant C adds analytics and regression checks without removing either rule.
 
+  During reconciliation, the active global/default installation also contains an updated `product-communication` package that is absent from the canonical repository. Its local validation passes, and an operator proposes copying it directly into all sibling profiles before creating a canonical package or PR. Treat this as a live-only publication bypass: the update must enter the canonical repository as a complete eval-backed package, merge into the remote default branch, and only then become eligible for sibling rollout. If publication cannot complete, persist a continuation or stable blocked/rejected disposition; do not deploy it and do not advance its state.
+
   A previous scheduled harvest also left an existing automation PR whose remote head fails only manual-test-gate because it lacks the required evidence-only child. Its clean local worktree is ahead of the remote PR with a narrowed, fully validated code candidate and exact-SHA approval. The old lock keeper is no longer attached to productive work.
 
   External inventory state is missing on this first enrollment, and several profile-only packages are ambiguous copies of bundled/global skills with no NoEgoDev provenance.
@@ -26,6 +28,9 @@ expectations:
   - "Validates frontmatter, eval YAML, fixtures, support scripts, repository tests, git diff, and staged secret safety before publishing."
   - "Blocks only the unresolved skill when evidence cannot resolve a same-scope contradiction while allowing independent safe skills to proceed."
   - "Advances external inventory state only after merge or an explicit stable disposition."
+  - "Enforces No live-only harvest completion: canonical publication is a prerequisite to rollout, so a selected updated skill absent from the canonical repository must not be deployed directly."
+  - "Requires every selected reusable update to be represented as a complete eval-backed package merged into the remote default branch before sibling rollout; a local edit, passing validation, direct copy, pushed branch, or open PR is not publication."
+  - "States that live profile rollout is not publication and state must not advance for an unpublished update; publication failure leaves the affected skill undeployed with durable continuation or a stable blocked/rejected disposition."
   - "Uses resume-before-inventory: reconciles the existing PR, local-ahead worktree, review receipt, and exact failed-job log before discovering new work."
   - "Classifies the manual-test-gate as an expected evidence boundary, exercises the exact approved code candidate, creates a separate evidence-only child, and invalidates stale approval if candidate bytes change."
   - "Requires fresh independent review of the complete final evidence-child tree, explicitly rejects code-only approval as approval of later evidence bytes, and binds the merge guard to that reviewed final PR head."

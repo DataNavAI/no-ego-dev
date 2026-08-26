@@ -85,6 +85,30 @@ def test_profile_skill_harvester_package_contract():
     assert SCRIPT.is_file()
 
 
+def test_harvested_skill_updates_must_publish_canonically_before_rollout():
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    evaluation = yaml.safe_load((SKILL_DIR / "EVAL.yaml").read_text(encoding="utf-8"))
+    fixture = SKILL_DIR / evaluation["parameters"]["fixture"]
+    state_machine = SKILL_DIR / "references" / "self-unblocking-publication.md"
+    contract = (
+        f"{skill}\n{fixture.read_text(encoding='utf-8')}\n"
+        f"{state_machine.read_text(encoding='utf-8')}\n"
+        + "\n".join(evaluation["expectations"])
+    )
+
+    for marker in (
+        "No live-only harvest completion",
+        "canonical publication is a prerequisite to rollout",
+        "absent from the canonical repository",
+        "must not be deployed directly",
+        "merged into the remote default branch",
+    ):
+        assert marker in contract
+
+    assert "live profile rollout is not publication" in contract.lower()
+    assert "state must not advance" in contract.lower()
+
+
 def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inventory():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
     reference_path = SKILL_DIR / "references" / "self-unblocking-publication.md"

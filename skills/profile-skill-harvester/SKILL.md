@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.29
+version: 1.5.36
 author: NoEgoDev
 license: MIT
 metadata:
@@ -48,6 +48,7 @@ Do not use it to copy runtime state, secrets, OAuth files, sessions, logs, memor
 7. **No broken uploads.** Validate packages, run repository tests, inspect the focused diff, secret-scan, push, and verify the remote SHA/PR.
 8. **One scheduler at a time.** Use a lock under the non-repository state directory and exit quietly when another harvest is active.
 9. **Respect profile ownership.** Central orchestration may distribute reusable skill packages, but product-local runners, cron jobs, releases, and operations belong to their named profile. A controller must not take over that work unless the user explicitly authorizes intervention. Cleanup after an ownership mistake removes only controller-created scratch/cache artifacts, never similarly named state under the owning profile.
+10. **No live-only harvest completion.** Every new or updated reusable skill selected during a harvest—including a global/default installed variant, a sibling-profile variant, or a correction authored during reconciliation—must be added to `/Users/moonk/no-ego-dev` as a complete package and merged into the remote default branch before any sibling rollout. Canonical publication is a prerequisite to rollout. A skill absent from the canonical repository must not be deployed directly; import it with eval coverage or classify it as blocked/rejected. Live profile rollout is not publication, and state must not advance for an unpublished update.
 
 ## Scheduled-job model pinning and canonical sibling rollout
 
@@ -60,6 +61,8 @@ An unfinished automation PR is a durable continuation, not a report-only blocker
 If the scheduled job also deploys the canonical distribution to sibling profiles, make the rollout contract explicit in the prompt: enumerate every target profile, define the canonical package root, compare complete-package digests and target-only drift before mutation, back up each target, preserve compatible local additions, block contradictory drift, validate fresh-process discovery per target, and report each target independently. A successful `[SILENT]` result means no new change or blocker was found—not that targets may be assumed synchronized without the per-target digest/adoption checks.
 
 Keep this rollout separate from harvesting: first freeze and verify the canonical remote-default candidate, then apply it to authorized sibling profiles. Never copy auth, sessions, memories, state databases, workspaces, cron configuration, or other runtime state as part of a profile-template/skill rollout. See [`references/live-source-freeze-and-target-sync.md`](references/live-source-freeze-and-target-sync.md) and [`references/controller-to-profile-rollout-boundaries.md`](references/controller-to-profile-rollout-boundaries.md).
+
+The publication boundary is mandatory even when the updated skill originated in the active global/default installation or was edited locally in response to a user request during the harvest. The only terminal dispositions for an observed update are: (a) merged into the remote default branch and then eligible for rollout; or (b) explicitly blocked/rejected with a stable reason and not rolled out. A local edit, successful validation, direct profile copy, pushed branch, or open PR does not satisfy publication. If canonical publication cannot complete, preserve durable continuation coordinates, leave the affected skill undeployed, and do not report the harvest as complete.
 
 ### Profile-family GitHub identity rollout
 
@@ -443,6 +446,7 @@ If there are no new differences and no blocker requiring attention, return `[SIL
 - [ ] Reviewer reliability changes were reconciled into existing cron prompts/skill attachments when applicable
 - [ ] Completion-hook changes wake the authoritative scheduler on every terminal event, keep hook payloads out of dispatch authority, debounce duplicates, and retain periodic fallback
 - [ ] Remote SHA and PR/merge state verified
+- [ ] Every selected new or updated reusable skill exists as a complete eval-backed package merged into the remote default branch before rollout; no local/global edit, direct profile copy, pushed branch, or open PR is treated as publication, and unpublished updates do not advance state
 - [ ] Existing sibling target packages backed up before authorized replacement
 - [ ] Every target's complete-package digest and semantic diff compared against the approved canonical package and its pre-rollout baseline; equal version strings were not treated as equality, and unharvested target drift was consolidated or blocked
 - [ ] Same-path profile adaptations used the immutable pre-change canonical SHA as three-way ancestor (never post-merge `origin/main`), passed a conflict-free dry-run, and retained explicit profile-policy markers in addition to target-only file counts

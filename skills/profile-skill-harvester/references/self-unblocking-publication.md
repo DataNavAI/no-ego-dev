@@ -41,7 +41,9 @@ Persist the exact state outside the repository after every transition. Use these
    - Fetch the remote default branch, prove the merge commit is reachable, discover workflows applicable to that exact SHA, and wait for their terminal results.
    - A broken exact default-branch run starts bounded remediation; it is not a successful publication report.
 8. `rollout`
+   - Derive the complete selected skill set from the harvest disposition and prove every selected package exists in the verified remote-default merge commit. A package that exists only in a live/global installation, local worktree, pushed branch, or open PR is not published and cannot enter rollout.
    - Export packages from the verified merge commit, not a mutable checkout. Follow the transactional sibling-rollout contract and verify each target independently.
+   - If any selected update is absent from the merge commit, stop before target mutation, persist canonical-publication continuation coordinates, and leave its inventory state unadvanced.
 9. `release_lock`
    - Release the exact PID/token-owned lock and prove both keeper exit and lock absence on every terminal path: success, no-change, blocked package, failed check, timeout reserve, exception, cancellation, or external-action boundary.
 

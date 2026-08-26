@@ -1,0 +1,34 @@
+prompt: |
+  Use the product-communication skill for this verified status:
+
+  The production iOS checkout-fix release is blocked by two account requirements. The legal Account Holder must accept the updated paid-app agreement today; only that authorized holder may accept binding legal terms. The Finance Owner must complete banking identity verification today; regulated identity verification cannot be delegated to delivery automation. Engineering regression testing continues meanwhile. After both actions, delivery automation will submit the existing build and monitor review. No user-accessible evidence link is available.
+
+  Write the user-facing status message. Use separately completable checklist items and preserve the human-only boundary and unblock result in each item. Do not invent account identifiers, credentials, URLs, or extra actions.
+expectations:
+  - "uses a natural opening sentence followed by Executive summary Human action needed and Detailed information in that order"
+  - "makes What Why and How explicit and includes Who When and Where whenever they affect understanding or action"
+  - "uses explicit in-progress review QA CI delegation investigation queue or retry wording rather than calling active internal work blocked"
+  - "uses blocked wording only when a verified external actor dependency or authorized human gate must act and NED cannot safely resolve it"
+  - "for review in progress names the active reviewer or process scope and next checkpoint and states Human action needed None when no person must act"
+  - "for an external blocker explains why NED cannot resolve it autonomously and names the exact human-owned action"
+  - "for a blocker names the blocked product outcome and explains the confirmed cause in plain language or explicitly says the cause is not yet confirmed"
+  - "for a blocker gives the smallest exact unblock action a named owner urgency and NED's immediate next step"
+  - "states what work continues or pauses while waiting"
+  - "leads with product or user impact rather than implementation jargon"
+  - "uses a short plain-language name for any user-visible scheduled job and keeps technical identifiers in details rather than the displayed name"
+  - "provides a recommended default for any user decision"
+  - "does not label a safe workaround as a blocker"
+  - "uses verified evidence links or explicitly says no user-accessible link is available"
+  - "keeps the four-part message body at or below 120 words unless a safety legal compliance irreversible-loss or truly multi-part decision exception is explicitly justified"
+  - "when an exception is justified leads with a decision summary of at most 120 words and moves extra detail to a labeled appendix"
+  - "avoids raw activity dumps repeated chronology vague asks unsupported certainty and secrets"
+  - "always includes the exact Human action needed field and writes None when no person must act"
+  - "keeps autonomous agent team CI and reviewer-bot next steps out of Human action needed"
+  - "for every non-None human action explicitly explains why the agent or delivery automation cannot safely perform it rather than relying on the human title alone"
+  - "for each required human task names the actor or role imperative action timing or urgency and product result it unblocks"
+  - "uses a Markdown checklist when multiple human tasks are required"
+  - "never claims all profiles received a policy without live inventory canonical-byte verification fresh runtime probes and meaningful exclusions"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
