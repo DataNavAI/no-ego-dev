@@ -40,7 +40,7 @@ Before replacing sibling-profile packages:
 1. Verify the reviewed PR head, checks, merge, and canonical merge commit.
    - Bind the merge to the independently approved head with `--match-head-commit APPROVED_SHA`.
    - Do not assume `gh pr checks --required` returning nonzero means a check failed: GitHub also returns nonzero when the branch has **no configured required checks**. Distinguish that state explicitly, inspect the complete `gh pr checks`/status-rollup result, require every reported check to pass, and re-read the PR head immediately before merging. Under `set -e`, keep the optional `--required` probe separate so the harmless “no required checks reported” state cannot abort the guarded merge path.
-   - After a squash merge, compare the approved candidate tree ID with the merge commit tree ID before using the candidate worktree as the rollout source.
+   - After a squash merge, compare the approved candidate tree ID with the merge commit tree ID, then export package bytes from the verified merge object into non-repository staging. Never use the candidate worktree as the rollout source, even when tree IDs match.
 2. Back up each existing target package to a non-repository profile-local backup root. Do not include credentials or runtime state.
 3. Replace only the selected skill package directories. Never copy profile config, auth files, memory, logs, sessions, caches, or workspaces.
    - Build each replacement in a temporary sibling directory on the same filesystem, verify its complete-package digest, rename the old directory aside, then rename the verified temporary directory into place. Delete the renamed old directory only after installation succeeds; retain the external backup.
@@ -53,7 +53,7 @@ Before replacing sibling-profile packages:
    - In `launchctl list`, a populated PID means the job is running; the adjacent numeric status is the prior exit status and may remain nonzero. Do not diagnose a failed restart from that status column alone.
    - Rich-rendered `hermes skills list` output ellipsizes long names. For machine verification, request local enabled skills with a wide noninteractive terminal or use the resolver/API, then require every expected frontmatter name exactly once.
 8. When profiles can fall back to a shared/default package, inspect resolver ownership explicitly. Update that shared fallback only when the requested rollout scope includes it, and back it up separately.
-9. Advance external inventory state only after the applicable final evidence: post-smoke bytes for skill hot-swaps, or post-restart generation/readiness/provider/hash evidence for process-loaded changes.
+9. Advance an observed package digest only after remote-default merge verification and the applicable rollout evidence: post-smoke bytes for skill hot-swaps, or post-restart generation/readiness/provider/hash evidence for process-loaded changes. Keep blocked/rejected dispositions separate and do not baseline unpublished bytes.
 10. Release the exact harvest lock on every success or failure exit; a stale lock must not block the scheduler indefinitely.
 
 When a target has a materially different same-name package, classify it before replacement. An explicit request to standardize siblings on the harvested canonical package can authorize exact replacement, but preserve a backup and report that target-specific extras were superseded. Without that authority, consolidate compatible context or block the one conflicting package rather than silently deleting it.

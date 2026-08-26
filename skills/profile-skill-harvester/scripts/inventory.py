@@ -2,7 +2,8 @@
 """Inventory complete Hermes skill packages without copying their contents.
 
 The output contains paths, digests, and change classifications only. Operational
-state belongs outside the repository and is written only with --record.
+state belongs outside the repository and is written only with an explicit
+initial-enrollment or verified-merge record operation.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 from dataclasses import asdict, dataclass
@@ -161,6 +163,51 @@ def parse_profile(value: str) -> tuple[str, Path]:
     return name, path
 
 
+def git_output(repo: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "git command failed"
+        raise ValueError(detail)
+    return completed.stdout.strip()
+
+
+def verify_remote_default_record_source(
+    repo: Path,
+    verified_sha: str,
+    remote: str,
+    default_branch: str,
+) -> None:
+    if not re.fullmatch(r"[0-9a-f]{40}", verified_sha):
+        raise ValueError("--verified-remote-default-sha must be a full lowercase commit SHA")
+    remote_ref = f"refs/remotes/{remote}/{default_branch}"
+    remote_sha = git_output(repo, "rev-parse", "--verify", f"{remote_ref}^{{commit}}")
+    advertised = git_output(
+        repo,
+        "ls-remote",
+        "--exit-code",
+        remote,
+        f"refs/heads/{default_branch}",
+    ).split()
+    if len(advertised) != 2:
+        raise ValueError(f"remote default branch refs/heads/{default_branch} is ambiguous")
+    advertised_sha = advertised[0]
+    head_sha = git_output(repo, "rev-parse", "--verify", "HEAD^{commit}")
+    if remote_sha != verified_sha or advertised_sha != verified_sha:
+        raise ValueError(
+            f"verified SHA does not match both remote {remote}/{default_branch} and {remote_ref}; "
+            "fetch the remote default branch and retry"
+        )
+    if head_sha != verified_sha:
+        raise ValueError("inventory source HEAD is not the verified remote-default merge commit")
+    if git_output(repo, "status", "--porcelain", "--untracked-files=all"):
+        raise ValueError("inventory source worktree is not clean at the verified merge commit")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", required=True, type=Path, help="Canonical repository root")
@@ -172,11 +219,23 @@ def main() -> int:
         help="Profile mapping NAME=/absolute/profile/path; repeat as needed",
     )
     parser.add_argument("--state", type=Path, help="External state JSON path")
-    parser.add_argument(
+    record_mode = parser.add_mutually_exclusive_group()
+    record_mode.add_argument(
         "--record",
         action="store_true",
-        help="Record the current observation baseline after a successful disposition",
+        help="Record a full post-rollout baseline from a verified remote-default merge commit",
     )
+    record_mode.add_argument(
+        "--initialize",
+        action="store_true",
+        help="Create the first observation baseline without treating existing drift as harvested",
+    )
+    parser.add_argument(
+        "--verified-remote-default-sha",
+        help="Full fetched remote-default merge SHA required by --record",
+    )
+    parser.add_argument("--remote", default="origin", help="Canonical git remote name")
+    parser.add_argument("--default-branch", default="main", help="Canonical default branch name")
     args = parser.parse_args()
 
     repo = args.repo.expanduser().resolve()
@@ -239,11 +298,43 @@ def main() -> int:
         "errors": errors,
     }
 
+    if args.initialize:
+        if not args.state:
+            parser.error("--initialize requires --state")
+        if args.state.expanduser().exists() or prior:
+            raise SystemExit("refusing to replace an existing inventory with --initialize")
+        if errors:
+            raise SystemExit("refusing to initialize an inventory with discovery errors")
+        snapshot["record_mode"] = "initial_enrollment"
+        atomic_json_write(args.state.expanduser(), snapshot)
+
     if args.record:
         if not args.state:
             parser.error("--record requires --state")
+        if not args.verified_remote_default_sha:
+            parser.error("--record requires --verified-remote-default-sha")
         if errors:
             raise SystemExit("refusing to record an inventory with discovery errors")
+        try:
+            verify_remote_default_record_source(
+                repo,
+                args.verified_remote_default_sha,
+                args.remote,
+                args.default_branch,
+            )
+        except ValueError as exc:
+            raise SystemExit(f"refusing to record: {exc}") from exc
+        unresolved = [candidate for candidate in candidates if candidate["newly_observed"]]
+        if unresolved:
+            names = ", ".join(
+                sorted(f"{item['profile']}:{item['skill']}" for item in unresolved)
+            )
+            raise SystemExit(
+                "refusing to baseline unpublished or unrolled candidates: "
+                f"{names}; use selective merged-entry advancement"
+            )
+        snapshot["record_mode"] = "verified_remote_default_merge"
+        snapshot["verified_remote_default_sha"] = args.verified_remote_default_sha
         atomic_json_write(args.state.expanduser(), snapshot)
 
     json.dump(snapshot, fp=sys.stdout, indent=2, sort_keys=True)

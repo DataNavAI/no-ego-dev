@@ -11,21 +11,23 @@ Use this when a controller session synchronizes generic distribution skills into
 3. Product-local work stays with its owning profile. A default/controller session must not implement, review, deploy, or operate that product unless the user explicitly asks it to intervene.
 4. If the controller previously crossed that boundary, cleanup means removing only controller-created scratch/cache artifacts. Do not delete similarly named files under the owning profile.
 
-## Explicit-owner override after a negative gate
+## Explicit-owner direction after a negative gate
 
-The normal rule remains: do not merge or roll out a rejected candidate. If the user, after the negative disposition is known, explicitly directs deployment anyway:
+A negative review or rejected publication cannot be overridden into distribution rollout. If the user explicitly directs the work to continue after the negative disposition:
 
-- treat that instruction as an owner override for rollout only;
-- identify the exact source commit and unresolved review status in the final report;
-- do not claim the candidate was approved or merge-authorized;
-- keep the source tree immutable during synchronization;
-- do not silently broaden the override to product runtime, cron, credentials, or unrelated configuration.
+- treat the instruction as authorization to repair and republish only, not as publication or rollout approval;
+- fix the finding, revalidate, and obtain fresh exact-SHA review for the changed candidate;
+- merge the approved complete package into the verified remote default branch before any profile mutation;
+- if the user instead narrows the behavior to a genuinely profile-local exception, keep it outside the reusable distribution package and do not describe it as harvested or canonical;
+- do not silently broaden the instruction to product runtime, cron, credentials, or unrelated configuration.
+
+No user scope override, rejected branch commit, pushed branch, or open PR may substitute for canonical publication.
 
 ## Safe complete-package overlay
 
 For every target profile and package:
 
-1. Freeze the exact source commit and require a clean source worktree.
+1. Export the complete package from the exact verified remote-default merge commit into a non-repository staging directory; never source rollout bytes from a candidate worktree.
 2. Back up the complete existing target package to a non-repository directory.
 3. Inventory source-relative and target-relative package files, excluding known generated caches only.
 4. Hash target-only files as profile-local additions.

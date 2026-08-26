@@ -8,8 +8,8 @@ A scheduler result such as `ok` or `execution_success=true` proves only that the
 
 - acquired and released its single-flight lock correctly;
 - completed inventory or semantic reconciliation;
-- advanced external state;
-- published or deliberately dispositioned candidates;
+- advanced observed package digests only for verified remote-default merged updates, while keeping blocked/rejected dispositions separate;
+- published every selected reusable candidate or deliberately dispositioned an unselected blocked/rejected candidate without baselining its bytes;
 - checked every rollout target;
 - reached a legitimate no-change `[SILENT]` result.
 

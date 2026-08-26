@@ -60,7 +60,7 @@ An unfinished automation PR is a durable continuation, not a report-only blocker
 
 If the scheduled job also deploys the canonical distribution to sibling profiles, make the rollout contract explicit in the prompt: enumerate every target profile, define the canonical package root, compare complete-package digests and target-only drift before mutation, back up each target, preserve compatible local additions, block contradictory drift, validate fresh-process discovery per target, and report each target independently. A successful `[SILENT]` result means no new change or blocker was found—not that targets may be assumed synchronized without the per-target digest/adoption checks.
 
-Keep this rollout separate from harvesting: first freeze and verify the canonical remote-default candidate, then apply it to authorized sibling profiles. Never copy auth, sessions, memories, state databases, workspaces, cron configuration, or other runtime state as part of a profile-template/skill rollout. See [`references/live-source-freeze-and-target-sync.md`](references/live-source-freeze-and-target-sync.md) and [`references/controller-to-profile-rollout-boundaries.md`](references/controller-to-profile-rollout-boundaries.md).
+Keep this rollout separate from harvesting: first merge and verify the canonical remote-default commit, then export the selected packages from that immutable merge object into non-repository staging and apply those bytes to authorized sibling profiles. A candidate worktree is never the rollout source, even when its tree matches the merge commit. Never copy auth, sessions, memories, state databases, workspaces, cron configuration, or other runtime state as part of a profile-template/skill rollout. See [`references/live-source-freeze-and-target-sync.md`](references/live-source-freeze-and-target-sync.md) and [`references/controller-to-profile-rollout-boundaries.md`](references/controller-to-profile-rollout-boundaries.md).
 
 The publication boundary is mandatory even when the updated skill originated in the active global/default installation or was edited locally in response to a user request during the harvest. The only terminal dispositions for an observed update are: (a) merged into the remote default branch and then eligible for rollout; or (b) explicitly blocked/rejected with a stable reason and not rolled out. A local edit, successful validation, direct profile copy, pushed branch, or open PR does not satisfy publication. If canonical publication cannot complete, preserve durable continuation coordinates, leave the affected skill undeployed, and do not report the harvest as complete.
 
@@ -272,7 +272,7 @@ If the policy-wide change is specifically about coder/implementation static anal
 
 ## Live Source Freeze and Sibling Propagation
 
-Treat profile packages as mutable until the canonical candidate is committed. Recompare every live-source file immediately before freeze, allow only recorded canonical adaptations, and restart validation if unexpected drift appears. After merge, back up target packages, replace only authorized skill directories, verify canonical digests, smoke-test discovery/provider operation, advance state, and release the exact lock on every exit.
+Treat profile packages as mutable until the canonical candidate is committed. Recompare every live-source file immediately before freeze, allow only recorded canonical adaptations, and restart validation if unexpected drift appears. After merge, export packages from the verified merge object, back up target packages, replace only authorized skill directories, verify canonical digests, smoke-test discovery/provider operation, advance only merged-package observed digests, and release the exact lock on every exit.
 
 Do not reflexively restart a gateway after a **skill-only** overlay. Existing same-name skills are read from disk when invoked, so new sessions and workers hot-load updated `SKILL.md` and support files. Existing conversations should use `/reset` or `/new` before relying on changed instructions; `/reload-skills` is for rescanning added or removed skill names. Reserve gateway restarts for startup-loaded code, plugins, environment, or configuration, or when live evidence shows the changed artifact is process-cached. Record `hot-swap verified` separately from `gateway restarted` rather than treating restart as the universal adoption gate.
 
@@ -394,7 +394,7 @@ If there are no new differences and no blocker requiring attention, return `[SIL
 4. **Losing support files.** Hash and move complete package directories.
 5. **Creating duplicate skill names.** If two paths declare the same frontmatter name, block until ownership/path is resolved.
 6. **Publishing unresolved ambiguity.** A concise blocked report is better than a confident but incoherent merge.
-7. **Updating state too early.** Only merged or explicitly dispositioned candidates advance the baseline.
+7. **Updating state too early.** Only candidates merged into the verified remote default branch advance their observed digest. Blocked/rejected outcomes live in a separate disposition map and never baseline unpublished bytes.
 8. **Leaving worktrees and locks behind.** Clean only the exact automation worktree/branch you created after verifying publication status.
 9. **Validating evals with YAML parsing alone.** Run the repository's real eval loader over every package; focused tests must not encode a private schema that production rejects.
 10. **Treating a negative verdict as reviewer failure.** A valid `REQUEST_CHANGES` for an unchanged SHA is complete evidence. Fix once and review the new SHA instead of dispatching duplicate reviewers.
@@ -455,5 +455,5 @@ If there are no new differences and no blocker requiring attention, return `[SIL
 - [ ] Profile-family service identities audited per profile-local configuration; shared identity targets and explicit exception profiles are declared before mutation
 - [ ] Shared credentials were authenticated in isolation, copied only to approved profile-local destinations, and every target passed identity/scope/API verification without secret exposure
 - [ ] Skill discovery confirms one enabled package per frontmatter name; superseded nested duplicates were backed up and removed
-- [ ] External state advanced only after final disposition
+- [ ] Observed package digests advanced only for verified remote-default merged updates; blocked/rejected dispositions were recorded separately without baselining unpublished bytes
 - [ ] Exact lock/worktree cleanup performed

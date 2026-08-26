@@ -113,6 +113,18 @@ def test_harvested_skill_updates_must_publish_canonically_before_rollout():
     assert "recorded separately" in contract.lower()
     assert "merged or stable-rejection disposition" not in contract
 
+    boundaries = (
+        SKILL_DIR / "references" / "controller-to-profile-rollout-boundaries.md"
+    ).read_text(encoding="utf-8")
+    propagation = (
+        SKILL_DIR / "references" / "live-source-freeze-and-target-sync.md"
+    ).read_text(encoding="utf-8")
+    assert "cannot be overridden into distribution rollout" in boundaries
+    assert "No user scope override" in boundaries
+    assert "never source rollout bytes from a candidate worktree" in boundaries
+    assert "Never use the candidate worktree as the rollout source" in propagation
+    assert "candidate worktree may be used as the rollout source" not in propagation
+
 
 def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inventory():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
@@ -575,6 +587,109 @@ def test_inventory_detects_divergent_complete_packages(tmp_path):
     assert json.loads(state.read_text(encoding="utf-8"))["profiles"]["ned"]["example"]["digest"]
     assert state.stat().st_mode & 0o777 == 0o600
     assert source.is_dir()
+
+
+def _git(repo: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return completed.stdout.strip()
+
+
+def test_inventory_record_requires_verified_merge_and_refuses_new_candidate(tmp_path):
+    repo = tmp_path / "repo"
+    profile = tmp_path / "profile"
+    _package(repo, "example", "merged")
+    _package(profile, "example", "merged")
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.name", "Test")
+    _git(repo, "config", "user.email", "test@example.invalid")
+    _git(repo, "add", "skills")
+    _git(repo, "commit", "-qm", "canonical")
+    _git(repo, "branch", "-M", "main")
+    remote = tmp_path / "remote.git"
+    remote.mkdir()
+    _git(remote, "init", "--bare", "-q")
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "-qu", "origin", "main")
+    sha = _git(repo, "rev-parse", "HEAD")
+
+    state = tmp_path / "state.json"
+    command = [
+        sys.executable,
+        str(SCRIPT),
+        "--repo",
+        str(repo),
+        "--profile",
+        f"ned={profile}",
+        "--state",
+        str(state),
+        "--record",
+        "--verified-remote-default-sha",
+        sha,
+    ]
+    recorded = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    assert recorded.returncode == 0, recorded.stderr
+    saved = json.loads(state.read_text(encoding="utf-8"))
+    assert saved["record_mode"] == "verified_remote_default_merge"
+    assert saved["verified_remote_default_sha"] == sha
+
+    previous_state = state.read_bytes()
+    wrong_sha = subprocess.run(
+        [*command[:-1], "0" * 40], capture_output=True, text=True, timeout=10
+    )
+    assert wrong_sha.returncode != 0
+    assert "does not match both remote" in wrong_sha.stderr
+    assert state.read_bytes() == previous_state
+
+    (profile / "skills" / "example" / "SKILL.md").write_text(
+        "---\nname: example\ndescription: test\n---\n\n# example\n\nunpublished\n",
+        encoding="utf-8",
+    )
+    refused = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    assert refused.returncode != 0
+    assert "refusing to baseline unpublished or unrolled candidates" in refused.stderr
+    assert state.read_bytes() == previous_state
+
+    (repo / "untracked.txt").write_text("dirty\n", encoding="utf-8")
+    dirty = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    assert dirty.returncode != 0
+    assert "worktree is not clean" in dirty.stderr
+    assert state.read_bytes() == previous_state
+
+
+def test_inventory_initial_enrollment_is_explicit_and_nonrepeatable(tmp_path):
+    repo = tmp_path / "repo"
+    profile = tmp_path / "profile"
+    _package(repo, "example", "canonical")
+    _package(profile, "example", "preexisting-profile-drift")
+    state = tmp_path / "state.json"
+    command = [
+        sys.executable,
+        str(SCRIPT),
+        "--repo",
+        str(repo),
+        "--profile",
+        f"ned={profile}",
+        "--state",
+        str(state),
+        "--initialize",
+    ]
+
+    initialized = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    assert initialized.returncode == 0, initialized.stderr
+    saved = json.loads(state.read_text(encoding="utf-8"))
+    assert saved["record_mode"] == "initial_enrollment"
+    first_bytes = state.read_bytes()
+
+    repeated = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    assert repeated.returncode != 0
+    assert "refusing to replace an existing inventory" in repeated.stderr
+    assert state.read_bytes() == first_bytes
 
 
 def test_inventory_rejects_duplicate_frontmatter_names(tmp_path):
