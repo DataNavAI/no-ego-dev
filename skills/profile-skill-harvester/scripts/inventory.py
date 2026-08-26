@@ -176,36 +176,61 @@ def git_output(repo: Path, *args: str) -> str:
     return completed.stdout.strip()
 
 
+def normalize_remote_url(value: str) -> str:
+    value = value.strip().rstrip("/")
+    if value.endswith(".git"):
+        value = value[:-4]
+    if value.startswith("git@") and ":" in value:
+        host, path = value[4:].split(":", 1)
+        return f"ssh://{host}/{path}".rstrip("/")
+    if "://" not in value:
+        return str(Path(value).expanduser().resolve())
+    return value
+
+
+def verify_origin_identity(repo: Path, expected_url: str) -> tuple[str, str]:
+    actual_url = git_output(repo, "remote", "get-url", "origin")
+    normalized_actual = normalize_remote_url(actual_url)
+    normalized_expected = normalize_remote_url(expected_url)
+    if normalized_actual != normalized_expected:
+        raise ValueError("origin URL does not match the enrolled canonical remote URL")
+
+    advertised = git_output(repo, "ls-remote", "--symref", "origin", "HEAD").splitlines()
+    symrefs = [line.split() for line in advertised if line.startswith("ref:")]
+    heads = [line.split() for line in advertised if not line.startswith("ref:")]
+    if len(symrefs) != 1 or len(symrefs[0]) != 3 or symrefs[0][2] != "HEAD":
+        raise ValueError("origin HEAD does not advertise one symbolic default branch")
+    prefix = "refs/heads/"
+    if not symrefs[0][1].startswith(prefix):
+        raise ValueError("origin HEAD does not resolve to refs/heads/<branch>")
+    default_branch = symrefs[0][1][len(prefix):]
+    head_rows = [row for row in heads if len(row) == 2 and row[1] == "HEAD"]
+    if len(head_rows) != 1 or not re.fullmatch(r"[0-9a-f]{40}", head_rows[0][0]):
+        raise ValueError("origin HEAD does not advertise one default-branch commit")
+    return default_branch, head_rows[0][0]
+
+
 def verify_remote_default_record_source(
     repo: Path,
     verified_sha: str,
-    remote: str,
-    default_branch: str,
-) -> None:
+    expected_remote_url: str,
+) -> tuple[str, str]:
     if not re.fullmatch(r"[0-9a-f]{40}", verified_sha):
         raise ValueError("--verified-remote-default-sha must be a full lowercase commit SHA")
-    remote_ref = f"refs/remotes/{remote}/{default_branch}"
+    default_branch, advertised_sha = verify_origin_identity(repo, expected_remote_url)
+    remote_ref = f"refs/remotes/origin/{default_branch}"
     remote_sha = git_output(repo, "rev-parse", "--verify", f"{remote_ref}^{{commit}}")
-    advertised = git_output(
-        repo,
-        "ls-remote",
-        "--exit-code",
-        remote,
-        f"refs/heads/{default_branch}",
-    ).split()
-    if len(advertised) != 2:
-        raise ValueError(f"remote default branch refs/heads/{default_branch} is ambiguous")
-    advertised_sha = advertised[0]
     head_sha = git_output(repo, "rev-parse", "--verify", "HEAD^{commit}")
     if remote_sha != verified_sha or advertised_sha != verified_sha:
         raise ValueError(
-            f"verified SHA does not match both remote {remote}/{default_branch} and {remote_ref}; "
-            "fetch the remote default branch and retry"
+            f"verified SHA does not match both origin/{default_branch} and {remote_ref}; "
+            "fetch origin and retry"
         )
     if head_sha != verified_sha:
         raise ValueError("inventory source HEAD is not the verified remote-default merge commit")
     if git_output(repo, "status", "--porcelain", "--untracked-files=all"):
         raise ValueError("inventory source worktree is not clean at the verified merge commit")
+    return default_branch, normalize_remote_url(expected_remote_url)
 
 
 def main() -> int:
@@ -232,10 +257,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--verified-remote-default-sha",
-        help="Full fetched remote-default merge SHA required by --record",
+        help="Full origin-default merge SHA required by --record",
     )
-    parser.add_argument("--remote", default="origin", help="Canonical git remote name")
-    parser.add_argument("--default-branch", default="main", help="Canonical default branch name")
+    parser.add_argument(
+        "--canonical-remote-url",
+        help="Canonical origin URL; required by --initialize and --record and persisted as a trust anchor",
+    )
     args = parser.parse_args()
 
     repo = args.repo.expanduser().resolve()
@@ -244,28 +271,47 @@ def main() -> int:
     prior_profiles = prior.get("profiles", {}) if isinstance(prior.get("profiles", {}), dict) else {}
 
     profiles: dict[str, dict[str, Package]] = {}
+    profile_roots: dict[str, str] = {}
     errors = list(source_errors)
     for profile_name, profile_path in args.profile:
+        if profile_name in profiles:
+            errors.append(f"duplicate --profile name: {profile_name}")
+            continue
         resolved = profile_path.resolve()
         found, profile_errors = discover(resolved / "skills")
         profiles[profile_name] = found
+        profile_roots[profile_name] = str(resolved)
         errors.extend(f"{profile_name}: {message}" for message in profile_errors)
 
     candidates = []
-    all_names = sorted(set(source).union(*(set(skills) for skills in profiles.values())))
+    all_skill_names = set(source)
+    for packages in profiles.values():
+        all_skill_names.update(packages)
+    for prior_packages in prior_profiles.values():
+        if isinstance(prior_packages, dict):
+            all_skill_names.update(prior_packages)
+    all_names = sorted(all_skill_names)
     for skill_name in all_names:
         source_package = source.get(skill_name)
         variants: dict[str, list[str]] = {}
         for profile_name, profile_packages in profiles.items():
             package = profile_packages.get(skill_name)
+            old_entry = prior_profiles.get(profile_name, {}).get(skill_name, {})
+            old_digest = old_entry.get("digest") if isinstance(old_entry, dict) else None
             if not package:
+                if old_digest is not None:
+                    candidates.append(
+                        {
+                            "skill": skill_name,
+                            "profile": profile_name,
+                            "profile_digest": None,
+                            "source_digest": source_package.digest if source_package else None,
+                            "newly_observed": True,
+                            "classification": "missing",
+                        }
+                    )
                 continue
             variants.setdefault(package.digest, []).append(profile_name)
-            old_digest = (
-                prior_profiles.get(profile_name, {})
-                .get(skill_name, {})
-                .get("digest")
-            )
             differs = source_package is None or package.digest != source_package.digest
             newly_observed = package.digest != old_digest
             if differs:
@@ -289,6 +335,7 @@ def main() -> int:
         "initialized_at": prior.get("initialized_at") or observed_at,
         "observed_at": observed_at,
         "repo": str(repo),
+        "profile_roots": profile_roots,
         "source": {name: asdict(package) for name, package in sorted(source.items())},
         "profiles": {
             profile: {name: asdict(package) for name, package in sorted(packages.items())}
@@ -301,11 +348,21 @@ def main() -> int:
     if args.initialize:
         if not args.state:
             parser.error("--initialize requires --state")
+        if not args.canonical_remote_url:
+            parser.error("--initialize requires --canonical-remote-url")
         if args.state.expanduser().exists() or prior:
             raise SystemExit("refusing to replace an existing inventory with --initialize")
+        if not profiles:
+            raise SystemExit("refusing to initialize without at least one configured profile")
         if errors:
             raise SystemExit("refusing to initialize an inventory with discovery errors")
+        try:
+            default_branch, _ = verify_origin_identity(repo, args.canonical_remote_url)
+        except ValueError as exc:
+            raise SystemExit(f"refusing to initialize: {exc}") from exc
         snapshot["record_mode"] = "initial_enrollment"
+        snapshot["canonical_remote_url"] = normalize_remote_url(args.canonical_remote_url)
+        snapshot["default_branch"] = default_branch
         atomic_json_write(args.state.expanduser(), snapshot)
 
     if args.record:
@@ -313,14 +370,25 @@ def main() -> int:
             parser.error("--record requires --state")
         if not args.verified_remote_default_sha:
             parser.error("--record requires --verified-remote-default-sha")
+        if not args.canonical_remote_url:
+            parser.error("--record requires --canonical-remote-url")
+        if not args.state.expanduser().exists() or not prior.get("initialized_at"):
+            raise SystemExit("refusing to record before explicit --initialize enrollment")
+        enrolled_remote = prior.get("canonical_remote_url")
+        enrolled_roots = prior.get("profile_roots")
+        if not isinstance(enrolled_remote, str) or not isinstance(enrolled_roots, dict):
+            raise SystemExit("refusing to record state without enrolled remote/profile trust anchors")
+        if normalize_remote_url(args.canonical_remote_url) != enrolled_remote:
+            raise SystemExit("refusing to change the enrolled canonical remote during --record")
+        if set(profiles) != set(prior_profiles) or profile_roots != enrolled_roots:
+            raise SystemExit("refusing to record an incomplete or substituted configured profile set")
         if errors:
             raise SystemExit("refusing to record an inventory with discovery errors")
         try:
-            verify_remote_default_record_source(
+            default_branch, normalized_remote = verify_remote_default_record_source(
                 repo,
                 args.verified_remote_default_sha,
-                args.remote,
-                args.default_branch,
+                args.canonical_remote_url,
             )
         except ValueError as exc:
             raise SystemExit(f"refusing to record: {exc}") from exc
@@ -335,6 +403,8 @@ def main() -> int:
             )
         snapshot["record_mode"] = "verified_remote_default_merge"
         snapshot["verified_remote_default_sha"] = args.verified_remote_default_sha
+        snapshot["canonical_remote_url"] = normalized_remote
+        snapshot["default_branch"] = default_branch
         atomic_json_write(args.state.expanduser(), snapshot)
 
     json.dump(snapshot, fp=sys.stdout, indent=2, sort_keys=True)
