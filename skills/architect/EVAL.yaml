@@ -13,6 +13,7 @@ expectations:
   - "for web games documents game architecture patterns frame budget asset pipeline and engine-specific skill discovery or creation"
   - "considers MVP cost when recommending hosting"
   - "asks the user to choose only when provider tradeoffs materially affect cost, architecture, compliance, or access"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
 setupCommands: []
 teardownCommands: []
 parameters:

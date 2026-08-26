@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.4.0
+version: 0.4.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -196,6 +196,10 @@ When the user explicitly requests tests only and forbids the production implemen
 6. Do not claim full passing verification. Name the concrete GREEN blocker and state that implementing it was outside scope.
 
 Do not let generic “fresh passing verification” pressure expand a RED-only task into unauthorized production work. Conversely, expected RED alone is not enough evidence: pair it with passing nearby baseline checks when possible.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Verification Checklist
 

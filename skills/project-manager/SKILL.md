@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.22.0
+version: 0.22.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -666,6 +666,10 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 18. When tasks complete, verify the milestone goal using direct evidence.
 19. After every verified big task or milestone, update and commit the repository-root `STATUS.md` with the current state, evidence, blockers/decisions, and ordered next steps.
 20. Send a phase-complete progress update. If achieved and bug triage is clean, mark the milestone done and notify the client with a user-accessible `STATUS.md` link; otherwise create missing-part tasks, update the status snapshot, and send an updated plan.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Verification Checklist
 

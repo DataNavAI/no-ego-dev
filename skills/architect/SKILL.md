@@ -1,7 +1,7 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.2
+version: 0.2.3
 author: NoEgoDev
 license: MIT
 metadata:
@@ -147,6 +147,10 @@ Implementation/QA tasks: <engine setup, gameplay systems, analytics, tests, smok
 7. Ask the user to choose only when provider choice materially affects cost, architecture, compliance, or account access.
 8. Name every affected component and interface.
 9. Save the spec under `.projects/<project>/tech-specs/`.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Verification Checklist
 

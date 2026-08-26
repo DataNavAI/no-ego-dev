@@ -25,6 +25,7 @@ expectations:
   - "allows ephemeral or local storage only for disposable prototype or PoC data and prevents those shortcuts from silently carrying into MVP"
   - "adds a persistence-readiness task for prototype or PoC promotion covering migrations backups restore monitoring ownership and rollback"
   - "when structured analytics is selected defines only the needed qualifying activity activation churn identity timezone cohort and exclusion semantics without creating a broad dashboard"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
 parameters:
   fixture: evaldata/README.md
   template: templates/mvp-plan.md

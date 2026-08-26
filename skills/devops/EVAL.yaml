@@ -46,6 +46,7 @@ expectations:
   - "treats requested waiting pending queued and in progress as nonterminal and uses bounded fallback grace and runtime limits when the repository documents none"
   - "keeps the CI incident open despite any separate owner risk exception until exact default branch readback proves every applicable required workflow and check green"
   - "must verify the replacement run and all required workflows on the exact repaired or default branch SHA before closing the incident"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
 setupCommands: []
 teardownCommands: []
 parameters:

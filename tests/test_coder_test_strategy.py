@@ -14,7 +14,7 @@ def test_coder_prefers_fast_reliable_lower_layer_tests_and_minimal_e2e():
     expectations = "\n".join(evaluation["expectations"])
 
     for marker in (
-        "version: 0.4.0",
+        "version: 0.4.1",
         "Test strategy: fast, reliable PR gates",
         "Default to unit tests",
         "Use focused integration tests for boundaries",

@@ -1,7 +1,7 @@
 ---
 name: technical-design-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact technical design or tech-spec revision for integrity, minimal complexity, automatic testability, operability, and sustainable self-monitoring."
-version: 0.3.6
+version: 0.3.7
 author: NoEgoDev
 license: MIT
 metadata:
@@ -263,6 +263,10 @@ Approval rationale: <why this exact design is or is not sound, minimal, testable
 ```
 
 Every approval dimension must cite artifact or repository evidence. A list of technologies is not a design, and a list of test names is not a testability proof.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Verification Checklist
 

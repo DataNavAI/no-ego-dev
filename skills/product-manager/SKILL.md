@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.4
+version: 0.2.5
 author: NoEgoDev
 license: MIT
 metadata:
@@ -205,6 +205,10 @@ Daily platform parity review — <project> — <date/time + timezone>
 15. Save or update metrics plan artifacts under `.projects/<project>/metrics/` unless the project has a stronger existing convention.
 16. Save or update feedback loop/log artifacts under `.projects/<project>/feedback/` unless the project has a stronger existing convention.
 17. Save or update platform parity artifacts under `.projects/<project>/platform-parity/` unless the project has a stronger existing convention.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Verification Checklist
 

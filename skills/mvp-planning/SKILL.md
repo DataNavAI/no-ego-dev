@@ -1,7 +1,7 @@
 ---
 name: mvp-planning
 description: "Use when planning a new MVP or cutting an existing product idea down to its minimum viable scope. Selects one key user problem, limits the MVP to one primary and at most two supporting critical user journeys, removes nonessential features, designs the shortest intuitive UX, and defines automated and manual QA gates that prove the core journeys work end to end."
-version: 1.1.1
+version: 1.1.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -299,6 +299,10 @@ If the plan cannot answer those questions, it is not ready for architecture or i
 10. **Letting new ideas leak into implementation.** Require CUJ mapping and explicit scope approval.
 11. **Supporting too many platforms.** Support only the interfaces needed to validate the problem; mark others intentionally unsupported or planned.
 12. **Calling a prototype an MVP.** Real users must complete the primary CUJ in a serviceable environment.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Verification Checklist
 

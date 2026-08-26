@@ -1,7 +1,7 @@
 ---
 name: qa
 description: "Use when writing or maintaining smoke/feature test plans, running UI QA, producing pass/fail reports with screenshots, and filing bugs in the issue system."
-version: 0.1.1
+version: 0.1.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -188,6 +188,10 @@ Notes:
 4. **Deleting evidence too early.** Upload/attach and verify first, then remove the per-run folder.
 5. **Ignoring obvious adjacent breakage.** A normal user does not care that the plan only covered one feature; report obvious broken navigation, auth, layout, error handling, or data-loss risks.
 6. **Letting stale bugs block milestones.** Re-triage before execution and milestone completion; close invalid, obsolete, or too-minor bugs as won't fix with rationale.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Verification Checklist
 
