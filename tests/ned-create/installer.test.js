@@ -12,7 +12,7 @@ const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/ned-create/INSTALL.md');
 const syntheticSecret = 'synthetic-daytona-test-key';
-const revision = 'a1de22fb7968c3c646ea21f3a9533a3bcd04c9cb';
+const releaseRevision = 'a1de22fb7968c3c646ea21f3a9533a3bcd04c9cb';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
 
 async function sha256(file) {
@@ -104,7 +104,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const installer = path.join(root, 'install-under-test.sh');
   await writeFile(installer, text, { mode: 0o700 });
 
-  return { root, home, curlLog, profileTempModeLog, installer, platform, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
+  return { root, home, sourceRoot, curlLog, profileTempModeLog, installer, platform, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
 }
 
 function runInstaller(harness, env = {}, input = `${syntheticSecret}\n`, installer = harness.installer) {
@@ -122,6 +122,25 @@ async function makeInstallerVariant(harness, replacements) {
   const variant = path.join(harness.root, `variant-${Math.random().toString(16).slice(2)}.sh`);
   await writeFile(variant, text, { mode: 0o700 });
   return variant;
+}
+
+async function makeCandidateCheckout(harness) {
+  const checkout = path.join(harness.root, 'candidate');
+  const installer = path.join(checkout, 'scripts', 'install.sh');
+  await cp(harness.sourceRoot, checkout, { recursive: true });
+  await mkdir(path.dirname(installer), { recursive: true });
+  await cp(harness.installer, installer);
+  for (const args of [
+    ['init', '-q', checkout],
+    ['-C', checkout, 'add', '.'],
+    ['-C', checkout, '-c', 'user.name=NED test', '-c', 'user.email=ned-test@example.invalid', 'commit', '-qm', 'candidate installer'],
+  ]) {
+    const result = spawnSync('git', args, { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const result = spawnSync('git', ['-C', checkout, 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  return { installer, revision: result.stdout.trim() };
 }
 
 for (const file of [readme, installDoc]) {
@@ -180,6 +199,21 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   });
   assert.equal(installedHelp.status, 0, installedHelp.stderr);
   assert.equal(installedHelp.stderr, '');
+});
+
+test('candidate checkout installer installs its exact checked-out identity while a copied release installer retains its stable pin', async () => {
+  const candidateHarness = await makeHarness();
+  const candidate = await makeCandidateCheckout(candidateHarness);
+  const candidateResult = runInstaller(candidateHarness, {}, '', candidate.installer);
+  assert.equal(candidateResult.status, 0, candidateResult.stderr);
+  const candidateManifest = await readFile(path.join(await activeGeneration(candidateHarness), 'install-manifest'), 'utf8');
+  assert.match(candidateManifest, new RegExp(`^revision=${candidate.revision}$`, 'm'));
+
+  const releaseHarness = await makeHarness();
+  const releaseResult = runInstaller(releaseHarness, {}, '');
+  assert.equal(releaseResult.status, 0, releaseResult.stderr);
+  const releaseManifest = await readFile(path.join(await activeGeneration(releaseHarness), 'install-manifest'), 'utf8');
+  assert.match(releaseManifest, new RegExp(`^revision=${releaseRevision}$`, 'm'));
 });
 
 test('clean macOS arm64 and Ubuntu amd64/arm64 installs and reruns preserve BotFather copy and CLI-linked docs', async () => {
@@ -332,7 +366,7 @@ test('failed upgrade integrity leaves a seeded complete installation byte-for-by
   const before = await snapshot(path.join(harness.home, '.local'));
   const nextRevision = '4'.repeat(40);
   const badUpgrade = await makeInstallerVariant(harness, [
-    [new RegExp(revision, 'g'), nextRevision],
+    [new RegExp(releaseRevision, 'g'), nextRevision],
     [/NED_SOURCE_SHA256=[a-f0-9]{64}/, `NED_SOURCE_SHA256=${'0'.repeat(64)}`],
   ]);
   const result = runInstaller(harness, {}, '', badUpgrade);
@@ -383,7 +417,7 @@ test('installed launcher preserves credential-free create dry-run', async () => 
 test('production installer pins runtime and source versions with per-platform SHA-256 values', async () => {
   const text = await readFile(productionInstaller, 'utf8');
   assert.match(text, /NODE_VERSION=22\.14\.0/);
-  assert.match(text, new RegExp(`NED_REVISION=${revision}`));
+  assert.match(text, new RegExp(`RELEASE_NED_REVISION=${releaseRevision}`));
   for (const platform of ['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64']) {
     assert.match(text, new RegExp(`${platform.replace('-', '\\-')}:[a-f0-9]{64}`));
   }
