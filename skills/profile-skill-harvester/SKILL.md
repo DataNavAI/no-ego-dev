@@ -334,7 +334,7 @@ The state file is operational metadata and must remain outside the repository, f
 ~/.hermes/state/profile-skill-harvester/state.json
 ```
 
-Record a profile package as harvested only after its result is merged into the canonical branch or deliberately rejected with a stable reason. Do not advance state merely because a diff was inspected or a branch was pushed.
+Record a new or updated profile package as harvested, and advance its observed digest, only after its result is merged into the verified remote default branch. A stable blocked/rejected disposition may be persisted separately, keyed to the candidate digest, to avoid repeating resolved analysis; it must not replace the prior observed digest, make the unpublished candidate no longer `newly_observed`, or count as publication. Do not advance state merely because a diff was inspected, validated, rejected, pushed, or placed in an open PR.
 
 State should include:
 
@@ -350,15 +350,16 @@ A retry must reuse or supersede an existing automation PR rather than opening du
 
 The inventory script's `--record` mode writes a complete observation snapshot. Do **not** use it after publishing or rejecting only a subset of newly observed candidates, because that silently baselines every unprocessed profile/package difference.
 
-When only some entries are dispositioned:
+When only some entries are merged:
 
 1. keep the prior state as the base;
-2. atomically update only each dispositioned `profiles[profile][skill]` digest/metadata entry;
-3. record the resulting canonical digest, stable rejection reason, PR URL, merge commit, and verified remote-default SHA for those entries;
-4. leave every unprocessed profile/skill digest unchanged so it remains `newly_observed` next run;
-5. rerun inventory against the updated state and assert that dispositioned entries are no longer new while deferred entries still are.
+2. atomically update only each merged `profiles[profile][skill]` digest/metadata entry;
+3. record the resulting canonical digest, PR URL, merge commit, and verified remote-default SHA for those merged entries;
+4. record blocked/rejected candidate digests and stable reasons in a separate disposition map without changing their prior observed digest;
+5. leave every unpublished profile/skill digest unchanged so it remains `newly_observed` next run;
+6. rerun inventory against the updated state and assert that merged entries are no longer new while blocked, rejected, deferred, pushed-only, and open-PR entries still are.
 
-Use full `--record` only when every newly observed candidate in the scan has a final merged or stable-rejection disposition.
+Use full `--record` only when every newly observed new/update candidate in the scan is merged into the verified remote default branch. If any candidate is blocked, rejected, deferred, pushed-only, or still in an open PR, use selective merged-entry advancement and preserve its prior observed digest.
 
 ### Verify operational markers as changed artifacts
 

@@ -21,9 +21,9 @@ Why it fails:
 ```markdown
 **The production release needs your help to continue.**
 
-**Executive summary:** Customer signup remains on the previous version because the deployment account lacks permission to update the production service. Staging and QA are complete; documentation work can continue.
+**Executive summary:** Customer signup remains on the previous version because the deployment account lacks permission to update the production service. Staging and QA are complete; documentation work can continue. After access is granted, the team will verify it and deploy the tested revision.
 
-**Human action needed:** By 3 PM, an account admin should grant `Release Manager` to `agent@example.com` in the production workspace. I will verify access, deploy the tested revision, and report the result immediately.
+**Human action needed:** **Production account admin — by 3 PM:** Grant `Release Manager` to the delivery identity in the production workspace. Only an authorized account admin can grant this privileged role; delivery automation cannot safely authorize itself. This unblocks production deployment.
 
 **Detailed information:**
 - <verified access-settings link>
@@ -37,9 +37,9 @@ Do not disguise a hypothesis as root cause.
 ```markdown
 **Reporting why the checkout release is paused.**
 
-**Executive summary:** The release is paused because the final checkout verification fails in production; the cause is not yet confirmed. Existing checkout remains available, and no failed charges are confirmed. I am comparing production configuration with the passing staging build now.
+**Executive summary:** The release is paused because the final checkout verification fails in production; the cause is not yet confirmed. Existing checkout remains available, and no failed charges are confirmed. The team is comparing production configuration with the passing staging build and will report the next checkpoint by 4 PM.
 
-**Human action needed:** None. I will report the confirmed cause or next bounded diagnostic step by 4 PM.
+**Human action needed:** None
 
 **Detailed information:**
 - <verified incident/evidence link>
@@ -52,9 +52,9 @@ If a safe workaround permits progress, label it as a risk or constraint rather t
 ```markdown
 **Reporting a release risk.**
 
-**Executive summary:** Automated screenshot capture is unavailable for one mobile viewport, but manual device verification lets QA continue. This may add one hour to release validation; product behavior is not blocked.
+**Executive summary:** Automated screenshot capture is unavailable for one mobile viewport, but manual device verification lets QA continue. This may add one hour to release validation; product behavior is not blocked. The team will complete the manual check and attach evidence before the release decision.
 
-**Human action needed:** None. I will complete the manual check and attach evidence before the release decision.
+**Human action needed:** None
 
 **Detailed information:**
 - <verified QA task>

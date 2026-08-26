@@ -79,7 +79,7 @@ def test_profile_skill_harvester_package_contract():
         "isolated worktree",
         "Complete packages move together",
         "Initial enrollment is a baseline",
-        "Advances external inventory state only after merge",
+        "Advances an observed package digest only after the update is merged",
     ):
         assert marker in skill or marker in "\n".join(evaluation["expectations"])
     assert SCRIPT.is_file()
@@ -93,6 +93,7 @@ def test_harvested_skill_updates_must_publish_canonically_before_rollout():
     contract = (
         f"{skill}\n{fixture.read_text(encoding='utf-8')}\n"
         f"{state_machine.read_text(encoding='utf-8')}\n"
+        f"{evaluation['prompt']}\n"
         + "\n".join(evaluation["expectations"])
     )
 
@@ -107,6 +108,10 @@ def test_harvested_skill_updates_must_publish_canonically_before_rollout():
 
     assert "live profile rollout is not publication" in contract.lower()
     assert "state must not advance" in contract.lower()
+    assert "must not replace the prior observed digest" in contract.lower()
+    assert "remain `newly_observed`" in contract
+    assert "recorded separately" in contract.lower()
+    assert "merged or stable-rejection disposition" not in contract
 
 
 def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inventory():

@@ -3,7 +3,12 @@ prompt: |
 
   The production iOS checkout-fix release is blocked by two account requirements. The legal Account Holder must accept the updated paid-app agreement today; only that authorized holder may accept binding legal terms. The Finance Owner must complete banking identity verification today; regulated identity verification cannot be delegated to delivery automation. Engineering regression testing continues meanwhile. After both actions, delivery automation will submit the existing build and monitor review. No user-accessible evidence link is available.
 
-  Write the user-facing status message. Use separately completable checklist items and preserve the human-only boundary and unblock result in each item. Do not invent account identifiers, credentials, URLs, or extra actions.
+  Write two separately labeled user-facing messages:
+
+  A. The external-blocker status above. Use separately completable checklist items and preserve the human-only boundary and unblock result in each item.
+  B. A no-action progress status: CI is running for the tested checkout fix, the delivery team will inspect the result and continue release preparation automatically, and no person needs to act. Put the autonomous next step in `Executive summary` and write the `Human action needed:` field as exact `None` with no appended sentence.
+
+  Do not invent account identifiers, credentials, URLs, or extra actions.
 expectations:
   - "uses a natural opening sentence followed by Executive summary Human action needed and Detailed information in that order"
   - "makes What Why and How explicit and includes Who When and Where whenever they affect understanding or action"
@@ -23,6 +28,7 @@ expectations:
   - "when an exception is justified leads with a decision summary of at most 120 words and moves extra detail to a labeled appendix"
   - "avoids raw activity dumps repeated chronology vague asks unsupported certainty and secrets"
   - "always includes the exact Human action needed field and writes None when no person must act"
+  - "in the no-action message writes Human action needed as exact None with no autonomous or team work appended to that field"
   - "keeps autonomous agent team CI and reviewer-bot next steps out of Human action needed"
   - "for every non-None human action explicitly explains why the agent or delivery automation cannot safely perform it rather than relying on the human title alone"
   - "for each required human task names the actor or role imperative action timing or urgency and product result it unblocks"

@@ -218,11 +218,12 @@ For immutable reviews or releases, include the exact SHA/revision and a verified
 
 When this skill or another message-governing policy changes, updating the global/default copy does **not** prove that profile-local emitters received it.
 
-1. Inventory every intended message emitter: global/default plus each named profile, cron owner, gateway, or distribution that may carry a local skill override.
-2. Define the rollout scope explicitly. Apply the canonical policy to every intended target, preserving compatible profile-local EVALs, fixtures, and domain references; report unrelated profiles as exclusions rather than implying universal coverage.
-3. Verify canonical file hashes or equivalent immutable bindings on every target. A matching version string alone is insufficient.
-4. Start a fresh registry/load probe in every target runtime and retrieve a distinguishing contract from the updated skill. Filesystem presence alone is insufficient because long-lived sessions may still hold cached instructions.
-5. In the completion message, state the included profiles, meaningful exclusions, preserved local additions, and runtime verification result. Never say `all profiles` unless the live profile inventory and every intended target were checked.
+1. Publish the complete eval-backed package to the canonical repository and verify the exact merge commit on the remote default branch. A global/default copy, local worktree, pushed branch, or open PR is not a rollout source.
+2. Inventory every intended message emitter: global/default plus each named profile, cron owner, gateway, or distribution that may carry a local skill override.
+3. Define the rollout scope explicitly. Export canonical files from the verified merge commit and apply them to every intended target, preserving compatible profile-local EVALs, fixtures, and domain references; report unrelated profiles as exclusions rather than implying universal coverage.
+4. Verify canonical file hashes or equivalent immutable bindings on every target. A matching version string alone is insufficient.
+5. Start a fresh registry/load probe in every target runtime and retrieve a distinguishing contract from the updated skill. Filesystem presence alone is insufficient because long-lived sessions may still hold cached instructions.
+6. In the completion message, state the included profiles, meaningful exclusions, preserved local additions, and runtime verification result. Never say `all profiles` unless the live profile inventory and every intended target were checked.
 
 See [`references/multi-profile-policy-propagation.md`](references/multi-profile-policy-propagation.md) for the reusable rollout and verification checklist.
 
@@ -251,9 +252,9 @@ Do not send a content-free "done" notification when the user needs context to ju
 ```markdown
 **<Product behavior or operating condition> now <meaningful before→after change>.**
 
-**Executive summary:** <who is affected, what they can now do or what risk changed, and any remaining limitation>
+**Executive summary:** <who is affected, what they can now do or what risk changed, any remaining limitation, and the autonomous/team next step>
 
-**Human action needed:** None. <next product step, monitoring condition, or state that remains in place>
+**Human action needed:** None
 
 **Detailed information:**
 - <verified release/status/evidence link; include implementation metrics only when decision-relevant>
@@ -264,9 +265,9 @@ Do not send a content-free "done" notification when the user needs context to ju
 ```markdown
 **A decision is needed to <product outcome>.**
 
-**Executive summary:** <affected users/behavior, current evidence, consequence of delay>
+**Executive summary:** <affected users/behavior, current evidence, consequence of delay, and what work continues or pauses>
 
-**Human action needed:** Choose <product requirement/tradeoff>. Recommendation: <default and why>. <what pauses or continues while waiting>
+**Human action needed:** **<human owner/role> — by <time/urgency>:** Choose <product requirement/tradeoff>. Recommendation: <default and why>. Only <owner/role> can set this product/business decision; delivery automation cannot choose it. This unblocks <product stage/result>.
 
 **Detailed information:**
 - <verified requirement/status/evidence link>
@@ -277,11 +278,11 @@ Do not send a content-free "done" notification when the user needs context to ju
 ```markdown
 **The <review/release/rollout/customer outcome> needs your help to continue.**
 
-**Executive summary:** <what cannot complete, product consequence, work already completed>
+**Executive summary:** <what cannot complete, product consequence, work already completed, and autonomous/team next step>
 
 **Human action needed:**
-- [ ] **<human owner/role> — by <time/urgency>:** <imperative task>. This unblocks <product stage/result>.
-- [ ] **<human owner/role> — by <time/urgency>:** <imperative task>. This enables <next outcome>.
+- [ ] **<human owner/role> — by <time/urgency>:** <imperative task>. Only <owner/role> can perform this <legal/identity/billing/UI-only/authority> action; delivery automation cannot safely do it. This unblocks <product stage/result>.
+- [ ] **<human owner/role> — by <time/urgency>:** <imperative task>. Only <owner/role> can perform this <legal/identity/billing/UI-only/authority> action; delivery automation cannot safely do it. This enables <next outcome>.
 
 **Detailed information:**
 - <verified status/runbook/artifact link>

@@ -2,12 +2,19 @@
 
 Use this checklist when a communication, reporting, safety, or workflow policy must behave consistently across profile-local runtimes.
 
+## Canonical publication prerequisite
+
+- First add the policy as a complete eval-backed package in the canonical repository and merge it into the remote default branch.
+- Verify the exact remote-default merge commit and export rollout bytes from that immutable commit.
+- A global/default installation, profile-local copy, mutable checkout, pushed branch, or open PR is not publication and must not be used as the rollout source.
+- If publication is incomplete, stop before target mutation and preserve durable continuation coordinates; do not advance the unpublished package's observed inventory digest.
+
 ## Discovery
 
 - Enumerate live profiles and identify which ones are in the requested rollout scope.
 - Locate the effective skill copy for global/default and every target profile; a local copy may shadow the global skill.
 - Compare package version, canonical files, and target-only additions before writing.
-- Freeze the approved source bytes and record their hashes.
+- Freeze source bytes exported from the verified remote-default merge commit and record their hashes.
 
 ## Transactional rollout
 
