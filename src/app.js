@@ -156,13 +156,16 @@ export function createNedApp({ provider, stateStore }) {
     async destroy() {
       const state = await stateStore.load();
       if (!state) return { destroyed: false, alreadyDeleted: true };
-      await provider.destroy({
+      const receipt = await provider.destroy({
         id: state.workspaceId,
         name: state.workspaceName,
         createAttemptId: state.createAttemptId,
         secretId: state.secretId,
         secretName: state.secretName,
       });
+      if (!receipt?.workspaceAbsent || !receipt?.secretAbsent) {
+        throw new Error('Daytona destroy did not prove workspace and model secret absence; local recovery state was preserved.');
+      }
       await stateStore.clear();
       return { destroyed: true, alreadyDeleted: false };
     },
