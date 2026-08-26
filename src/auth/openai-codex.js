@@ -290,7 +290,9 @@ async function refreshCredential(selected, { fetchImpl, signal }) {
     signal,
   });
   if (response.status !== 200) {
-    throw new Error(`ChatGPT OAuth refresh failed with status ${response.status}; authorize again.`);
+    const error = new Error(`ChatGPT OAuth refresh failed with status ${response.status}; authorize again.`);
+    error.oauthRefreshStatus = response.status;
+    throw error;
   }
   const payload = await parseJsonResponse(response, 'ChatGPT OAuth refresh');
   if (typeof payload.access_token !== 'string' || !payload.access_token) {
@@ -431,10 +433,19 @@ export async function authorizeOpenAICodex({
     }
     const release = await acquireNedAuthLock(existing.storePath, { now, sleep });
     try {
-      const refreshed = await refreshCredential(existing, { fetchImpl, signal });
-      const next = applyTokens(existing.payload, existing, refreshed);
+      let tokens;
+      let source = 'refreshed-hermes-oauth';
+      try {
+        tokens = await refreshCredential(existing, { fetchImpl, signal });
+      } catch (error) {
+        if (![400, 401, 403].includes(error?.oauthRefreshStatus)) throw error;
+        io.log('Your saved ChatGPT authorization was rejected. Reauthorize to reconnect NED.');
+        tokens = await runDeviceLogin({ fetchImpl, openBrowser, io, signal, timeoutMs, now, sleep });
+        source = 'reauthenticated-hermes-oauth';
+      }
+      const next = applyTokens(existing.payload, existing, tokens);
       await writeAuthStore(existing.storePath, next, { expectedText: existing.originalText });
-      return modelConnection(refreshed.accessToken, 'refreshed-hermes-oauth');
+      return modelConnection(tokens.accessToken, source);
     } finally {
       await release();
     }
