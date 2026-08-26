@@ -203,6 +203,108 @@ test('cancel and timeout persist no partial OAuth state and a restart can succee
   assert.equal(result.consumeCredential(), access);
 });
 
+test('expired Hermes credential with rejected refresh asks the user to reauthorize and replaces it only after device login succeeds', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'ned-codex-reauth-'));
+  const hermesHome = path.join(home, '.hermes', 'profiles', 'current');
+  const oldAccess = jwtWithExpiry(Math.floor(Date.now() / 1000) - 1);
+  const newAccess = jwtWithExpiry(Math.floor(Date.now() / 1000) + 3600);
+  await secureStore(hermesHome, authStore(oldAccess, 'rejected-refresh'));
+  const opened = [];
+  const output = [];
+  const responses = [
+    jsonResponse(401, {}),
+    jsonResponse(200, { user_code: 'REAUTH-CODE', device_auth_id: 'reauth-id', interval: 0 }),
+    jsonResponse(200, { authorization_code: 'reauth-code', code_verifier: 'reauth-verifier' }),
+    jsonResponse(200, { access_token: newAccess, refresh_token: 'replacement-refresh' }),
+  ];
+
+  const result = await authorizeOpenAICodex({
+    home,
+    env: { HERMES_HOME: hermesHome },
+    fetchImpl: async () => responses.shift(),
+    openBrowser: async (url) => opened.push(url),
+    io: { log: (value) => output.push(String(value)) },
+    sleep: async () => {},
+    timeoutMs: 1000,
+  });
+
+  assert.equal(result.source, 'reauthenticated-hermes-oauth');
+  assert.equal(result.consumeCredential(), newAccess);
+  assert.deepEqual(opened, [CHATGPT_DEVICE_URL]);
+  assert.match(output.join('\n'), /reauthoriz/i);
+  const persisted = JSON.parse(await readFile(path.join(hermesHome, 'auth.json'), 'utf8'));
+  assert.equal(persisted.providers['openai-codex'].tokens.access_token, newAccess);
+  assert.equal(persisted.providers['openai-codex'].tokens.refresh_token, 'replacement-refresh');
+});
+
+test('rejected 400, 401, and 403 refreshes preserve the existing store when device reauthorization fails', async () => {
+  for (const refreshStatus of [400, 401, 403]) {
+    const home = await mkdtemp(path.join(os.tmpdir(), `ned-codex-reauth-failure-${refreshStatus}-`));
+    const hermesHome = path.join(home, '.hermes', 'profiles', 'current');
+    const oldAccess = jwtWithExpiry(Math.floor(Date.now() / 1000) - 1);
+    const store = await secureStore(hermesHome, authStore(oldAccess, `rejected-refresh-${refreshStatus}`));
+    const original = await readFile(store, 'utf8');
+    const opened = [];
+    const calls = [];
+    const responses = [
+      jsonResponse(refreshStatus, {}),
+      jsonResponse(200, { user_code: 'REAUTH-CODE', device_auth_id: 'reauth-id', interval: 0 }),
+      jsonResponse(500, {}),
+    ];
+
+    await assert.rejects(
+      () => authorizeOpenAICodex({
+        home,
+        env: { HERMES_HOME: hermesHome },
+        fetchImpl: async (url) => {
+          calls.push(url);
+          return responses.shift();
+        },
+        openBrowser: async (url) => opened.push(url),
+        io: { log() {} },
+        sleep: async () => {},
+      }),
+      /device authorization polling failed with status 500/i,
+    );
+
+    assert.deepEqual(opened, [CHATGPT_DEVICE_URL]);
+    assert.deepEqual(calls, [
+      'https://auth.openai.com/oauth/token',
+      'https://auth.openai.com/api/accounts/deviceauth/usercode',
+      'https://auth.openai.com/api/accounts/deviceauth/token',
+    ]);
+    assert.equal(await readFile(store, 'utf8'), original);
+  }
+});
+
+test('transient ChatGPT refresh failure does not open a browser or modify the existing store', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'ned-codex-refresh-transient-'));
+  const hermesHome = path.join(home, '.hermes', 'profiles', 'current');
+  const oldAccess = jwtWithExpiry(Math.floor(Date.now() / 1000) - 1);
+  const store = await secureStore(hermesHome, authStore(oldAccess, 'transient-refresh'));
+  const original = await readFile(store, 'utf8');
+  const opened = [];
+  const calls = [];
+
+  await assert.rejects(
+    () => authorizeOpenAICodex({
+      home,
+      env: { HERMES_HOME: hermesHome },
+      fetchImpl: async (url) => {
+        calls.push(url);
+        return jsonResponse(500, {});
+      },
+      openBrowser: async (url) => opened.push(url),
+      io: { log() {} },
+    }),
+    /refresh failed with status 500/i,
+  );
+
+  assert.deepEqual(opened, []);
+  assert.deepEqual(calls, ['https://auth.openai.com/oauth/token']);
+  assert.equal(await readFile(store, 'utf8'), original);
+});
+
 test('expiring reused credential refreshes through the official contract and atomically preserves rotation', async () => {
   const home = await mkdtemp(path.join(os.tmpdir(), 'ned-codex-refresh-'));
   const hermesHome = path.join(home, '.hermes', 'profiles', 'current');

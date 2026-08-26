@@ -4,9 +4,24 @@ set +x
 umask 077
 
 NODE_VERSION=22.14.0
-NED_REVISION=a1de22fb7968c3c646ea21f3a9533a3bcd04c9cb
+RELEASE_NED_REVISION=a1de22fb7968c3c646ea21f3a9533a3bcd04c9cb
 NED_SOURCE_SHA256=e146cf9d099d6c9904b474d7a3b7acbe1626a119a906d5c48b47a214ae9fa6ac
-readonly NODE_VERSION NED_REVISION NED_SOURCE_SHA256
+
+candidate_checkout() {
+  local installer_dir repo
+  installer_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P) || return 1
+  repo=$(git -C "$installer_dir" rev-parse --show-toplevel 2>/dev/null) || return 1
+  git -C "$repo" diff --quiet -- scripts/install.sh || return 1
+  printf '%s\n' "$repo"
+}
+
+CANDIDATE_REPOSITORY=$(candidate_checkout || true)
+if [[ -n "$CANDIDATE_REPOSITORY" ]]; then
+  NED_REVISION=$(git -C "$CANDIDATE_REPOSITORY" rev-parse HEAD)
+else
+  NED_REVISION=$RELEASE_NED_REVISION
+fi
+readonly NODE_VERSION RELEASE_NED_REVISION CANDIDATE_REPOSITORY NED_REVISION NED_SOURCE_SHA256
 
 INSTALL_ROOT="${HOME:?HOME must be set}/.local/share/ned"
 BIN_DIR="$HOME/.local/bin"
@@ -202,8 +217,12 @@ if [[ "$install_ready" != 1 ]]; then
   printf 'Installing pinned private Node.js %s and NED %s...\n' "$NODE_VERSION" "$NED_REVISION"
   curl -fsSL "$node_url" -o "$tmp/node.tar.gz"
   verify_archive "$tmp/node.tar.gz" "$node_sha"
-  curl -fsSL "$source_url" -o "$tmp/ned.tar.gz"
-  verify_archive "$tmp/ned.tar.gz" "$source_sha"
+  if [[ -n "$CANDIDATE_REPOSITORY" ]]; then
+    git -C "$CANDIDATE_REPOSITORY" archive --format=tar.gz --prefix="no-ego-dev-$NED_REVISION/" --output="$tmp/ned.tar.gz" "$NED_REVISION"
+  else
+    curl -fsSL "$source_url" -o "$tmp/ned.tar.gz"
+    verify_archive "$tmp/ned.tar.gz" "$source_sha"
+  fi
 
   mkdir -p "$INSTALL_ROOT/generations"
   staging="$INSTALL_ROOT/.staging.$$"
