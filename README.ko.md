@@ -151,8 +151,9 @@ NED는 아이디어에서 공개 테스트까지 필요한 일반적인 작업�
 - `react-native-app-dev`: 크로스플랫폼 모바일 앱 작업을 지원합니다.
 - `project-knowledge-organization`: 프로젝트 결정, 노트, 산출물을 정리합니다.
 - `skill-creator`: Hermes 스킬을 만들거나 조정합니다.
-- `eval-creator`: 스킬과 워크플로용 평가를 만듭니다.
-- `profile-skill-harvester`: 실행 중인 NED 프로필의 재사용 가능한 변경을 표준 저장소로 통합하고, 충돌하는 지침을 제품 단계와 사용 사례별로 범위화하며, 검증된 전체 스킬 패키지만 게시합니다.
+- `eval-creator`: 스킬과 워크플로 평가를 만듭니다.
+- `communication-evaluator`: NED 사용자 메시지를 독립적으로 평가하여 제품 의미, 사람에게 필요한 행동, 근거, 인지 부담, 소프트웨어 엔지니어링 배경이 없는 사람의 1회독 이해도를 점수화합니다.
+- `profile-skill-harvester`: 라이브 NED 프로필의 재사용 가능한 업데이트를 canonical 저장소로 통합하고, 상충되는 지침을 제품 단계와 사용 사례별로 구분하며, 검증된 완전한 스킬 패키지만 게시합니다.
 
 ## Built with NED
 

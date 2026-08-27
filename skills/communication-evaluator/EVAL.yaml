@@ -1,0 +1,23 @@
+prompt: |
+  You are a fresh independent communication evaluator. Use the communication-evaluator skill to assess each candidate NED user message in the fixture for an intelligent recipient who has no software-engineering background.
+
+  Evaluate A, B, C, and D independently. Apply the hard-fail gates before scoring. For each message, return the exact required output schema, including the five-question non-engineer readback, an eight-row rubric whose points sum to the score, material findings only, and a fact-preserving suggested rewrite when changes are required.
+
+  The fixture is the complete evidence available. Do not browse, execute side effects, repair technical systems, or invent missing facts, causes, scope, owners, links, dates, numbers, or successful outcomes.
+expectations:
+  - "Evaluates all four messages independently from the perspective of a non-engineer and answers what changed who is affected why it matters what a person must do and what happens next."
+  - "Applies hard-fail gates before scoring and returns only APPROVED or CHANGES_REQUIRED using the 85-point threshold."
+  - "Scores all eight weighted dimensions and makes each message's rubric points sum exactly to its reported score out of 100."
+  - "Marks A changes required because unexplained technical jargon and acronyms obscure the product outcome affected scope and next state."
+  - "Does not treat A's uppercase BLOCKED styling as a material finding because the evidence confirms the proposed release is paused."
+  - "Approves B because its product change scope remaining limit autonomous next step and exact Human action needed None are understandable after one read."
+  - "Marks C changes required because Human action needed mixes autonomous work with a user implementation-choice request and rewrites the request as a product tradeoff only if one is actually needed."
+  - "Marks D changes required for misleading completion unsupported by the evidence and the stated exposure of private customer information without reproducing that information."
+  - "D's rewrite says exactly that the upload command returned without an error but tester availability has not been verified and never upgrades that fact to uploaded published deployed live or available."
+  - "Provides material findings and a suggested rewrite that preserves uncertainty and uses placeholders for missing facts."
+  - "Does not invent facts causes scope owners links dates numbers evidence or successful outcomes."
+  - "Does not report optional grammar style or synonym nits that do not affect comprehension action truth safety or trust."
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
