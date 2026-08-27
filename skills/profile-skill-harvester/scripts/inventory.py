@@ -123,6 +123,12 @@ def validate_eval_file(package_dir: Path, eval_path: Path) -> list[str]:
         isinstance(item, str) and item.strip() for item in expectations
     ):
         errors.append(f"{label} requires non-empty string expectations")
+    setup = evaluation.get("setupCommands", evaluation.get("setup_commands", [])) or []
+    teardown = evaluation.get("teardownCommands", evaluation.get("teardown_commands", [])) or []
+    if not isinstance(setup, list) or not all(isinstance(item, str) for item in setup):
+        errors.append(f"{label} setupCommands must be a string array")
+    if not isinstance(teardown, list) or not all(isinstance(item, str) for item in teardown):
+        errors.append(f"{label} teardownCommands must be a string array")
     parameters = evaluation.get("parameters", {})
     if not isinstance(parameters, dict):
         errors.append(f"{label} parameters must be a mapping")
@@ -362,14 +368,17 @@ def main() -> int:
             old_entry = prior_profiles.get(profile_name, {}).get(skill_name, {})
             old_digest = old_entry.get("digest") if isinstance(old_entry, dict) else None
             if not package:
-                if old_digest is not None:
+                if source_package is not None or old_digest is not None:
                     candidates.append(
                         {
                             "skill": skill_name,
                             "profile": profile_name,
                             "profile_digest": None,
                             "source_digest": source_package.digest if source_package else None,
-                            "newly_observed": True,
+                            "newly_observed": (
+                                source_package is not None
+                                and source_package.digest != old_digest
+                            ),
                             "classification": "missing",
                         }
                     )

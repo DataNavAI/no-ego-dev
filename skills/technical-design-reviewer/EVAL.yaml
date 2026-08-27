@@ -26,7 +26,7 @@ expectations:
   - "rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one"
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
-  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing malformed duplicate delayed or wrongly attributed signal detection"
 setupCommands: []
 teardownCommands: []
 parameters:

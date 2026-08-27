@@ -33,6 +33,9 @@ def test_production_service_plans_require_metric_collection_regression_tasks():
         assert "aggregation" in skill, name
         assert "reporting" in skill, name
         assert "missing" in skill, name
+        assert "duplicate" in skill, name
+        assert "delayed" in skill, name
+        assert "wrong attribution" in skill or "wrongly attributed" in skill, name
         assert "release-blocking" in skill, name
 
 
@@ -53,6 +56,9 @@ def test_metric_collection_regression_requirement_is_behaviorally_evaluated():
         assert "aggregation" in expectations, name
         assert "reporting" in expectations, name
         assert "missing" in expectations, name
+        assert "duplicate" in expectations, name
+        assert "delayed" in expectations, name
+        assert "wrong attribution" in expectations or "wrongly attributed" in expectations, name
         assert "release" in expectations, name
 
 
@@ -67,6 +73,9 @@ def test_mvp_template_materializes_metric_pipeline_gate_and_user_cannot_waive_it
         "storage and aggregation/query assertion",
         "destination/dashboard/reporting readback assertion",
         "missing/malformed-signal self-check or alert assertion",
+        "duplicate-signal assertion",
+        "delayed-signal assertion",
+        "wrong-attribution assertion",
     ):
         assert marker in template
 

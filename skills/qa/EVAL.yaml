@@ -12,7 +12,7 @@ expectations:
   - "files or updates bug issues for discovered product defects"
   - "reports obvious user-facing issues even outside the plan scope"
   - "cleans up the local artifact folder only after report upload is verified"
-  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing malformed duplicate delayed or wrongly attributed signal detection"
 setupCommands: []
 teardownCommands: []
 parameters:

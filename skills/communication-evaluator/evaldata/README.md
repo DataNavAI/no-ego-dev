@@ -71,7 +71,21 @@ Message:
 - Do not open or invent links.
 - Do not treat a successful command exit as verified publication.
 - In C, the claimed private engineering-workspace location is not established by evidence; omit it from findings and rewrites rather than repeating it.
+- A's rewrite must state the two verified facts separately: `The proposed release is paused. Some test-environment monitoring measurements were not collected reliably; the supplied evidence does not establish whether that caused the pause.`
+- C's action timing must use `by <decision deadline>` or say `timing is unknown`; it must not state that no deadline exists.
+- C's rewrite must say `Detailed information: No verified user-accessible link was supplied for this evaluation.` It must not claim that no such link exists.
 - In D rewrites, omit the private customer information and state that publication remains unverified.
 - D's rewrite must say: `The upload command returned without an error, but tester availability has not been verified.` Do not describe the release as uploaded, published, deployed, live, or available.
 - Do not treat capitalization such as A's `BLOCKED` as a material finding when the stated severity is supported; typography alone is optional polish.
 - Missing audience facts, affected scope, owners, timing, or causes must remain explicitly unknown or use angle-bracket placeholders.
+
+## Deterministic score oracle
+
+Use these exact totals and verdicts; the per-dimension points are frozen in `cases.yaml` and checked by Python regression tests.
+
+| Candidate | Score | Verdict | Hard-fail gates | One-read complete |
+|---|---:|---|---|---|
+| A | 48 | CHANGES_REQUIRED | core meaning inaccessible | No |
+| B | 99 | APPROVED | None | Yes |
+| C | 55 | CHANGES_REQUIRED | missing or wrong action boundary | No |
+| D | 46 | CHANGES_REQUIRED | misleading product state; sensitive-data exposure | No |

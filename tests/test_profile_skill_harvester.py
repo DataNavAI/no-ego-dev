@@ -911,6 +911,53 @@ def test_inventory_record_refuses_changed_enrolled_default_branch(tmp_path):
     assert state.read_bytes() == old_state
 
 
+def test_inventory_record_refuses_new_canonical_package_missing_from_profiles(tmp_path):
+    repo = tmp_path / "repo"
+    home = tmp_path / "home"
+    profiles = _canonical_test_profiles(home, "merged")
+    _package(repo, "example", "merged")
+    remote = tmp_path / "remote.git"
+    initial_sha = _publish_test_repo(repo, remote)
+    state = tmp_path / "state.json"
+    profile_args = [
+        item
+        for name, root in sorted(profiles.items())
+        for item in ("--profile", f"{name}={root}")
+    ]
+    common = [
+        sys.executable,
+        str(SCRIPT),
+        "--repo",
+        str(repo),
+        *profile_args,
+        "--state",
+        str(state),
+        "--canonical-remote-url",
+        str(remote),
+    ]
+    assert _run_inventory([*common, "--initialize"], home).returncode == 0
+    initial_record = _run_inventory(
+        [*common, "--record", "--verified-remote-default-sha", initial_sha], home
+    )
+    assert initial_record.returncode == 0, initial_record.stderr
+
+    _package(repo, "new-canonical-package", "merged but not rolled out")
+    _git(repo, "add", "skills/new-canonical-package")
+    _git(repo, "commit", "-qm", "publish new package")
+    _git(repo, "push", "-q", "origin", "main")
+    new_sha = _git(repo, "rev-parse", "HEAD")
+    previous_state = state.read_bytes()
+
+    refused = _run_inventory(
+        [*common, "--record", "--verified-remote-default-sha", new_sha], home
+    )
+    assert refused.returncode != 0
+    assert "refusing to baseline unpublished or unrolled candidates" in refused.stderr
+    for name in profiles:
+        assert f"{name}:new-canonical-package" in refused.stderr
+    assert state.read_bytes() == previous_state
+
+
 def test_inventory_requires_valid_eval_backing_and_packaged_fixtures(tmp_path):
     module = _module()
     root = tmp_path / "profile"
@@ -944,6 +991,17 @@ def test_inventory_requires_valid_eval_backing_and_packaged_fixtures(tmp_path):
     packages, errors = module.discover(root / "skills")
     assert "invalid-alternate" not in packages
     assert any("EVAL.security.yaml requires" in error for error in errors)
+
+    malformed_commands = _package(root, "malformed-commands")
+    (malformed_commands / "EVAL.yaml").write_text(
+        "prompt: test\nexpectations: [test]\nsetupCommands: npm install\n"
+        "teardownCommands: {command: cleanup}\n",
+        encoding="utf-8",
+    )
+    packages, errors = module.discover(root / "skills")
+    assert "malformed-commands" not in packages
+    assert any("setupCommands must be a string array" in error for error in errors)
+    assert any("teardownCommands must be a string array" in error for error in errors)
 
 
 def test_inventory_rejects_symlinked_package_files_and_lossy_remote_aliases(tmp_path):

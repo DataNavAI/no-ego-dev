@@ -158,6 +158,9 @@ For <specific target user in context>, the MVP solves <single painful problem> s
 - Storage and aggregation/query assertion:
 - Destination/dashboard/reporting readback assertion:
 - Missing/malformed-signal self-check or alert assertion:
+- Duplicate-signal assertion:
+- Delayed-signal assertion:
+- Wrong-attribution assertion:
 - Deterministic CI harness:
 - Production-like staging readback gate:
 - Owner, command, evidence, and release-blocking condition:

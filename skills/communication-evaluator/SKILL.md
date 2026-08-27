@@ -1,7 +1,7 @@
 ---
 name: communication-evaluator
 description: Use when independently evaluating a NED message before or after it is sent to a user. Scores product framing, human-action clarity, evidence, brevity, and especially whether a person without a software-engineering background can understand the message after one read; returns an approval verdict, material findings, and a plain-language rewrite without inventing facts.
-version: 1.0.0
+version: 1.0.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -133,7 +133,7 @@ Any of the following requires `CHANGES_REQUIRED`:
 2. **Core meaning inaccessible:** a non-engineer cannot determine what changed, who is affected, why it matters, or what happens next without understanding unexplained jargon or an acronym.
 3. **Missing or wrong action boundary:** omits `Human action needed:`, hides a required human task, puts autonomous team/agent work in that field, or asks the user to choose implementation details instead of a product requirement.
 4. **Unsafe or incomplete blocker request:** asks for credentials, access, approval, restart, payment, publication, or another consequential action without actor, imperative task, urgency, result unblocked, and why automation cannot safely perform it.
-5. **Secret or sensitive-data exposure:** includes passwords, tokens, credential contents, private auth paths, or unnecessary sensitive logs.
+5. **Sensitive-data exposure:** includes passwords, tokens, credential contents, private auth paths, private customer data, or unnecessary sensitive logs.
 6. **Severity distortion:** minimizes material risk, presents ordinary in-progress work as blocked, or uses alarmist language unsupported by impact.
 7. **Fabricated or unusable evidence:** invents links, cites evidence that does not support the summary, or forces the user to open technical artifacts to discover the basic product consequence.
 
@@ -210,6 +210,8 @@ Suggested rewrite:
 ```
 
 The rubric points must add up to `Score`. If context is insufficient to verify truth, distinguish `not verifiable` from `incorrect`.
+
+Use `scripts/score_evaluation.py` to total dimension scores and apply the 85-point, hard-fail, and one-read gates deterministically. `evaldata/cases.yaml` freezes exact A–D score/verdict oracles for regression testing; prose review still supplies the evidence-based dimension scores.
 
 ## Review Examples
 

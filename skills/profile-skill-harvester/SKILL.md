@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.37
+version: 1.5.38
 author: NoEgoDev
 license: MIT
 metadata:
@@ -107,6 +107,8 @@ Do not modify the user's existing checkout to make it clean.
 
 Before curating candidates or spending any exact-SHA review round, inspect the repository's production eval loader **and invocation path**, not only its YAML parser. Run one disposable sentinel eval outside the repository when practical and capture both evaluated-agent and judge arguments. If an eval declares `parameters.fixture`, prove that the package-relative fixture text reaches both invocations. A loader retaining the fixture path in an in-memory `parameters` map is not delivery evidence; neither is adding scenarios to an `evaldata/README.md` that `run_eval` never reads.
 
+Inventory validation must reject every EVAL shape the production loader rejects, including non-list `setupCommands`/`setup_commands` and `teardownCommands`/`teardown_commands`, and must validate all packaged `EVAL*.yaml` files rather than only the root filename.
+
 Fail closed before candidate freeze when the current runner cannot exercise behavior that the harvest must add. Classify this as a repository eval-harness prerequisite rather than repeatedly revising skill prose or consuming review rounds on structurally inert fixtures. Either fix the harness in a separately scoped, independently reviewed change first, or omit/block the affected package changes without baselining them.
 
 Before trusting an external prerequisite or continuation marker from an earlier run, reconcile it against live GitHub and repository state. A marker may still say `pending` after its PR merged, or may name a candidate SHA that is no longer the remote-default generation. Treat it as historical evidence until the PR state, merge reachability, current runner bytes, and remaining gates are re-proven. Refresh or supersede the marker outside the repository; never let stale continuation prose bypass or indefinitely preserve a prerequisite gate.
@@ -165,6 +167,8 @@ Classify changes before editing:
 | Contradictory | Same context demands mutually exclusive behavior | Resolve with explicit precedence or block |
 | Product-local | Behavior belongs to one product/project only | Keep profile/project-local or generalize with an explicit use-case boundary |
 | Unsafe/incomplete | Missing package files, malformed frontmatter, secret-like data, or untestable behavior | Reject and report |
+
+`Source-only` is acceptable during discovery but not as proof of completed rollout. Full post-rollout `--record` must emit a `missing` candidate for every canonical source package absent from every configured profile, including a newly published package that has no prior profile digest, and must refuse to advance the baseline until all five profiles contain the verified merged package bytes.
 
 Inspect diffs semantically. A newer timestamp or higher version does not prove superiority.
 

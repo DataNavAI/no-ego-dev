@@ -27,7 +27,7 @@ expectations:
   - "does not take non-bug feedback literally and instead identifies user context, underlying problem, and simplest solution"
   - "does not react to random one-off feedback unless it aligns with core product value or reveals a bug or risk"
   - "acts on repeated feedback patterns when more than a few users report the same underlying problem"
-  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing malformed duplicate delayed or wrongly attributed signal detection"
 setupCommands: []
 teardownCommands: []
 parameters:

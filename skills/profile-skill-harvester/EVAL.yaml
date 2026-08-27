@@ -26,6 +26,8 @@ expectations:
   - "Uses an isolated Git worktree from the remote default branch and does not sweep a dirty canonical checkout."
   - "Treats a missing state file as initial enrollment baseline rather than a historical bulk import, and excludes ambiguous bundled/global profile-only skills by default."
   - "Validates frontmatter, eval YAML, fixtures, support scripts, repository tests, git diff, and staged secret safety before publishing."
+  - "Rejects packaged EVAL files whose setupCommands setup_commands teardownCommands or teardown_commands are not string arrays, matching the production evaluator loader."
+  - "Refuses full post-rollout baseline recording when any newly published canonical package is absent from any of the exact five enrolled profiles even when no prior profile digest exists."
   - "Blocks only the unresolved skill when evidence cannot resolve a same-scope contradiction while allowing independent safe skills to proceed."
   - "Advances an enrolled profile package digest only after the update is merged into the verified remote default branch; stable blocked or rejected dispositions are recorded separately and cannot baseline an unpublished enrolled digest."
   - "Treats global or default installed variants as out-of-band observations with separate source path digest and continuation disposition rather than falsely advancing or assigning newly-observed state in the exact-five-profile inventory."

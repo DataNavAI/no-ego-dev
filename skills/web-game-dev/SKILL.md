@@ -1,7 +1,7 @@
 ---
 name: web-game-dev
 description: "Use when planning, architecting, implementing, or reviewing browser/web games. Research and choose a performant web game engine during architecture, document game architecture patterns, and find or create engine-specific skills for the chosen engine."
-version: 0.2.1
+version: 0.2.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -236,7 +236,7 @@ If creating a full engine skill is too much for the current task, create a conci
 
 ## Mandatory Metric-Collection Regression Task
 
-Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and missing, malformed, duplicate, delayed, or wrongly attributed signals are detected by a pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## QA / Verification Checklist
 
