@@ -36,6 +36,7 @@ expectations:
   - "keeps provider configured-state deletion rollback deployment and publication behind their original gates and blocks when tracker mutation is not authorized"
   - "closes a merged parent only after every literal acceptance row has immutable or authenticated evidence distinct required review kinds remain distinct and reviewed blobs are present in the merge tree"
   - "verifies explicit tracker comment and closure authority before closeout mutations and otherwise returns a read-only closeout assessment blocked on owner action"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection and cannot be waived by user exception"
 setupCommands: []
 teardownCommands: []
 parameters:

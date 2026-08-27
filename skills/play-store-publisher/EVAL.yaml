@@ -9,7 +9,7 @@ expectations:
   - "uploads the AAB waits for Play processing adds release notes previews warnings and distinguishes draft uploaded from published rolled out"
   - "does not claim testers or publishing succeeded unless Play Console state is verified after save or refresh"
   - "captures opt-in link or exact blocker and writes a project-local Google Play publishing report/runbook"
-  - "publishing report and every non-silent user update use Purpose Executive summary Action needed and Detailed information while leading with tester or release impact"
+  - "publishing report and every non-silent user update open with a natural purpose sentence without a Purpose label then use Executive summary Human action needed and Detailed information while leading with tester or release impact; autonomous work never appears as human action and populated human actions name actor imperative timing result unblocked and why automation cannot do it safely"
   - "hands off store listing copy ads localization build fixes or policy unknowns to the appropriate NoEgoDev skills"
 setupCommands: []
 teardownCommands: []

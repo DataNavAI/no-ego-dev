@@ -147,6 +147,20 @@ For <specific target user in context>, the MVP solves <single painful problem> s
 - Critical/high defects:
 - Unsupported or undecided interfaces:
 - Deployment/monitoring/rollback/support blockers:
+- Missing/stale/failed metric-collection regression evidence:
+
+### Release-Blocking Metric-Collection Regression Task
+
+- Exact production service and metric contract:
+- Emission assertion:
+- Transport/retry assertion:
+- Collector/ingestion assertion:
+- Storage and aggregation/query assertion:
+- Destination/dashboard/reporting readback assertion:
+- Missing/malformed-signal self-check or alert assertion:
+- Deterministic CI harness:
+- Production-like staging readback gate:
+- Owner, command, evidence, and release-blocking condition:
 
 ## 7. Vertical Delivery Plan
 
@@ -165,6 +179,8 @@ For <specific target user in context>, the MVP solves <single painful problem> s
 - Decision (`not required yet` / `minimal measurement` / `growing-product controls`):
 - Product-contract or learning-decision reason:
 - Smallest evidence needed for the next release decision:
+
+This posture governs optional product analytics breadth only. It never waives the mandatory operational metric-collection regression task for a production service.
 
 ### Conditional structured product health (complete only when required)
 - DAU and qualifying activity:

@@ -216,17 +216,17 @@ def test_project_manager_communicates_product_impact_and_product_decisions() -> 
     assert reference.is_file()
     assert "Technical-first" in reference.read_text(encoding="utf-8")
     assert "Product-first" in reference.read_text(encoding="utf-8")
-    assert "Purpose:" in reference.read_text(encoding="utf-8")
+    assert "never use a `Purpose:` prefix" in reference.read_text(encoding="utf-8")
     assert "Executive summary:" in reference.read_text(encoding="utf-8")
-    assert "Action needed:" in reference.read_text(encoding="utf-8")
+    assert "Human action needed:" in reference.read_text(encoding="utf-8")
     assert "Detailed information:" in reference.read_text(encoding="utf-8")
     assert "verify every link" in reference.read_text(encoding="utf-8")
-    assert "Every user-facing communication states its purpose" in content
-    assert "Action needed: None" in content
+    assert "Every user-facing communication states its purpose naturally" in content
+    assert "Human action needed: None" in content
     assert "product impact" in expectations
     assert "implementation details" in expectations
     assert "executive summary" in expectations
-    assert "action needed" in expectations
+    assert "human action needed" in expectations
     assert "detailed-information links" in expectations
     assert "Database connection pool saturation" in fixture
     assert "customers" in fixture
@@ -254,9 +254,9 @@ def test_project_manager_message_templates_include_mandatory_envelope() -> None:
     )[1]
 
     for template in (progress_template, completion_template):
-        assert "Purpose:" in template
+        assert not re.search(r"^\s*(?:-\s*)?Purpose:", template, re.MULTILINE)
         assert "Executive summary:" in template
-        assert "Action needed:" in template
+        assert "Human action needed:" in template
         assert "Detailed information:" in template
 
 
@@ -274,9 +274,9 @@ def test_all_changed_user_facing_templates_use_mandatory_envelope() -> None:
     play_report = play.split("Use this report shape:", 1)[1].split("```", 2)[1]
 
     for template in (service_template, single_email, portfolio_email, issue, play_report):
-        assert "Purpose:" in template
+        assert not re.search(r"^\s*(?:-\s*)?Purpose:", template, re.MULTILINE)
         assert "Executive summary:" in template
-        assert "Action needed:" in template
+        assert "Human action needed:" in template
         assert "Detailed information:" in template
 
     assert "Daily release alert envelope" in play

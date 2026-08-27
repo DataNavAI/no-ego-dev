@@ -68,11 +68,11 @@ Board state survives restarts, but `running` still requires lease/heartbeat reco
 
 ## Controller reporting contract
 
-Every user status update says:
+Every user status update uses:
 
-- `Purpose:` why status is being reported;
+- a natural opening sentence explaining why status is being reported, never a `Purpose:` label;
 - `Executive summary:` whether product work is moving, waiting, or blocked;
-- `Action needed:` the user's exact product decision/action, or `None`;
+- `Human action needed:` only a human-owned decision/task with actor, imperative action, timing, result unblocked, and why automation cannot perform it safely, or exactly `None`; autonomous follow-up stays in the executive summary;
 - `Detailed information:` verified artifacts plus the status evidence source.
 
 Name the source: owning Hermes runtime, completion delivery, Kanban, optional hook ledger, or `unknown`. Never present `/agents` output as authoritative child state when the gateway surface does not expose the child registry.

@@ -29,6 +29,7 @@ expectations:
   - "when judging an old immutable revision for current acceptance separates historical byte assessment from current-authority reconciliation and checks original live governing sources before session history"
   - "treats a later authoritative contradiction as potentially superseding current acceptance without retroactively falsifying a valid historical approval"
   - "classifies genuinely later authority as new evidence but preserves a previously discoverable defect as MATERIAL_PROCESS_ESCAPE and requests one bounded reconciliation of stale active occurrences"
+  - "blocks approval when a production service plan lacks a release-blocking metric collection regression task proving emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
 setupCommands: []
 teardownCommands: []
 parameters:

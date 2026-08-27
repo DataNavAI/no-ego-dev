@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.22.1
+version: 0.22.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -34,11 +34,11 @@ After confirmation, keep the dependency-safe queue moving automatically across p
 
 **Implementation choices stay with the delivery team.** Do not ask the user to select frameworks, libraries, schemas, cache/queue policies, retry algorithms, code structure, or deployment wiring unless they explicitly own technical direction or that choice itself changes a product promise. Translate any unavoidable technical constraint back into its product consequence before requesting a decision.
 
-**Every user-facing communication states its purpose** and uses this decision-ready envelope:
+**Every user-facing communication states its purpose naturally** and uses this decision-ready envelope:
 
-- `Purpose:` why the message is being sent now: status, decision, blocker, risk, completion, or handoff.
+- A short natural opening sentence explaining why the message is being sent now; never prefix it with `Purpose:`.
 - `Executive summary:` the product impact and current state in a few plain-language sentences or bullets.
-- `Action needed:` the exact user decision or action required to keep the project moving, including a recommended default and timing when relevant. If the user has no action, write **`Action needed: None`** and say what the team will do next.
+- `Human action needed:` only the exact human-owned decision or task required to keep the project moving, including owner, imperative action, recommended default, timing, result unblocked, and why automation cannot perform it safely. If no person must act, write exactly **`Human action needed: None`**; keep autonomous team work in `Executive summary`.
 - `Detailed information:` verified links to the canonical status, PR, issue, decision record, incident, dashboard, evidence, or specification. Never invent a link; if no user-accessible source exists, say so and provide the verified repository-relative or local path when appropriate.
 
 Keep this envelope concise. The executive summary carries the product meaning; links carry depth. Do not force the user to inspect technical detail to discover why the message matters or whether the project is waiting on them.
@@ -170,12 +170,12 @@ Use this update shape:
 
 ```text
 Progress update — Phase <N>: <phase name>
-- Purpose: <why this status, blocker, risk, or decision update is being sent now>
+<Natural sentence explaining why this status, blocker, risk, or decision update is being sent now.>
 - Executive summary:
   - Completed: <what is now done / artifact paths / issue IDs>
   - In progress / next: <next concrete task or subagent batch>
   - Blockers: <none or concise product-impacting blocker>
-- Action needed: <None and what the team will do next, or the exact decision/action, recommended default, and timing>
+- Human action needed: <None, or human owner + imperative action + timing + result unblocked + why automation cannot perform it safely>
 - Detailed information: <verified tests, PRs, docs, screenshots, deploy URLs, or logs>
 ```
 
@@ -239,11 +239,11 @@ Minimum completion-message shape:
 
 ```text
 Milestone complete — <name>
-- Purpose: completion and handoff for <milestone>
+<Natural completion and handoff sentence for this milestone.>
 - Executive summary:
   - Outcome: <verified user/project result>
   - Next: <highest-priority next step or explicit none>
-- Action needed: <None and what the team will do next, or the exact user decision/action, recommended default, and timing>
+- Human action needed: <None, or human owner + imperative action + timing + result unblocked + why automation cannot perform it safely>
 - Detailed information:
   - Evidence: <verified PR/commit/tests/QA/deploy links>
   - Project status: [STATUS.md](<user-accessible URL>) or <exact repo-relative and absolute paths for local-only repositories>
@@ -521,9 +521,9 @@ Use this shape for each periodic checkup report:
 
 ```text
 Service status — <project> — <date/time + timezone>
-Purpose: <why this checkup is being sent now and which customer/product outcome it protects>
+<Natural sentence explaining why this checkup is being sent now and which customer/product outcome it protects.>
 Executive summary: <healthy | watch | degraded | blocked; product trend, largest risk/opportunity, and what happens next>
-Action needed: <None and the team's next action, or one explicit product/ops/cost decision with recommended default and timing>
+Human action needed: <None, or human owner + imperative decision/task + timing + result unblocked + why automation cannot perform it safely>
 Detailed information:
 - Product-side update: <traffic/activation/retention/funnel changes plus feedback themes and channels checked>
 - Devops-side update: <CI/release, deployment, uptime/errors/latency/jobs/storage/integrations, hosting cost/run-rate/anomalies>
@@ -548,7 +548,7 @@ Subject: <Project> product performance — <date range>
 Preheader: <one-sentence state of the product and biggest next action>
 
 <div style="font-family: Arial, sans-serif; color:#111827; line-height:1.45; max-width:720px;">
-  <p><strong>Purpose:</strong> <why this report is being sent and which product outcome it supports></p>
+  <p><why this report is being sent and which product outcome it supports, written as a natural sentence></p>
   <h1 style="margin:0 0 8px; font-size:22px;">Product performance: <Project></h1>
   <p style="margin:0 0 16px; color:#6b7280;">Reporting period: <date range> • Overall: <healthy | watch | degraded | blocked></p>
 
@@ -577,11 +577,10 @@ Preheader: <one-sentence state of the product and biggest next action>
   </section>
 
   <section style="margin-bottom:16px;">
-    <h2 style="font-size:16px; margin:0 0 8px;">Action needed:</h2>
+    <h2 style="font-size:16px; margin:0 0 8px;">Human action needed:</h2>
     <ol style="margin:0; padding-left:20px;">
-      <li><strong><owner>:</strong> <highest-leverage action, ETA/status, issue link if available></li>
-      <li><strong><owner>:</strong> <second action only if important></li>
-      <li><strong>Decision needed:</strong> <none, or one crisp ask with default recommendation></li>
+      <li><strong><human owner>:</strong> <imperative action, timing, result unblocked, why automation cannot perform it safely, issue link if available></li>
+      <li><strong><human owner>:</strong> <second human-only action only if important></li>
     </ol>
   </section>
 
@@ -598,7 +597,7 @@ Subject: Product portfolio performance — <date range>
 Preheader: <portfolio-level state and biggest cross-product next action>
 
 <div style="font-family: Arial, sans-serif; color:#111827; line-height:1.45; max-width:760px;">
-  <p><strong>Purpose:</strong> <why this portfolio report is being sent and which cross-product outcome it supports></p>
+  <p><why this portfolio report is being sent and which cross-product outcome it supports, written as a natural sentence></p>
   <h1 style="margin:0 0 8px; font-size:22px;">Product portfolio performance</h1>
   <p style="margin:0 0 16px; color:#6b7280;">Reporting period: <date range> • Products: <active count> • Overall: <healthy | watch | degraded | blocked></p>
 
@@ -622,9 +621,9 @@ Preheader: <portfolio-level state and biggest cross-product next action>
   </section>
 
   <section style="margin-bottom:16px;">
-    <h2 style="font-size:16px; margin:0 0 8px;">Action needed:</h2>
+    <h2 style="font-size:16px; margin:0 0 8px;">Human action needed:</h2>
     <ol style="margin:0; padding-left:20px;">
-      <li><strong><owner or user>:</strong> <one highest-priority decision or action across the portfolio></li>
+      <li><strong><human owner>:</strong> <one imperative human-only decision or task, timing, result unblocked, and why automation cannot perform it safely></li>
     </ol>
   </section>
 

@@ -13,6 +13,7 @@ expectations:
   - "derives known constraints before asking and asks at most one upfront batch of three unanswered costly-to-reverse questions with recommended defaults"
   - "continues automatically without routine phase approval only within the user-authorized lifecycle scope and requires implementation authority before implementation or QA"
   - "pauses after intake only for a new costly contradiction missing access a blocking quality finding or external spend production publication credential or destructive authority"
+  - "for every production service plan includes a release-blocking metric collection regression task that proves emission transport retry collection ingestion storage aggregation destination reporting readback and missing or malformed signal detection"
 setupCommands: []
 teardownCommands: []
 parameters:

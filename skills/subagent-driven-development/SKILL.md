@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.8
+version: 1.12.9
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -212,7 +212,11 @@ A timeout, empty summary, or partial transcript is not approval. Recover the dur
 
 ### 6. Final Integration and Completion
 
-After all slices pass their gates, dispatch one fresh integration reviewer against the complete immutable result. Run canonical tests, static analysis, package checks, diff checks, and required security scans. Mark the plan complete only after every required verdict and check applies to the same final candidate.
+After all slices pass their gates, dispatch one fresh integration reviewer against the complete immutable result. Run canonical tests, static analysis, package checks, diff checks, and required security scans. For every production-service plan, verify that the final task graph and candidate include current release-blocking metric-collection regression evidence across emission, transport/retry, collection/ingestion, storage, aggregation/query, destination/reporting readback, and missing or malformed signal detection. Mark the plan complete only after every required verdict and check applies to the same final candidate.
+
+## Mandatory Metric-Collection Regression Task
+
+Every plan that creates, changes, or deploys a production service **must include an explicit release-blocking metric-collection regression task**, even when product analytics is intentionally minimal or deferred. The task must add automated coverage across emission, transport/retry, collection and ingestion, storage, aggregation/query, and dashboard or reporting readback. It must prove that expected metrics arrive exactly as intended, required labels/cardinality remain valid, and a simulated missing or malformed signal triggers the pipeline self-check or alert instead of appearing healthy. Use the lowest reliable layer, but include a focused integration test across emission → collection → destination whenever unit tests cannot prove the pipeline boundary. A manual dashboard glance is supplemental, never a replacement. If the production-like metric backend is unavailable in CI, plan a deterministic local collector/contract harness plus a staging destination readback gate, and keep release blocked until current evidence exists.
 
 ## Failure Recovery
 
@@ -231,7 +235,7 @@ Answer from contracts, repository evidence, or recorded defaults. Escalate only 
 ## Non-Negotiable Rules
 
 - No implementation without a plan or clear slice contract.
-- No production change without observed RED and GREEN evidence unless the user explicitly authorized an exception.
+- No production change without observed RED and GREEN evidence. A user may change scope, but cannot waive required regression evidence for a production change; metric-collection regression evidence is always release-blocking.
 - No overlapping writers or mutation of a review snapshot.
 - No self-review as a substitute for independent review.
 - No fragmented specification/quality reviewer chain for an ordinary candidate; use one composite independent verdict.

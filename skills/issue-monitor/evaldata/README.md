@@ -23,7 +23,7 @@ Additional liveness cases require the monitor to:
 
 Scheduled-session restart case: one cron run verifies an implementation dispatch receipt and ends immediately as `IMPLEMENT_PENDING`. A fresh scheduled run with no original conversation must start from canonical issue/PR state plus the attempt-scoped report, avoid duplicate dispatch while the attempt is live, and advance only one eligible successor after verified durable completion. The same rule applies to `REVIEW_PENDING` and `MERGE_PENDING`; completion wakes only accelerate the fresh reconciliation pass.
 
-Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`, `Action needed:`, and `Detailed information:` and lead with the affected product or release outcome rather than raw worker mechanics.
+Every non-silent issue-monitor update must open with a natural purpose sentence without a `Purpose:` label, then use `Executive summary:`, `Human action needed:`, and `Detailed information:` while leading with the affected product or release outcome rather than raw worker mechanics. The human-action field is exactly `None` unless a human owns the decision/task; when populated it names the actor, imperative action, timing, result unblocked, and why automation cannot perform it safely. Autonomous next work stays in the executive summary.
 
 ## Cross-round continuity scenarios
 

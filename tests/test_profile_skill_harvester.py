@@ -79,7 +79,7 @@ def test_profile_skill_harvester_package_contract():
         "isolated worktree",
         "Complete packages move together",
         "Initial enrollment is a baseline",
-        "Advances an observed package digest only after the update is merged",
+        "Advances an enrolled profile package digest only after the update is merged",
     ):
         assert marker in skill or marker in "\n".join(evaluation["expectations"])
     assert SCRIPT.is_file()
@@ -108,8 +108,11 @@ def test_harvested_skill_updates_must_publish_canonically_before_rollout():
 
     assert "live profile rollout is not publication" in contract.lower()
     assert "state must not advance" in contract.lower()
-    assert "must not replace the prior observed digest" in contract.lower()
-    assert "remain `newly_observed`" in contract
+    assert "exactly the five enrolled ned profile roots" in contract.lower()
+    assert "out-of-band" in contract.lower()
+    assert "source path" in contract.lower()
+    assert "package digest" in contract.lower()
+    assert "newly_observed` state transition" in contract
     assert "recorded separately" in contract.lower()
     assert "merged or stable-rejection disposition" not in contract
 
@@ -924,6 +927,58 @@ def test_inventory_requires_valid_eval_backing_and_packaged_fixtures(tmp_path):
     packages, errors = module.discover(root / "skills")
     assert "example" not in packages
     assert any("is not a regular packaged file" in error for error in errors)
+
+    template_package = _package(root, "missing-template")
+    (template_package / "EVAL.yaml").write_text(
+        "prompt: test\nexpectations: [test]\nparameters:\n  template: templates/missing.md\n",
+        encoding="utf-8",
+    )
+    packages, errors = module.discover(root / "skills")
+    assert "missing-template" not in packages
+    assert any("template is not a regular packaged file" in error for error in errors)
+
+    alternate_package = _package(root, "invalid-alternate")
+    (alternate_package / "EVAL.security.yaml").write_text(
+        "prompt: ''\nexpectations: []\n", encoding="utf-8"
+    )
+    packages, errors = module.discover(root / "skills")
+    assert "invalid-alternate" not in packages
+    assert any("EVAL.security.yaml requires" in error for error in errors)
+
+
+def test_inventory_rejects_symlinked_package_files_and_lossy_remote_aliases(tmp_path):
+    module = _module()
+    root = tmp_path / "profile"
+
+    linked_skill = _package(root, "linked-skill")
+    external_skill = tmp_path / "external-SKILL.md"
+    external_skill.write_text(
+        "---\nname: linked-skill\ndescription: external\n---\n", encoding="utf-8"
+    )
+    (linked_skill / "SKILL.md").unlink()
+    (linked_skill / "SKILL.md").symlink_to(external_skill)
+
+    linked_support = _package(root, "linked-support")
+    external_support = tmp_path / "external-support.md"
+    external_support.write_text("external", encoding="utf-8")
+    (linked_support / "references").mkdir()
+    (linked_support / "references" / "external.md").symlink_to(external_support)
+
+    packages, errors = module.discover(root / "skills")
+    assert "linked-skill" not in packages
+    assert "linked-support" not in packages
+    assert any("SKILL.md must be a regular packaged file" in error for error in errors)
+    assert any("package contains a symlink" in error for error in errors)
+
+    assert module.normalize_remote_url("git@github.com:owner/repo.git") == (
+        "ssh://git@github.com/owner/repo.git"
+    )
+    assert module.normalize_remote_url("deploy@github.com:owner/repo.git") != (
+        module.normalize_remote_url("git@github.com:owner/repo.git")
+    )
+    assert module.normalize_remote_url(str(tmp_path / "repository")) != (
+        module.normalize_remote_url(str(tmp_path / "repository.git"))
+    )
 
 
 def test_inventory_rejects_duplicate_frontmatter_names(tmp_path):

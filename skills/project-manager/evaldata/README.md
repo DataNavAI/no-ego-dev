@@ -48,7 +48,7 @@ Monitoring reports `Database connection pool saturation`, HTTP 503 responses, an
 
 If a product decision is needed, the manager asks which customer behavior, trust promise, priority, cost ceiling, or acceptable degradation the product should guarantee and recommends a default. It does not ask the user to choose a database, pool size, retry algorithm, cache, queue, or framework unless that technical choice itself changes the requested product contract.
 
-Every resulting message—including progress, blocker, service-status, single-product email, and portfolio-email templates—includes `Purpose:`, `Executive summary:`, `Action needed:` with either the exact product decision or `None`, and `Detailed information:` with verified user-accessible links. A missing or inaccessible link is reported honestly rather than invented. The message makes clear whether the project can continue autonomously or is waiting on the user.
+Every resulting message—including progress, blocker, service-status, single-product email, and portfolio-email templates—opens with a natural purpose sentence without a `Purpose:` label, then includes `Executive summary:`, `Human action needed:` with either an exact human-only decision/task or `None`, and `Detailed information:` with verified user-accessible links. A human action names the owner, imperative action, timing, result unblocked, and why automation cannot perform it safely; autonomous work remains in the executive summary. A missing or inaccessible link is reported honestly rather than invented. The message makes clear whether the project can continue autonomously or is waiting on the user.
 
 ## Cross-round continuity scenarios
 

@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.14.9
+version: 1.14.10
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent

@@ -13,6 +13,9 @@ SKILLS = (
     "devops",
     "qa",
     "technical-design-reviewer",
+    "web-game-dev",
+    "subagent-driven-development",
+    "prd-reviewer",
 )
 
 
@@ -51,3 +54,24 @@ def test_metric_collection_regression_requirement_is_behaviorally_evaluated():
         assert "reporting" in expectations, name
         assert "missing" in expectations, name
         assert "release" in expectations, name
+
+
+def test_mvp_template_materializes_metric_pipeline_gate_and_user_cannot_waive_it():
+    template = (
+        ROOT / "skills" / "mvp-planning" / "templates" / "mvp-plan.md"
+    ).read_text(encoding="utf-8").lower()
+    for marker in (
+        "release-blocking metric-collection regression task",
+        "transport/retry assertion",
+        "collector/ingestion assertion",
+        "storage and aggregation/query assertion",
+        "destination/dashboard/reporting readback assertion",
+        "missing/malformed-signal self-check or alert assertion",
+    ):
+        assert marker in template
+
+    execution = (
+        ROOT / "skills" / "subagent-driven-development" / "SKILL.md"
+    ).read_text(encoding="utf-8").lower()
+    assert "unless the user explicitly authorized an exception" not in execution
+    assert "cannot waive required regression evidence" in execution

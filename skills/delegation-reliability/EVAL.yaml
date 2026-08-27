@@ -3,6 +3,7 @@ prompt: |
 
   Use the delegation-reliability skill to explain and execute the safe recovery and continuation approach. Distinguish runtime state, durable artifacts, review verdicts, and downstream authorization.
 expectations:
+  - "Every user status update opens with a natural purpose sentence without a Purpose label and uses Human action needed only for a human-owned actor imperative timing result unblocked and why automation cannot perform it safely, otherwise exactly None; autonomous work remains in Executive summary."
   - "Does not treat a delegation handle, completed status, empty active-agent view, or self-report as proof that the requested deliverable exists."
   - "Inspects the remote branch/commit/PR, shared checkout, isolated worker residue, and exact requested report/checksum paths before re-dispatching."
   - "Classifies completed-with-partial-deliverable and timed-out-with-recovered-artifact states separately from task verdicts."

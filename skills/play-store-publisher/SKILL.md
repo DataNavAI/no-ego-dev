@@ -1,7 +1,7 @@
 ---
 name: play-store-publisher
 description: "Publish Android apps to Google Play, including daily change detection, mandatory versionCode updates, closed-testing uploads, and Play Console UI fallback."
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -116,9 +116,9 @@ For every release candidate that will be uploaded:
 **Daily release alert envelope:** every non-silent release, blocker, or state-transition alert must lead with product/tester impact and use:
 
 ```text
-Purpose: <why this closed-testing update is being sent and which tester/release outcome it affects>
+<Natural sentence explaining why this closed-testing update is being sent and which tester/release outcome it affects.>
 Executive summary: <verified release/blocker state, user-visible impact, and what happens next>
-Action needed: <None and the monitor's next action, or one exact product/release decision with timing>
+Human action needed: <None, or human owner + imperative product/release decision/task + timing + result unblocked + why automation cannot perform it safely>
 Detailed information: <source/release SHAs, versionCode, AAB checksum, exact closed track, gate evidence, Play receipt/status, and verified links>
 ```
 
@@ -215,9 +215,9 @@ Use this report shape:
 
 ```text
 Google Play publishing report — <project> — <date/time + timezone>
-Purpose: <why this publishing report exists and which tester/release outcome it supports>
+<Natural sentence explaining why this publishing report exists and which tester/release outcome it supports.>
 Executive summary: <verified current Play status, tester impact, largest blocker/risk, and next state>
-Action needed: <None and the team's next action, or one exact product/release decision with timing>
+Human action needed: <None, or human owner + imperative product/release decision/task + timing + result unblocked + why automation cannot perform it safely>
 Detailed information:
 - App name / Package ID / Developer account:
 - Track / tester group / opt-in link:

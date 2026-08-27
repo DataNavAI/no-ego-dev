@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's open GitHub issues should be polled on a schedule and advanced one durable stage at a time from reproduction through independently reviewed exact-SHA merge."
-version: 1.14.7
+version: 1.14.8
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -244,9 +244,9 @@ For this tick, execute **one durable stage per tick**:
 12. Deliver the result with this mandatory user-facing envelope:
 
 ```text
-Purpose: <why this issue-monitor update is being sent now and which product/release outcome it affects>
+<Natural sentence explaining why this issue-monitor update is being sent now and which product/release outcome it affects.>
 Executive summary: <verified stage outcome, current product impact, and next state>
-Action needed: <None and what automation does next, or one exact product-level decision/action with timing>
+Human action needed: <None, or human owner + imperative product-level decision/task + timing + result unblocked + why automation cannot perform it safely>
 Detailed information: <issue/PR URLs, exact SHA, attempt/stage, test/check evidence, reviewer verdict, merge commit, and blocker evidence>
 ```
 

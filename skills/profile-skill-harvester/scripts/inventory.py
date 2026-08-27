@@ -74,7 +74,9 @@ def parse_name(skill_md: Path) -> str:
 
 def package_files(package_dir: Path) -> Iterable[Path]:
     for path in sorted(package_dir.rglob("*")):
-        if path.is_symlink() or not path.is_file():
+        if path.is_symlink():
+            raise ValueError(f"package contains a symlink: {path}")
+        if not path.is_file():
             continue
         rel = path.relative_to(package_dir)
         if any(part in IGNORED_DIRS for part in rel.parts):
@@ -101,41 +103,54 @@ def hash_package(package_dir: Path) -> tuple[str, int, str]:
     return digest.hexdigest(), count, when
 
 
-def validate_eval_package(package_dir: Path) -> list[str]:
-    eval_path = package_dir / "EVAL.yaml"
+def validate_eval_file(package_dir: Path, eval_path: Path) -> list[str]:
+    label = eval_path.relative_to(package_dir)
     if not eval_path.is_file() or eval_path.is_symlink():
-        return ["missing regular EVAL.yaml"]
+        return [f"missing regular {label}"]
     try:
         evaluation = yaml.safe_load(eval_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, yaml.YAMLError) as exc:
-        return [f"invalid EVAL.yaml: {exc}"]
+        return [f"invalid {label}: {exc}"]
     if not isinstance(evaluation, dict):
-        return ["EVAL.yaml must be a mapping"]
+        return [f"{label} must be a mapping"]
 
     errors: list[str] = []
     prompt = evaluation.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
-        errors.append("EVAL.yaml requires a non-empty prompt")
+        errors.append(f"{label} requires a non-empty prompt")
     expectations = evaluation.get("expectations")
     if not isinstance(expectations, list) or not expectations or not all(
         isinstance(item, str) and item.strip() for item in expectations
     ):
-        errors.append("EVAL.yaml requires non-empty string expectations")
+        errors.append(f"{label} requires non-empty string expectations")
     parameters = evaluation.get("parameters", {})
     if not isinstance(parameters, dict):
-        errors.append("EVAL.yaml parameters must be a mapping")
+        errors.append(f"{label} parameters must be a mapping")
         return errors
     for key, value in parameters.items():
-        if "fixture" not in str(key).lower() or not isinstance(value, str):
+        lowered = str(key).lower()
+        if "fixture" not in lowered and "template" not in lowered:
             continue
-        candidate = (package_dir / value).resolve()
-        try:
-            candidate.relative_to(package_dir.resolve())
-        except ValueError:
-            errors.append(f"EVAL.yaml {key} escapes the package: {value}")
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f"{label} {key} must name a non-empty package-relative file")
             continue
+        declared = Path(value)
+        if declared.is_absolute() or ".." in declared.parts:
+            errors.append(f"{label} {key} is not package-relative: {value}")
+            continue
+        candidate = package_dir / declared
         if not candidate.is_file() or candidate.is_symlink():
-            errors.append(f"EVAL.yaml {key} is not a regular packaged file: {value}")
+            errors.append(f"{label} {key} is not a regular packaged file: {value}")
+    return errors
+
+
+def validate_eval_package(package_dir: Path) -> list[str]:
+    eval_path = package_dir / "EVAL.yaml"
+    if not eval_path.is_file() or eval_path.is_symlink():
+        return ["missing regular EVAL.yaml"]
+    errors: list[str] = []
+    for candidate in sorted(package_dir.rglob("EVAL*.yaml")):
+        errors.extend(validate_eval_file(package_dir, candidate))
     return errors
 
 
@@ -148,6 +163,8 @@ def discover(skills_root: Path) -> tuple[dict[str, Package], list[str]]:
         if any(part in IGNORED_DIRS for part in skill_md.parts):
             continue
         try:
+            if skill_md.is_symlink() or not skill_md.is_file():
+                raise ValueError(f"SKILL.md must be a regular packaged file: {skill_md}")
             name = parse_name(skill_md)
             if name in packages:
                 raise ValueError(
@@ -225,11 +242,10 @@ def git_output(repo: Path, *args: str) -> str:
 
 def normalize_remote_url(value: str) -> str:
     value = value.strip().rstrip("/")
-    if value.endswith(".git"):
-        value = value[:-4]
-    if value.startswith("git@") and ":" in value:
-        host, path = value[4:].split(":", 1)
-        return f"ssh://{host}/{path}".rstrip("/")
+    scp = re.fullmatch(r"([^@/:]+)@([^/:]+):(.+)", value)
+    if scp:
+        user, host, path = scp.groups()
+        return f"ssh://{user}@{host}/{path}".rstrip("/")
     if "://" not in value:
         return str(Path(value).expanduser().resolve())
     return value

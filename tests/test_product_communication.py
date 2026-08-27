@@ -107,3 +107,36 @@ def test_product_communication_eval_covers_human_action_and_rollout_claims():
     assert "multiple people" in fixture
     assert "separately completable checklist" in fixture
     assert "canonical-byte" in fixture
+
+
+def test_canonical_user_message_emitters_follow_product_communication_contract():
+    roots = (
+        ROOT / "skills" / "project-manager",
+        ROOT / "skills" / "issue-monitor",
+        ROOT / "skills" / "play-store-publisher",
+    )
+    files = [
+        path
+        for root in roots
+        for path in root.rglob("*")
+        if path.is_file() and path.suffix in {".md", ".yaml"}
+    ]
+    files.append(
+        ROOT
+        / "skills"
+        / "delegation-reliability"
+        / "references"
+        / "active-subagent-visibility.md"
+    )
+    contract = "\n".join(path.read_text(encoding="utf-8") for path in files)
+
+    assert "Human action needed:" in contract
+    assert "natural" in contract.lower()
+    assert "why automation cannot" in contract.lower()
+    assert not re.search(
+        r"^\s*(?:[-*]\s*)?(?:`|\*\*)?Purpose:", contract, re.MULTILINE
+    )
+    assert not re.search(
+        r"^\s*(?:[-*]\s*)?(?:`|\*\*)?Action needed:", contract, re.MULTILINE
+    )
+    assert "<strong>Purpose:</strong>" not in contract
