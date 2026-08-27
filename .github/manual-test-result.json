@@ -1,16 +1,15 @@
 {
-  "candidate_sha": "752e32c30437b58267ccd46deaf1e831c94e8132",
-  "tested_at": "2026-08-26T10:09:40Z",
-  "environment": "Owner-authorized macOS acceptance: clean isolated installed candidate, real Daytona provider, reusable local ChatGPT OAuth cache, disposable Telegram QA bot, and computer_use terminal capture.",
+  "candidate_sha": "9bcaa413111589530c4a8f4b0c2c4d575206f4e5",
+  "tested_at": "2026-08-27T15:09:55Z",
+  "environment": "Owner-authorized macOS canonical worktree using the repository Python virtual environment, Node/npm, eval_runner, gitleaks, GitHub CLI, and an immutable exact-SHA reviewer checkout. Product runtime paths were byte-identical to the previously accepted real Daytona lifecycle candidate.",
   "result": "pass",
   "commands": [
-    "bash scripts/install.sh",
-    "installed ned create --verbose",
-    "installed ned doctor",
-    "installed ned repair",
-    "installed ned doctor",
-    "installed ned destroy --yes",
-    "direct Daytona SDK cleanup readback"
+    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest -q",
+    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m eval_runner.cli skills/communication-evaluator/EVAL.yaml --markdown",
+    "strict inventory package discovery over skills/",
+    "npm ci && npm test && npm run check && npm pack --dry-run --json",
+    "gitleaks git . && gitleaks dir .",
+    "git diff --name-only 752e32c30437b58267ccd46deaf1e831c94e8132..9bcaa413111589530c4a8f4b0c2c4d575206f4e5 -- bin src scripts package.json package-lock.json profile"
   ],
-  "observations": "Real non-dry-run create reached ready state. An initial health probe safely reported unhealthy; repair succeeded and the subsequent doctor reported the sandbox, Hermes, NED profile, inference, and Telegram gateway healthy. Destroy succeeded; local state and the exact provider workspace and model secret were absent on direct readback. Credentials and their filenames were not recorded."
+  "observations": "Exact candidate validation returned 277 Python tests passed with 3 skipped; the communication-evaluator behavioral EVAL passed; strict discovery found 34 complete packages with 0 errors; 157 Node tests, syntax checks, and package dry-run passed; the package contained the evaluator skill, EVAL, fixtures, deterministic scorer, and exact A-D oracle; and history/tree secret scans found no leaks. An independent immutable review approved the exact candidate. The runtime-path comparison returned no changed paths, so the earlier real non-dry-run Daytona create, doctor, repair, destroy, and direct cleanup readback still cover identical product runtime bytes; this evidence update does not claim that external lifecycle was rerun for skill-only changes."
 }
