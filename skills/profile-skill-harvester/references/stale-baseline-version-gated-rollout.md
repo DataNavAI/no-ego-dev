@@ -1,8 +1,8 @@
-# Stale-baseline, version-gated profile rollout
+# Stale-baseline semantic reconciliation and profile rollout
 
 Use this fallback when a user explicitly asks to apply the latest canonical distribution skills, but the recorded per-package deployment ancestor is stale, missing, or cannot support a trustworthy three-way comparison.
 
-This is a **selection fallback**, not a substitute for exact-source verification.
+This is an **ancestry fallback**, not a version-selection shortcut or a substitute for exact-source verification. It increases the amount of semantic inspection required because a trustworthy three-way ancestor is unavailable.
 
 ## 1. Freeze authority before selection
 
@@ -20,35 +20,36 @@ Do not deploy from a mutable worktree, untracked files, generated caches, or the
 Across the canonical export and every target profile, record:
 
 - exact `name` from `SKILL.md` frontmatter;
-- semantic `version` when present and valid;
+- semantic `version` when present and valid, as metadata only;
 - complete package path and digest;
 - duplicate same-name packages;
 - canonical-path files, target-only files, and generated caches.
 
-Fail closed on malformed frontmatter, unsafe symlinks, invalid EVALs/fixtures, ambiguous ownership, or **unresolved** duplicate names. A duplicate is not permission for arbitrary deletion. It may be retired deterministically only when one live package is the unique selected package (for example, the sole highest valid semantic version), every duplicate is older/superseded rather than divergent, and the rollout authority includes standardization. Back up every duplicate at its original relative path before mutation; otherwise block that profile/skill.
+Fail closed on malformed frontmatter, unsafe symlinks, invalid EVALs/fixtures, ambiguous ownership, or **unresolved** duplicate names. A duplicate is not permission for arbitrary deletion. It may be retired deterministically only after complete-package semantic inspection proves one package adopted and every duplicate identical or explicitly `superseded` rather than divergent; version rank alone is never proof. Back up every duplicate at its original relative path before mutation; otherwise block that profile/skill.
 
-## 3. Conservative selection rules
+## 3. Complete semantic reconciliation rules
 
 When no reliable ancestor exists:
 
-1. **Canonical skill absent in target:** select it for installation.
-2. **Both versions are valid `MAJOR.MINOR.PATCH` and canonical is newer:** select it as an update candidate.
-3. **Versions are equal:** preserve the live package by default. Digest difference may represent a local adaptation; it is not evidence that canonical should win.
-4. **Target version is newer:** preserve it and report it as live-ahead.
-5. **Either version is missing or non-semantic:** classify as ambiguous and inspect manually. Do not pretend that an unversioned target is older.
-6. **Explicit standardization override:** a user may authorize canonical replacement despite ambiguity or live drift, but record the override, retain a full backup, preserve target-only files unless explicitly superseded, and do not call the result a three-way merge.
+1. Enumerate every canonical and live package by frontmatter identity and complete digest, regardless of whether its version is lower, equal, higher, missing, or malformed.
+2. Inspect every distinct package and per-file semantic delta. A version may prioritize inspection order, but every differing digest warrants examination.
+3. Build the same semantic disposition ledger used during harvest: every behavior/support-file delta is `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved` with evidence and origin.
+4. **Canonical skill absent in target:** install only after confirming no same-name live package or duplicate contains reusable drift that still needs harvesting.
+5. **Different digest at any version relation:** synthesize reusable guidance canonically first. Apply exact canonical bytes or a declared `product-local` adaptation only after verified merge.
+6. **Unversioned or malformed version:** do not infer age; semantic inspection still proceeds and malformed package metadata remains a validation blocker where required.
+7. **Unresolved or unsafe:** block that profile/skill and leave its state unadvanced. User standardization authority may resolve a genuine product-policy choice, but it cannot bypass safety, canonical publication, semantic disposition, or exact-source gates.
 
-Semantic versioning decides which packages warrant examination; it does **not** prove content equality, behavioral compatibility, review approval, or rollout success.
+Semantic versioning may assist ordering and final monotonic version choice; it never decides which packages warrant examination and does **not** prove content equality, compatibility, authority, review approval, or rollout success.
 
 ## 4. Preflight every target before mutation
 
-Build one global plan across all named profiles before copying anything. For each selected package:
+Build one global plan across all named profiles before copying anything. For every canonical/live package pair:
 
 - validate source package completeness and every `EVAL*.yaml` with the repository loader when available;
 - hash every canonical file;
 - hash every target-only file that must survive;
 - state the exact target path discovered by frontmatter identity;
-- record old/new versions and the selection reason;
+- record old/new versions as metadata plus every semantic disposition and convergence reason;
 - identify added skill names separately from same-name updates.
 
 A late ambiguous package blocks or is explicitly excluded before the first target changes.
@@ -60,7 +61,7 @@ For each authorized package:
 1. back up the complete selected target package and every superseded duplicate outside repositories, retaining each original profile-relative path;
 2. copy the selected target into a temporary sibling directory on the same filesystem;
 3. remove only known generated caches;
-4. overlay exact canonical files from the frozen export when the selection rule authorizes an update; for duplicate-retirement-only actions, preserve the selected package bytes unchanged;
+4. overlay exact canonical files from the frozen export only when the disposition ledger authorizes exact convergence; otherwise apply a predeclared `product-local` adaptation or block;
 5. preserve and re-hash target-only files;
 6. validate frontmatter, EVALs, fixtures, and support scripts in the staged package;
 7. atomically swap staged and live directories, then atomically rename superseded duplicates aside;
@@ -82,4 +83,4 @@ For skill-only changes:
 - tell existing conversations to use `/reset` or `/new` before relying on changed instructions;
 - do not restart gateways solely to manufacture adoption evidence.
 
-Report separately: selected, preserved-same-version, preserved-live-ahead, blocked-ambiguous, installed, target-only files preserved, fresh-process smokes, catalog rescans, and post-smoke hash verification.
+Report separately: inspected digests, semantic dispositions, exact-canonical targets, declared product-local adaptations, blocked unresolved/unsafe targets, installed packages, target-only files preserved, fresh-process smokes, catalog rescans, and post-smoke hash verification. Version relation may be reported as context but never as a preservation or overwrite decision.

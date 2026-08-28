@@ -112,6 +112,17 @@ def test_harvester_synthesizes_every_version_divergent_variant_then_converges_in
     assert "highest version wins" not in contract
     assert "lower versions may be ignored" not in contract
 
+    stale_fallback = (
+        SKILL_DIR / "references" / "stale-baseline-version-gated-rollout.md"
+    ).read_text(encoding="utf-8").lower()
+    assert "every differing digest warrants examination" in stale_fallback
+    assert "never decides which packages warrant examination" in stale_fallback
+    assert "semantic disposition ledger" in stale_fallback
+    assert "re-harvest reusable drift" in contract
+    assert "preserve the live package by default" not in stale_fallback
+    assert "preserve it and report it as live-ahead" not in stale_fallback
+    assert "replacement despite ambiguity or live drift" not in stale_fallback
+
 
 def test_harvested_skill_updates_must_publish_canonically_before_rollout():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
@@ -1028,8 +1039,20 @@ def test_inventory_requires_valid_eval_backing_and_packaged_fixtures(tmp_path):
     )
     packages, errors = module.discover(root / "skills")
     assert "malformed-commands" not in packages
-    assert any("setupCommands must be a string array" in error for error in errors)
-    assert any("teardownCommands must be a string array" in error for error in errors)
+    assert any("setupCommands must be a non-empty string array" in error for error in errors)
+    assert any("teardownCommands must be a non-empty string array" in error for error in errors)
+
+    blank_commands = _package(root, "blank-commands")
+    (blank_commands / "EVAL.yaml").write_text(
+        "prompt: test\nexpectations: [test]\n"
+        "setup_commands: ['', '   ']\n"
+        "teardownCommands: ['   ']\n",
+        encoding="utf-8",
+    )
+    packages, errors = module.discover(root / "skills")
+    assert "blank-commands" not in packages
+    assert any("setupCommands must be a non-empty string array" in error for error in errors)
+    assert any("teardownCommands must be a non-empty string array" in error for error in errors)
 
 
 def test_inventory_rejects_symlinked_package_files_and_lossy_remote_aliases(tmp_path):

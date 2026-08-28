@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.39
+version: 1.5.40
 author: NoEgoDev
 license: MIT
 metadata:
@@ -290,7 +290,7 @@ Follow [`references/live-source-freeze-and-target-sync.md`](references/live-sour
 
 For controller-to-sibling deployment, profile ownership boundaries, exact-source overlays that preserve target-only additions, explicit owner direction after a known negative gate that may request repair and re-review but never authorize rollout of the failed candidate, fail-fast validation, fresh-process discovery smokes, and the user-authorized sibling-gateway restart procedure, follow [`references/controller-to-profile-rollout-boundaries.md`](references/controller-to-profile-rollout-boundaries.md). Before mutating targets, separately preflight whether the current execution context can actually perform the required lifecycle adoption; skill wording is not execution authority. Follow [`references/gateway-reload-capability-preflight.md`](references/gateway-reload-capability-preflight.md).
 
-When the user asks to apply the latest canonical distribution but the recorded per-package deployment ancestor is stale, missing, or unusable, follow [`references/stale-baseline-version-gated-rollout.md`](references/stale-baseline-version-gated-rollout.md). Use semantic versions only to conservatively select absent/newer candidates; preserve equal/newer live packages, block ambiguous unversioned comparisons unless explicitly resolved, and still require frozen-source hashes, target-only preservation, transactional backup/rollback, fresh-process smokes, and post-smoke re-hashing.
+When the user asks to apply the latest canonical distribution but the recorded per-package deployment ancestor is stale, missing, or unusable, follow [`references/stale-baseline-version-gated-rollout.md`](references/stale-baseline-version-gated-rollout.md). Inspect every distinct complete package regardless of lower/equal/higher/missing version, build a semantic disposition ledger, re-harvest reusable drift, and converge every nonblocked target to exact canonical bytes or a declared `product-local` adaptation. Still require frozen-source hashes, target-only preservation, transactional rollback, and fresh-process adoption proof.
 
 Follow [`references/harvest-gate-implementation-checks.md`](references/harvest-gate-implementation-checks.md) when implementing the freeze gate, spawning an exact-SHA reviewer, validating eval fixture delivery and literal shell-safe prompt transport, building isolated mutating eval workspaces, proving browser/screenshot evidence, or budgeting the final cleanup sequence. In particular, run drift comparisons under fail-fast shell semantics so a nonzero drift result cannot fall through into commit, amend, push, or state-update commands; make disposable fixture recorders independent of scrubbed custom environment variables; keep cross-platform eval fixtures free of POSIX-only setup commands; and explicitly dispatch a newly introduced workflow from the frozen candidate ref when PR checks do not auto-start, verifying the run `headSha` and required platform job.
 
@@ -440,7 +440,7 @@ If there are no new differences and no blocker requiring attention, return `[SIL
 - [ ] Dynamic fixture and candidate-output text remains literal at every shell boundary; agent and judge marker-file adversarial tests create no side effects
 - [ ] Isolated worktree created from current `origin/<default>`
 - [ ] All configured profiles scanned read-only before the first canonical behavior edit or exact-review freeze
-- [ ] Higher-version and same-version/different-digest live variants reconciled into a common predecessor or explicitly classified; regressions prove reusable predecessor controls remain
+- [ ] Every lower/equal/higher/missing-version distinct-digest live variant, including baselined divergence, reconciled into a common predecessor or explicitly dispositioned; regressions prove reusable predecessor controls remain
 - [ ] Complete skill packages compared by frontmatter identity and digest
 - [ ] Live-source files rechecked immediately before freeze; drift probe ran under fail-fast semantics and only recorded canonical adaptations differ
 - [ ] Every divergence classified

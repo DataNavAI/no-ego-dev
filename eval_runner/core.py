@@ -143,10 +143,14 @@ def load_eval(path: str | Path) -> EvalSpec:
     setup = data.get("setupCommands", data.get("setup_commands", [])) or []
     teardown = data.get("teardownCommands", data.get("teardown_commands", [])) or []
     parameters = data.get("parameters", {}) or {}
-    if not isinstance(setup, list) or not all(isinstance(x, str) for x in setup):
-        raise ValueError("setupCommands must be a string array")
-    if not isinstance(teardown, list) or not all(isinstance(x, str) for x in teardown):
-        raise ValueError("teardownCommands must be a string array")
+    if not isinstance(setup, list) or not all(
+        isinstance(x, str) and x.strip() for x in setup
+    ):
+        raise ValueError("setupCommands must be a non-empty string array")
+    if not isinstance(teardown, list) or not all(
+        isinstance(x, str) and x.strip() for x in teardown
+    ):
+        raise ValueError("teardownCommands must be a non-empty string array")
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be a map")
     fixture_path, fixture_text = _load_fixture(eval_path, parameters)
@@ -154,8 +158,8 @@ def load_eval(path: str | Path) -> EvalSpec:
         eval_path,
         prompt.strip(),
         [x.strip() for x in expectations],
-        setup,
-        teardown,
+        [x.strip() for x in setup],
+        [x.strip() for x in teardown],
         parameters,
         fixture_path,
         fixture_text,

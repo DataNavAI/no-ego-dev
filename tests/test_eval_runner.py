@@ -202,6 +202,23 @@ def test_load_eval_validates_required_fields(tmp_path):
     assert spec.parameters["repo"] == "local"
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["setupCommands", "setup_commands", "teardownCommands", "teardown_commands"],
+)
+def test_load_eval_rejects_blank_setup_and_teardown_commands(tmp_path, field):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(
+        "prompt: Build it\n"
+        "expectations: [result exists]\n"
+        f"{field}: ['', '   ']\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="non-empty string array"):
+        load_eval(path)
+
+
 def test_load_eval_rejects_fixture_path_escape(tmp_path):
     eval_dir = tmp_path / "skill"
     eval_dir.mkdir()

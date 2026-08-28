@@ -125,10 +125,14 @@ def validate_eval_file(package_dir: Path, eval_path: Path) -> list[str]:
         errors.append(f"{label} requires non-empty string expectations")
     setup = evaluation.get("setupCommands", evaluation.get("setup_commands", [])) or []
     teardown = evaluation.get("teardownCommands", evaluation.get("teardown_commands", [])) or []
-    if not isinstance(setup, list) or not all(isinstance(item, str) for item in setup):
-        errors.append(f"{label} setupCommands must be a string array")
-    if not isinstance(teardown, list) or not all(isinstance(item, str) for item in teardown):
-        errors.append(f"{label} teardownCommands must be a string array")
+    if not isinstance(setup, list) or not all(
+        isinstance(item, str) and item.strip() for item in setup
+    ):
+        errors.append(f"{label} setupCommands must be a non-empty string array")
+    if not isinstance(teardown, list) or not all(
+        isinstance(item, str) and item.strip() for item in teardown
+    ):
+        errors.append(f"{label} teardownCommands must be a non-empty string array")
     parameters = evaluation.get("parameters", {})
     if not isinstance(parameters, dict):
         errors.append(f"{label} parameters must be a mapping")
