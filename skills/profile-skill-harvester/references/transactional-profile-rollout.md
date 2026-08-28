@@ -55,24 +55,26 @@ git archive "$REMOTE_MERGE_COMMIT" skills | tar -x -C "$EXPORT_ROOT"
 
 For an archive, verify representative or all exported blobs against Git before mutation with `git hash-object` and `git rev-parse "$REMOTE_MERGE_COMMIT:path"`.
 
-## 3. Resolve equal-version byte divergence and duplicate identities
+## 3. Resolve every distinct digest and duplicate identity
 
-Version equality is not package equality. If a live package and canonical candidate share a version but have different bytes, inspect semantic drift before rollout. Prefer a canonical version bump before review when distinct package bodies would otherwise be published under one version.
+Version is metadata, not package authority. Inspect every distinct complete live package whose version is lower, equal, higher, missing, or malformed, including divergence already present in inventory state. Before rollout, assign every behavior and support-file delta exactly one evidence-backed disposition: `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`. A reusable delta not represented in the frozen canonical generation requires re-harvest, validation, review, and merge before replacement; an unresolved or unsafe delta blocks only that package/profile and leaves its state unadvanced.
 
-Inventory by frontmatter `name`, not directory basename. If the same skill identity appears at multiple paths, select the canonical live path only from explicit package/version evidence. Back up every duplicate and retire only a proven older superseded copy. Never treat the first path returned by filesystem traversal as authoritative.
+Inventory by frontmatter `name`, not directory basename. If the same skill identity appears at multiple paths, select the canonical live path only from complete-package evidence and the disposition ledger, never from version rank. Back up every duplicate and retire only a semantically inspected copy explicitly dispositioned `superseded`. Never treat the first path returned by filesystem traversal as authoritative.
 
 ## 4. Globally stage, back up, and fail closed before mutation
 
 Preflight every target before changing any target:
 
 1. Discover every package and duplicate identity.
-2. Compare complete-package versions and digests.
-3. Compute canonical overlays and preserved target-only files.
-4. Validate every staged package, `SKILL.md`, `EVAL*.yaml`, fixture, and support-file path.
-5. Copy every affected live package—including superseded duplicates—to a timestamped backup outside repositories.
-6. Write a receipt containing source merge SHA, selected target path, reason, canonical per-file SHA-256 values, preserved target-only SHA-256 values, and retired duplicate paths.
-7. Acquire one external transaction lock.
-8. Abort globally if any preflight, backup, path-containment, or staged validation fails.
+2. Compare every complete-package digest and record version only as context.
+3. Complete the semantic disposition ledger for every delta across every target.
+4. Abort the generation and re-harvest any reusable live delta absent from canonical; do not overwrite it under standardization authority.
+5. Compute exact-canonical overlays and explicitly declared `product-local` adaptations. Generic target-only preservation is not a substitute for semantic disposition.
+6. Validate every staged package, `SKILL.md`, `EVAL*.yaml`, fixture, and support-file path.
+7. Copy every affected live package—including superseded duplicates—to a timestamped backup outside repositories.
+8. Write a receipt containing source merge SHA, selected target path, every disposition/reason, canonical per-file SHA-256 values, product-local adaptation hashes, and retired duplicate paths.
+9. Acquire one external transaction lock.
+10. Abort globally if any preflight, backup, path-containment, disposition, re-harvest, or staged validation fails.
 
 A path omitted from the action set proves only that it was not targeted; it does **not** prove a supposed local package exists. Verify existence and pre-rollout digest separately before claiming that a named local package was preserved.
 
@@ -81,7 +83,7 @@ A path omitted from the action set proves only that it was not targeted; it does
 Assemble each target in a sibling staging directory from its current package plus canonical files:
 
 - atomically replace every canonical file;
-- preserve target-only references/templates/scripts unless explicitly retired;
+- preserve target-only references/templates/scripts only when the ledger declares them `product-local`; re-harvest reusable additions and block unresolved/unsafe additions;
 - verify staged canonical and preserved-local hashes before swapping;
 - rename the live package to a rollback path, then rename the staged package into place;
 - only after the canonical path is live, rename proven superseded duplicates to rollback paths;

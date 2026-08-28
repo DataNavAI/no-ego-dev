@@ -206,16 +206,58 @@ def test_load_eval_validates_required_fields(tmp_path):
     "field",
     ["setupCommands", "setup_commands", "teardownCommands", "teardown_commands"],
 )
-def test_load_eval_rejects_blank_setup_and_teardown_commands(tmp_path, field):
+@pytest.mark.parametrize("value", ["null", "''", "0", "false", "{}", "['']", "['   ']"])
+def test_load_eval_rejects_present_invalid_setup_and_teardown_commands(
+    tmp_path, field, value
+):
     path = tmp_path / "EVAL.yaml"
     path.write_text(
         "prompt: Build it\n"
         "expectations: [result exists]\n"
-        f"{field}: ['', '   ']\n",
+        f"{field}: {value}\n",
         encoding="utf-8",
     )
 
     with pytest.raises(ValueError, match="non-empty string array"):
+        load_eval(path)
+
+
+@pytest.mark.parametrize(
+    ("primary", "secondary"),
+    [
+        ("setupCommands", "setup_commands"),
+        ("setup_commands", "setupCommands"),
+        ("teardownCommands", "teardown_commands"),
+        ("teardown_commands", "teardownCommands"),
+    ],
+)
+def test_load_eval_validates_secondary_command_alias_when_both_are_present(
+    tmp_path, primary, secondary
+):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(
+        "prompt: Build it\n"
+        "expectations: [result exists]\n"
+        f"{primary}: ['valid command']\n"
+        f"{secondary}: false\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="non-empty string array"):
+        load_eval(path)
+
+
+def test_load_eval_rejects_dual_valid_command_aliases(tmp_path):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(
+        "prompt: Build it\n"
+        "expectations: [result exists]\n"
+        "setupCommands: ['first']\n"
+        "setup_commands: ['second']\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="define only one"):
         load_eval(path)
 
 

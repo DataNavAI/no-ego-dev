@@ -123,6 +123,23 @@ def test_harvester_synthesizes_every_version_divergent_variant_then_converges_in
     assert "preserve it and report it as live-ahead" not in stale_fallback
     assert "replacement despite ambiguity or live drift" not in stale_fallback
 
+    transactional = (
+        SKILL_DIR / "references" / "transactional-profile-rollout.md"
+    ).read_text(encoding="utf-8").lower()
+    live_sync = (
+        SKILL_DIR / "references" / "live-source-freeze-and-target-sync.md"
+    ).read_text(encoding="utf-8").lower()
+    for rollout_contract in (transactional, live_sync):
+        assert "re-harvest" in rollout_contract
+        assert "product-local" in rollout_contract
+        assert "unresolved" in rollout_contract
+        assert "state unadvanced" in rollout_contract
+    assert "every distinct complete live package" in transactional
+    assert "never from version rank" in transactional
+    assert "standardization authority cannot bypass" in live_sync
+    assert "package/version evidence" not in transactional
+    assert "authorize exact replacement" not in live_sync
+
 
 def test_harvested_skill_updates_must_publish_canonically_before_rollout():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
@@ -1051,8 +1068,33 @@ def test_inventory_requires_valid_eval_backing_and_packaged_fixtures(tmp_path):
     )
     packages, errors = module.discover(root / "skills")
     assert "blank-commands" not in packages
-    assert any("setupCommands must be a non-empty string array" in error for error in errors)
+    assert any("setup_commands must be a non-empty string array" in error for error in errors)
     assert any("teardownCommands must be a non-empty string array" in error for error in errors)
+
+    secondary_alias = _package(root, "secondary-alias")
+    (secondary_alias / "EVAL.yaml").write_text(
+        "prompt: test\nexpectations: [test]\n"
+        "setupCommands: ['valid command']\n"
+        "setup_commands: false\n"
+        "teardown_commands: ['valid cleanup']\n"
+        "teardownCommands: null\n",
+        encoding="utf-8",
+    )
+    packages, errors = module.discover(root / "skills")
+    assert "secondary-alias" not in packages
+    assert any("setup_commands must be a non-empty string array" in error for error in errors)
+    assert any("teardownCommands must be a non-empty string array" in error for error in errors)
+
+    dual_valid_alias = _package(root, "dual-valid-alias")
+    (dual_valid_alias / "EVAL.yaml").write_text(
+        "prompt: test\nexpectations: [test]\n"
+        "setupCommands: ['first']\n"
+        "setup_commands: ['second']\n",
+        encoding="utf-8",
+    )
+    packages, errors = module.discover(root / "skills")
+    assert "dual-valid-alias" not in packages
+    assert any("define only one of setupCommands or setup_commands" in error for error in errors)
 
 
 def test_inventory_rejects_symlinked_package_files_and_lossy_remote_aliases(tmp_path):

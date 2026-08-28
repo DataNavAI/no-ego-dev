@@ -128,6 +128,23 @@ def _load_fixture(eval_path: Path, parameters: dict[str, Any]) -> tuple[Path | N
     return fixture_path, fixture_text
 
 
+def _load_command_array(
+    data: dict[str, Any], camel_key: str, snake_key: str
+) -> list[str]:
+    present = [key for key in (camel_key, snake_key) if key in data]
+    validated: dict[str, list[str]] = {}
+    for key in present:
+        value = data[key]
+        if not isinstance(value, list) or not all(
+            isinstance(item, str) and item.strip() for item in value
+        ):
+            raise ValueError(f"{key} must be a non-empty string array")
+        validated[key] = [item.strip() for item in value]
+    if len(present) > 1:
+        raise ValueError(f"define only one of {camel_key} or {snake_key}")
+    return validated[present[0]] if present else []
+
+
 def load_eval(path: str | Path) -> EvalSpec:
     _ensure_yaml()
     eval_path = Path(path).expanduser().resolve()
@@ -140,17 +157,9 @@ def load_eval(path: str | Path) -> EvalSpec:
         raise ValueError(f"{eval_path} requires non-empty string field: prompt")
     if not isinstance(expectations, list) or not all(isinstance(x, str) and x.strip() for x in expectations):
         raise ValueError(f"{eval_path} requires expectations: string[]")
-    setup = data.get("setupCommands", data.get("setup_commands", [])) or []
-    teardown = data.get("teardownCommands", data.get("teardown_commands", [])) or []
+    setup = _load_command_array(data, "setupCommands", "setup_commands")
+    teardown = _load_command_array(data, "teardownCommands", "teardown_commands")
     parameters = data.get("parameters", {}) or {}
-    if not isinstance(setup, list) or not all(
-        isinstance(x, str) and x.strip() for x in setup
-    ):
-        raise ValueError("setupCommands must be a non-empty string array")
-    if not isinstance(teardown, list) or not all(
-        isinstance(x, str) and x.strip() for x in teardown
-    ):
-        raise ValueError("teardownCommands must be a non-empty string array")
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be a map")
     fixture_path, fixture_text = _load_fixture(eval_path, parameters)

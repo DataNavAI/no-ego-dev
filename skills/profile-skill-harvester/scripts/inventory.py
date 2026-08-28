@@ -123,16 +123,19 @@ def validate_eval_file(package_dir: Path, eval_path: Path) -> list[str]:
         isinstance(item, str) and item.strip() for item in expectations
     ):
         errors.append(f"{label} requires non-empty string expectations")
-    setup = evaluation.get("setupCommands", evaluation.get("setup_commands", [])) or []
-    teardown = evaluation.get("teardownCommands", evaluation.get("teardown_commands", [])) or []
-    if not isinstance(setup, list) or not all(
-        isinstance(item, str) and item.strip() for item in setup
+    for camel_key, snake_key in (
+        ("setupCommands", "setup_commands"),
+        ("teardownCommands", "teardown_commands"),
     ):
-        errors.append(f"{label} setupCommands must be a non-empty string array")
-    if not isinstance(teardown, list) or not all(
-        isinstance(item, str) and item.strip() for item in teardown
-    ):
-        errors.append(f"{label} teardownCommands must be a non-empty string array")
+        present = [key for key in (camel_key, snake_key) if key in evaluation]
+        for key in present:
+            commands = evaluation[key]
+            if not isinstance(commands, list) or not all(
+                isinstance(item, str) and item.strip() for item in commands
+            ):
+                errors.append(f"{label} {key} must be a non-empty string array")
+        if len(present) > 1:
+            errors.append(f"{label} define only one of {camel_key} or {snake_key}")
     parameters = evaluation.get("parameters", {})
     if not isinstance(parameters, dict):
         errors.append(f"{label} parameters must be a mapping")

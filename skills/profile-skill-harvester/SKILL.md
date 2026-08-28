@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.40
+version: 1.5.41
 author: NoEgoDev
 license: MIT
 metadata:
@@ -107,7 +107,7 @@ Do not modify the user's existing checkout to make it clean.
 
 Before curating candidates or spending any exact-SHA review round, inspect the repository's production eval loader **and invocation path**, not only its YAML parser. Run one disposable sentinel eval outside the repository when practical and capture both evaluated-agent and judge arguments. If an eval declares `parameters.fixture`, prove that the package-relative fixture text reaches both invocations. A loader retaining the fixture path in an in-memory `parameters` map is not delivery evidence; neither is adding scenarios to an `evaldata/README.md` that `run_eval` never reads.
 
-Inventory validation must reject every EVAL shape the production loader rejects, including non-list `setupCommands`/`setup_commands` and `teardownCommands`/`teardown_commands`, and must validate all packaged `EVAL*.yaml` files rather than only the root filename.
+Inventory validation must reject every EVAL shape the production loader rejects. Every present `setupCommands`/`setup_commands` and `teardownCommands`/`teardown_commands` value must be an array of non-empty strings; validate every present alias independently and reject simultaneous camelCase/snake_case aliases as ambiguous. Validate all packaged `EVAL*.yaml` files rather than only the root filename.
 
 Fail closed before candidate freeze when the current runner cannot exercise behavior that the harvest must add. Classify this as a repository eval-harness prerequisite rather than repeatedly revising skill prose or consuming review rounds on structurally inert fixtures. Either fix the harness in a separately scoped, independently reviewed change first, or omit/block the affected package changes without baselining them.
 
