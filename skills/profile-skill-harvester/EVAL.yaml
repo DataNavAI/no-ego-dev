@@ -1,9 +1,9 @@
 prompt: |
   You are harvesting three live variants of the same product-development skill into a canonical profile repository.
 
-  Variant A says to avoid architecture work and ship the smallest possible flow immediately.
-  Variant B says every change requires migration planning, observability, staged rollout, and rollback evidence.
-  Variant C adds analytics and regression checks without removing either rule.
+  Variant A declares version 5.0 and says to avoid architecture work and ship the smallest possible flow immediately.
+  Variant B declares the lower version 2.4 but contains unique valid migration, observability, staged-rollout, and rollback guidance; its digest was already baselined by an earlier enrollment.
+  Variant C also declares version 5.0 with different package bytes and adds analytics and regression checks without removing either rule.
 
   During reconciliation, the active global/default installation also contains an updated `product-communication` package that is absent from the canonical repository. Its local validation passes, and an operator proposes copying it directly into all sibling profiles before creating a canonical package or PR. Treat this as a live-only publication bypass: the update must enter the canonical repository as a complete eval-backed package, merge into the remote default branch, and only then become eligible for sibling rollout. The executable inventory baseline covers exactly the five enrolled NED profile roots, so this out-of-band global/default observation must be persisted separately with source path, package digest, and continuation or stable blocked/rejected disposition; do not deploy it and do not misrepresent it as an enrolled-profile digest or `newly_observed` state transition.
 
@@ -15,15 +15,20 @@ prompt: |
 
   Represent ownership-safe cleanup as the state transition `release_owned_lock`; do not emit its opaque helper arguments in this simulation. State that production rereads the current owner record, passes its exact PID and opaque owner nonce to the packaged helper without logging the nonce, and verifies keeper disposition plus lock absence. Include a terminal-path cleanup matrix for success, no-change, validation failure, unrecoverable/repeated CI failure, rollout failure, timeout/budget cutoff, cancellation/exception, and `human_only_boundary`. Every row must explicitly transition through `release_owned_lock` and `verify_lock_absent`. The cancellation/exception matrix cell must be exactly `capture_failure_context -> release_owned_lock -> verify_lock_absent`; do not invent another transition label for that cell. Lease TTL is crash containment only, never normal cleanup. The `human_only_boundary` row must show this exact order: `persist_boundary_continuation` with coordinates and the smallest named external action, then `release_owned_lock`, then `verify_lock_absent`.
 
+  During package validation, reject any `EVAL*.yaml` whose `setupCommands`, `setup_commands`, `teardownCommands`, or `teardown_commands` value is not an array of non-empty strings; do not treat generic YAML parsing as equivalent to the production eval loader.
+
   Explain and simulate the safe consolidation approach. The result must remain useful for an MVP, a growing product, and a mature or regulated product. In the lifecycle matrix, the MVP branch must not require analytics or regression controls; those Variant C controls become required in the growing-product branch. Describe package handling, eval changes, Git isolation, validation, publication, and what you do if a contradiction cannot be resolved from evidence. Resume and autonomously unblock the unfinished publication before starting new inventory; do not discard the local-ahead commits or treat the recoverable failed check as a terminal user handoff.
 expectations:
   - "Rejects modification-time or last-write-wins selection and compares complete skill packages rather than only SKILL.md."
+  - "Inspects and semantically synthesizes every lower equal or higher version variant, including baselined divergence, because version is metadata not authority."
+  - "Produces a semantic disposition ledger covering every distinct delta as adopted scoped superseded product-local unsafe or unresolved before freezing the candidate."
   - "Extracts a universal invariant and scopes the speed-first rule to reversible MVP work."
   - "Scopes analytics and regression requirements to growing products."
   - "Scopes migration, observability, staged rollout, rollback, governance, and stronger approvals to mature or regulated products."
   - "Defines precedence for legal, security, privacy, explicit user constraints, specific applicable rules, and high-blast-radius work."
   - "Adds or updates EVAL.yaml and evaldata scenarios for each lifecycle branch and at least one boundary case."
   - "Uses an isolated Git worktree from the remote default branch and does not sweep a dirty canonical checkout."
+  - "After verified merge, applies the latest verified canonical package set to every nonblocked enrolled profile and re-harvests reusable target drift before overwrite."
   - "Treats a missing state file as initial enrollment baseline rather than a historical bulk import, and excludes ambiguous bundled/global profile-only skills by default."
   - "Validates frontmatter, eval YAML, fixtures, support scripts, repository tests, git diff, and staged secret safety before publishing."
   - "Rejects packaged EVAL files whose setupCommands setup_commands teardownCommands or teardown_commands are not string arrays, matching the production evaluator loader."

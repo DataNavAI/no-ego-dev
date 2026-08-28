@@ -85,6 +85,34 @@ def test_profile_skill_harvester_package_contract():
     assert SCRIPT.is_file()
 
 
+def test_harvester_synthesizes_every_version_divergent_variant_then_converges_instances():
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    evaluation = yaml.safe_load((SKILL_DIR / "EVAL.yaml").read_text(encoding="utf-8"))
+    fixture = (SKILL_DIR / evaluation["parameters"]["fixture"]).read_text(encoding="utf-8")
+    reference = (SKILL_DIR / "references" / "pre-candidate-live-variant-reconciliation.md").read_text(encoding="utf-8")
+    contract = f"{skill}\n{evaluation['prompt']}\n{' '.join(evaluation['expectations'])}\n{fixture}\n{reference}".lower()
+
+    for marker in (
+        "lower, equal, or higher",
+        "version is metadata, not authority",
+        "baselined divergence",
+        "semantic disposition ledger",
+        "adopted",
+        "scoped",
+        "superseded",
+        "product-local",
+        "unsafe",
+        "unresolved",
+        "every nonblocked enrolled profile",
+        "latest verified canonical package set",
+        "re-harvest before overwrite",
+    ):
+        assert marker in contract
+
+    assert "highest version wins" not in contract
+    assert "lower versions may be ignored" not in contract
+
+
 def test_harvested_skill_updates_must_publish_canonically_before_rollout():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
     evaluation = yaml.safe_load((SKILL_DIR / "EVAL.yaml").read_text(encoding="utf-8"))

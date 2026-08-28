@@ -4,17 +4,19 @@ This fixture tests consolidation rather than file copying.
 
 ## Scenario
 
-Three live profiles independently changed one canonical skill:
+Three live profiles independently changed one canonical skill. Their frontmatter versions are deliberately misleading: the MVP and mature variants both claim `5.0`, while the growing-product variant claims the lower `2.4` and was already baselined in inventory state.
 
 - **MVP profile:** demands the shortest reversible implementation and rejects premature architecture.
-- **Growing-product profile:** adds analytics, regression checks, and rollback readiness while preserving iteration speed. These controls are not mandatory in the MVP branch.
+- **Growing-product profile:** despite its lower, previously baselined version, adds analytics, regression checks, and rollback readiness while preserving iteration speed. These controls are not mandatory in the MVP branch.
 - **Mature/regulated profile:** requires compatibility analysis, migrations, staged rollout, observability, audit evidence, and approval boundaries.
 
 The active global/default installation also contains an updated `product-communication` package that is absent from the canonical repository. Although the local package validates, copying it directly into sibling profiles would create a live-only update with no durable canonical source. The passing behavior must add the complete package and eval coverage to the isolated NoEgoDev candidate, merge it into the remote default branch, and only then roll the merged bytes out. If publication cannot complete, the package remains undeployed and its state does not advance; the run records durable continuation coordinates or a stable blocked/rejected reason.
 
 The repository checkout is dirty with unrelated work. Each live package may also contain `EVAL.yaml`, `evaldata/`, references, scripts, or templates.
 
-A passing response must build explicit lifecycle applicability and precedence instead of selecting the newest file or blending contradictory bullets into vague prose. It must keep the repository checkout untouched by using an isolated worktree, preserve complete skill packages, add branch and boundary eval cases, reject secrets/runtime state, validate and test before publication, and leave unresolved same-scope contradictions blocked rather than guessed.
+A passing response must inspect every lower, equal, or higher version package and treat version as metadata, not authority. Baselined divergence still participates in synthesis. It must produce a semantic disposition ledger that classifies every distinct behavior/support-file delta as adopted, scoped, superseded, product-local, unsafe, or unresolved; build explicit lifecycle applicability and precedence instead of selecting the newest file or blending contradictory bullets into vague prose; preserve complete skill packages; and leave unresolved same-scope contradictions blocked rather than guessed.
+
+After verified merge, the passing response applies the latest verified canonical package set to every nonblocked enrolled profile, verifies exact bytes or declared product-local adaptations plus fresh loading, and re-harvests reusable target drift before overwrite. Publication without convergence across all five profiles is incomplete unless a named profile blocker keeps its state unadvanced.
 
 ## Interrupted-publication continuation
 

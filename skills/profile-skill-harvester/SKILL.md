@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.38
+version: 1.5.39
 author: NoEgoDev
 license: MIT
 metadata:
@@ -135,7 +135,7 @@ If a branch with that exact name exists, choose a new timestamp. Never reset or 
 
 Run `scripts/inventory.py` from this skill package, or perform an equivalent deterministic scan. Identify skills by frontmatter `name`, not merely directory basename. Hash the complete package while excluding `.git`, Python caches, editor files, OS metadata, and runtime artifacts.
 
-**This is a pre-candidate gate, not rollout-only bookkeeping.** Finish the complete live-profile inventory and reconcile every higher-version or same-version/different-digest variant before the first behavior edit, staged-diff freeze, or exact-candidate review. If canonical source is older than a compatible shared live predecessor, consolidate that predecessor first, then layer the requested change on top and choose a version newer than every live variant. Add a regression that proves both the new behavior and retention of reusable predecessor controls. Discovering this drift after review invalidates that review generation. Follow [`references/pre-candidate-live-variant-reconciliation.md`](references/pre-candidate-live-variant-reconciliation.md) for grouping common deltas, separating profile-local additions, and dry-running three-way target adaptations.
+**This is a pre-candidate gate, not rollout-only bookkeeping.** Finish the complete live-profile inventory and reconcile every distinct variant whose declared version is lower, equal, or higher than canonical before the first behavior edit, staged-diff freeze, or exact-candidate review. **Version is metadata, not authority:** a lower-version or previously baselined package can still contain the best reusable instruction, eval, fixture, script, template, or safety control. Inventory state controls scheduling and deduplication, not semantic inspection; baselined divergence remains synthesis input. If canonical source is older than a compatible shared live predecessor, consolidate that predecessor first, then layer the requested change on top and choose a version newer than every live variant. Add a regression that proves both the new behavior and retention of reusable predecessor controls. Discovering this drift after review invalidates that review generation. Follow [`references/pre-candidate-live-variant-reconciliation.md`](references/pre-candidate-live-variant-reconciliation.md) for grouping common deltas, separating profile-local additions, and dry-running three-way target adaptations.
 
 For each `(profile, skill)` record:
 
@@ -146,7 +146,11 @@ For each `(profile, skill)` record:
 - prior observed digest from the external state file, if present;
 - whether several profiles contain distinct variants.
 
-A candidate is interesting when it differs from the remote-default source package and is new or changed since the last successful harvest.
+Every package that differs from remote default is a semantic synthesis input, even when the difference predates enrollment or its declared version is lower. `newly_observed` determines whether a digest needs publication/state handling; it never determines whether the harvester reads and understands that variant.
+
+### Semantic disposition ledger
+
+Before editing, enumerate every distinct semantic delta and support-file delta across canonical, global/default, and enrolled profile packages. Record its origin and digest, applicable context, evidence, and exactly one disposition: `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`. This semantic disposition ledger is the completeness proof: no reusable delta may disappear merely because its source version is lower, its digest was previously baselined, or another profile has a newer timestamp. Freeze only after every delta has a disposition; block the affected package when a material same-scope conflict remains `unresolved`.
 
 **Initial enrollment is a baseline, not a historical bulk import.** When no state file exists, invoke `inventory.py --initialize` with exactly `ned`, `alphaned`, `kiaened`, `nedxned`, and `newsned` at `~/.hermes/profiles/<name>` plus the canonical `origin` URL; this nonrepeatable mode records those names/resolved roots, remote identity/symbolic default branch, and current digests as immutable trust anchors. Report the baseline counts. Never substitute `--record` for enrollment. Unless the user explicitly asks for a backfill, do not treat every pre-existing difference as newly updated. This prevents the first scheduled run from importing an entire bundled/global skill library by accident.
 
@@ -277,6 +281,8 @@ If the policy-wide change is specifically about coder/implementation static anal
 ## Live Source Freeze and Sibling Propagation
 
 Treat profile packages as mutable until the canonical candidate is committed. Recompare every live-source file immediately before freeze, allow only recorded canonical adaptations, and restart validation if unexpected drift appears. After merge, export packages from the verified merge object, back up target packages, replace only authorized skill directories, verify canonical digests, smoke-test discovery/provider operation, advance only merged-package observed digests, and release the exact lock on every exit.
+
+A harvest is not converged when canonical publication succeeds but sibling instances retain avoidable variants. Apply the latest verified canonical package set selected by the transaction back to **every nonblocked enrolled profile**, including the profile that contributed the winning guidance and profiles whose version string already matches. Require exact canonical bytes or an explicitly declared three-way `product-local` adaptation, then verify fresh loading and post-adoption digests. If rollout preflight finds a reusable unharvested delta, re-harvest before overwrite and publish a new reviewed canonical generation; do not silently erase it or preserve it as unexplained drift. Completion requires convergence evidence for `ned`, `alphaned`, `kiaened`, `nedxned`, and `newsned`, or a named per-profile blocker that leaves state unadvanced.
 
 Do not reflexively restart a gateway after a **skill-only** overlay. Existing same-name skills are read from disk when invoked, so new sessions and workers hot-load updated `SKILL.md` and support files. Existing conversations should use `/reset` or `/new` before relying on changed instructions; `/reload-skills` is for rescanning added or removed skill names. Reserve gateway restarts for startup-loaded code, plugins, environment, or configuration, or when live evidence shows the changed artifact is process-cached. Record `hot-swap verified` separately from `gateway restarted` rather than treating restart as the universal adoption gate.
 
