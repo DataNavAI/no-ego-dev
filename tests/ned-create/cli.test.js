@@ -492,6 +492,28 @@ test('CLI redacts Telegram token-shaped provider errors before output', async ()
   assert.match(stderr.join('\n'), /\[REDACTED\]/);
 });
 
+test('CLI redacts protocol request-path credentials in provider errors before output', async () => {
+  const stderr = [];
+  const protocolCredential = ['protocol', 'path', 'credential'].join('-');
+  const exitCode = await runCli(['create'], {
+    log() {},
+    error: (message) => stderr.push(message),
+  }, {
+    env: { DAYTONA_API_KEY: 'provider-test-value' },
+    getModelConnection: async () => codexConnection(),
+    getTelegramConnection: async () => telegramConnection(),
+    appFactory: async () => ({
+      async create() {
+        throw new Error(`hostile provider error https://provider.invalid/exchange/${protocolCredential}`);
+      },
+    }),
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(stderr.join('\n').includes(protocolCredential), false);
+  assert.match(stderr.join('\n'), /\[REDACTED\]/);
+});
+
 test('CLI pairing approves exactly one Hermes Telegram owner code in the saved workspace', async () => {
   const calls = [];
   const stdout = [];

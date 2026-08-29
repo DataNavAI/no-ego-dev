@@ -11,7 +11,10 @@ const USERNAME_PATTERN = /^[A-Za-z0-9_]{5,32}$/;
 
 export function redactTelegramText(value) {
   const text = String(value ?? '');
-  if (/api\.telegram\.org\/bot/i.test(text) || /\d{5,20}:[A-Za-z0-9_-]{30,}/.test(text)) {
+  if (/api\.telegram\.org\/bot/i.test(text)
+      || /\d{5,20}:[A-Za-z0-9_-]{30,}/.test(text)
+      || /https?:\/\/[^\s/]+(?:\/[^\s/?#]+)*\/(?:token|tokens|oauth|deviceauth|exchange|credentials?)\/[^\s/?#]+/i.test(text)
+      || /[?&](?:access[_-]?token|refresh[_-]?token|token|api[_-]?key|authorization|credential|code)=[^&#\s]+/i.test(text)) {
     return '[REDACTED]';
   }
   return text;
