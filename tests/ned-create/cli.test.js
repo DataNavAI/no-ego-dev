@@ -524,6 +524,7 @@ test('destroy deletes the remote workspace and its scoped secret before clearing
   const provider = {
     async destroy(workspace) {
       calls.push(['destroy', workspace.id, workspace.secretId]);
+      return { workspaceAbsent: true, secretAbsent: true };
     },
   };
   const app = createNedApp({ provider, stateStore });
@@ -531,6 +532,24 @@ test('destroy deletes the remote workspace and its scoped secret before clearing
   await app.destroy();
 
   assert.deepEqual(calls, [['destroy', 'sandbox-123', 'secret-1'], ['clear']]);
+});
+
+test('destroy preserves local recovery state until the provider proves workspace and secret absence', async () => {
+  const calls = [];
+  const app = createNedApp({
+    provider: {
+      async destroy() {
+        return { workspaceAbsent: true, secretAbsent: false };
+      },
+    },
+    stateStore: {
+      async load() { return { workspaceId: 'sandbox-123', secretId: 'secret-1' }; },
+      async clear() { calls.push('clear'); },
+    },
+  });
+
+  await assert.rejects(() => app.destroy(), /did not prove workspace and model secret absence/);
+  assert.deepEqual(calls, []);
 });
 
 test('destroy succeeds idempotently when local state is already clear', async () => {

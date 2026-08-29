@@ -1,16 +1,13 @@
 {
-  "candidate_sha": "752e32c30437b58267ccd46deaf1e831c94e8132",
-  "tested_at": "2026-08-26T10:09:40Z",
-  "environment": "Owner-authorized macOS acceptance: clean isolated installed candidate, real Daytona provider, reusable local ChatGPT OAuth cache, disposable Telegram QA bot, and computer_use terminal capture.",
+  "candidate_sha": "faadbaf032825c471b860515620a1c7f05659d7c",
   "result": "pass",
+  "tested_at": "2026-08-29T02:43:55Z",
+  "environment": "isolated macOS host live-provider acceptance using owner-only runtime handoffs",
   "commands": [
-    "bash scripts/install.sh",
     "installed ned create --verbose",
     "installed ned doctor",
-    "installed ned repair",
-    "installed ned doctor",
     "installed ned destroy --yes",
-    "direct Daytona SDK cleanup readback"
+    "direct Daytona SDK readback of the created Sandbox and model Secret"
   ],
-  "observations": "Real non-dry-run create reached ready state. An initial health probe safely reported unhealthy; repair succeeded and the subsequent doctor reported the sandbox, Hermes, NED profile, inference, and Telegram gateway healthy. Destroy succeeded; local state and the exact provider workspace and model secret were absent on direct readback. Credentials and their filenames were not recorded."
+  "observations": "Exact candidate installed successfully, completed non-dry-run provisioning and ready-state verification, then destroyed its exact Sandbox and model Secret. Direct provider readback returned 404 for both resources and isolated local state was absent. Credential values, authorization codes, and tokens were not recorded."
 }
