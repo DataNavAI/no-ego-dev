@@ -21,9 +21,9 @@ The read-only preflight runs before ChatGPT OAuth, Telegram setup, or resource c
 
 ## Maintainer manual live-QA protocol
 
-Live `ned create` acceptance is separate from credential-free CI. On the approved host, the owner-only QA material is already available at `$HERMES_HOME/secrets/ned-live-qa` when `HERMES_HOME` is the active profile root (for example, `/Users/moonk/.hermes/profiles/nedxned`). Do **not** append `profiles/<profile>` to that value; doing so checks the wrong path and can produce a false missing-credential blocker.
+Live `ned create` acceptance is separate from credential-free CI. The approved host-local QA material belongs under `$HOME/.no-ego-dev/`; it is **not** stored in macOS Keychain, the NED install directory, or a `$HERMES_HOME` subtree. The manual QA runner receives this QA root through its approved host configuration and must not search alternate locations, append profile segments, or fall back to Keychain. Treat a missing configured QA root as a configuration blocker rather than silently choosing another credential source.
 
-Before a live run, verify only that the directory is owner-only (`0700`) and its regular credential files are owner-only (`0600`). Do not print, copy, enumerate into reports, pass through argv or URLs, or place credential values in chat, source, logs, screenshots, fixtures, or persistent state. The accepted credential handoff remains hidden and runtime-only. After the run, record only the candidate SHA, PASS/FAIL/BLOCKED outcome, redacted evidence locations, created lifecycle handle status, and provider/local cleanup readback.
+Before a live run, verify only that the configured directory is owner-only (`0700`) and its regular credential files are owner-only (`0600`). Do not print, copy, enumerate into reports, pass through argv or URLs, or place credential values in chat, source, logs, screenshots, fixtures, or persistent state. The accepted credential handoff remains hidden and runtime-only. After the run, record only the candidate SHA, PASS/FAIL/BLOCKED outcome, redacted evidence locations, created lifecycle handle status, and provider/local cleanup readback.
 
 ## Revoke and destroy
 
