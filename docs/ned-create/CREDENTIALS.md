@@ -19,6 +19,12 @@ Create a **Personal Access Key** at <https://app.daytona.io/dashboard/keys> and 
 The read-only preflight runs before ChatGPT OAuth, Telegram setup, or resource creation. If Daytona rejects the key, NED reports that a Sandbox-only key is insufficient and points back to this key-creation page.
 - Logs, analytics, errors, state, screenshots, fixtures, and evidence contain no credential values.
 
+## Maintainer manual live-QA protocol
+
+Live `ned create` acceptance is separate from credential-free CI. On the approved host, the owner-only QA material is already available at `$HERMES_HOME/secrets/ned-live-qa` when `HERMES_HOME` is the active profile root (for example, `/Users/moonk/.hermes/profiles/nedxned`). Do **not** append `profiles/<profile>` to that value; doing so checks the wrong path and can produce a false missing-credential blocker.
+
+Before a live run, verify only that the directory is owner-only (`0700`) and its regular credential files are owner-only (`0600`). Do not print, copy, enumerate into reports, pass through argv or URLs, or place credential values in chat, source, logs, screenshots, fixtures, or persistent state. The accepted credential handoff remains hidden and runtime-only. After the run, record only the candidate SHA, PASS/FAIL/BLOCKED outcome, redacted evidence locations, created lifecycle handle status, and provider/local cleanup readback.
+
 ## Revoke and destroy
 
 1. In BotFather, use `/revoke` for only the disposable NED bot.
