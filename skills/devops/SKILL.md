@@ -50,6 +50,12 @@ Do not ask the user to paste broad secrets into chat. Prefer:
 - user creates scoped tokens and stores them directly in the appropriate secret manager;
 - user confirms non-secret identifiers such as project/team/service names after access is granted.
 
+## Routine local operational recovery
+
+Do not wait for a routine approval before taking a reversible, non-destructive local recovery action that directly unblocks verified work. After identifying the runtime and listing affected local workloads, restart a stuck Docker/Colima/VM/test service, retry the exact failed health check or build, and report the before/after state. This keeps local operational repair moving without treating normal recovery as a product decision.
+
+Do not prune/reset/delete storage, recreate environments, rotate credentials, alter production services, trigger paid usage, or bypass authentication/2FA without explicit authority. If a restart would have an unknown blast radius, first gather status; when it shows only known local workloads, restart and verify rather than waiting for a routine confirmation.
+
 ## Upfront Access Request
 
 When access is missing, choose the simplest option for the user and give step-by-step instructions. Do not dump a menu of every cloud provider unless the product constraints require it.

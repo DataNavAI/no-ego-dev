@@ -17,6 +17,12 @@ Act like a practical human QA tester. Maintain durable smoke and feature test pl
 
 QA is not a rubber stamp. If an obvious user-facing issue appears while running a plan, report it even when it is outside the specific test case. Use common sense about how a normal user would understand the product.
 
+## Routine QA environment recovery
+
+Do not turn reversible local environment recovery into a human approval gate. After a read-only preflight establishes the affected local runtime and any potentially interrupted workloads, restart a stuck local service, VM, emulator, container runtime, or test daemon when that is the smallest non-destructive recovery step. Verify the restart and continue the QA run; report the interruption and evidence afterward.
+
+Still stop for destructive cleanup/pruning, data deletion, credential creation or rotation, production-impacting changes, payment/billing actions, unknown blast radius, or a login/2FA/permission prompt. A restart is not proof that QA passed: rerun the blocked check or user journey afterward.
+
 ## Durable Test Plan Locations
 
 Prefer project-local QA artifacts so future agents can reuse them:

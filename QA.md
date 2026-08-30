@@ -42,7 +42,7 @@ $HOME/.config/no-ego-dev/secrets/daytona_api_key
 
 It requires only `write:sandboxes`, `delete:sandboxes`, and `manage:secrets`. Never send it through chat or put it in Git, source, screenshots, logs, shell history, command arguments, URLs, Docker build context, or persistent NED state.
 
-Keep ChatGPT OAuth cache and non-secret NED lifecycle state under the same owner-only root. Mount only the minimum needed file or state directory into a disposable container. Telegram remains a disposable hidden-TTY input: do not export it as a shell/Docker environment variable, place it in a QA file, or create a Daytona Secret for it.
+Keep ChatGPT OAuth cache and non-secret NED lifecycle state under the same owner-only root. Mount only the minimum needed file or state directory into a disposable container. Telegram remains a disposable hidden-TTY input: do not export it as a shell/Docker environment variable or create a Daytona Secret for it. A test-only owner-only `telegram_bot_token` file may be consumed by a local PTY wrapper solely to write the value to NED's hidden prompt; it is never mounted, passed in argv, logged, copied into the image, or persisted by NED.
 
 ## Preflight
 
