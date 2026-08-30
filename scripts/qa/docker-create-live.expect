@@ -1,0 +1,34 @@
+#!/usr/bin/expect -f
+# Runs a fresh-container live create while keeping both credentials host-local.
+
+set timeout -1
+
+foreach required {DAYTONA_API_KEY TELEGRAM_BOT_TOKEN NED_DOCKER_IMAGE NED_HERMES_AUTH_FILE NED_STATE_DIR} {
+  if {![info exists env($required)] || $env($required) eq ""} {
+    puts stderr "missing required live-QA runtime configuration: $required"
+    exit 2
+  }
+}
+
+# The Daytona credential is inherited only by Docker's named runtime env slot.
+# Telegram is written solely to NED's hidden TTY prompt and is never a Docker env.
+spawn docker run --rm --init --interactive --tty \
+  --env DAYTONA_API_KEY \
+  --volume "$env(NED_HERMES_AUTH_FILE):/root/.hermes/auth.json:rw" \
+  --volume "$env(NED_STATE_DIR):/root/.ned:rw" \
+  $env(NED_DOCKER_IMAGE) create --verbose
+
+expect {
+  -re {Paste the Telegram bot token \(input hidden\):} {
+    send -- "$env(TELEGRAM_BOT_TOKEN)\r"
+    unset env(TELEGRAM_BOT_TOKEN)
+    exp_continue
+  }
+  eof {
+    catch wait result
+    if {[llength $result] >= 4} {
+      exit [lindex $result 3]
+    }
+    exit 1
+  }
+}

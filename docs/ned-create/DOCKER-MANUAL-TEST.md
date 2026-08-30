@@ -5,41 +5,24 @@ This is the live acceptance test for a complete `ned create` setup in a fresh co
 ## Preconditions
 
 - Docker Desktop is running.
-- `DAYTONA_API_KEY` is present in the host shell, or stored at `~/.config/no-ego-dev/secrets/daytona_api_key`. The runner reads it without printing it and passes it only to the container runtime. Do not paste it into chat or commit it.
-- A disposable Telegram bot token is available from BotFather. Use NED's hidden prompt; do not pass it in argv, Docker `--env`, files, URLs, or logs.
-- ChatGPT OAuth can be completed interactively.
+- `DAYTONA_API_KEY` is stored at `~/.config/no-ego-dev/secrets/daytona_api_key` (mode `600`).
+- The disposable Telegram token is stored at `~/.config/no-ego-dev/secrets/telegram_bot_token` (mode `600`).
+- The secret directory uses mode `700`; `expect` is installed for the local hidden-TTY relay.
+- ChatGPT OAuth can be completed interactively if the cached authorization expires.
+
+The runner reads both values locally without printing them. It injects the Daytona key only into Docker's named runtime environment slot, and sends the Telegram token only to NED's hidden TTY prompt; the Telegram token is never mounted, exported to Docker, passed in argv, or logged.
 
 ## Run
 
 From the repository root:
 
 ```bash
-export DAYTONA_API_KEY='(load from your secret store; do not commit)'
-./scripts/qa/docker-create-smoke.sh
+./scripts/qa/docker-create-live.sh
 ```
 
 The runner persists the ChatGPT OAuth store at `~/.config/no-ego-dev/secrets/hermes_auth.json` (mode `600`) and mounts only that file into the disposable container. After first authorization, later runs reuse or refresh it. It also persists NED ownership state at `~/.config/no-ego-dev/secrets/state/` (mode `700`) so the workspace can be cleaned up after the disposable container exits.
 
-The script builds `docker/ned-create.Dockerfile` from the current checkout and runs:
-
-```text
-ned create --verbose
-```
-
-After a successful create, clean up with:
-
-```bash
-docker run --rm --init \
-  --env DAYTONA_API_KEY \
-  --volume "$HOME/.config/no-ego-dev/secrets/state:/root/.ned:rw" \
-  no-ego-dev/ned-create-manual:local destroy --yes
-```
-
-Complete ChatGPT OAuth and paste the disposable Telegram token only at:
-
-```text
-Paste the Telegram bot token (input hidden):
-```
+The script builds `docker/ned-create.Dockerfile` from the current checkout and runs `ned create --verbose` in a PTY. After create succeeds, test the bot's first response, run `ned repair` from the same image/state, test a second response, then run `ned destroy --yes` and verify provider readback. `QA.md` is the canonical acceptance/evidence runbook.
 
 ## Acceptance criteria
 
