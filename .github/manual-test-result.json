@@ -1,12 +1,11 @@
 {
-  "candidate_sha": "c1e0c7716b2caf2f7128b2e36f20d00903b6e297",
+  "candidate_sha": "814e07a1382131587b514f5f2565e90e396126f1",
   "result": "pass",
-  "tested_at": "2026-08-31T05:31:00Z",
-  "environment": "isolated macOS temporary home using the exact candidate installer through bash stdin",
+  "tested_at": "2026-08-31T17:54:38Z",
+  "environment": "macOS 26.5.2, Python 3.11.16",
   "commands": [
-    "HOME=<temporary> TMPDIR=<temporary> /bin/bash -s < scripts/install.sh",
-    "<temporary>/.local/bin/ned --version",
-    "grep revision=a0f55d1d015d415c06b6a08a1e92457de1352241 <temporary>/.local/share/ned/<current>/install-manifest"
+    "python -m pytest tests/test_project_manager_bug_intake.py -q",
+    "python -m pytest"
   ],
-  "observations": "The candidate installer downloaded and verified the release containing the pairing Daytona-authorization preflight, then installed it into an isolated temporary home. The launcher reported version 0.2.1 and the installed manifest recorded revision a0f55d1d015d415c06b6a08a1e92457de1352241. No credentials, OAuth sessions, Telegram tokens, or cloud resources were used."
+  "observations": "The direct-request diagnostic exception explicitly excludes user-reported product bugs, requires canonical issue creation or reuse and focused-worker dispatch before diagnosis, and limits emergency action to immediate reversible containment without project-manager inline diagnosis or implementation. Adversarial focused tests passed (3 passed), and the full repository suite passed (260 passed, 3 skipped)."
 }

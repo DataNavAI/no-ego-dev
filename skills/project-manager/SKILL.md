@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.22.0
+version: 0.23.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -139,6 +139,18 @@ When a late result arrives:
 
 If the audit discovers a historical secret-scan false positive, do not waive the red command. Create a focused exact-fingerprint security child and follow [`references/audit-discovered-secret-scan-exceptions.md`](references/audit-discovered-secret-scan-exceptions.md).
 
+## Product Bug Intake: Issue First, Worker First
+
+A direct user report that the product is broken, regressed, incorrect, unsafe, or failing is an execution trigger, not an invitation for the project manager to become the debugger. For every user-reported product bug, use this fail-closed sequence:
+
+1. Search the configured canonical tracker for matching open and closed reports using the product, affected journey, symptom, error/evidence, and likely synonyms. Reuse a matching issue; do not create a duplicate.
+2. Create or update **exactly one canonical issue** before any specialist execution. It must identify the project/repository and environment; capture sanitized reproduction/evidence, user impact and severity, scope and exclusions, acceptance criteria, verification requirements, and source-report context; and name the focused worker role. When evidence is incomplete, record what is known and assign bounded reproduction to the worker instead of diagnosing inline.
+3. **Spawn a focused worker linked to that canonical issue** before diagnosis, code inspection, reproduction work, or implementation. The worker re-reads the live issue and owns the bounded investigation/fix in an isolated branch or worktree. Use the domain specialist that matches the bug (`coder`, `ui-designer`, `devops`, `qa`, or another focused role), and include the issue ID/URL in its assignment and eventual branch/commit/PR evidence.
+4. The project manager coordinates and verifies; it does not diagnose or fix the bug inline. It verifies worker evidence, tracker/PR linkage, focused and full tests, independent review, CI, rollout or containment removal, exact revisions, and issue closure against the acceptance criteria.
+5. If worker dispatch is unavailable or fails before creating a durable execution artifact, keep the canonical issue open and add an explicit **dispatch blocker** with attempted route, failure evidence, user impact, owner, and next retry/escalation. Do not silently fix inline, mark the issue complete, or imply execution has started.
+
+**Emergency reversible containment** is allowed only to stop ongoing material harm such as data loss, security exposure, runaway spend, or a critical outage. Prefer a feature disable, rollback, traffic stop, or similarly bounded and reversible safety action; record the action and rollback condition on the issue. Containment never replaces the canonical issue and focused-worker flow: search/create/reuse the issue and dispatch the worker for diagnosis and a durable fix as soon as the immediate safety action permits.
+
 ## Direct User Request Issue and Subagent Rules
 
 When the user directly asks for an actionable project task, create or update an issue before execution and run the work through a subagent by default. The project manager should coordinate, verify, and report; it should not quietly perform directly requested project work inline.
@@ -152,7 +164,7 @@ For every directly asked task:
 5. After the subagent returns, verify the evidence directly before marking the child complete or reporting success.
 6. If no delegation/subagent tool is available, still create the milestone/child hierarchy and write a complete handoff prompt/assignment in each unblocked child; do not let the work exist only in chat memory.
 
-Issue-first execution can be skipped only for pure conversational answers, clarifying questions, or emergency read-only diagnostics where creating an issue would materially delay risk mitigation. If skipped, record the reason and create a follow-up issue once stable.
+Issue-first execution can be skipped only for pure conversational answers or clarifying questions. This exception never applies to user-reported product bugs: canonical issue creation or reuse and focused-worker dispatch precede any diagnosis. For ongoing material harm, only immediate, reversible containment may occur before that routing is complete, as defined by the product-bug intake contract above. Containment cannot include project-manager inline diagnosis or implementation. Record the containment and rollback condition on the canonical issue and complete worker dispatch as soon as the immediate safety action permits.
 
 ## Progress Update Rules
 
@@ -654,7 +666,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 6. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior; for web games, require it to cite the `web-game-dev` engine/architecture recommendation.
 7. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
 8. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
-9. For the directly asked task, create or update the durable issue/task before execution, even if the request looks small.
+9. For the directly asked task, create or update the durable issue/task before execution, even if the request looks small. When it is a user-reported product bug, apply the stricter product-bug intake contract: search first, create or reuse exactly one canonical issue, and dispatch a linked focused worker before diagnosis or implementation.
 10. Create milestones from the current PRD/spec/UI artifacts.
 11. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
 12. Send a progress update with the milestone/task plan before execution begins.
@@ -674,6 +686,9 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] New projects have invoked `agent-identity-and-access` and have a documented agent identity/access status or a follow-up setup issue.
 - [ ] Project email communications use the configured agent identity/delegated mailbox by default, or email is blocked pending identity/access setup.
 - [ ] Directly asked actionable tasks have a durable issue/task before execution and are assigned to a focused subagent by default.
+- [ ] Every user-reported product bug was deduplicated into exactly one canonical issue and a focused worker linked to that issue was dispatched before diagnosis or implementation.
+- [ ] The project manager coordinated and verified bug evidence, tracker/PR linkage, tests, review, CI, and closure instead of diagnosing or fixing inline.
+- [ ] Dispatch failures left the canonical bug open with an explicit dispatch blocker; any emergency reversible containment was recorded and did not replace issue creation/reuse or focused-worker dispatch.
 - [ ] Subagents receive enough context.
 - [ ] Any product-management, architecture, web-game, coding, devops, or QA work was delegated to the corresponding specialist subagent.
 - [ ] Browser/web game projects include a `web-game-dev` architecture-phase recommendation before implementation.
