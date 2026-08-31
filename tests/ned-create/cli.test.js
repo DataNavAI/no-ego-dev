@@ -128,11 +128,18 @@ test('create provisions, bootstraps, verifies, and persists only non-secret work
     async load() { return null; },
     async save(state) { savedState = state; },
   };
-  const app = createNedApp({ provider, stateStore });
+  const progress = [];
+  const app = createNedApp({ provider, stateStore, progress: (message) => progress.push(message) });
 
   const result = await app.create({ modelConnection: codexConnection(), telegramConnection: telegramConnection() });
 
   assert.equal(result.ready, true);
+  assert.deepEqual(progress, [
+    'Working: reserving your private Daytona workspace…',
+    'Working: installing NED skills and starting your Telegram gateway…',
+    'Working: checking the Telegram gateway connection…',
+    'Working: saving your workspace for recovery…',
+  ]);
   assert.deepEqual(calls.map(([name]) => name), ['create', 'bootstrap', 'doctor']);
   assert.deepEqual(calls[0][1], NED_PLAN);
   assert.deepEqual(savedState, {

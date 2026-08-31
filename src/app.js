@@ -1,6 +1,6 @@
 import { NED_PLAN, createNedPlan } from './plan.js';
 
-export function createNedApp({ provider, stateStore }) {
+export function createNedApp({ provider, stateStore, progress = () => {} }) {
   if (!provider || !stateStore) {
     throw new TypeError('provider and stateStore are required');
   }
@@ -30,6 +30,7 @@ export function createNedApp({ provider, stateStore }) {
 
       let workspace;
       try {
+        progress('Working: reserving your private Daytona workspace…');
         workspace = await provider.createWorkspace(plan, credentials);
       } catch (error) {
         if (error.recoveryState) {
@@ -67,12 +68,15 @@ export function createNedApp({ provider, stateStore }) {
       if (workspace.createAttemptId) workspaceState.createAttemptId = workspace.createAttemptId;
       if (credentials?.modelConnection) workspaceState.modelProvider = plan.modelProvider;
       try {
+        progress('Working: installing NED skills and starting your Telegram gateway…');
         await provider.bootstrap(workspace, plan);
+        progress('Working: checking the Telegram gateway connection…');
         const health = await provider.doctor(workspace, plan);
         if (!health.ok) {
           throw new Error('NED health check failed');
         }
 
+        progress('Working: saving your workspace for recovery…');
         await stateStore.save(workspaceState);
         return { ready: true, workspace: workspaceState, health };
       } catch (error) {
