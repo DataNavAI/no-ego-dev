@@ -1,12 +1,11 @@
 {
-  "candidate_sha": "c1e0c7716b2caf2f7128b2e36f20d00903b6e297",
+  "candidate_sha": "3dad040aaca4372ed60340177325a7f410def2c7",
   "result": "pass",
-  "tested_at": "2026-08-31T05:31:00Z",
-  "environment": "isolated macOS temporary home using the exact candidate installer through bash stdin",
+  "tested_at": "2026-08-31T17:42:49Z",
+  "environment": "macOS 26.5.2, Python 3.11.16",
   "commands": [
-    "HOME=<temporary> TMPDIR=<temporary> /bin/bash -s < scripts/install.sh",
-    "<temporary>/.local/bin/ned --version",
-    "grep revision=a0f55d1d015d415c06b6a08a1e92457de1352241 <temporary>/.local/share/ned/<current>/install-manifest"
+    "python -m pytest tests/test_project_manager_bug_intake.py tests/test_seo_growth_skill.py::test_project_manager_routes_organic_search_work_to_seo_growth -q",
+    "python -m pytest"
   ],
-  "observations": "The candidate installer downloaded and verified the release containing the pairing Daytona-authorization preflight, then installed it into an isolated temporary home. The launcher reported version 0.2.1 and the installed manifest recorded revision a0f55d1d015d415c06b6a08a1e92457de1352241. No credentials, OAuth sessions, Telegram tokens, or cloud resources were used."
+  "observations": "The project-manager package enforces canonical issue creation or reuse and focused worker dispatch before product-bug diagnosis or implementation; focused tests passed (3 passed) and the full repository suite passed (259 passed, 3 skipped)."
 }
