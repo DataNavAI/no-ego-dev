@@ -160,10 +160,7 @@ NED 워크플로를 통해 만들어진 배포 예시입니다.
 
 - **Korean Ground News** — 실시간 스토리 피드와 제품 모니터링이 포함된 뉴스 분석 제품.
   https://news.datanav.app
-- **Budget Table** — 재무 시나리오를 탐색하고 비교하는 예산 계획 제품.
-  https://budget.datanav.app
-- **Group Game Maker** — 공유 가능한 브라우저 게임/프로토타입 경험.
-  https://knoomdevbot.github.io/group-game-maker/
+  https://play.google.com/store/apps/details?id=app.datanav.news
 
 ## 평가 실행
 

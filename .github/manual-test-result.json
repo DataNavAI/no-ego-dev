@@ -1,13 +1,11 @@
 {
-  "candidate_sha": "faadbaf032825c471b860515620a1c7f05659d7c",
+  "candidate_sha": "3826097fde56c5471e122a86779d9d62cc5a28ca",
   "result": "pass",
-  "tested_at": "2026-08-29T02:43:55Z",
-  "environment": "isolated macOS host live-provider acceptance using owner-only runtime handoffs",
+  "tested_at": "2026-08-31T04:53:55Z",
+  "environment": "isolated macOS temporary home using the exact candidate installer through bash stdin",
   "commands": [
-    "installed ned create --verbose",
-    "installed ned doctor",
-    "installed ned destroy --yes",
-    "direct Daytona SDK readback of the created Sandbox and model Secret"
+    "HOME=<temporary> TMPDIR=<temporary> /bin/bash -s < scripts/install.sh",
+    "<temporary>/.local/bin/ned --version"
   ],
-  "observations": "Exact candidate installed successfully, completed non-dry-run provisioning and ready-state verification, then destroyed its exact Sandbox and model Secret. Direct provider readback returned 404 for both resources and isolated local state was absent. Credential values, authorization codes, and tokens were not recorded."
+  "observations": "The exact candidate installer completed from stdin without an unbound BASH_SOURCE error, installed its private runtime into an isolated temporary home, and the installed launcher reported version 0.2.1. No credentials, OAuth sessions, Telegram tokens, or cloud resources were used."
 }

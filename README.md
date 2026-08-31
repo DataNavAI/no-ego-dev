@@ -186,10 +186,7 @@ Examples of deployed work created through the NED workflow:
 
 - **Korean Ground News** — a deployed news-analysis product with live story feeds and product monitoring.
   https://news.datanav.app
-- **Budget Table** — a deployed budget-planning product for exploring and comparing financial scenarios.
-  https://budget.datanav.app
-- **Group Game Maker** — a shareable browser game/prototype experience.
-  https://knoomdevbot.github.io/group-game-maker/
+  https://play.google.com/store/apps/details?id=app.datanav.news
 
 ## Run evals
 

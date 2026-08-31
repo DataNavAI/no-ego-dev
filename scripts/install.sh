@@ -8,8 +8,9 @@ RELEASE_NED_REVISION=a1de22fb7968c3c646ea21f3a9533a3bcd04c9cb
 NED_SOURCE_SHA256=e146cf9d099d6c9904b474d7a3b7acbe1626a119a906d5c48b47a214ae9fa6ac
 
 candidate_checkout() {
-  local installer_dir repo
-  installer_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P) || return 1
+  local installer_dir repo installer_source=${BASH_SOURCE[0]:-}
+  [[ -n "$installer_source" ]] || return 1
+  installer_dir=$(CDPATH= cd -- "$(dirname -- "$installer_source")" && pwd -P) || return 1
   repo=$(git -C "$installer_dir" rev-parse --show-toplevel 2>/dev/null) || return 1
   git -C "$repo" diff --quiet -- scripts/install.sh || return 1
   printf '%s\n' "$repo"

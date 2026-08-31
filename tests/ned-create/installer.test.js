@@ -201,6 +201,19 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   assert.equal(installedHelp.stderr, '');
 });
 
+test('installer runs from piped stdin without reading an unset BASH_SOURCE entry', async () => {
+  const harness = await makeHarness();
+  const input = await readFile(harness.installer, 'utf8');
+  const result = spawnSync('/bin/bash', ['-s'], {
+    input,
+    env: harness.env,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /BASH_SOURCE.*unbound variable/);
+  assert.equal(await exists(path.join(harness.home, '.local/bin/ned')), true);
+});
+
 test('candidate checkout installer installs its exact checked-out identity while a copied release installer retains its stable pin', async () => {
   const candidateHarness = await makeHarness();
   const candidate = await makeCandidateCheckout(candidateHarness);
