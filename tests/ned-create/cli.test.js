@@ -509,13 +509,36 @@ test('CLI pairing approves exactly one Hermes Telegram owner code in the saved w
     env: { DAYTONA_API_KEY: 'provider-test-value' },
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
+      async verifyAuthorization() { calls.push('verify'); },
       async pair(code) { calls.push(code); return { approved: true }; },
     }),
   });
 
   assert.equal(exitCode, 0);
-  assert.deepEqual(calls, ['ABCD2345']);
+  assert.deepEqual(calls, ['verify', 'ABCD2345']);
   assert.match(stdout.join('\n'), /approved.*send hello again/i);
+});
+
+test('CLI pairing validates Daytona authorization before asking for an existing bot token', async () => {
+  const stderr = [];
+  let telegramPrompted = false;
+  const exitCode = await runCli(['pair', 'ABCD2345'], {
+    log: assert.fail,
+    error: (message) => stderr.push(message),
+  }, {
+    env: { DAYTONA_API_KEY: 'rejected-key' },
+    getTelegramConnection: async () => { telegramPrompted = true; return telegramConnection(); },
+    appFactory: async () => ({
+      async verifyAuthorization() {
+        throw new Error('Daytona API key was rejected (HTTP 401). Create a Personal Access Key.');
+      },
+      async pair() { assert.fail('must reject before pairing'); },
+    }),
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(telegramPrompted, false);
+  assert.match(stderr.join('\n'), /Daytona API key was rejected.*HTTP 401/);
 });
 
 test('destroy deletes the remote workspace and its scoped secret before clearing local state', async () => {
