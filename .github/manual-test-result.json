@@ -1,11 +1,11 @@
 {
-  "candidate_sha": "3dad040aaca4372ed60340177325a7f410def2c7",
+  "candidate_sha": "814e07a1382131587b514f5f2565e90e396126f1",
   "result": "pass",
-  "tested_at": "2026-08-31T17:42:49Z",
+  "tested_at": "2026-08-31T17:54:38Z",
   "environment": "macOS 26.5.2, Python 3.11.16",
   "commands": [
-    "python -m pytest tests/test_project_manager_bug_intake.py tests/test_seo_growth_skill.py::test_project_manager_routes_organic_search_work_to_seo_growth -q",
+    "python -m pytest tests/test_project_manager_bug_intake.py -q",
     "python -m pytest"
   ],
-  "observations": "The project-manager package enforces canonical issue creation or reuse and focused worker dispatch before product-bug diagnosis or implementation; focused tests passed (3 passed) and the full repository suite passed (259 passed, 3 skipped)."
+  "observations": "The direct-request diagnostic exception explicitly excludes user-reported product bugs, requires canonical issue creation or reuse and focused-worker dispatch before diagnosis, and limits emergency action to immediate reversible containment without project-manager inline diagnosis or implementation. Adversarial focused tests passed (3 passed), and the full repository suite passed (260 passed, 3 skipped)."
 }
