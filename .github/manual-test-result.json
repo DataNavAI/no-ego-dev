@@ -1,11 +1,12 @@
 {
-  "candidate_sha": "3826097fde56c5471e122a86779d9d62cc5a28ca",
+  "candidate_sha": "5a305f3bc21bb34764887d26d81e5bde587fdabf",
   "result": "pass",
-  "tested_at": "2026-08-31T04:53:55Z",
+  "tested_at": "2026-08-31T05:01:00Z",
   "environment": "isolated macOS temporary home using the exact candidate installer through bash stdin",
   "commands": [
     "HOME=<temporary> TMPDIR=<temporary> /bin/bash -s < scripts/install.sh",
-    "<temporary>/.local/bin/ned --version"
+    "<temporary>/.local/bin/ned --version",
+    "grep revision=cc05c158ca0319b82edc6f86b23f78c94e803d19 <temporary>/.local/share/ned/<current>/install-manifest"
   ],
-  "observations": "The exact candidate installer completed from stdin without an unbound BASH_SOURCE error, installed its private runtime into an isolated temporary home, and the installed launcher reported version 0.2.1. No credentials, OAuth sessions, Telegram tokens, or cloud resources were used."
+  "observations": "The candidate installer downloaded and verified the pinned archive containing the ChatGPT OAuth refresh-rejection recovery, then installed NED into an isolated temporary home. The launcher reported version 0.2.1 and the installed manifest recorded revision cc05c158ca0319b82edc6f86b23f78c94e803d19. No credentials, OAuth sessions, Telegram tokens, or cloud resources were used."
 }
