@@ -18,7 +18,7 @@ import {
 const require = createRequire(import.meta.url);
 const { version: NED_VERSION } = require('../package.json');
 
-async function defaultAppFactory({ env, verbose = false, log = () => {} }) {
+async function defaultAppFactory({ env, verbose = false, log = () => {}, progress = () => {} }) {
   return createNedApp({
     provider: createDaytonaProvider({
       apiKey: env.DAYTONA_API_KEY,
@@ -27,6 +27,7 @@ async function defaultAppFactory({ env, verbose = false, log = () => {} }) {
       profileArchive: createProfileArchive,
     }),
     stateStore: createFileStateStore(),
+    progress,
   });
 }
 
@@ -176,7 +177,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
     try {
       const provider = getModelProviderRuntime(providerId);
       verboseLog('create: initializing Daytona provider');
-      const app = await appFactory({ env, verbose, log: verboseLog });
+      const app = await appFactory({ env, verbose, log: verboseLog, progress: (message) => io.log(message) });
       verboseLog('create: validating Daytona authorization');
       await app.verifyAuthorization?.();
       verboseLog('create: Daytona authorization accepted');
@@ -189,6 +190,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       verboseLog(`create: Telegram bot validated as @${telegramConnection.botUsername}`);
       const botUrl = telegramConnection.botUrl;
       io.log('Creating your private NED workspace and Telegram gateway...');
+      io.log('This can take a few minutes. NED will print each completed step.');
       verboseLog('create: provisioning Daytona workspace and gateway');
       await app.create({ modelConnection, telegramConnection });
       verboseLog('create: workspace health verified and local state persisted');

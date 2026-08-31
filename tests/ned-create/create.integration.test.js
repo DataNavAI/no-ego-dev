@@ -38,8 +38,10 @@ test('ned create completes the mocked Daytona and Telegram journey with verbose 
     error: (message) => stderr.push(message),
   }, {
     env: { DAYTONA_API_KEY: 'synthetic-daytona-key' },
-    appFactory: async ({ verbose, log }) => {
+    appFactory: async ({ verbose, log, progress }) => {
       assert.equal(verbose, true);
+      assert.equal(typeof progress, 'function');
+      progress('Working: reserving your private Daytona workspace…');
       log('mock: Daytona provider initialized');
       calls.push('daytona.factory');
       return app;
@@ -67,6 +69,7 @@ test('ned create completes the mocked Daytona and Telegram journey with verbose 
   const output = stdout.join('\n');
   for (const stage of [
     'create: initializing Daytona provider',
+    'Working: reserving your private Daytona workspace…',
     'create: validating Daytona authorization',
     'create: Daytona authorization accepted',
     'create: authorizing ChatGPT',
