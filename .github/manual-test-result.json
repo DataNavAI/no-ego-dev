@@ -1,12 +1,12 @@
 {
-  "candidate_sha": "ed62b679194173d40a8fcca41ec5256bff68a49a",
+  "candidate_sha": "c1e0c7716b2caf2f7128b2e36f20d00903b6e297",
   "result": "pass",
-  "tested_at": "2026-08-31T05:15:00Z",
+  "tested_at": "2026-08-31T05:31:00Z",
   "environment": "isolated macOS temporary home using the exact candidate installer through bash stdin",
   "commands": [
     "HOME=<temporary> TMPDIR=<temporary> /bin/bash -s < scripts/install.sh",
     "<temporary>/.local/bin/ned --version",
-    "grep revision=2d8798db6e7b0e0f3cabcd1313375bd5049b7936 <temporary>/.local/share/ned/<current>/install-manifest"
+    "grep revision=a0f55d1d015d415c06b6a08a1e92457de1352241 <temporary>/.local/share/ned/<current>/install-manifest"
   ],
-  "observations": "The candidate installer downloaded and verified the release containing NED create progress updates, then installed it into an isolated temporary home. The launcher reported version 0.2.1 and the installed manifest recorded revision 2d8798db6e7b0e0f3cabcd1313375bd5049b7936. No credentials, OAuth sessions, Telegram tokens, or cloud resources were used."
+  "observations": "The candidate installer downloaded and verified the release containing the pairing Daytona-authorization preflight, then installed it into an isolated temporary home. The launcher reported version 0.2.1 and the installed manifest recorded revision a0f55d1d015d415c06b6a08a1e92457de1352241. No credentials, OAuth sessions, Telegram tokens, or cloud resources were used."
 }

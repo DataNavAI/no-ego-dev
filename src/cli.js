@@ -249,6 +249,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
     try {
       const app = await appFactory({ env });
+      await app.verifyAuthorization?.();
       const telegramConnection = await getTelegramConnection();
       await app.pair(code, telegramConnection);
       io.log('✓ Telegram owner approved. Return to the verified bot and send hello again.');
