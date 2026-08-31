@@ -36,6 +36,36 @@ def test_project_manager_routes_product_bug_reports_issue_first_and_worker_first
     assert "tracker/pr linkage" in lowered
 
 
+def test_product_bug_intake_cannot_use_direct_request_diagnostic_exception():
+    skill = SKILL_PATH.read_text(encoding="utf-8")
+    normalized = " ".join(skill.lower().split())
+    direct_request_rules = normalized.split(
+        "## direct user request issue and subagent rules", 1
+    )[1].split("## progress update rules", 1)[0]
+
+    for required in (
+        "this exception never applies to user-reported product bugs",
+        "canonical issue creation or reuse and focused-worker dispatch precede any diagnosis",
+        "only immediate, reversible containment",
+        "containment cannot include project-manager inline diagnosis or implementation",
+    ):
+        assert required in direct_request_rules, (
+            f"direct-request exception leaves a product-bug bypass: {required}"
+        )
+
+    forbidden_contradictions = (
+        "issue-first execution can be skipped only for pure conversational answers, "
+        "clarifying questions, or emergency read-only diagnostics",
+        "user-reported product bugs may use emergency read-only diagnostics",
+        "containment may include project-manager inline diagnosis",
+        "containment may include project-manager inline implementation",
+    )
+    for contradiction in forbidden_contradictions:
+        assert contradiction not in direct_request_rules, (
+            f"contradictory product-bug bypass remains: {contradiction}"
+        )
+
+
 def test_project_manager_eval_and_fixture_cover_direct_product_bug_intake():
     eval_data = yaml.safe_load(EVAL_PATH.read_text(encoding="utf-8"))
     expectations = "\n".join(eval_data["expectations"]).lower()

@@ -164,7 +164,7 @@ For every directly asked task:
 5. After the subagent returns, verify the evidence directly before marking the child complete or reporting success.
 6. If no delegation/subagent tool is available, still create the milestone/child hierarchy and write a complete handoff prompt/assignment in each unblocked child; do not let the work exist only in chat memory.
 
-Issue-first execution can be skipped only for pure conversational answers, clarifying questions, or emergency read-only diagnostics where creating an issue would materially delay risk mitigation. If skipped, record the reason and create a follow-up issue once stable.
+Issue-first execution can be skipped only for pure conversational answers or clarifying questions. This exception never applies to user-reported product bugs: canonical issue creation or reuse and focused-worker dispatch precede any diagnosis. For ongoing material harm, only immediate, reversible containment may occur before that routing is complete, as defined by the product-bug intake contract above. Containment cannot include project-manager inline diagnosis or implementation. Record the containment and rollback condition on the canonical issue and complete worker dispatch as soon as the immediate safety action permits.
 
 ## Progress Update Rules
 
