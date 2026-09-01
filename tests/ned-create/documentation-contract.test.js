@@ -56,3 +56,22 @@ test('durable V1 documentation freezes the Daytona CLI lifecycle contract', () =
   assert.match(browserPlan, /V2/iu);
   assert.match(browserPlan, /not.*V1|rather than V1/iu);
 });
+
+test('provider authorization decision record separates official delegated paths from API-key fallbacks', () => {
+  const record = read('docs/ned-create/PROVIDER_AUTHORIZATION_DECISION.md');
+
+  assert.match(record, /# Provider authorization decision record/iu);
+  assert.match(record, /## Anthropic/iu);
+  assert.match(record, /Claude Code.*OAuth|OAuth.*Claude Code/iu);
+  assert.match(record, /ANTHROPIC_API_KEY/iu);
+  assert.match(record, /api\.anthropic\.com/iu);
+  assert.match(record, /## Gemini/iu);
+  assert.match(record, /Gemini API.*OAuth|OAuth.*Gemini API/iu);
+  assert.match(record, /generativelanguage\.googleapis\.com/iu);
+  assert.match(record, /GEMINI_API_KEY/iu);
+  assert.match(record, /hidden[- ]TTY/iu);
+  assert.match(record, /#81/iu);
+  assert.match(record, /#82/iu);
+  assert.match(record, /#83/iu);
+  assert.match(record, /Accessed: 2026-09-01/iu);
+});
