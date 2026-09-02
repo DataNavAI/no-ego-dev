@@ -1,10 +1,10 @@
 {
-  "candidate_sha": "0eb26a42f6430370512089e399d81ca011eacf54",
+  "candidate_sha": "d7908a7e6a7b1f36caf3238265ee2c00bd43327c",
   "result": "pass",
-  "tested_at": "2026-09-02T04:57:06Z",
+  "tested_at": "2026-09-02T05:44:20Z",
   "environment": "macOS 26.5.2, Python 3.11.16, Node v25.6.1",
   "commands": [
-    "python -m pytest tests/test_project_manager_worker_watchdog.py tests/test_subagent_management_refresh.py tests/test_review_timeout_protocol.py tests/test_seo_growth_skill.py -q",
+    "python -m pytest tests/test_project_manager_worker_watchdog.py -q",
     "python -m pytest",
     "npm test",
     "npm run check",
@@ -12,5 +12,5 @@
     "git diff --check",
     "added-line security scan for hardcoded secrets, shell=True/os.system, eval/exec, pickle, and formatted SQL"
   ],
-  "observations": "Official cron+Kanban remediation passed 51 focused Python tests, the full Python suite (281 passed, 3 skipped), all 160 Node tests, npm syntax checks, py_compile, git diff whitespace validation, and added-line security scans with zero findings. The pure hermes_project_watchdog adapter constructs official cronjob operations and validated Hermes Kanban argv but performs no scheduler, lifecycle, or worker effects. It fail-closes invalid or conflicting list/stats activity evidence. The custom SQLite project_controller and competing issue-monitor completion-trigger controller guidance were removed; unrelated reusable review-round, exact-SHA, timeout, runtime-budget, and completion-hook protocols remain. Installed Hermes CLI/source inspection verified kanban --board, stats/runs/dispatch --max 1 --json and transient cronjob(action=run, prompt=...) support at tools/cronjob_tools.py lines 1494-1504."
+  "observations": "The deterministic no-agent remediation passed 63 focused watchdog tests, the full Python suite (323 passed, 3 skipped), all 160 Node tests, npm syntax checks, py_compile, and git diff whitespace validation. The added-line security scan found zero hardcoded-secret, shell-injection, eval/exec, pickle, or formatted-SQL findings across 1,274 added diff lines. Final audit found no accidental scope, stale prompt-watchdog contract, or untested public planner function. The real cron-list fixture preserves the official job_id, prompt_preview, script, no_agent, workdir, enabled, and state shape captured through an isolated official cron create/list/pause/remove lifecycle. Runtime regressions prove absent HERMES_PROFILE is accepted only with exact HERMES_HOME, paused-to-archive/completed removal validates exact binding, and initially paused setup stages create, canonical job_id readback, immediate pause, and exact-one paused readback."
 }
