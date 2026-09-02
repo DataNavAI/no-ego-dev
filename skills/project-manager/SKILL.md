@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.23.0
+version: 0.24.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -165,6 +165,26 @@ For every directly asked task:
 6. If no delegation/subagent tool is available, still create the milestone/child hierarchy and write a complete handoff prompt/assignment in each unblocked child; do not let the work exist only in chat memory.
 
 Issue-first execution can be skipped only for pure conversational answers or clarifying questions. This exception never applies to user-reported product bugs: canonical issue creation or reuse and focused-worker dispatch precede any diagnosis. For ongoing material harm, only immediate, reversible containment may occur before that routing is complete, as defined by the product-bug intake contract above. Containment cannot include project-manager inline diagnosis or implementation. Record the containment and rollback condition on the canonical issue and complete worker dispatch as soon as the immediate safety action permits.
+
+## Per-project worker watchdog
+
+At every new-project startup, automatically upsert one durable Hermes cron watchdog for that project before startup is complete. Derive a stable project identity from the canonical repository and tracker coordinates (for example, normalized repository identity plus tracker namespace/project ID), not from the checkout path, branch, display name, or current chat. Search by technical scope and create or update exactly one matching project job. Never create one global watchdog for all projects or a second controller for the same identity. Give the job a friendly project-specific outcome name while recording its technical scope, stable identity, and job ID in durable setup evidence.
+
+The scheduled prompt must be self-contained. Include repository and tracker coordinates, project identity, eligible task states, dependency rules, worker/profile routing, project-scoped single-flight lock and state paths, cadence, and evidence and reporting requirements. State explicitly that each fresh cron session has no current-chat context, cannot ask questions, and must finish one bounded reconciliation from canonical durable evidence.
+
+Each run follows this fail-closed reconciliation:
+
+1. Acquire the project-scoped single-flight lock atomically. If another owner holds a valid lock, exit as a verified no-op. Record an attempt identity; every exit releases only its own lock.
+2. Read the live canonical tracker rather than a copied backlog. Classify open tasks by configured state, priority, dependency completion, scope, and claim status. Only dependency-safe open work contributes to `eligible_count`.
+3. Corroborate active workers from a durable task claim plus current live lease/runtime evidence bound to the same project, task, worker, and attempt. A pid, branch, pr, worker self-report, or durable claim alone is insufficient. Recover stale claims only through bounded verified lease rules; uncertainty is not permission to launch.
+4. If `eligible_count >= 1 and active_worker_count == 0`, atomically claim the highest-priority dependency-safe task and re-read the claim under the lock. The run then starts exactly one focused worker linked to that task and routed to the configured profile. One tick starts at most one worker, and overlapping ticks and retries cannot double-dispatch.
+5. If `active_worker_count >= 1`, do not launch. If `eligible_count == 0`, do not launch. Persist a concise receipt for launch or no-op evidence without committing routine scheduler state to the repository.
+
+The watchdog is the project's worker-deficit reconciler, not a capacity-filling loop. Completion hooks may wake it but never dispatch directly. Reconcile any existing scheduled monitor or worker-pool rule by assigning one dispatch authority, disabling or narrowing competing launch behavior, and reusing the scoped job without duplicate controllers or contradictory permission rules.
+
+Setup is fail-closed: after the upsert, list and read back the exact job, run one manual reconciliation, then verify its receipt/output before reporting project startup complete. A scheduler command returning success without matching identity, prompt, cadence, enabled/pause state, and a verified manual-run receipt does not pass setup.
+
+Preserve a user-controlled pause across ticks, restarts, and ordinary setup reconciliation. Pause or retire the job when the project is explicitly paused, archived, or completed; resume only through an explicit lifecycle transition. A watchdog tick reconciles tasks and workers only and never creates or updates cron jobs, so there is no recursive scheduling.
 
 ## Progress Update Rules
 
@@ -659,7 +679,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 ## Workflow
 
 1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context. Create or verify the repository-root `STATUS.md` for active projects and use it as the concise current-status snapshot.
-2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing.
+2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing. Upsert and verify the exactly-one per-project worker watchdog, including readback, one manual reconciliation, and receipt/output evidence, before reporting startup complete.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
 4. For each PRD, decide whether the work needs UI. If yes, create the UI design issue/task and spawn a `ui-designer` subagent before creating or assigning any architecture/tech-spec task. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins. For UI-related features, require feature design images/mockups and a feature UI brief before tech-spec generation proceeds.
 5. If the PRD is a browser/web game or game-like interactive product, spawn a `web-game-dev` subagent during architecture planning so the engine choice, game architecture patterns, and engine-specific skill plan are ready before implementation.
@@ -684,6 +704,9 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Milestone goal is objective.
 - [ ] Tasks are tracked in an issue system.
 - [ ] New projects have invoked `agent-identity-and-access` and have a documented agent identity/access status or a follow-up setup issue.
+- [ ] Every new project has exactly one verified per-project worker watchdog keyed by stable repository/tracker identity; setup readback and one manual reconciliation receipt passed before startup completion.
+- [ ] Watchdog liveness requires a durable claim plus live lease/runtime evidence, dispatch is single-flight and at most one task per tick, and active-worker/no-eligible-task ticks are verified no-ops.
+- [ ] Existing scheduled-monitor or worker-pool launch rules were reconciled to one dispatch authority without duplicate controllers; pause/retire state is preserved and cron runs cannot create cron jobs.
 - [ ] Project email communications use the configured agent identity/delegated mailbox by default, or email is blocked pending identity/access setup.
 - [ ] Directly asked actionable tasks have a durable issue/task before execution and are assigned to a focused subagent by default.
 - [ ] Every user-reported product bug was deduplicated into exactly one canonical issue and a focused worker linked to that issue was dispatched before diagnosis or implementation.

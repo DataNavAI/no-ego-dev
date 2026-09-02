@@ -162,6 +162,6 @@ def test_project_manager_routes_organic_search_work_to_seo_growth():
         (ROOT / "skills" / "project-manager" / "EVAL.yaml").read_text(encoding="utf-8")
     )
 
-    assert "version: 0.23.0" in project_manager
+    assert "version: 0.24.0" in project_manager
     assert "spawn a subagent instructed to use `seo-growth`" in project_manager
     assert any("seo-growth" in expectation for expectation in project_eval["expectations"])
