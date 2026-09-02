@@ -15,13 +15,12 @@ The canonical scenario requires:
 
 Additional liveness cases require the monitor to:
 
-- classify a worker ending exactly at its effective wall-clock or iteration limit as a runtime-budget problem before declaring a product blocker;
-- increase both child and gateway budgets when the legitimate stage envelope exceeds the cap while preserving `gateway > child`;
-- distinguish an orphaned `agent:in-progress` label from a valid lifecycle-backed active-worker lease;
-- preserve a live lease's worktree during registration grace and a forced monitor tick;
-- debounce completion bursts so they wake one serialized cron reconciliation without duplicate dispatch.
+- use official Kanban running-task, run, and heartbeat JSON rather than labels, PIDs, local rows, or worker self-report;
+- no-op when activity evidence is uncertain or any project worker is running;
+- let the gateway dispatcher reclaim stale claims and continue durable tasks; and
+- issue exactly one bounded `dispatch --max 1 --json` only for ready work with zero running workers.
 
-Scheduled-session restart case: one cron run verifies an implementation dispatch receipt and ends immediately as `IMPLEMENT_PENDING`. A fresh scheduled run with no original conversation must start from canonical issue/PR state plus the attempt-scoped report, avoid duplicate dispatch while the attempt is live, and advance only one eligible successor after verified durable completion. The same rule applies to `REVIEW_PENDING` and `MERGE_PENDING`; completion wakes only accelerate the fresh reconciliation pass.
+Scheduled-session restart case: one official Kanban run records `IMPLEMENT_PENDING` with an attempt-scoped artifact. A later board run with no original conversation starts from canonical issue/PR and Kanban task/run state, avoids duplicate work while the attempt is live, and advances only after verified durable completion. The same rule applies to `REVIEW_PENDING` and `MERGE_PENDING`; the gateway dispatcher—not completion reinjection—owns continuation.
 
 Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`, `Action needed:`, and `Detailed information:` and lead with the affected product or release outcome rather than raw worker mechanics.
 
@@ -38,3 +37,11 @@ Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`,
 
 
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+## Official deterministic project-watchdog adapter scenario
+
+Project-manager and issue-monitor share one project-scoped official Hermes cron job and one stable per-project Kanban board. Setup verifies active-profile `kanban.max_in_progress=1`, renders a bounded safe script under active-profile `scripts/`, reads back exact bytes/hash, and manually executes that installed script with `--dry-run` before activation. The receipt proves exact identity, three read-only official Kanban argv arrays, `dispatched=0`, and `mutated=false`.
+
+Reconciliation parses the real official list fields `job_id`, `name`, `prompt_preview`, `script`, `no_agent`, `workdir`, `enabled`, `state`, and schedule; binds exact safe filename + workdir + friendly name + optional durable ID; rejects duplicates and partial collisions; preserves pause; uses official operations; and requires a fresh exact-one list. A new paused project orders create → canonical response `job_id` → immediate pause → fresh exact-one paused readback. Runtime uses `script=<relative safe filename>`, `no_agent=True`, exact `HERMES_HOME`, and no prompt or agent; absent profile-name env is allowed but a present mismatch is rejected.
+
+The deterministic script validates complete list/stats/running/dispatch schemas and fixed subprocess argv. Malformed/conflicting/unknown evidence or any running claim yields no dispatch until gateway stale reclaim returns ready. Ready plus verified zero running permits exactly one `dispatch --max 1 --json`. Verified no-op is empty stdout; dispatch/blocker receipts are structured. The script never invokes cron/chat/delegation, and lifecycle pause/remove requires current exact binding plus fresh readback. Kanban owns dependencies, claims, heartbeat/stale reclaim, workers, runtime, runs, and issue workflow stages.

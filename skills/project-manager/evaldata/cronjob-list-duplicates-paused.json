@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "jobs": [
+    {
+      "id": "job-z",
+      "name": "Legacy worker pool",
+      "enabled": true,
+      "schedule": "every 1h",
+      "workdir": "/Users/example/no-ego-dev",
+      "prompt": "HERMES_PROJECT_WATCHDOG_V1:f8b45434daf55a3b old prompt"
+    },
+    {
+      "id": "job-bound",
+      "name": "Keep no-ego-dev moving",
+      "enabled": false,
+      "schedule": "every 30m",
+      "workdir": "/Users/example/no-ego-dev",
+      "prompt": "HERMES_PROJECT_WATCHDOG_V1:f8b45434daf55a3b current prompt"
+    },
+    {
+      "id": "job-a",
+      "name": "Issue monitor",
+      "enabled": true,
+      "schedule": "every 15m",
+      "workdir": "/Users/example/no-ego-dev",
+      "prompt": "HERMES_PROJECT_WATCHDOG_V1:f8b45434daf55a3b duplicate prompt"
+    },
+    {
+      "id": "unrelated",
+      "name": "Daily report",
+      "enabled": true,
+      "schedule": "every 1d",
+      "workdir": "/Users/example/no-ego-dev",
+      "prompt": "Unrelated reporting job"
+    }
+  ]
+}

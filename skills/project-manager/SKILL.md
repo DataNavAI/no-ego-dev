@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.23.0
+version: 0.27.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -165,6 +165,35 @@ For every directly asked task:
 6. If no delegation/subagent tool is available, still create the milestone/child hierarchy and write a complete handoff prompt/assignment in each unblocked child; do not let the work exist only in chat memory.
 
 Issue-first execution can be skipped only for pure conversational answers or clarifying questions. This exception never applies to user-reported product bugs: canonical issue creation or reuse and focused-worker dispatch precede any diagnosis. For ongoing material harm, only immediate, reversible containment may occur before that routing is complete, as defined by the product-bug intake contract above. Containment cannot include project-manager inline diagnosis or implementation. Record the containment and rollback condition on the canonical issue and complete worker dispatch as soon as the immediate safety action permits.
+
+## Per-project deterministic Hermes watchdog setup
+
+At new-project startup, resolve/read back one stable Kanban board and reconcile exactly one real no-agent cron script for the project. Hermes cron owns scheduling and receipts; Kanban owns dependency promotion, claims, heartbeats, stale reclaim, isolated workers, runtime limits, and durable runs. **Do not build a scheduler, worker database, prompt controller, heartbeat table, or spawn receipt.** Retire older issue-monitor/worker-pool schedules so only this job and board can dispatch.
+
+Follow [`references/hermes-cron-kanban-contract.md`](references/hermes-cron-kanban-contract.md) and the pure renderer/planner in [`scripts/hermes_project_watchdog.py`](scripts/hermes_project_watchdog.py).
+
+### Safe renderer, runtime capacity, and installed script
+
+1. Verify the canonical repository/remote, tracker, active profile/profile home, absolute resolved checkout, board, cadence, and exact resolved `hermes` executable. Reject userinfo/credentials, ports, query/fragment, traversal, UNC/double-slash, shell/meta/env expansion, controls, aliases, and noncanonical paths.
+2. Read back effective active-profile config and require non-boolean integer `kanban.max_in_progress=1`. This currently applies to the **active profile runtime (all boards)**, so cron and gateway dispatch share the same one-worker cap. Fail closed if it is not exactly verifiable.
+3. Render the project-specific script to a bounded safe `project-watchdog-<digest>.py` filename and install it under the active profile's `scripts/` directory, outside the repository. Read back exact bytes/hash. Run **that installed file** manually with `--dry-run` from the canonical checkout and mechanically require its closed receipt: exact identity, exactly three read-only Kanban argv arrays, `dispatched=0`, and `mutated=false`. Do this before activation.
+
+### Real-schema exact-one cron reconciliation
+
+1. Read durable project status/notepad binding, then `cronjob(action="list", include_disabled=true)`. Parse official `job_id`, `name`, `prompt_preview`, `script`, `no_agent`, `workdir`, `enabled`, `state`, schedule, and metadata—never invented `id`/`paused` keys or full prompt readback.
+2. Identify only exact script filename + canonical workdir + friendly name + optional bound job ID. Reject duplicate IDs, unknown pause encodings, and partial/wrong-scope collisions.
+3. Create/update with `script=<relative safe filename>`, `no_agent=True`, exact workdir, friendly name, cadence, and delivery. There is no prompt, skill, toolset, or LLM. Preserve any pause, remove exact duplicates, then perform a **fresh** list and require exactly one exact binding. For a new project already paused, execute create first, take the canonical `job_id` from its successful response, immediately pause that ID before its first scheduled tick, then fresh-list and require exact-one paused; never fabricate a pause operation before creation. Runtime requires exact `HERMES_HOME`; absent profile-name env is valid, while any present `HERMES_PROFILE` or `HERMES_PROFILE_NAME` must match.
+4. Persist repository → board → script/hash → exact job ID in durable project status/notepad.
+
+### Deterministic bounded tick
+
+The script verifies installed location, profile/home, workdir, board, and executable before using `subprocess` argv arrays (never a shell). It runs exactly `list --json`, `stats --json`, and `list --status running --json`; validates complete official task records, unique bounded IDs, statuses/types, stats schemas, and mutually consistent non-boolean nonnegative running evidence. Malformed, conflicting, unknown, or identity-drift evidence fails closed.
+
+Any running claim is a silent no-op until the official gateway stale-reclaim path returns it to ready; do not claim `show` or `runs` exposes unavailable internal heartbeat fields. Only ready work plus verified zero running may invoke exactly once `hermes kanban --board <slug> dispatch --max 1 --json`, validate the complete receipt, and exit. Empty stdout is verified no-op; structured stdout is reserved for dispatch/blocker receipts. The script never loops or invokes cron, chat, or delegation.
+
+### Pause, archive, and completion
+
+Before pause/resume/remove, fresh-list and require current exact `job_id` + script + no-agent + name + workdir binding. Use official pause only for a project pause; resume only on an explicit user/project transition. Archive/completion removes the exact job. Fresh-list again and require paused/absent state before returning success.
 
 ## Progress Update Rules
 
@@ -659,7 +688,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 ## Workflow
 
 1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context. Create or verify the repository-root `STATUS.md` for active projects and use it as the concise current-status snapshot.
-2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing.
+2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing. Resolve/create one stable project Kanban board; verify active-profile `kanban.max_in_progress=1`; render, install, read back, and `--dry-run` the exact no-agent watchdog under the active profile's `scripts/`; then converge one official cron job by real `job_id`/`script`/`no_agent`/`workdir` list fields while preserving pause and retiring duplicates. Persist the verified board/script/hash/job binding in project status/notepad.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
 4. For each PRD, decide whether the work needs UI. If yes, create the UI design issue/task and spawn a `ui-designer` subagent before creating or assigning any architecture/tech-spec task. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins. For UI-related features, require feature design images/mockups and a feature UI brief before tech-spec generation proceeds.
 5. If the PRD is a browser/web game or game-like interactive product, spawn a `web-game-dev` subagent during architecture planning so the engine choice, game architecture patterns, and engine-specific skill plan are ready before implementation.
@@ -684,6 +713,9 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Milestone goal is objective.
 - [ ] Tasks are tracked in an issue system.
 - [ ] New projects have invoked `agent-identity-and-access` and have a documented agent identity/access status or a follow-up setup issue.
+- [ ] Every new project has one verified per-project Hermes Kanban board and exactly one real Hermes cron job keyed by a stable repository/tracker marker; official list/create-or-update/duplicate convergence, durable project status/notepad binding, exact readback, and setup dry-run receipt/history passed.
+- [ ] Ordinary ticks inspect official Kanban JSON, no-op for active/no-task/uncertain states, and invoke exactly one `dispatch --max 1 --json` only for ready work with zero project-wide running workers; Kanban owns claims, heartbeats, stale recovery, workers, runs, dependencies, and lifecycle stages.
+- [ ] Existing issue-monitor or worker-pool schedules were reconciled to the same job and board; user pause is preserved, pause/remove lifecycle operations are explicit, task content cannot enter commands, and cron runs cannot manage cron or use a second spawn path.
 - [ ] Project email communications use the configured agent identity/delegated mailbox by default, or email is blocked pending identity/access setup.
 - [ ] Directly asked actionable tasks have a durable issue/task before execution and are assigned to a focused subagent by default.
 - [ ] Every user-reported product bug was deduplicated into exactly one canonical issue and a focused worker linked to that issue was dispatched before diagnosis or implementation.

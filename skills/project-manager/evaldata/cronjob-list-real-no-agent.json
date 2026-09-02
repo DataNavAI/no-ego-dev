@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "count": 1,
+  "jobs": [
+    {
+      "job_id": "0cc1a5eae672",
+      "name": "Keep no-ego-dev moving",
+      "skill": null,
+      "skills": [],
+      "prompt_preview": "",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "schedule": "every 30m",
+      "repeat": "forever",
+      "deliver": "local",
+      "next_run_at": "2026-09-01T22:42:03.887116-07:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_delivery_error": null,
+      "last_fire_error": null,
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "script": "probe_watchdog.py",
+      "no_agent": true,
+      "workdir": "/private/tmp/ned-watchdog-workdir"
+    }
+  ],
+  "gateway_running": true
+}

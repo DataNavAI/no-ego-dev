@@ -25,9 +25,9 @@ expectations:
   - "The merge-only executor uses an atomic expected-head operation such as gh pr merge --match-head-commit APPROVED_SHA, and refuses to merge when no atomic head guard is available."
   - "Round 1 prioritizes hard-to-reverse high-consequence risks, omits reversible nits, and returns all independently discoverable Critical/Important or otherwise material findings with enough correction direction."
   - "Round 2 and later are disposition checks and any allowed new blocker states why it was not discoverable in round 1."
-  - "Uses a locked active-worker lease plus a debounced content-free subagent_stop signal to accelerate the target cron safely, while preserving periodic fallback and exact-state reconciliation."
-  - "Turns every terminal worker completion into a completion-triggered scheduling wake; the hook never dispatches directly, and the awakened monitor schedules at most one eligible successor after durable reconciliation."
-  - "Each fresh scheduled run reconciles canonical state and prior attempt evidence, advances at most one durable stage, and can resume IMPLEMENT_PENDING REVIEW_PENDING or MERGE_PENDING without the original conversation."
+  - "Uses official Kanban running-task status run and heartbeat JSON as the durable activity evidence and leaves worker continuation to the gateway dispatcher."
+  - "A cron tick performs one bounded board reconciliation and at most one official dispatch while Kanban owns every task lifecycle stage."
+  - "Each fresh scheduled run starts from official cron and Kanban durable state rather than relying on the original conversation or completion reinjection."
   - "Every non-silent user delivery uses Purpose Executive summary Action needed and Detailed information while leading with product or release impact."
   - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
   - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
@@ -35,6 +35,11 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "Uses one project-scoped no-agent Hermes cron script and Kanban board: verifies active-profile max_in_progress=1, installs/read-backs the generated safe script outside the repo, executes that exact script with --dry-run before activation, and persists board script hash and job binding in project status/notepad."
+  - "Parses real cron list job_id prompt_preview script no_agent workdir enabled state and schedule fields, rejects duplicate IDs partial collisions and invalid booleans/states, preserves pause, converges official calls, and requires a fresh exact-one readback; new paused projects stage create canonical ID immediate pause and paused readback."
+  - "The standalone script uses fixed subprocess argv, validates complete official list stats running and dispatch schemas, emits empty stdout for verified no-op, and invokes exactly one dispatch --max 1 --json only for ready work plus mutually verified zero running."
+  - "Any malformed conflicting unknown or hostile evidence and any running claim prevent dispatch until official gateway stale reclaim returns ready; dry-run never dispatches; pause/remove requires exact current binding plus fresh post-operation readback."
+  - "Runtime cron uses script=<relative safe filename> and no_agent=True with exact HERMES_HOME, optional matching profile-name env, and no prompt agent recursive cron chat or delegate_task, while Kanban owns claims heartbeats stale reclaim worker isolation runtime runs dependencies and lifecycle stages."
 setupCommands: []
 teardownCommands: []
 parameters:

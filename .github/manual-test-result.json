@@ -1,11 +1,16 @@
 {
-  "candidate_sha": "814e07a1382131587b514f5f2565e90e396126f1",
+  "candidate_sha": "d7908a7e6a7b1f36caf3238265ee2c00bd43327c",
   "result": "pass",
-  "tested_at": "2026-08-31T17:54:38Z",
-  "environment": "macOS 26.5.2, Python 3.11.16",
+  "tested_at": "2026-09-02T05:44:20Z",
+  "environment": "macOS 26.5.2, Python 3.11.16, Node v25.6.1",
   "commands": [
-    "python -m pytest tests/test_project_manager_bug_intake.py -q",
-    "python -m pytest"
+    "python -m pytest tests/test_project_manager_worker_watchdog.py -q",
+    "python -m pytest",
+    "npm test",
+    "npm run check",
+    "python -m py_compile skills/project-manager/scripts/hermes_project_watchdog.py skills/issue-monitor/scripts/review_gate.py skills/project-manager/scripts/validate_status_handoff.py",
+    "git diff --check",
+    "added-line security scan for hardcoded secrets, shell=True/os.system, eval/exec, pickle, and formatted SQL"
   ],
-  "observations": "The direct-request diagnostic exception explicitly excludes user-reported product bugs, requires canonical issue creation or reuse and focused-worker dispatch before diagnosis, and limits emergency action to immediate reversible containment without project-manager inline diagnosis or implementation. Adversarial focused tests passed (3 passed), and the full repository suite passed (260 passed, 3 skipped)."
+  "observations": "The deterministic no-agent remediation passed 63 focused watchdog tests, the full Python suite (323 passed, 3 skipped), all 160 Node tests, npm syntax checks, py_compile, and git diff whitespace validation. The added-line security scan found zero hardcoded-secret, shell-injection, eval/exec, pickle, or formatted-SQL findings across 1,274 added diff lines. Final audit found no accidental scope, stale prompt-watchdog contract, or untested public planner function. The real cron-list fixture preserves the official job_id, prompt_preview, script, no_agent, workdir, enabled, and state shape captured through an isolated official cron create/list/pause/remove lifecycle. Runtime regressions prove absent HERMES_PROFILE is accepted only with exact HERMES_HOME, paused-to-archive/completed removal validates exact binding, and initially paused setup stages create, canonical job_id readback, immediate pause, and exact-one paused readback."
 }
