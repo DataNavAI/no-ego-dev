@@ -25,9 +25,9 @@ expectations:
   - "The merge-only executor uses an atomic expected-head operation such as gh pr merge --match-head-commit APPROVED_SHA, and refuses to merge when no atomic head guard is available."
   - "Round 1 prioritizes hard-to-reverse high-consequence risks, omits reversible nits, and returns all independently discoverable Critical/Important or otherwise material findings with enough correction direction."
   - "Round 2 and later are disposition checks and any allowed new blocker states why it was not discoverable in round 1."
-  - "Uses a locked active-worker lease plus a debounced content-free subagent_stop signal to accelerate the target cron safely, while preserving periodic fallback and exact-state reconciliation."
-  - "Turns every terminal worker completion into a completion-triggered scheduling wake; the hook never dispatches directly, and the awakened monitor schedules at most one eligible successor after durable reconciliation."
-  - "Each fresh scheduled run reconciles canonical state and prior attempt evidence, advances at most one durable stage, and can resume IMPLEMENT_PENDING REVIEW_PENDING or MERGE_PENDING without the original conversation."
+  - "Uses official Kanban running-task status run and heartbeat JSON as the durable activity evidence and leaves worker continuation to the gateway dispatcher."
+  - "A cron tick performs one bounded board reconciliation and at most one official dispatch while Kanban owns every task lifecycle stage."
+  - "Each fresh scheduled run starts from official cron and Kanban durable state rather than relying on the original conversation or completion reinjection."
   - "Every non-silent user delivery uses Purpose Executive summary Action needed and Detailed information while leading with product or release impact."
   - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
   - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
@@ -35,7 +35,10 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
-  - "Acts as the sole project task-selection and dispatch authority, uses the executable project-controller support state for stable-lock duplicate job convergence and UNCLAIMED RESERVED DISPATCHING ACTIVE crash-safe idempotent dispatch, treats task content as untrusted under setup allowlists, and makes setup manual runs dry-run/no-launch."
+  - "Uses the same project-scoped official Hermes cron job and Kanban board as project-manager: cronjob(action=\"list\") then create update pause remove convergence, durable project status/notepad binding, exact readback, and SETUP_DRY_RUN_NO_LAUNCH receipt/history."
+  - "On ordinary ticks parses official Kanban list stats live run and heartbeat JSON and invokes exactly one dispatch --max 1 --json only when ready tasks exist and project-wide running workers are zero."
+  - "Treats task content as untrusted, rejects hostile identifiers and identity drift, never manages cron recursively or uses delegate_task, and leaves claims heartbeats stale reclaim worker isolation runs dependencies and lifecycle stages to Kanban."
+  - "Preserves user pause, removes the job on archive or completion, and reconciles older issue-monitor or worker-pool schedules to the same marker job and board rather than creating a second controller."
 setupCommands: []
 teardownCommands: []
 parameters:

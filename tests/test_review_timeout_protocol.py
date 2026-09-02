@@ -15,13 +15,13 @@ def test_issue_monitor_has_bounded_durable_review_protocol() -> None:
     content = text("issue-monitor")
 
     required = [
-        "one reviewer attempt per cron run",
+        "one reviewer attempt per Kanban worker run",
         "REVIEW_PENDING",
         "REQUEST_CHANGES",
         "reserve the final 20%",
         "INCOMPLETE",
         "exact-SHA CI",
-        "Attach only the controller skill",
+        "Attach only this skill and terminal/file",
     ]
     for phrase in required:
         assert phrase in content

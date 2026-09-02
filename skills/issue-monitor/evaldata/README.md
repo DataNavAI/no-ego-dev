@@ -15,13 +15,12 @@ The canonical scenario requires:
 
 Additional liveness cases require the monitor to:
 
-- classify a worker ending exactly at its effective wall-clock or iteration limit as a runtime-budget problem before declaring a product blocker;
-- increase both child and gateway budgets when the legitimate stage envelope exceeds the cap while preserving `gateway > child`;
-- distinguish an orphaned `agent:in-progress` label from a valid lifecycle-backed active-worker lease;
-- preserve a live lease's worktree during registration grace and a forced monitor tick;
-- debounce completion bursts so they wake one serialized cron reconciliation without duplicate dispatch.
+- use official Kanban running-task, run, and heartbeat JSON rather than labels, PIDs, local rows, or worker self-report;
+- no-op when activity evidence is uncertain or any project worker is running;
+- let the gateway dispatcher reclaim stale claims and continue durable tasks; and
+- issue exactly one bounded `dispatch --max 1 --json` only for ready work with zero running workers.
 
-Scheduled-session restart case: one cron run verifies an implementation dispatch receipt and ends immediately as `IMPLEMENT_PENDING`. A fresh scheduled run with no original conversation must start from canonical issue/PR state plus the attempt-scoped report, avoid duplicate dispatch while the attempt is live, and advance only one eligible successor after verified durable completion. The same rule applies to `REVIEW_PENDING` and `MERGE_PENDING`; completion wakes only accelerate the fresh reconciliation pass.
+Scheduled-session restart case: one official Kanban run records `IMPLEMENT_PENDING` with an attempt-scoped artifact. A later board run with no original conversation starts from canonical issue/PR and Kanban task/run state, avoids duplicate work while the attempt is live, and advances only after verified durable completion. The same rule applies to `REVIEW_PENDING` and `MERGE_PENDING`; the gateway dispatcher—not completion reinjection—owns continuation.
 
 Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`, `Action needed:`, and `Detailed information:` and lead with the affected product or release outcome rather than raw worker mechanics.
 
@@ -39,6 +38,8 @@ Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`,
 
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
 
-## Project-controller adversarial scenario
+## Official project-watchdog adapter scenario
 
-Project-manager sets up but does not replace this controller: issue-monitor remains the sole selector/dispatcher and advances one workflow stage per tick. The executable support state serializes overlapping setup by stable identity, re-reads and durably binds one scheduler job, converges duplicates, preserves pause, and releases only its owner lock. Dispatch uses `UNCLAIMED → RESERVED → DISPATCHING → ACTIVE`, one project/task/attempt idempotency key, atomic CAS, broker receipt/ack, stale-attempt fencing, and bounded lease recovery. Overlapping ticks and crashes after reserve, before ack, and after ack prove at most one worker start. Setup allowlists repository/tracker/profile and side effects; task content is untrusted and never executed. A paused setup manual run is dry-run/no-launch and cannot resume or dispatch.
+Project-manager and issue-monitor share one project-scoped official Hermes cron job and one stable per-project Kanban board. Setup uses `cronjob(action="list")` and official create/update/pause/remove calls, preserves a paused match, converges captured duplicate fixtures, re-lists/read-backs the exact job, and persists the project/board/marker/job ID in durable project status/notepad. It then runs `SETUP_DRY_RUN_NO_LAUNCH` and requires a terminal cron receipt/history with zero dispatch. No test claims a fixture row changed the external scheduler or started a worker.
+
+The immutable prompt rejects hostile identifiers and treats all task/repository content as untrusted data. An ordinary tick parses official Kanban list/stats/show/runs JSON and no-ops for active workers, no ready task, identity drift, invalid JSON, or uncertain activity. Only ready work plus zero project-wide running workers creates one `hermes kanban --board <slug> dispatch --max 1 --json` argv. The prompt has no recursive cron management and no `delegate_task`; task text never enters commands. Kanban owns dependencies, claims, heartbeats, stale reclaim, isolated workers, runs, and lifecycle stages. Pause/remove lifecycle operations preserve user pause and retire the shared job on archive/completion.
