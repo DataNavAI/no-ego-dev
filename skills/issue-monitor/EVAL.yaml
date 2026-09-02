@@ -35,6 +35,7 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "Acts as the sole project task-selection and dispatch authority, uses the executable project-controller support state for stable-lock duplicate job convergence and UNCLAIMED RESERVED DISPATCHING ACTIVE crash-safe idempotent dispatch, treats task content as untrusted under setup allowlists, and makes setup manual runs dry-run/no-launch."
 setupCommands: []
 teardownCommands: []
 parameters:

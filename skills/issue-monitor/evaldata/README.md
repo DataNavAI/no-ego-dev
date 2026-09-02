@@ -38,3 +38,7 @@ Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`,
 
 
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+## Project-controller adversarial scenario
+
+Project-manager sets up but does not replace this controller: issue-monitor remains the sole selector/dispatcher and advances one workflow stage per tick. The executable support state serializes overlapping setup by stable identity, re-reads and durably binds one scheduler job, converges duplicates, preserves pause, and releases only its owner lock. Dispatch uses `UNCLAIMED → RESERVED → DISPATCHING → ACTIVE`, one project/task/attempt idempotency key, atomic CAS, broker receipt/ack, stale-attempt fencing, and bounded lease recovery. Overlapping ticks and crashes after reserve, before ack, and after ack prove at most one worker start. Setup allowlists repository/tracker/profile and side effects; task content is untrusted and never executed. A paused setup manual run is dry-run/no-launch and cannot resume or dispatch.
