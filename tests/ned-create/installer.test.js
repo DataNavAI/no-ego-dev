@@ -172,6 +172,21 @@ test('manual Docker QA mounts the owner-only Daytona credential file without an 
   assert.match(text, /--volume "\$SECRETS_DIR:\/tmp\/ned-home\/\.config\/no-ego-dev\/secrets:ro"/);
 });
 
+test('manual Docker QA creates a selected-user-writable HOME before nested credential mounts', async () => {
+  const text = await readFile(path.join(repoRoot, 'scripts/qa/docker-create-smoke.sh'), 'utf8');
+  const user = text.indexOf('--user "$(id -u):$(id -g)"');
+  const home = text.indexOf('--env HOME=/tmp/ned-home');
+  const writableHome = text.indexOf('--tmpfs "/tmp/ned-home:uid=$(id -u),gid=$(id -g),mode=700"');
+  const nestedMount = text.indexOf('--volume "$SECRETS_DIR:/tmp/ned-home/.config/no-ego-dev/secrets:ro"');
+
+  assert.notEqual(user, -1, 'Docker must select the invoking user');
+  assert.notEqual(home, -1, 'Docker must set the runtime HOME');
+  assert.notEqual(writableHome, -1, 'Docker must mount HOME with selected-user ownership');
+  assert.notEqual(nestedMount, -1, 'Docker must retain the read-only credential mount');
+  assert.ok(user < writableHome && writableHome < nestedMount,
+    'selected-user HOME must be established before nested mounts create root-owned parents');
+});
+
 test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to run create', async () => {
   const harness = await makeHarness();
   await writeFile(path.join(harness.home, '.profile'), '# Documentation: ~/.local/bin is intentionally not on PATH\n', { mode: 0o600 });

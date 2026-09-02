@@ -44,6 +44,7 @@ INFO
 exec docker run --rm --init --interactive --tty \
   --user "$(id -u):$(id -g)" \
   --env HOME=/tmp/ned-home \
+  --tmpfs "/tmp/ned-home:uid=$(id -u),gid=$(id -g),mode=700" \
   --volume "$SECRETS_DIR:/tmp/ned-home/.config/no-ego-dev/secrets:ro" \
   --volume "$HERMES_AUTH_FILE:/tmp/ned-home/.hermes/auth.json:rw" \
   --volume "$STATE_DIR:/tmp/ned-home/.ned:rw" \
