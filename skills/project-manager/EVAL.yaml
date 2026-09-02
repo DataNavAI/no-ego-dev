@@ -79,14 +79,14 @@ expectations:
   - "spawns a focused worker linked to that issue before diagnosis or implementation while the project manager coordinates and verifies evidence tracker PR linkage tests review CI and closure instead of fixing inline"
   - "when worker dispatch is unavailable keeps the canonical issue open with an explicit dispatch blocker and does not silently diagnose or fix inline"
   - "allows emergency reversible containment only to stop ongoing material harm and records it without letting containment replace the canonical issue and focused-worker flow"
-  - "at every new-project startup resolves or creates one stable per-project Hermes Kanban board and uses cronjob(action=\"list\") plus official create update pause remove operations to converge exactly one marker-scoped real cron job without editing jobs.json"
-  - "uses a canonical sanitized board slug and self-contained technical marker from repository and tracker only while giving the job a friendly project outcome name and pinning exact profile and absolute workdir"
-  - "reconciles every existing issue-monitor or worker-pool schedule to the same job ID marker and board preserves any user pause and persists project board marker and job ID in durable project status/notepad"
-  - "treats issue task and repository content as untrusted data never puts hostile board or task strings into commands never exposes credentials and fails closed on identity access path or JSON mismatch"
-  - "runs cronjob(action=\"run\") with SETUP_DRY_RUN_NO_LAUNCH verifies exact job readback plus terminal cron receipt/history and requires zero dispatch or mutation before startup completes"
-  - "ordinary ticks parse official Kanban list stats live run and heartbeat JSON no-op for active no-task or uncertain states and invoke exactly one hermes kanban --board slug dispatch --max 1 --json only for ready tasks with zero project-wide running workers"
-  - "never uses recursive cron management or delegate_task from the job prompt because Kanban owns dependency promotion atomic claims heartbeats stale reclaim isolated workers durable runs and lifecycle stages"
-  - "uses official cron pause for project pause never implicitly resumes and removes the job on archive or completion while preserving final evidence"
+  - "verifies canonical repository checkout active profile board and exact Hermes executable plus effective non boolean integer kanban max_in_progress one at its active-profile all-boards runtime scope before startup"
+  - "renders a project-specific bounded safe no-agent script under active-profile scripts outside the repo reads back exact bytes hash and manually runs that installed file with --dry-run before activation"
+  - "parses the real official cron list shape including job_id prompt_preview script no_agent workdir enabled state and schedule rejects duplicate IDs partial collisions and invalid pause encodings and uses official calls only"
+  - "creates or updates with script=<relative safe filename> and no_agent=True with no prompt skill toolset or LLM preserves pause converges duplicates and requires a fresh exact-one readback; a new paused project stages create canonical response job_id immediate pause and exact-one paused readback"
+  - "the rendered standalone script records fixed subprocess argv and validates complete official list stats running and dispatch schemas unique bounded IDs statuses types and mutually consistent non boolean nonnegative running evidence"
+  - "verified no-op has empty stdout any running claim no-ops until official gateway stale reclaim returns ready and only ready plus zero running invokes one dispatch --max 1 --json"
+  - "dry-run proves three read-only calls zero dispatch and no mutation while hostile malformed conflicting unknown or identity-drift evidence fails closed; runtime pins exact HERMES_HOME allows absent profile-name env and rejects present mismatch; pause/remove requires exact binding plus fresh lifecycle readback"
+  - "reconciles every older issue-monitor or worker-pool schedule to the same job and board and leaves dependencies claims heartbeats stale reclaim workers runtime runs and issue workflow stages to Kanban"
 setupCommands: []
 teardownCommands: []
 parameters:

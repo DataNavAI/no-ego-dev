@@ -35,10 +35,11 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
-  - "Uses the same project-scoped official Hermes cron job and Kanban board as project-manager: cronjob(action=\"list\") then create update pause remove convergence, durable project status/notepad binding, exact readback, and SETUP_DRY_RUN_NO_LAUNCH receipt/history."
-  - "On ordinary ticks parses official Kanban list stats live run and heartbeat JSON and invokes exactly one dispatch --max 1 --json only when ready tasks exist and project-wide running workers are zero."
-  - "Treats task content as untrusted, rejects hostile identifiers and identity drift, never manages cron recursively or uses delegate_task, and leaves claims heartbeats stale reclaim worker isolation runs dependencies and lifecycle stages to Kanban."
-  - "Preserves user pause, removes the job on archive or completion, and reconciles older issue-monitor or worker-pool schedules to the same marker job and board rather than creating a second controller."
+  - "Uses one project-scoped no-agent Hermes cron script and Kanban board: verifies active-profile max_in_progress=1, installs/read-backs the generated safe script outside the repo, executes that exact script with --dry-run before activation, and persists board script hash and job binding in project status/notepad."
+  - "Parses real cron list job_id prompt_preview script no_agent workdir enabled state and schedule fields, rejects duplicate IDs partial collisions and invalid booleans/states, preserves pause, converges official calls, and requires a fresh exact-one readback; new paused projects stage create canonical ID immediate pause and paused readback."
+  - "The standalone script uses fixed subprocess argv, validates complete official list stats running and dispatch schemas, emits empty stdout for verified no-op, and invokes exactly one dispatch --max 1 --json only for ready work plus mutually verified zero running."
+  - "Any malformed conflicting unknown or hostile evidence and any running claim prevent dispatch until official gateway stale reclaim returns ready; dry-run never dispatches; pause/remove requires exact current binding plus fresh post-operation readback."
+  - "Runtime cron uses script=<relative safe filename> and no_agent=True with exact HERMES_HOME, optional matching profile-name env, and no prompt agent recursive cron chat or delegate_task, while Kanban owns claims heartbeats stale reclaim worker isolation runtime runs dependencies and lifecycle stages."
 setupCommands: []
 teardownCommands: []
 parameters:

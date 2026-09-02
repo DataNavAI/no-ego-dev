@@ -123,9 +123,11 @@ def test_scheduled_issue_monitor_dispatches_one_official_kanban_pass() -> None:
         encoding="utf-8"
     )
 
-    assert "SETUP_DRY_RUN_NO_LAUNCH" in content
+    assert "SETUP_DRY_RUN_NO_LAUNCH" not in content
+    assert "no-agent cron script" in content
+    assert "--dry-run" in content
     assert "dispatch --max 1 --json" in content
-    assert "Kanban—not this cron skill—owns" in content
+    assert "Kanban owns dependency promotion" in content
     assert "one durable stage per tick" not in content
     assert "project status/notepad" in expectations
     assert "dispatch --max 1 --json" in expectations
