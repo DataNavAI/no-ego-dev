@@ -1,11 +1,11 @@
 {
-  "candidate_sha": "814e07a1382131587b514f5f2565e90e396126f1",
+  "candidate_sha": "349c8b581a1d5f5fe99dbca7374644ff3d513bd6",
   "result": "pass",
-  "tested_at": "2026-08-31T17:54:38Z",
+  "tested_at": "2026-09-02T04:01:46Z",
   "environment": "macOS 26.5.2, Python 3.11.16",
   "commands": [
-    "python -m pytest tests/test_project_manager_bug_intake.py -q",
+    "python -m pytest tests/test_project_manager_worker_watchdog.py tests/test_project_manager_bug_intake.py tests/test_subagent_management_refresh.py -q",
     "python -m pytest"
   ],
-  "observations": "The direct-request diagnostic exception explicitly excludes user-reported product bugs, requires canonical issue creation or reuse and focused-worker dispatch before diagnosis, and limits emergency action to immediate reversible containment without project-manager inline diagnosis or implementation. Adversarial focused tests passed (3 passed), and the full repository suite passed (260 passed, 3 skipped)."
+  "observations": "Regression-first watchdog tests failed 8/8 before implementation, then the focused project-manager suite passed (30 passed). The full repository suite passed (268 passed, 3 skipped). The candidate defines stable per-project cron upsert, self-contained single-flight reconciliation, corroborated worker liveness, atomic one-task dispatch, setup readback/manual receipt verification, lifecycle handling, and duplicate-controller prevention."
 }
