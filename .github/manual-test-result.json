@@ -1,13 +1,16 @@
 {
-  "candidate_sha": "37081a23ba93603e2cc211c844c29abe31bdbfb3",
+  "candidate_sha": "0eb26a42f6430370512089e399d81ca011eacf54",
   "result": "pass",
-  "tested_at": "2026-09-02T04:20:35Z",
-  "environment": "macOS 26.5.2, Python 3.11.16",
+  "tested_at": "2026-09-02T04:57:06Z",
+  "environment": "macOS 26.5.2, Python 3.11.16, Node v25.6.1",
   "commands": [
-    "python -m pytest tests/test_project_manager_worker_watchdog.py -q",
+    "python -m pytest tests/test_project_manager_worker_watchdog.py tests/test_subagent_management_refresh.py tests/test_review_timeout_protocol.py tests/test_seo_growth_skill.py -q",
     "python -m pytest",
-    "python -m py_compile skills/issue-monitor/scripts/project_controller.py skills/issue-monitor/scripts/review_gate.py skills/project-manager/scripts/validate_status_handoff.py",
-    "git diff --check"
+    "npm test",
+    "npm run check",
+    "python -m py_compile skills/project-manager/scripts/hermes_project_watchdog.py skills/issue-monitor/scripts/review_gate.py skills/project-manager/scripts/validate_status_handoff.py",
+    "git diff --check",
+    "added-line security scan for hardcoded secrets, shell=True/os.system, eval/exec, pickle, and formatted SQL"
   ],
-  "observations": "The blocked head 29edbf43157c546ed31550f9a158403ab02617e2 failed the new executable suite (12 failures before the support controller existed). The corrected code candidate passed 13 deterministic adversarial setup/dispatch/crash/authorization/pause tests and the full suite (273 passed, 3 skipped). Overlapping setup converges to one durable bound job; overlapping dispatch and crashes before/after reserve and spawn acknowledgement prove at most one worker start. Static added-line security scans found no hardcoded-secret, shell-injection, eval/exec, pickle, or SQL-formatting findings. Standalone Codex review was attempted but its CLI OAuth returned HTTP 401, so no independent approval is claimed."
+  "observations": "Official cron+Kanban remediation passed 51 focused Python tests, the full Python suite (281 passed, 3 skipped), all 160 Node tests, npm syntax checks, py_compile, git diff whitespace validation, and added-line security scans with zero findings. The pure hermes_project_watchdog adapter constructs official cronjob operations and validated Hermes Kanban argv but performs no scheduler, lifecycle, or worker effects. It fail-closes invalid or conflicting list/stats activity evidence. The custom SQLite project_controller and competing issue-monitor completion-trigger controller guidance were removed; unrelated reusable review-round, exact-SHA, timeout, runtime-budget, and completion-hook protocols remain. Installed Hermes CLI/source inspection verified kanban --board, stats/runs/dispatch --max 1 --json and transient cronjob(action=run, prompt=...) support at tools/cronjob_tools.py lines 1494-1504."
 }
