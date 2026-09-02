@@ -20,9 +20,9 @@ From the repository root:
 The runner persists the ChatGPT OAuth store at `~/.config/no-ego-dev/secrets/hermes_auth.json` (mode `600`) and mounts only that file into the disposable container. After first authorization, later runs reuse or refresh it. It also persists NED ownership state at `~/.config/no-ego-dev/secrets/state/` (mode `700`) so the workspace can be cleaned up after the disposable container exits.
 
 The script builds `docker/ned-create.Dockerfile` from the current checkout and runs as
-the invoking user. It mounts `/tmp/ned-home` as a user-owned temporary filesystem before
-adding nested credential, OAuth, and state mounts, so the runtime can create its own
-non-secret HOME directories.
+the invoking user. It mounts `/tmp/ned-home` and its `.hermes` OAuth parent as user-owned
+temporary filesystems before adding nested credential, OAuth, and state mounts, so the
+runtime can create its own non-secret HOME directories.
 
 ```text
 ned create --verbose

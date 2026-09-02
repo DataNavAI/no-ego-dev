@@ -177,14 +177,18 @@ test('manual Docker QA creates a selected-user-writable HOME before nested crede
   const user = text.indexOf('--user "$(id -u):$(id -g)"');
   const home = text.indexOf('--env HOME=/tmp/ned-home');
   const writableHome = text.indexOf('--tmpfs "/tmp/ned-home:uid=$(id -u),gid=$(id -g),mode=700"');
+  const writableHermes = text.indexOf('--tmpfs "/tmp/ned-home/.hermes:uid=$(id -u),gid=$(id -g),mode=700"');
   const nestedMount = text.indexOf('--volume "$SECRETS_DIR:/tmp/ned-home/.config/no-ego-dev/secrets:ro"');
+  const authMount = text.indexOf('--volume "$HERMES_AUTH_FILE:/tmp/ned-home/.hermes/auth.json:rw"');
 
   assert.notEqual(user, -1, 'Docker must select the invoking user');
   assert.notEqual(home, -1, 'Docker must set the runtime HOME');
   assert.notEqual(writableHome, -1, 'Docker must mount HOME with selected-user ownership');
+  assert.notEqual(writableHermes, -1, 'Docker must mount the OAuth parent with selected-user ownership');
   assert.notEqual(nestedMount, -1, 'Docker must retain the read-only credential mount');
-  assert.ok(user < writableHome && writableHome < nestedMount,
-    'selected-user HOME must be established before nested mounts create root-owned parents');
+  assert.notEqual(authMount, -1, 'Docker must retain the OAuth file mount');
+  assert.ok(user < writableHome && writableHome < writableHermes && writableHermes < authMount,
+    'selected-user HOME and OAuth parent must be established before the nested OAuth file mount');
 });
 
 test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to run create', async () => {
