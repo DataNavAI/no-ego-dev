@@ -5,7 +5,7 @@ This is the live acceptance test for a complete `ned create` setup in a fresh co
 ## Preconditions
 
 - Docker Desktop is running.
-- `DAYTONA_API_KEY` is present in the host shell, or stored at `~/.config/no-ego-dev/secrets/daytona_api_key`. The runner reads it without printing it and passes it only to the container runtime. Do not paste it into chat or commit it.
+- The owner-only Daytona credential file exists at `~/.config/no-ego-dev/secrets/daytona_api_key`. The runner never reads or exports it; it mounts the containing owner-only directory read-only at the container runtime path. Do not paste it into chat or commit it.
 - A disposable Telegram bot token is available from BotFather. Use NED's hidden prompt; do not pass it in argv, Docker `--env`, files, URLs, or logs.
 - ChatGPT OAuth can be completed interactively.
 
@@ -14,7 +14,6 @@ This is the live acceptance test for a complete `ned create` setup in a fresh co
 From the repository root:
 
 ```bash
-export DAYTONA_API_KEY='(load from your secret store; do not commit)'
 ./scripts/qa/docker-create-smoke.sh
 ```
 
@@ -30,8 +29,10 @@ After a successful create, clean up with:
 
 ```bash
 docker run --rm --init \
-  --env DAYTONA_API_KEY \
-  --volume "$HOME/.config/no-ego-dev/secrets/state:/root/.ned:rw" \
+  --user "$(id -u):$(id -g)" \
+  --env HOME=/tmp/ned-home \
+  --volume "$HOME/.config/no-ego-dev/secrets:/tmp/ned-home/.config/no-ego-dev/secrets:ro" \
+  --volume "$HOME/.config/no-ego-dev/secrets/state:/tmp/ned-home/.ned:rw" \
   no-ego-dev/ned-create-manual:local destroy --yes
 ```
 

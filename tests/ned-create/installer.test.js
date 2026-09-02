@@ -158,10 +158,18 @@ test('production installer contains no runtime test override or integrity bypass
 
 test('Node launcher contains the credential boundary and delegates version without credentials', async () => {
   const text = await readFile(path.join(repoRoot, 'src/launcher.js'), 'utf8');
-  assert.match(text, /DAYTONA_API_KEY/);
-  assert.match(text, /no-ego-dev\/daytona/);
+  assert.match(text, /delete env\.DAYTONA_API_KEY/);
+  assert.doesNotMatch(text, /no-ego-dev\/daytona/);
   assert.match(text, /--version/);
   assert.doesNotMatch(text, /readline\.question\([^)]*DAYTONA_API_KEY/);
+});
+
+test('manual Docker QA mounts the owner-only Daytona credential file without an environment channel', async () => {
+  const text = await readFile(path.join(repoRoot, 'scripts/qa/docker-create-smoke.sh'), 'utf8');
+  assert.doesNotMatch(text, /DAYTONA_API_KEY/);
+  assert.match(text, /--user "\$\(id -u\):\$\(id -g\)"/);
+  assert.match(text, /--env HOME=\/tmp\/ned-home/);
+  assert.match(text, /--volume "\$SECRETS_DIR:\/tmp\/ned-home\/\.config\/no-ego-dev\/secrets:ro"/);
 });
 
 test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to run create', async () => {
