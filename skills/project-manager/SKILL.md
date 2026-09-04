@@ -1,22 +1,33 @@
 ---
 name: project-manager
-description: "Use when converting PRDs/specs into milestones, issue-managed tasks, and subagent execution."
-version: 0.27.0
+description: "Use when converting PRDs/specs into GitHub milestones, GitHub Issues, and subagent execution."
+version: 0.28.0
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, software-development, artifact-review]
-    related_skills: [reviewable-artifacts, seo-growth]
+    related_skills: [github-issues, github-pr-workflow, reviewable-artifacts, seo-growth]
 ---
 
 # Project Manager
 
 ## Overview
 
-Operate the project loop. Break work into objectively verifiable milestones, create issue-managed tasks, kick off subagents, inspect completion evidence, and create follow-up work when reality diverges from the plan. Direct user requests become issue-managed work and are executed by focused subagents by default.
+Operate the project loop. Break work into objectively verifiable GitHub milestones, create GitHub Issues, kick off subagents, inspect completion evidence, and create follow-up issues when reality diverges from the plan. Direct user requests become GitHub-issue-managed work and are executed by focused subagents by default.
 
-The project manager also owns the routine service status loop for live projects: schedule recurring checkups, gather product-side and devops-side updates, summarize health for the user at least once per day, send periodic status-report emails when configured, and convert findings into prioritized issue-managed work.
+The project manager also owns the routine service status loop for live projects: schedule recurring checkups, gather product-side and devops-side updates, summarize health for the user at least once per day, send periodic status-report emails when configured, and convert findings into prioritized GitHub Issues.
+
+## GitHub Issues Work Tracking Policy
+
+GitHub Issues is the only work tracker used by the project manager. Use GitHub milestones and parent/sub-issues for hierarchy; use GitHub issue fields, labels, assignees, comments, linked branches, and PRs for status and evidence.
+
+- Search open and closed GitHub Issues before creating work. Reuse or reopen the matching canonical issue when appropriate; do not create duplicates.
+- Every actionable item must have a GitHub issue number and URL before specialist execution begins. Record scope, exclusions, acceptance criteria, dependencies, owner/specialist, tests/QA, and expected closure evidence in that issue.
+- Do **not** create or use Kanban tasks/cards, Linear tasks, repo-local issue/task folders, chat TODOs, scheduler notes, or private agent queues as the work tracker. A GitHub Projects view may visualize linked GitHub Issues, but a card never substitutes for an issue.
+- Repository artifacts remain canonical for PRDs, specs, plans, runbooks, `STATUS.md`, release mappings, and evidence. Link them from GitHub Issues rather than turning files into a parallel task database.
+- If the project has no reachable GitHub repository or GitHub issue access is unavailable, mark execution `ISSUE_TRACKER_BLOCKED`, state the exact repository/access action needed, and continue only emergency reversible containment or read-only risk mitigation. Never fall back to Kanban or local tasks.
+- When legacy Kanban, Linear, or local task records are discovered, migrate actionable work into deduplicated GitHub Issues, preserve backlinks where useful, and use only the GitHub issues thereafter.
 
 ## Upfront Requirement Confirmation and Automatic Continuation
 
@@ -91,10 +102,10 @@ Before review, require a machine-readable **review-readiness receipt** bound to 
 - Tasks link to PRDs/specs and have acceptance checks.
 - Completion requires evidence, not just a worker saying “done”.
 - A pending asynchronous review blocks only that branch's merge or production deployment. Keep the active milestone moving by dispatching another dependency-safe, non-overlapping child in an isolated branch/worktree when one exists; do not start a later milestone, overlap generated-output ownership, or ignore a late blocking verdict merely to avoid idle time.
-- When the user expects autonomous continuation after worker-state changes and prefers no duplicate queue, keep GitHub/Linear canonical and use process-local completion: a top-level `tasks=[...]` fan-out creates independent children with separate handles and completion deliveries, while separate calls remain useful for explicit ownership or retry boundaries. After each delivery, verify evidence, reconcile the live tracker, and kick off at most one dependency-safe successor. `subagent_stop` is observer-only; child status cannot complete work or release dependencies. State the process-local trade-off honestly: gateway/parent interruption can lose active children or callbacks, so recover remote artifacts before resuming. Use Hermes Kanban only when unattended restart durability materially outweighs queue duplication and the user accepts it. Load `delegation-reliability` and follow `references/harness-completion-hooks.md`.
+- When the user expects autonomous continuation after worker-state changes, keep GitHub Issues canonical and use process-local completion: a top-level `tasks=[...]` fan-out creates independent children with separate handles and completion deliveries, while separate calls remain useful for explicit ownership or retry boundaries. After each delivery, verify evidence, update the GitHub Issue, and kick off at most one dependency-safe successor. `subagent_stop` is observer-only; child status cannot complete work or release dependencies. State the process-local trade-off honestly: gateway/parent interruption can lose active children or callbacks, so recover remote branches, PRs, commits, issue comments, and other durable artifacts before resuming. Load `delegation-reliability` and follow `references/harness-completion-hooks.md`.
 - Scope hook-only continuation to an interactive parent that remains available to receive completion. A cron run or fresh scheduled session must instead require a durable attempt-scoped report or marked tracker comment, dispatch at most one reviewer per run, and reconcile that evidence on the next tick. Never create same-run reviewer retry fan-out because a result was not reinjected.
 - Deduplicate review work by exact candidate SHA and review kind. A valid negative verdict is complete and blocks that SHA; assign one remediation owner and review only the resulting new SHA. Budget every review, reserve time to close the report, reuse trustworthy exact-SHA CI, and preserve an explicit `INCOMPLETE` artifact when required evidence does not fit.
-- When GitHub, Linear, or another tracker already owns the issue backlog, do **not** maintain a second copy of issue bodies in Kanban. Keep external issues canonical and use thin idempotent Kanban cards for execution state, machine-readable dependency edges, worktree/assignee routing, retries, and evidence handoff. Workers re-read the live issue before editing and update the external issue/PR plus Kanban completion as one reconciled handoff. Follow [`references/canonical-issues-thin-kanban-queue.md`](references/canonical-issues-thin-kanban-queue.md).
+- Keep dependency edges, worker ownership, retries, blockers, and evidence handoffs on the GitHub milestone/issues and linked PRs. Do not mirror them into Kanban or another task system. Workers re-read the live GitHub Issue before editing and update the issue/PR as one reconciled handoff.
 
 ## Epic Decomposition and Progress Truthfulness
 
@@ -143,7 +154,7 @@ If the audit discovers a historical secret-scan false positive, do not waive the
 
 A direct user report that the product is broken, regressed, incorrect, unsafe, or failing is an execution trigger, not an invitation for the project manager to become the debugger. For every user-reported product bug, use this fail-closed sequence:
 
-1. Search the configured canonical tracker for matching open and closed reports using the product, affected journey, symptom, error/evidence, and likely synonyms. Reuse a matching issue; do not create a duplicate.
+1. Search open and closed GitHub Issues for matching reports using the product, affected journey, symptom, error/evidence, and likely synonyms. Reuse a matching issue; do not create a duplicate.
 2. Create or update **exactly one canonical issue** before any specialist execution. It must identify the project/repository and environment; capture sanitized reproduction/evidence, user impact and severity, scope and exclusions, acceptance criteria, verification requirements, and source-report context; and name the focused worker role. When evidence is incomplete, record what is known and assign bounded reproduction to the worker instead of diagnosing inline.
 3. **Spawn a focused worker linked to that canonical issue** before diagnosis, code inspection, reproduction work, or implementation. The worker re-reads the live issue and owns the bounded investigation/fix in an isolated branch or worktree. Use the domain specialist that matches the bug (`coder`, `ui-designer`, `devops`, `qa`, or another focused role), and include the issue ID/URL in its assignment and eventual branch/commit/PR evidence.
 4. The project manager coordinates and verifies; it does not diagnose or fix the bug inline. It verifies worker evidence, tracker/PR linkage, focused and full tests, independent review, CI, rollout or containment removal, exact revisions, and issue closure against the acceptance criteria.
@@ -158,42 +169,24 @@ When the user directly asks for an actionable project task, create or update an 
 For every directly asked task:
 
 1. Apply the milestone-vs-small-task classification before creating the execution issue. If the request is broad, create one coordination-only milestone/epic parent plus the detailed small child issues first; never paste the whole request into one oversized implementation issue and dispatch it.
-2. Create or update the durable child issue/task with the relevant slice of the original user request, project/repo, exact scope and exclusions, dependencies, acceptance criteria, owner/subagent role, targeted tests/QA, expected evidence, and links to relevant PRDs/specs/files.
-3. If an external issue tracker is configured, use it. Otherwise create a repo-local issue/task artifact under the project's durable knowledge area, such as `.projects/<project>/issues/`, or the active Kanban board if that is the project's issue system.
+2. Search open and closed GitHub Issues, then create, update, or reopen the canonical GitHub child issue with the relevant slice of the original user request, project/repo, exact scope and exclusions, dependencies, acceptance criteria, owner/subagent role, targeted tests/QA, expected evidence, and links to relevant PRDs/specs/files.
+3. Record the GitHub issue number and URL in the phase update and every subagent handoff. Never substitute a Kanban card, Linear task, repo-local task artifact, or chat TODO.
 4. Spawn the appropriate focused subagent to execute only that small child issue, instructing it to use the matching skill (`product-manager`, `architect`, `coder`, `devops`, `qa`, etc.) and to return evidence, changed paths, test output, PR/commit links, blockers, and follow-up issue suggestions.
 5. After the subagent returns, verify the evidence directly before marking the child complete or reporting success.
 6. If no delegation/subagent tool is available, still create the milestone/child hierarchy and write a complete handoff prompt/assignment in each unblocked child; do not let the work exist only in chat memory.
 
 Issue-first execution can be skipped only for pure conversational answers or clarifying questions. This exception never applies to user-reported product bugs: canonical issue creation or reuse and focused-worker dispatch precede any diagnosis. For ongoing material harm, only immediate, reversible containment may occur before that routing is complete, as defined by the product-bug intake contract above. Containment cannot include project-manager inline diagnosis or implementation. Record the containment and rollback condition on the canonical issue and complete worker dispatch as soon as the immediate safety action permits.
 
-## Per-project deterministic Hermes watchdog setup
+## GitHub-Issue Project Watchdog
 
-At new-project startup, resolve/read back one stable Kanban board and reconcile exactly one real no-agent cron script for the project. Hermes cron owns scheduling and receipts; Kanban owns dependency promotion, claims, heartbeats, stale reclaim, isolated workers, runtime limits, and durable runs. **Do not build a scheduler, worker database, prompt controller, heartbeat table, or spawn receipt.** Retire older issue-monitor/worker-pool schedules so only this job and board can dispatch.
+Each new active project gets at most one periodic watchdog when the user wants autonomous backlog execution. The watchdog is a capacity reconciler, not a second tracker:
 
-Follow [`references/hermes-cron-kanban-contract.md`](references/hermes-cron-kanban-contract.md) and the pure renderer/planner in [`scripts/hermes_project_watchdog.py`](scripts/hermes_project_watchdog.py).
-
-### Safe renderer, runtime capacity, and installed script
-
-1. Verify the canonical repository/remote, tracker, active profile/profile home, absolute resolved checkout, board, cadence, and exact resolved `hermes` executable. Reject userinfo/credentials, ports, query/fragment, traversal, UNC/double-slash, shell/meta/env expansion, controls, aliases, and noncanonical paths.
-2. Read back effective active-profile config and require non-boolean integer `kanban.max_in_progress=1`. This currently applies to the **active profile runtime (all boards)**, so cron and gateway dispatch share the same one-worker cap. Fail closed if it is not exactly verifiable.
-3. Render the project-specific script to a bounded safe `project-watchdog-<digest>.py` filename and install it under the active profile's `scripts/` directory, outside the repository. Read back exact bytes/hash. Run **that installed file** manually with `--dry-run` from the canonical checkout and mechanically require its closed receipt: exact identity, exactly three read-only Kanban argv arrays, `dispatched=0`, and `mutated=false`. Do this before activation.
-
-### Real-schema exact-one cron reconciliation
-
-1. Read durable project status/notepad binding, then `cronjob(action="list", include_disabled=true)`. Parse official `job_id`, `name`, `prompt_preview`, `script`, `no_agent`, `workdir`, `enabled`, `state`, schedule, and metadata—never invented `id`/`paused` keys or full prompt readback.
-2. Identify only exact script filename + canonical workdir + friendly name + optional bound job ID. Reject duplicate IDs, unknown pause encodings, and partial/wrong-scope collisions.
-3. Create/update with `script=<relative safe filename>`, `no_agent=True`, exact workdir, friendly name, cadence, and delivery. There is no prompt, skill, toolset, or LLM. Preserve any pause, remove exact duplicates, then perform a **fresh** list and require exactly one exact binding. For a new project already paused, execute create first, take the canonical `job_id` from its successful response, immediately pause that ID before its first scheduled tick, then fresh-list and require exact-one paused; never fabricate a pause operation before creation. Runtime requires exact `HERMES_HOME`; absent profile-name env is valid, while any present `HERMES_PROFILE` or `HERMES_PROFILE_NAME` must match.
-4. Persist repository → board → script/hash → exact job ID in durable project status/notepad.
-
-### Deterministic bounded tick
-
-The script verifies installed location, profile/home, workdir, board, and executable before using `subprocess` argv arrays (never a shell). It runs exactly `list --json`, `stats --json`, and `list --status running --json`; validates complete official task records, unique bounded IDs, statuses/types, stats schemas, and mutually consistent non-boolean nonnegative running evidence. Malformed, conflicting, unknown, or identity-drift evidence fails closed.
-
-Any running claim is a silent no-op until the official gateway stale-reclaim path returns it to ready; do not claim `show` or `runs` exposes unavailable internal heartbeat fields. Only ready work plus verified zero running may invoke exactly once `hermes kanban --board <slug> dispatch --max 1 --json`, validate the complete receipt, and exit. Empty stdout is verified no-op; structured stdout is reserved for dispatch/blocker receipts. The script never loops or invokes cron, chat, or delegation.
-
-### Pause, archive, and completion
-
-Before pause/resume/remove, fresh-list and require current exact `job_id` + script + no-agent + name + workdir binding. Use official pause only for a project pause; resume only on an explicit user/project transition. Archive/completion removes the exact job. Fresh-list again and require paused/absent state before returning success.
+1. Bind it to one canonical GitHub repository, the eligible issue labels/milestone, cadence, workdir, and friendly scheduler name. Discover and reuse the matching job before creating anything; remove exact duplicates only after verified readback.
+2. On each run, query GitHub Issues and linked PRs/branches for the live state. Search for eligible, dependency-ready issues and corroborate whether a worker is already active from durable worker/PR evidence; labels alone are not proof.
+3. If runnable issues exist and no worker is active, start exactly one focused worker for the highest-priority issue. Put the issue number/URL in the assignment and require the worker to update that issue with branch/PR, tests, blockers, and terminal evidence.
+4. If no issue is runnable, a worker is active, or evidence is uncertain, launch nothing. Keep no-op runs silent and never invent work merely to fill capacity.
+5. Store durable work state in GitHub Issues, comments, linked branches, and PRs. Scheduler receipts may identify runs, but must not become a task list. Do not create Kanban cards or any parallel queue.
+6. Preserve explicit user pause across runs. Resume only on explicit instruction. Archive/remove the watchdog when the project is completed or monitoring is no longer wanted, then verify the scheduler state by fresh readback.
 
 ## Progress Update Rules
 
@@ -296,7 +289,7 @@ Treat documentation, planning, prompt, copy, process, and configuration changes 
 
 For every project task that changes repository artifacts — including docs, PRDs, runbooks, issue templates, skill files, marketing copy, configuration examples, or planning files:
 
-1. Ensure the directly requested task already has a durable issue/task artifact and assigned subagent owner before editing.
+1. Ensure the directly requested task already has a canonical GitHub Issue and assigned subagent owner before editing.
 2. Create a fresh checkout/worktree/branch before editing. Do not work directly in the user’s active checkout unless they explicitly instruct you to do so for that task.
 3. Record the checkout path and branch in the task/progress update before execution begins.
 4. Keep changes scoped to the task. Do not mix unrelated docs, code, config, or cleanup in the same branch/commit.
@@ -688,16 +681,16 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 ## Workflow
 
 1. Start Phase 0: Intake/status. Send a progress update stating the known request, current artifacts, and missing context. Create or verify the repository-root `STATUS.md` for active projects and use it as the concise current-status snapshot.
-2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up setup issue if missing. Resolve/create one stable project Kanban board; verify active-profile `kanban.max_in_progress=1`; render, install, read back, and `--dry-run` the exact no-agent watchdog under the active profile's `scripts/`; then converge one official cron job by real `job_id`/`script`/`no_agent`/`workdir` list fields while preserving pause and retiring duplicates. Persist the verified board/script/hash/job binding in project status/notepad.
+2. During new-project onboarding, invoke `agent-identity-and-access` to ask for or confirm the dedicated project/agent identity, OAuth/delegated access, signed-in browser SSO profile, and email identity needed for communications; record the resulting identity status or create a follow-up GitHub Issue if missing. Verify GitHub repository and issue access. If autonomous backlog execution is wanted, reconcile exactly one GitHub-Issue Project Watchdog and verify its scheduler readback without creating a Kanban board or parallel queue.
 3. For a new or unclear project, spawn a `product-manager` subagent to produce or refine the core PRD or feature PRD.
-4. For each PRD, decide whether the work needs UI. If yes, create the UI design issue/task and spawn a `ui-designer` subagent before creating or assigning any architecture/tech-spec task. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins. For UI-related features, require feature design images/mockups and a feature UI brief before tech-spec generation proceeds.
+4. For each PRD, decide whether the work needs UI. If yes, create the UI design GitHub Issue and spawn a `ui-designer` subagent before creating or assigning any architecture/tech-spec issue. For new UI-bearing projects, write the project UI guideline after the core PRD is done and before architecture begins. For UI-related features, require feature design images/mockups and a feature UI brief before tech-spec generation proceeds.
 5. If the PRD is a browser/web game or game-like interactive product, spawn a `web-game-dev` subagent during architecture planning so the engine choice, game architecture patterns, and engine-specific skill plan are ready before implementation.
 6. Spawn an `architect` subagent to produce a tech spec tied to the current codebase and bootstrap the repo if needed. For UI-bearing work, require the tech spec to cite the UI guideline/brief and not invent conflicting UI behavior; for web games, require it to cite the `web-game-dev` engine/architecture recommendation.
 7. Spawn a `devops` subagent to define/setup CI/CD, deployment, observability, and operational checks when appropriate.
-8. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up task until configured.
-9. For the directly asked task, create or update the durable issue/task before execution, even if the request looks small. When it is a user-reported product bug, apply the stricter product-bug intake contract: search first, create or reuse exactly one canonical issue, and dispatch a linked focused worker before diagnosis or implementation.
+8. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up GitHub Issue until configured.
+9. For the directly asked task, search for and create/update/reopen the canonical GitHub Issue before execution, even if the request looks small. When it is a user-reported product bug, apply the stricter product-bug intake contract: search first, create or reuse exactly one GitHub Issue, and dispatch a linked focused worker before diagnosis or implementation.
 10. Create milestones from the current PRD/spec/UI artifacts.
-11. Create issues/tasks in the chosen issue system, including UI design/design-review tasks when applicable.
+11. Create GitHub Issues for all executable work, including UI design/design-review work when applicable; never create Kanban, Linear, or repo-local task substitutes.
 12. Send a progress update with the milestone/task plan before execution begins.
 13. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
 14. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution covering every affected supported device interface in the canonical registry.
@@ -711,13 +704,13 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 ## Verification Checklist
 
 - [ ] Milestone goal is objective.
-- [ ] Tasks are tracked in an issue system.
+- [ ] Every actionable item has a deduplicated GitHub issue number/URL; no Kanban, Linear, repo-local task artifacts, chat TODOs, scheduler notes, or private queues are used as the tracker.
 - [ ] New projects have invoked `agent-identity-and-access` and have a documented agent identity/access status or a follow-up setup issue.
-- [ ] Every new project has one verified per-project Hermes Kanban board and exactly one real Hermes cron job keyed by a stable repository/tracker marker; official list/create-or-update/duplicate convergence, durable project status/notepad binding, exact readback, and setup dry-run receipt/history passed.
-- [ ] Ordinary ticks inspect official Kanban JSON, no-op for active/no-task/uncertain states, and invoke exactly one `dispatch --max 1 --json` only for ready work with zero project-wide running workers; Kanban owns claims, heartbeats, stale recovery, workers, runs, dependencies, and lifecycle stages.
-- [ ] Existing issue-monitor or worker-pool schedules were reconciled to the same job and board; user pause is preserved, pause/remove lifecycle operations are explicit, task content cannot enter commands, and cron runs cannot manage cron or use a second spawn path.
+- [ ] GitHub repository/issue access is verified; lack of access is `ISSUE_TRACKER_BLOCKED` and never triggers a Kanban/local-task fallback.
+- [ ] When autonomous backlog execution is requested, exactly one watchdog reads GitHub Issues and linked PR evidence, launches at most one focused worker only when runnable work exists and none is active, and stores no parallel task queue.
+- [ ] Watchdog pause/resume/removal state and exact scheduler identity were freshly verified; no-op or uncertain runs launch nothing.
 - [ ] Project email communications use the configured agent identity/delegated mailbox by default, or email is blocked pending identity/access setup.
-- [ ] Directly asked actionable tasks have a durable issue/task before execution and are assigned to a focused subagent by default.
+- [ ] Directly asked actionable tasks have a canonical GitHub Issue before execution and are assigned to a focused subagent by default.
 - [ ] Every user-reported product bug was deduplicated into exactly one canonical issue and a focused worker linked to that issue was dispatched before diagnosis or implementation.
 - [ ] The project manager coordinated and verified bug evidence, tracker/PR linkage, tests, review, CI, and closure instead of diagnosing or fixing inline.
 - [ ] Dispatch failures left the canonical bug open with an explicit dispatch blocker; any emergency reversible containment was recorded and did not replace issue creation/reuse or focused-worker dispatch.
@@ -741,7 +734,7 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Email reports are mentally lightweight: readable in under two minutes, ideally 300-600 words, under two pages, and free of raw log dumps or dense project-detail overload.
 - [ ] Missing CI, health, analytics, or feedback instrumentation becomes explicit follow-up work instead of an assumed healthy status.
 - [ ] Progress updates were sent at phase start, phase completion, before subagent batches, and after subagent results.
-- [ ] Autonomous continuation uses the user-approved mode: process-local per-child completion with the canonical tracker, or durable Kanban by explicit trade-off.
+- [ ] Autonomous continuation uses process-local per-child completion or the single GitHub-Issue Project Watchdog while keeping GitHub Issues canonical and creating no Kanban queue.
 - [ ] The correct lifecycle source is used for each worker type; top-level batch children are reconciled independently, and process-local interruption risk and recovery are documented.
 - [ ] Hook-only completion was smoke-tested to re-enter the parent, verify evidence, reconcile the live tracker, and launch at most one dependency-safe next task without a duplicate queue.
 - [ ] Any observer hook is bounded/non-recursive and cannot promote failed, partial, timed-out, or unverified work.
