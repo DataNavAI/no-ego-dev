@@ -1,16 +1,16 @@
 {
-  "candidate_sha": "d7908a7e6a7b1f36caf3238265ee2c00bd43327c",
+  "candidate_sha": "3936a9fbc1a72b5ff60cbf377d7837adf8f652e8",
   "result": "pass",
-  "tested_at": "2026-09-02T05:44:20Z",
+  "tested_at": "2026-09-04T06:11:09Z",
   "environment": "macOS 26.5.2, Python 3.11.16, Node v25.6.1",
   "commands": [
-    "python -m pytest tests/test_project_manager_worker_watchdog.py -q",
-    "python -m pytest",
+    "python -m pytest -q tests/test_project_manager_github_issues_policy.py",
+    "python -m pytest -q",
+    "npm ci",
     "npm test",
     "npm run check",
-    "python -m py_compile skills/project-manager/scripts/hermes_project_watchdog.py skills/issue-monitor/scripts/review_gate.py skills/project-manager/scripts/validate_status_handoff.py",
     "git diff --check",
-    "added-line security scan for hardcoded secrets, shell=True/os.system, eval/exec, pickle, and formatted SQL"
+    "project-manager frontmatter, version, description-length, and total-size validation"
   ],
-  "observations": "The deterministic no-agent remediation passed 63 focused watchdog tests, the full Python suite (323 passed, 3 skipped), all 160 Node tests, npm syntax checks, py_compile, and git diff whitespace validation. The added-line security scan found zero hardcoded-secret, shell-injection, eval/exec, pickle, or formatted-SQL findings across 1,274 added diff lines. Final audit found no accidental scope, stale prompt-watchdog contract, or untested public planner function. The real cron-list fixture preserves the official job_id, prompt_preview, script, no_agent, workdir, enabled, and state shape captured through an isolated official cron create/list/pause/remove lifecycle. Runtime regressions prove absent HERMES_PROFILE is accepted only with exact HERMES_HOME, paused-to-archive/completed removal validates exact binding, and initially paused setup stages create, canonical job_id readback, immediate pause, and exact-one paused readback."
+  "observations": "The exact candidate passed 2 focused GitHub-Issues policy tests, the full Python suite (325 passed, 3 skipped), all 160 Node tests, npm syntax checks, git diff whitespace validation, and project-manager frontmatter/size validation. The behavior now makes GitHub Issues the only work tracker, requires search/reuse before creation, removes Kanban/Linear/repo-local task fallbacks, and keeps any scheduler as a single GitHub-Issue-backed capacity watchdog rather than a parallel task queue."
 }
