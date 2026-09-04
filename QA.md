@@ -9,6 +9,16 @@ This runbook governs manual live-provider QA. It is separate from credential-fre
 - Keep the Telegram bot token on NED's hidden TTY/Keychain path. It must not be passed through the shell environment or a QA command.
 - Record the candidate revision and the exact command results in the QA report, with credentials redacted.
 
+## Mandatory credential-validity preflight
+
+**Before cleanup or any live QA lifecycle action, prove the current credentials are accepted without creating, changing, or deleting a Daytona resource.** Token age is not evidence of validity; a `401` may instead indicate revocation, the wrong account or environment, or an authorization boundary.
+
+1. Use the approved candidate/QA runner's redacted Daytona authentication probe with only `/Users/moonk/.config/no-ego-dev/secrets/daytona_api_key`. Record only `accepted`, `401`, `403`, or transport failure; never record the key, request headers, URLs, or provider body.
+2. If Daytona returns `401` or `403`, mark the run **BLOCKED** and stop before cleanup, token prompting, or resource mutation. Record the response class and account/environment selection, then obtain the owner-approved credential/account correction.
+3. Through NED's hidden TTY/Keychain handoff—not a shell command, environment variable, or QA report—validate the Telegram bot token with Telegram `getMe`. Record only `accepted` and the verified `@username`, or `rejected`; never record the token or token-bearing URL.
+4. If Telegram rejects the token, mark the run **BLOCKED**. Revoke/regenerate only the disposable test bot through BotFather, then repeat this preflight before any QA lifecycle action.
+5. A run may continue only when both probes are accepted. Preserve the redacted result as preflight evidence; do not infer validity from issuance date.
+
 ## Mandatory Daytona cleanup preflight
 
 **Before every live QA run, clean up NED-managed Daytona sandboxes and prove the result before starting the candidate.** This prevents an old sandbox, gateway, or model secret from masking a first-run, repair, or cleanup result.
