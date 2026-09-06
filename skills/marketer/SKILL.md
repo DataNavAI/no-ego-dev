@@ -1,7 +1,7 @@
 ---
 name: marketer
 description: "Use when planning, publishing, launching, and promoting a new product or mobile app with sincere user outreach, channel strategy, launch assets, and app-store submission guidance."
-version: 0.2.1
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -189,6 +189,17 @@ Google Ads troubleshooting guardrails:
 - Treat Google Ads simulators as planning estimates for recent weekly impressions, clicks, cost, conversions, and conversion value; they are not guarantees. Conversion estimates require stable tracking and must account for conversion delay.
 - Change one major lever at a time: budget, bid strategy, target CPA/ROAS, audience, creative, or landing page. Record changes in the launch/post-launch report.
 
+### Google Ads operating branches
+
+Use `references/google-ads-operations-and-validation.md` whenever paid Search is being used for opportunity validation, live account operations, or performance diagnosis. Select the branch from the evidence actually available:
+
+- **Small-budget opportunity validation:** narrow candidates with no-paid evidence first, give finalists equivalent working value paths, then compare at most the funded finalists on completed value rather than cheapest clicks.
+- **Live reporting unavailable:** separate verified first-party attribution from unavailable Ads metrics. Never relabel visits as clicks or characterize CPC without cost and click evidence from the same range.
+- **UI, Scripts, and external API:** treat these as separate capabilities. Confirm the intended account and campaign before mutation, preview reversible script changes, obtain explicit approval before enabling spend, and verify the resulting account state. Browser or Scripts access does not prove external API readiness.
+- **Public demand proxies:** when volume tools are unavailable, preserve locale, date, seeds, source URLs, observed suggestions, SERP intent, and freshness burden. Autocomplete agreement is query-language evidence, not search volume.
+
+Any credential exposed in chat is compromised: do not store, echo, or test it; require rotation and have the owner place the replacement directly in an approved secret store. Never place credentials, account identifiers, browser-session material, or product-local paths in marketing artifacts.
+
 ## Minimum Response Requirements
 
 When the user asks for a launch or publishing plan, the marketer response must explicitly include all of these sections even if the final answer is concise:
@@ -371,6 +382,20 @@ Launch review — <project> — <date/time + timezone>
 - Evidence: <URLs, dashboards, posts, comments, screenshots, app-store links>
 ```
 
+### Privacy-safe feedback-to-task conversion
+
+Daily product monitoring turns actionable feedback into owned work rather than merely summarizing complaints.
+
+1. Read new feedback alongside the affected CUJ, current release state, analytics/QA evidence, and existing open GitHub Issues.
+2. Classify it as `bug`, `accessibility`, `trust/editorial`, `discovery/SEO`, `platform-parity`, `feature request`, `support question`, `praise`, `abuse/spam`, or `insufficient evidence`.
+3. Redact direct identifiers, contact details, raw queries/URLs, and unnecessary sensitive text. Deduplicate by root problem and retain only a privacy-safe count and paraphrase.
+4. Through the project-manager boundary, search open and closed GitHub Issues and create, reopen, or update exactly one deduplicated canonical GitHub Issue for each actionable, product-aligned root problem. Include reader impact, journey/platform, evidence date/count, severity, owner, acceptance criterion, recheck method, and relevant PRD/CUJ/issue links. Record the issue number and URL.
+5. Route suspected incidents, security/privacy concerns, legal/rights requests, and unsupported editorial claims through an appropriately restricted human escalation rather than a public issue or automated response.
+6. Keep praise, isolated support questions, and insufficient evidence out of the engineering queue unless a repeated pattern crosses a declared observation threshold.
+7. Close work only after the reader-visible result is verified against fresh release and feedback evidence.
+
+If no repository is reachable or GitHub issue access is unavailable, report `ISSUE_TRACKER_BLOCKED` and do not fall back to Kanban, Linear, local task files, chat TODOs, or a private queue. The report must list created/updated GitHub Issue numbers and URLs, deduplication decisions, and feedback deliberately excluded from issue creation.
+
 Create or update issues for:
 
 - repeated confusion about positioning or pricing;
@@ -408,4 +433,6 @@ Before finishing marketer work, include a brief verification note with artifact 
 - [ ] Mobile app plan includes Apple and/or Google account/access, app record/listing, build upload, screenshots/metadata, privacy/data safety, testing tracks, review submission, release mode, and common rejection risks.
 - [ ] Measurement plan includes source tracking, launch review cadence, feedback triage, and post-launch report path.
 - [ ] If Google Ads is recommended, the plan includes conversion tracking, campaign type, budget/test duration, bidding strategy, simulator check, stop-loss rule, and no-impression troubleshooting for low bids or unrealistic CPA/ROAS targets.
+- [ ] Ads reporting distinguishes UI, Scripts, external API, first-party attribution, and public demand-proxy evidence without inventing platform metrics.
+- [ ] Actionable feedback is redacted, deduplicated into canonical GitHub Issues through the project-manager boundary, safely escalated when sensitive, and closed only with reader-visible verification.
 - [ ] Follow-up issues are created for missing launch readiness, missing analytics, app-store blockers, repeated feedback, or conversion problems.

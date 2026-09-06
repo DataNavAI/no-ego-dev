@@ -1,7 +1,7 @@
 ---
 name: online-opportunity-seeker
 description: "Use when researching product opportunities for a given vertical by combining keyword trend/search demand, Reddit/community pain signals, Google results, app-store/play-store competitors, and existing-service gaps into ranked product bets."
-version: 0.1.1
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -98,6 +98,15 @@ When trend tools are available, compare relative interest across keyword cluster
 - Marketplace results: extensions/plugins/templates and review counts.
 
 Do not claim exact search volume unless the source provides it. Prefer “high/medium/low evidence from <source>” over fake precision.
+
+For broad entity/reference SEO, restricted Reddit access, broad-destination portfolios, permission-first community validation, SEO-first consumer wedges, or a user who will not personally market, use `references/evidence-and-distribution-branches.md`. Required branch rules include:
+
+- keep forced entity × modifier probes separate from organic broad-seed recurrence and audit ambiguous/franchise contamination;
+- cite original public community URLs, label archive use, avoid stale engagement counts, and re-check live promotion rules before outreach;
+- compare candidates at similar audience breadth, treating shared infrastructure and narrow reserve verticals separately;
+- obtain moderator/administrator permission, disclose the builder relationship, and separate controlled-panel, incentivized, creator, and organic cohorts;
+- for SEO-first products, answer the query before asking for signup or sharing, and test whether the interactive step improves the same user job;
+- when the operator will not market personally, require a credible store-search, marketplace, or SEO discovery path and an active-business conflict check for every shortlisted opportunity.
 
 ### 4. Mine Reddit and communities for pain
 
@@ -235,3 +244,4 @@ Before finishing, verify:
 - [ ] Anti-opportunities and unknowns are called out plainly.
 - [ ] Validation plan includes concrete next tests and artifact paths.
 - [ ] Follow-up owners are named: product-manager, ui-designer, marketer, project-manager, or implementation skills as appropriate.
+- [ ] Entity/modifier probes, public-community fallbacks, breadth parity, permission-first outreach, SEO-first value, and no-personal-marketing constraints are applied when their conditions are present.

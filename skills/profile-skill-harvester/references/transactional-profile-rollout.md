@@ -55,9 +55,9 @@ git archive "$REMOTE_MERGE_COMMIT" skills | tar -x -C "$EXPORT_ROOT"
 
 For an archive, verify representative or all exported blobs against Git before mutation with `git hash-object` and `git rev-parse "$REMOTE_MERGE_COMMIT:path"`.
 
-## 3. Resolve equal-version byte divergence and duplicate identities
+## 3. Resolve every distinct digest and duplicate identity
 
-Version equality is not package equality. If a live package and canonical candidate share a version but have different bytes, inspect semantic drift before rollout. Prefer a canonical version bump before review when distinct package bodies would otherwise be published under one version.
+Version is metadata, not package authority. Inspect every distinct package digest regardless of version or baseline state. Assign every delta exactly one of `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`. Re-harvest reusable drift before overwrite; unsafe or unresolved drift blocks the affected target with state unadvanced.
 
 Inventory by frontmatter `name`, not directory basename. If the same skill identity appears at multiple paths, select the canonical live path only from explicit package/version evidence. Back up every duplicate and retire only a proven older superseded copy. Never treat the first path returned by filesystem traversal as authoritative.
 
@@ -66,8 +66,8 @@ Inventory by frontmatter `name`, not directory basename. If the same skill ident
 Preflight every target before changing any target:
 
 1. Discover every package and duplicate identity.
-2. Compare complete-package versions and digests.
-3. Compute canonical overlays and preserved target-only files.
+2. Compare every complete-package digest and record version only as context.
+3. Complete the semantic disposition ledger and compute canonical overlays plus declared product-local adaptations.
 4. Validate every staged package, `SKILL.md`, `EVAL*.yaml`, fixture, and support-file path.
 5. Copy every affected live package—including superseded duplicates—to a timestamped backup outside repositories.
 6. Write a receipt containing source merge SHA, selected target path, reason, canonical per-file SHA-256 values, preserved target-only SHA-256 values, and retired duplicate paths.
@@ -81,7 +81,7 @@ A path omitted from the action set proves only that it was not targeted; it does
 Assemble each target in a sibling staging directory from its current package plus canonical files:
 
 - atomically replace every canonical file;
-- preserve target-only references/templates/scripts unless explicitly retired;
+- preserve target-only references/templates/scripts only when explicitly dispositioned `product-local`;
 - verify staged canonical and preserved-local hashes before swapping;
 - rename the live package to a rollback path, then rename the staged package into place;
 - only after the canonical path is live, rename proven superseded duplicates to rollback paths;

@@ -85,6 +85,35 @@ def test_profile_skill_harvester_package_contract():
     assert SCRIPT.is_file()
 
 
+def test_harvester_dispositions_every_live_delta_before_rollout():
+    paths = [
+        SKILL_DIR / "SKILL.md",
+        SKILL_DIR / "EVAL.yaml",
+        SKILL_DIR / "references" / "controller-to-profile-rollout-boundaries.md",
+        SKILL_DIR / "references" / "sibling-rollout-drift-adaptations.md",
+        SKILL_DIR / "references" / "stale-baseline-version-gated-rollout.md",
+        SKILL_DIR / "references" / "transactional-profile-rollout.md",
+    ]
+    contract = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    for marker in (
+        "every distinct",
+        "regardless of version",
+        "adopted",
+        "scoped",
+        "superseded",
+        "product-local",
+        "unsafe",
+        "unresolved",
+        "re-harvest",
+        "state unadvanced",
+    ):
+        assert marker in contract
+    assert "target-only path is not automatically profile-local" in contract
+    assert "use semantic versions only to conservatively select" not in contract
+    assert "preserve equal/newer live packages" not in contract
+    assert not re.search(r"(?m)^\s*\d+\.\s+preserve and re-hash target-only files;\s*$", contract)
+
+
 def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inventory():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
     reference_path = SKILL_DIR / "references" / "self-unblocking-publication.md"

@@ -1,6 +1,6 @@
 name: mvp-planning
 prompt: |
-  Plan a new MVP for independent home-care nurses who lose time coordinating daily patient visits across texts and spreadsheets. Stakeholders have requested route optimization, a team chat, payroll, a CRM, AI visit summaries, patient billing, inventory, analytics dashboards, native iOS and Android apps, and a web admin portal. Produce the smallest coherent MVP scope, UX direction, and QA/test strategy.
+  Run a non-mutating deterministic planning simulation using only the fixture evidence supplied below. Re-scope an existing MVP for independent home-care nurses who lose time coordinating daily patient visits across texts and spreadsheets. The fixture models a dependency-heavy backlog and partially implemented shared website with scheduling, lead-intake, and education hypotheses; do not claim to inspect a live repository or issue tracker. Staff must receive and follow up on inbound requests, but contact permissions, lifecycle authority, after-hours routing, and payment-test boundaries are unresolved. Stakeholders also requested route optimization, team chat, payroll, CRM, AI summaries, billing, inventory, dashboards, native apps, and a web admin portal. Produce the smallest coherent MVP scope, backlog disposition/dependency rewrite, shared-site experiment framing, staff-workflow discovery plan, UX direction, and QA strategy.
 expectations:
   - "states one key user problem for one specific target user and context"
   - "selects exactly one primary critical user journey and no more than two necessary supporting critical user journeys"
@@ -25,6 +25,10 @@ expectations:
   - "allows ephemeral or local storage only for disposable prototype or PoC data and prevents those shortcuts from silently carrying into MVP"
   - "adds a persistence-readiness task for prototype or PoC promotion covering migrations backups restore monitoring ownership and rollback"
   - "when structured analytics is selected defines only the needed qualifying activity activation churn identity timezone cohort and exclusion semantics without creating a broad dashboard"
+  - "uses only the deterministic fixture backlog and implementation evidence without claiming live access before classifying every modeled open child as must simplify defer or close with a retained outcome and dependency rewrite"
+  - "frames multiple shared site hypotheses under one coherent promise one primary CUJ independently attributable routes and explicit shared foundation beta or reserve classifications rather than several equal MVPs"
+  - "defines a decision gated staff discovery session covering routing channel permissions minimum data state authority warm lead next action after hours fallback and contained synthetic pilot evidence"
+  - "does not treat discovery as permission for sensitive data production outreach booking or payments and requires approved payment sandbox or controlled cancellation or refund procedure"
 parameters:
   fixture: evaldata/README.md
   template: templates/mvp-plan.md

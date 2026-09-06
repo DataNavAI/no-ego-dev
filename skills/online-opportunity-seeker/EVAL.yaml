@@ -1,7 +1,7 @@
 prompt: |
   Use the online-opportunity-seeker skill to respond to this realistic opportunity research request:
 
-  "I want to build a small online product in the pet services vertical, probably around dog walkers, pet sitters, or anxious first-time dog owners. Research product opportunities by looking at search keyword demand, Reddit/community pain, existing Google results, and Play Store/App Store style competitors. I do not want generic startup ideas; I want a ranked shortlist with evidence, competitor gaps, MVP wedges, acquisition angles, and what to validate next."
+  "I want to build a broad pet-services search destination around dog walkers, pet sitters, and anxious first-time dog owners, but I will not personally do outbound sales, social posting, paid ads, influencer outreach, or ongoing content. Research opportunities using public autocomplete entity/modifier probes, Reddit/community pain even if direct pages are restricted, existing search results, and app/plugin competitors. Compare candidates at similar breadth, explain permission-first organic validation and an SEO-first interactive wedge, and give a ranked shortlist with evidence, distribution paths, business-conflict checks, and what to validate next."
 expectations:
   - "states vertical scope assumptions target users geography language platform scope and source limitations"
   - "creates or names durable research artifacts such as opportunity map keyword map community pain log competitor matrix opportunity shortlist and validation plan"
@@ -16,6 +16,12 @@ expectations:
   - "includes mobile/app store reality for app-like opportunities such as app store competitor review signals screenshots subscriptions update recency and policy or trust constraints"
   - "routes next work to product-manager for PRD ui-designer for mocks marketer for validation or project-manager for issue routing as appropriate"
   - "does not produce generic ideas disconnected from keyword search language community pain existing services or app store evidence"
+  - "separates broad seed recurrence from forced entity modifier probes preserves source locale date and raw evidence and audits ambiguous franchise or fictional contamination"
+  - "when direct Reddit access is restricted uses only public fallbacks cites original thread URLs labels archive limitations avoids stale engagement claims and marks live rule verification pending"
+  - "compares broad destination candidates at similar audience breadth and classifies shared infrastructure and narrow reserve verticals separately"
+  - "requires moderator permission builder disclosure direct working value routes privacy safe attribution and separate panel incentivized creator and organic cohorts"
+  - "makes an SEO first result answer the query before signup or sharing and verifies that interaction and sharing reinforce the same user job"
+  - "for every shortlist item names a discovery channel without operator led marketing why users can find it and an active business conflict check"
 setupCommands: []
 teardownCommands: []
 parameters:

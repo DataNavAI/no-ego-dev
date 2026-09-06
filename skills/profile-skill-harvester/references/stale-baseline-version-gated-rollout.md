@@ -27,18 +27,18 @@ Across the canonical export and every target profile, record:
 
 Fail closed on malformed frontmatter, unsafe symlinks, invalid EVALs/fixtures, ambiguous ownership, or **unresolved** duplicate names. A duplicate is not permission for arbitrary deletion. It may be retired deterministically only when one live package is the unique selected package (for example, the sole highest valid semantic version), every duplicate is older/superseded rather than divergent, and the rollout authority includes standardization. Back up every duplicate at its original relative path before mutation; otherwise block that profile/skill.
 
-## 3. Conservative selection rules
+## 3. Semantic disposition rules
 
-When no reliable ancestor exists:
+When no reliable ancestor exists, inspect every distinct digest regardless of version or prior baseline state. For every behavior and support-file delta, record exactly one evidence-backed disposition: `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`.
 
 1. **Canonical skill absent in target:** select it for installation.
 2. **Both versions are valid `MAJOR.MINOR.PATCH` and canonical is newer:** select it as an update candidate.
-3. **Versions are equal:** preserve the live package by default. Digest difference may represent a local adaptation; it is not evidence that canonical should win.
-4. **Target version is newer:** preserve it and report it as live-ahead.
+3. **Versions are equal:** inspect the semantic difference; equality grants neither preservation nor overwrite authority.
+4. **Target version is newer:** inspect it like every other distinct digest; reusable drift must be re-harvested before overwrite.
 5. **Either version is missing or non-semantic:** classify as ambiguous and inspect manually. Do not pretend that an unversioned target is older.
-6. **Explicit standardization override:** a user may authorize canonical replacement despite ambiguity or live drift, but record the override, retain a full backup, preserve target-only files unless explicitly superseded, and do not call the result a three-way merge.
+6. **Standardization request:** record it as scope authority only. It cannot waive semantic disposition, safety, canonical publication, or immutable-source gates. Preserve only declared, hash-verified `product-local` adaptations; block `unsafe`/`unresolved` drift with state unadvanced.
 
-Semantic versioning decides which packages warrant examination; it does **not** prove content equality, behavioral compatibility, review approval, or rollout success.
+Semantic versioning orders inspection and supports a monotonic final version; it never decides which packages warrant examination, preservation, replacement, or retirement.
 
 ## 4. Preflight every target before mutation
 
@@ -61,7 +61,7 @@ For each authorized package:
 2. copy the selected target into a temporary sibling directory on the same filesystem;
 3. remove only known generated caches;
 4. overlay exact canonical files from the frozen export when the selection rule authorizes an update; for duplicate-retirement-only actions, preserve the selected package bytes unchanged;
-5. preserve and re-hash target-only files;
+5. preserve and re-hash only target-only files whose semantic delta ledger explicitly classifies them as `product-local`; reusable drift must first enter a newly reviewed and merged canonical generation, while unsafe or unresolved drift blocks that package;
 6. validate frontmatter, EVALs, fixtures, and support scripts in the staged package;
 7. atomically swap staged and live directories, then atomically rename superseded duplicates aside;
 8. enroll the current package in the rollback ledger **before** duplicate retirement so a failure during the current action restores both the selected path and any duplicate already moved;
@@ -82,4 +82,4 @@ For skill-only changes:
 - tell existing conversations to use `/reset` or `/new` before relying on changed instructions;
 - do not restart gateways solely to manufacture adoption evidence.
 
-Report separately: selected, preserved-same-version, preserved-live-ahead, blocked-ambiguous, installed, target-only files preserved, fresh-process smokes, catalog rescans, and post-smoke hash verification.
+Report separately: exact-canonical, declared product-local adaptations, blocked unsafe/unresolved drift, re-harvested reusable drift, installed, fresh-process smokes, catalog rescans, and post-smoke hash verification. Never use `preserved-same-version`, `preserved-live-ahead`, or generic target-only preservation as a semantic disposition.

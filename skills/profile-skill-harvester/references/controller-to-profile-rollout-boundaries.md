@@ -27,14 +27,14 @@ For every target profile and package:
 
 1. Freeze the exact source commit and require a clean source worktree.
 2. Back up the complete existing target package to a non-repository directory.
-3. Inventory source-relative and target-relative package files, excluding known generated caches only.
-4. Hash target-only files as profile-local additions.
-5. Atomically overlay every canonical source file into the target package **without deleting target-only files**.
-6. Re-hash every canonical path and require byte equality with the frozen source.
-7. Re-hash target-only files and require exact equality with the pre-rollout inventory.
+3. Inventory every distinct source and target package digest, excluding known generated caches only, regardless of version or prior baseline state.
+4. Assign every semantic and support-file delta exactly one evidence-backed disposition: `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`. A target-only path is not automatically profile-local.
+5. Re-harvest reusable drift into a newly validated, reviewed, merged canonical generation before overwrite; block unsafe or unresolved drift with state unadvanced.
+6. Stage exact canonical files plus only declared, hash-verified `product-local` adaptations.
+7. Atomically install the staged package, re-hash canonical and product-local paths, and require equality with their manifests.
 8. Repeat the comparison after runtime/fresh-process verification because profile automation may edit skills concurrently.
 
-Do not use version strings as equality proof. Do not replace a whole skill directory when additive profile references exist.
+Do not use version strings as equality proof. Standardization authority and backups cannot waive semantic disposition, safety, publication, or immutable-source gates.
 
 ## Validation details
 

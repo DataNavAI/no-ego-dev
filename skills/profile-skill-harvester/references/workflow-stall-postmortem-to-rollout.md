@@ -26,7 +26,7 @@ Write deterministic regression tests first. Update `SKILL.md`, `EVAL.yaml`, fixt
 ## Freeze and publish canonically
 
 1. Work from an isolated worktree at current `origin/<default>`; never use a dirty canonical checkout.
-2. Inventory all sibling variants before choosing bytes.
+2. Inventory every distinct sibling variant regardless of version or baseline state. Assign every semantic/support-file delta exactly one evidence-backed disposition (`adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`) before choosing bytes; reusable drift requires a newer canonical generation.
 3. Use a canonical version strictly newer than every divergent live variant. Equal version strings with different package digests are a release defect, not harmless drift.
 4. Run focused and repository-wide tests, diff checks, and staged secret scanning.
 5. Freeze one candidate generation and obtain independent review. Any byte change—including README or version metadata—invalidates the verdict and requires a fresh review.
@@ -36,11 +36,11 @@ Write deterministic regression tests first. Update `SKILL.md`, `EVAL.yaml`, fixt
 
 1. Back up every affected target package outside repositories and hash the backup.
 2. Recompare live targets immediately before mutation; block on drift after backup.
-3. Overlay canonical files while preserving compatible target-only support files. Report each target as exact or adapted.
+3. Overlay canonical files while preserving only declared, hash-verified `product-local` adaptations. Re-harvest reusable target-only support files through a newly validated, reviewed, merged generation before overwrite; block unresolved/unsafe packages with state unadvanced. Standardization authority and backups cannot bypass these gates. Report each target as exact, product-local adapted, or blocked.
 4. If a live profile has the same frontmatter skill name at a nested legacy path, back it up and retire it only after the canonical path is installed; require exactly one discovered package per skill name.
-5. Verify canonical-file byte parity, preserved target-only files, fresh-process skill discovery, and post-adoption digests. Skill-only overlays usually hot-load; do not restart gateways without evidence that startup-loaded state changed.
+5. Verify canonical-file byte parity, declared product-local adaptation hashes, fresh-process skill discovery, and post-adoption digests. Skill-only overlays usually hot-load; do not restart gateways without evidence that startup-loaded state changed.
 6. Treat scheduled-job prompts and attached-skill lists as a separate policy surface. A skill rollout does not automatically repair contradictory hard-coded cron instructions.
 
 ## Reporting
 
-Report canonical commit/PR/merge evidence, tests, security scan, backup location, each profile's exact/adapted status, preserved additions, duplicate retirement, discovery proof, and any still-separate scheduler prompt correction. Never conflate successful package copy with product publication or runtime behavior adoption.
+Report canonical commit/PR/merge evidence, tests, security scan, backup location, each profile's exact/product-local-adapted/blocked status, disposition and adaptation hashes, duplicate retirement, discovery proof, and any still-separate scheduler prompt correction. Never conflate successful package copy with product publication or runtime behavior adoption.
