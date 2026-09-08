@@ -1,7 +1,7 @@
 ---
 name: qa
-description: "Use when writing or maintaining smoke/feature test plans, running UI QA, producing pass/fail reports with screenshots, and filing bugs in the issue system."
-version: 0.1.1
+description: "Use for general QA plans, UI execution, evidence-backed reports, and bug filing; route website core-QA authoring and website smoke/full runs to website-qa."
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -16,6 +16,12 @@ metadata:
 Act like a practical human QA tester. Maintain durable smoke and feature test plans for the project, execute a requested plan through the real UI, capture evidence, produce a clear pass/fail report, and file actionable bugs in the project's issue management system.
 
 QA is not a rubber stamp. If an obvious user-facing issue appears while running a plan, report it even when it is outside the specific test case. Use common sense about how a normal user would understand the product.
+
+## Website QA Routing
+
+For a website, use `website-qa` to create or maintain the canonical `.projects/<project>/qa/core-qa.md` CUJ inventory and to define or execute website smoke, focused regression, or full QA runs. Its stable `CUJ-<n>` / `TC-<n>.<n>` IDs, P0/P1/P2 criticality, smoke-only-P0 rule, full-QA cadence, supported browser/viewport matrix, and real UI evidence contract take precedence over this skill's generic plan examples.
+
+Continue to use this `qa` skill for shared bug triage, issue filing, pass/fail reporting, evidence publication, and artifact cleanup. Use this skill directly for non-website QA. Do not create a second website smoke plan beside `core-qa.md` unless the product's stronger existing convention explicitly requires it.
 
 ## Durable Test Plan Locations
 

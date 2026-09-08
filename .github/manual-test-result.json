@@ -1,17 +1,18 @@
 {
-  "candidate_sha": "6b2e2d9095311ffbc1fa13b95b1b63debc5c4620",
+  "candidate_sha": "4cf47cbb3070d986f4a1ef460286bd87dbecdb0a",
   "result": "pass",
-  "tested_at": "2026-09-08T00:52:19Z",
+  "tested_at": "2026-09-08T05:59:49Z",
   "environment": "macOS 26.6.2, Python 3.11.16, Node v25.6.1",
   "commands": [
-    "python -m pytest -q tests/test_project_manager_priority_milestones.py",
+    "python -m pytest -q tests/test_website_qa_skill.py",
     "python -m pytest",
     "npm ci",
     "npm test",
     "npm run check",
+    "npm pack --dry-run",
     "git diff --check origin/main...HEAD",
-    "project-manager YAML/frontmatter validation",
-    "independent exact-candidate semantic review"
+    "tracked-file validator-hook search",
+    "independent exact-candidate review"
   ],
-  "observations": "The exact code candidate passed 3 focused priority/milestone tests, the full Python suite (328 passed, 3 skipped), all 160 Node tests, npm syntax checks, dependency audit with zero vulnerabilities, and whitespace/YAML/frontmatter validation. A fresh independent reviewer approved the exact candidate after verifying strict P0 > P1 > P2 dispatch with no lower-priority bypass, P0 reclassification for urgent containment, milestone completion at the P0/P1 evidence boundary, rollover of every remaining open P2, user confirmation of the next milestone goal, receiving-milestone reprioritization, and no retroactive changes to the completed milestone."
+  "observations": "The exact guidance-only website-QA candidate passed 6 focused tests, the full Python suite (334 passed, 3 skipped), all 160 Node tests, npm syntax checks, package dry-run, dependency audit with zero vulnerabilities, and whitespace/frontmatter/EVAL validation. Searches across tracked files found no website-QA validator script, structural-parser fixtures, validator command, mandatory VALID/INVALID result, Validation record, GitHub workflow hook, or package-script hook. A fresh independent reviewer approved the exact candidate and confirmed that tests cover only fixed package assets and guidance markers rather than parsing arbitrary project QA documents."
 }

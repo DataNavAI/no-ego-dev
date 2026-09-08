@@ -98,10 +98,14 @@ Build a shareable browser game for [audience/use case]. Make the first interacti
 
 ### QA
 
-공개 전에 핵심 사용자 흐름을 점검하고, 사용성 문제를 찾고, 실용적인 수정 방향을 정리합니다.
+웹사이트의 표준 핵심 QA 문서에서 핵심 사용자 여정을 관리하고, 지원 브라우저와 화면 크기에서 P0 전용 스모크 또는 위험 기반 전체 회귀 테스트를 실행한 뒤 실제 UI 근거와 함께 수정 방향을 정리합니다.
 
 ```text
 Review this deployed prototype: [URL]. QA the main user flow, identify the biggest usability issues, and suggest the next practical improvements before I share it publicly.
+```
+
+```text
+Create or update this website's core QA document, inventory its critical user journeys with stable IDs, and run the P0 smoke suite against this exact release candidate: [URL/build].
 ```
 
 ### 퍼블리싱
@@ -138,7 +142,8 @@ NED는 아이디어에서 공개 테스트까지 필요한 일반적인 작업�
 - `spec-compliance-review`: 고정된 후보를 권위 있는 계획, 계약, 인수 기준 매트릭스에 맞춰 감사하며 첫 라운드에 발견 가능한 피드백을 모으고 3라운드 이후에는 차단 결함 중심의 승인 수렴 모드를 적용합니다.
 - `immutable-candidate-verification`: TDD, 후보 정체성, 독립 검토, 릴리스 근거, 제한 없이 단조 증가하는 검토 계보를 정확한 커밋에 결속하며 라운드 소진만으로 승인하지 않습니다.
 - `coder`: 제품 변경 사항을 만들며, 프로젝트 소유의 생태계 적합 정적 분석이 없으면 구성하고 모든 코드 변경 후와 최종 전체 검증에서 다시 실행합니다.
-- `qa`: 사용자 흐름을 테스트하고, 회귀를 잡고, 근거를 포함해 보고합니다.
+- `qa`: 일반 QA 계획, 버그 분류, 근거 기반 보고를 담당하고 웹사이트 핵심 QA 작업은 웹사이트 전문 스킬로 연결합니다.
+- `website-qa`: 웹사이트마다 하나의 CUJ 기반 핵심 QA 문서를 유지하고, 실제 브라우저 근거를 바탕으로 P0 전용 스모크, 집중 회귀, 위험 기반 전체 QA를 실행합니다.
 - `devops`: 배포, 운영 점검, 도메인, CI/CD, 기본 관측성을 다룹니다.
 - `marketer`: 포지셔닝, 채널 계획, 런칭 문구, 아웃리치 노트, 피드백 루프를 만듭니다.
 - `seo-growth`: 잠재력이 높은 자연 검색어를 조사해 기존 또는 정당한 신규 페이지에 매핑하고, 기술·온페이지 SEO를 구현한 뒤 순위·Search Console·분석·전환 근거로 지속 개선합니다.
