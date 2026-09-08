@@ -123,10 +123,14 @@ Build a shareable browser game for [audience/use case]. Make the first interacti
 
 ### QA
 
-Check the main user flow, find usability issues, and report practical fixes before you share publicly.
+Maintain a website's canonical core QA inventory, run its P0-only smoke or risk-based full regression through supported browsers and viewports, and report practical fixes with real UI evidence before you share publicly.
 
 ```text
 Review this deployed prototype: [URL]. QA the main user flow, identify the biggest usability issues, and suggest the next practical improvements before I share it publicly.
+```
+
+```text
+Create or update this website's core QA document, inventory its critical user journeys with stable IDs, and run the P0 smoke suite against this exact release candidate: [URL/build].
 ```
 
 ### Publishing
@@ -163,7 +167,8 @@ NED is packaged with focused skills for the common work needed to go from idea t
 - `spec-compliance-review`: audits fixed candidates against authoritative plans, contracts, and acceptance matrices with complete first-round findings and blocker-focused approval convergence after Round 3.
 - `immutable-candidate-verification`: keeps TDD, candidate identity, independent reviews, release evidence, and an unlimited monotonic review lineage bound to exact commits without automatic approval.
 - `coder`: builds product changes, provisions ecosystem-appropriate project-owned static analysis when absent, and reruns it after every code change plus final full verification.
-- `qa`: tests the user flow, catches regressions, and reports evidence.
+- `qa`: handles general QA planning, bug triage, evidence-backed reports, and routes website core QA work to the website specialist.
+- `website-qa`: maintains one CUJ-based core QA document per website and runs strict P0-only smoke, focused regression, or risk-based full QA with real browser evidence.
 - `devops`: handles deployment, operational checks, domains, CI/CD, and basic observability.
 - `marketer`: creates positioning, channel plans, launch copy, outreach notes, and feedback loops.
 - `seo-growth`: researches high-potential organic queries, maps them to existing or justified new pages, implements technical and on-page improvements, and iterates from rankings, Search Console, analytics, and conversion evidence.
