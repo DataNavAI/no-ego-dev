@@ -1040,7 +1040,11 @@ def _build_oneshot_command(
     base_args = _split_windows_command_line(base_command) if use_windows_parsing else shlex.split(base_command)
     if not base_args:
         raise ValueError("oneshot command must not be empty")
-    return [*base_args, "-q", prompt]
+    executable = base_args[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+    quiet_args = []
+    if executable in {"hermes", "hermes.exe"} and not {"-Q", "--quiet"}.intersection(base_args):
+        quiet_args.append("-Q")
+    return [*base_args, *quiet_args, "-q", prompt]
 
 
 def _judge_with_hermes(

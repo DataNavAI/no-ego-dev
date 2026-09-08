@@ -173,7 +173,19 @@ def test_windows_oneshot_command_uses_windows_argument_quoting():
 
     command = _build_oneshot_command("hermes chat -t skills", prompt, windows=True)
 
-    assert command == ["hermes", "chat", "-t", "skills", "-q", prompt]
+    assert command == ["hermes", "chat", "-t", "skills", "-Q", "-q", prompt]
+
+
+def test_hermes_oneshot_command_enables_machine_quiet_output():
+    command = _build_oneshot_command("hermes chat -t skills", "judge exactly")
+
+    assert command == ["hermes", "chat", "-t", "skills", "-Q", "-q", "judge exactly"]
+
+
+def test_custom_oneshot_command_does_not_receive_hermes_only_quiet_flag():
+    command = _build_oneshot_command("python fake_hermes.py", "judge exactly")
+
+    assert command == ["python", "fake_hermes.py", "-q", "judge exactly"]
 
 
 def test_loads_every_tracked_repository_eval():
