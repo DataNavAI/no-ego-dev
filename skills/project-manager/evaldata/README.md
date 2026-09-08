@@ -82,3 +82,21 @@ A new active project uses a canonical GitHub repository and already has a Kanban
 If autonomous execution is requested, the response reconciles exactly one periodic GitHub-Issue Project Watchdog bound to the repository, eligible labels/milestone, cadence, workdir, and friendly scheduler name. Each run reads live GitHub Issues and linked PR/branch evidence, launches one focused worker only when a dependency-ready issue exists and no worker is corroborated active, otherwise no-ops silently, and records worker ownership, branches/PRs, tests, blockers, retries, and terminal evidence on the GitHub issue or linked PR. Labels alone are not proof of an active worker. Pause is sticky until explicit resume, scheduler identity/state is verified by fresh readback, and scheduler receipts never become a second task tracker.
 
 If GitHub access or a repository is unavailable, the response marks `ISSUE_TRACKER_BLOCKED`, identifies the exact access/repository action required, and does not fall back to Kanban or local tasks. Repository PRDs, specs, plans, runbooks, `STATUS.md`, and evidence remain durable artifacts linked from GitHub Issues rather than parallel task records.
+
+## Scenario: Deterministic P0/P1/P2 milestone queue and rollover
+
+Milestone **M1 — Checkout is reliably usable** has the following dependency and completion state. Each issue was created with exactly one priority label and M1 already assigned:
+
+| Issue | Priority | State | Dependency | Normal completion/evidence gate |
+| --- | --- | --- | --- | --- |
+| #201 Stop duplicate charges | P0 | runnable | none | pending |
+| #202 Restore order confirmation | P1 | runnable | none | pending |
+| #203 Add payment recovery UI | P1 | blocked | #202 | pending |
+| #204 Improve receipt copy | P2 | runnable | none | pending |
+| #205 Add receipt themes | P2 | open | #204 | pending |
+
+The only available worker takes #201 first. After #201 passes its normal gate, #202 runs before runnable #204 because P1 outranks P2. Once #202 passes, #203 becomes runnable and runs before #204. Dispatch order for M1: `#201` → `#202` → `#203`. Dependency order is respected inside P1; lower-priority work never consumes capacity while higher-priority runnable work exists. If containment becomes urgent enough to outrank current work, the manager must first classify that issue as P0 and then apply the same strict dispatch order; it cannot bypass the queue at a lower priority.
+
+After #201, #202, and #203 satisfy their normal completion/evidence gates, M1 immediately reaches its completion boundary while #204 and #205 both remain open as P2. No P2 issue dispatches after that boundary. The manager must ask the user to confirm M2's outcome, then select or create **M2 — Customers understand and can manage receipts**. Before closing M1, it must move #204 and #205 to M2 with comments preserving each issue's M1 history and rollover rationale; it must not close either issue merely to make M1's open count zero. The manager then re-evaluates #204, #205, and every issue already in M2 against the confirmed M2 goal, atomically replacing labels as needed so each has exactly one of P0/P1/P2. It must not retroactively relabel M1.
+
+A newly discovered issue #206 cannot be created until its outcome-based milestone is determined (creating/selecting the next one first if absent) and its creation request includes exactly one P0/P1/P2 label plus that milestone. If #206's scope, evidence, milestone goal, incident state, or dependencies later change, priority is re-evaluated and read back to prove exactly one priority remains.

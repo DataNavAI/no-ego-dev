@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into GitHub milestones, GitHub Issues, and subagent execution."
-version: 0.28.0
+version: 0.29.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -28,6 +28,23 @@ GitHub Issues is the only work tracker used by the project manager. Use GitHub m
 - Repository artifacts remain canonical for PRDs, specs, plans, runbooks, `STATUS.md`, release mappings, and evidence. Link them from GitHub Issues rather than turning files into a parallel task database.
 - If the project has no reachable GitHub repository or GitHub issue access is unavailable, mark execution `ISSUE_TRACKER_BLOCKED`, state the exact repository/access action needed, and continue only emergency reversible containment or read-only risk mitigation. Never fall back to Kanban or local tasks.
 - When legacy Kanban, Linear, or local task records are discovered, migrate actionable work into deduplicated GitHub Issues, preserve backlinks where useful, and use only the GitHub issues thereafter.
+
+### Priority labels, issue creation, and milestone completion
+
+Use exactly these mutually exclusive priority labels:
+
+- `P0` = **MUST-FIX**.
+- `P1` = **critical to a product milestone**.
+- `P2` = **good-to-fix**.
+
+Apply this policy fail-closed throughout the issue lifecycle:
+
+1. Before creating an issue, determine the outcome-based milestone that owns it and classify it as exactly one of `P0`, `P1`, or `P2`. Include that one priority label and the determined milestone at creation; never create it unprioritized, multiply prioritized, or milestone-unassigned. If the correct milestone does not exist, create or select the next outcome-based milestone before creating the issue.
+2. Select runnable work in strict priority order, `P0` > `P1` > `P2`, while respecting dependencies within each priority. Lower-priority work cannot consume capacity while a higher-priority runnable issue exists, with no general capacity bypass. If emergency containment becomes urgent enough to outrank current work, reclassify the urgent issue as `P0`, preserve exactly one priority label, and then apply the same strict dispatch order.
+3. Re-evaluate an issue's priority whenever its scope, evidence, milestone goal, incident state, or dependencies change. Add the new priority and remove the old one in the same update, then read back the issue to verify exactly one priority label remains.
+4. A milestone can be called done once all `P0` and `P1` issues assigned to it satisfy the normal completion and evidence gates. Open `P2` work does not block that boundary, but it must remain truthful backlog work.
+5. At that boundary, consult the user on the goal of the next milestone and confirm or create the receiving outcome-based milestone. Move every remaining open `P2` issue to the next milestone before closing the completed milestone, preserving its history and recording why it rolled over. Do not close P2 issues merely to drive the milestone's open count to zero.
+6. Re-evaluate and relabel all issues already in or moved into the receiving milestone against the user-confirmed next goal, again leaving exactly one priority label per issue. Do not retroactively readjust priorities in the just-completed milestone.
 
 ## Upfront Requirement Confirmation and Automatic Continuation
 
@@ -183,7 +200,7 @@ Each new active project gets at most one periodic watchdog when the user wants a
 
 1. Bind it to one canonical GitHub repository, the eligible issue labels/milestone, cadence, workdir, and friendly scheduler name. Discover and reuse the matching job before creating anything; remove exact duplicates only after verified readback.
 2. On each run, query GitHub Issues and linked PRs/branches for the live state. Search for eligible, dependency-ready issues and corroborate whether a worker is already active from durable worker/PR evidence; labels alone are not proof.
-3. If runnable issues exist and no worker is active, start exactly one focused worker for the highest-priority issue. Put the issue number/URL in the assignment and require the worker to update that issue with branch/PR, tests, blockers, and terminal evidence.
+3. If runnable issues exist and no worker is active, start exactly one focused worker using strict `P0` > `P1` > `P2` selection and dependency-safe ordering within that priority. Never let lower-priority work consume capacity while higher-priority runnable work exists. Urgent emergency-containment work must first be reclassified as `P0`, with exactly one priority label, rather than bypassing the queue. Put the issue number/URL in the assignment and require the worker to update that issue with branch/PR, tests, blockers, and terminal evidence.
 4. If no issue is runnable, a worker is active, or evidence is uncertain, launch nothing. Keep no-op runs silent and never invent work merely to fill capacity.
 5. Store durable work state in GitHub Issues, comments, linked branches, and PRs. Scheduler receipts may identify runs, but must not become a task list. Do not create Kanban cards or any parallel queue.
 6. Preserve explicit user pause across runs. Resume only on explicit instruction. Archive/remove the watchdog when the project is completed or monitoring is no longer wanted, then verify the scheduler state by fresh readback.
@@ -690,20 +707,24 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 8. For deployed/user-facing projects, set up routine service status checks with self-contained recurring prompts that pull product-side updates (traffic and feedback) plus devops-side updates (CI/release, system health, and hosting cost) and send the user a summary at least once per day. If email report recipient/cadence are configured, discover all active products first and schedule one aggregate portfolio status-report email per shared recipient/cadence/timezone group; if not configured, proactively ask the user for the recipient email and cadence and create a follow-up GitHub Issue until configured.
 9. For the directly asked task, search for and create/update/reopen the canonical GitHub Issue before execution, even if the request looks small. When it is a user-reported product bug, apply the stricter product-bug intake contract: search first, create or reuse exactly one GitHub Issue, and dispatch a linked focused worker before diagnosis or implementation.
 10. Create milestones from the current PRD/spec/UI artifacts.
-11. Create GitHub Issues for all executable work, including UI design/design-review work when applicable; never create Kanban, Linear, or repo-local task substitutes.
+11. Create GitHub Issues for all executable work, including UI design/design-review work when applicable; assign exactly one `P0`/`P1`/`P2` label and one determined outcome-based milestone in the creation request, creating/selecting the next milestone first when needed. Never create Kanban, Linear, or repo-local task substitutes.
 12. Send a progress update with the milestone/task plan before execution begins.
-13. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents.
+13. Kick off the next unblocked set of tasks with focused `coder`/`react-native-app-dev`/`android-app-dev`/`devops`/other specialist subagents, exhausting runnable `P0` before `P1` and runnable `P1` before `P2`, dependency-safe within each priority.
 14. When an implementation task completes, verify the implementation evidence and create a linked follow-up QA task for smoke or feature-plan execution covering every affected supported device interface in the canonical registry.
 15. Spawn a `qa` subagent for the follow-up QA task; require at least one test case and a separate pass/fail/blocked result with evidence for each supported interface, screenshots for failures, duplicate-search-before-bug-filing, and artifact cleanup after report upload.
 16. Periodically check milestone status, QA results, open bugs, and scheduled product-checkup findings; spawn follow-up fix, instrumentation, product, or QA tasks as needed.
-17. Before milestone completion, triage every open linked bug. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
-18. When tasks complete, verify the milestone goal using direct evidence.
+17. Before milestone completion, triage every open linked bug and re-evaluate priorities after any scope, evidence, goal, incident, or dependency change. Fix milestone-relevant bugs, close invalid/obsolete/too-minor bugs with rationale, and explicitly defer only bugs that do not compromise the milestone goal.
+18. When all assigned `P0` and `P1` issues pass their normal completion/evidence gates, consult the user on the next milestone goal, move remaining open `P2` issues to that receiving milestone with history and rationale, and re-evaluate the receiving milestone's issues against the confirmed goal without relabeling the completed milestone. Then verify the completed milestone goal using direct evidence.
 19. After every verified big task or milestone, update and commit the repository-root `STATUS.md` with the current state, evidence, blockers/decisions, and ordered next steps.
 20. Send a phase-complete progress update. If achieved and bug triage is clean, mark the milestone done and notify the client with a user-accessible `STATUS.md` link; otherwise create missing-part tasks, update the status snapshot, and send an updated plan.
 
 ## Verification Checklist
 
 - [ ] Milestone goal is objective.
+- [ ] Every newly created issue received exactly one `P0`, `P1`, or `P2` label and one determined outcome-based milestone at creation; any missing milestone was created/selected first.
+- [ ] Priority meanings are exact: `P0` is MUST-FIX, `P1` is critical to the product milestone, and `P2` is good-to-fix.
+- [ ] Runnable work was selected `P0` before `P1` before `P2`, dependency-safe within a priority, with no lower-priority capacity bypass; urgent containment was first reclassified as `P0`.
+- [ ] Priority was re-evaluated after scope, evidence, milestone-goal, incident-state, or dependency changes, and readback proves exactly one priority label remains.
 - [ ] Every actionable item has a deduplicated GitHub issue number/URL; no Kanban, Linear, repo-local task artifacts, chat TODOs, scheduler notes, or private queues are used as the tracker.
 - [ ] New projects have invoked `agent-identity-and-access` and have a documented agent identity/access status or a follow-up setup issue.
 - [ ] GitHub repository/issue access is verified; lack of access is `ISSUE_TRACKER_BLOCKED` and never triggers a Kanban/local-task fallback.
@@ -756,6 +777,8 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] QA reports include pass/fail/blocked status, failure details, screenshots, and linked bugs.
 - [ ] Bugs were searched for duplicates before creation and triaged on creation.
 - [ ] Before milestone completion, all linked open bugs were fixed, closed as invalid/obsolete/won't-fix with rationale, or explicitly deferred without compromising milestone acceptance.
+- [ ] Milestone completion required all assigned `P0` and `P1` issues to pass normal completion/evidence gates; remaining open `P2` issues were moved, not closed to zero the count.
+- [ ] The user confirmed the next milestone goal, rollover history/rationale was preserved, and receiving-milestone priorities were re-evaluated without retroactively changing the completed milestone.
 - [ ] Follow-up tasks exist for discovered gaps.
 
 ## Post-Round-3 approval convergence
