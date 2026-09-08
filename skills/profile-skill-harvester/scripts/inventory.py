@@ -244,6 +244,12 @@ def main() -> int:
             parser.error("--record requires --state")
         if errors:
             raise SystemExit("refusing to record an inventory with discovery errors")
+        if prior:
+            raise SystemExit(
+                "refusing full --record for established state; use merged-only "
+                "selective state advancement with verified remote-default merge "
+                "and rollout/adoption evidence"
+            )
         atomic_json_write(args.state.expanduser(), snapshot)
 
     json.dump(snapshot, fp=sys.stdout, indent=2, sort_keys=True)

@@ -79,22 +79,19 @@ def test_profile_skill_harvester_package_contract():
         "isolated worktree",
         "Complete packages move together",
         "Initial enrollment is a baseline",
-        "Advances external inventory state only after merge",
+        "Advances an observed digest only after verified remote-default merged publication",
     ):
         assert marker in skill or marker in "\n".join(evaluation["expectations"])
     assert SCRIPT.is_file()
 
 
 def test_harvester_dispositions_every_live_delta_before_rollout():
-    paths = [
-        SKILL_DIR / "SKILL.md",
-        SKILL_DIR / "EVAL.yaml",
-        SKILL_DIR / "references" / "controller-to-profile-rollout-boundaries.md",
-        SKILL_DIR / "references" / "sibling-rollout-drift-adaptations.md",
-        SKILL_DIR / "references" / "stale-baseline-version-gated-rollout.md",
-        SKILL_DIR / "references" / "transactional-profile-rollout.md",
-    ]
-    contract = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    paths = sorted(
+        path for path in SKILL_DIR.rglob("*")
+        if path.is_file() and path.suffix in {".md", ".yaml", ".yml", ".py"}
+    )
+    contracts = {path: path.read_text(encoding="utf-8").lower() for path in paths}
+    contract = "\n".join(contracts.values())
     for marker in (
         "every distinct",
         "regardless of version",
@@ -112,6 +109,77 @@ def test_harvester_dispositions_every_live_delta_before_rollout():
     assert "use semantic versions only to conservatively select" not in contract
     assert "preserve equal/newer live packages" not in contract
     assert not re.search(r"(?m)^\s*\d+\.\s+preserve and re-hash target-only files;\s*$", contract)
+    for path, text in contracts.items():
+        assert "preserve target-only files" not in text, path
+        assert "preserve target-only additions" not in text, path
+        assert "preserve every live source file" not in text, path
+        assert not re.search(r"standardiz\w*.{0,80}authoriz\w*.{0,40}(?:replacement|overwrite)", text), path
+        assert not re.search(r"compatible additive.{0,100}(?:replay|adaptation)", text), path
+        assert not re.search(r"target-only.{0,80}unless explicitly retired", text), path
+
+
+def test_inventory_record_refuses_unpublished_candidates_in_established_state(tmp_path):
+    repo = tmp_path / "repo"
+    profile = tmp_path / "profile"
+    source_package = _package(repo, "example", "canonical")
+    profile_package = _package(profile, "example", "live drift")
+    module = _module()
+    old_digest = module.hash_package(profile_package)[0]
+    state = tmp_path / "state.json"
+    state.write_text(
+        json.dumps({"initialized_at": "2026-01-01T00:00:00Z", "profiles": {"ned": {"example": {"digest": old_digest}}}}),
+        encoding="utf-8",
+    )
+    (profile_package / "SKILL.md").write_text(
+        "---\nname: example\ndescription: test\n---\n\n# example\n\nnew unpublished drift\n",
+        encoding="utf-8",
+    )
+
+    refused = subprocess.run(
+        [sys.executable, str(SCRIPT), "--repo", str(repo), "--profile", f"ned={profile}",
+         "--state", str(state), "--record"],
+        capture_output=True, text=True,
+    )
+    assert refused.returncode != 0
+    assert "refusing full --record for established state" in refused.stderr
+    assert json.loads(state.read_text(encoding="utf-8"))["profiles"]["ned"]["example"]["digest"] == old_digest
+
+    for child in source_package.iterdir():
+        (profile_package / child.name).write_bytes(child.read_bytes())
+    equal_bytes_still_refused = subprocess.run(
+        [sys.executable, str(SCRIPT), "--repo", str(repo), "--profile", f"ned={profile}",
+         "--state", str(state), "--record"],
+        capture_output=True, text=True,
+    )
+    assert equal_bytes_still_refused.returncode != 0
+    assert "refusing full --record for established state" in equal_bytes_still_refused.stderr
+    assert json.loads(state.read_text(encoding="utf-8"))["profiles"]["ned"]["example"]["digest"] == old_digest
+
+
+def test_inventory_rejected_disposition_does_not_baseline_candidate(tmp_path):
+    repo = tmp_path / "repo"
+    profile = tmp_path / "profile"
+    _package(repo, "example", "canonical")
+    profile_package = _package(profile, "example", "rejected live drift")
+    module = _module()
+    old_digest = "0" * 64
+    state = tmp_path / "state.json"
+    state.write_text(
+        json.dumps({
+            "initialized_at": "2026-01-01T00:00:00Z",
+            "profiles": {"ned": {"example": {"digest": old_digest}}},
+            "dispositions": {"ned/example": {"candidate_digest": module.hash_package(profile_package)[0], "status": "rejected"}},
+        }),
+        encoding="utf-8",
+    )
+
+    observed = subprocess.run(
+        [sys.executable, str(SCRIPT), "--repo", str(repo), "--profile", f"ned={profile}", "--state", str(state)],
+        capture_output=True, text=True, check=True,
+    )
+    candidate = json.loads(observed.stdout)["candidates"][0]
+    assert candidate["newly_observed"] is True
+    assert json.loads(state.read_text(encoding="utf-8"))["profiles"]["ned"]["example"]["digest"] == old_digest
 
 
 def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inventory():
@@ -137,8 +205,8 @@ def test_harvester_resumes_and_self_unblocks_existing_publication_before_new_inv
     ):
         assert marker in contract
 
-    release_index = contract.index("release_lock")
-    assert "every terminal path" in contract[release_index - 500 : release_index + 1000]
+    lock_safety_index = contract.index("## lock safety and pid reuse")
+    assert "every terminal path" in contract[lock_safety_index : lock_safety_index + 2000]
     evidence_index = contract.index("write_evidence_commit")
     final_review_index = contract.index("review_final_tree")
     guarded_merge_index = contract.index("guarded_merge")

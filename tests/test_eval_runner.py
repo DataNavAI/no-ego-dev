@@ -165,15 +165,15 @@ def test_discovers_eval_yaml_files(tmp_path):
 
 def test_real_eval_default_restricts_hermes_to_skills_toolset():
     default = inspect.signature(run_eval).parameters["hermes_command"].default
-    assert default == "hermes -t skills"
+    assert default == "hermes chat -t skills"
 
 
 def test_windows_oneshot_command_uses_windows_argument_quoting():
     prompt = 'literal & | < > "quoted" %PATH%'
 
-    command = _build_oneshot_command("hermes -t skills", prompt, windows=True)
+    command = _build_oneshot_command("hermes chat -t skills", prompt, windows=True)
 
-    assert command == ["hermes", "-t", "skills", "-z", prompt]
+    assert command == ["hermes", "chat", "-t", "skills", "-q", prompt]
 
 
 def test_loads_every_tracked_repository_eval():

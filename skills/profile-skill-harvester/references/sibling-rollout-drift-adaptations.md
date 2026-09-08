@@ -1,6 +1,6 @@
 # Sibling rollout with same-path live drift
 
-Use this procedure when a reviewed canonical skill package must be propagated to sibling profiles and a target has changed since the rollout baseline. This is a rollout-integration case, not permission for newest-file-wins replacement.
+Use this procedure when a reviewed canonical skill package must be propagated to sibling profiles and a target has changed since the rollout baseline. This is a rollout-integration case, not permission for newest-file-wins replacement. A target-only path is not automatically profile-local: every target delta still requires one evidence-backed ledger disposition before mutation.
 
 ## 1. Freeze three inputs
 
@@ -26,19 +26,16 @@ Run one global fail-closed pass across every target. Classify each path as:
 
 Do not start copying after the first clean target. A later target may contain an unharvested change that requires integration or blocks the transaction.
 
-For every classified path, regardless of version or prior baseline state, record exactly one evidence-backed disposition: `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`. Path classification is observation, not overwrite or preservation authority.
-
 ## 3. Resolve same-path live drift
 
 For each drifted file, inspect the semantic diff against both baseline and approved source.
 
 - **Superseded:** replace only when the approved policy explicitly supersedes the live behavior.
-- **Compatible reusable addition:** stop this rollout generation and re-harvest it into a newly validated, exact-SHA-reviewed, merged canonical generation before overwrite.
-- **Contradictory or unclear:** disposition it `unresolved`, block that package/target with state unadvanced, and do not guess.
-- **Product-local:** retain it only in the owning profile after an explicit `product-local` disposition, reason, and adaptation digest.
-- **Unsafe:** block that package/target with state unadvanced; standardization authority and backups do not waive safety.
+- **Reusable compatible additive:** stop rollout and re-harvest the addition into a newly reviewed and merged canonical generation before retrying the target.
+- **Contradictory or unclear:** block that package/target; do not guess.
+- **Product-local:** retain it only in the owning profile and label the adaptation as local.
 
-When adapting a `SKILL.md`, preserve the approved universal policy first, then reapply the scoped live addition. Remove stale contradictory clauses rather than leaving both policies in different sections. Bump the adapted package version when practical. Update companion support files when their old wording would contradict the adapted skill.
+When adapting a `SKILL.md`, start from the approved universal policy and reapply only a declared, reasoned, hash-verified `product-local` delta. Remove stale contradictory clauses rather than leaving both policies in different sections. Bump the adapted package version when practical. Update companion support files when their old wording would contradict the adapted skill.
 
 Never claim an adapted package is byte-identical to canonical source.
 
@@ -64,7 +61,7 @@ Before the first mutation, back up every complete target package. For each targe
 2. overlay approved canonical files;
 3. remove baseline-canonical paths deliberately removed by source;
 4. apply recorded adaptations;
-5. preserve only target-only additions explicitly dispositioned `product-local`;
+5. retain only target additions explicitly dispositioned `product-local`, with reasons and manifest hashes;
 6. verify expected digests in the temporary directory;
 7. atomically rename target to rollback and temporary to target;
 8. restore rollback on swap failure; delete it only after successful verification.

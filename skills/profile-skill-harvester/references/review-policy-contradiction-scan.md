@@ -20,12 +20,20 @@ Search semantic families rather than one exact spelling. For an “omit reversib
 
 ## Regression-test pattern
 
-1. Add a negative test that recursively reads the complete package and rejects every known contradictory phrase or output field.
+1. Add a negative test that recursively reads the complete package and rejects every known contradictory phrase or output field. The scanned policy surface must include Markdown plus every `EVAL*.yaml`, not only `SKILL.md`; eval prompts and expectations are executable policy.
 2. Add positive assertions for the canonical rule, artifact path, ownership boundary, and fail-closed receipt.
 3. Run the focused test and capture the expected failure before editing policy text.
 4. Patch every surfaced contradiction, including eval prompts and nested references.
 5. Re-run focused tests, then the repository’s full Python/Node/eval/package validation.
 6. Repeat a raw recursive search after tests pass; tests are a guardrail, not the inventory itself.
+
+For semantic action classifiers, attach negation to the prohibited action rather than exempting an entire sentence because it contains a generic word such as `no`, `unsafe`, `never`, `without`, `instead of`, or a permissive modal. Split independent clauses and inspect a bounded prefix immediately before each action occurrence. Treat only action-attached grammatical forms as safe, using a narrow allowlist of filler words or an exact safe sentence already asserted by deterministic tests. Do not accept an arbitrary number of intervening words: unrelated-prefix negation, conditional destructive guidance, and passive permission must all fail. Match every inflection of each prohibited verb without broad substring matches, while excluding unrelated adjectives. Add paired mutations for every exemption so safe prohibitions pass while misleading prefixes, conditions, passive constructions, and direct destructive guidance fail.
+
+When the policy defines lifecycle or applicability branches, scan **related packages together**, not only the package being edited. A canonical MVP branch that says analytics or broad regression controls are optional can still be contradicted by an MVP-planning package or its eval that mandates them universally. Add a cross-package invariant test over Markdown and every `EVAL*.yaml`, assert the stage-selection markers, and reject unconditional mandate phrase families. Preserve essential CUJ validation and named learning evidence while scoping structured analytics, cohort reporting, and broader regression controls to an explicit product contract or growing-product stage.
+
+Exact forbidden-phrase tests also match a canonical document that quotes obsolete wording inside a negation. Do not teach the scanner to understand that self-created exception. Rewrite canonical prose without reproducing the forbidden bytes—for example, `review opportunities have no fixed round cap`—and retain the exact negative regression.
+
+When a safe fixture sentence exists only to state that no executable target was supplied, prefer non-action wording such as `no keeper control target` over action-oriented prose. This reduces classifier exceptions and keeps simulation fixtures semantically distinct from production guidance. Do not weaken the scanner to accommodate awkward fixture prose; rewrite the fixture and retain the unsafe mutation.
 
 Prefer exact forbidden phrases for high-signal regressions, supplemented by narrow case-insensitive patterns. Avoid banning generic words like `low` across an entire library because valid phrases such as low-risk or low-latency can produce false positives.
 

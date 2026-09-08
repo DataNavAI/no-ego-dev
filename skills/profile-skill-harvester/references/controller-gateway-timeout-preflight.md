@@ -18,12 +18,25 @@ Persisted YAML alone is not runtime proof because the gateway snapshots timeout 
 
 ## Fail-closed restart boundary
 
-If the controller config must change or runtime adoption is stale/ambiguous:
+If the controller config must change or runtime adoption is stale/ambiguous, separate **read-only reconciliation** from **generation-sensitive work**.
+
+Read-only reconciliation remains required before stopping when an earlier transaction exists. It may:
+
+- refresh the named PR and continuation coordinates from the remote authority;
+- verify whether the PR merged and whether that merge is reachable from the remote default branch;
+- compare the final PR-head tree with the merge tree;
+- inspect exact post-merge push CI for the merge SHA;
+- derive the complete changed-skill package set from immutable `BASE_SHA..MERGE_SHA` coordinates;
+- supersede stale continuation prose with the verified publication and remaining rollout/state gates.
+
+This permission is deliberately narrow: it authorizes no child dispatch, candidate-byte change, review, merge, state advancement, target backup, or profile mutation. A restart boundary must not leave a marker claiming `pending` when the remote PR is already merged, but it also must not be used as an excuse to begin rollout from the stale process generation.
+
+Then:
 
 - persist the corrected config;
 - do not dispatch another child;
-- do not continue exact-SHA review, merge, or rollout in the same request;
-- persist durable continuation coordinates: isolated worktree, branch, PR, exact candidate SHA, validation evidence, live-source digests, and remaining gates;
+- do not continue exact-SHA review, merge, rollout, new inventory, or other mutation in the same request;
+- persist durable continuation coordinates: isolated worktree, branch, PR/final head, merge SHA and reachability when applicable, exact post-merge CI, complete changed-package set, validation evidence, live-source digests already known, target list, mutation/state-advancement flags, and remaining gates;
 - stop and return control without dispatching more work;
 - allow a user/admin to issue the supported messaging `/restart` command, which gracefully drains active runs before restarting and confirms when the gateway returns, or restart from a genuinely external shell/supervisor;
 - never have the agent invoke a terminal lifecycle command against the gateway that owns its current request;

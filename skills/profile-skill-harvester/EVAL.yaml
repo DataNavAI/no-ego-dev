@@ -28,13 +28,18 @@ expectations:
   - "Treats a missing state file as initial enrollment baseline rather than a historical bulk import, and excludes ambiguous bundled/global profile-only skills by default."
   - "Validates frontmatter, eval YAML, fixtures, support scripts, repository tests, git diff, and staged secret safety before publishing."
   - "Blocks only the unresolved skill when evidence cannot resolve a same-scope contradiction while allowing independent safe skills to proceed."
-  - "Advances external inventory state only after merge or an explicit stable disposition."
+  - "Advances an observed digest only after verified remote-default merged publication and applicable rollout/read-back evidence; records rejected or blocked candidate digests separately without baselining them or clearing newly_observed."
   - "Uses resume-before-inventory: reconciles the existing PR, local-ahead worktree, review receipt, and exact failed-job log before discovering new work."
   - "Classifies the manual-test-gate as an expected evidence boundary, exercises the exact approved code candidate, creates a separate evidence-only child, and invalidates stale approval if candidate bytes change."
   - "Requires fresh independent review of the complete final evidence-child tree, explicitly rejects code-only approval as approval of later evidence bytes, and binds the merge guard to that reviewed final PR head."
   - "For this non-mutating simulation, emits exact production command shapes and evidence gates for push/check wait, exact-head guarded merge of the independently reviewed final tree, applicable exact default-branch CI, and authorized transactional rollout without fabricating success."
   - "Uses bounded retry only for a proven external transient and does not loop, repeatedly rerun, or ask the user to perform routine evidence/CI repair within the harvester's authority."
   - "Every terminal-path matrix row includes release_owned_lock then verify_lock_absent; production release rereads exact owner identity privately, and finite lease TTL is crash containment rather than normal cleanup."
+  - "Acquires the verified packaged finite-lease helper before read-only publication reconciliation, never substitutes an inline keeper, and preserves recoverable ownership across malformed or interrupted lock cleanup."
+  - "Discovers open and recently closed automation PRs, branches, worktrees, and continuation chains broadly; classifies unrelated work without taking ownership and refreshes mergeability plus dirty-generation evidence after default-branch movement."
+  - "Rejects null scalar mapping blank-entry and dual-alias setup or teardown command fields consistently in inventory validation and the production eval loader."
+  - "Treats a stale controller runtime as a restart boundary rather than publication: bounded reconciliation may persist exact remaining gates, but review merge rollout state advancement and new inventory wait for fresh runtime proof."
+  - "Derives the complete rollout package set from immutable base-to-merge coordinates, exports rollout bytes only from verified remote default, and never treats candidate or open-PR bytes as canonical."
 setupCommands: []
 teardownCommands: []
 parameters:

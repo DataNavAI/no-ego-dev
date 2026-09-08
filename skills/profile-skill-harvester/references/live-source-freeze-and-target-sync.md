@@ -19,7 +19,7 @@ This catches the common race where a live agent adds a reference or updates `SKI
 
 Canonical package requirements still apply when the live source omitted distribution artifacts.
 
-- Preserve every live source file.
+- Treat every live-source file as a semantic synthesis input. Record every behavior/support-file delta in the disposition ledger; adopt or scope reusable content canonically, retain only declared `product-local` adaptations, and block `unsafe` or `unresolved` deltas.
 - Add the smallest required `EVAL.yaml`, `evaldata/` fixture, frontmatter correction, or package metadata needed by the canonical repository.
 - Do not invent new behavioral guidance merely to satisfy structure.
 - State each canonical-only addition in the PR and validate it independently.
@@ -56,4 +56,4 @@ Before replacing sibling-profile packages:
 9. Advance external inventory state only after the applicable final evidence: post-smoke bytes for skill hot-swaps, or post-restart generation/readiness/provider/hash evidence for process-loaded changes.
 10. Release the exact harvest lock on every success or failure exit; a stale lock must not block the scheduler indefinitely.
 
-When a target has a materially different same-name package, classify it before replacement. An explicit request to standardize siblings on the harvested canonical package can authorize exact replacement, but preserve a backup and report that target-specific extras were superseded. Without that authority, consolidate compatible context or block the one conflicting package rather than silently deleting it.
+When a target has a materially different same-name package, disposition every behavior and support-file delta before replacement. User authority to standardize does not bypass the ledger: reusable additions must be re-harvested into a reviewed and merged canonical generation; only declared, reasoned, hash-verified `product-local` adaptations may survive; `unsafe` or `unresolved` drift blocks that package/profile with state unadvanced. Back up the complete target before any authorized mutation and report every superseded delta explicitly.

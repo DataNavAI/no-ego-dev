@@ -4,31 +4,42 @@ Use this before editing or freezing any canonical skill candidate that will late
 
 ## Why this gate exists
 
-The remote-default package can be older than live profiles even when the requested change appears source-local. Profiles may also share one frontmatter version while carrying different `SKILL.md` bytes. Building from stale canonical text and discovering those variants only after exact review wastes the review generation and risks downgrading learned behavior.
+Version and inventory state are metadata, not semantic authority. A lower-version or previously baselined profile can contain the best reusable instruction, fixture, script, template, or safety control. Inspecting only newer/newly-observed variants silently loses learned behavior; preserving every target-only file as “local” merely freezes divergence.
 
 ## Gate sequence
 
-1. Inventory the complete canonical package and every authorized live sibling package before the first behavior edit.
-2. Compare complete-package digests and per-file hashes; never use frontmatter version equality as package equality.
-3. Group identical files across profiles. Separate:
-   - reusable common deltas shared by profiles;
-   - profile-local support files or sections;
-   - contradictory same-context behavior;
-   - generated/runtime files that must be excluded.
-4. If any live profile version is higher than source, reconstruct the newest compatible common predecessor first. Apply the requested new behavior on top of that predecessor and choose a version strictly newer than every live variant.
-5. Add a regression that proves the requested behavior **and** retains reusable predecessor controls. Run it red before importing the predecessor delta, then green after consolidation.
-6. Only after this reconciliation may the first staged-diff/exact-SHA review generation be frozen.
+1. Resolve the canonical **generation** before inventory. Fetch the remote default branch, record its exact SHA, and compare the target package's version and digest across every plausible local checkout plus live profiles. A remembered repository path, a clean-looking checkout, or a higher local version is not authority when that checkout is on a stale/diverged branch. Use a fresh isolated worktree rooted at the fetched `origin/<default>` SHA. If editing began from an older generation, abandon that candidate and reapply the behavior change to the latest remote-default package; never sync the stale candidate over newer live copies.
+2. Inventory the complete canonical package, active global/default copy, and every authorized sibling package before the first behavior edit.
+3. Group identical complete-package digests, then inspect every distinct digest regardless of lower/equal/higher/missing version or prior baseline state.
+4. Compare every package file—not only `SKILL.md`—and build a semantic disposition ledger. For each behavior/support-file delta record origin, evidence, applicability, and exactly one disposition:
+   - `adopted`: reusable behavior enters canonical;
+   - `scoped`: compatible behavior enters canonical under an explicit lifecycle/use-case boundary;
+   - `superseded`: evidence proves the canonical successor intentionally replaces it;
+   - `product-local`: it belongs only to the owning profile and requires a declared adaptation with hashes/reason;
+   - `unsafe`: it may not deploy;
+   - `unresolved`: same-scope evidence cannot select a safe rule yet.
+5. Treat state as scheduling/deduplication only. Baselined divergence still participates in semantic synthesis every generation.
+6. Synthesize the most complete compatible predecessor from the union of evidence; never select bytes by highest version, newest mtime, first path, or source-profile identity.
+7. Add regressions that prove requested behavior and retention of every adopted/scoped predecessor control. Include a lower-version unique-control case and a previously-baselined divergence case.
+8. Freeze an exact-SHA candidate only after every distinct delta has a disposition. Unsafe/unresolved conflicts block only the affected package; do not baseline or overwrite it.
 
-Any profile package that changes after this gate is ordinary live drift: invalidate affected evidence, reclassify, and follow the sibling-rollout drift procedure.
+## Drift found during rollout
 
-## Preserving profile-local `SKILL.md` additions
+Re-read every target immediately before mutation. If a reusable delta is absent from the merged canonical generation, stop that package’s rollout and re-harvest it into a new validated, independently reviewed, merged generation. User standardization authority, matching/newer versions, and backups cannot bypass semantic disposition, safety, canonical publication, or immutable-source gates.
 
-When one common live package can serve as the baseline and sibling `SKILL.md` files contain compatible local additions, use a deterministic three-way merge:
+Only `product-local` deltas may become a three-way adaptation:
 
-- base: common live predecessor;
-- ours: approved canonical successor;
-- theirs: target's immediately-pre-rollout live file.
+- base: immutable canonical package at the target’s last verified deployment ancestor;
+- ours: package exported from the verified new merge commit;
+- theirs: target package captured immediately before mutation.
 
-Dry-run every target before mutation. Resolve only predeclared, evidence-backed conflicts; otherwise block that target. Build adapted bytes outside profile directories, retain an adaptation map and digests, back up all targets, then swap transactionally. Canonical EVALs/scripts/fixtures may overlay exactly while an adapted `SKILL.md` is reported separately from exact canonical parity.
+Dry-run all targets globally, build adaptations outside profile directories, record adaptation maps and digests, back up complete packages, and swap transactionally. Never call adapted bytes canonical-identical.
 
-Do not call a merged profile byte-identical to canonical. Verify canonical markers, retained local markers, target-only file hashes, package references, and a fresh-process explicit skill load.
+## Convergence closure
+
+Canonical publication alone is incomplete. Apply the latest verified canonical package set to every nonblocked enrolled profile—including the source profile and equal-version targets. Require one of:
+
+- exact canonical package bytes; or
+- a declared, hash-verified `product-local` adaptation.
+
+Then prove fresh-process loading and re-hash after adoption. Advance a profile/skill digest only after verified merge, successful rollout/read-back, and convergence proof. Report blocked profiles by name and leave their prior state unadvanced.

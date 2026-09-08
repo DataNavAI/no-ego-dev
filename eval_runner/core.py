@@ -1040,7 +1040,7 @@ def _build_oneshot_command(
     base_args = _split_windows_command_line(base_command) if use_windows_parsing else shlex.split(base_command)
     if not base_args:
         raise ValueError("oneshot command must not be empty")
-    return [*base_args, "-z", prompt]
+    return [*base_args, "-q", prompt]
 
 
 def _judge_with_hermes(
@@ -1129,7 +1129,7 @@ def _isolated_runtime_env(run_profile: Path) -> dict[str, str]:
 def run_eval(
     eval_path: str | Path,
     output_root: str | Path = ".eval-runs",
-    hermes_command: str = "hermes -t skills",
+    hermes_command: str = "hermes chat -t skills",
     judge_command: str | None = None,
 ) -> EvalResult:
     if not hermes_command or not hermes_command.strip():

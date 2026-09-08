@@ -17,7 +17,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--markdown", action="store_true", help="Also generate a Markdown report")
     parser.add_argument(
         "--hermes-command",
-        default="hermes -t skills",
+        default="hermes chat -t skills",
         help="Hermes executable/command to invoke (default restricts evals to the skills toolset)",
     )
     parser.add_argument(

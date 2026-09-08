@@ -1,113 +1,95 @@
-# Self-unblocking publication state machine
+# Bounded Self-Unblocking Publication
 
-Use this whenever a harvest finds an existing automation PR, continuation marker, local-ahead worktree, failed required check, or reviewed candidate that has not reached verified default-branch publication. This continuation has priority over new discovery.
+Use this when a scheduled harvest encounters an existing automation PR, failed required check, local-ahead worktree, stale review/evidence receipt, or orphaned lock keeper.
 
-## Core rule: resume-before-inventory
+## Resume existing PR before new inventory
 
-An unfinished existing PR is a first-class durable queue item. Before starting new inventory or producing another candidate:
+Treat unfinished publication as a durable continuation queue. Before scanning for new packages:
 
-1. Fetch the remote default branch and the existing feature branch.
-2. Reconcile the continuation marker, local worktree HEAD, remote PR head, exact review receipt, CI runs, and merge state.
-3. Preserve local-ahead commits and independently useful review findings. Never reset, force away, or silently abandon unpublished candidate bytes.
-4. Resume from the first incomplete state below. Do not repeat completed expensive stages unless candidate bytes, parentage, evidence bytes, or required external state changed.
-5. Start new inventory only after the existing PR is merged, deliberately closed with a stable reason, or reduced to independently blocked packages while safe packages continue.
+1. enumerate open PRs, remote automation branches, registered worktrees, continuation markers, and review/evidence receipts; do not filter only on one legacy prefix such as `automation/skill-harvest-*`, because a renamed harvester branch may own the active publication;
+2. enumerate marker families such as `continuation*.json`, not only a canonical `continuation.json`; order timestamped markers, follow `supersedes` links, and treat the newest coherent chain as historical evidence until live state confirms it;
+3. reconcile each matching PR's remote head, local worktree, continuation marker, and current default branch;
+4. treat a closed-unmerged PR as historical publication state, not automatic terminality, when its automation branch, local-ahead commits, dirty worktree, review/evidence receipts, or continuation marker still preserve unpublished candidate bytes. Record the live `CLOSED` state immediately, keep those bytes untouched, and after generation-sensitive preflights clear choose one evidence-backed path: reopen the same PR when GitHub permits and its lineage remains coherent, or continue on one explicitly superseding automation PR. Never create duplicate publication for the same candidate set or describe a closed PR as still open;
+5. preserve local-ahead commits unless proven disposable;
+6. if an isolated worktree is dirty, preserve all uncommitted bytes and freshly recompute its exact path, HEAD, branch/PR coordinates, modified-path set, binary-diff SHA-256, and diff byte size during every reconciliation. Do not reuse an older marker's dirty-path list or digest merely because `HEAD` and the remote PR head are unchanged; interrupted work or another authorized actor may have changed the uncommitted generation;
+7. do not clean, reset, commit, or selectively copy dirty bytes during a read-only controller-restart boundary;
+8. inspect the exact failed-job log rather than stopping at a red summary;
+9. bind every test, review, evidence, push, and merge claim to immutable SHAs.
 
-A report that merely names the blocker is not a successful harvest when the job has authority and tools to repair it.
+A dirty worktree is continuation evidence, not authorization to publish. After the runtime or authorization boundary clears, resume from those preserved bytes, rerun validation, freeze a clean commit, and obtain fresh exact-SHA review before evidence or merge.
 
-## Durable states and transitions
+## Failure classification
 
-Persist the exact state outside the repository after every transition. Use these state names verbatim so the next run can resume deterministically:
+- **Expected evidence boundary:** when `manual-test-gate` requires proof, exercise the exact approved code candidate, then create a separate evidence-only child commit.
+- **Candidate defect:** add a failing regression, fix the candidate, rerun affected/full validation, and obtain fresh exact-SHA review.
+- **External transient:** retry only the failed job once; never loop all checks.
+- **Independent unsafe package:** omit or stably reject that package while allowing safe packages to continue.
+- **Irreducible authorization or user decision:** persist exact continuation coordinates and stop without claiming publication.
 
-1. `resume_existing_pr`
-   - Verify repository, PR number, worktree, local HEAD, remote head, base SHA, and changed package set.
-   - If the local worktree is ahead of the remote PR, validate and publish that integrated head rather than inspecting only the stale remote head.
-2. `classify_failed_check`
-   - Read the exact failed job log immediately.
-   - Classify it as: expected evidence gate, candidate defect, external transient, stale-base conflict, unavailable authorization/infrastructure, or unrelated failing default-branch condition.
-3. `repair_candidate`
-   - For a candidate defect, use TDD, narrow or repair only the affected package, run focused and full validation, freeze a new code SHA, and obtain fresh exact-SHA approval.
-   - Preserve safe independent packages when one package is unexercisable or unsafe.
-4. `write_evidence_commit`
-   - When `manual-test-gate` requires a separate evidence-only child, exercise the exact approved code commit, write `.github/manual-test-result.json` with `candidate_sha` equal to that code commit, verify it with the repository script, and commit only that evidence file.
-   - Never ask a user to create routine evidence that the autonomous harvest can generate from its own completed checks.
-5. `review_final_tree`
-   - Obtain independent approval bound to the complete final PR head after the evidence-only child exists. Code-only approval does not approve later evidence bytes, even when the evidence names the approved code parent.
-   - Verify the final review receipt names the exact evidence-child SHA, its parent is the exercised code candidate, and the evidence file is the only child change. Any later byte or parentage change invalidates this approval.
-6. `guarded_merge`
-   - Push without overwriting concurrent remote work, wait for required checks, and merge directly with `gh pr merge ... --match-head-commit <verified-pr-head>`.
-   - The guarded SHA must equal the independently approved complete final-tree SHA, not the earlier code-only candidate.
-   - Do not arm unguarded auto-merge from an external review verdict.
-7. `post_merge_ci`
-   - Fetch the remote default branch, prove the merge commit is reachable, discover workflows applicable to that exact SHA, and wait for their terminal results.
-   - A broken exact default-branch run starts bounded remediation; it is not a successful publication report.
-8. `rollout`
-   - Export packages from the verified merge commit, not a mutable checkout. Follow the transactional sibling-rollout contract and verify each target independently.
-9. `release_lock`
-   - Release the exact PID/token-owned lock and prove both keeper exit and lock absence on every terminal path: success, no-change, blocked package, failed check, timeout reserve, exception, cancellation, or external-action boundary.
+Any candidate-byte change invalidates the previous approval and manual-test evidence. A manual-evidence child does not change the reviewed code candidate, but code-only approval does not approve the later evidence bytes: obtain fresh independent exact-SHA approval of the complete final evidence-child tree, then require the repository's checks and bind guarded merge to that reviewed final head.
 
-## Failed-check decision table
+## Publication state machine
 
-| Classification | Autonomous action |
-|---|---|
-| Expected evidence gate | Complete exact-code tests/review, create and verify the evidence-only child, obtain fresh independent approval of the complete final PR head, push/wait checks, and continue only with that reviewed head. |
-| Candidate defect | Fix or narrow with TDD, revalidate, invalidate stale approvals, obtain fresh exact-SHA approval, then continue. |
-| External transient before candidate code ran | Rerun only the failed job once as a bounded retry; require the same SHA to pass. |
-| Default branch advanced | Rebase/integrate without discarding either side, regenerate stale evidence, revalidate, and re-review the new SHA. |
-| One package has an impossible fixture or unsafe behavior | Defer that package with a stable reason; publish independent safe packages. |
-| Missing user authorization, destructive ambiguity, or unavailable external system | Persist exact coordinates and the smallest safe user action, release the lock, and resume-before-inventory on the next run. |
+Use explicit durable states:
 
-A retry is bounded retry, not an infinite loop. One transient rerun is allowed per unchanged SHA/failure class. A repeated failure must be diagnosed or repaired, never repeatedly rerun.
-
-## Lock lease and cleanup
-
-Never use an immortal detached `while True` keeper. Every lock owner must have a lease TTL shorter than the scheduler interval and long enough for the declared maximum run. The owner record must include PID, random token, acquisition time, `expires_at`, controller/session identity, worktree, branch, and PR when known.
-
-Use the packaged helper rather than inventing a new inline keeper:
-
-```bash
-python3 scripts/lease_lock.py hold \
-  --lock-dir ~/.hermes/state/profile-skill-harvester/harvest.lock \
-  --lease-seconds 7200 \
-  --session-id <scheduled-run-id> \
-  --controller-profile default \
-  --provider openai-codex \
-  --model gpt-5.6-sol
+```text
+resume_existing_pr
+classify_failed_check
+repair_candidate
+write_evidence_commit
+review_final_tree
+guarded_merge
+post_merge_ci
+rollout
+release_lock
 ```
 
-Run `hold` as a managed background process and retain the emitted PID/token. Release it explicitly on every terminal path:
+The normal path is:
 
-```bash
-python3 scripts/lease_lock.py release \
-  --lock-dir ~/.hermes/state/profile-skill-harvester/harvest.lock \
-  --pid <exact-pid> \
-  --token <exact-token>
-```
+1. freeze and validate the code candidate;
+2. obtain independent review of that exact SHA;
+3. create an evidence-only child when required;
+4. push and wait for required checks;
+5. merge with an exact-head guard;
+6. verify applicable exact default-branch CI;
+7. roll out only immutable merged bytes;
+8. advance state selectively;
+9. release and verify the lock.
 
-- The active run may heartbeat the lease only while it still owns productive work.
-- The keeper must self-terminate and token-safely remove its own lock when the lease TTL expires.
-- Normal completion must explicitly enter `release_lock`; TTL is crash containment, not normal cleanup.
-- A live keeper accepts release only through its token-authenticated loopback control channel. Never send a process signal based only on a PID from owner metadata; PID reuse could terminate unrelated work.
-- A fresh run may reclaim a dead or expired owner's lock after matching PID/token metadata and proving no productive child, review, publication, or rollout remains. Reclaim the lock only; do not signal an unverified live PID.
-- Never delete the lock directory while a live owner remains.
+“Blocked before publication” is not terminal when the remaining repair is within the harvester's existing GitHub, test, review, file, or rollout authority.
 
-## Budget discipline
+## Lock safety and PID reuse
 
-Reserve enough execution budget for evidence generation, one review, CI disposition, guarded merge, post-merge proof, state advancement, and `release_lock` before starting another eval or candidate generation. If the reserve is threatened:
+A live PID is not proof of productive lock ownership. Correlate owner metadata with the scheduled transcript, session, worktree, PR, age, command ancestry, and current continuation state.
 
-1. stop creating new work;
-2. persist the current state name and immutable coordinates;
-3. terminate/disposition background work;
-4. execute and verify `release_lock`;
-5. let the next scheduled run perform resume-before-inventory.
+Use a finite lease shorter than the scheduler interval. Normal completion must release explicitly; lease TTL is crash containment only.
 
-The next run must continue the existing PR before scanning for new work. This makes interruption resumable without requiring routine human intervention.
+**Never signal a PID from owner metadata.** PIDs can be reused. For a live keeper, require an authenticated same-user control mechanism, such as a token-authenticated loopback control channel through which the keeper self-terminates. A dead or expired owner may have only its exact token-owned lock reclaimed; do not signal an unverified live PID.
+
+Every terminal path—success, no change, validation failure, repeated CI failure, rollout failure, timeout/budget cutoff, cancellation/exception, or external authorization—must:
+
+1. disposition background work;
+2. invoke exact-owner release;
+3. verify keeper disposition;
+4. verify lock absence;
+5. persist continuation coordinates if work remains.
+
+## Eval design
+
+If a behavioral eval supplies no authenticated disposable GitHub target, real PR coordinates, or signalable keeper process, it must not demand fabricated side effects. Make it an explicit deterministic simulation that requires:
+
+- ordered state transitions;
+- exact production command shapes with placeholders;
+- evidence required at each gate;
+- a cleanup matrix for every terminal path;
+- a statement that production runs with verified coordinates must execute the actions.
+
+This preserves behavioral coverage without teaching the model to invent merges, CI, or process cleanup.
 
 ## Completion proof
 
-A self-unblocked harvest is complete only when one of these is verified:
+A run is complete only with one of:
 
-- merged default-branch SHA plus applicable exact-SHA CI, selective state advancement, sibling rollout receipts, and lock absence;
-- no-change inventory plus target reconciliation and lock absence;
-- a stable irreducible external/user boundary with a verified continuation marker and lock absence.
-
-“Blocked before publication” is not terminal when the remaining action is within the harvester's existing GitHub, file, test, review, or rollout authority.
+- merged default-branch SHA, applicable exact-SHA CI, selective state advancement, rollout receipts, and lock absence;
+- verified no-change reconciliation and lock absence;
+- stable irreducible boundary with an actionable continuation marker and lock absence.
