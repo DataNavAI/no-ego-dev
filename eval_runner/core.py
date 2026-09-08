@@ -1074,13 +1074,14 @@ Return only JSON with this exact schema:
         env=env,
         timeout=1800,
     )
-    judge_output = proc.stdout + proc.stderr
+    judge_output = proc.stdout
+    judge_diagnostics = proc.stdout + proc.stderr
     if proc.returncode != 0:
         reason = f"Hermes judge command failed with exit code {proc.returncode}"
-        excerpt = _safe_error_excerpt(judge_output)
+        excerpt = _safe_error_excerpt(judge_diagnostics)
         if excerpt:
             reason += f": {excerpt}"
-        return False, [reason], judge_output, True
+        return False, [reason], judge_diagnostics, True
     try:
         data = _extract_json_object(judge_output)
         expected_keys = {"passed", "failure_reasons"}
@@ -1101,8 +1102,8 @@ Return only JSON with this exact schema:
         if not passed and not raw_reasons:
             raise ValueError("Judge result must explain a failed verdict")
     except (ValueError, json.JSONDecodeError) as exc:
-        return False, [str(exc)], judge_output, True
-    return passed, raw_reasons, judge_output, False
+        return False, [str(exc)], judge_diagnostics, True
+    return passed, raw_reasons, judge_diagnostics, False
 
 
 def _isolated_runtime_env(run_profile: Path) -> dict[str, str]:
@@ -1221,8 +1222,8 @@ def run_eval(
         # The historical shorthand is `hermes -z PROMPT`.
         command = _build_oneshot_command(hermes_command, agent_prompt)
         proc = _run_oneshot_command(command, cwd=agent_cwd, env=env, timeout=1800)
-        output_parts.append(proc.stdout + proc.stderr)
         if proc.returncode != 0:
+            output_parts.append(proc.stdout + proc.stderr)
             reason = f"Hermes command failed with exit code {proc.returncode}"
             excerpt = _safe_error_excerpt(proc.stdout + proc.stderr)
             if excerpt:
@@ -1231,9 +1232,12 @@ def run_eval(
             passed = False
             infrastructure_failure = True
         else:
+            output_parts.append(proc.stdout)
             passed, expectation_failures, judge_output, judge_infrastructure_failure = _judge_with_hermes(
                 _redact_credentials("\n".join(output_parts)), spec, judge_command, env
             )
+            if proc.stderr:
+                output_parts.append("\n--- AGENT STDERR ---\n" + proc.stderr)
             output_parts.append("\n--- JUDGE OUTPUT ---\n" + judge_output)
             failure_reasons.extend(expectation_failures)
             infrastructure_failure = judge_infrastructure_failure

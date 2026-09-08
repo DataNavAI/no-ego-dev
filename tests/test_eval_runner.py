@@ -71,6 +71,16 @@ def _judge_output_command(tmp_path: Path, output: str, *, exit_code: int = 0) ->
     return f"{sys.executable} {script}"
 
 
+def _stdout_with_success_warning_command(tmp_path: Path, stdout: str) -> str:
+    script = tmp_path / f"stdout_with_warning_{abs(hash(stdout))}.py"
+    script.write_text(
+        "import sys\n"
+        f"print({stdout!r})\n"
+        "print('runtime warning: diagnostic only', file=sys.stderr)\n"
+    )
+    return f"{sys.executable} {script}"
+
+
 def _recording_hermes_command(tmp_path: Path) -> tuple[str, Path]:
     script = tmp_path / "recording_hermes.py"
     record_path = tmp_path / "hermes-prompts.json"
@@ -383,6 +393,45 @@ def test_run_eval_rejects_invalid_judge_result_schema_as_infrastructure_error(tm
     assert result.passed is False
     assert result.infrastructure_failure is True
     assert "passed must be a boolean" in result.failure_reasons[0]
+
+
+def test_run_eval_parses_successful_judge_stdout_without_stderr_diagnostics(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text("prompt: Say done\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_judge_output_command(tmp_path, "done appears"),
+        judge_command=_stdout_with_success_warning_command(
+            tmp_path, json.dumps({"passed": True, "failure_reasons": []})
+        ),
+    )
+
+    assert result.passed is True
+    assert result.infrastructure_failure is False
+    assert "runtime warning: diagnostic only" in result.output
+
+
+def test_run_eval_does_not_send_successful_agent_stderr_to_judge(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text("prompt: Say done\nexpectations: [done appears]\n")
+    judge_command, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_stdout_with_success_warning_command(tmp_path, "done appears"),
+        judge_command=judge_command,
+    )
+
+    assert result.passed is True
+    assert "runtime warning: diagnostic only" not in judge_prompt_path.read_text()
+    assert "runtime warning: diagnostic only" in result.output
 
 
 @pytest.mark.parametrize(
