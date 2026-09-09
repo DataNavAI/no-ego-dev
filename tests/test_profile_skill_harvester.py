@@ -117,6 +117,9 @@ def test_harvester_dispositions_every_live_delta_before_rollout():
         assert "owner override for rollout" not in text, path
         assert "hash target-only files as profile-local additions" not in text, path
         assert "without deleting target-only files" not in text, path
+        assert "target-only files preserved" not in text, path
+        assert "preserved target-only file counts" not in text, path
+        assert "and known profile-policy markers" not in text, path
         assert not re.search(r"standardiz\w*.{0,80}authoriz\w*.{0,40}(?:replacement|overwrite)", text), path
         assert not re.search(r"compatible additive.{0,100}(?:replay|adaptation)", text), path
         assert not re.search(r"target-only.{0,80}unless explicitly retired", text), path

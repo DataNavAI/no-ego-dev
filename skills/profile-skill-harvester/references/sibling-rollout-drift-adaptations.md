@@ -74,8 +74,9 @@ The manifest must distinguish:
 
 - exact canonical packages, e.g. `48/50`;
 - approved local adaptations, e.g. `2/50`;
-- target-only files preserved;
-- target-only files intentionally adapted;
+- declared, reasoned, hash-verified `product-local` adaptation files retained;
+- reusable target-only files re-harvested into the verified canonical merge generation;
+- unsafe or unresolved target-only files blocked with state unadvanced;
 - compiled scripts and package metadata checks;
 - stale-policy contradiction count;
 - fresh-process explicit-skill smokes;

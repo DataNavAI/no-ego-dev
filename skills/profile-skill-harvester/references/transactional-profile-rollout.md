@@ -130,5 +130,5 @@ Before reporting success:
 - verify the immutable remote merge SHA and exact default-branch CI runs;
 - verify backup readability and receipt status;
 - prove the transaction lock, staging paths, rollback paths, and failed-swap paths are absent;
-- report exact/adapted package counts, preserved target-only file counts, retired duplicate counts, backup/receipt paths, and runtime-load evidence;
+- report exact/adapted package counts, declared product-local adaptation file counts and hashes, re-harvested or blocked target-only delta counts, retired duplicate counts, backup/receipt paths, and runtime-load evidence;
 - distinguish confirmed preserved packages from assumptions or merely untargeted paths.
