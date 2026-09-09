@@ -93,6 +93,15 @@ def test_harvester_eval_requires_orphan_release_before_new_lease_and_reharvests_
     assert prompt.index("perform authenticated `release_owned_lock`") < prompt.index("only then may it acquire a new finite lease")
     assert "re-harvested into a newly validated, exact-SHA-reviewed, merged canonical generation before overwrite" in prompt
     assert "only then acquires the new finite lease" in expectations
+    for required in (
+        "mature/regulated governance",
+        "audit evidence",
+        "approval boundaries/stronger approvals",
+        "unique isolated candidate branch/worktree",
+        "fixture existence and delivery to agent plus judge",
+        "staged-byte secret scanning",
+    ):
+        assert required in prompt
 
 
 def test_harvester_dispositions_every_live_delta_before_rollout():
