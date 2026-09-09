@@ -85,6 +85,16 @@ def test_profile_skill_harvester_package_contract():
     assert SCRIPT.is_file()
 
 
+def test_harvester_eval_requires_orphan_release_before_new_lease_and_reharvests_reusable_rollout_drift():
+    evaluation = yaml.safe_load((SKILL_DIR / "EVAL.yaml").read_text(encoding="utf-8"))
+    prompt = evaluation["prompt"]
+    expectations = "\n".join(evaluation["expectations"])
+
+    assert prompt.index("perform authenticated `release_owned_lock`") < prompt.index("only then may it acquire a new finite lease")
+    assert "re-harvested into a newly validated, exact-SHA-reviewed, merged canonical generation before overwrite" in prompt
+    assert "only then acquires the new finite lease" in expectations
+
+
 def test_harvester_dispositions_every_live_delta_before_rollout():
     paths = sorted(
         path for path in SKILL_DIR.rglob("*")
