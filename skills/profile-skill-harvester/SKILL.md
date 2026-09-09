@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.57
+version: 1.5.58
 author: NoEgoDev
 license: MIT
 metadata:
@@ -483,7 +483,7 @@ If there are no new differences and no blocker requiring attention, return `[SIL
 - [ ] Complete rollout package set derived from immutable `BASE_SHA..REMOTE_MERGE_COMMIT`; every changed `skills/<package>/...` identity appears in the transaction plan for every authorized target, while unrelated profile-only libraries remain discovery-only
 - [ ] Existing sibling target packages backed up before authorized replacement
 - [ ] Every target's complete-package digest and semantic diff compared against the approved canonical package and its pre-rollout baseline; equal version strings were not treated as equality, and unharvested target drift was consolidated or blocked
-- [ ] Same-path profile adaptations used the immutable pre-change canonical SHA as three-way ancestor (never post-merge `origin/main`), passed a conflict-free dry-run, and retained explicit profile-policy markers in addition to target-only file counts
+- [ ] Same-path profile adaptations used the immutable pre-change canonical SHA as three-way ancestor (never post-merge `origin/main`), passed a conflict-free dry-run, and retained only reasoned, ledger-dispositioned, hash-verified `product-local` adaptations; a profile-policy marker survived only by independently satisfying that contract
 - [ ] Installed target package bytes verified immediately after copy and after the applicable adoption proof: fresh-process explicit skill load for hot swaps, or changed gateway generation plus platform/provider readiness when restart is required
 - [ ] Profile-family service identities audited per profile-local configuration; shared identity targets and explicit exception profiles are declared before mutation
 - [ ] Shared credentials were authenticated in isolation, copied only to approved profile-local destinations, and every target passed identity/scope/API verification without secret exposure
