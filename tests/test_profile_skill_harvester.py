@@ -113,6 +113,10 @@ def test_harvester_dispositions_every_live_delta_before_rollout():
         assert "preserve target-only files" not in text, path
         assert "preserve target-only additions" not in text, path
         assert "preserve every live source file" not in text, path
+        assert "using the candidate worktree as the rollout source" not in text, path
+        assert "owner override for rollout" not in text, path
+        assert "hash target-only files as profile-local additions" not in text, path
+        assert "without deleting target-only files" not in text, path
         assert not re.search(r"standardiz\w*.{0,80}authoriz\w*.{0,40}(?:replacement|overwrite)", text), path
         assert not re.search(r"compatible additive.{0,100}(?:replay|adaptation)", text), path
         assert not re.search(r"target-only.{0,80}unless explicitly retired", text), path
