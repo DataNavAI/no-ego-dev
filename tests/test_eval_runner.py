@@ -224,6 +224,41 @@ def test_load_eval_validates_required_fields(tmp_path):
     assert spec.parameters["repo"] == "local"
 
 
+@pytest.mark.parametrize("field", ["setupCommands", "setup_commands", "teardownCommands", "teardown_commands"])
+@pytest.mark.parametrize("invalid", [None, False, 0, "command", {"run": "command"}, [None], [1], [""], ["   "]])
+def test_load_eval_rejects_every_invalid_command_field_alias(tmp_path, field, invalid):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], field: invalid}))
+
+    with pytest.raises(ValueError, match="string array with no blank entries"):
+        load_eval(path)
+
+
+@pytest.mark.parametrize(
+    ("camel", "snake"),
+    [("setupCommands", "setup_commands"), ("teardownCommands", "teardown_commands")],
+)
+def test_load_eval_rejects_simultaneous_command_aliases(tmp_path, camel, snake):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(
+        yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], camel: [], snake: []})
+    )
+
+    with pytest.raises(ValueError, match="must not both be present"):
+        load_eval(path)
+
+
+@pytest.mark.parametrize("field", ["setupCommands", "setup_commands", "teardownCommands", "teardown_commands"])
+def test_load_eval_accepts_explicit_empty_command_aliases(tmp_path, field):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], field: []}))
+
+    spec = load_eval(path)
+
+    assert spec.setup_commands == []
+    assert spec.teardown_commands == []
+
+
 def test_load_eval_rejects_fixture_path_escape(tmp_path):
     eval_dir = tmp_path / "skill"
     eval_dir.mkdir()

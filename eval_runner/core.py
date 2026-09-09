@@ -128,6 +128,18 @@ def _load_fixture(eval_path: Path, parameters: dict[str, Any]) -> tuple[Path | N
     return fixture_path, fixture_text
 
 
+def _load_command_field(data: dict[str, Any], camel: str, snake: str) -> list[str]:
+    present = [key for key in (camel, snake) if key in data]
+    if len(present) > 1:
+        raise ValueError(f"{camel} and {snake} must not both be present")
+    if not present:
+        return []
+    value = data[present[0]]
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise ValueError(f"{present[0]} must be a string array with no blank entries")
+    return value
+
+
 def load_eval(path: str | Path) -> EvalSpec:
     _ensure_yaml()
     eval_path = Path(path).expanduser().resolve()
@@ -140,13 +152,9 @@ def load_eval(path: str | Path) -> EvalSpec:
         raise ValueError(f"{eval_path} requires non-empty string field: prompt")
     if not isinstance(expectations, list) or not all(isinstance(x, str) and x.strip() for x in expectations):
         raise ValueError(f"{eval_path} requires expectations: string[]")
-    setup = data.get("setupCommands", data.get("setup_commands", [])) or []
-    teardown = data.get("teardownCommands", data.get("teardown_commands", [])) or []
+    setup = _load_command_field(data, "setupCommands", "setup_commands")
+    teardown = _load_command_field(data, "teardownCommands", "teardown_commands")
     parameters = data.get("parameters", {}) or {}
-    if not isinstance(setup, list) or not all(isinstance(x, str) for x in setup):
-        raise ValueError("setupCommands must be a string array")
-    if not isinstance(teardown, list) or not all(isinstance(x, str) for x in teardown):
-        raise ValueError("teardownCommands must be a string array")
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be a map")
     fixture_path, fixture_text = _load_fixture(eval_path, parameters)

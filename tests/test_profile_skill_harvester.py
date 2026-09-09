@@ -118,6 +118,32 @@ def test_harvester_dispositions_every_live_delta_before_rollout():
         assert not re.search(r"target-only.{0,80}unless explicitly retired", text), path
 
 
+@pytest.mark.parametrize("field", ["setupCommands", "setup_commands", "teardownCommands", "teardown_commands"])
+@pytest.mark.parametrize("invalid", [None, False, 0, "command", {"run": "command"}, [None], [1], [""], ["   "]])
+def test_inventory_rejects_every_invalid_eval_command_field_alias(tmp_path, field, invalid):
+    package = _package(tmp_path, "example")
+    eval_path = package / "EVAL.yaml"
+    eval_path.write_text(yaml.safe_dump({"prompt": "test", "expectations": ["test"], field: invalid}))
+
+    with pytest.raises(ValueError, match="string array with no blank entries"):
+        _module().validate_eval_command_fields(eval_path)
+
+
+@pytest.mark.parametrize(
+    ("camel", "snake"),
+    [("setupCommands", "setup_commands"), ("teardownCommands", "teardown_commands")],
+)
+def test_inventory_rejects_simultaneous_eval_command_aliases(tmp_path, camel, snake):
+    package = _package(tmp_path, "example")
+    eval_path = package / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump({"prompt": "test", "expectations": ["test"], camel: [], snake: []})
+    )
+
+    with pytest.raises(ValueError, match="must not both be present"):
+        _module().validate_eval_command_fields(eval_path)
+
+
 def test_inventory_record_refuses_unpublished_candidates_in_established_state(tmp_path):
     repo = tmp_path / "repo"
     profile = tmp_path / "profile"
