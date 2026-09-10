@@ -17,6 +17,32 @@ When `.github/manual-test-result.json` (or equivalent) must name the latest code
 
 Any evidence edit invalidates final-tree approval. Do not bypass the gate, invent a future SHA, put self-referential evidence in one commit, or treat code-only approval as approval of later evidence bytes.
 
+### Exercise a commit-shaped verifier before the permanent evidence commit
+
+Some repository verifiers inspect `HEAD^` and require the evidence commit itself to touch exactly one evidence path. A merely staged file cannot satisfy that contract, but committing before final-tree review would reverse the required approval order. Use Git plumbing to create a temporary unreachable commit without moving the branch:
+
+```bash
+test "$(git diff --cached --name-only)" = ".github/manual-test-result.json"
+test -z "$(git diff --name-only)"
+STAGED_TREE=$(git write-tree)
+TEMP_EVIDENCE_COMMIT=$(printf 'temporary evidence verification\n' | \
+  git commit-tree "$STAGED_TREE" -p "$APPROVED_CODE_CANDIDATE")
+MANUAL_TEST_BASE_SHA="$BASE_SHA" \
+MANUAL_TEST_HEAD_SHA="$TEMP_EVIDENCE_COMMIT" \
+  node scripts/verify-manual-test-result.mjs
+```
+
+Give the independent final-tree reviewer the approved code SHA, staged tree hash, temporary commit SHA, and verifier output. Require proof that the temporary commit has exactly the code candidate as parent, its tree equals the staged tree, and its sole delta is the evidence path. After approval, commit the already-reviewed index without editing it, then assert:
+
+```bash
+test "$(git rev-parse HEAD^)" = "$APPROVED_CODE_CANDIDATE"
+test "$(git rev-parse HEAD^{tree})" = "$STAGED_TREE"
+test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = \
+     ".github/manual-test-result.json"
+```
+
+Run the real verifier again against the permanent evidence commit. The dangling temporary commit is verification scaffolding, not a branch, tag, publication artifact, or substitute for reviewing the staged tree.
+
 ## Default-branch movement after evidence exists
 
 A guarded merge may report conflicts because the default branch advanced and changed the repository's shared evidence file. Treat that as a new candidate generation, even when the product/skill files do not conflict.
@@ -54,4 +80,4 @@ A reviewed candidate worktree is not the rollout source after squash, rebase, or
 - **base:** immutable canonical file from before the change;
 - **theirs:** file exported from the verified merged commit.
 
-Dry-run all targets before mutation. Back up full target packages, preserve target-only files and known profile-policy markers, fail on conflicts, install atomically with rollback, and prove adoption through a fresh explicit skill load in every target profile. Remove temporary worktrees/archives/scripts after verification, but retain the timestamped rollback backup.
+Dry-run all targets before mutation. Back up full target packages, retain only reasoned, ledger-dispositioned, and hash-verified `product-local` adaptations, fail on conflicts, install atomically with rollback, and prove adoption through a fresh explicit skill load in every target profile. A profile-policy marker is retained only when it independently satisfies that same `product-local` contract; its name or prior presence is not authority. Remove temporary worktrees/archives/scripts after verification, but retain the timestamped rollback backup.

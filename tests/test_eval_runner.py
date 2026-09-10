@@ -71,6 +71,16 @@ def _judge_output_command(tmp_path: Path, output: str, *, exit_code: int = 0) ->
     return f"{sys.executable} {script}"
 
 
+def _stdout_with_success_warning_command(tmp_path: Path, stdout: str) -> str:
+    script = tmp_path / f"stdout_with_warning_{abs(hash(stdout))}.py"
+    script.write_text(
+        "import sys\n"
+        f"print({stdout!r})\n"
+        "print('runtime warning: diagnostic only', file=sys.stderr)\n"
+    )
+    return f"{sys.executable} {script}"
+
+
 def _recording_hermes_command(tmp_path: Path) -> tuple[str, Path]:
     script = tmp_path / "recording_hermes.py"
     record_path = tmp_path / "hermes-prompts.json"
@@ -165,15 +175,27 @@ def test_discovers_eval_yaml_files(tmp_path):
 
 def test_real_eval_default_restricts_hermes_to_skills_toolset():
     default = inspect.signature(run_eval).parameters["hermes_command"].default
-    assert default == "hermes -t skills"
+    assert default == "hermes chat -t skills"
 
 
 def test_windows_oneshot_command_uses_windows_argument_quoting():
     prompt = 'literal & | < > "quoted" %PATH%'
 
-    command = _build_oneshot_command("hermes -t skills", prompt, windows=True)
+    command = _build_oneshot_command("hermes chat -t skills", prompt, windows=True)
 
-    assert command == ["hermes", "-t", "skills", "-z", prompt]
+    assert command == ["hermes", "chat", "-t", "skills", "-Q", "-q", prompt]
+
+
+def test_hermes_oneshot_command_enables_machine_quiet_output():
+    command = _build_oneshot_command("hermes chat -t skills", "judge exactly")
+
+    assert command == ["hermes", "chat", "-t", "skills", "-Q", "-q", "judge exactly"]
+
+
+def test_custom_oneshot_command_does_not_receive_hermes_only_quiet_flag():
+    command = _build_oneshot_command("python fake_hermes.py", "judge exactly")
+
+    assert command == ["python", "fake_hermes.py", "-q", "judge exactly"]
 
 
 def test_loads_every_tracked_repository_eval():
@@ -200,6 +222,41 @@ def test_load_eval_validates_required_fields(tmp_path):
     assert spec.prompt == "Build it"
     assert spec.expectations == ["result exists"]
     assert spec.parameters["repo"] == "local"
+
+
+@pytest.mark.parametrize("field", ["setupCommands", "setup_commands", "teardownCommands", "teardown_commands"])
+@pytest.mark.parametrize("invalid", [None, False, 0, "command", {"run": "command"}, [None], [1], [""], ["   "]])
+def test_load_eval_rejects_every_invalid_command_field_alias(tmp_path, field, invalid):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], field: invalid}))
+
+    with pytest.raises(ValueError, match="string array with no blank entries"):
+        load_eval(path)
+
+
+@pytest.mark.parametrize(
+    ("camel", "snake"),
+    [("setupCommands", "setup_commands"), ("teardownCommands", "teardown_commands")],
+)
+def test_load_eval_rejects_simultaneous_command_aliases(tmp_path, camel, snake):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(
+        yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], camel: [], snake: []})
+    )
+
+    with pytest.raises(ValueError, match="must not both be present"):
+        load_eval(path)
+
+
+@pytest.mark.parametrize("field", ["setupCommands", "setup_commands", "teardownCommands", "teardown_commands"])
+def test_load_eval_accepts_explicit_empty_command_aliases(tmp_path, field):
+    path = tmp_path / "EVAL.yaml"
+    path.write_text(yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], field: []}))
+
+    spec = load_eval(path)
+
+    assert spec.setup_commands == []
+    assert spec.teardown_commands == []
 
 
 def test_load_eval_rejects_fixture_path_escape(tmp_path):
@@ -371,6 +428,45 @@ def test_run_eval_rejects_invalid_judge_result_schema_as_infrastructure_error(tm
     assert result.passed is False
     assert result.infrastructure_failure is True
     assert "passed must be a boolean" in result.failure_reasons[0]
+
+
+def test_run_eval_parses_successful_judge_stdout_without_stderr_diagnostics(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text("prompt: Say done\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_judge_output_command(tmp_path, "done appears"),
+        judge_command=_stdout_with_success_warning_command(
+            tmp_path, json.dumps({"passed": True, "failure_reasons": []})
+        ),
+    )
+
+    assert result.passed is True
+    assert result.infrastructure_failure is False
+    assert "runtime warning: diagnostic only" in result.output
+
+
+def test_run_eval_does_not_send_successful_agent_stderr_to_judge(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text("prompt: Say done\nexpectations: [done appears]\n")
+    judge_command, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_stdout_with_success_warning_command(tmp_path, "done appears"),
+        judge_command=judge_command,
+    )
+
+    assert result.passed is True
+    assert "runtime warning: diagnostic only" not in judge_prompt_path.read_text()
+    assert "runtime warning: diagnostic only" in result.output
 
 
 @pytest.mark.parametrize(

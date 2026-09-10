@@ -1,6 +1,6 @@
 # Sibling rollout with same-path live drift
 
-Use this procedure when a reviewed canonical skill package must be propagated to sibling profiles and a target has changed since the rollout baseline. This is a rollout-integration case, not permission for newest-file-wins replacement.
+Use this procedure when a reviewed canonical skill package must be propagated to sibling profiles and a target has changed since the rollout baseline. This is a rollout-integration case, not permission for newest-file-wins replacement. A target-only path is not automatically profile-local: every target delta still requires one evidence-backed ledger disposition before mutation.
 
 ## 1. Freeze three inputs
 
@@ -31,11 +31,11 @@ Do not start copying after the first clean target. A later target may contain an
 For each drifted file, inspect the semantic diff against both baseline and approved source.
 
 - **Superseded:** replace only when the approved policy explicitly supersedes the live behavior.
-- **Compatible additive:** create a deterministic adaptation from the approved source and replay only the compatible live addition.
+- **Reusable compatible additive:** stop rollout and re-harvest the addition into a newly reviewed and merged canonical generation before retrying the target.
 - **Contradictory or unclear:** block that package/target; do not guess.
 - **Product-local:** retain it only in the owning profile and label the adaptation as local.
 
-When adapting a `SKILL.md`, preserve the approved universal policy first, then reapply the scoped live addition. Remove stale contradictory clauses rather than leaving both policies in different sections. Bump the adapted package version when practical. Update companion support files when their old wording would contradict the adapted skill.
+When adapting a `SKILL.md`, start from the approved universal policy and reapply only a declared, reasoned, hash-verified `product-local` delta. Remove stale contradictory clauses rather than leaving both policies in different sections. Bump the adapted package version when practical. Update companion support files when their old wording would contradict the adapted skill.
 
 Never claim an adapted package is byte-identical to canonical source.
 
@@ -61,7 +61,7 @@ Before the first mutation, back up every complete target package. For each targe
 2. overlay approved canonical files;
 3. remove baseline-canonical paths deliberately removed by source;
 4. apply recorded adaptations;
-5. preserve target-only additions not superseded by an adaptation;
+5. retain only target additions explicitly dispositioned `product-local`, with reasons and manifest hashes;
 6. verify expected digests in the temporary directory;
 7. atomically rename target to rollback and temporary to target;
 8. restore rollback on swap failure; delete it only after successful verification.
@@ -74,8 +74,9 @@ The manifest must distinguish:
 
 - exact canonical packages, e.g. `48/50`;
 - approved local adaptations, e.g. `2/50`;
-- target-only files preserved;
-- target-only files intentionally adapted;
+- declared, reasoned, hash-verified `product-local` adaptation files retained;
+- reusable target-only files re-harvested into the verified canonical merge generation;
+- unsafe or unresolved target-only files blocked with state unadvanced;
 - compiled scripts and package metadata checks;
 - stale-policy contradiction count;
 - fresh-process explicit-skill smokes;

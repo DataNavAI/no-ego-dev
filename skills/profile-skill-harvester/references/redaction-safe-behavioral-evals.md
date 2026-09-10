@@ -31,8 +31,11 @@ This is not permission to replace exact ownership verification with prose. The h
 3. Inspect the runner's credential-redaction implementation and identify key/assignment patterns that consume values or whole lines.
 4. Confirm whether redaction happens before model/judge invocation, only during serialization, or both.
 5. Rename simulation-only states away from credential-key syntax and move private argument correctness into deterministic tests.
-6. Rerun once with the revised redaction-safe contract.
-7. Preserve both pieces of evidence: deterministic private-mechanics tests and the behavioral state-machine verdict.
+6. For mandatory matrix cells, prescribe the exact redaction-safe transition string instead of allowing the model to invent a prefix. Explicitly state lifecycle applicability boundaries in the prompt as well as expectations—for example, whether analytics/regression controls begin at the growing-product branch and are forbidden as MVP requirements. This reduces judge variability without weakening the production gate.
+7. Rerun once with the revised redaction-safe contract.
+8. Preserve both pieces of evidence: deterministic private-mechanics tests and the behavioral state-machine verdict.
+
+A later failure with a different semantic reason is not proof that the earlier redaction correction failed. Compare eval and fixture bytes, classify the new reason independently, and tighten only an already-required contract. Never keep editing the rubric merely to chase a pass.
 
 ## Review checks
 

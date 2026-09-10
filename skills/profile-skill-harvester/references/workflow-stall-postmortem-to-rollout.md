@@ -36,9 +36,9 @@ Write deterministic regression tests first. Update `SKILL.md`, `EVAL.yaml`, fixt
 
 1. Back up every affected target package outside repositories and hash the backup.
 2. Recompare live targets immediately before mutation; block on drift after backup.
-3. Overlay canonical files while preserving compatible target-only support files. Report each target as exact or adapted.
+3. Disposition every target delta before mutation. Re-harvest reusable support-file additions into a reviewed and merged canonical generation; overlay canonical files and reapply only declared, reasoned, hash-verified `product-local` adaptations. Block `unsafe` or `unresolved` drift with state unadvanced, and report each target as exact, adapted, or blocked.
 4. If a live profile has the same frontmatter skill name at a nested legacy path, back it up and retire it only after the canonical path is installed; require exactly one discovered package per skill name.
-5. Verify canonical-file byte parity, preserved target-only files, fresh-process skill discovery, and post-adoption digests. Skill-only overlays usually hot-load; do not restart gateways without evidence that startup-loaded state changed.
+5. Verify canonical-file byte parity, declared `product-local` adaptation hashes, fresh-process skill discovery, and post-adoption digests. Skill-only overlays usually hot-load; do not restart gateways without evidence that startup-loaded state changed.
 6. Treat scheduled-job prompts and attached-skill lists as a separate policy surface. A skill rollout does not automatically repair contradictory hard-coded cron instructions.
 
 ## Reporting

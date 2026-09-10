@@ -128,6 +128,18 @@ def _load_fixture(eval_path: Path, parameters: dict[str, Any]) -> tuple[Path | N
     return fixture_path, fixture_text
 
 
+def _load_command_field(data: dict[str, Any], camel: str, snake: str) -> list[str]:
+    present = [key for key in (camel, snake) if key in data]
+    if len(present) > 1:
+        raise ValueError(f"{camel} and {snake} must not both be present")
+    if not present:
+        return []
+    value = data[present[0]]
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise ValueError(f"{present[0]} must be a string array with no blank entries")
+    return value
+
+
 def load_eval(path: str | Path) -> EvalSpec:
     _ensure_yaml()
     eval_path = Path(path).expanduser().resolve()
@@ -140,13 +152,9 @@ def load_eval(path: str | Path) -> EvalSpec:
         raise ValueError(f"{eval_path} requires non-empty string field: prompt")
     if not isinstance(expectations, list) or not all(isinstance(x, str) and x.strip() for x in expectations):
         raise ValueError(f"{eval_path} requires expectations: string[]")
-    setup = data.get("setupCommands", data.get("setup_commands", [])) or []
-    teardown = data.get("teardownCommands", data.get("teardown_commands", [])) or []
+    setup = _load_command_field(data, "setupCommands", "setup_commands")
+    teardown = _load_command_field(data, "teardownCommands", "teardown_commands")
     parameters = data.get("parameters", {}) or {}
-    if not isinstance(setup, list) or not all(isinstance(x, str) for x in setup):
-        raise ValueError("setupCommands must be a string array")
-    if not isinstance(teardown, list) or not all(isinstance(x, str) for x in teardown):
-        raise ValueError("teardownCommands must be a string array")
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be a map")
     fixture_path, fixture_text = _load_fixture(eval_path, parameters)
@@ -1040,7 +1048,11 @@ def _build_oneshot_command(
     base_args = _split_windows_command_line(base_command) if use_windows_parsing else shlex.split(base_command)
     if not base_args:
         raise ValueError("oneshot command must not be empty")
-    return [*base_args, "-z", prompt]
+    executable = base_args[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+    quiet_args = []
+    if executable in {"hermes", "hermes.exe"} and not {"-Q", "--quiet"}.intersection(base_args):
+        quiet_args.append("-Q")
+    return [*base_args, *quiet_args, "-q", prompt]
 
 
 def _judge_with_hermes(
@@ -1070,13 +1082,14 @@ Return only JSON with this exact schema:
         env=env,
         timeout=1800,
     )
-    judge_output = proc.stdout + proc.stderr
+    judge_output = proc.stdout
+    judge_diagnostics = proc.stdout + proc.stderr
     if proc.returncode != 0:
         reason = f"Hermes judge command failed with exit code {proc.returncode}"
-        excerpt = _safe_error_excerpt(judge_output)
+        excerpt = _safe_error_excerpt(judge_diagnostics)
         if excerpt:
             reason += f": {excerpt}"
-        return False, [reason], judge_output, True
+        return False, [reason], judge_diagnostics, True
     try:
         data = _extract_json_object(judge_output)
         expected_keys = {"passed", "failure_reasons"}
@@ -1097,8 +1110,8 @@ Return only JSON with this exact schema:
         if not passed and not raw_reasons:
             raise ValueError("Judge result must explain a failed verdict")
     except (ValueError, json.JSONDecodeError) as exc:
-        return False, [str(exc)], judge_output, True
-    return passed, raw_reasons, judge_output, False
+        return False, [str(exc)], judge_diagnostics, True
+    return passed, raw_reasons, judge_diagnostics, False
 
 
 def _isolated_runtime_env(run_profile: Path) -> dict[str, str]:
@@ -1129,7 +1142,7 @@ def _isolated_runtime_env(run_profile: Path) -> dict[str, str]:
 def run_eval(
     eval_path: str | Path,
     output_root: str | Path = ".eval-runs",
-    hermes_command: str = "hermes -t skills",
+    hermes_command: str = "hermes chat -t skills",
     judge_command: str | None = None,
 ) -> EvalResult:
     if not hermes_command or not hermes_command.strip():
@@ -1217,8 +1230,8 @@ def run_eval(
         # The historical shorthand is `hermes -z PROMPT`.
         command = _build_oneshot_command(hermes_command, agent_prompt)
         proc = _run_oneshot_command(command, cwd=agent_cwd, env=env, timeout=1800)
-        output_parts.append(proc.stdout + proc.stderr)
         if proc.returncode != 0:
+            output_parts.append(proc.stdout + proc.stderr)
             reason = f"Hermes command failed with exit code {proc.returncode}"
             excerpt = _safe_error_excerpt(proc.stdout + proc.stderr)
             if excerpt:
@@ -1227,9 +1240,12 @@ def run_eval(
             passed = False
             infrastructure_failure = True
         else:
+            output_parts.append(proc.stdout)
             passed, expectation_failures, judge_output, judge_infrastructure_failure = _judge_with_hermes(
                 _redact_credentials("\n".join(output_parts)), spec, judge_command, env
             )
+            if proc.stderr:
+                output_parts.append("\n--- AGENT STDERR ---\n" + proc.stderr)
             output_parts.append("\n--- JUDGE OUTPUT ---\n" + judge_output)
             failure_reasons.extend(expectation_failures)
             infrastructure_failure = judge_infrastructure_failure

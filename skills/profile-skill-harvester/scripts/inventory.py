@@ -17,7 +17,12 @@ import tempfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover - exercised as an operational prerequisite
+    yaml = None
 
 IGNORED_DIRS = {
     ".git",
@@ -96,6 +101,35 @@ def hash_package(package_dir: Path) -> tuple[str, int, str]:
     return digest.hexdigest(), count, when
 
 
+def _validate_command_field(data: dict[str, Any], camel: str, snake: str, eval_path: Path) -> None:
+    present = [key for key in (camel, snake) if key in data]
+    if len(present) > 1:
+        raise ValueError(f"{eval_path}: {camel} and {snake} must not both be present")
+    if not present:
+        return
+    value = data[present[0]]
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise ValueError(f"{eval_path}: {present[0]} must be a string array with no blank entries")
+
+
+def validate_eval_command_fields(eval_path: Path) -> None:
+    if yaml is None:
+        raise RuntimeError("PyYAML is required to validate EVAL.yaml files")
+    data = yaml.safe_load(eval_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{eval_path}: EVAL must contain a YAML mapping")
+    _validate_command_field(data, "setupCommands", "setup_commands", eval_path)
+    _validate_command_field(data, "teardownCommands", "teardown_commands", eval_path)
+
+
+def validate_package_eval_command_fields(package_dir: Path) -> None:
+    for eval_path in sorted(package_dir.rglob("EVAL*.yaml")):
+        rel = eval_path.relative_to(package_dir)
+        if any(part in IGNORED_DIRS for part in rel.parts) or eval_path.is_symlink():
+            continue
+        validate_eval_command_fields(eval_path)
+
+
 def discover(skills_root: Path) -> tuple[dict[str, Package], list[str]]:
     packages: dict[str, Package] = {}
     errors: list[str] = []
@@ -111,6 +145,7 @@ def discover(skills_root: Path) -> tuple[dict[str, Package], list[str]]:
                     f"duplicate skill name {name!r}: {packages[name].path} and {skill_md.parent}"
                 )
             package_dir = skill_md.parent
+            validate_package_eval_command_fields(package_dir)
             digest, count, newest = hash_package(package_dir)
             packages[name] = Package(
                 name=name,
@@ -244,6 +279,12 @@ def main() -> int:
             parser.error("--record requires --state")
         if errors:
             raise SystemExit("refusing to record an inventory with discovery errors")
+        if prior:
+            raise SystemExit(
+                "refusing full --record for established state; use merged-only "
+                "selective state advancement with verified remote-default merge "
+                "and rollout/adoption evidence"
+            )
         atomic_json_write(args.state.expanduser(), snapshot)
 
     json.dump(snapshot, fp=sys.stdout, indent=2, sort_keys=True)

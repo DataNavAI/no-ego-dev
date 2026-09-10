@@ -28,7 +28,7 @@ Skill instructions express workflow policy; they do not grant execution capabili
 
 ## Execution and evidence
 
-For a skill hot-swap, do not restart merely to manufacture a PID change. Run a fresh process that explicitly loads a changed skill, require the expected provider response, then re-hash canonical and preserved target-only files. Record that existing conversations need `/reset` or `/new` for a clean context. This proves the updated content is available to the runtime path that consumes it.
+For a skill hot-swap, do not restart merely to manufacture a PID change. Run a fresh process that explicitly loads a changed skill, require the expected provider response, then re-hash canonical files and only those adaptations declared `product-local` with reasons and verified hashes in the disposition ledger. Reusable additions must first be re-harvested into a reviewed and merged canonical generation; `unsafe` or `unresolved` drift blocks mutation with state unadvanced. Record that existing conversations need `/reset` or `/new` for a clean context. This proves the updated content is available to the runtime path that consumes it.
 
 For a process-loaded change, reload one sibling at a time. A successful command exit is not enough: require a changed PID/generation, healthy platform connection, provider smoke, and package re-hash. If the lifecycle attempt is rejected before reaching the supervisor, preserve the package backup/manifest, stop additional lifecycle attempts, and report the exact targets as reload-pending. Do not repeat the same blocked mechanism through wrappers.
 
@@ -36,7 +36,7 @@ For a process-loaded change, reload one sibling at a time. A successful command 
 
 Use distinct statements:
 
-- **Installed:** target package bytes match the frozen source and preserved target-only files still match their pre-rollout hashes.
+- **Installed:** target package bytes match the frozen source and any ledger-declared `product-local` adaptations still match their recorded hashes.
 - **Hot-swap verified:** a new one-shot process explicitly loaded the updated same-name skill and provider successfully; existing conversations require `/reset` or `/new` for clean adoption.
 - **Catalog rescanned:** `/reload-skills` refreshed added/removed skill names; this is not required for same-name content edits.
 - **Gateway reloaded/adopted:** only for process-loaded changes—the target gateway generation changed and passed readiness plus post-reload verification.

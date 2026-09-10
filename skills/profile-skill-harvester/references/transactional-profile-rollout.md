@@ -55,6 +55,20 @@ git archive "$REMOTE_MERGE_COMMIT" skills | tar -x -C "$EXPORT_ROOT"
 
 For an archive, verify representative or all exported blobs against Git before mutation with `git hash-object` and `git rev-parse "$REMOTE_MERGE_COMMIT:path"`.
 
+### Derive the complete rollout package set from the merged diff
+
+Do not infer rollout scope from the package that triggered the task or from the last package edited. Derive it from immutable repository coordinates:
+
+```bash
+git diff --name-only "$BASE_SHA..$REMOTE_MERGE_COMMIT"
+```
+
+Map every changed path under `skills/<package>/...` to its complete package root and deduplicate by frontmatter identity. The rollout action set is the Cartesian product of **all changed canonical package identities** and all authorized target profiles, minus explicitly blocked targets. An evidence-only child does not add a package, but every skill package changed earlier in the PR must still roll out.
+
+A whole-profile inventory is a discovery surface, not the rollout action set. Profiles may legitimately contain hundreds of bundled, hub-installed, or product-local skills absent from the canonical distribution; raw `profile-only` candidate counts must not be interpreted as packages to deploy or harvest. After the broad inventory proves there are no discovery errors or duplicate identities, scope rollout reconciliation to the changed canonical package set. For each scoped package, classify same-path canonical-file drift separately from target-only additions and assign every delta exactly one evidence-backed ledger disposition. Reusable additions require a newly reviewed and merged canonical generation; only declared, reasoned, hash-verified `product-local` adaptations may remain; contradictory, `unsafe`, or `unresolved` drift blocks the package/profile with state unadvanced. Report both the broad inventory counts and the scoped package/action counts so a large profile library cannot hide an omitted changed package.
+
+Before mutation, assert that the derived changed-package list matches the packages represented in backup/receipt plans. After mutation, verify every canonical file for every `(profile, changed package)` pair, not only the primary package named in the incident.
+
 ## 3. Resolve equal-version byte divergence and duplicate identities
 
 Version equality is not package equality. If a live package and canonical candidate share a version but have different bytes, inspect semantic drift before rollout. Prefer a canonical version bump before review when distinct package bodies would otherwise be published under one version.
@@ -67,22 +81,22 @@ Preflight every target before changing any target:
 
 1. Discover every package and duplicate identity.
 2. Compare complete-package versions and digests.
-3. Compute canonical overlays and preserved target-only files.
+3. Compute canonical overlays and declared, hash-verified `product-local` adaptations from the completed disposition ledger.
 4. Validate every staged package, `SKILL.md`, `EVAL*.yaml`, fixture, and support-file path.
 5. Copy every affected live package—including superseded duplicates—to a timestamped backup outside repositories.
-6. Write a receipt containing source merge SHA, selected target path, reason, canonical per-file SHA-256 values, preserved target-only SHA-256 values, and retired duplicate paths.
+6. Write a receipt containing source merge SHA, selected target path, reason, canonical per-file SHA-256 values, declared `product-local` adaptation SHA-256 values and reasons, and retired duplicate paths.
 7. Acquire one external transaction lock.
 8. Abort globally if any preflight, backup, path-containment, or staged validation fails.
 
 A path omitted from the action set proves only that it was not targeted; it does **not** prove a supposed local package exists. Verify existence and pre-rollout digest separately before claiming that a named local package was preserved.
 
-## 5. Atomically overlay canonical files and preserve compatible additions
+## 5. Atomically overlay canonical files and declared product-local adaptations
 
 Assemble each target in a sibling staging directory from its current package plus canonical files:
 
 - atomically replace every canonical file;
-- preserve target-only references/templates/scripts unless explicitly retired;
-- verify staged canonical and preserved-local hashes before swapping;
+- reapply only ledger-declared, reasoned, hash-verified `product-local` references/templates/scripts; stop and re-harvest reusable additions before mutation;
+- verify staged canonical and declared adaptation hashes before swapping;
 - rename the live package to a rollback path, then rename the staged package into place;
 - only after the canonical path is live, rename proven superseded duplicates to rollback paths;
 - register the current action in the rollback journal **before** duplicate retirement so a mid-dedupe failure restores both the package and any already-moved duplicate;
@@ -94,7 +108,7 @@ If any action or global postcondition fails, roll back all completed actions in 
 
 For every target profile:
 
-1. Re-hash every canonical and preserved target-only file from the receipt.
+1. Re-hash every canonical and declared `product-local` adaptation file from the receipt.
 2. Confirm retired duplicate paths are absent and exactly one enabled package exists per frontmatter name.
 3. Run a fresh profile-scoped registry check, for example:
 
@@ -116,5 +130,5 @@ Before reporting success:
 - verify the immutable remote merge SHA and exact default-branch CI runs;
 - verify backup readability and receipt status;
 - prove the transaction lock, staging paths, rollback paths, and failed-swap paths are absent;
-- report exact/adapted package counts, preserved target-only file counts, retired duplicate counts, backup/receipt paths, and runtime-load evidence;
+- report exact/adapted package counts, declared product-local adaptation file counts and hashes, re-harvested or blocked target-only delta counts, retired duplicate counts, backup/receipt paths, and runtime-load evidence;
 - distinguish confirmed preserved packages from assumptions or merely untargeted paths.

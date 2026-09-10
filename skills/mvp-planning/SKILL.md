@@ -1,7 +1,7 @@
 ---
 name: mvp-planning
 description: "Use when planning a new MVP or cutting an existing product idea down to its minimum viable scope. Selects one key user problem, limits the MVP to one primary and at most two supporting critical user journeys, removes nonessential features, designs the shortest intuitive UX, and defines automated and manual QA gates that prove the core journeys work end to end."
-version: 1.1.1
+version: 1.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -129,6 +129,14 @@ Common default cuts unless the primary CUJ truly requires them:
 - enterprise architecture for hypothetical scale.
 
 Do not quietly reintroduce parked scope in architecture, design, implementation, QA, launch, or marketing work.
+
+## Context-Specific Planning Branches
+
+The one-primary-CUJ constraint remains universal, but established products and human-handoff pilots need additional evidence. Use `references/existing-backlog-and-shared-experiments.md` and `references/human-handoff-workflow-discovery.md` as applicable.
+
+- **Existing backlog:** inspect the live issue graph and an exact default-branch revision before trusting status documents. Classify every open child exactly once as must-before-user-testing, simplify/merge, defer-post-validation, or close/supersede; name the retained outcome and dependency rewrite.
+- **Several hypotheses on one site:** frame the release as one shared experimental platform with one primary CUJ, up to two necessary supporting CUJs, independently measurable routes, and explicitly classified shared foundations/beta modules/reserve verticals. Do not turn the homepage into an experiment chooser or call every module an MVP.
+- **Staff or human handoff:** run a decision-gated discovery session for routing, minimum permitted data, per-channel contact permission, authoritative lifecycle state, warm-lead ownership, after-hours fallback, and a contained pilot. Sensitive-domain, payment, or production automation requires the applicable owner and safety approvals; discovery alone grants none.
 
 ## MVP Measurement: Stage-Appropriate Learning
 
@@ -324,3 +332,6 @@ If the plan cannot answer those questions, it is not ready for architecture or i
 - [ ] MVP plan is saved at `.projects/<project>/product/mvp-plan.md` or the project's documented equivalent.
 - [ ] Existing PRD, CUJ, UI, tech, task, and QA artifacts cross-link the same scope contract; missing artifacts have explicit planned paths and owners without empty-document ceremony.
 - [ ] New ideas require explicit CUJ justification and scope approval.
+- [ ] Existing backlogs classify every live open child and rewrite dependencies from current issue/code/test evidence.
+- [ ] Shared-site experiments preserve one primary CUJ, independently attributable routes, a coherent homepage promise, and explicit module classifications.
+- [ ] Human-handoff plans define routing, permissions, state authority, warm-item follow-up, after-hours behavior, contained testing, and safety/approval boundaries.

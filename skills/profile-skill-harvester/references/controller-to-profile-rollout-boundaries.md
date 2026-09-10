@@ -11,30 +11,25 @@ Use this when a controller session synchronizes generic distribution skills into
 3. Product-local work stays with its owning profile. A default/controller session must not implement, review, deploy, or operate that product unless the user explicitly asks it to intervene.
 4. If the controller previously crossed that boundary, cleanup means removing only controller-created scratch/cache artifacts. Do not delete similarly named files under the owning profile.
 
-## Explicit-owner override after a negative gate
+## Canonical publication is not waivable
 
-The normal rule remains: do not merge or roll out a rejected candidate. If the user, after the negative disposition is known, explicitly directs deployment anyway:
-
-- treat that instruction as an owner override for rollout only;
-- identify the exact source commit and unresolved review status in the final report;
-- do not claim the candidate was approved or merge-authorized;
-- keep the source tree immutable during synchronization;
-- do not silently broaden the override to product runtime, cron, credentials, or unrelated configuration.
+Do not merge or roll out a rejected candidate. User direction may expand target scope or accept product risk, but it cannot make rejected, unreviewed, candidate-worktree, pushed-only, or open-PR bytes canonical. Resolve material findings, obtain fresh exact-SHA approval, merge with the guarded final head, verify the remote-default merge, and export rollout bytes from that immutable merge commit.
 
 ## Safe complete-package overlay
 
 For every target profile and package:
 
-1. Freeze the exact source commit and require a clean source worktree.
+1. Fetch and verify the exact remote-default merge commit, then export the complete package from that immutable object into non-repository staging. Never source rollout bytes from a candidate worktree, pushed branch, open PR, global installation, or live profile.
 2. Back up the complete existing target package to a non-repository directory.
-3. Inventory source-relative and target-relative package files, excluding known generated caches only.
-4. Hash target-only files as profile-local additions.
-5. Atomically overlay every canonical source file into the target package **without deleting target-only files**.
-6. Re-hash every canonical path and require byte equality with the frozen source.
-7. Re-hash target-only files and require exact equality with the pre-rollout inventory.
-8. Repeat the comparison after runtime/fresh-process verification because profile automation may edit skills concurrently.
+3. Inventory source-relative and target-relative package files, excluding known generated caches only, and compare every distinct complete-package digest regardless of version or baseline state.
+4. Inspect every behavior and support-file delta and assign exactly one evidence-backed disposition: `adopted`, `scoped`, `superseded`, `product-local`, `unsafe`, or `unresolved`. A target-only path is not automatically profile-local.
+5. If a reusable target delta is absent from canonical, stop that generation and re-harvest it through validation, fresh exact-SHA review, and verified merge before overwrite. Leave unsafe or unresolved package state unadvanced.
+6. Stage exact canonical files plus only declared `product-local` adaptations, recording each adaptation's reason and digest. Standardization authority and backups cannot waive disposition, review, publication, or safety gates.
+7. Atomically install the staged complete package, with rollback on any validation or swap failure.
+8. Re-hash every canonical path and require byte equality with the verified merge export; re-hash every declared product-local adaptation against its preflight manifest.
+9. Repeat the comparison after runtime/fresh-process verification because profile automation may edit skills concurrently.
 
-Do not use version strings as equality proof. Do not replace a whole skill directory when additive profile references exist.
+Do not use version strings as equality proof. Do not preserve or overwrite unclassified additions; re-harvest reusable additions and block unsafe or unresolved drift.
 
 ## Validation details
 

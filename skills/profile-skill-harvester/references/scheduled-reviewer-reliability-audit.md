@@ -39,8 +39,8 @@ Measure representative child duration and tool calls, but also count duplicate d
 8. Reserve the final 20% of the child budget for report closure and readback.
 9. Reuse verified exact-SHA CI for broad suites; independently inspect the full diff and run only missing high-risk probes.
 10. Return `INCOMPLETE` when evidence is missing. It is never approval.
-11. A valid negative verdict suppresses same-SHA redispatch and routes one consolidated remediation generation in the current scheduled run.
-12. Every remediation creates a new SHA and invalidates old approval. Review opportunities have no fixed round cap: if another material blocker is found, keep the candidate blocked, preserve the monotonic lineage, correct it on a new SHA, and obtain fresh exact-SHA review; never patch-and-merge unreviewed bytes.
+11. A valid negative verdict suppresses same-SHA redispatch and routes one bounded remediation.
+12. Every remediation creates a new SHA and invalidates old approval. If a later review finds another material blocker, keep the candidate blocked until remediation and fresh exact-SHA review; never patch-and-merge unreviewed bytes. There is no fixed round limit, and Round 4 and later remain in approval-convergence mode.
 13. A durable exact-SHA approval can be consumed later only by a narrowly scoped merge-only executor that revalidates identity, approval, checks, and branch policy, cannot edit code or waive gates, and invokes an atomic expected-head merge operation. On GitHub use `gh pr merge ... --match-head-commit APPROVED_SHA`; if no atomic final-head guard exists, do not merge.
 14. Do not use GitHub auto-merge to consume an external agent verdict. Its head check occurs when auto-merge is enabled, while an authorized later push may leave the pending automatic merge armed for changed, unreviewed bytes.
 
@@ -49,7 +49,7 @@ Measure representative child duration and tool calls, but also count duplicate d
 Prompt rules alone are not deduplication. Prefer a small deterministic gate stored outside candidate repositories that atomically claims `(repository, PR, lineage, round, exact SHA, bundle)`, records `IN_PROGRESS`, finalizes one terminal verdict, and emits attempt/suppression/recovery/round/runtime/token metrics.
 
 - Write state through owner-only temporary files plus atomic replace.
-- Use an exclusive lock carrying the owner PID (and process-generation evidence when practical). Recover a lock only after proving its owner is dead. The default helper restores authenticated owner metadata if an unexpected artifact blocks directory removal. Malformed/ambiguous ownership stays fail-closed until a bounded stale-lock policy applies; the implementation may reclaim only an empty directory or a sole malformed regular `owner.json` whose filesystem age exceeds the maximum lease plus grace, while valid owners, symlinks, and extra entries remain blocked.
+- Use an exclusive lock carrying the owner PID (and process-generation evidence when practical). Recover a lock only after proving its owner is dead; malformed/ambiguous ownership stays fail-closed until a bounded stale-lock policy applies.
 - An `INCOMPLETE` result permits at most one replacement whose requested scope is a subset of its declared missing evidence.
 - If a reviewer process exits without a terminal report but left trustworthy probes/logs, preserve those artifacts, classify the attempt `INCOMPLETE`, consolidate every material discovered defect into one correction packet, and create one replacement SHA. Do not launch another broad review of the obsolete SHA merely to obtain nicer formatting.
 - After corrections, request one composite exact-SHA re-review covering prior dispositions and regression risk. Only its terminal approval can unlock merge.
@@ -80,5 +80,5 @@ After package installation:
 - Exact-SHA approval + pending CI persists `merge_pending`; a later merge-only executor uses an atomic expected-head guard and no duplicate reviewer.
 - GitHub auto-merge remains disabled for external agent verdicts, including when an authorized writer pushes a changed head.
 - Changed SHA invalidates prior approval and requires fresh independent review.
-- A negative review at any round blocks merge; a corrected SHA remains review-required until approval convergence.
+- A negative review at any round blocks/escalates instead of creating unreviewed remediation.
 - Parent controller begins with only its controller skill, not the full worker/reviewer library.
