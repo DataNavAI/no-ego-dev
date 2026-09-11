@@ -1,15 +1,15 @@
 {
-  "candidate_sha": "3bff4fada7d13981314de0365c636ad7bc73ffb7",
-  "tested_at": "2026-09-09T11:06:03Z",
-  "environment": "macOS 26.6.2; Python 3.11.16; Node.js 25.6.1",
+  "candidate_sha": "b85b2c6aa6af8ea8dee024b0fcd28938ebf2160e",
+  "tested_at": "2026-09-11T10:35:57Z",
+  "environment": "macOS 26.6.2; Python 3.11.14; Node.js 25.6.1",
   "result": "pass",
   "commands": [
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest -q",
+    "/Users/moonk/.hermes/work/pytest-env-20260911/bin/python -m pytest",
     "npm test",
     "npm run check",
     "npm pack --dry-run --json",
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m eval_runner.cli skills/profile-skill-harvester/EVAL.yaml --output-root /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260909-r5 --report /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260909-r5/profile-skill-harvester --markdown",
+    "python3 -m eval_runner.cli skills/marketer --markdown --output-root /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260911-marketer-final --report /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260911-marketer-final/report",
     "git diff --check"
   ],
-  "observations": "Python repository suite: 422 passed, 3 skipped. Node repository suite: 160 passed. npm check passed. npm pack dry-run listed 365 files with no __pycache__ or .pyc payload. The production behavioral eval runner reported profile-skill-harvester PASS for the exact approved code candidate. Secret-pattern scan reported zero hits."
+  "observations": "Python repository suite: 425 passed, 3 skipped. Node repository suite: 160 passed. npm check passed. npm pack dry-run listed 367 files with no __pycache__ or .pyc payload. The production behavioral eval runner reported PASS for both marketer EVAL scenarios. Secret-pattern scan reported zero hits. Independent exact-SHA review approved the tested code candidate."
 }
