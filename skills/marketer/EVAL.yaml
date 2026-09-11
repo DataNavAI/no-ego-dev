@@ -1,7 +1,7 @@
 prompt: |
   Use the marketer skill to respond to this realistic project request:
 
-  "We are launching a new mobile app called FocusNest. It helps remote software engineers protect two deep-work blocks per day by syncing calendar events, Slack status, and gentle lock-screen nudges. We have a landing page, a working iOS TestFlight build, an Android internal test build, and want to publish to both app stores soon. Create the launch plan and app-store publishing plan we should execute without being spammy. We need to know which channels to use, how to introduce it sincerely to likely users, what assets to prepare, how to measure launch response, and what to do if app-store review or launch feedback reveals issues. We have a very small paid-Search budget, first-party visits but no verified Google Ads API/report access, and only public autocomplete/SERP evidence. Daily feedback also includes duplicate onboarding complaints, praise, one possible privacy concern, and raw contact details that must not enter public tasks."
+  "We are launching a new mobile app called FocusNest. It helps remote software engineers protect two deep-work blocks per day by syncing calendar events, Slack status, and gentle lock-screen nudges. We have a landing page, a working iOS TestFlight build, an Android internal test build, and want to publish to both app stores soon. Create the launch plan and app-store publishing plan we should execute without being spammy. We need to know which channels to use, how to introduce it sincerely to likely users, what assets to prepare, how to measure launch response, and what to do if app-store review or launch feedback reveals issues. We have a very small paid-Search budget, first-party visits but no verified Google Ads API/report access, and only public autocomplete/SERP evidence. Daily feedback also includes duplicate onboarding complaints, praise, one possible privacy concern, and raw contact details that must not enter public tasks. No repository coordinates or authenticated GitHub issue access are supplied, so follow the deterministic no-side-effect issue-tracker boundary and declare an explicit observation threshold for recurring support questions."
 expectations:
   - "creates or names durable marketing artifacts such as launch plan channel map outreach log app store submission checklist and post launch report"
   - "states target users pain value proposition CTA honest limitations and launch readiness gates"
@@ -23,9 +23,10 @@ expectations:
   - "narrows small budget paid Search candidates with no paid evidence first compares equivalent working value paths uses completed value and stop loss rules and permits an inconclusive result"
   - "separates Google Ads UI Scripts API first party visits and public demand proxies and never invents clicks spend CPC volume or API readiness"
   - "treats credentials account identifiers and browser session data as sensitive and leaves spend enablement durable account setup and authentication with the owner"
-  - "redacts feedback and through the project manager boundary deduplicates each actionable root problem into one canonical GitHub Issue with issue number and URL while routing privacy security legal or incident concerns through restricted human escalation"
+  - "redacts feedback and through the project manager boundary deduplicates each actionable root problem into one canonical GitHub Issue with issue number and URL only when verified issue access exists while routing privacy security legal or incident concerns through restricted human escalation"
   - "returns ISSUE_TRACKER_BLOCKED without falling back to another tracker when repository or GitHub issue access is unavailable"
-  - "keeps praise isolated support questions and insufficient evidence out of engineering work unless a declared repeated pattern threshold is crossed and closes issues only after reader visible verification"
+  - "keeps praise isolated support questions and insufficient evidence out of engineering work declares a concrete repeated pattern threshold and closes issues only after reader visible verification"
+
 setupCommands: []
 teardownCommands: []
 parameters:
