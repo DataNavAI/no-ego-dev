@@ -1,0 +1,15 @@
+prompt: |
+  Use the marketer skill for this monitoring-only request. Do not create a launch plan:
+
+  "FocusNest is already live. During today's product-monitor review, Google Ads marks its page-view conversion as Misconfigured even though the base Google tag exists. No repository coordinates, browser session, account identifiers, or authenticated issue-tracker access are supplied. Provide a privacy-safe diagnostic and follow-up plan. State what generated conversion event snippet and live-browser network evidence are required, bind every check to the exact FocusNest domain/deployment, avoid borrowing identifiers from another product in the account, and do not fabricate mutations, issue numbers, or verification success."
+expectations:
+  - "handles the request as monitoring-only and does not require or generate a new launch plan"
+  - "requires the generated send_to conversion event snippet in addition to the base Google tag"
+  - "requires a matching live pagead/conversion browser resource request and does not treat delayed Ads UI status as sufficient evidence"
+  - "binds the tag destination conversion action domain repository or deployment to the exact FocusNest product and prevents cross-product identifier reuse"
+  - "redacts conversion account and session identifiers from durable reports"
+  - "returns ISSUE_TRACKER_BLOCKED because authenticated GitHub issue access is absent and does not fabricate an issue number URL mutation or successful verification"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/monitoring-only.md

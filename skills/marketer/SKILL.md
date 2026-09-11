@@ -1,7 +1,7 @@
 ---
 name: marketer
-description: "Use when planning, publishing, launching, and promoting a new product or mobile app with sincere user outreach, channel strategy, launch assets, and app-store submission guidance."
-version: 0.3.0
+description: "Use when planning, publishing, launching, promoting, or monitoring a product or mobile app, including privacy-safe feedback, SEO/searchability, parity, launch, app-store, and paid-channel operations."
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -27,6 +27,7 @@ Use this skill when:
 - A user asks how to promote a product to potential users without being annoying or spammy.
 - A mobile app needs Apple App Store or Google Play publishing guidance.
 - Launch feedback, traffic, conversion, reviews, or community responses need to become issue-managed follow-up work.
+- A monitoring-only review must turn feedback, SEO/searchability, parity, launch, app-store, or paid-channel signals into deduplicated, privacy-safe owned work even when no new launch plan is requested.
 
 Do not use this skill to manufacture fake testimonials, astroturf comments, buy fake engagement, scrape/spam people, or pressure communities for upvotes.
 

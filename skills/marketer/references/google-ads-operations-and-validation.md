@@ -34,6 +34,13 @@ Browser dashboard, Ads Scripts, and external API access are distinct capabilitie
 - Prefer reversible, idempotent operations. When an API method is unsupported, use documented resource-name mutation operations and check every result rather than assuming a batch succeeded.
 - Log only non-sensitive names/status/counts needed for verification. Redact account identifiers and never preserve browser-session content.
 
+### Conversion-tag diagnostics
+
+- An account goal marked `Misconfigured` can mean the conversion action has not received a valid recent tag hit. Do not treat a base `gtag('config', 'AW-...')` call as proof of a Google Ads page-load or page-view conversion; require the generated conversion event snippet with `send_to: 'AW-<conversionId>/<conversionLabel>'`.
+- Bind every fix to the exact product/domain, live destination URL, repository/worktree, and conversion action. Never carry an identifier, label, or site patch between products because goal names or UI paths look similar.
+- After deployment, load the live page in a real browser. Confirm the matching `gtag/js?id=AW-...` resource, confirm the conversion event snippet is present in the delivered page, and inspect `performance.getEntriesByType('resource')` for the matching `pagead/conversion/<conversionId>/...&label=<conversionLabel>` request. The Google Ads UI status may lag, so UI status alone cannot replace live resource proof.
+- Keep conversion identifiers redacted in durable reports while recording the product/domain, deployment revision, verification time, and pass/fail result.
+
 ## External API readiness
 
 UI admin access and Ads Scripts do not prove API readiness. A usable client requires an approved developer-token path, OAuth authorization, target customer context, and manager/login-customer context when applicable.
