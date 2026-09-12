@@ -415,9 +415,151 @@ def _copy_distribution(run_profile: Path) -> None:
         dst = run_profile / name
         if src.is_dir():
             shutil.copytree(src, dst, dirs_exist_ok=True)
+            if name == "skills":
+                # copytree preserves a read-only distribution root, but candidate
+                # packages must be staged beneath the isolated skills directory.
+                dst.chmod(dst.stat().st_mode | 0o200)
         else:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
+
+
+_CANDIDATE_PACKAGE_DIRECTORIES = ("assets", "evaldata", "references", "scripts", "templates")
+_SKILL_NAME_RE = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}")
+
+
+if yaml is not None:
+
+    class _UniqueKeySafeLoader(yaml.SafeLoader):
+        def construct_mapping(self, node, deep=False):
+            self.flatten_mapping(node)
+            seen = set()
+            for key_node, _ in node.value:
+                key = self.construct_object(key_node, deep=deep)
+                try:
+                    duplicate = key in seen
+                    seen.add(key)
+                except TypeError as exc:
+                    raise yaml.constructor.ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        "found an unhashable key",
+                        key_node.start_mark,
+                    ) from exc
+                if duplicate:
+                    raise yaml.constructor.ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        f"found duplicate key {key!r}",
+                        key_node.start_mark,
+                    )
+            return super().construct_mapping(node, deep=deep)
+
+
+def _candidate_skill_package_dir(eval_path: Path) -> Path | None:
+    for candidate in (eval_path.parent, *eval_path.parent.parents):
+        if (candidate / "SKILL.md").is_file():
+            return candidate.resolve()
+        if (candidate / "distribution.yaml").is_file():
+            return None
+    return None
+
+
+def _candidate_skill_name(skill_file: Path) -> str:
+    text = skill_file.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        raise ValueError("candidate SKILL.md frontmatter must start at byte zero")
+    closing = text.find("\n---\n", 4)
+    if closing < 0:
+        raise ValueError("candidate SKILL.md frontmatter is not closed")
+    _ensure_yaml()
+    try:
+        frontmatter = yaml.load(text[4:closing], Loader=_UniqueKeySafeLoader)
+    except yaml.YAMLError as exc:
+        raise ValueError("candidate SKILL.md frontmatter is invalid YAML") from exc
+    if not isinstance(frontmatter, dict):
+        raise ValueError("candidate SKILL.md frontmatter must be a mapping")
+    name = frontmatter.get("name")
+    if not isinstance(name, str) or _SKILL_NAME_RE.fullmatch(name) is None:
+        raise ValueError("candidate SKILL.md frontmatter name is missing or invalid")
+    return name
+
+
+def _copy_candidate_package_tree(source: Path, destination: Path, package_root: Path) -> None:
+    if source.is_symlink() or not source.is_dir():
+        raise ValueError("candidate package resource directory must be a real directory")
+    for child in source.iterdir():
+        if child.name.startswith(".") or child.name == "__pycache__" or child.suffix in {".pyc", ".pyo"}:
+            continue
+        resolved = child.resolve()
+        try:
+            relative = resolved.relative_to(package_root)
+        except ValueError as exc:
+            raise ValueError("candidate package resources must stay within the package") from exc
+        if child.is_symlink():
+            raise ValueError("candidate package resources must not contain symlinks")
+        target = destination / relative.relative_to(source.relative_to(package_root))
+        if child.is_dir():
+            target.mkdir()
+            _copy_candidate_package_tree(child, target, package_root)
+        elif child.is_file():
+            if child.match("EVAL*.yaml"):
+                continue
+            shutil.copy2(child, target)
+        else:
+            raise ValueError("candidate package resources must contain only regular files and directories")
+
+
+def _overlay_candidate_package(run_profile: Path, eval_path: Path) -> None:
+    package_root = _candidate_skill_package_dir(eval_path)
+    if package_root is None:
+        return
+
+    distribution_skills = Path(__file__).resolve().parents[1] / "skills"
+    try:
+        relative_distribution_package = package_root.relative_to(distribution_skills.resolve())
+    except ValueError:
+        pass
+    else:
+        if len(relative_distribution_package.parts) == 1:
+            return
+
+    package_basename = package_root.name
+    if (
+        not package_basename
+        or package_basename in {".", ".."}
+        or Path(package_basename).name != package_basename
+    ):
+        raise ValueError("candidate package name is unsafe")
+    skill_file = package_root / "SKILL.md"
+    if skill_file.is_symlink() or not skill_file.is_file():
+        raise ValueError("candidate SKILL.md must be a real file")
+    package_name = _candidate_skill_name(skill_file)
+    if package_basename != package_name:
+        raise ValueError("candidate package directory must match its frontmatter name")
+    skills_root = (run_profile / "skills").resolve()
+    destination = skills_root / package_name
+    try:
+        destination.resolve().relative_to(skills_root)
+    except ValueError as exc:
+        raise ValueError("candidate package destination must stay within isolated skills") from exc
+    if destination.exists() or destination.is_symlink():
+        raise FileExistsError("candidate package collides with an isolated profile skill")
+
+    staging = Path(tempfile.mkdtemp(prefix=f".{package_name}-", dir=skills_root))
+    try:
+        shutil.copy2(skill_file, staging / "SKILL.md")
+        for directory_name in _CANDIDATE_PACKAGE_DIRECTORIES:
+            source = package_root / directory_name
+            if not source.exists() and not source.is_symlink():
+                continue
+            target = staging / directory_name
+            target.mkdir()
+            _copy_candidate_package_tree(source, target, package_root)
+        staging.rename(destination)
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
 
 
 def _runtime_credential_home() -> Path:
@@ -1174,6 +1316,7 @@ def run_eval(
         run_profile.mkdir(parents=True, mode=0o700)
         run_profile.chmod(0o700)
         _copy_distribution(run_profile)
+        _overlay_candidate_package(run_profile, spec.path)
         _copy_runtime_credentials(run_profile, (hermes_command, judge_command))
         _overlay_runtime_model_selection(run_profile)
     except Exception as exc:

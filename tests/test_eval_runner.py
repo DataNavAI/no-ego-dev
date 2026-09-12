@@ -147,6 +147,26 @@ def _cwd_recording_hermes_command(tmp_path: Path) -> tuple[str, Path]:
     return _base_command_line([sys.executable, str(script)]), record_path
 
 
+def _profile_package_recording_command(tmp_path: Path, package_name: str) -> tuple[str, Path]:
+    script = tmp_path / "profile_package_recording.py"
+    record_path = tmp_path / "profile-package.json"
+    script.write_text(
+        "import json, os, sys\n"
+        "from pathlib import Path\n"
+        f"record_path = Path({str(record_path)!r})\n"
+        "prompt = sys.argv[-1] if sys.argv else ''\n"
+        "if 'Return only JSON' in prompt:\n"
+        "    print(json.dumps({'passed': True, 'failure_reasons': []}))\n"
+        "else:\n"
+        f"    package = Path(os.environ['HERMES_HOME']) / 'skills' / {package_name!r}\n"
+        "    files = {path.relative_to(package).as_posix(): path.read_text(encoding='utf-8') "
+        "for path in package.rglob('*') if path.is_file()}\n"
+        "    record_path.write_text(json.dumps(files, sort_keys=True))\n"
+        "    print('candidate package available')\n"
+    )
+    return _base_command_line([sys.executable, str(script)]), record_path
+
+
 def _lingering_child_hermes_command(tmp_path: Path) -> str:
     script = tmp_path / "lingering_child_hermes.py"
     script.write_text(
@@ -374,6 +394,255 @@ def test_run_eval_writes_result_json_using_hermes_oneshot_command(tmp_path):
     assert result_json.exists()
     data = json.loads(result_json.read_text())
     assert data["failure_reasons"] == []
+
+
+def test_copy_distribution_allows_overlay_into_copied_read_only_skills_root(tmp_path, monkeypatch):
+    distribution = tmp_path / "read-only-distribution"
+    source_skills = distribution / "skills"
+    source_skills.mkdir(parents=True)
+    (distribution / "eval_runner").mkdir()
+    (source_skills / "installed-skill").mkdir()
+    (source_skills / "installed-skill" / "SKILL.md").write_text("installed skill\n")
+
+    package = tmp_path / "external-candidate"
+    (package / "evaldata").mkdir(parents=True)
+    skill_text = "---\nname: external-candidate\ndescription: candidate skill\n---\n\ncandidate skill\n"
+    (package / "SKILL.md").write_text(skill_text)
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [candidate package available]\n")
+
+    run_profile = tmp_path / "run-profile"
+    run_profile.mkdir(mode=0o700)
+    monkeypatch.setattr(eval_core, "__file__", str(distribution / "eval_runner" / "core.py"))
+    source_skills.chmod(0o500)
+    source_mode = source_skills.stat().st_mode
+    try:
+        eval_core._copy_distribution(run_profile)
+        copied_skills = run_profile / "skills"
+
+        assert source_skills.stat().st_mode == source_mode
+        if os.name != "nt":
+            assert copied_skills.stat().st_mode & 0o777 == 0o700
+        eval_core._overlay_candidate_package(run_profile, eval_path)
+        assert (copied_skills / package.name / "SKILL.md").read_text() == skill_text
+    finally:
+        source_skills.chmod(0o700)
+
+
+def test_run_eval_overlays_external_candidate_package_into_isolated_profile(tmp_path):
+    package = tmp_path / "external-candidate"
+    (package / "references").mkdir(parents=True)
+    (package / "evaldata").mkdir()
+    (package / "scripts").mkdir()
+    skill_text = "---\nname: external-candidate\ndescription: candidate skill\n---\n\ncandidate skill\n"
+    (package / "SKILL.md").write_text(skill_text)
+    (package / "references" / "guide.md").write_text("candidate reference\n")
+    (package / "evaldata" / "cases.yaml").write_text("cases: []\n")
+    (package / "scripts" / "inspect.py").write_text("print('candidate script')\n")
+    (package / "runtime.log").write_text("must not be copied\n")
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [candidate package available]\n")
+    command, record_path = _profile_package_recording_command(tmp_path, package.name)
+
+    result = run_eval(eval_path, output_root=tmp_path / "runs", hermes_command=command)
+
+    assert result.passed is True
+    assert json.loads(record_path.read_text()) == {
+        "SKILL.md": skill_text,
+        "evaldata/cases.yaml": "cases: []\n",
+        "references/guide.md": "candidate reference\n",
+        "scripts/inspect.py": "print('candidate script')\n",
+    }
+
+
+def test_run_eval_does_not_overlay_ancestor_skill_across_distribution_boundary(tmp_path):
+    ancestor_skill = tmp_path / "unrelated-ancestor-skill"
+    distribution = ancestor_skill / "standalone-distribution"
+    eval_dir = distribution / "evaldata"
+    eval_dir.mkdir(parents=True)
+    (ancestor_skill / "SKILL.md").write_text("unrelated ancestor skill\n")
+    (distribution / "distribution.yaml").write_text("name: standalone\n")
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text("prompt: Say done\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.passed is True
+    isolated_package = Path(result.run_dir) / "profile" / "skills" / ancestor_skill.name
+    assert not isolated_package.exists()
+
+
+def test_run_eval_rejects_candidate_package_resource_symlink_traversal(tmp_path):
+    package = tmp_path / "external-candidate"
+    (package / "evaldata").mkdir(parents=True)
+    (package / "references").mkdir()
+    (package / "SKILL.md").write_text(
+        "---\nname: external-candidate\ndescription: candidate skill\n---\n\ncandidate skill\n"
+    )
+    outside = tmp_path / "outside-secret.txt"
+    outside.write_text("outside secret must not be copied\n")
+    try:
+        (package / "references" / "escape.md").symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks unavailable")
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.infrastructure_failure is True
+    assert result.failure_reasons == ["eval preflight failed (ValueError)"]
+    isolated_package = Path(result.run_dir) / "profile" / "skills" / package.name
+    assert not isolated_package.exists()
+
+
+def test_run_eval_rejects_external_candidate_package_name_collision(tmp_path):
+    package = tmp_path / "profile-skill-harvester"
+    (package / "evaldata").mkdir(parents=True)
+    (package / "SKILL.md").write_text(
+        "---\n"
+        "name: profile-skill-harvester\n"
+        "description: untrusted replacement\n"
+        "---\n\n"
+        "untrusted replacement\n"
+    )
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.infrastructure_failure is True
+    assert result.failure_reasons == ["eval preflight failed (FileExistsError)"]
+    isolated_skill = (
+        Path(result.run_dir) / "profile" / "skills" / "profile-skill-harvester" / "SKILL.md"
+    )
+    assert isolated_skill.read_text(encoding="utf-8") == (
+        Path(__file__).resolve().parents[1] / "skills" / "profile-skill-harvester" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    assert "untrusted replacement" not in isolated_skill.read_text(encoding="utf-8")
+
+
+def test_run_eval_checks_declared_candidate_identity_matches_directory_before_collision(tmp_path):
+    package = tmp_path / "candidate-alias"
+    (package / "evaldata").mkdir(parents=True)
+    (package / "SKILL.md").write_text(
+        "---\n"
+        "name: profile-skill-harvester\n"
+        "description: untrusted replacement\n"
+        "---\n\n"
+        "# Untrusted replacement\n"
+    )
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.infrastructure_failure is True
+    assert result.failure_reasons == ["eval preflight failed (ValueError)"]
+    isolated_skill = (
+        Path(result.run_dir) / "profile" / "skills" / "profile-skill-harvester" / "SKILL.md"
+    )
+    assert "untrusted replacement" not in isolated_skill.read_text(encoding="utf-8")
+    assert not (Path(result.run_dir) / "profile" / "skills" / "candidate-alias").exists()
+
+
+def test_run_eval_rejects_duplicate_candidate_name_with_conflicting_canonical_identity(tmp_path):
+    package = tmp_path / "external-candidate"
+    (package / "evaldata").mkdir(parents=True)
+    (package / "SKILL.md").write_text(
+        "---\n"
+        "name: external-candidate\n"
+        "description: untrusted replacement\n"
+        "name: profile-skill-harvester\n"
+        "---\n\n"
+        "# Untrusted replacement\n"
+    )
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.infrastructure_failure is True
+    assert result.failure_reasons == ["eval preflight failed (ValueError)"]
+    skills_root = Path(result.run_dir) / "profile" / "skills"
+    isolated_skill = skills_root / "profile-skill-harvester" / "SKILL.md"
+    assert "untrusted replacement" not in isolated_skill.read_text(encoding="utf-8")
+    assert not (skills_root / package.name).exists()
+
+
+def test_run_eval_rejects_candidate_name_that_differs_from_directory(tmp_path):
+    package = tmp_path / "candidate-alias"
+    (package / "evaldata").mkdir(parents=True)
+    (package / "SKILL.md").write_text(
+        "---\nname: distinct-candidate\ndescription: candidate skill\n---\n\n# Candidate\n"
+    )
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.infrastructure_failure is True
+    assert result.failure_reasons == ["eval preflight failed (ValueError)"]
+    skills_root = Path(result.run_dir) / "profile" / "skills"
+    assert not (skills_root / "candidate-alias").exists()
+    assert not (skills_root / "distinct-candidate").exists()
+
+
+@pytest.mark.parametrize(
+    "skill_text",
+    [
+        "candidate skill without frontmatter\n",
+        "---\nname: malformed-candidate\ndescription: missing close\n",
+        "---\ndescription: missing name\n---\n\n# Candidate\n",
+        "---\nname: Invalid-Candidate\ndescription: invalid name\n---\n\n# Candidate\n",
+        "---\nname: [malformed-candidate]\ndescription: non-scalar name\n---\n\n# Candidate\n",
+        "---\n- name: malformed-candidate\n---\n\n# Candidate\n",
+        (
+            "---\nname: malformed-candidate\nmetadata:\n  owner: first\n  owner: second\n"
+            "---\n\n# Candidate\n"
+        ),
+    ],
+)
+def test_run_eval_rejects_missing_or_malformed_candidate_frontmatter(tmp_path, skill_text):
+    package = tmp_path / "malformed-candidate"
+    (package / "evaldata").mkdir(parents=True)
+    (package / "SKILL.md").write_text(skill_text)
+    eval_path = package / "evaldata" / "EVAL.yaml"
+    eval_path.write_text("prompt: Inspect candidate package\nexpectations: [done appears]\n")
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.infrastructure_failure is True
+    assert result.failure_reasons == ["eval preflight failed (ValueError)"]
+    assert not (Path(result.run_dir) / "profile" / "skills" / package.name).exists()
 
 
 def test_run_eval_classifies_agent_provider_failure_as_infrastructure_error(tmp_path):
