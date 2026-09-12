@@ -1,15 +1,15 @@
 {
-  "candidate_sha": "b85b2c6aa6af8ea8dee024b0fcd28938ebf2160e",
-  "tested_at": "2026-09-11T10:35:57Z",
-  "environment": "macOS 26.6.2; Python 3.11.14; Node.js 25.6.1",
+  "candidate_sha": "7d05df6d6c2fa9b482abe429b8a8c28b42c2059d",
+  "tested_at": "2026-09-12T11:00:27Z",
+  "environment": "macOS 26.6.2; Python 3.11.16; Node.js 25.6.1; GitHub Actions Windows Python 3.11.9",
   "result": "pass",
   "commands": [
-    "/Users/moonk/.hermes/work/pytest-env-20260911/bin/python -m pytest",
+    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest -q",
     "npm test",
     "npm run check",
     "npm pack --dry-run --json",
-    "python3 -m eval_runner.cli skills/marketer --markdown --output-root /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260911-marketer-final --report /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260911-marketer-final/report",
-    "git diff --check"
+    "git diff --check",
+    "GitHub Actions NED CLI / windows-eval-runner for 7d05df6d6c2fa9b482abe429b8a8c28b42c2059d"
   ],
-  "observations": "Python repository suite: 425 passed, 3 skipped. Node repository suite: 160 passed. npm check passed. npm pack dry-run listed 367 files with no __pycache__ or .pyc payload. The production behavioral eval runner reported PASS for both marketer EVAL scenarios. Secret-pattern scan reported zero hits. Independent exact-SHA review approved the tested code candidate."
+  "observations": "Immutable code candidate 7d05df6d6c2fa9b482abe429b8a8c28b42c2059d passed the Python repository suite (440 passed, 3 skipped), Node repository suite (160 passed), npm syntax checks, package dry-run, diff check, and a read-only exact-SHA overlay probe. GitHub Actions windows-eval-runner passed 172 tests with 5 skipped; macOS, Node 20/22, and install-profile checks also passed. Secret-pattern scan reported zero hits. Independent exact-SHA review approved this code candidate."
 }
