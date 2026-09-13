@@ -93,7 +93,8 @@ def test_product_bootstrap_is_prototype_scoped_and_self_contained() -> None:
     spec = load_eval(package / "EVAL.yaml")
     assert spec.fixture_path == package / "evaldata" / "SCENARIO.md"
     assert spec.parameters["working_directory"] == "~/product-bootstrap-workspace"
-    assert spec.parameters["verification_command"] == "python3 verify.py"
+    assert spec.parameters["verification_script"] == "evaldata/starter/verify.py"
+    assert "verification_command" not in spec.parameters
     rendered = _prompt_with_fixture(spec)
     assert spec.fixture_text in rendered
     assert "deterministic post-agent verifier" in rendered

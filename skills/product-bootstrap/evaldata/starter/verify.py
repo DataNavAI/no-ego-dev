@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path.cwd()
 
 
 def read(name: str) -> str:

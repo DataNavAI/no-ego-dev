@@ -17,7 +17,7 @@ teardownCommands: []
 parameters:
   fixture: evaldata/SCENARIO.md
   working_directory: ~/product-bootstrap-workspace
-  verification_command: python3 verify.py
+  verification_script: evaldata/starter/verify.py
   expected_artifacts:
     - index.html
     - app.js
