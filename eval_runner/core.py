@@ -1568,6 +1568,14 @@ def _read_posix_file_descriptor(
     return data
 
 
+def _windows_relative_open_parameters(*, directory: bool) -> tuple[int, int, int]:
+    desired_access = 0x0001 | 0x0080 | 0x00100000
+    # Keep traversal permissive, but retain final files without write/delete sharing.
+    share_access = 0x1 | 0x2 if directory else 0x1
+    options = 0x20 | 0x00200000 | (0x1 if directory else 0x40)
+    return desired_access, share_access, options
+
+
 class _NativeWindowsHandleApi:
     """Open descendants relative to retained NT handles, never by reconstructed paths."""
 
@@ -1666,11 +1674,13 @@ class _NativeWindowsHandleApi:
         )
         io_status = self.IO_STATUS_BLOCK()
         handle = self.wintypes.HANDLE()
-        options = 0x20 | 0x00200000 | (0x1 if directory else 0x40)
+        desired_access, share_access, options = _windows_relative_open_parameters(
+            directory=directory
+        )
         status = self.ntdll.NtCreateFile(
-            self.ctypes.byref(handle), 0x0001 | 0x0080 | 0x00100000,
+            self.ctypes.byref(handle), desired_access,
             self.ctypes.byref(attributes), self.ctypes.byref(io_status), None, 0,
-            0x1 | 0x2, 1, options, None, 0,
+            share_access, 1, options, None, 0,
         )
         if status < 0:
             error = self.ntdll.RtlNtStatusToDosError(status)

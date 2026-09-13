@@ -1719,6 +1719,21 @@ def test_posix_workspace_anchor_fails_closed_without_nofollow(tmp_path, monkeypa
         eval_core._PosixWorkspaceAnchor(workspace)
 
 
+def test_windows_relative_open_parameters_deny_final_artifact_write_sharing():
+    directory_access, directory_share, directory_options = (
+        eval_core._windows_relative_open_parameters(directory=True)
+    )
+    artifact_access, artifact_share, artifact_options = (
+        eval_core._windows_relative_open_parameters(directory=False)
+    )
+
+    assert directory_access == artifact_access == 0x0001 | 0x0080 | 0x00100000
+    assert directory_share == 0x1 | 0x2
+    assert artifact_share == 0x1
+    assert directory_options == 0x20 | 0x00200000 | 0x1
+    assert artifact_options == 0x20 | 0x00200000 | 0x40
+
+
 class _FakeWindowsHandleApi:
     def __init__(self, nodes):
         root = eval_core._WindowsFileInfo(True, False, False, 0, (1, 1), 1)
@@ -1778,6 +1793,30 @@ def test_windows_workspace_anchor_rejects_reparse_component_and_closes_handles(t
     assert set(api.closed) == {(), ("link",)}
 
 
+def _windows_open_for_write(path):
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateFileW.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    ]
+    kernel32.CreateFileW.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    ctypes.set_last_error(0)
+    handle = kernel32.CreateFileW(
+        str(path), 0x40000000, 0x1 | 0x2, None, 3, 0x80, None
+    )
+    return kernel32, handle, ctypes.get_last_error(), wintypes.HANDLE(-1).value
+
+
 @pytest.mark.skipif(os.name != "nt", reason="requires Windows native handles")
 def test_windows_native_workspace_anchor_reads_nested_regular_file(tmp_path):
     workspace = tmp_path / "workspace"
@@ -1795,8 +1834,10 @@ def test_windows_native_workspace_anchor_reads_nested_regular_file(tmp_path):
     assert (snapshot / "nested" / "a.txt").read_bytes() == b"safe"
 
 
-@pytest.mark.skipif(os.name != "nt", reason="requires Windows native handles")
-def test_windows_native_workspace_anchor_rejects_in_place_change(tmp_path, monkeypatch):
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native sharing semantics")
+def test_windows_native_workspace_anchor_denies_same_size_write_while_reading(
+    tmp_path, monkeypatch
+):
     workspace = tmp_path / "workspace"
     snapshot = tmp_path / "snapshot"
     workspace.mkdir()
@@ -1806,32 +1847,56 @@ def test_windows_native_workspace_anchor_rejects_in_place_change(tmp_path, monke
     api = eval_core._NativeWindowsHandleApi()
     anchor = eval_core._WindowsWorkspaceAnchor(workspace, api=api)
     real_read = api.read
-    mutations = []
+    blocked = []
 
-    def mutate_then_read(handle, limit):
-        before = api.info(handle)
-        time.sleep(0.01)
-        artifact.write_bytes(b"substitut")
-        after = api.info(handle)
-        mutations.append((before, after))
+    def attempt_write_then_read(handle, limit):
+        kernel32, writer, error, invalid_handle = _windows_open_for_write(artifact)
+        if writer != invalid_handle:
+            kernel32.CloseHandle(writer)
+            pytest.fail("Windows same-size write unexpectedly bypassed the retained handle")
+        blocked.append(error)
         return real_read(handle, limit)
 
-    monkeypatch.setattr(api, "read", mutate_then_read)
+    monkeypatch.setattr(api, "read", attempt_write_then_read)
 
     try:
-        with pytest.raises(
-            eval_core.PostAgentVerificationFailure,
-            match="changed while being snapshotted",
-        ):
-            eval_core._snapshot_expected_artifacts(anchor, snapshot, ("artifact.txt",))
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("artifact.txt",))
     finally:
         anchor.close()
 
-    assert mutations
-    before, after = mutations[0]
-    assert after.size == before.size
-    assert after.identity == before.identity
-    assert (after.mtime, after.change_time) != (before.mtime, before.change_time)
+    assert blocked
+    assert blocked[0] == 32  # ERROR_SHARING_VIOLATION
+    assert artifact.read_bytes() == b"validated"
+    assert (snapshot / "artifact.txt").read_bytes() == b"validated"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native sharing semantics")
+def test_windows_native_workspace_anchor_fails_closed_with_existing_writer(tmp_path):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    artifact.write_bytes(b"validated")
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace)
+
+    try:
+        kernel32, writer, error, invalid_handle = _windows_open_for_write(artifact)
+        assert writer != invalid_handle, error
+        try:
+            with pytest.raises(
+                eval_core.PostAgentVerificationFailure,
+                match="could not be opened securely",
+            ):
+                eval_core._snapshot_expected_artifacts(
+                    anchor, snapshot, ("artifact.txt",)
+                )
+        finally:
+            assert kernel32.CloseHandle(writer)
+    finally:
+        anchor.close()
+
+    assert not (snapshot / "artifact.txt").exists()
 
 
 @pytest.mark.parametrize("operation", ["rename", "delete"])
