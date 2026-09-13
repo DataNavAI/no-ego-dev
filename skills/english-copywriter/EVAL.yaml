@@ -1,0 +1,17 @@
+name: english-copywriter
+prompt: |
+  Use the english-copywriter skill on the supplied website and mobile scenarios. Explicitly choose Authoring mode or Specialist review mode for each requested output. Review only copy-specialist concerns, run the minimum-text pass before rewriting, and provide exact material corrections. Do not claim binding candidate approval.
+expectations:
+  - "distinguishes Authoring mode from Specialist review mode and does not self-approve authored copy"
+  - "uses only PASS NEEDS ITERATION or BLOCKED for a specialist verdict"
+  - "omits reversible nits entirely rather than reporting minor optional deferred or polish feedback"
+  - "inventories visible and accessible UI copy or clearly bounds unavailable review surfaces"
+  - "runs a minimum-text pass before rewriting and preserves text needed for accessibility safety trust or recovery"
+  - "rewrites material CTAs states errors confirmations and permissions with exact plain-English strings"
+  - "checks dynamic visible accessible payload and documentation copy for truthful state agreement"
+  - "checks sourced factual claims and evidence-availability language without treating references as proof"
+  - "defers binding candidate approval identity lineage rounds and independence gates to a canonical reviewer"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md

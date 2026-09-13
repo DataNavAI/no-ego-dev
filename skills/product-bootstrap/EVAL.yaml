@@ -1,0 +1,25 @@
+name: product-bootstrap
+prompt: |
+  Bootstrap the smallest useful dog-walker intake prototype from the supplied benchmark and starter. Work only in the configured isolated workspace. Before editing, define the product stage, learning decision, primary journey, feedback path, mocked/manual inventory, and prototype limitations. Implement one interaction, then run the deterministic post-agent verifier and report exact evidence. Do not present the result as a real MVP or production system.
+expectations:
+  - "works in the configured isolated workspace copied from the vendored starter and does not mutate the canonical fixture"
+  - "states Product stage as prototype and routes a real MVP to product-manager and mvp-planning"
+  - "states one Learning decision and the evidence that would change it before implementation"
+  - "implements one clear adapted intake-to-handoff journey without copying benchmark branding or text"
+  - "provides a concrete Feedback path for collecting evidence from a reviewer or user"
+  - "provides a complete Mocked/manual inventory and honest prototype limitations"
+  - "runs the deterministic post-agent verifier using python3 verify.py and reports its exact result"
+  - "separates deterministic source verification from any browser interaction evidence"
+  - "leaves no scratch output in the canonical package or fixture"
+setupCommands:
+  - "python3 -c \"from pathlib import Path; import os, shutil; shutil.copytree(Path.cwd() / 'evaldata' / 'starter', Path(os.environ['HOME']) / 'product-bootstrap-workspace')\""
+teardownCommands: []
+parameters:
+  fixture: evaldata/SCENARIO.md
+  working_directory: ~/product-bootstrap-workspace
+  verification_command: python3 verify.py
+  expected_artifacts:
+    - index.html
+    - app.js
+    - styles.css
+    - README.md
