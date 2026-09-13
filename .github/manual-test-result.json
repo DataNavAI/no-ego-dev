@@ -1,15 +1,15 @@
 {
-  "candidate_sha": "7d05df6d6c2fa9b482abe429b8a8c28b42c2059d",
-  "tested_at": "2026-09-12T11:00:27Z",
-  "environment": "macOS 26.6.2; Python 3.11.16; Node.js 25.6.1; GitHub Actions Windows Python 3.11.9",
+  "candidate_sha": "5ceacf139be72df7b40b892db523881feeb32c0f",
+  "tested_at": "2026-09-13T02:45:47Z",
+  "environment": "macOS 26.6.2; Python 3.11.14 via uv; Node.js 25.6.1",
   "result": "pass",
   "commands": [
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest -q",
+    "PYTHONPATH=$PWD uv run --python 3.11 --with pytest --with pyyaml pytest -q",
     "npm test",
     "npm run check",
-    "npm pack --dry-run --json",
-    "git diff --check",
-    "GitHub Actions NED CLI / windows-eval-runner for 7d05df6d6c2fa9b482abe429b8a8c28b42c2059d"
+    "python3 -m compileall -q eval_runner tests",
+    "git diff --check origin/main...HEAD",
+    "npm pack --dry-run --json"
   ],
-  "observations": "Immutable code candidate 7d05df6d6c2fa9b482abe429b8a8c28b42c2059d passed the Python repository suite (440 passed, 3 skipped), Node repository suite (160 passed), npm syntax checks, package dry-run, diff check, and a read-only exact-SHA overlay probe. GitHub Actions windows-eval-runner passed 172 tests with 5 skipped; macOS, Node 20/22, and install-profile checks also passed. Secret-pattern scan reported zero hits. Independent exact-SHA review approved this code candidate."
+  "observations": "Exact code candidate 5ceacf139be72df7b40b892db523881feeb32c0f passed the Python repository suite (505 passed, 9 platform skips), Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (394 files with no cache artifacts), diff check, and added-line secret/security scans. Native Windows cases were skipped on macOS and remain an explicit CI gate; cross-platform structural checks passed locally. Independent exact-SHA review approved the code candidate with no material findings."
 }

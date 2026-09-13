@@ -8,12 +8,15 @@ import re
 import shlex
 import shutil
 import signal
+import stat
 import string
 import subprocess
+import sys
 import tempfile
+import threading
 import time
 import uuid
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Iterable
 from urllib.parse import urlsplit
 
@@ -33,6 +36,23 @@ class EvalSpec:
     parameters: dict[str, Any]
     fixture_path: Path | None
     fixture_text: str | None
+    verification_script: str | None
+    verification_program: bytes | None
+    expected_artifacts: tuple[str, ...]
+
+
+class PostAgentVerificationFailure(RuntimeError):
+    def __init__(self, reason: str, evidence: dict[str, Any]):
+        super().__init__(reason)
+        self.reason = reason
+        self.evidence = evidence
+
+
+class _VerifierOutputLimitExceeded(RuntimeError):
+    def __init__(self, stdout: str, stderr: str):
+        super().__init__("post-agent verifier exceeded output limit")
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 @dataclasses.dataclass
@@ -140,6 +160,103 @@ def _load_command_field(data: dict[str, Any], camel: str, snake: str) -> list[st
     return value
 
 
+_MAX_VERIFIER_PROGRAM_BYTES = 1_048_576
+_MAX_EXPECTED_ARTIFACTS = 64
+_MAX_ARTIFACT_BYTES = 4_194_304
+_MAX_TOTAL_ARTIFACT_BYTES = 16_777_216
+
+
+def _safe_relative_parts(value: str, field: str) -> tuple[str, ...]:
+    native = Path(value)
+    posix = PurePosixPath(value)
+    windows = PureWindowsPath(value)
+    if (
+        native.is_absolute()
+        or posix.is_absolute()
+        or windows.is_absolute()
+        or bool(windows.drive)
+        or bool(windows.root)
+        or value in {".", ".."}
+    ):
+        raise ValueError(f"{field} must contain nonempty relative paths")
+    if ".." in native.parts or ".." in windows.parts:
+        raise ValueError(f"{field} must not contain traversal components")
+    parts = tuple(part for part in native.parts if part not in {"", "."})
+    if not parts:
+        raise ValueError(f"{field} must contain nonempty relative paths")
+    return parts
+
+
+def _read_package_verifier(eval_path: Path, relative: str) -> bytes:
+    parts = _safe_relative_parts(relative, "parameters.verification_script")
+    package = _eval_package_dir(eval_path)
+    candidate = package.joinpath(*parts)
+    current = package
+    for part in parts:
+        current = current / part
+        if current.is_symlink():
+            raise ValueError("parameters.verification_script must not use symlinks")
+    try:
+        candidate.resolve().relative_to(package)
+    except ValueError as exc:
+        raise ValueError("parameters.verification_script must stay within the eval package") from exc
+    try:
+        info = candidate.stat()
+    except FileNotFoundError as exc:
+        raise ValueError("parameters.verification_script must reference an existing file") from exc
+    if not stat.S_ISREG(info.st_mode):
+        raise ValueError("parameters.verification_script must reference a regular file")
+    if info.st_size == 0 or info.st_size > _MAX_VERIFIER_PROGRAM_BYTES:
+        raise ValueError("parameters.verification_script has an invalid size")
+    program = candidate.read_bytes()
+    if len(program) != info.st_size:
+        raise ValueError("parameters.verification_script changed while being read")
+    return program
+
+
+def _load_post_agent_verifier(
+    eval_path: Path, parameters: dict[str, Any],
+) -> tuple[str | None, bytes | None, tuple[str, ...]]:
+    if "verification_command" in parameters:
+        raise ValueError("parameters.verification_command is unsafe; use verification_script")
+    has_command = "verification_script" in parameters
+    has_artifacts = "expected_artifacts" in parameters
+    command = parameters.get("verification_script")
+    artifacts = parameters.get("expected_artifacts")
+
+    working_directory = parameters.get("working_directory")
+    if "working_directory" in parameters and (
+        not isinstance(working_directory, str) or not working_directory.strip()
+    ):
+        raise ValueError("parameters.working_directory must be a non-empty path string")
+    if has_command and (not isinstance(command, str) or not command.strip()):
+        raise ValueError("parameters.verification_script must be a non-empty string")
+    if has_artifacts and (
+        not isinstance(artifacts, list)
+        or not artifacts
+        or not all(isinstance(item, str) and item.strip() for item in artifacts)
+    ):
+        raise ValueError("parameters.expected_artifacts must be a non-empty string array")
+    if has_command != has_artifacts:
+        raise ValueError(
+            "parameters.verification_script and parameters.expected_artifacts must be declared together"
+        )
+    if not has_command:
+        return None, None, ()
+    if len(artifacts) > _MAX_EXPECTED_ARTIFACTS:
+        raise ValueError("parameters.expected_artifacts exceeds the maximum artifact count")
+
+    normalized: list[str] = []
+    for raw in artifacts:
+        value = raw.strip()
+        _safe_relative_parts(value, "parameters.expected_artifacts")
+        normalized.append(value)
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("parameters.expected_artifacts must not contain duplicate paths")
+    script = command.strip()
+    return script, _read_package_verifier(eval_path, script), tuple(normalized)
+
+
 def load_eval(path: str | Path) -> EvalSpec:
     _ensure_yaml()
     eval_path = Path(path).expanduser().resolve()
@@ -157,6 +274,9 @@ def load_eval(path: str | Path) -> EvalSpec:
     parameters = data.get("parameters", {}) or {}
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be a map")
+    verification_script, verification_program, expected_artifacts = _load_post_agent_verifier(
+        eval_path, parameters
+    )
     fixture_path, fixture_text = _load_fixture(eval_path, parameters)
     return EvalSpec(
         eval_path,
@@ -167,6 +287,9 @@ def load_eval(path: str | Path) -> EvalSpec:
         parameters,
         fixture_path,
         fixture_text,
+        verification_script,
+        verification_program,
+        expected_artifacts,
     )
 
 
@@ -346,6 +469,7 @@ def _run_oneshot_command(
     env: dict[str, str],
     timeout: int,
     cleanup_descendants: bool = True,
+    output_limit: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Capture a one-shot command without hanging on inherited pipe handles."""
     with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stdout_file, tempfile.TemporaryFile(
@@ -398,11 +522,23 @@ def _run_oneshot_command(
                     _terminate_windows_process_tree(proc.pid)
         stdout_file.seek(0)
         stderr_file.seek(0)
+
+        def captured(handle) -> str:
+            if output_limit is None:
+                return handle.read()
+            value = handle.read(output_limit + 1)
+            if len(value) <= output_limit:
+                return value
+            marker = "\n...[output truncated by eval runner]...\n"
+            if output_limit <= len(marker):
+                return marker[:output_limit]
+            return value[: output_limit - len(marker)] + marker
+
         return subprocess.CompletedProcess(
             args=command,
             returncode=returncode,
-            stdout=stdout_file.read(),
-            stderr=stderr_file.read(),
+            stdout=captured(stdout_file),
+            stderr=captured(stderr_file),
         )
 
 
@@ -1197,12 +1333,589 @@ def _build_oneshot_command(
     return [*base_args, *quiet_args, "-q", prompt]
 
 
+def _resolve_eval_working_directory(
+    spec: EvalSpec,
+    env: dict[str, str],
+    run_dir: Path,
+) -> Path:
+    raw = spec.parameters.get("working_directory")
+    if raw is None:
+        configured = run_dir
+    else:
+        if not isinstance(raw, str) or not raw.strip():
+            raise ValueError("parameters.working_directory must be a non-empty path string")
+        expanded = string.Template(raw).safe_substitute(env)
+        if expanded == "~":
+            configured = Path(env["HOME"])
+        elif expanded.startswith("~/"):
+            configured = Path(env["HOME"]) / expanded[2:]
+        elif expanded.startswith("~"):
+            raise ValueError("parameters.working_directory must not reference another user's home")
+        else:
+            configured = Path(expanded)
+        if not configured.is_absolute():
+            configured = spec.path.parent / configured
+    working_directory = configured.resolve()
+    if spec.verification_program is not None:
+        try:
+            working_directory.relative_to(run_dir.resolve())
+        except ValueError as exc:
+            raise ValueError(
+                "parameters.working_directory must stay within the isolated eval workspace"
+            ) from exc
+    return working_directory
+
+
+_VERIFIER_TIMEOUT_SECONDS = 120
+_VERIFIER_OUTPUT_LIMIT = 16_384
+
+
+def _run_bounded_verifier_command(
+    command: list[str], *, cwd: Path, env: dict[str, str], timeout: float, output_limit: int
+) -> subprocess.CompletedProcess[str]:
+    """Drain verifier pipes live and kill its process tree at the byte limit."""
+    windows_flags = 0
+    if os.name == "nt":
+        windows_flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        windows_flags |= getattr(subprocess, "CREATE_SUSPENDED", 0x00000004)
+    proc = subprocess.Popen(
+        command,
+        cwd=cwd,
+        env=env,
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=os.name == "posix",
+        creationflags=windows_flags,
+    )
+    windows_job = _prepare_windows_isolated_process(proc) if os.name == "nt" else None
+    captured = {"stdout": bytearray(), "stderr": bytearray()}
+    captured_bytes = 0
+    lock = threading.Lock()
+    overflow = threading.Event()
+
+    def drain(name: str, stream: Any) -> None:
+        nonlocal captured_bytes
+        while True:
+            chunk = stream.read(4096)
+            if not chunk:
+                return
+            with lock:
+                available = max(0, output_limit - captured_bytes)
+                captured[name].extend(chunk[:available])
+                captured_bytes += min(len(chunk), available)
+                if len(chunk) > available:
+                    overflow.set()
+                    return
+
+    readers = [
+        threading.Thread(target=drain, args=("stdout", proc.stdout), daemon=True),
+        threading.Thread(target=drain, args=("stderr", proc.stderr), daemon=True),
+    ]
+    for reader in readers:
+        reader.start()
+    deadline = time.monotonic() + timeout
+    timed_out = False
+    try:
+        while proc.poll() is None:
+            if overflow.wait(timeout=min(0.01, max(0.0, deadline - time.monotonic()))):
+                break
+            if time.monotonic() >= deadline:
+                timed_out = True
+                break
+        if overflow.is_set() or timed_out:
+            if os.name == "posix":
+                _terminate_posix_process_group(proc.pid)
+            else:
+                if windows_job is not None:
+                    _close_windows_kill_job(windows_job)
+                    windows_job = None
+                else:
+                    _terminate_windows_process_tree(proc.pid)
+                if proc.poll() is None:
+                    proc.kill()
+        try:
+            returncode = proc.wait(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            _bounded_kill_and_wait(proc)
+            returncode = proc.poll() if proc.poll() is not None else -1
+    finally:
+        if os.name == "posix":
+            _terminate_posix_process_group(proc.pid)
+        elif windows_job is not None:
+            _close_windows_kill_job(windows_job)
+        for stream in (proc.stdout, proc.stderr):
+            if stream is not None:
+                stream.close()
+        for reader in readers:
+            reader.join(timeout=1.0)
+    stdout = bytes(captured["stdout"]).decode("utf-8", errors="replace")
+    stderr = bytes(captured["stderr"]).decode("utf-8", errors="replace")
+    if overflow.is_set():
+        raise _VerifierOutputLimitExceeded(stdout, stderr)
+    if timed_out:
+        raise RuntimeError(f"One-shot command timed out after {timeout} seconds")
+    return subprocess.CompletedProcess(command, returncode, stdout, stderr)
+
+
+def _artifact_failure(reason: str, artifacts: tuple[str, ...]) -> PostAgentVerificationFailure:
+    return PostAgentVerificationFailure(
+        reason, {"status": "failed", "expected_artifacts": list(artifacts)}
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class _WindowsFileInfo:
+    is_directory: bool
+    is_regular: bool
+    is_reparse: bool
+    size: int
+    identity: tuple[int, int]
+    mtime: int
+    change_time: int = 0
+
+
+class _PosixWorkspaceAnchor:
+    def __init__(self, working_directory: Path):
+        if not hasattr(os, "O_NOFOLLOW"):
+            raise OSError("secure verifier traversal requires O_NOFOLLOW")
+        if os.open not in getattr(os, "supports_dir_fd", set()):
+            raise OSError("secure verifier traversal requires os.open dir_fd support")
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | os.O_NOFOLLOW
+        self._descriptor = os.open(working_directory, flags)
+        if not stat.S_ISDIR(os.fstat(self._descriptor).st_mode):
+            self.close()
+            raise NotADirectoryError(str(working_directory))
+
+    def close(self) -> None:
+        descriptor = getattr(self, "_descriptor", None)
+        if descriptor is not None:
+            self._descriptor = None
+            os.close(descriptor)
+
+    def read_artifact(self, artifact: str, artifacts: tuple[str, ...]) -> bytes:
+        parts = _safe_relative_parts(artifact, "parameters.expected_artifacts")
+        nofollow = getattr(os, "O_NOFOLLOW", 0)
+        directory_flag = getattr(os, "O_DIRECTORY", 0)
+        descriptors: list[int] = []
+        parent_descriptor = self._descriptor
+        try:
+            for part in parts[:-1]:
+                descriptor = os.open(
+                    part, os.O_RDONLY | directory_flag | nofollow, dir_fd=parent_descriptor
+                )
+                descriptors.append(descriptor)
+                parent_descriptor = descriptor
+            file_descriptor = os.open(parts[-1], os.O_RDONLY | nofollow, dir_fd=parent_descriptor)
+            descriptors.append(file_descriptor)
+            return _read_posix_file_descriptor(file_descriptor, artifact, artifacts)
+        except PostAgentVerificationFailure:
+            raise
+        except (FileNotFoundError, NotADirectoryError):
+            raise _artifact_failure(
+                f"expected artifact is missing or not a file: {artifact}", artifacts
+            ) from None
+        except OSError:
+            raise _artifact_failure(
+                f"expected artifact must not use symlinks: {artifact}", artifacts
+            ) from None
+        finally:
+            for descriptor in reversed(descriptors):
+                os.close(descriptor)
+
+
+def _stat_ctime_ns(info: os.stat_result) -> int:
+    ctime_ns = getattr(info, "st_ctime_ns", None)
+    if ctime_ns is not None:
+        return int(ctime_ns)
+    return int(info.st_ctime * 1_000_000_000)
+
+
+def _read_posix_file_descriptor(
+    file_descriptor: int, artifact: str, artifacts: tuple[str, ...]
+) -> bytes:
+    info = os.fstat(file_descriptor)
+    if not stat.S_ISREG(info.st_mode):
+        raise _artifact_failure(
+            f"expected artifact is missing or not a regular file: {artifact}", artifacts
+        )
+    if info.st_size > _MAX_ARTIFACT_BYTES:
+        raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+    chunks: list[bytes] = []
+    remaining = _MAX_ARTIFACT_BYTES + 1
+    while remaining:
+        chunk = os.read(file_descriptor, min(65_536, remaining))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    data = b"".join(chunks)
+    if len(data) > _MAX_ARTIFACT_BYTES:
+        raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+    final_info = os.fstat(file_descriptor)
+    initial_identity = (
+        info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns,
+        _stat_ctime_ns(info),
+    )
+    final_identity = (
+        final_info.st_dev, final_info.st_ino, final_info.st_mode,
+        final_info.st_size, final_info.st_mtime_ns, _stat_ctime_ns(final_info),
+    )
+    if len(data) != info.st_size or final_identity != initial_identity:
+        raise _artifact_failure(
+            f"expected artifact changed while being snapshotted: {artifact}", artifacts
+        )
+    return data
+
+
+def _windows_relative_open_parameters(*, directory: bool) -> tuple[int, int, int]:
+    desired_access = 0x0001 | 0x0080 | 0x00100000
+    # Keep traversal permissive, but retain final files without write/delete sharing.
+    share_access = 0x1 | 0x2 if directory else 0x1
+    options = 0x20 | 0x00200000 | (0x1 if directory else 0x40)
+    return desired_access, share_access, options
+
+
+class _NativeWindowsHandleApi:
+    """Open descendants relative to retained NT handles, never by reconstructed paths."""
+
+    def __init__(self) -> None:
+        if os.name != "nt":
+            raise OSError("Windows native handles are unavailable on this platform")
+        import ctypes
+        from ctypes import wintypes
+
+        self.ctypes = ctypes
+        self.wintypes = wintypes
+        self.kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.ntdll = ctypes.WinDLL("ntdll", use_last_error=True)
+
+        class UNICODE_STRING(ctypes.Structure):
+            _fields_ = [("Length", wintypes.USHORT), ("MaximumLength", wintypes.USHORT),
+                        ("Buffer", wintypes.LPWSTR)]
+
+        class OBJECT_ATTRIBUTES(ctypes.Structure):
+            _fields_ = [("Length", wintypes.ULONG), ("RootDirectory", wintypes.HANDLE),
+                        ("ObjectName", ctypes.POINTER(UNICODE_STRING)), ("Attributes", wintypes.ULONG),
+                        ("SecurityDescriptor", wintypes.LPVOID),
+                        ("SecurityQualityOfService", wintypes.LPVOID)]
+
+        class IO_STATUS_BLOCK(ctypes.Structure):
+            _fields_ = [("Status", ctypes.c_void_p), ("Information", ctypes.c_size_t)]
+
+        class BY_HANDLE_FILE_INFORMATION(ctypes.Structure):
+            _fields_ = [("dwFileAttributes", wintypes.DWORD), ("ftCreationTime", wintypes.FILETIME),
+                        ("ftLastAccessTime", wintypes.FILETIME), ("ftLastWriteTime", wintypes.FILETIME),
+                        ("dwVolumeSerialNumber", wintypes.DWORD), ("nFileSizeHigh", wintypes.DWORD),
+                        ("nFileSizeLow", wintypes.DWORD), ("nNumberOfLinks", wintypes.DWORD),
+                        ("nFileIndexHigh", wintypes.DWORD), ("nFileIndexLow", wintypes.DWORD)]
+
+        class FILE_BASIC_INFO(ctypes.Structure):
+            _fields_ = [("CreationTime", ctypes.c_longlong), ("LastAccessTime", ctypes.c_longlong),
+                        ("LastWriteTime", ctypes.c_longlong), ("ChangeTime", ctypes.c_longlong),
+                        ("FileAttributes", wintypes.DWORD)]
+
+        self.UNICODE_STRING = UNICODE_STRING
+        self.OBJECT_ATTRIBUTES = OBJECT_ATTRIBUTES
+        self.IO_STATUS_BLOCK = IO_STATUS_BLOCK
+        self.BY_HANDLE_FILE_INFORMATION = BY_HANDLE_FILE_INFORMATION
+        self.FILE_BASIC_INFO = FILE_BASIC_INFO
+        self.kernel32.CreateFileW.argtypes = [
+            wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+            wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+        ]
+        self.kernel32.CreateFileW.restype = wintypes.HANDLE
+        self.kernel32.GetFileInformationByHandle.argtypes = [
+            wintypes.HANDLE, ctypes.POINTER(BY_HANDLE_FILE_INFORMATION),
+        ]
+        self.kernel32.GetFileInformationByHandle.restype = wintypes.BOOL
+        self.kernel32.GetFileInformationByHandleEx.argtypes = [
+            wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD,
+        ]
+        self.kernel32.GetFileInformationByHandleEx.restype = wintypes.BOOL
+        self.kernel32.ReadFile.argtypes = [
+            wintypes.HANDLE, wintypes.LPVOID, wintypes.DWORD,
+            ctypes.POINTER(wintypes.DWORD), wintypes.LPVOID,
+        ]
+        self.kernel32.ReadFile.restype = wintypes.BOOL
+        self.kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        self.kernel32.CloseHandle.restype = wintypes.BOOL
+        self.ntdll.NtCreateFile.argtypes = [
+            ctypes.POINTER(wintypes.HANDLE), wintypes.ULONG,
+            ctypes.POINTER(OBJECT_ATTRIBUTES), ctypes.POINTER(IO_STATUS_BLOCK),
+            wintypes.LPVOID, wintypes.ULONG, wintypes.ULONG, wintypes.ULONG,
+            wintypes.ULONG, wintypes.LPVOID, wintypes.ULONG,
+        ]
+        self.ntdll.NtCreateFile.restype = ctypes.c_long
+        self.ntdll.RtlNtStatusToDosError.argtypes = [ctypes.c_long]
+        self.ntdll.RtlNtStatusToDosError.restype = wintypes.ULONG
+
+    def _raise_last_error(self) -> None:
+        raise self.ctypes.WinError(self.ctypes.get_last_error())
+
+    def open_root(self, path: Path) -> Any:
+        handle = self.kernel32.CreateFileW(
+            str(path), 0x0001 | 0x0080 | 0x00100000, 0x1 | 0x2, None, 3,
+            0x02000000 | 0x00200000, None,
+        )
+        if handle == self.wintypes.HANDLE(-1).value:
+            self._raise_last_error()
+        return handle
+
+    def open_relative(self, parent: Any, name: str, *, directory: bool) -> Any:
+        name_buffer = self.ctypes.create_unicode_buffer(name)
+        unicode_name = self.UNICODE_STRING(
+            len(name.encode("utf-16-le")), len(name.encode("utf-16-le")) + 2,
+            self.ctypes.cast(name_buffer, self.wintypes.LPWSTR),
+        )
+        attributes = self.OBJECT_ATTRIBUTES(
+            self.ctypes.sizeof(self.OBJECT_ATTRIBUTES), parent,
+            self.ctypes.pointer(unicode_name), 0x40, None, None,
+        )
+        io_status = self.IO_STATUS_BLOCK()
+        handle = self.wintypes.HANDLE()
+        desired_access, share_access, options = _windows_relative_open_parameters(
+            directory=directory
+        )
+        status = self.ntdll.NtCreateFile(
+            self.ctypes.byref(handle), desired_access,
+            self.ctypes.byref(attributes), self.ctypes.byref(io_status), None, 0,
+            share_access, 1, options, None, 0,
+        )
+        if status < 0:
+            error = self.ntdll.RtlNtStatusToDosError(status)
+            raise self.ctypes.WinError(error)
+        return handle
+
+    def info(self, handle: Any) -> _WindowsFileInfo:
+        info = self.BY_HANDLE_FILE_INFORMATION()
+        if not self.kernel32.GetFileInformationByHandle(handle, self.ctypes.byref(info)):
+            self._raise_last_error()
+        basic = self.FILE_BASIC_INFO()
+        if not self.kernel32.GetFileInformationByHandleEx(
+            handle, 0, self.ctypes.byref(basic), self.ctypes.sizeof(basic)
+        ):
+            self._raise_last_error()
+        attributes = info.dwFileAttributes
+        size = (info.nFileSizeHigh << 32) | info.nFileSizeLow
+        identity = (info.dwVolumeSerialNumber, (info.nFileIndexHigh << 32) | info.nFileIndexLow)
+        mtime = (info.ftLastWriteTime.dwHighDateTime << 32) | info.ftLastWriteTime.dwLowDateTime
+        is_directory = bool(attributes & 0x10)
+        return _WindowsFileInfo(
+            is_directory, not is_directory, bool(attributes & 0x400), size, identity, mtime,
+            basic.ChangeTime,
+        )
+
+    def read(self, handle: Any, limit: int) -> bytes:
+        chunks: list[bytes] = []
+        remaining = limit
+        while remaining:
+            requested = min(65_536, remaining)
+            buffer = self.ctypes.create_string_buffer(requested)
+            count = self.wintypes.DWORD()
+            if not self.kernel32.ReadFile(handle, buffer, requested, self.ctypes.byref(count), None):
+                error = self.ctypes.get_last_error()
+                if error == 38:  # ERROR_HANDLE_EOF
+                    break
+                raise self.ctypes.WinError(error)
+            if not count.value:
+                break
+            chunks.append(buffer.raw[:count.value])
+            remaining -= count.value
+        return b"".join(chunks)
+
+    def close(self, handle: Any) -> None:
+        if not self.kernel32.CloseHandle(handle):
+            self._raise_last_error()
+
+
+class _WindowsWorkspaceAnchor:
+    def __init__(self, working_directory: Path, *, api: Any | None = None):
+        self._api = api or _NativeWindowsHandleApi()
+        self._handle = self._api.open_root(working_directory)
+        try:
+            root_info = self._api.info(self._handle)
+            if not root_info.is_directory or root_info.is_reparse:
+                raise OSError("verifier working directory must be a non-reparse directory")
+        except Exception:
+            self.close()
+            raise
+
+    def close(self) -> None:
+        handle = getattr(self, "_handle", None)
+        if handle is not None:
+            self._handle = None
+            self._api.close(handle)
+
+    def read_artifact(self, artifact: str, artifacts: tuple[str, ...]) -> bytes:
+        parts = _safe_relative_parts(artifact, "parameters.expected_artifacts")
+        handles: list[Any] = []
+        parent = self._handle
+        try:
+            for part in parts[:-1]:
+                handle = self._api.open_relative(parent, part, directory=True)
+                handles.append(handle)
+                info = self._api.info(handle)
+                if info.is_reparse:
+                    raise _artifact_failure(
+                        f"expected artifact must not use reparse points: {artifact}", artifacts
+                    )
+                if not info.is_directory:
+                    raise _artifact_failure(
+                        f"expected artifact is missing or not a file: {artifact}", artifacts
+                    )
+                parent = handle
+            handle = self._api.open_relative(parent, parts[-1], directory=False)
+            handles.append(handle)
+            info = self._api.info(handle)
+            if info.is_reparse:
+                raise _artifact_failure(
+                    f"expected artifact must not use reparse points: {artifact}", artifacts
+                )
+            if not info.is_regular:
+                raise _artifact_failure(
+                    f"expected artifact is missing or not a regular file: {artifact}", artifacts
+                )
+            if info.size > _MAX_ARTIFACT_BYTES:
+                raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+            data = self._api.read(handle, _MAX_ARTIFACT_BYTES + 1)
+            final_info = self._api.info(handle)
+            if len(data) > _MAX_ARTIFACT_BYTES:
+                raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+            if len(data) != info.size or final_info != info:
+                raise _artifact_failure(
+                    f"expected artifact changed while being snapshotted: {artifact}", artifacts
+                )
+            return data
+        except PostAgentVerificationFailure:
+            raise
+        except (FileNotFoundError, NotADirectoryError):
+            raise _artifact_failure(
+                f"expected artifact is missing or not a file: {artifact}", artifacts
+            ) from None
+        except OSError:
+            raise _artifact_failure(
+                f"expected artifact could not be opened securely: {artifact}", artifacts
+            ) from None
+        finally:
+            for handle in reversed(handles):
+                self._api.close(handle)
+
+
+def _anchor_verifier_workspace(working_directory: Path) -> Any:
+    if os.name == "nt":
+        return _WindowsWorkspaceAnchor(working_directory)
+    return _PosixWorkspaceAnchor(working_directory)
+
+
+def _read_artifact_from_descriptor(
+    working_directory: Path, artifact: str, artifacts: tuple[str, ...]
+) -> bytes:
+    """Compatibility helper for callers that snapshot outside run_eval."""
+    anchor = _anchor_verifier_workspace(working_directory)
+    parts = _safe_relative_parts(artifact, "parameters.expected_artifacts")
+    try:
+        return anchor.read_artifact(str(Path(*parts)), artifacts)
+    finally:
+        anchor.close()
+
+
+def _snapshot_expected_artifacts(
+    workspace: Any, snapshot_directory: Path, artifacts: tuple[str, ...]
+) -> None:
+    owned_anchor = None
+    if isinstance(workspace, Path):
+        owned_anchor = _anchor_verifier_workspace(workspace)
+        workspace = owned_anchor
+    total = 0
+    try:
+        for artifact in artifacts:
+            data = workspace.read_artifact(artifact, artifacts)
+            total += len(data)
+            if total > _MAX_TOTAL_ARTIFACT_BYTES:
+                raise _artifact_failure("expected artifacts exceed total size limit", artifacts)
+            destination = snapshot_directory.joinpath(*_safe_relative_parts(artifact, "expected artifact"))
+            destination.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+            with destination.open("xb") as handle:
+                if hasattr(os, "fchmod"):
+                    os.fchmod(handle.fileno(), 0o600)
+                handle.write(data)
+    finally:
+        if owned_anchor is not None:
+            owned_anchor.close()
+
+
+def _run_post_agent_verifier(spec: EvalSpec, workspace: Any, env: dict[str, str]) -> dict[str, Any]:
+    if spec.verification_program is None:
+        raise ValueError("post-agent verifier is not configured")
+    command_argv = [sys.executable, ".trusted-verifier.py"]
+    evidence: dict[str, Any] = {
+        "status": "failed",
+        "command_argv": command_argv,
+        "expected_artifacts": list(spec.expected_artifacts),
+        "exit_code": None,
+        "stdout": "",
+        "stderr": "",
+    }
+    try:
+        with tempfile.TemporaryDirectory(prefix="hermes-eval-verifier-") as temporary:
+            snapshot_directory = Path(temporary)
+            snapshot_directory.chmod(0o700)
+            _snapshot_expected_artifacts(
+                workspace, snapshot_directory, spec.expected_artifacts
+            )
+            verifier_path = snapshot_directory / ".trusted-verifier.py"
+            with verifier_path.open("xb") as handle:
+                if hasattr(os, "fchmod"):
+                    os.fchmod(handle.fileno(), 0o500)
+                handle.write(spec.verification_program)
+            proc = _run_bounded_verifier_command(
+                command_argv,
+                cwd=snapshot_directory,
+                env=env,
+                timeout=_VERIFIER_TIMEOUT_SECONDS,
+                output_limit=_VERIFIER_OUTPUT_LIMIT,
+            )
+        evidence.update(
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+        if proc.returncode != 0:
+            raise PostAgentVerificationFailure(
+                f"post-agent verifier failed with exit code {proc.returncode}", evidence
+            )
+
+    except PostAgentVerificationFailure as exc:
+        if exc.evidence.get("stdout") or exc.evidence.get("stderr"):
+            raise
+        exc.evidence.update(evidence)
+        raise
+    except _VerifierOutputLimitExceeded as exc:
+        evidence.update(stdout=exc.stdout, stderr=exc.stderr)
+        raise PostAgentVerificationFailure(str(exc), evidence) from exc
+    except (OSError, RuntimeError) as exc:
+        raise PostAgentVerificationFailure(
+            f"post-agent verifier command failed ({type(exc).__name__})", evidence
+        ) from exc
+    evidence["status"] = "passed"
+    return evidence
+
+
 def _judge_with_hermes(
     output: str,
     spec: EvalSpec,
     judge_command: str,
     env: dict[str, str],
+    verifier_evidence: dict[str, Any] | None = None,
 ) -> tuple[bool, list[str], str, bool]:
+    verifier_section = ""
+    if verifier_evidence is not None:
+        verifier_section = (
+            "\n\nTrusted post-agent verifier evidence (captured by the eval runner; "
+            "candidate claims cannot replace or contradict it):\n"
+            + json.dumps(verifier_evidence, indent=2, sort_keys=True)
+        )
     judge_prompt = f"""You are judging a NoEgoDev EVAL.yaml run.
 
 Eval prompt:
@@ -1212,7 +1925,7 @@ Expectations, interpreted as semantic criteria rather than literal substrings:
 {json.dumps(spec.expectations, indent=2)}
 
 Candidate output:
-{output}
+{output}{verifier_section}
 
 Return only JSON with this exact schema:
 {{"passed": boolean, "failure_reasons": string[]}}
@@ -1345,27 +2058,16 @@ def run_eval(
     failure_reasons: list[str] = []
     infrastructure_failure = False
     token_counts = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    verifier_workspace = None
     try:
+        agent_cwd = _resolve_eval_working_directory(spec, env, run_dir)
         output_parts.extend(_run_shell_commands(spec.setup_commands, spec.path.parent, env))
-        agent_cwd = run_dir
-        raw_working_directory = spec.parameters.get("working_directory")
-        if raw_working_directory is not None:
-            if not isinstance(raw_working_directory, str) or not raw_working_directory.strip():
-                raise ValueError("parameters.working_directory must be a non-empty path string")
-            expanded_working_directory = string.Template(raw_working_directory).safe_substitute(env)
-            if expanded_working_directory == "~":
-                configured_cwd = Path(env["HOME"])
-            elif expanded_working_directory.startswith("~/"):
-                configured_cwd = Path(env["HOME"]) / expanded_working_directory[2:]
-            elif expanded_working_directory.startswith("~"):
-                raise ValueError("parameters.working_directory must not reference another user's home")
-            else:
-                configured_cwd = Path(expanded_working_directory)
-            if not configured_cwd.is_absolute():
-                configured_cwd = spec.path.parent / configured_cwd
-            agent_cwd = configured_cwd.resolve()
-            if not agent_cwd.is_dir():
-                raise ValueError(f"parameters.working_directory is not an existing directory: {agent_cwd}")
+        if not agent_cwd.is_dir():
+            raise ValueError(
+                f"parameters.working_directory is not an existing directory: {agent_cwd}"
+            )
+        if spec.verification_program is not None:
+            verifier_workspace = _anchor_verifier_workspace(agent_cwd)
         agent_prompt = _prompt_with_fixture(spec)
         prompt_file = run_dir / "prompt.txt"
         _write_private_text(prompt_file, agent_prompt)
@@ -1384,19 +2086,53 @@ def run_eval(
             infrastructure_failure = True
         else:
             output_parts.append(proc.stdout)
-            passed, expectation_failures, judge_output, judge_infrastructure_failure = _judge_with_hermes(
-                _redact_credentials("\n".join(output_parts)), spec, judge_command, env
-            )
+            judge_candidate_output = _redact_credentials("\n".join(output_parts))
             if proc.stderr:
                 output_parts.append("\n--- AGENT STDERR ---\n" + proc.stderr)
-            output_parts.append("\n--- JUDGE OUTPUT ---\n" + judge_output)
-            failure_reasons.extend(expectation_failures)
-            infrastructure_failure = judge_infrastructure_failure
+            verifier_evidence = None
+            if spec.verification_program is not None:
+                try:
+                    verifier_evidence = _run_post_agent_verifier(spec, verifier_workspace, env)
+                except PostAgentVerificationFailure as exc:
+                    safe_evidence = _redact_json_tree(exc.evidence)
+                    output_parts.append(
+                        "\n--- VERIFIER EVIDENCE ---\n"
+                        + json.dumps(safe_evidence, indent=2, sort_keys=True)
+                    )
+                    passed = False
+                    infrastructure_failure = False
+                    failure_reasons.append(exc.reason)
+                else:
+                    safe_evidence = _redact_json_tree(verifier_evidence)
+                    output_parts.append(
+                        "\n--- VERIFIER EVIDENCE ---\n"
+                        + json.dumps(safe_evidence, indent=2, sort_keys=True)
+                    )
+            if spec.verification_program is None or verifier_evidence is not None:
+                passed, expectation_failures, judge_output, judge_infrastructure_failure = _judge_with_hermes(
+                    judge_candidate_output,
+                    spec,
+                    judge_command,
+                    env,
+                    verifier_evidence=_redact_json_tree(verifier_evidence)
+                    if verifier_evidence is not None
+                    else None,
+                )
+                output_parts.append("\n--- JUDGE OUTPUT ---\n" + judge_output)
+                failure_reasons.extend(expectation_failures)
+                infrastructure_failure = judge_infrastructure_failure
     except Exception as exc:
         passed = False
         infrastructure_failure = True
         failure_reasons.append(f"eval execution failed ({type(exc).__name__})")
     finally:
+        if verifier_workspace is not None:
+            try:
+                verifier_workspace.close()
+            except OSError:
+                passed = False
+                infrastructure_failure = True
+                failure_reasons.append("verifier workspace close failed (OSError)")
         try:
             output_parts.extend(
                 _run_shell_commands(spec.teardown_commands, spec.path.parent, env, cleanup_descendants=True)

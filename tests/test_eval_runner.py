@@ -4,6 +4,7 @@ import inspect
 import json
 import os
 import shlex
+import stat
 import subprocess
 import sys
 import time
@@ -147,6 +148,20 @@ def _cwd_recording_hermes_command(tmp_path: Path) -> tuple[str, Path]:
     return _base_command_line([sys.executable, str(script)]), record_path
 
 
+def _artifact_writing_agent_command(tmp_path: Path, files: dict[str, str]) -> str:
+    script = tmp_path / f"artifact_agent_{abs(hash(tuple(files.items())))}.py"
+    script.write_text(
+        "import json, pathlib\n"
+        f"files = json.loads({json.dumps(json.dumps(files))})\n"
+        "for name, content in files.items():\n"
+        "    path = pathlib.Path(name)\n"
+        "    path.parent.mkdir(parents=True, exist_ok=True)\n"
+        "    path.write_text(content, encoding='utf-8')\n"
+        "print('agent claims success')\n"
+    )
+    return _base_command_line([sys.executable, str(script)])
+
+
 def _profile_package_recording_command(tmp_path: Path, package_name: str) -> tuple[str, Path]:
     script = tmp_path / "profile_package_recording.py"
     record_path = tmp_path / "profile-package.json"
@@ -277,6 +292,132 @@ def test_load_eval_accepts_explicit_empty_command_aliases(tmp_path, field):
 
     assert spec.setup_commands == []
     assert spec.teardown_commands == []
+
+
+@pytest.mark.parametrize(
+    ("parameters", "message"),
+    [
+        ({"verification_script": []}, "verification_script"),
+        ({"verification_script": "   "}, "verification_script"),
+        ({"expected_artifacts": "index.html"}, "expected_artifacts"),
+        ({"expected_artifacts": []}, "expected_artifacts"),
+        ({"expected_artifacts": ["ok", 1]}, "expected_artifacts"),
+        (
+            {"verification_script": "python verify.py", "expected_artifacts": ["/absolute"]},
+            "relative paths",
+        ),
+        (
+            {
+                "verification_script": "python verify.py",
+                "expected_artifacts": ["nested/../escape"],
+            },
+            "traversal",
+        ),
+        ({"verification_script": "python verify.py"}, "must be declared together"),
+        ({"expected_artifacts": ["index.html"]}, "must be declared together"),
+        (
+            {"verification_script": [], "expected_artifacts": "index.html"},
+            "verification_script",
+        ),
+        (
+            {
+                "working_directory": [],
+                "verification_script": "python verify.py",
+                "expected_artifacts": ["index.html"],
+            },
+            "working_directory",
+        ),
+    ],
+)
+def test_load_eval_rejects_invalid_post_agent_verifier_contract(tmp_path, parameters, message):
+    eval_path = tmp_path / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], "parameters": parameters})
+    )
+
+    with pytest.raises(ValueError, match=message):
+        load_eval(eval_path)
+
+
+@pytest.mark.parametrize(
+    "artifact",
+    [
+        "/posix-rooted",
+        r"\windows-rooted",
+        r"C:drive-qualified",
+        r"C:\drive-rooted",
+        r"\\server\share\artifact.txt",
+    ],
+)
+def test_load_eval_rejects_cross_platform_rooted_or_drive_qualified_artifacts(tmp_path, artifact):
+    (tmp_path / "verify.py").write_text("print('verified')\n")
+    eval_path = tmp_path / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["done"],
+                "parameters": {
+                    "verification_script": "verify.py",
+                    "expected_artifacts": [artifact],
+                },
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="relative paths"):
+        load_eval(eval_path)
+
+
+def test_load_eval_rejects_missing_absolute_traversing_or_symlink_verification_script(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    outside = tmp_path / "outside.py"
+    outside.write_text("print('outside')\n")
+    symlink = eval_dir / "linked.py"
+    try:
+        symlink.symlink_to(outside)
+    except (OSError, NotImplementedError):
+        symlink = None
+    invalid = ["missing.py", str(outside), "nested/../outside.py"]
+    if symlink is not None:
+        invalid.append("linked.py")
+
+    for script in invalid:
+        eval_path = eval_dir / "EVAL.yaml"
+        eval_path.write_text(
+            yaml.safe_dump(
+                {
+                    "prompt": "Build it",
+                    "expectations": ["done"],
+                    "parameters": {
+                        "verification_script": script,
+                        "expected_artifacts": ["artifact.txt"],
+                    },
+                }
+            )
+        )
+        with pytest.raises(ValueError):
+            load_eval(eval_path)
+
+
+def test_load_eval_rejects_legacy_workspace_verification_command(tmp_path):
+    eval_path = tmp_path / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["done"],
+                "parameters": {
+                    "verification_command": "python verify.py",
+                    "expected_artifacts": ["artifact.txt"],
+                },
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="unsafe; use verification_script"):
+        load_eval(eval_path)
 
 
 def test_load_eval_rejects_fixture_path_escape(tmp_path):
@@ -1397,6 +1538,722 @@ def test_run_eval_expands_working_directory_against_isolated_home(tmp_path):
     assert records[0]["cwd"] == str(Path(result.run_dir) / "profile" / "workspace")
 
 
+def _write_verifier_eval(eval_path: Path, verifier_program: str, expected_artifacts: list[str]) -> None:
+    setup = 'mkdir "%HOME%\\workspace"' if os.name == "nt" else 'mkdir -p "$HOME/workspace"'
+    (eval_path.parent / "verify.py").write_text(verifier_program)
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["verified"],
+                "setupCommands": [setup],
+                "parameters": {
+                    "working_directory": "~/workspace",
+                    "verification_script": "verify.py",
+                    "expected_artifacts": expected_artifacts,
+                },
+            },
+            sort_keys=False,
+        )
+    )
+
+
+@pytest.mark.skipif(os.name != "posix", reason="exercises the POSIX descriptor adapter")
+def test_artifact_snapshot_rejects_in_place_change_after_descriptor_validation(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    artifact.write_bytes(b"validated")
+    real_read = eval_core.os.read
+    changed = False
+
+    def race_read(fd, size):
+        nonlocal changed
+        if not changed:
+            changed = True
+            artifact.write_bytes(b"substitut")
+        return real_read(fd, size)
+
+    monkeypatch.setattr(eval_core.os, "read", race_read)
+
+    with pytest.raises(
+        eval_core.PostAgentVerificationFailure,
+        match="changed while being snapshotted",
+    ):
+        eval_core._snapshot_expected_artifacts(workspace, snapshot, ("artifact.txt",))
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX ctime mutation detection")
+def test_run_eval_rejects_same_size_artifact_rewrite_with_restored_mtime(tmp_path, monkeypatch):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(
+        eval_path,
+        "from pathlib import Path\nassert Path('artifact.txt').read_bytes() == b'mutated!!'\n",
+        ["artifact.txt"],
+    )
+    workspace_record = tmp_path / "workspace.txt"
+    agent_script = tmp_path / "write_artifact.py"
+    agent_script.write_text(
+        "from pathlib import Path\n"
+        f"Path({str(workspace_record)!r}).write_text(str(Path.cwd()))\n"
+        "Path('artifact.txt').write_bytes(b'original!')\n"
+        "print('verified')\n"
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+    real_read = eval_core.os.read
+    mutation_stats = []
+
+    def race_read(fd, size):
+        if not mutation_stats and workspace_record.exists():
+            artifact = Path(workspace_record.read_text()) / "artifact.txt"
+            before = artifact.stat()
+            time.sleep(0.01)
+            artifact.write_bytes(b"mutated!!")
+            os.utime(artifact, ns=(before.st_atime_ns, before.st_mtime_ns))
+            after = artifact.stat()
+            mutation_stats.append((before, after))
+        return real_read(fd, size)
+
+    monkeypatch.setattr(eval_core.os, "read", race_read)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_base_command_line([sys.executable, str(agent_script)]),
+        judge_command=judge,
+    )
+
+    assert mutation_stats, (result.failure_reasons, result.output)
+    before, after = mutation_stats[0]
+    assert after.st_size == before.st_size
+    assert after.st_mtime_ns == before.st_mtime_ns
+    assert after.st_ctime_ns != before.st_ctime_ns
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert result.failure_reasons == ["expected artifact changed while being snapshotted: artifact.txt"]
+    assert judge_prompt_path.exists() is False
+
+
+@pytest.mark.skipif(os.name != "posix", reason="exercises POSIX open-inode semantics")
+def test_artifact_snapshot_reads_opened_inode_when_path_target_is_swapped(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    held = workspace / "held.txt"
+    replacement = workspace / "replacement.txt"
+    artifact.write_bytes(b"validated")
+    replacement.write_bytes(b"later-bits")
+    real_fstat = eval_core.os.fstat
+    swapped = False
+
+    def race_fstat(fd):
+        nonlocal swapped
+        info = real_fstat(fd)
+        if not swapped and stat.S_ISREG(info.st_mode):
+            swapped = True
+            artifact.rename(held)
+            replacement.rename(artifact)
+            info = real_fstat(fd)
+        return info
+
+    monkeypatch.setattr(eval_core.os, "fstat", race_fstat)
+
+    eval_core._snapshot_expected_artifacts(workspace, snapshot, ("artifact.txt",))
+
+    assert (snapshot / "artifact.txt").read_bytes() == b"validated"
+    assert artifact.read_bytes() == b"later-bits"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX root-swap regression")
+def test_run_eval_snapshots_from_pre_agent_root_after_working_directory_swap(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(
+        eval_path,
+        "from pathlib import Path\nassert Path('artifact.txt').read_text() == 'external'\n",
+        ["artifact.txt"],
+    )
+    external = tmp_path / "external"
+    external.mkdir()
+    (external / "artifact.txt").write_text("external")
+    agent_script = tmp_path / "swap_workspace.py"
+    agent_script.write_text(
+        "from pathlib import Path\n"
+        "import os\n"
+        "root = Path.cwd()\n"
+        "held = root.with_name(root.name + '-held')\n"
+        "os.chdir(root.parent)\n"
+        "root.rename(held)\n"
+        f"root.symlink_to({str(external)!r}, target_is_directory=True)\n"
+        "print('agent claims external artifact')\n"
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_base_command_line([sys.executable, str(agent_script)]),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert result.failure_reasons == ["expected artifact is missing or not a file: artifact.txt"]
+    assert judge_prompt_path.exists() is False
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX descriptor capability test")
+def test_posix_workspace_anchor_fails_closed_without_nofollow(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    monkeypatch.delattr(eval_core.os, "O_NOFOLLOW")
+
+    with pytest.raises(OSError, match="O_NOFOLLOW"):
+        eval_core._PosixWorkspaceAnchor(workspace)
+
+
+def test_windows_relative_open_parameters_deny_final_artifact_write_sharing():
+    directory_access, directory_share, directory_options = (
+        eval_core._windows_relative_open_parameters(directory=True)
+    )
+    artifact_access, artifact_share, artifact_options = (
+        eval_core._windows_relative_open_parameters(directory=False)
+    )
+
+    assert directory_access == artifact_access == 0x0001 | 0x0080 | 0x00100000
+    assert directory_share == 0x1 | 0x2
+    assert artifact_share == 0x1
+    assert directory_options == 0x20 | 0x00200000 | 0x1
+    assert artifact_options == 0x20 | 0x00200000 | 0x40
+
+
+class _FakeWindowsHandleApi:
+    def __init__(self, nodes):
+        root = eval_core._WindowsFileInfo(True, False, False, 0, (1, 1), 1)
+        self.nodes = {(): (root, b""), **nodes}
+        self.closed = []
+
+    def open_root(self, path):
+        return ()
+
+    def open_relative(self, parent, name, *, directory):
+        handle = (*parent, name)
+        if handle not in self.nodes:
+            raise FileNotFoundError(name)
+        return handle
+
+    def info(self, handle):
+        return self.nodes[handle][0]
+
+    def read(self, handle, limit):
+        return self.nodes[handle][1][:limit]
+
+    def close(self, handle):
+        self.closed.append(handle)
+
+
+def test_windows_workspace_anchor_snapshots_without_posix_dir_fd(tmp_path, monkeypatch):
+    directory = eval_core._WindowsFileInfo(True, False, False, 0, (1, 2), 3)
+    regular = eval_core._WindowsFileInfo(False, True, False, 4, (1, 4), 5)
+    api = _FakeWindowsHandleApi({("nested",): (directory, b""), ("nested", "a.txt"): (regular, b"safe")})
+    anchor = eval_core._WindowsWorkspaceAnchor(Path("C:/workspace"), api=api)
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    monkeypatch.setattr(eval_core.os, "open", lambda *args, **kwargs: (_ for _ in ()).throw(NotImplementedError()))
+
+    try:
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("nested/a.txt",))
+    finally:
+        anchor.close()
+
+    assert (snapshot / "nested" / "a.txt").read_bytes() == b"safe"
+    assert set(api.closed) == {(), ("nested",), ("nested", "a.txt")}
+
+
+def test_windows_workspace_anchor_rejects_reparse_component_and_closes_handles(tmp_path):
+    reparse = eval_core._WindowsFileInfo(True, False, True, 0, (1, 2), 3)
+    api = _FakeWindowsHandleApi({("link",): (reparse, b"")})
+    anchor = eval_core._WindowsWorkspaceAnchor(Path("C:/workspace"), api=api)
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+
+    try:
+        with pytest.raises(eval_core.PostAgentVerificationFailure, match="must not use reparse points"):
+            eval_core._snapshot_expected_artifacts(anchor, snapshot, ("link/a.txt",))
+    finally:
+        anchor.close()
+
+    assert set(api.closed) == {(), ("link",)}
+
+
+def _windows_open_for_write(path):
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateFileW.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    ]
+    kernel32.CreateFileW.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    ctypes.set_last_error(0)
+    handle = kernel32.CreateFileW(
+        str(path), 0x40000000, 0x1 | 0x2, None, 3, 0x80, None
+    )
+    return kernel32, handle, ctypes.get_last_error(), wintypes.HANDLE(-1).value
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native handles")
+def test_windows_native_workspace_anchor_reads_nested_regular_file(tmp_path):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    (workspace / "nested").mkdir(parents=True)
+    snapshot.mkdir()
+    (workspace / "nested" / "a.txt").write_bytes(b"safe")
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace)
+
+    try:
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("nested/a.txt",))
+    finally:
+        anchor.close()
+
+    assert (snapshot / "nested" / "a.txt").read_bytes() == b"safe"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native sharing semantics")
+def test_windows_native_workspace_anchor_denies_same_size_write_while_reading(
+    tmp_path, monkeypatch
+):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    artifact.write_bytes(b"validated")
+    api = eval_core._NativeWindowsHandleApi()
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace, api=api)
+    real_read = api.read
+    blocked = []
+
+    def attempt_write_then_read(handle, limit):
+        kernel32, writer, error, invalid_handle = _windows_open_for_write(artifact)
+        if writer != invalid_handle:
+            kernel32.CloseHandle(writer)
+            pytest.fail("Windows same-size write unexpectedly bypassed the retained handle")
+        blocked.append(error)
+        return real_read(handle, limit)
+
+    monkeypatch.setattr(api, "read", attempt_write_then_read)
+
+    try:
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("artifact.txt",))
+    finally:
+        anchor.close()
+
+    assert blocked
+    assert blocked[0] == 32  # ERROR_SHARING_VIOLATION
+    assert artifact.read_bytes() == b"validated"
+    assert (snapshot / "artifact.txt").read_bytes() == b"validated"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native sharing semantics")
+def test_windows_native_workspace_anchor_fails_closed_with_existing_writer(tmp_path):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    artifact.write_bytes(b"validated")
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace)
+
+    try:
+        kernel32, writer, error, invalid_handle = _windows_open_for_write(artifact)
+        assert writer != invalid_handle, error
+        try:
+            with pytest.raises(
+                eval_core.PostAgentVerificationFailure,
+                match="could not be opened securely",
+            ):
+                eval_core._snapshot_expected_artifacts(
+                    anchor, snapshot, ("artifact.txt",)
+                )
+        finally:
+            assert kernel32.CloseHandle(writer)
+    finally:
+        anchor.close()
+
+    assert not (snapshot / "artifact.txt").exists()
+
+
+@pytest.mark.parametrize("operation", ["rename", "delete"])
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native sharing semantics")
+def test_windows_native_workspace_anchor_denies_path_swap_while_reading(
+    tmp_path, monkeypatch, operation
+):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    artifact.write_bytes(b"validated")
+    api = eval_core._NativeWindowsHandleApi()
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace, api=api)
+    real_read = api.read
+    blocked = []
+
+    def attempt_swap_then_read(handle, limit):
+        try:
+            if operation == "rename":
+                artifact.rename(workspace / "held.txt")
+            else:
+                artifact.unlink()
+        except OSError as exc:
+            blocked.append(exc)
+        else:
+            pytest.fail(f"Windows {operation} unexpectedly bypassed the retained handle")
+        return real_read(handle, limit)
+
+    monkeypatch.setattr(api, "read", attempt_swap_then_read)
+
+    try:
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("artifact.txt",))
+    finally:
+        anchor.close()
+
+    assert blocked
+    assert artifact.read_bytes() == b"validated"
+    assert (snapshot / "artifact.txt").read_bytes() == b"validated"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows junctions")
+def test_windows_native_workspace_anchor_rejects_junction_component(tmp_path):
+    workspace = tmp_path / "workspace"
+    outside = tmp_path / "outside"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    outside.mkdir()
+    snapshot.mkdir()
+    (outside / "a.txt").write_bytes(b"external")
+    subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(workspace / "link"), str(outside)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace)
+
+    try:
+        with pytest.raises(eval_core.PostAgentVerificationFailure, match="must not use reparse points"):
+            eval_core._snapshot_expected_artifacts(anchor, snapshot, ("link/a.txt",))
+    finally:
+        anchor.close()
+
+
+def test_run_eval_uses_pre_agent_package_verifier_not_workspace_forgery(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    trusted_verifier = eval_dir / "verify.py"
+    trusted_verifier.write_text(
+        "from pathlib import Path\n"
+        "assert Path('index.html').read_text() == 'genuine'\n"
+        "print('TRUSTED VERIFIER PASSED')\n"
+    )
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["verified"],
+                "setupCommands": [
+                    'mkdir "%HOME%\\workspace"'
+                    if os.name == "nt"
+                    else 'mkdir -p "$HOME/workspace"'
+                ],
+                "parameters": {
+                    "working_directory": "~/workspace",
+                    "verification_script": "verify.py",
+                    "expected_artifacts": ["index.html"],
+                },
+            },
+            sort_keys=False,
+        )
+    )
+    forged = "print('FORGED VERIFIER PASSED')\n"
+    agent = _artifact_writing_agent_command(
+        tmp_path, {"index.html": "bogus", "verify.py": forged}
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+    original_package_bytes = trusted_verifier.read_bytes()
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=agent,
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert result.failure_reasons == ["post-agent verifier failed with exit code 1"]
+    assert judge_prompt_path.exists() is False
+    assert "TRUSTED VERIFIER PASSED" not in result.output
+    assert "FORGED VERIFIER PASSED" not in result.output
+    assert "Trusted post-agent verifier evidence" not in result.output
+    assert trusted_verifier.read_bytes() == original_package_bytes
+
+
+def test_run_eval_terminates_verifier_during_sustained_output_overflow(tmp_path, monkeypatch):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    verifier = eval_dir / "verify.py"
+    verifier.write_text(
+        "import os, sys\n"
+        "chunk = b'x' * 4096\n"
+        "while True:\n"
+        "    os.write(sys.stdout.fileno(), chunk)\n"
+    )
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["verified"],
+                "setupCommands": [
+                    'mkdir "%HOME%\\workspace"'
+                    if os.name == "nt"
+                    else 'mkdir -p "$HOME/workspace"'
+                ],
+                "parameters": {
+                    "working_directory": "~/workspace",
+                    "verification_script": "verify.py",
+                    "expected_artifacts": ["artifact.txt"],
+                },
+            },
+            sort_keys=False,
+        )
+    )
+    monkeypatch.setattr(eval_core, "_VERIFIER_OUTPUT_LIMIT", 1024)
+    monkeypatch.setattr(eval_core, "_VERIFIER_TIMEOUT_SECONDS", 30)
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+    original_verifier = verifier.read_bytes()
+
+    started = time.monotonic()
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_artifact_writing_agent_command(tmp_path, {"artifact.txt": "safe"}),
+        judge_command=judge,
+    )
+
+    assert time.monotonic() - started < 3
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert result.failure_reasons == ["post-agent verifier exceeded output limit"]
+    assert len(result.output.encode("utf-8")) < 4096
+    assert judge_prompt_path.exists() is False
+    assert verifier.read_bytes() == original_verifier
+
+
+def test_run_eval_executes_declared_verifier_before_judge_and_supplies_trusted_evidence(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    verifier = (
+        "from pathlib import Path\n"
+        "assert Path('index.html').read_text() == 'built'\n"
+        "print('DETERMINISTIC VERIFIER PASSED')\n"
+    )
+    _write_verifier_eval(eval_path, verifier, ["index.html"])
+    agent = _artifact_writing_agent_command(
+        tmp_path, {"index.html": "built", "verify.py": "print('forged')\n"}
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=agent,
+        judge_command=judge,
+    )
+
+    assert result.passed is True
+    assert result.infrastructure_failure is False
+    judge_prompt = judge_prompt_path.read_text()
+    assert "Trusted post-agent verifier evidence" in judge_prompt
+    assert "DETERMINISTIC VERIFIER PASSED" in judge_prompt
+    assert '"index.html"' in judge_prompt
+    assert "--- VERIFIER EVIDENCE ---" in result.output
+
+
+def test_run_eval_rejects_missing_artifact_before_judge(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(eval_path, "print('must not run')\n", ["index.html"])
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_artifact_writing_agent_command(
+            tmp_path, {"verify.py": "print('must not run')\n"}
+        ),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert "expected artifact is missing or not a file: index.html" in result.failure_reasons
+    assert judge_prompt_path.exists() is False
+
+
+def test_run_eval_rejects_verifier_failure_before_judge(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(
+        eval_path,
+        "import sys\nprint('VERIFICATION FAILED')\nsys.exit(7)\n",
+        ["index.html"],
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_artifact_writing_agent_command(
+            tmp_path,
+            {
+                "index.html": "claimed",
+                "verify.py": "import sys\nprint('VERIFICATION FAILED')\nsys.exit(7)\n",
+            },
+        ),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert "post-agent verifier failed with exit code 7" in result.failure_reasons
+    assert "VERIFICATION FAILED" in result.output
+    assert judge_prompt_path.exists() is False
+
+
+def test_run_eval_rejects_verifier_paths_that_escape_isolation(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "artifact.txt").write_text("outside")
+    setup_marker = tmp_path / "unsafe-setup-ran"
+    (eval_dir / "verify.py").write_text("pass\n")
+    setup_command = _base_command_line(
+        [
+            sys.executable,
+            "-c",
+            f"from pathlib import Path; Path({str(setup_marker)!r}).write_text('ran')",
+        ]
+    )
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["verified"],
+                "setupCommands": [setup_command],
+                "parameters": {
+                    "working_directory": str(outside),
+                    "verification_script": "verify.py",
+                    "expected_artifacts": ["artifact.txt"],
+                },
+            }
+        )
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is True
+    assert "eval execution failed (ValueError)" in result.failure_reasons
+    assert setup_marker.exists() is False
+    assert judge_prompt_path.exists() is False
+
+
+def test_run_eval_rejects_expected_artifact_symlink_escape(tmp_path):
+    if os.name == "nt":
+        pytest.skip("symlink creation may require Windows privileges")
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(eval_path, "print('verified')\n", ["artifact.txt"])
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside")
+    agent = _artifact_writing_agent_command(tmp_path, {})
+    agent_script = Path(shlex.split(agent)[1])
+    agent_script.write_text(
+        "import pathlib\n"
+        f"pathlib.Path('artifact.txt').symlink_to({str(outside)!r})\n"
+        "print('agent claims success')\n"
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=agent,
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert "expected artifact must not use symlinks: artifact.txt" in result.failure_reasons
+    assert judge_prompt_path.exists() is False
+
+
+def test_load_eval_treats_verification_script_as_a_package_path_not_a_command(tmp_path):
+    if os.name == "nt":
+        pytest.skip("POSIX path metacharacter contract")
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    injected = tmp_path / "shell-injected"
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["verified"],
+                "parameters": {
+                    "verification_script": f"verify.py ; touch {injected}",
+                    "expected_artifacts": ["artifact.txt"],
+                },
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="existing file"):
+        load_eval(eval_path)
+    assert injected.exists() is False
+
+
 def test_run_eval_does_not_hang_on_descendant_holding_output_pipes(tmp_path):
     eval_dir = tmp_path / "skill"
     eval_dir.mkdir()
@@ -1485,6 +2342,19 @@ def test_run_eval_setup_does_not_hang_on_descendant_holding_output_pipes(tmp_pat
 
     assert result.passed is True
     assert time.monotonic() - started < 2
+
+
+def test_oneshot_output_limit_includes_truncation_marker_within_bound(tmp_path):
+    completed = _run_oneshot_command(
+        [sys.executable, "-c", "print('x' * 1000)"],
+        cwd=tmp_path,
+        env=os.environ.copy(),
+        timeout=5,
+        output_limit=128,
+    )
+
+    assert len(completed.stdout) <= 128
+    assert "output truncated by eval runner" in completed.stdout
 
 
 def test_oneshot_timeout_does_not_expose_the_full_command(tmp_path):
