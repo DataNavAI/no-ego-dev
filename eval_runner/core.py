@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 import time
 import uuid
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Iterable
 from urllib.parse import urlsplit
 
@@ -33,6 +33,15 @@ class EvalSpec:
     parameters: dict[str, Any]
     fixture_path: Path | None
     fixture_text: str | None
+    verification_argv: tuple[str, ...] | None
+    expected_artifacts: tuple[str, ...]
+
+
+class PostAgentVerificationFailure(RuntimeError):
+    def __init__(self, reason: str, evidence: dict[str, Any]):
+        super().__init__(reason)
+        self.reason = reason
+        self.evidence = evidence
 
 
 @dataclasses.dataclass
@@ -140,6 +149,59 @@ def _load_command_field(data: dict[str, Any], camel: str, snake: str) -> list[st
     return value
 
 
+def _parse_verification_command(command: str) -> tuple[str, ...]:
+    try:
+        argv = _split_windows_command_line(command) if os.name == "nt" else shlex.split(command)
+    except ValueError as exc:
+        raise ValueError("parameters.verification_command must be a valid command line") from exc
+    if not argv:
+        raise ValueError("parameters.verification_command must be a non-empty string")
+    return tuple(argv)
+
+
+def _load_post_agent_verifier(
+    parameters: dict[str, Any],
+) -> tuple[tuple[str, ...] | None, tuple[str, ...]]:
+    has_command = "verification_command" in parameters
+    has_artifacts = "expected_artifacts" in parameters
+    command = parameters.get("verification_command")
+    artifacts = parameters.get("expected_artifacts")
+
+    working_directory = parameters.get("working_directory")
+    if "working_directory" in parameters and (
+        not isinstance(working_directory, str) or not working_directory.strip()
+    ):
+        raise ValueError("parameters.working_directory must be a non-empty path string")
+    if has_command and (not isinstance(command, str) or not command.strip()):
+        raise ValueError("parameters.verification_command must be a non-empty string")
+    if has_artifacts and (
+        not isinstance(artifacts, list)
+        or not artifacts
+        or not all(isinstance(item, str) and item.strip() for item in artifacts)
+    ):
+        raise ValueError("parameters.expected_artifacts must be a non-empty string array")
+    if has_command != has_artifacts:
+        raise ValueError(
+            "parameters.verification_command and parameters.expected_artifacts must be declared together"
+        )
+    if not has_command:
+        return None, ()
+
+    normalized: list[str] = []
+    for raw in artifacts:
+        value = raw.strip()
+        native = Path(value)
+        windows = PureWindowsPath(value)
+        if native.is_absolute() or windows.is_absolute() or value in {".", ".."}:
+            raise ValueError("parameters.expected_artifacts must contain nonempty relative paths")
+        if ".." in native.parts or ".." in windows.parts:
+            raise ValueError("parameters.expected_artifacts must not contain traversal components")
+        normalized.append(value)
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("parameters.expected_artifacts must not contain duplicate paths")
+    return _parse_verification_command(command.strip()), tuple(normalized)
+
+
 def load_eval(path: str | Path) -> EvalSpec:
     _ensure_yaml()
     eval_path = Path(path).expanduser().resolve()
@@ -157,6 +219,7 @@ def load_eval(path: str | Path) -> EvalSpec:
     parameters = data.get("parameters", {}) or {}
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be a map")
+    verification_argv, expected_artifacts = _load_post_agent_verifier(parameters)
     fixture_path, fixture_text = _load_fixture(eval_path, parameters)
     return EvalSpec(
         eval_path,
@@ -167,6 +230,8 @@ def load_eval(path: str | Path) -> EvalSpec:
         parameters,
         fixture_path,
         fixture_text,
+        verification_argv,
+        expected_artifacts,
     )
 
 
@@ -346,6 +411,7 @@ def _run_oneshot_command(
     env: dict[str, str],
     timeout: int,
     cleanup_descendants: bool = True,
+    output_limit: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Capture a one-shot command without hanging on inherited pipe handles."""
     with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stdout_file, tempfile.TemporaryFile(
@@ -398,11 +464,23 @@ def _run_oneshot_command(
                     _terminate_windows_process_tree(proc.pid)
         stdout_file.seek(0)
         stderr_file.seek(0)
+
+        def captured(handle) -> str:
+            if output_limit is None:
+                return handle.read()
+            value = handle.read(output_limit + 1)
+            if len(value) <= output_limit:
+                return value
+            marker = "\n...[output truncated by eval runner]...\n"
+            if output_limit <= len(marker):
+                return marker[:output_limit]
+            return value[: output_limit - len(marker)] + marker
+
         return subprocess.CompletedProcess(
             args=command,
             returncode=returncode,
-            stdout=stdout_file.read(),
-            stderr=stderr_file.read(),
+            stdout=captured(stdout_file),
+            stderr=captured(stderr_file),
         )
 
 
@@ -1197,12 +1275,128 @@ def _build_oneshot_command(
     return [*base_args, *quiet_args, "-q", prompt]
 
 
+def _resolve_eval_working_directory(
+    spec: EvalSpec,
+    env: dict[str, str],
+    run_dir: Path,
+) -> Path:
+    raw = spec.parameters.get("working_directory")
+    if raw is None:
+        configured = run_dir
+    else:
+        if not isinstance(raw, str) or not raw.strip():
+            raise ValueError("parameters.working_directory must be a non-empty path string")
+        expanded = string.Template(raw).safe_substitute(env)
+        if expanded == "~":
+            configured = Path(env["HOME"])
+        elif expanded.startswith("~/"):
+            configured = Path(env["HOME"]) / expanded[2:]
+        elif expanded.startswith("~"):
+            raise ValueError("parameters.working_directory must not reference another user's home")
+        else:
+            configured = Path(expanded)
+        if not configured.is_absolute():
+            configured = spec.path.parent / configured
+    working_directory = configured.resolve()
+    if spec.verification_argv is not None:
+        try:
+            working_directory.relative_to(run_dir.resolve())
+        except ValueError as exc:
+            raise ValueError(
+                "parameters.working_directory must stay within the isolated eval workspace"
+            ) from exc
+    return working_directory
+
+
+_VERIFIER_TIMEOUT_SECONDS = 120
+_VERIFIER_OUTPUT_LIMIT = 16_384
+
+
+def _validate_expected_artifacts(working_directory: Path, artifacts: tuple[str, ...]) -> None:
+    root = working_directory.resolve()
+    for artifact in artifacts:
+        candidate = working_directory / artifact
+        resolved = candidate.resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError as exc:
+            raise PostAgentVerificationFailure(
+                f"expected artifact escapes working directory: {artifact}",
+                {"status": "failed", "expected_artifacts": list(artifacts)},
+            ) from exc
+        relative = candidate.relative_to(working_directory)
+        current = working_directory
+        for part in relative.parts:
+            current = current / part
+            if current.is_symlink():
+                raise PostAgentVerificationFailure(
+                    f"expected artifact must not use symlinks: {artifact}",
+                    {"status": "failed", "expected_artifacts": list(artifacts)},
+                )
+        if not resolved.is_file():
+            raise PostAgentVerificationFailure(
+                f"expected artifact is missing or not a file: {artifact}",
+                {"status": "failed", "expected_artifacts": list(artifacts)},
+            )
+
+
+def _run_post_agent_verifier(spec: EvalSpec, working_directory: Path, env: dict[str, str]) -> dict[str, Any]:
+    if spec.verification_argv is None:
+        raise ValueError("post-agent verifier is not configured")
+    evidence: dict[str, Any] = {
+        "status": "failed",
+        "command_argv": list(spec.verification_argv),
+        "expected_artifacts": list(spec.expected_artifacts),
+        "exit_code": None,
+        "stdout": "",
+        "stderr": "",
+    }
+    try:
+        _validate_expected_artifacts(working_directory, spec.expected_artifacts)
+        proc = _run_oneshot_command(
+            list(spec.verification_argv),
+            cwd=working_directory,
+            env=env,
+            timeout=_VERIFIER_TIMEOUT_SECONDS,
+            output_limit=_VERIFIER_OUTPUT_LIMIT,
+        )
+        evidence.update(
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+        if proc.returncode != 0:
+            raise PostAgentVerificationFailure(
+                f"post-agent verifier failed with exit code {proc.returncode}", evidence
+            )
+        _validate_expected_artifacts(working_directory, spec.expected_artifacts)
+    except PostAgentVerificationFailure as exc:
+        if exc.evidence.get("stdout") or exc.evidence.get("stderr"):
+            raise
+        exc.evidence.update(evidence)
+        raise
+    except (OSError, RuntimeError) as exc:
+        raise PostAgentVerificationFailure(
+            f"post-agent verifier command failed ({type(exc).__name__})", evidence
+        ) from exc
+    evidence["status"] = "passed"
+    return evidence
+
+
 def _judge_with_hermes(
     output: str,
     spec: EvalSpec,
     judge_command: str,
     env: dict[str, str],
+    verifier_evidence: dict[str, Any] | None = None,
 ) -> tuple[bool, list[str], str, bool]:
+    verifier_section = ""
+    if verifier_evidence is not None:
+        verifier_section = (
+            "\n\nTrusted post-agent verifier evidence (captured by the eval runner; "
+            "candidate claims cannot replace or contradict it):\n"
+            + json.dumps(verifier_evidence, indent=2, sort_keys=True)
+        )
     judge_prompt = f"""You are judging a NoEgoDev EVAL.yaml run.
 
 Eval prompt:
@@ -1212,7 +1406,7 @@ Expectations, interpreted as semantic criteria rather than literal substrings:
 {json.dumps(spec.expectations, indent=2)}
 
 Candidate output:
-{output}
+{output}{verifier_section}
 
 Return only JSON with this exact schema:
 {{"passed": boolean, "failure_reasons": string[]}}
@@ -1346,26 +1540,12 @@ def run_eval(
     infrastructure_failure = False
     token_counts = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     try:
+        agent_cwd = _resolve_eval_working_directory(spec, env, run_dir)
         output_parts.extend(_run_shell_commands(spec.setup_commands, spec.path.parent, env))
-        agent_cwd = run_dir
-        raw_working_directory = spec.parameters.get("working_directory")
-        if raw_working_directory is not None:
-            if not isinstance(raw_working_directory, str) or not raw_working_directory.strip():
-                raise ValueError("parameters.working_directory must be a non-empty path string")
-            expanded_working_directory = string.Template(raw_working_directory).safe_substitute(env)
-            if expanded_working_directory == "~":
-                configured_cwd = Path(env["HOME"])
-            elif expanded_working_directory.startswith("~/"):
-                configured_cwd = Path(env["HOME"]) / expanded_working_directory[2:]
-            elif expanded_working_directory.startswith("~"):
-                raise ValueError("parameters.working_directory must not reference another user's home")
-            else:
-                configured_cwd = Path(expanded_working_directory)
-            if not configured_cwd.is_absolute():
-                configured_cwd = spec.path.parent / configured_cwd
-            agent_cwd = configured_cwd.resolve()
-            if not agent_cwd.is_dir():
-                raise ValueError(f"parameters.working_directory is not an existing directory: {agent_cwd}")
+        if not agent_cwd.is_dir():
+            raise ValueError(
+                f"parameters.working_directory is not an existing directory: {agent_cwd}"
+            )
         agent_prompt = _prompt_with_fixture(spec)
         prompt_file = run_dir / "prompt.txt"
         _write_private_text(prompt_file, agent_prompt)
@@ -1384,14 +1564,41 @@ def run_eval(
             infrastructure_failure = True
         else:
             output_parts.append(proc.stdout)
-            passed, expectation_failures, judge_output, judge_infrastructure_failure = _judge_with_hermes(
-                _redact_credentials("\n".join(output_parts)), spec, judge_command, env
-            )
+            judge_candidate_output = _redact_credentials("\n".join(output_parts))
             if proc.stderr:
                 output_parts.append("\n--- AGENT STDERR ---\n" + proc.stderr)
-            output_parts.append("\n--- JUDGE OUTPUT ---\n" + judge_output)
-            failure_reasons.extend(expectation_failures)
-            infrastructure_failure = judge_infrastructure_failure
+            verifier_evidence = None
+            if spec.verification_argv is not None:
+                try:
+                    verifier_evidence = _run_post_agent_verifier(spec, agent_cwd, env)
+                except PostAgentVerificationFailure as exc:
+                    safe_evidence = _redact_json_tree(exc.evidence)
+                    output_parts.append(
+                        "\n--- VERIFIER EVIDENCE ---\n"
+                        + json.dumps(safe_evidence, indent=2, sort_keys=True)
+                    )
+                    passed = False
+                    infrastructure_failure = False
+                    failure_reasons.append(exc.reason)
+                else:
+                    safe_evidence = _redact_json_tree(verifier_evidence)
+                    output_parts.append(
+                        "\n--- VERIFIER EVIDENCE ---\n"
+                        + json.dumps(safe_evidence, indent=2, sort_keys=True)
+                    )
+            if spec.verification_argv is None or verifier_evidence is not None:
+                passed, expectation_failures, judge_output, judge_infrastructure_failure = _judge_with_hermes(
+                    judge_candidate_output,
+                    spec,
+                    judge_command,
+                    env,
+                    verifier_evidence=_redact_json_tree(verifier_evidence)
+                    if verifier_evidence is not None
+                    else None,
+                )
+                output_parts.append("\n--- JUDGE OUTPUT ---\n" + judge_output)
+                failure_reasons.extend(expectation_failures)
+                infrastructure_failure = judge_infrastructure_failure
     except Exception as exc:
         passed = False
         infrastructure_failure = True

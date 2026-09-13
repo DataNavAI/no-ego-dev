@@ -147,6 +147,20 @@ def _cwd_recording_hermes_command(tmp_path: Path) -> tuple[str, Path]:
     return _base_command_line([sys.executable, str(script)]), record_path
 
 
+def _artifact_writing_agent_command(tmp_path: Path, files: dict[str, str]) -> str:
+    script = tmp_path / f"artifact_agent_{abs(hash(tuple(files.items())))}.py"
+    script.write_text(
+        "import json, pathlib\n"
+        f"files = json.loads({json.dumps(json.dumps(files))})\n"
+        "for name, content in files.items():\n"
+        "    path = pathlib.Path(name)\n"
+        "    path.parent.mkdir(parents=True, exist_ok=True)\n"
+        "    path.write_text(content, encoding='utf-8')\n"
+        "print('agent claims success')\n"
+    )
+    return _base_command_line([sys.executable, str(script)])
+
+
 def _profile_package_recording_command(tmp_path: Path, package_name: str) -> tuple[str, Path]:
     script = tmp_path / "profile_package_recording.py"
     record_path = tmp_path / "profile-package.json"
@@ -277,6 +291,51 @@ def test_load_eval_accepts_explicit_empty_command_aliases(tmp_path, field):
 
     assert spec.setup_commands == []
     assert spec.teardown_commands == []
+
+
+@pytest.mark.parametrize(
+    ("parameters", "message"),
+    [
+        ({"verification_command": []}, "verification_command"),
+        ({"verification_command": "   "}, "verification_command"),
+        ({"expected_artifacts": "index.html"}, "expected_artifacts"),
+        ({"expected_artifacts": []}, "expected_artifacts"),
+        ({"expected_artifacts": ["ok", 1]}, "expected_artifacts"),
+        (
+            {"verification_command": "python verify.py", "expected_artifacts": ["/absolute"]},
+            "relative paths",
+        ),
+        (
+            {
+                "verification_command": "python verify.py",
+                "expected_artifacts": ["nested/../escape"],
+            },
+            "traversal",
+        ),
+        ({"verification_command": "python verify.py"}, "must be declared together"),
+        ({"expected_artifacts": ["index.html"]}, "must be declared together"),
+        (
+            {"verification_command": [], "expected_artifacts": "index.html"},
+            "verification_command",
+        ),
+        (
+            {
+                "working_directory": [],
+                "verification_command": "python verify.py",
+                "expected_artifacts": ["index.html"],
+            },
+            "working_directory",
+        ),
+    ],
+)
+def test_load_eval_rejects_invalid_post_agent_verifier_contract(tmp_path, parameters, message):
+    eval_path = tmp_path / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump({"prompt": "Build it", "expectations": ["done"], "parameters": parameters})
+    )
+
+    with pytest.raises(ValueError, match=message):
+        load_eval(eval_path)
 
 
 def test_load_eval_rejects_fixture_path_escape(tmp_path):
@@ -1397,6 +1456,215 @@ def test_run_eval_expands_working_directory_against_isolated_home(tmp_path):
     assert records[0]["cwd"] == str(Path(result.run_dir) / "profile" / "workspace")
 
 
+def _write_verifier_eval(eval_path: Path, verification_command: str, expected_artifacts: list[str]) -> None:
+    setup = 'mkdir "%HOME%\\workspace"' if os.name == "nt" else 'mkdir -p "$HOME/workspace"'
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["verified"],
+                "setupCommands": [setup],
+                "parameters": {
+                    "working_directory": "~/workspace",
+                    "verification_command": verification_command,
+                    "expected_artifacts": expected_artifacts,
+                },
+            },
+            sort_keys=False,
+        )
+    )
+
+
+def test_run_eval_executes_declared_verifier_before_judge_and_supplies_trusted_evidence(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(eval_path, f"{shlex.quote(sys.executable)} verify.py", ["index.html"])
+    verifier = (
+        "from pathlib import Path\n"
+        "assert Path('index.html').read_text() == 'built'\n"
+        "print('DETERMINISTIC VERIFIER PASSED')\n"
+    )
+    agent = _artifact_writing_agent_command(
+        tmp_path, {"index.html": "built", "verify.py": verifier}
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=agent,
+        judge_command=judge,
+    )
+
+    assert result.passed is True
+    assert result.infrastructure_failure is False
+    judge_prompt = judge_prompt_path.read_text()
+    assert "Trusted post-agent verifier evidence" in judge_prompt
+    assert "DETERMINISTIC VERIFIER PASSED" in judge_prompt
+    assert '"index.html"' in judge_prompt
+    assert "--- VERIFIER EVIDENCE ---" in result.output
+
+
+def test_run_eval_rejects_missing_artifact_before_judge(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(eval_path, f"{shlex.quote(sys.executable)} verify.py", ["index.html"])
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_artifact_writing_agent_command(
+            tmp_path, {"verify.py": "print('must not run')\n"}
+        ),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert "expected artifact is missing or not a file: index.html" in result.failure_reasons
+    assert judge_prompt_path.exists() is False
+
+
+def test_run_eval_rejects_verifier_failure_before_judge(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(eval_path, f"{shlex.quote(sys.executable)} verify.py", ["index.html"])
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_artifact_writing_agent_command(
+            tmp_path,
+            {
+                "index.html": "claimed",
+                "verify.py": "import sys\nprint('VERIFICATION FAILED')\nsys.exit(7)\n",
+            },
+        ),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert "post-agent verifier failed with exit code 7" in result.failure_reasons
+    assert "VERIFICATION FAILED" in result.output
+    assert judge_prompt_path.exists() is False
+
+
+def test_run_eval_rejects_verifier_paths_that_escape_isolation(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "artifact.txt").write_text("outside")
+    setup_marker = tmp_path / "unsafe-setup-ran"
+    setup_command = _base_command_line(
+        [
+            sys.executable,
+            "-c",
+            f"from pathlib import Path; Path({str(setup_marker)!r}).write_text('ran')",
+        ]
+    )
+    eval_path = eval_dir / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["verified"],
+                "setupCommands": [setup_command],
+                "parameters": {
+                    "working_directory": str(outside),
+                    "verification_command": f"{shlex.quote(sys.executable)} -c pass",
+                    "expected_artifacts": ["artifact.txt"],
+                },
+            }
+        )
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_fake_hermes_command(tmp_path),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is True
+    assert "eval execution failed (ValueError)" in result.failure_reasons
+    assert setup_marker.exists() is False
+    assert judge_prompt_path.exists() is False
+
+
+def test_run_eval_rejects_expected_artifact_symlink_escape(tmp_path):
+    if os.name == "nt":
+        pytest.skip("symlink creation may require Windows privileges")
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(
+        eval_path, f"{shlex.quote(sys.executable)} -c pass", ["artifact.txt"]
+    )
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside")
+    agent = _artifact_writing_agent_command(tmp_path, {})
+    agent_script = Path(shlex.split(agent)[1])
+    agent_script.write_text(
+        "import pathlib\n"
+        f"pathlib.Path('artifact.txt').symlink_to({str(outside)!r})\n"
+        "print('agent claims success')\n"
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=agent,
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert "expected artifact escapes working directory: artifact.txt" in result.failure_reasons
+    assert judge_prompt_path.exists() is False
+
+
+def test_run_eval_treats_verification_shell_metacharacters_as_literal_arguments(tmp_path):
+    if os.name == "nt":
+        pytest.skip("POSIX shlex literal argument contract")
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    injected = tmp_path / "shell-injected"
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(
+        eval_path,
+        f"{shlex.quote(sys.executable)} verify.py ; touch {shlex.quote(str(injected))}",
+        ["artifact.txt"],
+    )
+    verifier = (
+        "import sys\n"
+        "assert sys.argv[1] == ';'\n"
+        "assert sys.argv[2] == 'touch'\n"
+        "print('literal metacharacters')\n"
+    )
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_artifact_writing_agent_command(
+            tmp_path, {"artifact.txt": "built", "verify.py": verifier}
+        ),
+        judge_command=_fake_hermes_command(tmp_path),
+    )
+
+    assert result.passed is True
+    assert injected.exists() is False
+
+
 def test_run_eval_does_not_hang_on_descendant_holding_output_pipes(tmp_path):
     eval_dir = tmp_path / "skill"
     eval_dir.mkdir()
@@ -1485,6 +1753,19 @@ def test_run_eval_setup_does_not_hang_on_descendant_holding_output_pipes(tmp_pat
 
     assert result.passed is True
     assert time.monotonic() - started < 2
+
+
+def test_oneshot_output_limit_includes_truncation_marker_within_bound(tmp_path):
+    completed = _run_oneshot_command(
+        [sys.executable, "-c", "print('x' * 1000)"],
+        cwd=tmp_path,
+        env=os.environ.copy(),
+        timeout=5,
+        output_limit=128,
+    )
+
+    assert len(completed.stdout) <= 128
+    assert "output truncated by eval runner" in completed.stdout
 
 
 def test_oneshot_timeout_does_not_expose_the_full_command(tmp_path):
