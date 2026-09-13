@@ -1584,6 +1584,155 @@ def test_artifact_snapshot_reads_opened_inode_when_path_target_is_swapped(tmp_pa
     assert artifact.read_bytes() == b"later-bits"
 
 
+@pytest.mark.skipif(os.name == "nt", reason="POSIX root-swap regression")
+def test_run_eval_snapshots_from_pre_agent_root_after_working_directory_swap(tmp_path):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(
+        eval_path,
+        "from pathlib import Path\nassert Path('artifact.txt').read_text() == 'external'\n",
+        ["artifact.txt"],
+    )
+    external = tmp_path / "external"
+    external.mkdir()
+    (external / "artifact.txt").write_text("external")
+    agent_script = tmp_path / "swap_workspace.py"
+    agent_script.write_text(
+        "from pathlib import Path\n"
+        "import os\n"
+        "root = Path.cwd()\n"
+        "held = root.with_name(root.name + '-held')\n"
+        "os.chdir(root.parent)\n"
+        "root.rename(held)\n"
+        f"root.symlink_to({str(external)!r}, target_is_directory=True)\n"
+        "print('agent claims external artifact')\n"
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_base_command_line([sys.executable, str(agent_script)]),
+        judge_command=judge,
+    )
+
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert result.failure_reasons == ["expected artifact is missing or not a file: artifact.txt"]
+    assert judge_prompt_path.exists() is False
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX descriptor capability test")
+def test_posix_workspace_anchor_fails_closed_without_nofollow(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    monkeypatch.delattr(eval_core.os, "O_NOFOLLOW")
+
+    with pytest.raises(OSError, match="O_NOFOLLOW"):
+        eval_core._PosixWorkspaceAnchor(workspace)
+
+
+class _FakeWindowsHandleApi:
+    def __init__(self, nodes):
+        root = eval_core._WindowsFileInfo(True, False, False, 0, (1, 1), 1)
+        self.nodes = {(): (root, b""), **nodes}
+        self.closed = []
+
+    def open_root(self, path):
+        return ()
+
+    def open_relative(self, parent, name, *, directory):
+        handle = (*parent, name)
+        if handle not in self.nodes:
+            raise FileNotFoundError(name)
+        return handle
+
+    def info(self, handle):
+        return self.nodes[handle][0]
+
+    def read(self, handle, limit):
+        return self.nodes[handle][1][:limit]
+
+    def close(self, handle):
+        self.closed.append(handle)
+
+
+def test_windows_workspace_anchor_snapshots_without_posix_dir_fd(tmp_path, monkeypatch):
+    directory = eval_core._WindowsFileInfo(True, False, False, 0, (1, 2), 3)
+    regular = eval_core._WindowsFileInfo(False, True, False, 4, (1, 4), 5)
+    api = _FakeWindowsHandleApi({("nested",): (directory, b""), ("nested", "a.txt"): (regular, b"safe")})
+    anchor = eval_core._WindowsWorkspaceAnchor(Path("C:/workspace"), api=api)
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    monkeypatch.setattr(eval_core.os, "open", lambda *args, **kwargs: (_ for _ in ()).throw(NotImplementedError()))
+
+    try:
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("nested/a.txt",))
+    finally:
+        anchor.close()
+
+    assert (snapshot / "nested" / "a.txt").read_bytes() == b"safe"
+    assert set(api.closed) == {(), ("nested",), ("nested", "a.txt")}
+
+
+def test_windows_workspace_anchor_rejects_reparse_component_and_closes_handles(tmp_path):
+    reparse = eval_core._WindowsFileInfo(True, False, True, 0, (1, 2), 3)
+    api = _FakeWindowsHandleApi({("link",): (reparse, b"")})
+    anchor = eval_core._WindowsWorkspaceAnchor(Path("C:/workspace"), api=api)
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+
+    try:
+        with pytest.raises(eval_core.PostAgentVerificationFailure, match="must not use reparse points"):
+            eval_core._snapshot_expected_artifacts(anchor, snapshot, ("link/a.txt",))
+    finally:
+        anchor.close()
+
+    assert set(api.closed) == {(), ("link",)}
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native handles")
+def test_windows_native_workspace_anchor_reads_nested_regular_file(tmp_path):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    (workspace / "nested").mkdir(parents=True)
+    snapshot.mkdir()
+    (workspace / "nested" / "a.txt").write_bytes(b"safe")
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace)
+
+    try:
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("nested/a.txt",))
+    finally:
+        anchor.close()
+
+    assert (snapshot / "nested" / "a.txt").read_bytes() == b"safe"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows junctions")
+def test_windows_native_workspace_anchor_rejects_junction_component(tmp_path):
+    workspace = tmp_path / "workspace"
+    outside = tmp_path / "outside"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    outside.mkdir()
+    snapshot.mkdir()
+    (outside / "a.txt").write_bytes(b"external")
+    subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(workspace / "link"), str(outside)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace)
+
+    try:
+        with pytest.raises(eval_core.PostAgentVerificationFailure, match="must not use reparse points"):
+            eval_core._snapshot_expected_artifacts(anchor, snapshot, ("link/a.txt",))
+    finally:
+        anchor.close()
+
+
 def test_run_eval_uses_pre_agent_package_verifier_not_workspace_forgery(tmp_path):
     eval_dir = tmp_path / "skill"
     eval_dir.mkdir()

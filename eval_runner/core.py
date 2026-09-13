@@ -1456,92 +1456,370 @@ def _artifact_failure(reason: str, artifacts: tuple[str, ...]) -> PostAgentVerif
     )
 
 
+@dataclasses.dataclass(frozen=True)
+class _WindowsFileInfo:
+    is_directory: bool
+    is_regular: bool
+    is_reparse: bool
+    size: int
+    identity: tuple[int, int]
+    mtime: int
+    change_time: int = 0
+
+
+class _PosixWorkspaceAnchor:
+    def __init__(self, working_directory: Path):
+        if not hasattr(os, "O_NOFOLLOW"):
+            raise OSError("secure verifier traversal requires O_NOFOLLOW")
+        if os.open not in getattr(os, "supports_dir_fd", set()):
+            raise OSError("secure verifier traversal requires os.open dir_fd support")
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | os.O_NOFOLLOW
+        self._descriptor = os.open(working_directory, flags)
+        if not stat.S_ISDIR(os.fstat(self._descriptor).st_mode):
+            self.close()
+            raise NotADirectoryError(str(working_directory))
+
+    def close(self) -> None:
+        descriptor = getattr(self, "_descriptor", None)
+        if descriptor is not None:
+            self._descriptor = None
+            os.close(descriptor)
+
+    def read_artifact(self, artifact: str, artifacts: tuple[str, ...]) -> bytes:
+        parts = _safe_relative_parts(artifact, "parameters.expected_artifacts")
+        nofollow = getattr(os, "O_NOFOLLOW", 0)
+        directory_flag = getattr(os, "O_DIRECTORY", 0)
+        descriptors: list[int] = []
+        parent_descriptor = self._descriptor
+        try:
+            for part in parts[:-1]:
+                descriptor = os.open(
+                    part, os.O_RDONLY | directory_flag | nofollow, dir_fd=parent_descriptor
+                )
+                descriptors.append(descriptor)
+                parent_descriptor = descriptor
+            file_descriptor = os.open(parts[-1], os.O_RDONLY | nofollow, dir_fd=parent_descriptor)
+            descriptors.append(file_descriptor)
+            return _read_posix_file_descriptor(file_descriptor, artifact, artifacts)
+        except PostAgentVerificationFailure:
+            raise
+        except (FileNotFoundError, NotADirectoryError):
+            raise _artifact_failure(
+                f"expected artifact is missing or not a file: {artifact}", artifacts
+            ) from None
+        except OSError:
+            raise _artifact_failure(
+                f"expected artifact must not use symlinks: {artifact}", artifacts
+            ) from None
+        finally:
+            for descriptor in reversed(descriptors):
+                os.close(descriptor)
+
+
+def _read_posix_file_descriptor(
+    file_descriptor: int, artifact: str, artifacts: tuple[str, ...]
+) -> bytes:
+    info = os.fstat(file_descriptor)
+    if not stat.S_ISREG(info.st_mode):
+        raise _artifact_failure(
+            f"expected artifact is missing or not a regular file: {artifact}", artifacts
+        )
+    if info.st_size > _MAX_ARTIFACT_BYTES:
+        raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+    chunks: list[bytes] = []
+    remaining = _MAX_ARTIFACT_BYTES + 1
+    while remaining:
+        chunk = os.read(file_descriptor, min(65_536, remaining))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    data = b"".join(chunks)
+    if len(data) > _MAX_ARTIFACT_BYTES:
+        raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+    final_info = os.fstat(file_descriptor)
+    initial_identity = (
+        info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns,
+    )
+    final_identity = (
+        final_info.st_dev, final_info.st_ino, final_info.st_mode,
+        final_info.st_size, final_info.st_mtime_ns,
+    )
+    if len(data) != info.st_size or final_identity != initial_identity:
+        raise _artifact_failure(
+            f"expected artifact changed while being snapshotted: {artifact}", artifacts
+        )
+    return data
+
+
+class _NativeWindowsHandleApi:
+    """Open descendants relative to retained NT handles, never by reconstructed paths."""
+
+    def __init__(self) -> None:
+        if os.name != "nt":
+            raise OSError("Windows native handles are unavailable on this platform")
+        import ctypes
+        from ctypes import wintypes
+
+        self.ctypes = ctypes
+        self.wintypes = wintypes
+        self.kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.ntdll = ctypes.WinDLL("ntdll", use_last_error=True)
+
+        class UNICODE_STRING(ctypes.Structure):
+            _fields_ = [("Length", wintypes.USHORT), ("MaximumLength", wintypes.USHORT),
+                        ("Buffer", wintypes.LPWSTR)]
+
+        class OBJECT_ATTRIBUTES(ctypes.Structure):
+            _fields_ = [("Length", wintypes.ULONG), ("RootDirectory", wintypes.HANDLE),
+                        ("ObjectName", ctypes.POINTER(UNICODE_STRING)), ("Attributes", wintypes.ULONG),
+                        ("SecurityDescriptor", wintypes.LPVOID),
+                        ("SecurityQualityOfService", wintypes.LPVOID)]
+
+        class IO_STATUS_BLOCK(ctypes.Structure):
+            _fields_ = [("Status", ctypes.c_void_p), ("Information", ctypes.c_size_t)]
+
+        class BY_HANDLE_FILE_INFORMATION(ctypes.Structure):
+            _fields_ = [("dwFileAttributes", wintypes.DWORD), ("ftCreationTime", wintypes.FILETIME),
+                        ("ftLastAccessTime", wintypes.FILETIME), ("ftLastWriteTime", wintypes.FILETIME),
+                        ("dwVolumeSerialNumber", wintypes.DWORD), ("nFileSizeHigh", wintypes.DWORD),
+                        ("nFileSizeLow", wintypes.DWORD), ("nNumberOfLinks", wintypes.DWORD),
+                        ("nFileIndexHigh", wintypes.DWORD), ("nFileIndexLow", wintypes.DWORD)]
+
+        class FILE_BASIC_INFO(ctypes.Structure):
+            _fields_ = [("CreationTime", ctypes.c_longlong), ("LastAccessTime", ctypes.c_longlong),
+                        ("LastWriteTime", ctypes.c_longlong), ("ChangeTime", ctypes.c_longlong),
+                        ("FileAttributes", wintypes.DWORD)]
+
+        self.UNICODE_STRING = UNICODE_STRING
+        self.OBJECT_ATTRIBUTES = OBJECT_ATTRIBUTES
+        self.IO_STATUS_BLOCK = IO_STATUS_BLOCK
+        self.BY_HANDLE_FILE_INFORMATION = BY_HANDLE_FILE_INFORMATION
+        self.FILE_BASIC_INFO = FILE_BASIC_INFO
+        self.kernel32.CreateFileW.argtypes = [
+            wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+            wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+        ]
+        self.kernel32.CreateFileW.restype = wintypes.HANDLE
+        self.kernel32.GetFileInformationByHandle.argtypes = [
+            wintypes.HANDLE, ctypes.POINTER(BY_HANDLE_FILE_INFORMATION),
+        ]
+        self.kernel32.GetFileInformationByHandle.restype = wintypes.BOOL
+        self.kernel32.GetFileInformationByHandleEx.argtypes = [
+            wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD,
+        ]
+        self.kernel32.GetFileInformationByHandleEx.restype = wintypes.BOOL
+        self.kernel32.ReadFile.argtypes = [
+            wintypes.HANDLE, wintypes.LPVOID, wintypes.DWORD,
+            ctypes.POINTER(wintypes.DWORD), wintypes.LPVOID,
+        ]
+        self.kernel32.ReadFile.restype = wintypes.BOOL
+        self.kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        self.kernel32.CloseHandle.restype = wintypes.BOOL
+        self.ntdll.NtCreateFile.argtypes = [
+            ctypes.POINTER(wintypes.HANDLE), wintypes.ULONG,
+            ctypes.POINTER(OBJECT_ATTRIBUTES), ctypes.POINTER(IO_STATUS_BLOCK),
+            wintypes.LPVOID, wintypes.ULONG, wintypes.ULONG, wintypes.ULONG,
+            wintypes.ULONG, wintypes.LPVOID, wintypes.ULONG,
+        ]
+        self.ntdll.NtCreateFile.restype = ctypes.c_long
+        self.ntdll.RtlNtStatusToDosError.argtypes = [ctypes.c_long]
+        self.ntdll.RtlNtStatusToDosError.restype = wintypes.ULONG
+
+    def _raise_last_error(self) -> None:
+        raise self.ctypes.WinError(self.ctypes.get_last_error())
+
+    def open_root(self, path: Path) -> Any:
+        handle = self.kernel32.CreateFileW(
+            str(path), 0x0001 | 0x0080 | 0x00100000, 0x1 | 0x2, None, 3,
+            0x02000000 | 0x00200000, None,
+        )
+        if handle == self.wintypes.HANDLE(-1).value:
+            self._raise_last_error()
+        return handle
+
+    def open_relative(self, parent: Any, name: str, *, directory: bool) -> Any:
+        name_buffer = self.ctypes.create_unicode_buffer(name)
+        unicode_name = self.UNICODE_STRING(
+            len(name.encode("utf-16-le")), len(name.encode("utf-16-le")) + 2,
+            self.ctypes.cast(name_buffer, self.wintypes.LPWSTR),
+        )
+        attributes = self.OBJECT_ATTRIBUTES(
+            self.ctypes.sizeof(self.OBJECT_ATTRIBUTES), parent,
+            self.ctypes.pointer(unicode_name), 0x40, None, None,
+        )
+        io_status = self.IO_STATUS_BLOCK()
+        handle = self.wintypes.HANDLE()
+        options = 0x20 | 0x00200000 | (0x1 if directory else 0x40)
+        status = self.ntdll.NtCreateFile(
+            self.ctypes.byref(handle), 0x0001 | 0x0080 | 0x00100000,
+            self.ctypes.byref(attributes), self.ctypes.byref(io_status), None, 0,
+            0x1 | 0x2, 1, options, None, 0,
+        )
+        if status < 0:
+            error = self.ntdll.RtlNtStatusToDosError(status)
+            raise self.ctypes.WinError(error)
+        return handle
+
+    def info(self, handle: Any) -> _WindowsFileInfo:
+        info = self.BY_HANDLE_FILE_INFORMATION()
+        if not self.kernel32.GetFileInformationByHandle(handle, self.ctypes.byref(info)):
+            self._raise_last_error()
+        basic = self.FILE_BASIC_INFO()
+        if not self.kernel32.GetFileInformationByHandleEx(
+            handle, 0, self.ctypes.byref(basic), self.ctypes.sizeof(basic)
+        ):
+            self._raise_last_error()
+        attributes = info.dwFileAttributes
+        size = (info.nFileSizeHigh << 32) | info.nFileSizeLow
+        identity = (info.dwVolumeSerialNumber, (info.nFileIndexHigh << 32) | info.nFileIndexLow)
+        mtime = (info.ftLastWriteTime.dwHighDateTime << 32) | info.ftLastWriteTime.dwLowDateTime
+        is_directory = bool(attributes & 0x10)
+        return _WindowsFileInfo(
+            is_directory, not is_directory, bool(attributes & 0x400), size, identity, mtime,
+            basic.ChangeTime,
+        )
+
+    def read(self, handle: Any, limit: int) -> bytes:
+        chunks: list[bytes] = []
+        remaining = limit
+        while remaining:
+            requested = min(65_536, remaining)
+            buffer = self.ctypes.create_string_buffer(requested)
+            count = self.wintypes.DWORD()
+            if not self.kernel32.ReadFile(handle, buffer, requested, self.ctypes.byref(count), None):
+                error = self.ctypes.get_last_error()
+                if error == 38:  # ERROR_HANDLE_EOF
+                    break
+                raise self.ctypes.WinError(error)
+            if not count.value:
+                break
+            chunks.append(buffer.raw[:count.value])
+            remaining -= count.value
+        return b"".join(chunks)
+
+    def close(self, handle: Any) -> None:
+        if not self.kernel32.CloseHandle(handle):
+            self._raise_last_error()
+
+
+class _WindowsWorkspaceAnchor:
+    def __init__(self, working_directory: Path, *, api: Any | None = None):
+        self._api = api or _NativeWindowsHandleApi()
+        self._handle = self._api.open_root(working_directory)
+        try:
+            root_info = self._api.info(self._handle)
+            if not root_info.is_directory or root_info.is_reparse:
+                raise OSError("verifier working directory must be a non-reparse directory")
+        except Exception:
+            self.close()
+            raise
+
+    def close(self) -> None:
+        handle = getattr(self, "_handle", None)
+        if handle is not None:
+            self._handle = None
+            self._api.close(handle)
+
+    def read_artifact(self, artifact: str, artifacts: tuple[str, ...]) -> bytes:
+        parts = _safe_relative_parts(artifact, "parameters.expected_artifacts")
+        handles: list[Any] = []
+        parent = self._handle
+        try:
+            for part in parts[:-1]:
+                handle = self._api.open_relative(parent, part, directory=True)
+                handles.append(handle)
+                info = self._api.info(handle)
+                if info.is_reparse:
+                    raise _artifact_failure(
+                        f"expected artifact must not use reparse points: {artifact}", artifacts
+                    )
+                if not info.is_directory:
+                    raise _artifact_failure(
+                        f"expected artifact is missing or not a file: {artifact}", artifacts
+                    )
+                parent = handle
+            handle = self._api.open_relative(parent, parts[-1], directory=False)
+            handles.append(handle)
+            info = self._api.info(handle)
+            if info.is_reparse:
+                raise _artifact_failure(
+                    f"expected artifact must not use reparse points: {artifact}", artifacts
+                )
+            if not info.is_regular:
+                raise _artifact_failure(
+                    f"expected artifact is missing or not a regular file: {artifact}", artifacts
+                )
+            if info.size > _MAX_ARTIFACT_BYTES:
+                raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+            data = self._api.read(handle, _MAX_ARTIFACT_BYTES + 1)
+            final_info = self._api.info(handle)
+            if len(data) > _MAX_ARTIFACT_BYTES:
+                raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
+            if len(data) != info.size or final_info != info:
+                raise _artifact_failure(
+                    f"expected artifact changed while being snapshotted: {artifact}", artifacts
+                )
+            return data
+        except PostAgentVerificationFailure:
+            raise
+        except (FileNotFoundError, NotADirectoryError):
+            raise _artifact_failure(
+                f"expected artifact is missing or not a file: {artifact}", artifacts
+            ) from None
+        except OSError:
+            raise _artifact_failure(
+                f"expected artifact could not be opened securely: {artifact}", artifacts
+            ) from None
+        finally:
+            for handle in reversed(handles):
+                self._api.close(handle)
+
+
+def _anchor_verifier_workspace(working_directory: Path) -> Any:
+    if os.name == "nt":
+        return _WindowsWorkspaceAnchor(working_directory)
+    return _PosixWorkspaceAnchor(working_directory)
+
+
 def _read_artifact_from_descriptor(
     working_directory: Path, artifact: str, artifacts: tuple[str, ...]
 ) -> bytes:
+    """Compatibility helper for callers that snapshot outside run_eval."""
+    anchor = _anchor_verifier_workspace(working_directory)
     parts = _safe_relative_parts(artifact, "parameters.expected_artifacts")
-    nofollow = getattr(os, "O_NOFOLLOW", 0)
-    directory_flag = getattr(os, "O_DIRECTORY", 0)
-    descriptors: list[int] = []
     try:
-        descriptors.append(os.open(working_directory, os.O_RDONLY | directory_flag))
-        for part in parts[:-1]:
-            descriptors.append(
-                os.open(part, os.O_RDONLY | directory_flag | nofollow, dir_fd=descriptors[-1])
-            )
-        file_descriptor = os.open(parts[-1], os.O_RDONLY | nofollow, dir_fd=descriptors[-1])
-        descriptors.append(file_descriptor)
-        info = os.fstat(file_descriptor)
-        if not stat.S_ISREG(info.st_mode):
-            raise _artifact_failure(
-                f"expected artifact is missing or not a regular file: {artifact}", artifacts
-            )
-        if info.st_size > _MAX_ARTIFACT_BYTES:
-            raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
-        chunks: list[bytes] = []
-        remaining = _MAX_ARTIFACT_BYTES + 1
-        while remaining:
-            chunk = os.read(file_descriptor, min(65_536, remaining))
-            if not chunk:
-                break
-            chunks.append(chunk)
-            remaining -= len(chunk)
-        data = b"".join(chunks)
-        if len(data) > _MAX_ARTIFACT_BYTES:
-            raise _artifact_failure(f"expected artifact exceeds size limit: {artifact}", artifacts)
-        final_info = os.fstat(file_descriptor)
-        initial_identity = (
-            info.st_dev,
-            info.st_ino,
-            info.st_mode,
-            info.st_size,
-            info.st_mtime_ns,
-        )
-        final_identity = (
-            final_info.st_dev,
-            final_info.st_ino,
-            final_info.st_mode,
-            final_info.st_size,
-            final_info.st_mtime_ns,
-        )
-        if len(data) != info.st_size or final_identity != initial_identity:
-            raise _artifact_failure(
-                f"expected artifact changed while being snapshotted: {artifact}", artifacts
-            )
-        return data
-    except PostAgentVerificationFailure:
-        raise
-    except (FileNotFoundError, NotADirectoryError):
-        raise _artifact_failure(
-            f"expected artifact is missing or not a file: {artifact}", artifacts
-        ) from None
-    except OSError:
-        raise _artifact_failure(
-            f"expected artifact must not use symlinks: {artifact}", artifacts
-        ) from None
+        return anchor.read_artifact(str(Path(*parts)), artifacts)
     finally:
-        for descriptor in reversed(descriptors):
-            os.close(descriptor)
+        anchor.close()
 
 
 def _snapshot_expected_artifacts(
-    working_directory: Path, snapshot_directory: Path, artifacts: tuple[str, ...]
+    workspace: Any, snapshot_directory: Path, artifacts: tuple[str, ...]
 ) -> None:
+    owned_anchor = None
+    if isinstance(workspace, Path):
+        owned_anchor = _anchor_verifier_workspace(workspace)
+        workspace = owned_anchor
     total = 0
-    for artifact in artifacts:
-        data = _read_artifact_from_descriptor(working_directory, artifact, artifacts)
-        total += len(data)
-        if total > _MAX_TOTAL_ARTIFACT_BYTES:
-            raise _artifact_failure("expected artifacts exceed total size limit", artifacts)
-        destination = snapshot_directory.joinpath(*_safe_relative_parts(artifact, "expected artifact"))
-        destination.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
-        with destination.open("xb") as handle:
-            if hasattr(os, "fchmod"):
-                os.fchmod(handle.fileno(), 0o600)
-            handle.write(data)
+    try:
+        for artifact in artifacts:
+            data = workspace.read_artifact(artifact, artifacts)
+            total += len(data)
+            if total > _MAX_TOTAL_ARTIFACT_BYTES:
+                raise _artifact_failure("expected artifacts exceed total size limit", artifacts)
+            destination = snapshot_directory.joinpath(*_safe_relative_parts(artifact, "expected artifact"))
+            destination.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+            with destination.open("xb") as handle:
+                if hasattr(os, "fchmod"):
+                    os.fchmod(handle.fileno(), 0o600)
+                handle.write(data)
+    finally:
+        if owned_anchor is not None:
+            owned_anchor.close()
 
 
-def _run_post_agent_verifier(spec: EvalSpec, working_directory: Path, env: dict[str, str]) -> dict[str, Any]:
+def _run_post_agent_verifier(spec: EvalSpec, workspace: Any, env: dict[str, str]) -> dict[str, Any]:
     if spec.verification_program is None:
         raise ValueError("post-agent verifier is not configured")
     command_argv = [sys.executable, ".trusted-verifier.py"]
@@ -1558,7 +1836,7 @@ def _run_post_agent_verifier(spec: EvalSpec, working_directory: Path, env: dict[
             snapshot_directory = Path(temporary)
             snapshot_directory.chmod(0o700)
             _snapshot_expected_artifacts(
-                working_directory, snapshot_directory, spec.expected_artifacts
+                workspace, snapshot_directory, spec.expected_artifacts
             )
             verifier_path = snapshot_directory / ".trusted-verifier.py"
             with verifier_path.open("xb") as handle:
@@ -1754,6 +2032,7 @@ def run_eval(
     failure_reasons: list[str] = []
     infrastructure_failure = False
     token_counts = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    verifier_workspace = None
     try:
         agent_cwd = _resolve_eval_working_directory(spec, env, run_dir)
         output_parts.extend(_run_shell_commands(spec.setup_commands, spec.path.parent, env))
@@ -1761,6 +2040,8 @@ def run_eval(
             raise ValueError(
                 f"parameters.working_directory is not an existing directory: {agent_cwd}"
             )
+        if spec.verification_program is not None:
+            verifier_workspace = _anchor_verifier_workspace(agent_cwd)
         agent_prompt = _prompt_with_fixture(spec)
         prompt_file = run_dir / "prompt.txt"
         _write_private_text(prompt_file, agent_prompt)
@@ -1785,7 +2066,7 @@ def run_eval(
             verifier_evidence = None
             if spec.verification_program is not None:
                 try:
-                    verifier_evidence = _run_post_agent_verifier(spec, agent_cwd, env)
+                    verifier_evidence = _run_post_agent_verifier(spec, verifier_workspace, env)
                 except PostAgentVerificationFailure as exc:
                     safe_evidence = _redact_json_tree(exc.evidence)
                     output_parts.append(
@@ -1819,6 +2100,13 @@ def run_eval(
         infrastructure_failure = True
         failure_reasons.append(f"eval execution failed ({type(exc).__name__})")
     finally:
+        if verifier_workspace is not None:
+            try:
+                verifier_workspace.close()
+            except OSError:
+                passed = False
+                infrastructure_failure = True
+                failure_reasons.append("verifier workspace close failed (OSError)")
         try:
             output_parts.extend(
                 _run_shell_commands(spec.teardown_commands, spec.path.parent, env, cleanup_descendants=True)
