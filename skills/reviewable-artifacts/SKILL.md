@@ -93,15 +93,21 @@ python skills/reviewable-artifacts/scripts/github_review_threads.py resolve \
 
 Round 1 is a broad review, not a sampling pass. Cover all material dimensions applicable to the artifact: correctness, user/CUJ fit, requirements, security/privacy, release/operations, accessibility, failure states, evidence quality, and artifact rendering. Report every material finding visible in the frozen candidate so later rounds do not become serial discovery.
 
+**Omit reversible nits entirely from findings and follow-up in every round.** This applies to Round 1, every disposition check, and every later follow-up—not only to newly introduced observations in convergence mode. Naming taste, cosmetic formatting, optional refactors, and minor polish that can safely wait do not become finding IDs, disposition entries, replies, or reasons for another review round.
+
 ### Cumulative lineage
 
-Every round binds to its exact revision and carries forward all earlier findings with stable IDs and dispositions. Before dispatch, include base/current revision, prior reviewed revisions, changed scope, unresolved findings, addressed evidence, and known limitations. A prior approval does not carry to changed bytes unless the reviewer explicitly evaluates the cumulative delta and current whole.
+Every round binds to its exact revision. The **active cumulative lineage carries material unresolved findings only**, with stable IDs. Durable reports and dispositions may preserve resolution evidence for material findings that were closed, but those findings leave the active correction set. Never carry a reversible nit from an earlier report, disposition, reply, or follow-up into the lineage. Before dispatch, include base/current revision, prior reviewed revisions, changed scope, unresolved material findings, addressed evidence, and known limitations. A prior approval does not carry to changed bytes unless the reviewer explicitly evaluates the cumulative delta and current whole.
 
 For immutable candidate mechanics, exact-SHA receipts, and evidence closure, use canonical `immutable-candidate-verification` and `spec-compliance-review` rather than duplicating their protocols here.
 
 ### Round 4 and convergence
 
-There is no fixed round cap. In **Round 4** and later, enter convergence mode: recheck unresolved material findings, regressions, and changed risk surfaces; report new issues only when they are material, security/reliability relevant, or evidence of a systemic defect. Omit newly introduced **reversible nits**—cosmetic or preference-only observations that can safely wait—so review converges without concealing blockers. Any material finding remains blocking regardless of round number.
+There is no fixed round cap. In **Round 4** and later, enter approval-convergence mode: recheck unresolved material findings, regressions, and changed risk surfaces; report new issues only when they are material. **In Round 4 and later, return `APPROVED` immediately when no material blocker remains**; requesting continuation for preferences, optional hardening, out-of-contract evidence, or reversible nits is invalid. Omit reversible nits entirely from findings and follow-up in every round.
+
+**Never approve by exhaustion.** A genuine material blocker remains `REQUEST_CHANGES` regardless of round count, including a late material security, correctness, privacy, data-loss, compliance, accessibility, reliability, or systemic defect. Continue with the smallest complete material correction set; neither elapsed rounds nor reviewer fatigue converts it to approval.
+
+When the review surface embeds a scoped specialist report, preserve that specialist's verdict vocabulary and scope; do not translate its valid terminal states into a different generic vocabulary. The artifact-level convergence decision does not broaden or overwrite specialist authority.
 
 ## Review-Only Close Lifecycle
 

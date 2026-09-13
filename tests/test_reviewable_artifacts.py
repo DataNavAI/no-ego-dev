@@ -120,6 +120,46 @@ def test_eval_loads_as_non_mutating_deterministic_simulation():
         assert scenario in contract
 
 
+def _policy_surfaces():
+    spec = load_eval(SKILL_DIR / "EVAL.yaml")
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    fixture = spec.fixture_text
+    template = (SKILL_DIR / "templates" / "review-index.md").read_text(encoding="utf-8")
+    eval_expectations = "\n".join(spec.expectations)
+    return skill, fixture, template, eval_expectations
+
+
+def test_convergence_policy_rejects_reversible_nits_in_every_round_and_follow_up():
+    skill, fixture, _template, eval_expectations = _policy_surfaces()
+    for surface in (skill, fixture, eval_expectations):
+        assert "Omit reversible nits entirely from findings and follow-up in every round" in surface
+    assert "a reversible nit reported in round 1 or any follow-up is rejected" in fixture.lower()
+
+
+def test_cumulative_lineage_carries_material_findings_only_not_reversible_nits():
+    skill, fixture, template, eval_expectations = _policy_surfaces()
+    for surface in (skill, fixture, eval_expectations):
+        assert "active cumulative lineage carries material unresolved findings only" in surface
+    assert "Material unresolved finding / ID" in template
+    assert "Prior finding / ID" not in template
+    assert "a lineage packet that carries a reversible nit from any earlier round is rejected" in fixture.lower()
+
+
+def test_round_four_without_a_material_blocker_requires_immediate_approval():
+    skill, fixture, _template, eval_expectations = _policy_surfaces()
+    for surface in (skill, fixture, eval_expectations):
+        assert "In Round 4 and later, return `APPROVED` immediately when no material blocker remains" in surface
+    assert "requesting another round is rejected" in fixture
+
+
+def test_material_blockers_never_become_approved_by_exhaustion():
+    skill, fixture, _template, eval_expectations = _policy_surfaces()
+    for surface in (skill, fixture, eval_expectations):
+        assert "Never approve by exhaustion" in surface
+        assert "genuine material blocker remains `REQUEST_CHANGES` regardless of round count" in surface
+    assert "approval by exhaustion is rejected" in fixture.lower()
+
+
 def test_parser_requires_full_identity_for_every_mutation():
     parser = _module().build_parser()
     for command in ("reply", "resolve"):

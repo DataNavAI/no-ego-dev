@@ -33,11 +33,13 @@
 |---|---|---|---|---|
 | `DEC-01` | ... | ... | ... | open |
 
-## Cumulative lineage and changes
+## Cumulative material lineage and changes
 
-| Round | Exact revision | Prior finding / ID | Disposition | Evidence |
+| Round | Exact revision | Material unresolved finding / ID | Disposition | Evidence |
 |---|---|---|---|---|
 | 1 | ... | ... | ... | ... |
+
+Record material findings only. Omit reversible nits from every round, follow-up, and lineage entry; remove resolved material findings from the active unresolved set while retaining their durable material disposition evidence.
 
 ## Main artifact
 
