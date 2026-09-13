@@ -1516,6 +1516,13 @@ class _PosixWorkspaceAnchor:
                 os.close(descriptor)
 
 
+def _stat_ctime_ns(info: os.stat_result) -> int:
+    ctime_ns = getattr(info, "st_ctime_ns", None)
+    if ctime_ns is not None:
+        return int(ctime_ns)
+    return int(info.st_ctime * 1_000_000_000)
+
+
 def _read_posix_file_descriptor(
     file_descriptor: int, artifact: str, artifacts: tuple[str, ...]
 ) -> bytes:
@@ -1540,10 +1547,11 @@ def _read_posix_file_descriptor(
     final_info = os.fstat(file_descriptor)
     initial_identity = (
         info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns,
+        _stat_ctime_ns(info),
     )
     final_identity = (
         final_info.st_dev, final_info.st_ino, final_info.st_mode,
-        final_info.st_size, final_info.st_mtime_ns,
+        final_info.st_size, final_info.st_mtime_ns, _stat_ctime_ns(final_info),
     )
     if len(data) != info.st_size or final_identity != initial_identity:
         raise _artifact_failure(

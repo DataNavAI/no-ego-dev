@@ -1554,6 +1554,59 @@ def test_artifact_snapshot_rejects_in_place_change_after_descriptor_validation(t
         eval_core._snapshot_expected_artifacts(workspace, snapshot, ("artifact.txt",))
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX ctime mutation detection")
+def test_run_eval_rejects_same_size_artifact_rewrite_with_restored_mtime(tmp_path, monkeypatch):
+    eval_dir = tmp_path / "skill"
+    eval_dir.mkdir()
+    eval_path = eval_dir / "EVAL.yaml"
+    _write_verifier_eval(
+        eval_path,
+        "from pathlib import Path\nassert Path('artifact.txt').read_bytes() == b'mutated!!'\n",
+        ["artifact.txt"],
+    )
+    workspace_record = tmp_path / "workspace.txt"
+    agent_script = tmp_path / "write_artifact.py"
+    agent_script.write_text(
+        "from pathlib import Path\n"
+        f"Path({str(workspace_record)!r}).write_text(str(Path.cwd()))\n"
+        "Path('artifact.txt').write_bytes(b'original!')\n"
+        "print('verified')\n"
+    )
+    judge, judge_prompt_path = _judge_prompt_recording_command(tmp_path)
+    real_read = eval_core.os.read
+    mutation_stats = []
+
+    def race_read(fd, size):
+        if not mutation_stats and workspace_record.exists():
+            artifact = Path(workspace_record.read_text()) / "artifact.txt"
+            before = artifact.stat()
+            time.sleep(0.01)
+            artifact.write_bytes(b"mutated!!")
+            os.utime(artifact, ns=(before.st_atime_ns, before.st_mtime_ns))
+            after = artifact.stat()
+            mutation_stats.append((before, after))
+        return real_read(fd, size)
+
+    monkeypatch.setattr(eval_core.os, "read", race_read)
+
+    result = run_eval(
+        eval_path,
+        output_root=tmp_path / "runs",
+        hermes_command=_base_command_line([sys.executable, str(agent_script)]),
+        judge_command=judge,
+    )
+
+    assert mutation_stats, (result.failure_reasons, result.output)
+    before, after = mutation_stats[0]
+    assert after.st_size == before.st_size
+    assert after.st_mtime_ns == before.st_mtime_ns
+    assert after.st_ctime_ns != before.st_ctime_ns
+    assert result.passed is False
+    assert result.infrastructure_failure is False
+    assert result.failure_reasons == ["expected artifact changed while being snapshotted: artifact.txt"]
+    assert judge_prompt_path.exists() is False
+
+
 def test_artifact_snapshot_reads_opened_inode_when_path_target_is_swapped(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     snapshot = tmp_path / "snapshot"
@@ -1574,6 +1627,7 @@ def test_artifact_snapshot_reads_opened_inode_when_path_target_is_swapped(tmp_pa
             swapped = True
             artifact.rename(held)
             replacement.rename(artifact)
+            info = real_fstat(fd)
         return info
 
     monkeypatch.setattr(eval_core.os, "fstat", race_fstat)
