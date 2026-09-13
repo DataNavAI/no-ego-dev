@@ -1,0 +1,22 @@
+name: workflow-training
+prompt: |
+  A workflow eval failed because the agent ignored the provided workspace and fixture. Describe the next training iteration as a thin routing decision. Use the deterministic fixture, parameterize source_root and target_roots, require controlled old-skill and no-skill baselines plus multi-prompt regression, and explain the publication and runtime-adoption gates. Do not prescribe fixed local paths, destructive sync, direct mutable-checkout rollout, reflex gateway restart, or shell interpolation.
+expectations:
+  - "identifies workflow-training as a thin router to eval-creator skill-creator third-party-skill-integration and profile-skill-harvester"
+  - "classifies the failed behavior without weakening a valid eval"
+  - "parameterizes source_root target_roots eval_path and scratch_root rather than embedding a developer path"
+  - "requires actual loader and fixture delivery validation through eval-creator"
+  - "uses controlled current-skill old-skill no-skill and candidate baselines"
+  - "requires a representative adversarial multi-prompt regression"
+  - "requires pinned external source license attribution and third-party review when importing material"
+  - "requires independent exact-generation review and remote-default merge before profile rollout"
+  - "rejects rollout from a mutable checkout and destructive target mirroring"
+  - "classifies existing skill-only changes as hot-loadable and avoids reflex gateway restart"
+  - "requires argv-safe literal transport and rejects shell interpolation of dynamic text"
+  - "keeps run artifacts outside the source repository"
+parameters:
+  fixture: evaldata/scenario.md
+  source_root: "<canonical-source-root>"
+  target_roots: ["<authorized-target-root-a>", "<authorized-target-root-b>"]
+setupCommands: []
+teardownCommands: []
