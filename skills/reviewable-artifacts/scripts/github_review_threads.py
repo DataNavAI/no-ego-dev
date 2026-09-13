@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List and safely mutate GitHub pull-request review threads via gh."""
+"""List and inspect GitHub pull-request review threads via gh."""
 
 from __future__ import annotations
 
@@ -44,23 +44,6 @@ query($threadId: ID!, $after: String) {
   }
 }
 """
-
-REPLY_MUTATION = r"""
-mutation($threadId: ID!, $body: String!) {
-  addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {
-    comment { id databaseId body createdAt url author { login } }
-  }
-}
-"""
-
-RESOLVE_MUTATION = r"""
-mutation($threadId: ID!) {
-  resolveReviewThread(input: {threadId: $threadId}) {
-    thread { id isResolved }
-  }
-}
-"""
-
 
 def parse_repo(value: str) -> tuple[str, str]:
     parts = value.strip().strip("/").split("/")
@@ -194,7 +177,7 @@ def _validate_snapshot(data: dict[str, Any], repo: tuple[str, str], pr_number: i
 def _exact_thread(data: dict[str, Any], thread_id: str) -> dict[str, Any]:
     matches = [thread for thread in data.get("threads", []) if thread.get("id") == thread_id]
     if len(matches) != 1:
-        raise RuntimeError(f"thread identity mismatch: expected exactly one unresolved target {thread_id}")
+        raise RuntimeError(f"thread identity mismatch: expected exactly one target {thread_id}")
     return matches[0]
 
 
@@ -202,63 +185,25 @@ def _unresolved_count(data: dict[str, Any]) -> int:
     return sum(not thread.get("isResolved", False) for thread in data.get("threads", []))
 
 
-def prefetch_unresolved_thread(
-    repo: tuple[str, str], pr_number: int, thread_id: str, expected_head: str
-) -> tuple[dict[str, Any], dict[str, Any]]:
+def inspect_thread(
+    repo: tuple[str, str],
+    pr_number: int,
+    thread_id: str,
+    expected_head: str,
+    *,
+    unresolved_only: bool = False,
+) -> dict[str, Any]:
     data = fetch_threads(repo, pr_number)
     _validate_snapshot(data, repo, pr_number, expected_head)
     thread = _exact_thread(data, thread_id)
-    if thread.get("isResolved"):
+    if unresolved_only and thread.get("isResolved"):
         raise RuntimeError(f"target thread is already resolved: {thread_id}")
-    return data, thread
-
-
-def reply(
-    repo: tuple[str, str], pr_number: int, thread_id: str, expected_head: str, body: str
-) -> dict[str, Any]:
-    if not body.strip():
-        raise RuntimeError("reply body cannot be empty")
-    before, _ = prefetch_unresolved_thread(repo, pr_number, thread_id, expected_head)
-    payload = graphql(REPLY_MUTATION, {"threadId": thread_id, "body": body})
-    comment = payload.get("data", {}).get("addPullRequestReviewThreadReply", {}).get("comment") or {}
-    if not comment.get("id"):
-        raise RuntimeError("GitHub did not return the created reply identity")
-    after = fetch_threads(repo, pr_number)
-    _validate_snapshot(after, repo, pr_number, expected_head)
-    target = _exact_thread(after, thread_id)
-    comments = (target.get("comments") or {}).get("nodes") or []
-    if sum(item.get("id") == comment["id"] for item in comments) != 1:
-        raise RuntimeError("reply readback did not contain the exact created comment")
     return {
-        "thread_id": thread_id,
-        "head_sha": expected_head,
-        "before_unresolved": _unresolved_count(before),
-        "after_unresolved": _unresolved_count(after),
-        "comment": comment,
-    }
-
-
-def resolve(repo: tuple[str, str], pr_number: int, thread_id: str, expected_head: str) -> dict[str, Any]:
-    before, _ = prefetch_unresolved_thread(repo, pr_number, thread_id, expected_head)
-    payload = graphql(RESOLVE_MUTATION, {"threadId": thread_id})
-    mutated = payload.get("data", {}).get("resolveReviewThread", {}).get("thread") or {}
-    if mutated.get("id") != thread_id:
-        raise RuntimeError("mutation returned wrong thread identity")
-    if not mutated.get("isResolved"):
-        raise RuntimeError("GitHub did not confirm that the target thread was resolved")
-    after = fetch_threads(repo, pr_number)
-    _validate_snapshot(after, repo, pr_number, expected_head)
-    target = _exact_thread(after, thread_id)
-    before_count = _unresolved_count(before)
-    after_count = _unresolved_count(after)
-    if not target.get("isResolved") or after_count != before_count - 1:
-        raise RuntimeError("resolve readback did not confirm exact target and unresolved counts")
-    return {
-        "thread_id": thread_id,
-        "head_sha": expected_head,
-        "before_unresolved": before_count,
-        "after_unresolved": after_count,
-        "isResolved": True,
+        "repo": data["repo"],
+        "pr": data["pr"],
+        "url": data.get("url"),
+        "head_sha": data["head_sha"],
+        "thread": thread,
     }
 
 
@@ -293,14 +238,12 @@ def build_parser() -> argparse.ArgumentParser:
     listing.add_argument("--pr", required=True, type=positive_int)
     listing.add_argument("--unresolved", action="store_true")
     listing.add_argument("--json", action="store_true")
-    for command in ("reply", "resolve"):
-        mutation = subparsers.add_parser(command)
-        mutation.add_argument("--repo", required=True, type=parse_repo)
-        mutation.add_argument("--pr", required=True, type=positive_int)
-        mutation.add_argument("--thread-id", required=True)
-        mutation.add_argument("--expected-head", required=True, type=full_sha)
-        if command == "reply":
-            mutation.add_argument("--body", required=True)
+    inspection = subparsers.add_parser("inspect")
+    inspection.add_argument("--repo", required=True, type=parse_repo)
+    inspection.add_argument("--pr", required=True, type=positive_int)
+    inspection.add_argument("--thread-id", required=True)
+    inspection.add_argument("--expected-head", required=True, type=full_sha)
+    inspection.add_argument("--unresolved", action="store_true")
     return parser
 
 
@@ -310,10 +253,14 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "list":
             data = fetch_threads(args.repo, args.pr)
             result: Any = data if args.json else markdown_report(data, args.unresolved)
-        elif args.command == "reply":
-            result = reply(args.repo, args.pr, args.thread_id, args.expected_head, args.body)
         else:
-            result = resolve(args.repo, args.pr, args.thread_id, args.expected_head)
+            result = inspect_thread(
+                args.repo,
+                args.pr,
+                args.thread_id,
+                args.expected_head,
+                unresolved_only=args.unresolved,
+            )
         print(json.dumps(result, indent=2) if not isinstance(result, str) else result)
         return 0
     except RuntimeError as exc:

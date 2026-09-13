@@ -63,6 +63,8 @@ Record material findings only. Omit reversible nits from every round, follow-up,
 
 ## Feedback disposition log
 
+Use the bundled helper only for read-only list/inspect operations. Before any separately authorized reply or resolution through the normal GitHub/UI workflow, record immediate revalidation of repository, PR, live full head SHA, exact thread, unresolved state, and authority. GitHub provides no atomic exact-head guarantee; a post-check cannot undo a side effect if identity changes in the race window.
+
 | Thread URL/ID | Stable ID | Authority | Disposition | Change/rationale | Revision | Status |
 |---|---|---|---|---|---|---|
 | ... | `DEC-01` | ... | accepted | ... | ... | resolved |

@@ -129,6 +129,23 @@ def _policy_surfaces():
     return skill, fixture, template, eval_expectations
 
 
+def test_thread_tooling_policy_is_read_only_and_never_claims_atomic_mutation_safety():
+    skill, fixture, template, eval_expectations = _policy_surfaces()
+    pr_body = (SKILL_DIR / "templates" / "review-only-pr-body.md").read_text(encoding="utf-8")
+    combined = "\n".join((skill, fixture, template, pr_body, eval_expectations))
+
+    for required in (
+        "read-only",
+        "no atomic exact-head guarantee",
+        "immediate revalidation",
+        "post-check cannot undo a side effect",
+    ):
+        assert required in combined
+    assert "github_review_threads.py reply" not in combined
+    assert "github_review_threads.py resolve" not in combined
+    assert "mutates only after match" not in combined
+
+
 def test_convergence_policy_rejects_reversible_nits_in_every_round_and_follow_up():
     skill, fixture, _template, eval_expectations = _policy_surfaces()
     for surface in (skill, fixture, eval_expectations):
@@ -160,26 +177,63 @@ def test_material_blockers_never_become_approved_by_exhaustion():
     assert "approval by exhaustion is rejected" in fixture.lower()
 
 
-def test_parser_requires_full_identity_for_every_mutation():
-    parser = _module().build_parser()
-    for command in ("reply", "resolve"):
-        with pytest.raises(SystemExit):
-            parser.parse_args([command, "--thread-id", "T_1"])
-        parsed = parser.parse_args(
-            [
-                command,
-                "--repo",
-                "acme/widgets",
-                "--pr",
-                "7",
-                "--thread-id",
-                "T_1",
-                "--expected-head",
-                "a" * 40,
-                *(["--body", "addressed"] if command == "reply" else []),
-            ]
-        )
-        assert parsed.thread_id == "T_1"
+@pytest.mark.parametrize("command", ["reply", "resolve"])
+def test_mutation_subcommands_are_rejected_before_any_network_call(monkeypatch, command):
+    module = _module()
+    network_calls = []
+    monkeypatch.setattr(module, "run_gh", lambda args: network_calls.append(args))
+
+    arguments = [
+        command,
+        "--repo",
+        "acme/widgets",
+        "--pr",
+        "7",
+        "--thread-id",
+        "T_1",
+        "--expected-head",
+        "a" * 40,
+    ]
+    if command == "reply":
+        arguments.extend(["--body", "addressed"])
+
+    with pytest.raises(SystemExit):
+        module.main(arguments)
+
+    assert network_calls == []
+
+
+def test_helper_contains_only_graphql_queries_not_mutations():
+    module = _module()
+    graphql_documents = [
+        value
+        for name, value in vars(module).items()
+        if name.endswith(("_QUERY", "_MUTATION")) and isinstance(value, str)
+    ]
+
+    assert graphql_documents
+    assert all(document.lstrip().startswith("query(") for document in graphql_documents)
+    source = SCRIPT.read_text(encoding="utf-8")
+    assert "addPullRequestReviewThreadReply" not in source
+    assert "resolveReviewThread" not in source
+
+
+def test_inspect_reads_exact_thread_at_expected_head(monkeypatch):
+    module = _module()
+    snapshot = {
+        "repo": "acme/widgets",
+        "pr": 7,
+        "head_sha": "a" * 40,
+        "threads": [_thread("T_1"), _thread("T_2", resolved=True)],
+    }
+    monkeypatch.setattr(module, "fetch_threads", lambda *_args, **_kwargs: snapshot)
+
+    result = module.inspect_thread(("acme", "widgets"), 7, "T_1", "a" * 40)
+
+    assert result["repo"] == "acme/widgets"
+    assert result["pr"] == 7
+    assert result["head_sha"] == "a" * 40
+    assert result["thread"]["id"] == "T_1"
 
 
 def test_fetch_threads_paginates_threads_and_comments(monkeypatch):
@@ -257,124 +311,23 @@ def test_fetch_threads_rejects_missing_pagination_cursors(monkeypatch, payload, 
         (_page([_thread("T_1", resolved=True)]), "T_1", "a" * 40, "already resolved"),
     ],
 )
-def test_prefetch_rejects_repo_pr_head_and_thread_mismatch(monkeypatch, data, thread_id, expected_head, error):
+def test_inspect_rejects_repo_pr_head_and_thread_mismatch(monkeypatch, data, thread_id, expected_head, error):
     module = _module()
     monkeypatch.setattr(module, "graphql", lambda *_args, **_kwargs: data)
     with pytest.raises(RuntimeError, match=error):
-        module.prefetch_unresolved_thread(("acme", "widgets"), 7, thread_id, expected_head)
+        module.inspect_thread(("acme", "widgets"), 7, thread_id, expected_head, unresolved_only=True)
 
 
-def test_prefetch_rejects_pr_number_and_repo_identity_mismatch(monkeypatch):
+def test_inspect_rejects_pr_number_and_repo_identity_mismatch(monkeypatch):
     module = _module()
     wrong_pr = _page([_thread()])
     wrong_pr["data"]["repository"]["pullRequest"]["number"] = 8
     monkeypatch.setattr(module, "graphql", lambda *_args, **_kwargs: wrong_pr)
     with pytest.raises(RuntimeError, match="pull request identity"):
-        module.prefetch_unresolved_thread(("acme", "widgets"), 7, "T_1", "a" * 40)
+        module.inspect_thread(("acme", "widgets"), 7, "T_1", "a" * 40)
 
     wrong_repo = _page([_thread()])
     wrong_repo["data"]["repository"]["nameWithOwner"] = "other/widgets"
     monkeypatch.setattr(module, "graphql", lambda *_args, **_kwargs: wrong_repo)
     with pytest.raises(RuntimeError, match="repository identity"):
-        module.prefetch_unresolved_thread(("acme", "widgets"), 7, "T_1", "a" * 40)
-
-
-def test_reply_prefetches_mutates_and_rereads_exact_thread_and_counts(monkeypatch):
-    module = _module()
-    before = {
-        "repo": "acme/widgets",
-        "pr": 7,
-        "head_sha": "a" * 40,
-        "threads": [_thread("T_1"), _thread("T_2")],
-    }
-    after = {
-        **before,
-        "threads": [_thread("T_1", comments=[_comment(), _comment(12, "C_12", "addressed")]), _thread("T_2")],
-    }
-    fetches = iter([before, after])
-    monkeypatch.setattr(module, "fetch_threads", lambda *_args, **_kwargs: next(fetches))
-    monkeypatch.setattr(
-        module,
-        "graphql",
-        lambda query, variables: {
-            "data": {"addPullRequestReviewThreadReply": {"comment": _comment(12, "C_12", variables["body"])}}
-        },
-    )
-
-    result = module.reply(("acme", "widgets"), 7, "T_1", "a" * 40, "addressed")
-
-    assert result["thread_id"] == "T_1"
-    assert result["before_unresolved"] == result["after_unresolved"] == 2
-    assert result["comment"]["id"] == "C_12"
-
-
-def test_reply_fails_closed_when_readback_does_not_contain_mutated_comment(monkeypatch):
-    module = _module()
-    snapshot = {"repo": "acme/widgets", "pr": 7, "head_sha": "a" * 40, "threads": [_thread()]}
-    monkeypatch.setattr(module, "fetch_threads", lambda *_args, **_kwargs: snapshot)
-    monkeypatch.setattr(
-        module,
-        "graphql",
-        lambda *_args, **_kwargs: {
-            "data": {"addPullRequestReviewThreadReply": {"comment": _comment(99, "C_99", "addressed")}}
-        },
-    )
-    with pytest.raises(RuntimeError, match="reply readback"):
-        module.reply(("acme", "widgets"), 7, "T_1", "a" * 40, "addressed")
-
-
-def test_resolve_prefetches_mutates_and_verifies_exact_target_and_counts(monkeypatch):
-    module = _module()
-    before = {
-        "repo": "acme/widgets",
-        "pr": 7,
-        "head_sha": "a" * 40,
-        "threads": [_thread("T_1"), _thread("T_2")],
-    }
-    after = {
-        **before,
-        "threads": [_thread("T_1", resolved=True), _thread("T_2")],
-    }
-    fetches = iter([before, after])
-    monkeypatch.setattr(module, "fetch_threads", lambda *_args, **_kwargs: next(fetches))
-    monkeypatch.setattr(
-        module,
-        "graphql",
-        lambda *_args, **_kwargs: {
-            "data": {"resolveReviewThread": {"thread": {"id": "T_1", "isResolved": True}}}
-        },
-    )
-
-    result = module.resolve(("acme", "widgets"), 7, "T_1", "a" * 40)
-
-    assert result == {
-        "thread_id": "T_1",
-        "head_sha": "a" * 40,
-        "before_unresolved": 2,
-        "after_unresolved": 1,
-        "isResolved": True,
-    }
-
-
-@pytest.mark.parametrize(
-    "mutation_id,readback,error",
-    [
-        ("T_wrong", _thread("T_1", resolved=True), "mutation returned wrong thread"),
-        ("T_1", _thread("T_1", resolved=False), "resolve readback"),
-    ],
-)
-def test_resolve_rejects_wrong_mutation_id_or_failed_readback(monkeypatch, mutation_id, readback, error):
-    module = _module()
-    before = {"repo": "acme/widgets", "pr": 7, "head_sha": "a" * 40, "threads": [_thread()]}
-    after = {**before, "threads": [readback]}
-    fetches = iter([before, after])
-    monkeypatch.setattr(module, "fetch_threads", lambda *_args, **_kwargs: next(fetches))
-    monkeypatch.setattr(
-        module,
-        "graphql",
-        lambda *_args, **_kwargs: {
-            "data": {"resolveReviewThread": {"thread": {"id": mutation_id, "isResolved": True}}}
-        },
-    )
-    with pytest.raises(RuntimeError, match=error):
-        module.resolve(("acme", "widgets"), 7, "T_1", "a" * 40)
+        module.inspect_thread(("acme", "widgets"), 7, "T_1", "a" * 40)

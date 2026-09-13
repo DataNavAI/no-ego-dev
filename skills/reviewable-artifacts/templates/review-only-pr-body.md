@@ -14,6 +14,8 @@
 2. Review stable `DEC-*`, `RISK-*`, and `UI-*` anchors.
 3. Comment in Files changed beside the exact anchor.
 
+The bundled thread helper is read-only. Any authorized reply or resolution uses the normal GitHub/UI workflow after immediate revalidation. There is no atomic exact-head guarantee, and a post-check cannot undo a side effect caused inside the race window.
+
 ## Canonical source and lineage
 
 - Canonical path:

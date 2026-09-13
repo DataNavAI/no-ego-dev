@@ -61,31 +61,26 @@ For every unresolved thread:
 2. Update canonical source and the disposition log—not only the reply.
 3. Render/test the revised artifact and regenerate visual evidence.
 4. Commit and push the verified revision.
-5. Reply with the change, exact revision, and residual tradeoff.
-6. Resolve only after the accepted change or agreed rationale is present and verified.
+5. Revalidate the live PR head and exact thread immediately before any authorized reply or resolution in the normal GitHub/UI workflow.
+6. Reply with the change, exact revision, and residual tradeoff.
+7. Resolve only after the accepted change or agreed rationale is present and verified.
 
 Keep disputed material decisions open. Thread resolution, artifact approval, merge authority, and release authority are separate states.
 
-### Safe GitHub thread operations
+### Read-only GitHub thread inspection
 
-List operations are read-only:
+The bundled helper is read-only. It lists every review thread and comment with complete pagination, or inspects one exact thread at an expected head:
 
 ```bash
 python skills/reviewable-artifacts/scripts/github_review_threads.py \
   list --repo OWNER/REPO --pr 123 --unresolved
+
+python skills/reviewable-artifacts/scripts/github_review_threads.py \
+  inspect --repo OWNER/REPO --pr 123 --thread-id PRRT_... \
+  --expected-head <FULL_HEAD_SHA> --unresolved
 ```
 
-Every reply or resolve requires repository, PR number, exact unresolved thread ID, and the expected full head SHA. The helper prefetches all pages, verifies exact repository/PR/head/thread identity, mutates, then rereads the exact target and unresolved counts. Any GraphQL error, missing cursor, ambiguity, stale head, wrong ID, or readback mismatch fails closed.
-
-```bash
-python skills/reviewable-artifacts/scripts/github_review_threads.py reply \
-  --repo OWNER/REPO --pr 123 --thread-id PRRT_... \
-  --expected-head <FULL_HEAD_SHA> --body "Addressed in <revision>: ..."
-
-python skills/reviewable-artifacts/scripts/github_review_threads.py resolve \
-  --repo OWNER/REPO --pr 123 --thread-id PRRT_... \
-  --expected-head <FULL_HEAD_SHA>
-```
+The helper exposes no reply or resolve subcommand and contains no GraphQL mutation. GitHub provides no compare-and-swap operation that atomically binds a review-thread mutation to an expected PR head, so there is **no atomic exact-head guarantee** between inspection and a later reply or resolution. When an authorized mutation is needed, use the normal GitHub/UI workflow only after **immediate revalidation** of repository, PR, live full head SHA, exact thread ID, unresolved state, and reviewer authority. Re-read the live target afterward, but a **post-check cannot undo a side effect** if the head or thread changed during the race window; report that uncertainty and reconcile it rather than claiming the operation was race-safe.
 
 ## Multi-Round Review Protocol
 
@@ -134,7 +129,7 @@ Keep source canonical, render local HTML plus visual media, retain stable IDs, a
 - [ ] Canonical source, stable IDs, rendered Markdown/visual bundle, and disposition log exist.
 - [ ] First-round completeness and cumulative lineage are recorded.
 - [ ] Feedback is treated as untrusted and authority is verified.
-- [ ] Mutations are exact-head/identity bound and read back.
+- [ ] Bundled thread tooling remained read-only; any authorized GitHub/UI mutation followed immediate revalidation and records that no atomic exact-head guarantee exists.
 - [ ] Production-first has explicit authority and all independent gates pass.
 - [ ] Accepted work is preserved before review-only cleanup.
 - [ ] Review-only PR is closed without merge and exact cleanup is verified.
