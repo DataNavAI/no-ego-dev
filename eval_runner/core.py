@@ -16,7 +16,7 @@ import tempfile
 import threading
 import time
 import uuid
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Iterable
 from urllib.parse import urlsplit
 
@@ -168,8 +168,16 @@ _MAX_TOTAL_ARTIFACT_BYTES = 16_777_216
 
 def _safe_relative_parts(value: str, field: str) -> tuple[str, ...]:
     native = Path(value)
+    posix = PurePosixPath(value)
     windows = PureWindowsPath(value)
-    if native.is_absolute() or windows.is_absolute() or value in {".", ".."}:
+    if (
+        native.is_absolute()
+        or posix.is_absolute()
+        or windows.is_absolute()
+        or bool(windows.drive)
+        or bool(windows.root)
+        or value in {".", ".."}
+    ):
         raise ValueError(f"{field} must contain nonempty relative paths")
     if ".." in native.parts or ".." in windows.parts:
         raise ValueError(f"{field} must not contain traversal components")

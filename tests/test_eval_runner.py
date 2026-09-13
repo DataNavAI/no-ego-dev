@@ -339,6 +339,36 @@ def test_load_eval_rejects_invalid_post_agent_verifier_contract(tmp_path, parame
         load_eval(eval_path)
 
 
+@pytest.mark.parametrize(
+    "artifact",
+    [
+        "/posix-rooted",
+        r"\windows-rooted",
+        r"C:drive-qualified",
+        r"C:\drive-rooted",
+        r"\\server\share\artifact.txt",
+    ],
+)
+def test_load_eval_rejects_cross_platform_rooted_or_drive_qualified_artifacts(tmp_path, artifact):
+    (tmp_path / "verify.py").write_text("print('verified')\n")
+    eval_path = tmp_path / "EVAL.yaml"
+    eval_path.write_text(
+        yaml.safe_dump(
+            {
+                "prompt": "Build it",
+                "expectations": ["done"],
+                "parameters": {
+                    "verification_script": "verify.py",
+                    "expected_artifacts": [artifact],
+                },
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="relative paths"):
+        load_eval(eval_path)
+
+
 def test_load_eval_rejects_missing_absolute_traversing_or_symlink_verification_script(tmp_path):
     eval_dir = tmp_path / "skill"
     eval_dir.mkdir()
@@ -1528,6 +1558,7 @@ def _write_verifier_eval(eval_path: Path, verifier_program: str, expected_artifa
     )
 
 
+@pytest.mark.skipif(os.name != "posix", reason="exercises the POSIX descriptor adapter")
 def test_artifact_snapshot_rejects_in_place_change_after_descriptor_validation(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     snapshot = tmp_path / "snapshot"
@@ -1607,6 +1638,7 @@ def test_run_eval_rejects_same_size_artifact_rewrite_with_restored_mtime(tmp_pat
     assert judge_prompt_path.exists() is False
 
 
+@pytest.mark.skipif(os.name != "posix", reason="exercises POSIX open-inode semantics")
 def test_artifact_snapshot_reads_opened_inode_when_path_target_is_swapped(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     snapshot = tmp_path / "snapshot"
@@ -1761,6 +1793,85 @@ def test_windows_native_workspace_anchor_reads_nested_regular_file(tmp_path):
         anchor.close()
 
     assert (snapshot / "nested" / "a.txt").read_bytes() == b"safe"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native handles")
+def test_windows_native_workspace_anchor_rejects_in_place_change(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    artifact.write_bytes(b"validated")
+    api = eval_core._NativeWindowsHandleApi()
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace, api=api)
+    real_read = api.read
+    mutations = []
+
+    def mutate_then_read(handle, limit):
+        before = api.info(handle)
+        time.sleep(0.01)
+        artifact.write_bytes(b"substitut")
+        after = api.info(handle)
+        mutations.append((before, after))
+        return real_read(handle, limit)
+
+    monkeypatch.setattr(api, "read", mutate_then_read)
+
+    try:
+        with pytest.raises(
+            eval_core.PostAgentVerificationFailure,
+            match="changed while being snapshotted",
+        ):
+            eval_core._snapshot_expected_artifacts(anchor, snapshot, ("artifact.txt",))
+    finally:
+        anchor.close()
+
+    assert mutations
+    before, after = mutations[0]
+    assert after.size == before.size
+    assert after.identity == before.identity
+    assert (after.mtime, after.change_time) != (before.mtime, before.change_time)
+
+
+@pytest.mark.parametrize("operation", ["rename", "delete"])
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows native sharing semantics")
+def test_windows_native_workspace_anchor_denies_path_swap_while_reading(
+    tmp_path, monkeypatch, operation
+):
+    workspace = tmp_path / "workspace"
+    snapshot = tmp_path / "snapshot"
+    workspace.mkdir()
+    snapshot.mkdir()
+    artifact = workspace / "artifact.txt"
+    artifact.write_bytes(b"validated")
+    api = eval_core._NativeWindowsHandleApi()
+    anchor = eval_core._WindowsWorkspaceAnchor(workspace, api=api)
+    real_read = api.read
+    blocked = []
+
+    def attempt_swap_then_read(handle, limit):
+        try:
+            if operation == "rename":
+                artifact.rename(workspace / "held.txt")
+            else:
+                artifact.unlink()
+        except OSError as exc:
+            blocked.append(exc)
+        else:
+            pytest.fail(f"Windows {operation} unexpectedly bypassed the retained handle")
+        return real_read(handle, limit)
+
+    monkeypatch.setattr(api, "read", attempt_swap_then_read)
+
+    try:
+        eval_core._snapshot_expected_artifacts(anchor, snapshot, ("artifact.txt",))
+    finally:
+        anchor.close()
+
+    assert blocked
+    assert artifact.read_bytes() == b"validated"
+    assert (snapshot / "artifact.txt").read_bytes() == b"validated"
 
 
 @pytest.mark.skipif(os.name != "nt", reason="requires Windows junctions")
