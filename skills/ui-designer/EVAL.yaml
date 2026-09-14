@@ -1,16 +1,22 @@
 prompt: |
-  Use the ui-designer skill for realistic web and mobile app projects that need UI guidelines and design reviews of implemented screens. Include a mobile app review case where layout must be small-screen focused and navigation must work by touch/one-finger browsing.
+  Use the ui-designer skill for the scenarios in the fixture. Explain the durable artifacts, visual and implementation handoff, MVP and mobile rules, responsive verification, and independent review gates. Distinguish material user-visible work from a trivial non-visual edit.
 expectations:
-  - "creates or updates a durable UI guideline artifact"
-  - "UI guideline covers layout, visual language, components or states, accessibility basics, and copy tone"
-  - "distinguishes mobile app UX review from web app UX review when the product is mobile or mobile-first"
-  - "mobile review checks simple focused screens, touch target size, thumb reach zones, one-finger navigation, and native mobile navigation patterns"
-  - "reviews real or specified implemented UI against the UI guideline"
-  - "captures or requests screenshot/evidence for UI findings"
-  - "separates guideline violations from subjective preferences"
-  - "searches the issue system before filing UI bugs"
-  - "files actionable UI bugs with severity, expected vs actual, evidence, and guideline reference"
-  - "creates follow-up work when the UI guideline is missing or ambiguous"
+  - "stores a feature-local UI brief and clean plus annotated design images beside or cross-linked to the PRD and expected tech spec"
+  - "uses stable interaction annotation IDs and maps each ID to action destination transition states validation and accessibility behavior"
+  - "for material design directions creates runnable or concrete visuals and a visual-first DESIGN_REVIEW deck with a contact sheet dominant screenshots compact comparison and explicit decision prompts"
+  - "for a greenfield UI defines concrete semantic tokens and the smallest CUJ-required component and state set then renders and inspects a mobile and desktop specimen before feature design"
+  - "for a brownfield UI audits and reuses themes or minimally extends the established token and component sources instead of creating a competing design system"
+  - "records canonical token source component code paths variants owners version and exception or change process"
+  - "for MVP work reads the scope contract maps every screen and state to one primary and no more than two supporting CUJs and counts entry-to-value user actions"
+  - "removes unmapped screens avoidable actions competing primary jobs and parked features without dropping accessibility trust privacy loading empty error success or recovery states"
+  - "applies mobile-specific touch target thumb reach safe-area keyboard navigation input burden and interrupted-session rules"
+  - "maps every implementation acceptance item to a design source stable screen or annotation ID target code or component owner and deterministic plus rendered verification evidence"
+  - "verifies responsive desktop and mobile geometry no horizontal overflow semantic document order keyboard and screen-reader reading order and rendered screenshots"
+  - "requires fresh independent read-only copy and UI reviewers only for material user-visible work and keeps authoring remediation guideline ownership and candidate edits with the designer"
+  - "uses binding UI verdicts APPROVED or REQUEST_CHANGES and treats missing frozen evidence as BLOCKED without accepting a reviewer-created governing guideline"
+  - "does not require independent copy or UI review for a trivial non-visual edit that cannot materially affect visible copy layout interaction accessibility trust or the primary journey"
+  - "does not introduce alternate minor-polish approval vocabulary reviewer-authored governing guidelines or a temporary PR lifecycle solely for design review"
+  - "reviews real implemented UI against the canonical guideline captures viewport-bound evidence separates guideline violations from taste searches for duplicate issues and files actionable material UI bugs"
 setupCommands: []
 teardownCommands: []
 parameters:

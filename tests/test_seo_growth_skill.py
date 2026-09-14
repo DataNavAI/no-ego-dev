@@ -28,7 +28,7 @@ def test_seo_growth_package_is_complete_and_loadable():
     skill = _skill_text()
     frontmatter = yaml.safe_load(skill.split("---", 2)[1])
     assert frontmatter["name"] == "seo-growth"
-    assert frontmatter["version"] == "0.1.0"
+    assert frontmatter["version"] == "0.2.0"
     assert "marketer" in frontmatter["metadata"]["hermes"]["related_skills"]
 
     spec = yaml.safe_load((PACKAGE / "EVAL.yaml").read_text(encoding="utf-8"))

@@ -1,15 +1,16 @@
 {
-  "candidate_sha": "5ceacf139be72df7b40b892db523881feeb32c0f",
-  "tested_at": "2026-09-13T02:45:47Z",
-  "environment": "macOS 26.6.2; Python 3.11.14 via uv; Node.js 25.6.1",
+  "candidate_sha": "e5fd11c70723c59cb9eaa48eda63a592ec73eab0",
+  "tested_at": "2026-09-14T10:49:17Z",
+  "environment": "macOS 26.6.2; Python 3.11.16; Node.js with clean exact-SHA archive dependencies",
   "result": "pass",
   "commands": [
-    "PYTHONPATH=$PWD uv run --python 3.11 --with pytest --with pyyaml pytest -q",
+    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest",
+    "npm ci --ignore-scripts",
     "npm test",
     "npm run check",
-    "python3 -m compileall -q eval_runner tests",
-    "git diff --check origin/main...HEAD",
-    "npm pack --dry-run --json"
+    "npm pack --dry-run --json",
+    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m compileall -q eval_runner tests",
+    "git diff --check 63862c6a48e3e409ba25bb13e1d5cfa0ba55459c...e5fd11c70723c59cb9eaa48eda63a592ec73eab0"
   ],
-  "observations": "Exact code candidate 5ceacf139be72df7b40b892db523881feeb32c0f passed the Python repository suite (505 passed, 9 platform skips), Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (394 files with no cache artifacts), diff check, and added-line secret/security scans. Native Windows cases were skipped on macOS and remain an explicit CI gate; cross-platform structural checks passed locally. Independent exact-SHA review approved the code candidate with no material findings."
+  "observations": "Exact code candidate e5fd11c70723c59cb9eaa48eda63a592ec73eab0 passed the Python repository suite (505 passed, 9 platform skips), the Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (398 files; no __pycache__ or .pyc artifacts), diff check, eval-loader checks, and staged secret scan. Authenticated behavioral evaluations passed for play-store-cli, seo-growth, and ui-designer. Independent exact-SHA review approved the code candidate with no material findings. Play-store-publisher and subagent-driven-development were excluded after their behavioral evals failed; they are byte-identical to the base."
 }

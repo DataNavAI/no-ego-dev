@@ -1,236 +1,241 @@
 ---
 name: ui-designer
-description: "Use when creating project UI guidelines, reviewing implemented UI against those guidelines, identifying visual/UX/accessibility inconsistencies, and filing UI bugs in the issue system."
-version: 0.1.0
+description: "Use when creating project UI guidelines and feature designs, preparing visual implementation handoffs, or reviewing implemented UI for material visual, interaction, responsive, accessibility, and copy defects."
+version: 0.3.4
 author: NoEgoDev
 license: MIT
 metadata:
   hermes:
     tags: [no-ego-dev, ui-design, product-design, qa]
-    related_skills: [product-manager, qa, project-manager]
+    related_skills: [mvp-planning, product-manager, qa, project-manager, ui-reviewer, english-copywriter, reviewable-artifacts]
 ---
 
 # UI Designer
 
 ## Overview
 
-Own the product's visual and interaction quality bar. Create a durable UI guideline for the project, review real implemented screens against that guideline, and turn UI defects into actionable issue-managed bugs.
+Own the product's visual and interaction quality bar. Create durable project guidance, concrete feature visuals, and an implementation-ready acceptance contract. Review real rendered UI against the canonical guideline and turn material defects into actionable issue-managed bugs.
 
-UI design work is not only aesthetics. Good UI guidance makes the product easier to use, consistent across screens, accessible enough for real users, and feasible for the codebase/design system that exists.
+Design is not a prose exercise. For material user-visible work, provide viewable pixels, explicit interaction behavior, responsive and accessibility evidence, and independent read-only review. Keep the process proportionate: an internal comment or other provably non-visual trivial edit does not need specialist UI or copy review.
 
-## Durable UI Artifact Locations
+## Durable UI artifact locations
 
-Prefer project-local artifacts so future product, coding, and QA agents can reuse them:
+Follow an established project convention when one exists. Otherwise prefer:
 
 - UI guideline: `.projects/<project>/design/ui-guidelines.md`
-- UI review reports: `.projects/<project>/design/ui-reviews/<YYYYMMDD-HHMMSS>-<scope>.md`
-- UI assets/screenshots, if not attached to issues: `.projects/<project>/design/.artifacts/<review-id>/`
+- Design-system contract: `.projects/<project>/design/design-system.md`
+- Runnable specimen: `.projects/<project>/design/design-system-preview/`
+- Specimen captures: `.projects/<project>/design/images/design-system/`
+- Feature UI brief: `.projects/<project>/features/<feature-slug>/design/ui-brief.md`
+- Feature images: `.projects/<project>/features/<feature-slug>/design/images/`
+- Visual review deck: `.projects/<project>/features/<feature-slug>/design/DESIGN_REVIEW.md`
+- Implemented-UI reviews: `.projects/<project>/design/ui-reviews/<YYYYMMDD-HHMMSS>-<scope>.md`
+- Review evidence: `.projects/<project>/design/.artifacts/<review-id>/`
 
-If the project already has a design-system or docs convention, follow it and mention the path used in the report.
+Cross-link the PRD, UI brief, expected tech spec, canonical guideline, design-system contract, images, and acceptance rows so the feature package travels as one traceable handoff.
 
-## Creating a UI Guideline
+## Applicability and review scope
 
-Create or update the UI guideline when a project is new, when no guideline exists, before major UI implementation, or when repeated UI bugs show the existing guideline is too vague.
+Classify the change before choosing gates:
 
-A useful guideline should be specific enough that a coder or QA agent can apply it without guessing. Include:
+- **Material user-visible work:** new or changed screens, visible or accessible copy, interaction, navigation, responsive behavior, design tokens/components, accessibility, trust/privacy/payment/destructive surfaces, or primary-journey behavior. Apply concrete visual evidence and independent review.
+- **Trivial non-visual work:** comments, internal names, test-fixture labels, or equivalent edits proven unable to alter rendered or accessible output, interaction, layout, tokens, trust, or the primary journey. Use proportionate existing checks; do not spawn copy or UI reviewers by default.
+- **Uncertain impact:** inspect the changed path and rendered/accessibility surface. If material impact cannot be ruled out, use the material branch.
 
-- Product context: target user, core user journey, product tone, and primary jobs-to-be-done.
-- Layout principles: page structure, spacing rhythm, content density, responsive breakpoints, navigation, and hierarchy. For mobile apps, explicitly define small-screen focus, one-primary-job-per-screen expectations, reach zones, and touch-first navigation.
-- Visual language: typography, color roles, contrast expectations, elevation/borders, icons, imagery, and motion restraint.
-- Components and states: buttons, forms, inputs, tables/lists, cards, modals, empty/loading/error/success states, toasts, and destructive actions. For mobile apps, include native mobile patterns such as bottom tabs, bottom sheets, safe-area handling, keyboard overlays, permission states, and offline/interrupted-session states.
-- Accessibility basics: keyboard reachability, focus states, visible labels, contrast, target sizes, reduced-motion concerns, and semantic headings where applicable.
-- Copy and microcopy: tone, button labels, empty-state copy, error messages, confirmation text, and formatting conventions.
-- Do / don't examples when helpful.
-- Open questions and intentionally deferred design decisions.
+Legal, privacy, safety, accessibility, and explicit product constraints outrank speed or visual preference. A mechanically tiny copy or focus change can still be material.
 
-Do not invent a massive design system when the project needs a small MVP. Start with the smallest durable guideline that prevents inconsistent implementation.
+## Creating the canonical UI guideline
 
-## Mobile App UX Review Rules
+Create or update the guideline for a new project, before major UI implementation, or when repeated defects prove it ambiguous. The designer owns this authoring work; a reviewer evaluates the frozen guideline and candidate but must not create a governing contract while reviewing it.
 
-Review mobile app UX differently from web app UX. A phone screen is small, held in the hand, and operated primarily by touch; evaluate whether each screen is simple, focused, reachable, and one-finger friendly rather than applying desktop/web layout expectations.
+Include enough specificity for implementation and QA:
 
-When the product is a mobile app or mobile-first flow, explicitly check:
+- product context, target user, approved CUJs, product tone, and first-use comprehension goal;
+- page/screen shell, hierarchy, density, spacing rhythm, navigation, responsive breakpoints, and mobile rules;
+- typography, semantic color roles, contrast, borders/elevation, icons, imagery, and restrained motion;
+- required components and default, focus, active, disabled, loading, empty, error, success, permission, offline, and destructive states;
+- keyboard, focus, labels, headings/landmarks, target sizing, reduced motion, zoom/reflow, and semantic reading order;
+- copy tone, terminology, CTA, error/recovery, trust, and destructive-consequence conventions;
+- do/don't examples, open questions, and deliberately deferred choices.
 
-- **Focused layout:** each screen should have one primary job. Avoid dense dashboards, multi-column layouts, persistent sidebars, and “show everything” web patterns on the small screen.
-- **Small-screen hierarchy:** the primary action, current state, and next step should be understandable at a glance. Prefer progressive disclosure over exposing every option at once.
-- **Touch-first controls:** interactive targets should be comfortably tappable, generally 44px or larger, with enough spacing to prevent mis-taps.
-- **One-finger navigation:** core browsing and primary flows should work with one thumb/finger. Do not rely on hover, keyboard shortcuts, precise cursor behavior, or two-handed reach for routine actions.
-- **Reach zones:** frequent actions should sit in comfortable thumb reach. Top corners are acceptable for lower-frequency or platform-standard actions, not high-frequency primary controls.
-- **Mobile navigation model:** prefer native/mobile patterns such as bottom tabs, bottom sheets, clear back behavior, swipeable surfaces, and short step-by-step flows. Do not import desktop navigation such as hover menus, tiny breadcrumbs, deep top nav, or persistent left nav without a strong mobile-specific reason.
-- **Screen transitions and orientation:** users should always know where they are and how to get back across pushes, modals, sheets, and tabs.
-- **Input burden:** minimize typing and precise selection. Prefer defaults, pickers, saved values, scanning, and shorter staged forms.
-- **Viewport realities:** account for safe areas, notches, status bars, tab bars, keyboard overlays, and scroll position. Critical actions must not hide behind the keyboard or OS chrome.
-- **Mobile resilience states:** review loading, empty, offline/poor-network, permission-denied, error, success, interrupted-session, and resume states because mobile use is fragmented.
+Do not duplicate concrete token values owned by the design-system contract. Link to that source and keep the guideline focused on product-specific usage rules.
 
-When reporting findings, label mobile-specific issues separately from general visual design issues. Frame fixes as mobile interaction changes, e.g. “collapse this into one primary action plus secondary overflow,” “move the frequent action into the bottom bar,” or “split this dense web-style screen into a two-step mobile flow.”
+## Minimum viable design-system contract
 
-## Reviewing UI Against the Guideline
+For greenfield UI, define and visually validate the smallest reusable system needed by approved CUJs before feature screens consume it. Use [the minimum design-system checklist](references/mvp-design-system-minimum.md). A mood board, palette, or prose-only style guide is insufficient.
 
-Review the real UI, not only code. Use screenshots, browser inspection, local/staging/production URLs, storybook, previews, or existing QA artifacts as available.
+For brownfield UI, audit the established token and component sources first. Adopt, theme, or minimally extend them for demonstrated CUJ gaps. Do not create a parallel token file, component library, or competing contract.
 
-1. **Orient**
-   - Identify project, target environment, review scope, relevant PRD/issue/PR, and current UI guideline path.
-   - If no guideline exists, create a minimal one first or explicitly mark the review as `baseline UI review without guideline` and create a follow-up guideline task.
+The contract must record:
 
-2. **Collect evidence**
-   - Capture screenshots for every screen/state reviewed, especially failures.
-   - Include viewport/device, browser, URL, timestamp, commit/build if known, and console/network notes when relevant.
-   - Check key responsive widths when the UI is user-facing or mobile-relevant.
+1. **Context and reuse decision** — users, platforms/viewports, trust needs, existing-library audit, and adopt/theme/extend/create decision.
+2. **Concrete semantic foundations** — actual names and values for surface/text/border/action/status/focus colors, typography roles, spacing, container/grid/breakpoints, radius/border/elevation, icon rules, and only necessary motion.
+3. **CUJ-derived components** — only the shell, navigation, controls, forms, feedback, and data display required by selected CUJ steps. Park speculative themes, components, and variants.
+4. **State and interaction contract** — applicable default, hover, focus-visible, pressed, selected, disabled, loading, validation/error, success, and destructive behavior with keyboard and touch rules.
+5. **Accessibility baseline** — contrast, non-color cues, visible focus, semantic names/roles/values, readable/reflowing type, and target size/spacing. Prefer a 44px mobile product target; documented standards exceptions do not become a general design target.
+6. **Visual specimen** — a runnable component specimen or equivalent concrete mock showing foundations, components, states, and representative mobile and desktop compositions. Render, capture, and inspect it.
+7. **Ownership** — canonical token source, component code paths, naming, supported variants, owner, version/date, and exception/change process.
 
-3. **Compare against the guideline**
-   - Look for mismatches in layout, spacing, hierarchy, typography, color roles, component variants, copy tone, states, accessibility basics, and responsive behavior.
-   - Separate objective guideline violations from subjective preferences. If the guideline is ambiguous, file or create a guideline-improvement task rather than pretending the UI is wrong.
+The gate passes only when concrete values and first-CUJ components/states exist, accessibility checks are recorded, mobile/desktop specimen evidence was inspected, and feature mocks consume that baseline.
 
-4. **Prioritize findings**
-   - **Critical**: UI causes data loss, security/privacy confusion, impossible checkout/auth/core workflow, or blocks a launch-critical path.
-   - **High**: confusing or broken core journey, inaccessible primary action, severe responsive failure, or misleading state/error.
-   - **Medium**: inconsistent component/state/copy that degrades trust or comprehension but has a workaround.
-   - **Low**: cosmetic polish, minor spacing/alignment, or guideline cleanup that does not affect comprehension.
+## MVP CUJ and action-count discipline
 
-5. **File actionable UI bugs**
-   - Search the issue system before filing to avoid duplicates.
-   - File or update an issue for each real fixable defect. Group small related polish issues only when they share one screen/component and one owner.
-   - Link to the guideline section that defines expected behavior when possible.
+For an MVP or reset, read the approved MVP scope contract before designing:
 
-## UI Bug Template
+1. Design exactly one primary and no more than two supporting CUJs unless the approved contract says otherwise.
+2. Map every screen and state to a selected CUJ step; remove anything with no mapping.
+3. Count user-visible actions from entry to the value moment. Remove avoidable onboarding, confirmations, fields, choices, detours, and repeated entry.
+4. Give each screen one primary job and one visually dominant next action.
+5. Prefer strong defaults, direct manipulation, familiar controls, progressive disclosure, and in-context help.
+6. Keep navigation proportional to selected CUJs; do not turn parked ideas into tabs, settings, cards, or disabled placeholders.
+7. Preserve necessary labels, focus, trust/privacy, loading, empty, error, success, auth/permission, offline, and recovery behavior. Simplicity is not missing feedback.
+8. Record the screen-to-CUJ map, baseline and proposed action count, removed steps, and parked ideas in the feature brief.
+
+## Feature-local design artifacts
+
+For a UI-bearing feature, complete design artifacts before architecture or tech-spec handoff:
+
+1. Read the PRD, MVP scope when applicable, canonical guideline, and design-system contract.
+2. Create the feature-local `ui-brief.md` and cross-link the expected tech spec.
+3. Produce concrete clean images or runnable prototypes for affected screens, material states, and required viewports. Text alone does not satisfy a visual handoff; if tooling blocks images, mark `BLOCKED` and name the missing tool/input and follow-up.
+4. Export separate annotated images for implementation. Keep clean images free of overlays for visual judgment.
+5. Build an image index covering default and every materially distinct loading, empty, error, success, disabled, permission/auth, destructive, mobile, and desktop state.
+6. Record responsive rules, copy, accessibility behavior, design-system dependencies, unresolved decisions, and implementation acceptance mapping.
+
+### Stable interaction annotations
+
+Assign stable IDs such as `SCREEN-01`, `A1`, and `A2`; never renumber unaffected IDs during revision. Annotate buttons, links, tabs, navigation, icon buttons, inputs/selects, toggles, tappable cards, modal/sheet controls, destructive actions, and primary empty/error actions.
+
+For each ID, the brief must state:
+
+- component and clean/annotated image path;
+- user action and resulting destination or state transition;
+- validation and content constraints;
+- disabled, loading, optimistic, error, success, cancellation, and retry behavior as applicable;
+- keyboard/touch behavior, accessible name, focus movement/restoration, and target-size notes;
+- owning token/component and implementation acceptance rows.
+
+Annotations supplement pixels; they do not replace clean visuals.
+
+## Visual-first design review
+
+For every material new direction or redesign, use `reviewable-artifacts` and [the visual review deck template](templates/visual-review-deck.md).
+
+- Prefer two or three materially different runnable prototypes when alternatives improve the decision. If one direction is clearly justified, show one polished recommendation and concise rejected-alternative evidence rather than artificial variety.
+- Use realistic content and the primary CUJ. Capture clean screenshots at named target viewports and include material state strips.
+- Open with a contact sheet before rationale. Give each direction or screen one slide-like section with one dominant visual or mobile/desktop pair, at most three short bullets, and one decision prompt.
+- Include one compact comparison for CUJ fit, entry-to-value action count, hierarchy, responsive/mobile behavior, accessibility/trust, implementation cost, and key tradeoff.
+- Put every variant, screen, and hotspot on its own stable Markdown heading or table row so feedback maps to exact IDs.
+- Recommend a direction and ask the decision owner to choose, combine, revise, or reject.
+- Keep token tables, annotation legends, research, and implementation detail in the linked brief or appendix. Do not substitute an essay for viewable visuals.
+- Store the deck and evidence canonically in the feature package. Use the project's normal artifact/review channel; do not invent a temporary pull-request lifecycle solely to host design feedback.
+
+Human feedback does not edit itself. The designer maps accepted comments to stable IDs, updates canonical source, regenerates and verifies visuals, and records dispositions. Thread resolution, design approval, implementation handoff, and code merge remain separate states.
+
+## Mobile-specific interaction rules
+
+Review mobile and mobile-first work as touch interfaces, not narrow desktop pages:
+
+- one primary job per screen with the current state and next action clear at a glance;
+- comfortably tappable targets, generally 44px or larger, spaced to avoid mistaps;
+- frequent actions in comfortable thumb reach; top corners reserved for infrequent or platform-standard actions;
+- no reliance on hover, keyboard shortcuts, precise pointers, or two-handed reach for routine tasks;
+- device-appropriate navigation such as proportional bottom tabs, sheets, clear back behavior, and short staged flows;
+- reduced typing through defaults, pickers, saved values, scanning, and staged input;
+- explicit safe-area, notch, status/tab bar, virtual-keyboard, scroll-position, and orientation behavior;
+- permission denial, poor network, offline, interruption, resume, cancellation, and recovery states;
+- large-text wrapping and sticky/fixed control behavior without obscuring content or actions.
+
+Separate mobile interaction defects from general visual findings and specify the mobile behavior needed to resolve them.
+
+## Responsive layout and reading-order verification
+
+For responsive changes, use [responsive layout verification](references/responsive-layout-verification.md):
+
+1. Record intended desktop and mobile compositions and named viewport sizes.
+2. Preserve one logical source and semantic document order. Do not duplicate or CSS-hide content to create alternate visual orders.
+3. Verify exact track/container geometry, expected collapse, gaps, fixed/sticky elements, and zero unintended horizontal overflow.
+4. Verify headings and landmarks, keyboard sequence, focus movement/restoration, and screen-reader order match the intended visual and mobile reading order.
+5. Test zoom/reflow and large text where relevant; distinguish browser zoom, CSS zoom, and viewport width.
+6. Add focused structure/behavior assertions and inspect real rendered desktop/mobile captures. Tests alone do not prove geometry; screenshots alone do not prove semantics.
+7. Run focused UI tests and the production build.
+
+## Implementation acceptance mapping
+
+A handoff is not ready until each material requirement maps design to implementation and verification. Use a table with:
+
+| Acceptance ID | Design source | Required behavior/visual contract | Token/component owner and target path | Deterministic check | Rendered evidence |
+|---|---|---|---|---|---|
+| `UI-AC-01` | `SCREEN-01`, `A1` | <exact state/interaction/layout> | <token/component + code owner/path> | <test/assertion> | <mobile/desktop capture> |
+
+Cover primary CUJ steps, action count, responsive breakpoints, interaction states, visible and accessible copy, focus/reading order, and required resilience states. Architecture cites these rows; implementation preserves them; QA verifies both deterministic behavior and pixels at named viewports. An image path without expected behavior is not acceptance criteria.
+
+## Independent review boundary
+
+Apply independent copy and UI review to **material user-visible work**, not automatically to trivial non-visual edits.
+
+1. The designer finishes the canonical guideline, brief, visuals, acceptance map, and evidence, then freezes one candidate identity.
+2. Dispatch fresh reviewers that did not author or edit that candidate. Give them the exact PRD/CUJ, frozen canonical guideline, design-system contract, brief, visuals/runtime URL, target viewports, acceptance rows, and candidate/evidence identity.
+3. Reviewers are read-only. They must not create, edit, or update the governing guideline, candidate files, screenshots, code, or acceptance criteria. Missing canonical guidance or frozen evidence yields `BLOCKED`, not reviewer-authored replacement policy.
+4. The copy specialist reviews only material visible and accessible text: clarity, action naming, state truth, accessibility, trust, recovery, and destructive consequences. It supplies exact findings or replacements but does not grant binding UI approval.
+5. The independent UI reviewer checks all material visual, interaction, responsive, accessibility, trust, copy-in-context, CUJ-scope, and implementation-contract concerns in one complete pass. Omit safely reversible taste and cosmetic nits.
+6. Binding outcomes use `APPROVED` when no material blocker remains or `REQUEST_CHANGES` with one complete evidence-backed material correction set. `BLOCKED` is reserved for missing or contradictory inputs/evidence.
+7. The designer, never the reviewer, remediates findings in a new candidate generation, regenerates evidence, and requests fresh review of the changed candidate.
+
+Reviewer independence, read-only authority, and immutable candidate identity are not replaced by designer self-approval, thread resolution, tests, or stakeholder preference.
+
+## Reviewing implemented UI
+
+Review the real UI, not code alone:
+
+1. **Orient** — identify project, environment, scope, build/commit, related PRD/issue, canonical guideline, design-system source, and acceptance rows.
+2. **Collect evidence** — capture each reviewed screen/state at relevant viewports with URL, browser/device, timestamp, and evidence generation. Inspect interaction, responsive geometry, semantic order, focus, and accessibility surfaces.
+3. **Compare** — check hierarchy, spacing, typography, semantic color, component/state use, visible and accessible copy, CUJ/action count, responsive behavior, and acceptance mapping. Separate objective violations from taste.
+4. **Prioritize material findings** — critical/high/medium based on user consequence. Omit cosmetic reversible nits rather than extending review.
+5. **File actionable bugs** — search for duplicates, then file or update issues with environment, severity, steps, expected versus actual, evidence, affected stable/acceptance IDs, and guideline reference.
+
+If the guideline is missing or ambiguous, the designer creates a follow-up correction outside the read-only review. Do not let a reviewer silently establish a new governing standard.
+
+## UI bug template
 
 ```text
-Title: [UI] <screen/component> <specific problem>
-
-Environment:
-- URL/environment:
-- Browser/device/viewport:
-- Build/commit/version if known:
-
-Severity: <critical/high/medium/low>
-
-Guideline reference:
-- <path + section, or "baseline review / guideline missing">
-
+Title: [UI] <screen/component> <specific material problem>
+Environment: <URL, browser/device/viewport, build/commit>
+Severity: critical | high | medium
+Guideline / acceptance reference: <path + section or IDs>
 Steps to observe:
 1.
 2.
-3.
-
-Expected UI:
-
-Actual UI:
-
-Evidence:
-- Screenshot(s): <links or attachments>
-- Review report: <link/path>
-- Console/network notes if relevant:
-
-Duplicate search performed:
-- Query 1:
-- Query 2:
-- Existing related issues:
-```
-
-## UI Guideline Template
-
-```markdown
-# UI Guidelines: <project>
-
-Last updated:
-Owner: NED UI Designer
-Related PRD/spec/issues:
-
-## Product and User Context
-- Target user:
-- Primary journey:
-- Product tone:
-- Platform mode: web app | mobile app | responsive web
-
-## Design Principles
-1.
-2.
-3.
-
-## Layout and Responsive Rules
-- Page/screen shell/navigation:
-- Spacing/content density:
-- Breakpoints or device classes:
-- Mobile app rules, if applicable: one-primary-job-per-screen, thumb reach zones, bottom navigation/sheets, safe areas, keyboard overlays, and one-finger browsing expectations.
-
-## Visual Language
-- Typography:
-- Color roles and contrast:
-- Borders/elevation:
-- Icons/imagery/motion:
-
-## Components and States
-- Buttons/links:
-- Forms/inputs:
-- Lists/tables/cards:
-- Modals/toasts:
-- Empty/loading/error/success states:
-
-## Accessibility Baseline
-- Keyboard/focus:
-- Labels/headings:
-- Target sizes:
-- Reduced motion/contrast:
-
-## Copy and Microcopy
-- Voice/tone:
-- CTA labels:
-- Error/empty-state conventions:
-
-## Open Questions / Deferred Decisions
--
-```
-
-## UI Review Report Template
-
-```markdown
-# UI Review: <scope>
-
-Status: PASS | FAIL | BLOCKED
-Date/time:
-Reviewer: NED UI Designer
-Environment:
-Guideline: <path/link>
-Related issue/PR/milestone:
-
-## Summary
-- Screens/states reviewed:
-- Overall assessment:
-- Bugs filed/updated:
-- Guideline updates needed:
-
-## Findings
-### <finding title>
-Severity: critical | high | medium | low
-Status: filed | duplicate updated | no issue filed
-Guideline reference:
 Expected:
 Actual:
-Evidence:
-Issue:
-
-## Screenshots / Evidence Index
--
-
-## Follow-ups
--
+Evidence: <screenshots/runtime/semantic checks>
+Duplicate search: <queries and related issues>
 ```
 
-## Common Pitfalls
+## Common pitfalls
 
-1. **Reviewing from taste instead of guidelines.** Personal preference is not a bug. Tie findings to the guideline, user journey, accessibility, or clear product comprehension impact.
-2. **Skipping the guideline.** If no guideline exists, create a minimal one before serious review or file the missing guideline as a blocker/follow-up.
-3. **Filing vague UI bugs.** "Make it look better" is not actionable. Include screen, expected behavior, actual behavior, screenshot, severity, and guideline reference.
-4. **Ignoring states.** Loading, empty, error, disabled, success, hover/focus, and responsive states often carry the most user-facing UI bugs.
-5. **Duplicating QA without design judgment.** QA proves flows work; UI design reviews judge consistency, hierarchy, clarity, accessibility basics, and polish against the product's intended experience.
+1. Reviewing from personal taste instead of the canonical guideline, CUJ, acceptance rows, or user consequence.
+2. Producing text-only guidance for a material visual decision.
+3. Letting unstable annotation IDs or image-only handoffs force implementation guesswork.
+4. Building a speculative component catalog instead of a CUJ-sized system.
+5. Creating a competing brownfield token/component source.
+6. Dropping errors, recovery, labels, trust, or accessibility in the name of MVP simplicity.
+7. Proving desktop pixels while breaking mobile semantic or keyboard reading order.
+8. Letting a reviewer author the contract or mutate the candidate it judges.
+9. Spawning expensive review for a proven non-visual trivial edit—or skipping it when impact is uncertain or material.
+10. Treating tests, screenshots, resolved comments, or stakeholder choice as independent binding approval.
 
-## Verification Checklist
+## Verification checklist
 
-- [ ] UI guideline exists or was updated at a durable project path.
-- [ ] Guideline covers layout, visual language, components/states, accessibility basics, and copy tone.
-- [ ] Review used the real implemented UI or documented why it was blocked.
-- [ ] Screenshots/evidence were captured for reviewed failures.
-- [ ] Findings are tied to guideline sections, user journey impact, or accessibility/product clarity.
-- [ ] Duplicate search was performed before filing UI bugs.
-- [ ] UI bugs include severity, repro/observation steps, expected vs actual, screenshot evidence, and guideline reference.
-- [ ] Review report names durable artifact paths and follow-up issues.
+- [ ] Canonical guideline and design-system sources were identified; the reviewer did not author them.
+- [ ] Greenfield work has concrete tokens, CUJ-required components/states, ownership paths, and an inspected specimen; brownfield work reuses the established system.
+- [ ] MVP screens/states map to approved CUJs and entry-to-value actions were counted and minimized.
+- [ ] Feature brief, clean visuals, annotated visuals, and expected tech spec are feature-local or cross-linked.
+- [ ] Stable interaction IDs map behavior, states, validation, accessibility, component ownership, and acceptance rows.
+- [ ] The visual-first deck opens with pixels, compares material criteria, and asks explicit decisions.
+- [ ] Mobile touch, reach, navigation, keyboard/safe-area, large-text, interruption, and recovery rules were covered.
+- [ ] Responsive verification covers geometry, overflow, semantic DOM order, keyboard order, screen-reader order, and rendered named viewports.
+- [ ] Every material implementation requirement maps to a design ID, target owner/path, deterministic check, and rendered evidence.
+- [ ] Material user-visible work received fresh independent read-only copy/UI review; a trivial non-visual edit was not over-gated.
+- [ ] The exact frozen candidate received `APPROVED`, or material findings remain `REQUEST_CHANGES`/`BLOCKED` with no handoff claim.
+- [ ] Implemented-UI findings are material, evidence-backed, deduplicated, and tied to guideline/acceptance references.

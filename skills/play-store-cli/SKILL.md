@@ -1,7 +1,7 @@
 ---
 name: play-store-cli
 description: "Use when automating Google Play Console access and Android publishing through CLI/API tools such as fastlane supply, EAS Submit, Gradle Play Publisher, or the Google Play Developer API."
-version: 0.1.0
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -32,6 +32,13 @@ Use this skill when:
 Do not use this skill to create a brand-new Google Play developer account, pay fees, complete identity verification, answer policy declarations without product facts, or create final store listing copy. Hand those to the user, `play-store-publisher`, `product-manager`, or `marketer` as appropriate.
 
 ## Key Reality Check
+
+A missing local environment variable, service-account file, or CLI login does not prove the release credentials are unavailable. Before asking for a new key:
+
+1. Inspect the repository's publishing workflows and configuration to identify the expected secret and variable **names** and their consumers.
+2. At an authorized hosted boundary, list only non-secret metadata such as GitHub secret names/timestamps or Expo environment-variable name, environment, type/visibility, and update metadata. Never retrieve, print, copy, or search logs/chat/session data for values.
+3. Confirm `app.json`/`app.config.*`, `eas.json`, or the release lane actually consumes those names. A configured file variable is ineffective if app config still points to a local static file.
+4. If CI/EAS holds the credential, keep it there and run the existing harmless authentication/preflight job as an actual CI preflight. Treat credentials as missing only after safe inventory plus an actual preflight/authentication failure.
 
 CLI tools usually require one-time console setup first:
 
@@ -264,6 +271,8 @@ For Expo projects already building with EAS:
 npx eas-cli submit -p android --profile production --latest --non-interactive
 ```
 
+Do not use the moving `--latest` selector for a release whose identity has already been frozen. Capture the intended EAS build ID, source commit, package, version name/code, and download URL; download that exact AAB, record its SHA-256, and inspect its manifest before submitting it explicitly. Source config or a build request is not evidence about the resulting bytes.
+
 If no service account is configured, use EAS setup or provide the JSON path:
 
 ```bash
@@ -273,6 +282,8 @@ npx eas-cli submit -p android \
 ```
 
 Record in the project runbook whether EAS stores submit credentials remotely or whether CI supplies the JSON key at runtime. Do not upload service account JSON into source control.
+
+For the complete version-bump, exact-artifact QA, Android Publisher edit/readback, review-state, and internal-testing bootstrap flow, follow [`references/expo-versioned-release-api.md`](references/expo-versioned-release-api.md). The internal-track exception is narrow: when no suitable device is available, an owner may authorize internal-only upload to obtain the exact signed artifact for QA, but no closed/open/production promotion is allowed until that same artifact passes the required device journey and fresh readback proves wider tracks were unchanged.
 
 ## Gradle Play Publisher Option
 
@@ -357,9 +368,11 @@ Google Play CLI report — <project> — <date/time + timezone>
 - Secret location: <local path or CI secret name, no value>
 - Track/action:
 - Artifact/versionCode:
+- Exact identity: <package, versionName, versionCode, source commit, build ID, AAB SHA-256>
 - Command run:
 - validate_only/draft/completed/staged rollout:
 - Result/status:
+- Review state: <uploaded | committed | ready to send | sent | in review | approved/live>
 - Play Console URL:
 - Follow-ups:
 ```
@@ -382,7 +395,9 @@ Google Play CLI report — <project> — <date/time + timezone>
 - [ ] Service account is invited to Play Console with minimum required app permissions.
 - [ ] `validate_play_store_json_key` or equivalent read-only validation passes.
 - [ ] Package ID and versionCode match the release artifact.
+- [ ] Exact AAB identity, build provenance, checksum, and manifest metadata match one another.
 - [ ] First risky run uses `validate_only` or `release_status: draft` unless explicitly approved.
 - [ ] Binary-only lanes skip metadata/images/screenshots unless listing changes are intended.
 - [ ] CLI result is verified in Play Console or through a follow-up API read.
+- [ ] Fresh readback verifies the target track/review state and proves non-target tracks were unchanged.
 - [ ] Publishing report/runbook records tool, command, track, artifact, secret location, and current status.

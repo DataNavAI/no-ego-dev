@@ -13,6 +13,8 @@ Use this reference to select maintained evidence sources before building custom 
 | Demand direction | Google Trends | Relative indexed interest, not absolute search volume. Record geography, category, search type, and window. |
 | Paid-search query planning | Google Ads Keyword Planner when authorized | Estimates depend on account/settings and are not guaranteed organic traffic. |
 
+Search Console access is channel-specific. An API/export credential failure does not prove the property is unavailable in an already authenticated browser profile. When browser use is authorized and safe, open the exact property and relevant Performance or URL Inspection view, record the observed property/view and timestamp, and keep browser, API, and export access statuses separate. Never extract or report browser cookies, session tokens, or credential material.
+
 Official anchors:
 
 - Google Search Essentials: `https://developers.google.com/search/docs/essentials`

@@ -1,7 +1,7 @@
 ---
 name: seo-growth
 description: Use when a website needs evidence-based organic search growth. Researches high-potential queries, maps them to the best existing or justified new pages, implements technical and on-page improvements, verifies indexability and rendered output, and iterates from rankings, Search Console, analytics, and conversion evidence without search spam or fabricated metrics.
-version: 0.1.0
+version: 0.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -75,6 +75,8 @@ Evidence hierarchy:
 
 **Do not invent search volume, keyword difficulty, traffic potential, rankings, click-through rate, conversions, or competitor data.** If data access is missing, say what is unavailable, use transparent proxies, lower confidence, and produce an instrumentation/access plan before claiming opportunity size.
 
+Treat Search Console access paths separately. If API credentials or exports are unavailable, inspect an already authenticated browser session when one is safely available: open the exact property, verify the property identity, and observe the relevant Performance or URL Inspection view without exposing cookies or credentials. Only then label browser access unavailable. Browser visibility does not imply API/export permission, and API failure does not prove the user lacks browser access.
+
 ## Adopt → Configure → Extend → Wrap → Build New
 
 Before building crawlers, rank trackers, dashboards, or keyword databases:
@@ -105,6 +107,8 @@ Do not optimize for visits alone. Pair every SEO objective with a user outcome a
 ### 1.2 Crawl and inventory the actual site
 
 Create a URL inventory from multiple sources where available: crawlable internal links, XML sitemap, CMS/database, Search Console landing pages, analytics landing pages, logs, and known campaign URLs. Record final status, redirect target, canonical, index directive, content type/template, title, H1, word/content purpose, internal inlinks, depth, structured data, language/locale, mobile rendering, and conversion role.
+
+Sample production by **route class**, not convenience URLs. Cover at least one representative route for every in-scope class—such as home, pricing/product, integration, comparison, template/tool, blog/editorial, documentation, locale, and any dynamic aggregation/news detail and index routes. Expand sampling for materially different templates or risk states, and record classes that are absent, inaccessible, or intentionally omitted. One healthy route never proves a catch-all, detail route, or sibling template is healthy.
 
 Inspect at minimum:
 
@@ -250,7 +254,21 @@ Structured data can enable rich-result eligibility; it does not guarantee displa
 
 Record every material change in the experiment log with page cohort, hypothesis, baseline window, change date, release/commit, expected mechanism, primary metric, guardrail metrics, confounders, and rollback. Prefer one coherent hypothesis per cohort. Avoid changing titles, content, internal links, templates, tracking, and URLs simultaneously unless safety or a migration requires it.
 
+### 4.5 Dynamic aggregation and news products
+
+Apply this lifecycle only when the product publishes dynamic aggregation/news items whose upstream records can change, merge, disappear, or be retained after source removal. Give each item a durable opaque identity independent of mutable titles, source URLs, and display slugs. Define canonical detail URLs, slug-change redirects, merge/duplicate redirects, tombstone or removal behavior, source provenance, correction/takedown flow, retention/deletion windows, sitemap eligibility, and explicit indexability state transitions. Verify that removed/private records cannot remain discoverable through HTML, feeds, sitemaps, structured data, caches, or internal links.
+
+Do **not** impose this item lifecycle on ordinary static marketing, product, pricing, documentation, or editorial pages merely because they need SEO. Those routes follow the normal URL, redirect, retention, and indexability rules elsewhere in this skill. Scope aggregation controls only to the route/data classes that actually have mutable external-item identity.
+
 ## Phase 5 — Verify Before Claiming Completion
+
+Keep three truth states separate in every artifact and report:
+
+1. **Planned** — a recommendation, backlog item, design, or intended target; no implementation claim.
+2. **Implemented crawlability** — exact deployment plus representative production response/render/canonical/robots/sitemap/internal-link evidence proves what users and crawlers can access now; no search-performance claim.
+3. **Measured performance** — dated Search Console, analytics/conversion, rank, indexation, or field-performance evidence after the relevant latency/window; no causal upgrade without an appropriate comparison and confounder analysis.
+
+Never infer implemented crawlability from a plan or source diff, and never infer indexing, ranking, traffic, conversion, or performance improvement from implementation evidence alone.
 
 Verify in the actual target environment:
 
