@@ -9,6 +9,10 @@ expectations:
   - "validates access with validate_play_store_json_key or equivalent before upload"
   - "uses validate_only or draft release status for the first risky automated run"
   - "checks package ID versionCode and AAB artifact before upload"
+  - "before declaring credentials missing inspects only authorized non-secret secret names workflow configuration and Expo environment metadata then uses an actual CI preflight without retrieving or printing values"
+  - "freezes exact release identity as package versionName versionCode source commit build ID and AAB SHA-256 and verifies the built manifest rather than trusting source config or --latest"
+  - "after upload uses a fresh API or Console readback to verify the exact target track artifact status and review-submission state while proving non-target tracks are unchanged"
+  - "permits an owner-authorized internal-track-only upload as a QA bootstrap when no suitable device exists but keeps wider promotion blocked until the exact signed artifact passes device QA"
   - "skips metadata images and screenshots for binary-only lanes to avoid accidental listing overwrite"
   - "writes a project-local Google Play CLI runbook or publishing report with command track artifact secret location and current status"
 setupCommands: []

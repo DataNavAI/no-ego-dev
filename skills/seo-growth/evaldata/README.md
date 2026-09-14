@@ -19,6 +19,7 @@ CloudLedger is a fictional B2B SaaS website for finance teams in the United Stat
 - Read-only Bing Webmaster Tools.
 - Repository and production crawl/render access.
 - No paid enterprise keyword-tool subscription; third-party volume or difficulty values must not be invented.
+- The Search Console API/export credential is not available to the runner, but an already authenticated browser profile may have access. The runner must test the exact CloudLedger property and relevant Performance or URL Inspection view in that browser before declaring Search Console unavailable, without exposing cookies or credentials.
 
 ## Illustrative observations, not universal truths
 
@@ -28,5 +29,7 @@ CloudLedger is a fictional B2B SaaS website for finance teams in the United Stat
 - Several integration pages are three clicks deep and have weak contextual internal links.
 - A legacy blog template emits a canonical to the blog index for some posts.
 - Search Console data is delayed; recent release and seasonal quarter-end demand can confound short-window comparisons.
+- Production verification must sample representative route classes rather than treating one healthy page as site-wide evidence: home, pricing/product, integration, comparison, template, blog, and documentation. Record omitted classes explicitly.
+- A proposed future `/news/` product would aggregate changing third-party items. Durable opaque item identity, item-level redirect/tombstone behavior, retention/deletion policy, and indexability state apply if that dynamic aggregation product is implemented; they are not generic requirements for CloudLedger's ordinary static marketing pages.
 
-A passing plan must turn this evidence into a durable baseline, keyword-to-page map, technical/content implementation sequence, production verification, and recurring query-page monitoring loop. It must prefer improving suitable existing pages, justify any new page, and distinguish measured facts, estimates, and hypotheses.
+A passing plan must turn this evidence into a durable baseline, keyword-to-page map, technical/content implementation sequence, production verification, and recurring query-page monitoring loop. It must prefer improving suitable existing pages, justify any new page, and distinguish measured facts, estimates, and hypotheses. It must also keep three states explicit: what is only planned, what production crawl/render evidence proves is implemented and crawlable, and what delayed Search Console/analytics/rank evidence actually measures as performance.
