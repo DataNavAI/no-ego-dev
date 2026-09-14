@@ -1,0 +1,112 @@
+cases:
+  - id: A
+    message: |-
+      The checkout release is PAUSED after the OTel exporter hit a high-cardinality
+      label regression. CI is green at `8deafff`, but the telemetry ingestion path is
+      lossy and the release controller will not advance until the schema is remediated.
+      Executive summary: Metric integrity is below the SLO and the immutable candidate
+      is parked.
+      Human action needed: None
+      Detailed information: PR #67, workflow
+      `manual-test-gate`, exporter logs.
+    scores:
+      product_outcome: 3
+      non_engineer_comprehension: 2
+      human_action: 15
+      context_next_state: 3
+      structure_status: 8
+      cognitive_load: 3
+      evidence_safety: 5
+      accessible_tone: 5
+    hard_fail_gates: [core_meaning_inaccessible, misleading_product_state]
+    one_read_complete: false
+    expected_score: 44
+    expected_verdict: CHANGES_REQUIRED
+
+  - id: B
+    message: |-
+      The requested web-checkout fix for failed card payments is complete. Executive
+      summary: Web shoppers in the US can retry payment without adding their items
+      again. Mobile checkout is unchanged. The team will watch failed-payment recovery
+      for 24 hours before considering the change complete everywhere.
+      Human action needed: None
+      Detailed information: No user-accessible link is available.
+    scores:
+      product_outcome: 15
+      non_engineer_comprehension: 25
+      human_action: 15
+      context_next_state: 9
+      structure_status: 10
+      cognitive_load: 10
+      evidence_safety: 10
+      accessible_tone: 5
+    hard_fail_gates: []
+    one_read_complete: true
+    expected_score: 99
+    expected_verdict: APPROVED
+
+  - id: C
+    message: >-
+      Account consistency work is blocked. Executive summary: We need to finish the
+      migration and rerun CI before implementation can continue. Human action needed:
+      The engineering team will update the migration. Please choose PostgreSQL
+      synchronous commits or a Kafka retry queue by Friday. Detailed information:
+      Architecture discussion is in the private engineering workspace.
+    scores:
+      product_outcome: 8
+      non_engineer_comprehension: 14
+      human_action: 0
+      context_next_state: 6
+      structure_status: 5
+      cognitive_load: 8
+      evidence_safety: 9
+      accessible_tone: 5
+    hard_fail_gates: [core_meaning_inaccessible, missing_or_wrong_action_boundary]
+    one_read_complete: false
+    expected_score: 55
+    expected_verdict: CHANGES_REQUIRED
+
+  - id: D
+    message: |-
+      The requested checkout release is live for all testers and everything is safe.
+      Executive summary: Deployment succeeded with no remaining limits. The full
+      customer record is included here for support reuse: `[private customer information
+      was exposed]`.
+      Human action needed: None
+      Detailed information: The upload command
+      exited successfully.
+    scores:
+      product_outcome: 0
+      non_engineer_comprehension: 18
+      human_action: 15
+      context_next_state: 3
+      structure_status: 5
+      cognitive_load: 3
+      evidence_safety: 0
+      accessible_tone: 2
+    hard_fail_gates: [misleading_product_state, sensitive_data_exposure]
+    one_read_complete: false
+    expected_score: 46
+    expected_verdict: CHANGES_REQUIRED
+
+  - id: E
+    message: >-
+      I’ve consolidated six material findings into one correction set. A focused
+      remediation worker is adding regression coverage first, then fixing fallback
+      validity, hostile undo history, max-mistake safety, elapsed-time accounting,
+      board separators, dialog focus containment, disabled contrast, and the
+      false-green smoke gaps.
+    scores:
+      product_outcome: 2
+      non_engineer_comprehension: 2
+      human_action: 0
+      context_next_state: 2
+      structure_status: 2
+      cognitive_load: 4
+      evidence_safety: 8
+      accessible_tone: 5
+    hard_fail_gates:
+      [active_project_context_missing, core_meaning_inaccessible, missing_or_wrong_action_boundary]
+    one_read_complete: false
+    expected_score: 25
+    expected_verdict: CHANGES_REQUIRED

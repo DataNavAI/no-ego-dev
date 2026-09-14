@@ -1,0 +1,47 @@
+prompt: |
+  Use the product-communication skill for this verified status:
+
+  The production iOS checkout-fix release is blocked by two account requirements. The legal Account Holder must accept the updated paid-app agreement today; only that authorized holder may accept binding legal terms. The Finance Owner must complete banking identity verification today; regulated identity verification cannot be delegated to delivery automation. Engineering regression testing continues meanwhile. After both actions, delivery automation will submit the existing build and monitor review. No user-accessible evidence link is available.
+
+  Write three separately labeled user-facing messages:
+
+  A. The external-blocker status above. Use separately completable checklist items and preserve the human-only boundary in each item. Each item must say that it unblocks release submission only together with the other required account action; do not claim either action alone unblocks submission.
+  B. A no-action progress status: CI is running for the tested checkout fix, the delivery team will inspect the result and continue release preparation automatically, and no person needs to act. Put the autonomous next step in `Executive summary` and write the `Human action needed:` field as exact `None` with no appended sentence.
+
+  C. The active project is to implement and deploy a Sudoku game. It is not deployed yet. A review produced this internal update: `I’ve consolidated six material findings into one correction set. A focused remediation worker is adding regression coverage first, then fixing fallback validity, hostile undo history, max-mistake safety, elapsed-time accounting, board separators, dialog focus containment, disabled contrast, and the false-green smoke gaps.` Rewrite it for the user. State that the review found the issues now; explain that undo/mistake handling and timer accuracy may affect gameplay, board separators and disabled contrast may affect visual clarity, dialog focus containment may affect keyboard accessibility, and false-green smoke gaps mean the automated release check did not exercise those paths. Anchor the message to the requested Sudoku deployment, state whether it is ready, group the issues by user consequence, and state the next product checkpoint. Do not lead with or repeat the raw internal labels. No person needs to act.
+
+  Do not invent account identifiers, credentials, URLs, or extra actions.
+expectations:
+  - "uses a natural opening sentence followed by Executive summary Human action needed and Detailed information in that order"
+  - "makes What Why and How explicit and includes Who When and Where whenever they affect understanding or action"
+  - "uses explicit in-progress review QA CI delegation investigation queue or retry wording rather than calling active internal work blocked"
+  - "uses blocked wording only when a verified external actor dependency or authorized human gate must act and NED cannot safely resolve it"
+  - "for review in progress names the active reviewer or process scope and next checkpoint and states Human action needed None when no person must act"
+  - "for an external blocker explains why NED cannot resolve it autonomously and names the exact human-owned action"
+  - "for a blocker names the blocked product outcome and explains the confirmed cause in plain language or explicitly says the cause is not yet confirmed"
+  - "for a blocker gives the smallest exact unblock action a named owner urgency and NED's immediate next step"
+  - "states what work continues or pauses while waiting"
+  - "leads with product or user impact rather than implementation jargon"
+  - "anchors every update to the active project requested outcome and current delivery state before mentioning internal work"
+  - "for every newly introduced issue explains why it appeared now and what this changes for the active project"
+  - "when an issue relationship is unverified says the relationship is not yet verified rather than inventing impact"
+  - "does not send a bare list of internal finding names and defines or replaces every unavoidable internal term"
+  - "rewrites the Sudoku remediation update into gameplay visual-accessibility keyboard-accessibility and release-confidence consequences"
+  - "uses a short plain-language name for any user-visible scheduled job and keeps technical identifiers in details rather than the displayed name"
+  - "provides a recommended default for any user decision"
+  - "does not label a safe workaround as a blocker"
+  - "uses verified evidence links or explicitly says no user-accessible link is available"
+  - "keeps the four-part message body at or below 120 words unless a safety legal compliance irreversible-loss or truly multi-part decision exception is explicitly justified"
+  - "when an exception is justified leads with a decision summary of at most 120 words and moves extra detail to a labeled appendix"
+  - "avoids raw activity dumps repeated chronology vague asks unsupported certainty and secrets"
+  - "always includes the exact Human action needed field and writes None when no person must act"
+  - "in the no-action message writes Human action needed as exact None with no autonomous or team work appended to that field"
+  - "keeps autonomous agent team CI and reviewer-bot next steps out of Human action needed"
+  - "for every non-None human action explicitly explains why the agent or delivery automation cannot safely perform it rather than relying on the human title alone"
+  - "for each required human task names the actor or role imperative action timing or urgency and product result it unblocks"
+  - "uses a Markdown checklist when multiple human tasks are required"
+  - "never claims all profiles received a policy without live inventory canonical-byte verification fresh runtime probes and meaningful exclusions"
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
