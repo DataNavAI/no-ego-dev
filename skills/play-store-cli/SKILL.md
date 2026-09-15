@@ -1,7 +1,7 @@
 ---
 name: play-store-cli
 description: "Use when automating Google Play Console access and Android publishing through CLI/API tools such as fastlane supply, EAS Submit, Gradle Play Publisher, or the Google Play Developer API."
-version: 0.2.0
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -285,6 +285,12 @@ Record in the project runbook whether EAS stores submit credentials remotely or 
 
 For the complete version-bump, exact-artifact QA, Android Publisher edit/readback, review-state, and internal-testing bootstrap flow, follow [`references/expo-versioned-release-api.md`](references/expo-versioned-release-api.md). The internal-track exception is narrow: when no suitable device is available, an owner may authorize internal-only upload to obtain the exact signed artifact for QA, but no closed/open/production promotion is allowed until that same artifact passes the required device journey and fresh readback proves wider tracks were unchanged.
 
+### Analytics-version allowlist synchronization
+
+When release analytics, rollout monitoring, or post-release queries use a version allowlist, update that allowlist from the **exact release version** frozen for the submitted AAB. Treat the release tuple and analytics filter as one reviewed change: package, `versionName`, `versionCode`, source commit, build ID, and AAB SHA-256 must agree with the newly allowed analytics version. Never broaden the filter to an unbounded version family or infer it from `--latest`.
+
+Add a RED regression before changing the allowlist: the new exact version must initially be rejected while the previous approved versions remain accepted. Then update the allowlist and prove the new version is accepted, an adjacent/unreleased version is rejected, and historical approved versions still work. Run this focused regression before upload and again in the release workflow when analytics configuration ships with the app or backend.
+
 ## Gradle Play Publisher Option
 
 For native Android projects that prefer Gradle-integrated publishing, use Gradle Play Publisher (GPP):
@@ -396,6 +402,7 @@ Google Play CLI report — <project> — <date/time + timezone>
 - [ ] `validate_play_store_json_key` or equivalent read-only validation passes.
 - [ ] Package ID and versionCode match the release artifact.
 - [ ] Exact AAB identity, build provenance, checksum, and manifest metadata match one another.
+- [ ] Any analytics-version allowlist was changed from the exact frozen release identity and passed RED-then-green acceptance, adjacent-version rejection, and historical-version regression checks.
 - [ ] First risky run uses `validate_only` or `release_status: draft` unless explicitly approved.
 - [ ] Binary-only lanes skip metadata/images/screenshots unless listing changes are intended.
 - [ ] CLI result is verified in Play Console or through a follow-up API read.

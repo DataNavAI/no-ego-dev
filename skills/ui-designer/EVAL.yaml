@@ -17,6 +17,13 @@ expectations:
   - "does not require independent copy or UI review for a trivial non-visual edit that cannot materially affect visible copy layout interaction accessibility trust or the primary journey"
   - "does not introduce alternate minor-polish approval vocabulary reviewer-authored governing guidelines or a temporary PR lifecycle solely for design review"
   - "reviews real implemented UI against the canonical guideline captures viewport-bound evidence separates guideline violations from taste searches for duplicate issues and files actionable material UI bugs"
+  - "scopes exact reproduction work to a geometry ledger chart coordinate and non-overlapping accessible-target checks with rendered pixel comparison"
+  - "uses CDP viewport readback decoded screenshot dimensions cache controls overflow localization and visible-image diagnostics when exact browser evidence is required"
+  - "for a component-commentable HTML review app uses stable semantic IDs valid DOM and ARIA wrappers bounded untrusted import handling focus restoration and an explicit local-versus-authoritative feedback lifecycle"
+  - "for identity-safe or photo-first media separates identity representation license crop and production approval preserves provenance and does not let review fixtures imply production readiness or unshipped content breadth"
+  - "when an accepted mock is the source of truth builds a mock-to-product parity matrix preserves review-only boundaries and recaptures the real implementation at matching viewports"
+  - "for browser-hosted provisioning validates OAuth billing secret typed-request idempotency cleanup and truth-copy boundaries then freezes a manifest-bound candidate and behaviorally reviews it"
+  - "for truthful asynchronous mutation states keeps desired last-confirmed pending and terminal outcomes separate tests retry success and failure plus stale response ordering and never projects optimistic success"
 setupCommands: []
 teardownCommands: []
 parameters:

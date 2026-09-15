@@ -1,7 +1,7 @@
 ---
 name: ui-designer
 description: "Use when creating project UI guidelines and feature designs, preparing visual implementation handoffs, or reviewing implemented UI for material visual, interaction, responsive, accessibility, and copy defects."
-version: 0.3.4
+version: 0.4.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -159,6 +159,21 @@ For responsive changes, use [responsive layout verification](references/responsi
 5. Test zoom/reflow and large text where relevant; distinguish browser zoom, CSS zoom, and viewport width.
 6. Add focused structure/behavior assertions and inspect real rendered desktop/mobile captures. Tests alone do not prove geometry; screenshots alone do not prove semantics.
 7. Run focused UI tests and the production build.
+
+## Specialized use-case controls
+
+Apply these only when the named product/design context exists; they extend rather than replace the canonical safety and independent-review gates:
+
+- **Exact screenshot/Figma reproduction:** build a per-screen geometry ledger, separate visible from accessible hit geometry, verify chart coordinate systems and adjacent target non-overlap, and inspect pixel overlays across supported widths. Follow [exact reproduction geometry](references/exact-reproduction-geometry.md).
+- **Browser evidence diagnostics:** force and read back the exact CDP layout viewport, check decoded screenshot dimensions, localize overflow, account for lazy images, disable stale cache, and collect accessibility evidence from the same target. Follow [CDP viewport capture and image diagnostics](references/cdp-viewport-capture-and-image-diagnostics.md).
+- **Component-commentable HTML review apps:** use stable semantic component IDs, safe local or authoritative backend comment lifecycles, valid DOM/ARIA wrappers, bounded untrusted import handling, and exact focus restoration. Follow [component-commentable HTML review apps](references/component-commentable-html-review-apps.md).
+- **Identity-bearing media fixtures:** separate identity, lineup/representation, copyright, excluded-source, crop, and production approval decisions; preserve evidence and fail closed on uncertainty. Follow [identity-safe media fixtures](references/identity-safe-media-fixtures.md).
+- **Photo-first MVPs:** treat meaningful photography/art roles, crop/fallback behavior, rights provenance, released-content breadth, and production-media readiness as design-system primitives. Follow [photo-first MVP design systems](references/photo-first-mvp-design-system.md).
+- **Accepted mock implementation:** create a parity matrix, preserve the mock's stable semantics without promoting review-only media, test the real product boundary, and recapture matching viewports. Follow [mock-to-product alignment](references/mock-to-product-alignment.md).
+- **Browser-hosted provisioning:** validate billing, OAuth/PKCE, secrets, idempotency, cleanup, typed allowlisted worker requests, and evidence-bound copy before architecture. Follow [browser-hosted provisioning design](references/browser-hosted-provisioning-design.md), then freeze and review the executable state model with [frozen browser provisioning review](references/frozen-browser-provisioning-review.md).
+- **Asynchronous mutations:** model desired, last-confirmed, pending, and terminal states separately; never project optimistic success, preserve opt-out and restart recovery, and test stale-response ordering. Follow [truthful asynchronous mutation states](references/truthful-async-mutation-states.md).
+
+Use-case references do not make product-local wording, brand-specific update style, or one product's layout preference canonical. Scope every control to the lifecycle and product class it actually governs.
 
 ## Implementation acceptance mapping
 
