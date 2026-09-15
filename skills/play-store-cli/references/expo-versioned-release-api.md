@@ -29,6 +29,10 @@ Store the download outside the repository. Compute SHA-256, test ZIP integrity, 
 
 Derive installable APKs from this AAB and exercise the required device/emulator journey. Record package-manager version readback, cold launch, changed/policy-sensitive screens, recovery behavior, and absence of fatal exceptions.
 
+## Synchronize release analytics filters
+
+If analytics ingestion, dashboards, alerts, or release monitoring use a version allowlist, derive the new entry from the exact frozen `versionName`/`versionCode`; do not use a moving build selector or wildcard family. Write a RED regression first that proves the new exact release version is rejected. After updating the allowlist, prove the exact version is accepted, one adjacent or unreleased version remains rejected, and previously approved versions are unchanged. Keep this test in the same release workflow so publishing cannot silently outrun analytics attribution.
+
 ### Internal-track QA bootstrap exception
 
 If no suitable device is locally available, an owner may authorize uploading the exact signed AAB to **internal testing only** so it can be installed for physical-device QA. This is QA distribution, not broader release approval. Keep closed/open/production promotion blocked until the same identity passes required device QA. Fresh readback must prove only internal changed and every wider track remained unchanged.
