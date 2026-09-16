@@ -28,6 +28,8 @@ expectations:
   - "samples representative production URLs by route class including home product pricing integration comparison template blog and documentation plus dynamic aggregation or news routes only when the product actually has them"
   - "keeps planned changes implemented crawlability and measured search performance as three separate truth states and never upgrades one state from another without direct evidence"
   - "applies durable opaque item identity redirect retention deletion and indexability lifecycle rules specifically to dynamic aggregation or news products and does not impose that product-specific lifecycle on ordinary static marketing pages"
+  - "selects a representative dynamic detail URL from the live sitemap or public inventory in the same observation window and records an actual system-clock observation timestamp with timezone rather than inferring provenance"
+  - "for dynamic aggregation persists canonical modification timestamps performs deterministic legacy backfill emits lastmod only from those values tests indexability transitions and separates reader retention from SEO retention"
 setupCommands: []
 teardownCommands: []
 parameters:

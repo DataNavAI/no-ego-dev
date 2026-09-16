@@ -1,7 +1,7 @@
 ---
 name: seo-growth
 description: Use when a website needs evidence-based organic search growth. Researches high-potential queries, maps them to the best existing or justified new pages, implements technical and on-page improvements, verifies indexability and rendered output, and iterates from rankings, Search Console, analytics, and conversion evidence without search spam or fabricated metrics.
-version: 0.2.0
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -109,6 +109,8 @@ Do not optimize for visits alone. Pair every SEO objective with a user outcome a
 Create a URL inventory from multiple sources where available: crawlable internal links, XML sitemap, CMS/database, Search Console landing pages, analytics landing pages, logs, and known campaign URLs. Record final status, redirect target, canonical, index directive, content type/template, title, H1, word/content purpose, internal inlinks, depth, structured data, language/locale, mobile rendering, and conversion role.
 
 Sample production by **route class**, not convenience URLs. Cover at least one representative route for every in-scope class—such as home, pricing/product, integration, comparison, template/tool, blog/editorial, documentation, locale, and any dynamic aggregation/news detail and index routes. Expand sampling for materially different templates or risk states, and record classes that are absent, inaccessible, or intentionally omitted. One healthy route never proves a catch-all, detail route, or sibling template is healthy.
+
+For dynamic detail routes, select the representative URL from the live sitemap or public inventory during the **same observation window** as the route-class probe. Record an observation timestamp from the actual system clock, with timezone, before writing the baseline. Keep requested URL, rendered canonical, title, primary heading, fallback content, schema type, and sitemap membership tied to that timestamp; do not infer provenance from conversation metadata, scheduler labels, or a later report window.
 
 Inspect at minimum:
 
@@ -256,7 +258,9 @@ Record every material change in the experiment log with page cohort, hypothesis,
 
 ### 4.5 Dynamic aggregation and news products
 
-Apply this lifecycle only when the product publishes dynamic aggregation/news items whose upstream records can change, merge, disappear, or be retained after source removal. Give each item a durable opaque identity independent of mutable titles, source URLs, and display slugs. Define canonical detail URLs, slug-change redirects, merge/duplicate redirects, tombstone or removal behavior, source provenance, correction/takedown flow, retention/deletion windows, sitemap eligibility, and explicit indexability state transitions. Verify that removed/private records cannot remain discoverable through HTML, feeds, sitemaps, structured data, caches, or internal links.
+Apply this lifecycle only when the product publishes dynamic aggregation/news items whose upstream records can change, merge, disappear, or be retained after source removal. Give each item a durable opaque identity independent of mutable titles, source URLs, and display slugs. Define canonical detail URLs, slug-change redirects, merge/duplicate redirects, tombstone or removal behavior, source provenance, correction/takedown flow, retention/deletion windows, sitemap eligibility, and explicit tested indexability state transitions. Verify that removed/private records cannot remain discoverable through HTML, feeds, sitemaps, structured data, caches, or internal links.
+
+Persist a canonical page-modification timestamp for every sitemap-eligible item. Define its provenance and mutation rules, migrate/backfill legacy items deterministically, and verify rollback. Emit `lastmod` only from that persisted modification timestamp. Keep **reader retention** (how long users can access a useful item) separate from **SEO retention** (how long its canonical/indexable/search surfaces remain eligible); define each window and transition independently so source removal, legal takedown, correction, merge, or product policy cannot leave contradictory discoverability.
 
 Do **not** impose this item lifecycle on ordinary static marketing, product, pricing, documentation, or editorial pages merely because they need SEO. Those routes follow the normal URL, redirect, retention, and indexability rules elsewhere in this skill. Scope aggregation controls only to the route/data classes that actually have mutable external-item identity.
 
@@ -371,6 +375,7 @@ Separate observed facts, third-party estimates, and hypotheses. Include source/d
 - [ ] Every target cluster maps to one intentional existing page or one justified new page.
 - [ ] Cannibalization, content uniqueness, internal links, architecture, and page purpose are addressed.
 - [ ] Technical audit covers robots.txt, XML sitemap, status/redirects, canonical, noindex, rendering, mobile, structured data, internationalization, and Core Web Vitals.
+- [ ] Dynamic route samples came from the same-window live sitemap/inventory with system-clock observation timestamps; lifecycle products have persisted/backfilled `lastmod`, tested indexability, and separate reader-versus-SEO retention rules.
 - [ ] Implemented content is people-first, accurate, differentiated, useful, and conversion-aware.
 - [ ] Production response and rendered HTML are verified after deployment.
 - [ ] Experiment log records baseline, hypothesis, cohort, change date, release, metrics, confounders, and rollback.
