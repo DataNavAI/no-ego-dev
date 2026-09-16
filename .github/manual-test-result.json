@@ -1,16 +1,15 @@
 {
-  "candidate_sha": "e5fd11c70723c59cb9eaa48eda63a592ec73eab0",
-  "tested_at": "2026-09-14T10:49:17Z",
-  "environment": "macOS 26.6.2; Python 3.11.16; Node.js with clean exact-SHA archive dependencies",
+  "candidate_sha": "95baac550a6f14e6354afee0d9d3dc9fa80d0f93",
+  "tested_at": "2026-09-16T10:21:52Z",
+  "environment": "macOS 26.6.2; Python 3.11.16; Node.js repository toolchain",
   "result": "pass",
   "commands": [
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest",
-    "npm ci --ignore-scripts",
+    "python -m pytest",
     "npm test",
     "npm run check",
     "npm pack --dry-run --json",
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m compileall -q eval_runner tests",
-    "git diff --check 63862c6a48e3e409ba25bb13e1d5cfa0ba55459c...e5fd11c70723c59cb9eaa48eda63a592ec73eab0"
+    "python -m compileall -q eval_runner tests",
+    "git diff --check f8a1cc570c0b537152621c9b8150c1fdc2f35110...95baac550a6f14e6354afee0d9d3dc9fa80d0f93"
   ],
-  "observations": "Exact code candidate e5fd11c70723c59cb9eaa48eda63a592ec73eab0 passed the Python repository suite (505 passed, 9 platform skips), the Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (398 files; no __pycache__ or .pyc artifacts), diff check, eval-loader checks, and staged secret scan. Authenticated behavioral evaluations passed for play-store-cli, seo-growth, and ui-designer. Independent exact-SHA review approved the code candidate with no material findings. Play-store-publisher and subagent-driven-development were excluded after their behavioral evals failed; they are byte-identical to the base."
+  "observations": "Exact code candidate 95baac550a6f14e6354afee0d9d3dc9fa80d0f93 passed the Python repository suite (522 passed, 9 platform skips), Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (422 files; no __pycache__ or .pyc artifacts), diff check, and focused secret scan. Independent exact-SHA review approved the complete code candidate with no material findings after communication-evaluator oracle contradictions were corrected."
 }
