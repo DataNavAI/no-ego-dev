@@ -97,7 +97,7 @@ Use these exact totals and verdicts; the per-dimension points are frozen in `cas
 
 | Candidate | Score | Verdict | Hard-fail gates | One-read complete |
 |---|---:|---|---|---|
-| A | 48 | CHANGES_REQUIRED | core meaning inaccessible | No |
+| A | 48 | CHANGES_REQUIRED | core meaning inaccessible; severity distortion | No |
 | B | 99 | APPROVED | None | Yes |
 | C | 55 | CHANGES_REQUIRED | missing or wrong action boundary | No |
 | D | 46 | CHANGES_REQUIRED | misleading product state; sensitive-data exposure | No |

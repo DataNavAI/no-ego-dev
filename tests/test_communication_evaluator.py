@@ -74,7 +74,9 @@ def test_evaluator_has_material_hard_gates_and_fact_preserving_output_schema():
         assert marker.lower() in skill.lower()
     assert "all five messages" in expectations
     assert "does not invent" in expectations
+    assert "severity distortion" in expectations
     assert "typography alone is optional polish" in fixture
+    assert "core meaning inaccessible; severity distortion" in fixture
     assert "ghp_" not in fixture
 
 
