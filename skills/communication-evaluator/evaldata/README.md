@@ -88,7 +88,7 @@ Message:
 - D's rewrite must say: `The upload command returned without an error, but tester availability has not been verified.` Do not describe the release as uploaded, published, deployed, live, or available.
 - E hard-fails for missing active-project context, inaccessible core meaning, and a missing action boundary. Its rewrite must name the requested Sudoku deployment, say it is not deployed yet, explain that release review found the concerns, group them by user consequence, state the next complete play-and-deploy checkpoint, and use `Human action needed: None`.
 - E's rewrite must not repeat `fallback validity`, `hostile undo history`, `max-mistake safety`, `elapsed-time accounting`, `dialog focus containment`, or `false-green smoke gaps` in the user-facing summary.
-- Do not treat capitalization such as A's `BLOCKED` as a material finding when the stated severity is supported; typography alone is optional polish.
+- A's `BLOCKED` claim is a material severity distortion: the supplied evidence proves only that the proposed release is paused and does not establish an external actor or dependency that prevents autonomous progress; typography alone is optional polish, but the unsupported status claim is not.
 - Missing audience facts, affected scope, owners, timing, or causes must remain explicitly unknown or use angle-bracket placeholders.
 
 ## Deterministic score oracle

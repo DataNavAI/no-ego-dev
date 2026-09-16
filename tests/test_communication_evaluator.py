@@ -28,7 +28,7 @@ def test_communication_evaluator_is_a_complete_production_loadable_package():
     spec = load_eval(SKILL_DIR / "EVAL.yaml")
 
     assert re.search(r"^name: communication-evaluator$", skill, re.MULTILINE)
-    assert re.search(r"^version: 1\.0\.3$", skill, re.MULTILINE)
+    assert re.search(r"^version: 1\.0\.4$", skill, re.MULTILINE)
     assert spec.fixture_path == SKILL_DIR / "evaldata" / "README.md"
     assert spec.fixture_text.strip()
     assert spec.expectations
@@ -103,6 +103,14 @@ def test_candidate_oracles_include_sudoku_and_are_exactly_repeatable():
     assert "dialog focus containment" in sudoku["message"]
     assert "false-green smoke gaps" in sudoku["message"]
     assert "active_project_context_missing" in sudoku["hard_fail_gates"]
+
+    opaque_pause = cases[0]
+    assert "severity_distortion" in opaque_pause["hard_fail_gates"]
+
+    approved_completion = cases[1]
+    assert "checkout payment-recovery project" in approved_completion["message"].lower()
+    assert "goal" in approved_completion["message"].lower()
+    assert "monitor" in approved_completion["message"].lower()
 
 
 def test_score_threshold_hard_gate_and_one_read_gate_fail_closed():

@@ -12,15 +12,17 @@ cases:
       cognitive_load: 3
       evidence_safety: 9
       accessible_tone: 5
-    hard_fail_gates: [core_meaning_inaccessible]
+    hard_fail_gates: [core_meaning_inaccessible, severity_distortion]
     one_read_complete: false
     expected_score: 48
     expected_verdict: CHANGES_REQUIRED
 
   - id: B
     message: >-
-      Failed card payments no longer empty a customer's basket. Web shoppers in the
-      US can retry; mobile checkout is unchanged. Human action needed: None.
+      The US web checkout payment-recovery project has reached its goal: failed card
+      payments no longer empty a customer's basket. Web shoppers in the US can retry;
+      mobile checkout is unchanged. The team will monitor failed-payment recovery for
+      24 hours. Human action needed: None.
     scores:
       product_outcome: 15
       non_engineer_comprehension: 25

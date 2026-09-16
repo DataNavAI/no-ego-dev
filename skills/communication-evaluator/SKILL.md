@@ -1,7 +1,7 @@
 ---
 name: communication-evaluator
 description: Use when independently evaluating a NED message before or after it is sent to a user. Scores product framing, human-action clarity, evidence, brevity, and especially whether a person without a software-engineering background can understand the message after one read; returns an approval verdict, material findings, and a plain-language rewrite without inventing facts.
-version: 1.0.3
+version: 1.0.4
 author: NoEgoDev
 license: MIT
 metadata:
