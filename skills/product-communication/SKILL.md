@@ -1,7 +1,7 @@
 ---
 name: product-communication
 description: Use for any user-facing project issue, blocker, risk, status, decision request, completion report, or handoff. Translates technical conditions into product impact, separates human-owned tasks from autonomous next steps, requires an explicit Human action needed field (including None), and asks users for product-requirement decisions rather than implementation choices.
-version: 1.3.9
+version: 1.4.0
 author: NoEgoDev
 license: MIT
 created_by: NoEgoDev
@@ -250,6 +250,12 @@ Then provide a verified repository-relative or local path only when useful and s
 
 For immutable reviews or releases, include the exact SHA/revision and a verified PR or artifact link.
 
+### Immutable approval registration
+
+When an approval, readiness decision, or review outcome must be registered as exactly one GitHub issue comment while the issue itself remains immutable, treat the comment as a bounded registration transaction—not an opportunity to edit issue metadata or imply new authority. Bind the comment to exact API-read source bytes and hashes, use a unique idempotency marker, state the decision and its authority limit, scan the final body before posting, and verify the posted body plus every protected issue field afterward. An existing marker means the decision is already registered: return the existing comment rather than posting or editing another one.
+
+Follow [`references/immutable-approval-registration.md`](references/immutable-approval-registration.md) for the exact preflight, one-comment mutation boundary, readback checks, fail-closed cases, and ad-hoc verification rules.
+
 ## Multi-Profile Policy Propagation
 
 When this skill or another message-governing policy changes, updating the global/default copy does **not** prove that profile-local emitters received it.
@@ -342,6 +348,7 @@ See [`references/decision-ready-message-examples.md`](references/decision-ready-
 11. **Accomplishment-first reporting.** Do not lead with what the agent built, deployed, reviewed, or verified; lead with the product's changed behavior and affected scope.
 12. **Verification theater.** Do not turn test counts, review rounds, hashes, backups, or CI job totals into the headline unless they materially change a decision, risk, or release status.
 13. **Celebratory overclaiming.** Avoid victory language that obscures remaining limitations, excluded users, or the difference between rollout completion and product impact.
+14. **Approval registration that mutates the issue or overstates authority.** A one-comment decision record must preserve protected issue fields, prove exact source/body identity, remain idempotent, and say what the recorded decision does not authorize.
 
 ## Verification Checklist
 
@@ -366,3 +373,4 @@ Before sending:
 - [ ] Severity and uncertainty are not minimized
 - [ ] No credentials or sensitive artifacts are exposed
 - [ ] Running, queued, approval, source-authority, and authentication claims name only the furthest state verified by current evidence
+- [ ] Any one-comment approval registration uses exact API-read hashes, one unique marker, an authority disclaimer, posted-comment readback, and protected-field comparison without a corrective second mutation

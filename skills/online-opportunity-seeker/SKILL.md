@@ -1,7 +1,7 @@
 ---
 name: online-opportunity-seeker
 description: "Use when researching product opportunities for a given vertical by combining keyword trend/search demand, Reddit/community pain signals, Google results, app-store/play-store competitors, and existing-service gaps into ranked product bets."
-version: 0.2.0
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -99,7 +99,12 @@ When trend tools are available, compare relative interest across keyword cluster
 
 Do not claim exact search volume unless the source provides it. Prefer “high/medium/low evidence from <source>” over fake precision.
 
-For broad entity/reference SEO, restricted Reddit access, broad-destination portfolios, permission-first community validation, SEO-first consumer wedges, or a user who will not personally market, use `references/evidence-and-distribution-branches.md`. Required branch rules include:
+For broad entity/reference SEO, restricted Reddit access, broad-destination portfolios, or permission-first community validation, use `references/evidence-and-distribution-branches.md`. For deeper conditional workflows, use:
+
+- [`references/seo-first-fandom-mvp-pattern.md`](references/seo-first-fandom-mvp-pattern.md) when a consumer community, hobby, interest, fandom, or entity product is meant to become a search destination. Apply its `query answer → guided learning/action → proof or useful share artifact` journey and SEO validation gates; do not assume every informational query needs software.
+- [`references/no-marketing-side-income-filter.md`](references/no-marketing-side-income-filter.md) when the operator will not personally perform outbound sales, social posting, paid ads, influencer outreach, or ongoing content. Apply its channel-first filter and require a non-overlap check against the operator's active business.
+
+Required branch rules include:
 
 - keep forced entity × modifier probes separate from organic broad-seed recurrence and audit ambiguous/franchise contamination;
 - cite original public community URLs, label archive use, avoid stale engagement counts, and re-check live promotion rules before outreach;

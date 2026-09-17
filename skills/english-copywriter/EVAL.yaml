@@ -1,6 +1,10 @@
 name: english-copywriter
 prompt: |
-  Use the english-copywriter skill on the supplied website and mobile scenarios. Explicitly choose Authoring mode or Specialist review mode for each requested output. Review only copy-specialist concerns, run the minimum-text pass before rewriting, and provide exact material corrections. Do not claim binding candidate approval.
+  Use the english-copywriter skill on every supplied website and mobile scenario. Explicitly choose Authoring mode or Specialist review mode for each requested output. Review only copy-specialist concerns, run the minimum-text pass before rewriting, and provide exact material corrections. Do not claim binding candidate approval.
+
+  For the frozen-snapshot scenario, give the ordered integrity and runtime-review procedure, distinguish exact-candidate status from diagnostic coverage, and explain how concurrent mutation changes the verdict without repairing candidate files.
+
+  For the implemented landing-page headline scenario, provide the exact rollout checklist from promise selection through production readback. Preserve the existing display typography unless design is explicitly in scope, and do not stop after proposing an isolated H1 string.
 expectations:
   - "distinguishes Authoring mode from Specialist review mode and does not self-approve authored copy"
   - "uses only PASS NEEDS ITERATION or BLOCKED for a specialist verdict"
@@ -11,6 +15,12 @@ expectations:
   - "checks dynamic visible accessible payload and documentation copy for truthful state agreement"
   - "checks sourced factual claims and evidence-availability language without treating references as proof"
   - "defers binding candidate approval identity lineage rounds and independence gates to a canonical reviewer"
+  - "for a frozen snapshot verifies the requested full SHA before substantive review resolves the manifest from its expected root records and checks the manifest before review and reruns the complete check afterward"
+  - "keeps runtime probes and temporary helpers outside the frozen candidate removes them and treats a changed missing or newly contaminated snapshot as BLOCKED for exact-candidate certification without restoring concurrent changes"
+  - "separates diagnostic copy findings from snapshot validity and never implies a before-check or partial critical-file match proves the required after-check"
+  - "for an implemented hero headline chooses one concrete promise evaluates concise copy in the real layout and shortens copy rather than silently shrinking established display typography"
+  - "synchronizes the H1 fallback localization runtime title static title metadata structured data and exact-copy tests rather than changing only visible copy"
+  - "uses real desktop and mobile browser verification with device metrics layout probes and screenshot review then reads the deployed public origin for the new copy old-copy absence revision and unchanged critical routes"
 setupCommands: []
 teardownCommands: []
 parameters:
