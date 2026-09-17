@@ -1,7 +1,7 @@
 ---
 name: english-copywriter
 description: "Use when authoring or performing a specialist review of English product copy for websites and mobile apps, including headlines, labels, CTAs, onboarding, empty states, errors, confirmations, and microcopy."
-version: 1.0.0
+version: 1.1.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -59,8 +59,9 @@ This verdict is not a binding review, release approval, or immutable-candidate c
 4. **Run the minimum-text pass first.** Classify necessary changes as remove, replace with design, shorten, keep, or add. Never remove text required for comprehension, accessibility, legal/safety clarity, trust, or recovery.
 5. **Rewrite necessary copy.** Put the user's action or outcome first, use specific verbs and nouns, and keep terminology stable.
 6. **Check state and claim truth.** For dynamic interfaces, use [interactive copy-truth probes](references/interactive-copy-truth-probes.md). For sourced claims and saved/following state, use [fact-source and state-copy closure](references/fact-source-and-state-copy-closure.md). For claims that evidence is present, use [candidate documentation and evidence claims](references/candidate-documentation-evidence-claims.md).
-7. **Check design and accessibility fit.** Confirm labels remain available, copy fits its components, mobile strings stay usable, and hidden or accessible surfaces agree with visible copy.
-8. **Return only material action.** Give exact current-to-recommended strings or an explicit design change. Escalate product, legal, or brand questions only when they materially change wording.
+7. **Protect immutable review evidence.** When the task names an exact candidate and checksum manifest, verify the full candidate identity and every manifest entry before review, exercise the frozen source read-only, rerun the complete integrity check afterward, and block exact-candidate certification on any mismatch. Follow [frozen-snapshot UI-copy review](references/frozen-snapshot-review.md).
+8. **Check design and accessibility fit.** Confirm labels remain available, copy fits its components, mobile strings stay usable, and hidden or accessible surfaces agree with visible copy. For an implemented hero change, follow [landing-page headline rollout](references/landing-page-headline-rollout.md) to compare copy in the real layout, synchronize every copy surface, and verify representative desktop/mobile rendering plus production readback.
+9. **Return only material action.** Give exact current-to-recommended strings or an explicit design change. Escalate product, legal, or brand questions only when they materially change wording.
 
 ## Specialist review output
 
@@ -134,6 +135,8 @@ For ongoing work, add a concise copy guideline to the project's established desi
 5. Treating authored copy as independently approved.
 6. Checking visible text while missing stale accessible names, payloads, or state-dependent helpers.
 7. Claiming evidence exists because a manifest or README references it.
+8. Certifying an exact candidate after the requested SHA, manifest, or listed files changed during review.
+9. Updating only the visible H1 while leaving stale document titles, localized/runtime strings, metadata, snapshots, or production copy.
 
 ## Verification Checklist
 
@@ -146,3 +149,5 @@ For ongoing work, add a concise copy guideline to the project's established desi
 - [ ] Recommendations contain exact strings or exact design behavior.
 - [ ] Reversible nits are absent.
 - [ ] Any binding approval is left to a fresh canonical reviewer.
+- [ ] Exact-candidate reviews prove full SHA and manifest integrity before and after review and never repair concurrent candidate drift.
+- [ ] Implemented headline changes were tested in the real desktop/mobile layout, synchronized across all copy surfaces, and read back from production after release.

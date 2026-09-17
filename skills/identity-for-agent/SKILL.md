@@ -1,7 +1,7 @@
 ---
 name: identity-for-agent
 description: Use the guarded ifa CLI to check, request, and securely deliver third-party authorization with profile-bound credential isolation.
-version: 1.1.0
+version: 1.1.1
 author: DataNavAI
 license: MIT
 metadata:
@@ -126,3 +126,7 @@ python "$IFA_GUARD" "$HERMES_PROFILE" remove-profile
 ```
 
 This removes the profile from every shared grant's `approved_profiles` and removes only its profile-local runtime tree. It preserves each independent shared store and metadata, including when another approved consumer remains. The provider grant is revoked only by an explicit human action; an empty approval list is denied to everyone but retained for that decision. Never revoke or delete another consumer's shared grant as a side effect of profile removal.
+
+## Release and installer changes
+
+When reviewing or releasing IFA itself, follow [`references/release-verification.md`](references/release-verification.md). Validate installation from a clean checkout pinned to the exact commit under review, deterministic builds with explicit commit/date metadata, uninstall behavior that preserves the initialized runtime store byte-for-byte, and a tracked-file plus diff secret/runtime-artifact scan. Do not treat an installer fetched from a default branch as evidence for a different candidate SHA.

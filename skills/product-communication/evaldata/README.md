@@ -15,6 +15,7 @@ Evaluate messages for realistic NoEgoDev situations such as:
 - an access-recovery update where browser sign-in, client registration, scopes, unattended background access, and real operation/readback are distinct setup states;
 - a scheduler update where work is `queued—not started`, not verified running work;
 - a source-authority correction where internal planning was mislabeled as an accountable owner's decision.
+- an immutable approval or readiness registration constrained to exactly one new GitHub issue comment, with every issue field protected from mutation.
 
 A strong answer lets a non-technical user understand, on one read:
 
@@ -38,3 +39,5 @@ For a new issue or review finding, require a **project anchor** before implement
 The Sudoku scenario is a hard regression. A strong rewrite says the requested Sudoku game is not deployed yet and that release review found gameplay, visual-accessibility, keyboard-accessibility, and test-coverage problems. It translates the raw labels into effects such as incorrect undo/mistake behavior, inaccurate elapsed time, unclear board/control states, keyboard focus escaping dialogs, and an automated release check that did not exercise those paths. Raw labels belong only in optional detailed traceability, not in the user-facing summary.
 
 For progress and evidence-state scenarios, a strong answer says `Running now` only for a confirmed live worker and `Queued—not started` for planned successors. It classifies internal planning separately from direct or owner-confirmed evidence. It names the furthest verified authentication state and withholds `restored`, `sent`, `published`, or `available` until the real operation and authoritative readback prove that state. A stale document or overstatement should be corrected rather than converted into a new user approval gate.
+
+For immutable one-comment registration, a strong answer reads the live issue, comments, and source decision through the API; hashes exact UTF-8 bodies; records title, body, state/reason, labels, milestone, assignees, and lock status; scans the final comment for secrets and private paths; rechecks one unique HTML marker immediately before the single POST; and reads the posted comment back by ID before comparing all protected issue fields. The comment must state that registration does not enlarge the reviewer's authority. An existing marker returns the existing comment. Any input drift stops before mutation; posted-body, marker, or protected-field mismatch is reported without a second corrective comment or silent restoration. If no canonical suite exists, a temporary focused verifier is labeled **ad-hoc verification**, not suite green.

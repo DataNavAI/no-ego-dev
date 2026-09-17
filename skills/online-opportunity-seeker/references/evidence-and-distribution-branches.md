@@ -43,6 +43,8 @@ Do not mass-DM, scrape members, hijack replies, evade moderation, use giveaways 
 
 For a consumer search destination, map query families by user job and inspect current result types. Distinguish informational content from software: interaction must materially improve comprehension, confidence, action, or repeat use.
 
+For the complete cross-domain workflow and validation rubric, use [`seo-first-fandom-mvp-pattern.md`](seo-first-fandom-mvp-pattern.md). Despite the retained source filename, the canonical pattern applies to any suitable community, hobby, interest, or entity destination; fandom is only one example.
+
 A valid journey is `query answer → guided learning/action → proof or useful share`. Deliver the answer immediately; signup, sharing, or navigation cannot block it. The interaction/share artifact must reinforce the same job. Start with a small manually verified catalog and treat freshness, provenance, correction handling, media rights, and internal linking as product requirements. Avoid doorway pages, filler, and unresolved biometric/privacy risks.
 
 Validate answer completion, time to confidence, freshness understanding, actual share action, and referred-user completion. Predeclare thresholds and pair SEO probes with task tests.
@@ -50,6 +52,8 @@ Validate answer completion, time to confidence, freshness understanding, actual 
 ## No-personal-marketing constraint
 
 When the operator will not do outbound sales, social posting, paid ads, influencer outreach, or ongoing content, do not shortlist an idea until its discovery channel is credible. Prefer store-search extensions, established plugin/app marketplaces, or SEO micro-tools that answer recurring queries. Downgrade generic templates, consulting lead-gen, broad undifferentiated wrappers, manual-service businesses, and ideas that conflict with the operator's active business.
+
+Use [`no-marketing-side-income-filter.md`](no-marketing-side-income-filter.md) for the full channel-first evidence and shortlist contract. This branch changes distribution feasibility requirements; it does not waive the core demand, competitor, trust, or MVP research.
 
 For every shortlisted opportunity include:
 

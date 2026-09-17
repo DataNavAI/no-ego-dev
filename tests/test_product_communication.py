@@ -23,7 +23,7 @@ def test_product_communication_is_a_complete_production_loadable_package():
     spec = load_eval(SKILL_DIR / "EVAL.yaml")
 
     assert re.search(r"^name: product-communication$", skill, re.MULTILINE)
-    assert re.search(r"^version: 1\.3\.9$", skill, re.MULTILINE)
+    assert re.search(r"^version: 1\.4\.0$", skill, re.MULTILINE)
     assert spec.fixture_path == SKILL_DIR / "evaldata" / "README.md"
     assert spec.fixture_text.strip()
     for reference in (
@@ -34,6 +34,7 @@ def test_product_communication_is_a_complete_production_loadable_package():
         "project-context-and-issue-translation.md",
         "restart-boundary-vs-completion.md",
         "progress-and-evidence-language.md",
+        "immutable-approval-registration.md",
     ):
         assert (SKILL_DIR / "references" / reference).is_file()
 
@@ -96,6 +97,21 @@ def test_product_communication_eval_covers_action_rollout_and_sudoku_regressions
     assert "Sudoku" in fixture
     assert "separately completable checklist" in fixture
     assert "canonical-byte" in fixture
+
+
+def test_immutable_approval_registration_revalidates_all_inputs_before_post():
+    reference = (
+        SKILL_DIR / "references" / "immutable-approval-registration.md"
+    ).read_text(encoding="utf-8").lower()
+
+    assert "immediately before posting" in reference
+    assert "re-fetch the source decision" in reference
+    assert "complete comment collection with explicit pagination" in reference
+    assert "recompute every frozen body hash" in reference
+    assert "compare every protected field" in reference
+    assert "freeze its exact utf-8 hash before mutation" in reference
+    assert "equality with the frozen outbound-body hash" in reference
+    assert "baseline comment count plus one" in reference
 
 
 def test_examples_keep_autonomous_work_out_of_human_action_field():

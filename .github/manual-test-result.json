@@ -1,15 +1,15 @@
 {
-  "candidate_sha": "95baac550a6f14e6354afee0d9d3dc9fa80d0f93",
-  "tested_at": "2026-09-16T10:21:52Z",
-  "environment": "macOS 26.6.2; Python 3.11.16; Node.js repository toolchain",
+  "candidate_sha": "aa5cff9a5a3a199de23880f81efe9b9d04aa5258",
+  "tested_at": "2026-09-17T10:47:21Z",
+  "environment": "macOS 26.6.2; Python 3.14.3; Node.js 25.6.1; dependencies installed with npm ci",
   "result": "pass",
   "commands": [
-    "python -m pytest",
+    "/tmp/hermes-harvest-py312/bin/python -m pytest",
     "npm test",
     "npm run check",
     "npm pack --dry-run --json",
-    "python -m compileall -q eval_runner tests",
-    "git diff --check f8a1cc570c0b537152621c9b8150c1fdc2f35110...95baac550a6f14e6354afee0d9d3dc9fa80d0f93"
+    "/tmp/hermes-harvest-py312/bin/python -m compileall -q eval_runner tests",
+    "git diff --check dec58ce5712cbb085ff8755a8e31f02cbdf504b8...aa5cff9a5a3a199de23880f81efe9b9d04aa5258"
   ],
-  "observations": "Exact code candidate 95baac550a6f14e6354afee0d9d3dc9fa80d0f93 passed the Python repository suite (522 passed, 9 platform skips), Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (422 files; no __pycache__ or .pyc artifacts), diff check, and focused secret scan. Independent exact-SHA review approved the complete code candidate with no material findings after communication-evaluator oracle contradictions were corrected."
+  "observations": "Exact code candidate aa5cff9a5a3a199de23880f81efe9b9d04aa5258 passed the Python repository suite (523 passed, 9 platform skips), Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (429 files; no __pycache__ or .pyc artifacts), and diff check. The complete code candidate received independent exact-SHA approval with no material findings after immutable approval-registration guidance was corrected and issue-monitor was excluded as an unresolved package."
 }

@@ -1,7 +1,7 @@
 ---
 name: mvp-planning
 description: "Use when planning a new MVP or cutting an existing product idea down to its minimum viable scope. Selects one key user problem, limits the MVP to one primary and at most two supporting critical user journeys, removes nonessential features, designs the shortest intuitive UX, and defines automated and manual QA gates that prove the core journeys work end to end."
-version: 1.2.0
+version: 1.2.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -132,11 +132,11 @@ Do not quietly reintroduce parked scope in architecture, design, implementation,
 
 ## Context-Specific Planning Branches
 
-The one-primary-CUJ constraint remains universal, but established products and human-handoff pilots need additional evidence. Use `references/existing-backlog-and-shared-experiments.md` and `references/human-handoff-workflow-discovery.md` as applicable.
+The one-primary-CUJ constraint remains universal, but established products and human-handoff pilots need additional evidence. Use `references/existing-backlog-and-shared-experiments.md` and `references/human-handoff-workflow-discovery.md` as applicable. When staff must receive, follow up on, and convert inbound work for the primary CUJ, use the more detailed, context-scoped discovery workflow in [`references/staff-workflow-discovery.md`](references/staff-workflow-discovery.md); do not impose that workflow on self-service MVPs or handoffs outside the selected CUJs.
 
 - **Existing backlog:** inspect the live issue graph and an exact default-branch revision before trusting status documents. Classify every open child exactly once as must-before-user-testing, simplify/merge, defer-post-validation, or close/supersede; name the retained outcome and dependency rewrite.
 - **Several hypotheses on one site:** frame the release as one shared experimental platform with one primary CUJ, up to two necessary supporting CUJs, independently measurable routes, and explicitly classified shared foundations/beta modules/reserve verticals. Do not turn the homepage into an experiment chooser or call every module an MVP.
-- **Staff or human handoff:** run a decision-gated discovery session for routing, minimum permitted data, per-channel contact permission, authoritative lifecycle state, warm-lead ownership, after-hours fallback, and a contained pilot. Sensitive-domain, payment, or production automation requires the applicable owner and safety approvals; discovery alone grants none.
+- **Staff or human handoff:** when a handoff materially gates a selected CUJ, run a decision-gated discovery session for routing, minimum permitted data, per-channel contact permission, authoritative lifecycle state, warm-item ownership, after-hours fallback, and a contained pilot. Sensitive-domain, payment, or production automation requires the applicable owner and safety approvals; discovery alone grants none. For a self-service MVP or an incidental internal handoff that does not gate a selected CUJ, keep the lighter planning path and do not add staff-workflow ceremony.
 
 ## MVP Measurement: Stage-Appropriate Learning
 
