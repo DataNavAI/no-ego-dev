@@ -13,6 +13,8 @@ expectations:
   - "for web games documents game architecture patterns frame budget asset pipeline and engine-specific skill discovery or creation"
   - "considers MVP cost when recommending hosting"
   - "asks the user to choose only when provider tradeoffs materially affect cost, architecture, compliance, or access"
+  - "positive: MVP durable system-of-record and lifecycle architecture includes migrations backup restore retention rollback ownership public identity compatibility evidence timestamps refactoring and retirement"
+  - "boundary/negative: must not use a fixed review-round cap, treat ephemeral local state as an MVP system of record, or hand off architecture only in chat"
 setupCommands: []
 teardownCommands: []
 parameters:

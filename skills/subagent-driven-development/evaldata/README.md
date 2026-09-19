@@ -31,3 +31,7 @@ Boundary cases:
 
 
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+## Harvested positive and boundary scenarios
+
+- **Positive:** three requested product workstreams may use many helpers but count as three; each has one reconciled lease, durable remote artifacts, exact review hold, explicit workdir, and immediate frontier refill. Sequential mode instead keeps exactly one stream through merge and parent reconciliation.
+- **Boundary/negative:** a child merged into a synthetic base does not update the parent; a local-only artifact is undelivered; a scheduled test from the profile cwd is controller-only; cleanup is blocked if ownership, terminal state, unpushed-work absence, or durable evidence preservation is unproved.

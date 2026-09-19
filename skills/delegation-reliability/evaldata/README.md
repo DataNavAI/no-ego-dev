@@ -27,3 +27,11 @@ Boundary cases:
 
 
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+## Positive scenario
+
+Restart-durable delegated delivery on one pinned board: preserve the early draft PR, exact issue/task/run mapping, worker claim, installed prompt, GUI readiness, and current-base multi-PR convergence under one authoritative controller.
+
+## Boundary/negative scenario
+
+Must not create a competing controller or force sequential focus. Hooks and ticks wake reconciliation but do not dispatch from untrusted payloads, race worker-owned artifacts, or serialize independent work without a declared reason.

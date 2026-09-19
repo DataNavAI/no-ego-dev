@@ -31,3 +31,7 @@ Additional continuity scenarios:
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
 
 Negative scenario: Round 2 and later must omit ordinary architecture feedback that was reasonably discoverable in Round 1 and unrelated to corrections or new evidence. Missing exact revision, lineage, or cumulative report history returns `BLOCKED` rather than a verdict.
+## Harvested positive and boundary scenarios
+
+- **Positive:** a recoverable non-user-data cleanup uses the configured MVP risk threshold, exact allow/deny lists, stop-on-mismatch, and final readback; a separate design proves exact archive continuity, cross-document authority, recomputable digests, maximum-size capacity, outage independence, and durable evidence.
+- **Boundary/negative:** a gate rejects all safe controls, capacity uses averages, an “independent” path needs the failed store, old HMAC-key rows become unreachable, or restart converts response ambiguity into false absence. These remain material blockers.

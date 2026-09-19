@@ -1,7 +1,7 @@
 ---
 name: agent-identity-and-access
 description: "Use when setting up or maintaining an agent-owned project identity for SSO, OAuth/delegated access, signed-in browser sessions, service signups, notifications, and email communication."
-version: 0.1.0
+version: 0.1.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -208,6 +208,16 @@ When using the agent identity to create or access SaaS tools:
 5. Verify the selected Google account is the agent identity before continuing.
 6. Record non-secret identifiers: service name, account email, workspace/project ID, plan, admin URL, owner, and billing status.
 7. Do not store raw secrets in project docs; store only secret names/locations and owner.
+
+## Profile-local GitHub and staged provider access
+
+Preserve IFA-first routing. Before provider-specific authorization, use the active profile's guarded IFA status/request/verification path; fall back only for an explicitly unsupported operation. For GitHub fallback, use a **profile-local GH_CONFIG_DIR**, then run both `gh auth status` and `gh api user --jq .login` in that environment. A host-global login or another profile's success is not evidence. Prove a harmless repository read and, when write access is required, a reversible write probe against the intended namespace. Do not switch the machine-global account.
+
+Capture **owner-authority provenance** before mutation: intended owner/account, requesting authority, approved role/scopes, target organization/project, protected exclusions, evidence source, and verification time. Register a **sanitized blocker** containing only provider, non-secret account label, denied operation, safe error class, required owner action, and retry/readback command; redact tokens, device codes, cookies, credential URLs, and raw auth files.
+
+Use **staged SaaS access**: inventory existing non-secret account/workspace metadata; verify read access; request the smallest needed write role; perform one reversible write probe; then enable production-impacting operations only after exact owner/account readback. Treat a **one-time secret** as a transient bootstrap channel: deliver it directly to the approved secret store or provider UI, never chat/docs/source/shell history, verify the consumer without printing the value, and rotate or revoke it immediately after durable OAuth, workload identity, or delegated access works. Record the rotation receipt without secret bytes.
+
+See [`references/profile-local-provider-access.md`](references/profile-local-provider-access.md) for the generic evidence and blocker schema.
 
 ## Common Pitfalls
 

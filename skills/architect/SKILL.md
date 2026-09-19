@@ -1,7 +1,7 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.2
+version: 0.2.11
 author: NoEgoDev
 license: MIT
 metadata:
@@ -28,6 +28,18 @@ Translate product intent into a technical plan that a coder can implement safely
 - Hosting/deployment provider options that support the required stack, including tradeoffs and a recommended default.
 - Web game engine and game architecture selection when the product is a browser/web game: researched performant engine recommendation, game loop/state/scene/entity architecture, asset pipeline, browser performance budget, and engine-specific skill plan.
 - Test and rollout plan.
+
+## Lifecycle and risk scope
+
+Architecture depth follows product stage and reversibility, but production truth does not. A prototype may use disposable state when explicitly labeled; an MVP needs a durable **system of record** for user, business, and product data. Name its owner and include schema/migrations, access control, observability, cost, retention, rollback ownership, and tested **backup and restore**. A local or instance-bound file is not an MVP store unless durable-volume, replacement, backup, and restore behavior are proven.
+
+Treat externally visible slugs, IDs, URLs, account keys, and shared schema names as **public identity migration** contracts. Specify compatibility aliases, backfill, collision behavior, consumer migration, deprecation, rollback, and removal evidence. Every architecture claim and operational proof records **evidence timestamps** and immutable candidate/provider identity so stale dashboard or deployment evidence cannot silently authorize handoff.
+
+Prefer **managed security** capabilities for identity, encryption, secrets, backups, audit logs, and policy enforcement when they satisfy the threat model; custom security code needs a named gap and stronger review. Existing **retained resource** adoption requires exact inventory, import support and identifiers, duplicate/dependency assessment, owner authority for destructive steps, import-only fail-closed changes, and post-import readback.
+
+Every milestone ends with a scheduled refactoring task, and every feature includes **feature retirement**: flags/routes/permissions/secrets/data/resources to remove or retain, exit criteria, preservation/rollback, and tests proving obsolete surfaces are gone. Complete a **repository-integrated handoff** by committing the spec, diagrams/contracts, migration and rollback plan, owned implementation tasks, and verification matrix in the repository rather than leaving the architecture only in chat.
+
+See [`references/lifecycle-system-of-record.md`](references/lifecycle-system-of-record.md) for the stage/risk decision table.
 
 ## Product Metrics Instrumentation
 
@@ -163,3 +175,7 @@ Implementation/QA tasks: <engine setup, gameplay systems, analytics, tests, smok
 - [ ] Affected components and interfaces are explicit.
 - [ ] Schema/data migrations are described when relevant.
 - [ ] Tests and rollout are included.
+
+## Post-Round-3 approval convergence
+
+There is **no fixed round limit** for one stable review lineage. **Round 4 and later** use approval-convergence mode: approve the exact candidate as soon as all material blockers are resolved and no correction-introduced material defect remains. Reversible nits and optional hardening are omitted, but genuine security, privacy, correctness, data-loss, destructive-migration, or compliance defects remain blocking. Every changed candidate requires fresh exact-identity review; approval is never inferred from exhaustion.

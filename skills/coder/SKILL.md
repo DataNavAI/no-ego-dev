@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.4.0
+version: 0.4.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -10,6 +10,8 @@ metadata:
 ---
 
 # Coder
+
+<!-- Package lineage: previous canonical marker was version: 0.4.0; frontmatter is authoritative. -->
 
 For static-site/SPA production scaffolds, deterministic artifact builders, public/private byte boundaries, deep-link verification, executable schema closure, and timeout recovery, also follow [`references/static-web-build-verification.md`](references/static-web-build-verification.md). When JPEG assets must be proven genuinely decodable with truthful canonical dimensions at both source and emitted-public boundaries, also follow [`references/bounded-decoder-backed-jpeg-validation.md`](references/bounded-decoder-backed-jpeg-validation.md): use one non-emitted bounded decoder helper, RED→GREEN marker-wrapped fake and dimension-mismatch attacks, an isolated copied-verifier fixture for module-loaded canonical data, exact dependency locking, and fresh exact-head canonical evidence.
 
@@ -152,6 +154,19 @@ When anonymous or signed-in product retention is zero or unmeasurable, use `refe
 When implementing product-event schemas, local viewed-history continuity, fallback-to-live payload transitions, direct detail routes, or exact-N session completion, also use `references/fail-closed-product-analytics.md`. Share one exact event/target validator across HTTP, persistence, and forwarding; validate before dedupe; convert generated Unicode IDs to opaque analytics IDs in every client send path; test semantic demographic-label variants; key viewed-state writes by ID plus content version; and retain session snapshots while saved IDs remain anywhere in the available feed. Its hostile browser-boundary section also covers generated sender extraction, Symbol-safe regex guards, throwing Proxy reflection traps, descriptor-aware DOM reads, delegated method containment, valid-event controls, and scoped restoration of generated output.
 
 For privacy-bounded optional analytics/feedback APIs, portable source-evidence compilation, hashed static assets, content-health monitoring, and immutable AWS delivery, use `references/fail-closed-optional-write-aws-api.md`: reject out-of-contract request metadata at CDN and handler boundaries; use recursively canonical idempotency and aggregate dimensions; bound strongly consistent race readback; enforce expiry before asynchronous TTL deletion; contain evidence with lexical plus realpath checks; keep CI evidence portable and public artifacts free of raw/editorial data; derive health counts and per-entity state from the release; separate scheduled Lambda entrypoints/roles/log groups; persist browser-event acknowledgement after accepted same-key delivery; and bind clean-main OIDC deployment to deterministic ZIP/static manifests, Versions/Aliases, preloaded revision paths, live identity, and rollback.
+
+## General implementation closure boundaries
+
+- **Current-base merge:** fetch the live target base immediately before final integration, classify overlap, merge/rebase once in an isolated checkout, rerun identity-invalidated checks, and bind the final review to current base and head. Never treat an older green candidate as merge-ready after material base movement.
+- **Untrusted-model process isolation:** parse model output as untrusted data in a constrained child process or sandbox with bounded inputs, timeout, output size, filesystem/network permissions, and explicit schema validation. Never import, `eval`, source, or execute model-produced code in the authority process.
+- **TTY installer and credential checks:** detect whether installers or auth flows require a controlling TTY before launching them; keep hidden input off captured stderr/stdout, restore terminal echo on every exit, and verify the resulting non-secret account identity. Noninteractive automation must stop with a safe user action rather than hanging or exposing credentials.
+- **Exact-base/head recovery:** authenticate the remote base/head, commits, worktree residue, and pushed artifacts independently. Recover only declared paths, preserve partial RED or draft-PR checkpoints, and never infer missing bytes from a worker summary.
+- **Fail-closed validator:** validators reject missing, malformed, ambiguous, stale, or unverifiable inputs and test hostile near-misses; a warning-only path cannot authorize publication.
+- **Durable transaction:** stage writes, bind them to expected prior state, commit atomically, read back, and provide idempotent recovery/rollback after interruption. Passing unit tests does not prove persistence or external mutation.
+- **Source/evidence closure:** every material claim maps to an authoritative source, retrieval/identity metadata, transformation, consumer, and executable check. Missing evidence remains blocked rather than receiving plausible filler.
+- **Consumer parity:** test canonical producers and every runtime/build/export consumer against the same schema and semantics, including stale and malformed inputs; source correctness alone is insufficient.
+
+Provider/domain recipes are scoped examples, not universal architecture. Apply them only when the repository's provider, lifecycle, and governing contract match; otherwise preserve the invariants above and derive project-specific commands. See [`references/implementation-closure-boundaries.md`](references/implementation-closure-boundaries.md).
 
 ## Workflow
 

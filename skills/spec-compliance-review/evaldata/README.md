@@ -20,3 +20,8 @@ Additional continuity scenarios:
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
 
 Negative scenario: Round 2 and later must omit ordinary feedback that was reasonably discoverable in Round 1 and unrelated to remediation or new evidence. Missing lineage, immutable candidate identity, required review kinds, or cumulative report history returns `BLOCKED_INVALID_LINEAGE` rather than a verdict.
+## Harvested positive and boundary scenarios
+
+- **Positive:** the caller cwd is dirty and wrong, but a sibling repository contains both SHAs. The review binds there, then verifies released-catalog parity, required/empty arguments, own-`undefined`, emitted-byte consumers, transactional publication, local auth-broker behavior, and final report recovery.
+- **Boundary/negative:** a static helper passes while runtime uses a hard-coded allowlist; a stale async completion overwrites a newer state; or a report checksum is created before final verification. Keep the verdict fail-closed.
+- **Scoped recipe:** apply provider-specific probes only when the candidate actually includes that provider/domain boundary.

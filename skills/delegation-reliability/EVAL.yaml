@@ -26,6 +26,8 @@ expectations:
   - "does not invalidate all candidate evidence for an unrelated documentation-only base advance and instead proves patch or affected-tree equivalence with a bounded delta check"
   - "requires one final exact current-base current-head approval for the selected promotion candidate while reusing trustworthy unaffected evidence"
   - "does not refill capacity merely because a periodic controller tick occurred and never manufactures tracker-only work to occupy a slot"
+  - "positive: restart-durable delegated delivery on one pinned board uses an early draft PR, exact board/run identity, persisted prompt reconciliation, GUI readiness, and current-base multi-PR convergence"
+  - "boundary/negative: must not create a competing controller or force sequential focus when parallel work is independent and no owner or dependency constraint declares serialization"
 setupCommands: []
 teardownCommands: []
 parameters:

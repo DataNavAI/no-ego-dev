@@ -1,7 +1,7 @@
 ---
 name: qa
 description: "Use for general QA plans, UI execution, evidence-backed reports, and bug filing; route website core-QA authoring and website smoke/full runs to website-qa."
-version: 0.2.0
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -22,6 +22,23 @@ QA is not a rubber stamp. If an obvious user-facing issue appears while running 
 For a website, use `website-qa` to create or maintain the canonical `.projects/<project>/qa/core-qa.md` CUJ inventory and to define or execute website smoke, focused regression, or full QA runs. Its stable `CUJ-<n>` / `TC-<n>.<n>` IDs, P0/P1/P2 criticality, smoke-only-P0 rule, full-QA cadence, supported browser/viewport matrix, and real UI evidence contract take precedence over this skill's generic plan examples.
 
 Continue to use this `qa` skill for shared bug triage, issue filing, pass/fail reporting, evidence publication, and artifact cleanup. Use this skill directly for non-website QA. Do not create a second website smoke plan beside `core-qa.md` unless the product's stronger existing convention explicitly requires it.
+
+This **Website QA routing** remains authoritative after applying the controls below; these controls supplement rather than replace `website-qa`.
+
+## Candidate-bound interface and browser gates
+
+- Read the canonical supported-interface registry and construct a **supported-interface matrix** with one concrete executable target and a separate current `PASS`, `FAIL`, or `BLOCKED` result for every supported interface. Missing, stale, failed, blocked, or undecided required coverage blocks release.
+- Bind **candidate-bound browser evidence** to exact source SHA, deployment/release identity, build/artifact digest, route, viewport/device, browser engine/version, trusted capture time, case ID, and result. Read back the served revision where possible. A screenshot from an unshipped route, mutable local server, or unknown deployment is not release evidence.
+- Run **cross-engine Playwright** for the declared Chromium, Firefox, and WebKit targets where those engines represent supported interfaces. Record justified lifecycle-scoped omissions; one engine cannot silently stand in for all browsers.
+- Test **capability parity** through every supported entry point (for example web, mobile web, installed app, desktop, share/deep link, keyboard, or API-assisted UI): compare discoverability, permissions, state, persistence, recovery, and outcome—not pixel identity.
+- Preserve **immutable UI evidence** in no-replace run folders or an atomically published bundle with manifest/checksums. Any UI, fixture, content, route, build, or evidence-label correction creates a new candidate and invalidates old acceptance.
+- Verify responsive fit at declared breakpoints and exact boundary widths. Assert semantic DOM/reading order, keyboard **focus order**, visible focus, focus retention after rerender, no unintended clipping, and intentional scrollers separately from overflow defects.
+- For **production analytics CDP**, use a privacy-safe browser session against the exact production candidate, verify consent state, event name/properties, one emission, transport response, and provider ingestion/query readback. Do not capture secrets or user payloads, and do not call console/network emission proof of ingestion.
+- For **generated/static accessibility**, test emitted artifacts after generation, hydration, and route transitions: landmarks/headings, accessible names, keyboard operation, alt/fallback behavior, contrast where measurable, no-JS/static behavior where supported, and absence of hidden duplicate controls. Source-template tests alone are insufficient.
+
+Label scope explicitly: **smoke** is the minimum release-blocking selected critical path; **journey** is one end-to-end CUJ including recovery and evidence; **complete** is the full declared functional/interface/engine/accessibility matrix. Never call a smoke or one-journey run complete QA. Apply lighter matrices to discovery prototypes, exact selected-CUJ gates to MVP/beta, and compatibility/regression/audit depth to mature or regulated products—this **lifecycle scope** never waives a supported primary interface or material safety/privacy check.
+
+Keep UX journey recording as an optional separately installed skill; do not nest another `SKILL.md` package under `qa`.
 
 ## Durable Test Plan Locations
 

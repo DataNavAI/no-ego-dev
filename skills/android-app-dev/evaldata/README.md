@@ -10,3 +10,11 @@ A client asks for an Android onboarding flow with three Compose screens, API-bac
 - Mention likely Gradle checks such as `test`, `lintDebug`, `assembleDebug`, and `connectedDebugAndroidTest` when a device/emulator exists.
 - Require emulator/device/preview/screenshot evidence or an explicit QA follow-up if device testing is unavailable.
 - For any Play Store, internal testing, or publishing handoff, require the release candidate to be installed and QA-smoked on an Android emulator first, with emulator/API/build artifact/pass-fail evidence; block publishing and create a QA/release issue if emulator QA is unavailable, skipped, or failing.
+
+## Positive scenario
+
+Expo/EAS Android release identity and emulator QA: inventory only variable metadata, trace consumers, install the exact candidate, test system back, record privacy-safe analytics evidence, and reconcile visible version identity with the AAB and intended Play track/capabilities.
+
+## Boundary/negative scenario
+
+Must not retrieve secret values or assume date-based versionCode. Date encoding is valid only under an explicit project policy with timezone, collision, monotonicity, and recovery rules; upload success without artifact/install/Play readback is incomplete.

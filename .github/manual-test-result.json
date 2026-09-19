@@ -1,15 +1,16 @@
 {
-  "candidate_sha": "aa5cff9a5a3a199de23880f81efe9b9d04aa5258",
-  "tested_at": "2026-09-17T10:47:21Z",
-  "environment": "macOS 26.6.2; Python 3.14.3; Node.js 25.6.1; dependencies installed with npm ci",
+  "candidate_sha": "2f2bfb82bd5a6b5088a54aaf0e2deda0874f882f",
+  "tested_at": "2026-09-19T10:42:40Z",
+  "environment": "macOS 26.6.2; Python 3.11.16; Node.js 25.6.1; dependencies installed with npm install in a disposable exact-SHA clone",
   "result": "pass",
   "commands": [
-    "/tmp/hermes-harvest-py312/bin/python -m pytest",
+    "npm install --ignore-scripts --no-audit --no-fund",
     "npm test",
     "npm run check",
+    "python -m pytest -q",
+    "python -m compileall -q eval_runner tests",
     "npm pack --dry-run --json",
-    "/tmp/hermes-harvest-py312/bin/python -m compileall -q eval_runner tests",
-    "git diff --check dec58ce5712cbb085ff8755a8e31f02cbdf504b8...aa5cff9a5a3a199de23880f81efe9b9d04aa5258"
+    "git diff --check 66ab0bb999964162fda0fd4b6455738ce76f0bc1...2f2bfb82bd5a6b5088a54aaf0e2deda0874f882f"
   ],
-  "observations": "Exact code candidate aa5cff9a5a3a199de23880f81efe9b9d04aa5258 passed the Python repository suite (523 passed, 9 platform skips), Node repository suite (160 passed), npm syntax checks, Python compilation, package dry-run (429 files; no __pycache__ or .pyc artifacts), and diff check. The complete code candidate received independent exact-SHA approval with no material findings after immutable approval-registration guidance was corrected and issue-monitor was excluded as an unresolved package."
+  "observations": "Exact code candidate 2f2bfb82bd5a6b5088a54aaf0e2deda0874f882f was exercised in a disposable clone outside the repository worktree. The Node repository suite passed 160/160, the Python repository suite passed 545 with 9 platform skips, syntax checks and Python compilation passed, the package dry run contained 440 files with no __pycache__ or .pyc artifacts, and the diff check passed. The exact code candidate also received independent approval with no material findings after lifecycle/product scoping and credential-channel contradictions were corrected."
 }

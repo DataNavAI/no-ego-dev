@@ -14,6 +14,12 @@ expectations:
   - "files or updates bug issues for discovered product defects"
   - "reports obvious user-facing issues even outside the plan scope"
   - "cleans up the local artifact folder only after report upload is verified"
+  - "Preserves website QA routing while constructing a supported-interface matrix with executable current exact-candidate results for non-website and shared release gates."
+  - "Requires candidate-bound browser evidence and immutable UI evidence tied to source deployment artifact route viewport engine time and case."
+  - "Uses cross-engine Playwright where declared interfaces require Chromium Firefox and WebKit and verifies capability parity across supported entry points."
+  - "Checks responsive fit semantic reading and focus order production analytics CDP ingestion readback and generated/static accessibility after hydration."
+  - "Labels smoke journey and complete scopes honestly and applies lifecycle scope without waiving a supported primary interface or material safety check."
+  - "Rejects screenshots not bound to the candidate nested UX skill packages emission-only analytics proof and calling one smoke or journey run complete QA."
 setupCommands: []
 teardownCommands: []
 parameters:

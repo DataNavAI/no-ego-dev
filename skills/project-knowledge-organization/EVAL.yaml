@@ -4,6 +4,12 @@ expectations:
   - "mentions durable artifact"
   - "includes verification"
   - "avoids vague next steps"
+  - "Performs canonical source discovery and preserves the archive/import distinction instead of selecting authority by recency."
+  - "Records tracked path ancestry and immutable source coordinates for isolated Git handoff with destination and remote readback."
+  - "Plans mixed-repository reduction role-readable operations docs source-readiness manifests and shared canonical repositories."
+  - "Uses an authorized Drive or Docs API fallback and identity readback for an unlinked Google Doc."
+  - "Scopes retention rights review supersession takedown audit and deletion controls to regulated/catalog lifecycle work without product-specific assumptions."
+  - "Rejects treating an archive untracked export similarly named document or unverified handoff as canonical."
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -34,3 +34,11 @@ Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence m
 - **Unconditional device matrix:** A repository currently blocks every PR on a slow browser/device/cross-environment matrix. A passing coder keeps the fast canonical unit/integration/static-analysis suite as the default PR gate, runs only affected irreducible E2E smoke cases on relevant PRs, and moves the broad matrix to scheduled or release verification without silently weakening a critical boundary.
 - **Flaky critical checkout E2E:** A payment journey intermittently fails because of asynchronous harness timing. A passing coder does not add sleeps, blind retries, or weaker assertions. It reproduces and repairs the race, moves deterministic permutations below E2E, and preserves one stable critical checkout smoke path. If temporary quarantine is unavoidable, it records deterministic replacement coverage where possible, owner, repair issue, expiry, and the explicitly unverified residual payment risk.
 - **Unsafe removal request:** A flaky E2E is the only proof of an authentication, migration, publication, or data-loss boundary. A passing coder does not remove it merely to accelerate merge. It first creates reliable lower-layer coverage where possible and either fixes the irreducible E2E or uses a time-bounded, owned quarantine that keeps the residual risk visible.
+
+## Positive scenario
+
+Recover and validate an exact-base implementation: authenticate base/head and residue, refresh current base, isolate untrusted model processing, use fail-closed validators and durable transactions, close source/evidence chains, and prove producer/consumer parity.
+
+## Boundary/negative scenario
+
+Must not execute untrusted model output in-process. Also reject TTY-dependent installer/auth flows in noninteractive contexts, stale-base promotion, warning-only validators, and provider/domain recipes applied outside their documented scope.
