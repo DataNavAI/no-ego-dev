@@ -1,86 +1,9 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
-import { pathToFileURL } from 'node:url';
-import { buildLaunchEnvironment, defaultReadCredential, needsDaytona, readHiddenDaytonaKey, runLauncher } from '../../src/launcher.js';
-
-function runHiddenDaytonaKeyPty(env = process.env) {
-  const moduleUrl = pathToFileURL(resolve('src/launcher.js')).href;
-  const childProgram = `
-    import { readHiddenDaytonaKey } from ${JSON.stringify(moduleUrl)};
-    try {
-      const value = await readHiddenDaytonaKey();
-      console.log(value === 'DAYTONA_PTY_FIXTURE' ? 'RESULT:accepted' : 'RESULT:wrong');
-    } catch (error) {
-      console.log('ERROR:' + error.message);
-    }
-  `;
-  const ptyRunner = `
-import fcntl, os, pty, select, sys, termios, time
-master, slave = pty.openpty()
-pid = os.fork()
-if pid == 0:
-    os.setsid()
-    fcntl.ioctl(slave, termios.TIOCSCTTY, 0)
-    os.dup2(slave, 0)
-    os.dup2(slave, 1)
-    os.dup2(slave, 2)
-    os.execvpe(${JSON.stringify(process.execPath)}, ${JSON.stringify([process.execPath, '--input-type=module', '-e', childProgram])}, os.environ)
-output = b''
-sent = False
-echo_at_prompt = None
-deadline = time.monotonic() + 10
-while time.monotonic() < deadline:
-    ready, _, _ = select.select([master], [], [], 0.1)
-    if ready:
-        try: data = os.read(master, 4096)
-        except OSError: break
-        if not data: break
-        output += data
-        if not sent and b'input hidden' in output:
-            echo_at_prompt = bool(termios.tcgetattr(master)[3] & termios.ECHO)
-            os.write(master, b'DAYTONA_PTY_FIXTURE\\n')
-            sent = True
-    done, status = os.waitpid(pid, os.WNOHANG)
-    if done: break
-else:
-    os.kill(pid, 9)
-    _, status = os.waitpid(pid, 0)
-echo_after_exit = bool(termios.tcgetattr(master)[3] & termios.ECHO)
-sys.stdout.buffer.write(output)
-print('ECHO_AT_PROMPT:' + ('none' if echo_at_prompt is None else str(int(echo_at_prompt))))
-print('ECHO_AFTER_EXIT:' + str(int(echo_after_exit)))
-sys.exit(os.waitstatus_to_exitcode(status))
-`;
-  return spawnSync('python3', ['-c', ptyRunner], { encoding: 'utf8', env });
-}
-
-
-test('Daytona replacement-key prompt uses the controlling TTY, suppresses echo, and restores it', () => {
-  const child = runHiddenDaytonaKeyPty();
-  assert.equal(child.status, 0, child.stderr);
-  assert.match(child.stdout, /RESULT:accepted/);
-  assert.doesNotMatch(child.stdout, /DAYTONA_PTY_FIXTURE|ERROR:/);
-  assert.match(child.stdout, /ECHO_AT_PROMPT:0/);
-  assert.match(child.stdout, /ECHO_AFTER_EXIT:1/);
-});
-
-test('Daytona replacement-key prompt fails closed before prompting when echo suppression fails', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'ned-daytona-no-echo-'));
-  const stty = join(root, 'stty');
-  await writeFile(stty, '#!/bin/sh\nexit 1\n');
-  await chmod(stty, 0o755);
-  const child = runHiddenDaytonaKeyPty({ ...process.env, PATH: `${root}:${process.env.PATH}` });
-  assert.equal(child.status, 0, child.stderr);
-  assert.match(child.stdout, /ERROR:NED: interactive terminal with hidden input is required/);
-  assert.doesNotMatch(child.stdout, /input hidden|DAYTONA_PTY_FIXTURE|RESULT:/);
-  assert.match(child.stdout, /ECHO_AT_PROMPT:none/);
-  assert.match(child.stdout, /ECHO_AFTER_EXIT:1/);
-  await rm(root, { recursive: true, force: true });
-});
+import { buildLaunchEnvironment, defaultReadCredential, needsDaytona, runLauncher } from '../../src/launcher.js';
 
 test('version and help never require Daytona authorization', () => {
   assert.equal(needsDaytona(['--version']), false);
@@ -91,10 +14,17 @@ test('version and help never require Daytona authorization', () => {
   assert.equal(needsDaytona(['chat', 'hello']), true);
 });
 
-test('launcher passes credentials only through the child environment', () => {
-  const env = buildLaunchEnvironment({ baseEnv: { PATH: '/bin' }, token: 'secret-token' });
-  assert.equal(env.DAYTONA_API_KEY, 'secret-token');
+test('launcher rejects legacy Daytona credential sources and strips them from child environments', async () => {
+  const env = buildLaunchEnvironment({
+    baseEnv: { PATH: '/bin', DAYTONA_API_KEY: 'synthetic-legacy-daytona-key' },
+    token: 'synthetic-legacy-daytona-key',
+  });
+  assert.equal(env.DAYTONA_API_KEY, undefined);
   assert.equal(env.PATH, '/bin');
+  await assert.rejects(
+    () => defaultReadCredential('/tmp/test-home', { DAYTONA_API_KEY: 'synthetic-legacy-daytona-key' }),
+    /owner-only runtime credential file/i,
+  );
 });
 
 test('version delegates directly to the Node CLI without credential lookup', async () => {
@@ -114,12 +44,6 @@ test('version delegates directly to the Node CLI without credential lookup', asy
   assert.equal(captured.options.env.DAYTONA_API_KEY, undefined);
 });
 
-test('an explicitly exported Daytona key takes precedence over stored credentials', async () => {
-  assert.equal(
-    await defaultReadCredential('/tmp/test-home', { DAYTONA_API_KEY: ' explicit-key ' }),
-    'explicit-key',
-  );
-});
 
 test('spawned create errors stream before exit without exposing child credentials', async () => {
   const root = await mkdtemp(join(tmpdir(), 'ned-launcher-stderr-'));

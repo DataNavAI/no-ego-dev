@@ -38,6 +38,7 @@ test('ned create completes the mocked Daytona and Telegram journey with verbose 
     error: (message) => stderr.push(message),
   }, {
     env: { DAYTONA_API_KEY: 'synthetic-daytona-key' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     appFactory: async ({ verbose, log, progress }) => {
       assert.equal(verbose, true);
       assert.equal(typeof progress, 'function');
