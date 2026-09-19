@@ -1,7 +1,7 @@
 ---
 name: react-native-app-dev
 description: "Use when setting up, implementing, testing, debugging, packaging, or reviewing React Native mobile apps, including Android Studio/SDK environment setup for Android emulator/device testing."
-version: 0.1.0
+version: 0.1.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -225,6 +225,22 @@ cd android && ./gradlew clean && cd ..
 ```
 
 Do not delete `node_modules`, lockfiles, Gradle caches, Pods, or generated native folders unless there is a clear reason and the user/project permits it.
+
+## Runtime, release, and policy closure
+
+Perform **prerequisite inspection** before changing code: inspect app config, native folders, lockfile, installed Expo/RN versions, build profiles, notification/provider configuration, release metadata, and the exact clients/devices available. This inventory is for correct execution, not eval-facing judge optimization; never add wording or branches solely to satisfy a judge.
+
+- **Navigation and clients:** make Android back behavior explicit for root, nested, modal, webview, and interrupted-auth states. Choose deliberately among Expo Go, a development client, a prebuild/bare app, and the installed release artifact; verify cross-client parity for every supported client instead of treating web or Expo Go as native proof.
+- **Toolchain and device selection:** match Gradle/AGP to the project JDK, select an exact `adb` device when several are attached, and record API/ABI. Never let a default emulator or stale Metro target stand in for the named device.
+- **Recovery:** classify EAS and Firebase failures before cleanup: authentication/project binding, package/application ID, signing, service files, credentials, quota, or provider outage. Read back project identity after repair; do not delete caches or regenerate credentials speculatively.
+- **Prebuild and release:** preview and inspect Expo prebuild output before accepting native changes. Release evidence must bind source commit, EAS/native build ID, package/application ID, signing identity, channel/profile, and the exact installed artifact identity (`versionName`/version name plus `versionCode`, and iOS short version plus build number). A visible marketing version is not build identity.
+- **Platform surfaces:** exercise in-app browser open/close/back/deep-link behavior; use privacy-safe analytics with bounded allowlisted event properties and no raw URLs, article text, tokens, or personal data; and prove notification readiness across permission, token, registration, foreground/background/tap, opt-out, and retry states before claiming delivery readiness.
+
+Keep visible version and build separation in settings/about and support reports: display both in an unambiguous form and verify them from the installed binary, not only source config. Follow [references/mobile-runtime-release-readiness.md](references/mobile-runtime-release-readiness.md) for the positive and hostile matrix.
+
+### News-policy scope
+
+For an app classified as News, apply News policy and contact discoverability only to that product/store submission. Require a persistent labeled in-app contact route plus accurate listing/website contact metadata and an exact-version journey receipt. Date-based visible version wording is likewise product-local: use it only when the product contract requires a publication date, while retaining the independent immutable build number. Do not globalize News contact or date-version conventions to non-News apps.
 
 ## Testing and QA Expectations
 

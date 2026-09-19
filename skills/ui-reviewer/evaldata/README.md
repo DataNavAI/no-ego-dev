@@ -34,3 +34,8 @@ Additional continuity scenarios:
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
 
 Negative scenario: Round 2 and later must omit ordinary visual feedback that was reasonably discoverable in Round 1 and unrelated to revisions or new evidence. A missing canonical guideline returns `BLOCKED_MISSING_UI_GUIDELINE`; missing lineage or cumulative report history returns `BLOCKED_INVALID_LINEAGE`.
+## Harvested positive and boundary scenarios
+
+- **Positive:** serve an exact archived prototype from a temporary directory, prove byte binding, exercise every settings state and copy/visual rule, capture carousel geometry plus keyboard/click transitions, then terminate Chromium/server and remove reviewer-owned residue.
+- **Boundary/negative:** an occupied dev port serves another worktree, one screenshot stands in for interactions, later-round evidence targets a different commit, or the parent-native suite passes because it lacks the new regression assertion. Withhold approval.
+- **Negative control:** transplant only the candidate regression test into the archived parent and require the expected old-behavior assertion failure; unrelated setup failure is inconclusive.

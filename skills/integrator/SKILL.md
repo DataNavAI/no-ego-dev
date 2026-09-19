@@ -1,7 +1,7 @@
 ---
 name: integrator
 description: "Use when researching, selecting, setting up, or integrating third-party tools, SaaS products, APIs, SDKs, webhooks, CLIs, auth providers, analytics, payments, communication tools, AI services, or other external services. Also use when documenting provider-specific integration knowledge as reusable skills or support files."
-version: 0.1.0
+version: 0.2.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -23,7 +23,7 @@ Third-party integration work is not complete when the dashboard says “connecte
 - Check account, workspace, project, billing-plan, auth, and permission prerequisites before implementation.
 - Guide the user through account/workspace/project setup when human action, payment, email verification, OAuth consent, or admin access is required.
 - Integrate SDKs, APIs, CLIs, webhooks, OAuth apps, service accounts, environment variables, config files, provider dashboards, and CI/deployment secrets.
-- Handle secrets safely: never commit credentials, avoid asking for raw secrets in chat, prefer official CLI login or secret stores, and document only secret names/locations.
+- Handle secrets safely: never ask for or accept credential values in chat, never commit credentials, prefer official CLI login or direct user entry into approved secret stores, and document only secret names/locations.
 - Verify integrations with provider read/status calls, CLI `whoami` checks, API smoke tests, webhook delivery tests, sandbox transactions, or application-level tests.
 - Document provider-specific knowledge as durable project docs, reusable support files, or a new/updated skill when the knowledge is broadly useful.
 - Create follow-up issues for blocked setup, missing credentials, paid-plan/billing decisions, privacy/legal approvals, unsupported features, or incomplete verification.
@@ -81,17 +81,32 @@ Never treat credentials as ordinary text.
 
 Preferred access paths, in order:
 
-1. User authenticates the official CLI/browser session (`gh auth login`, `stripe login`, `supabase login`, `vercel login`, provider-specific device flow, etc.).
+1. User authenticates through the official CLI, provider UI, browser session, or authenticated device flow (`gh auth login`, `stripe login`, `supabase login`, `vercel login`, provider-specific device flow, etc.).
 2. User grants the agent/account project-scoped access in the provider workspace/team.
-3. User creates a scoped token/API key and stores it directly in a password manager, local profile `.env`, CI secret store, deployment-provider secret store, or cloud secret manager.
-4. If chat is the only path, request a short-lived/revocable scoped token, use it only for the task, then instruct the user how to rotate/revoke it.
+3. User creates a scoped token/API key and enters it directly into an approved secret store, provider UI, authenticated device flow, or official CLI prompt. Approved stores include a password manager, local profile `.env` protected from source control, CI secret store, deployment-provider secret store, or cloud secret manager.
+4. Agents may request secret metadata or locators only, never secret bytes. If no approved non-chat entry path is available, stop and report the integration as blocked; do not use chat as a credential-value fallback, even for short-lived, scoped, or revocable credentials.
 
-Do not commit `.env`, token files, OAuth client secrets, service account JSON, webhook signing secrets, private keys, downloaded credentials, or provider exports containing secrets. Source-controlled artifacts may include:
+Do not place secret bytes in chat, durable reports, issue bodies, shell history, logs, screenshots, fixtures, source, `.env` commits, token files, OAuth client secrets, service account JSON, webhook signing secrets, private keys, downloaded credentials, or provider exports containing secrets. Source-controlled artifacts may include:
 
 - `.env.example` with variable names and safe placeholders only.
 - Secret-store references such as `op://vault/item/field`, not values.
 - Runbooks that list secret names, owners, storage locations, scopes, consumers, rotation cadence, and revocation steps.
 - Provider public IDs and public keys only when the provider documents them as safe to expose.
+
+## Provider/domain scoped integration gates
+
+Use only the applicable recipe and record its provider/domain scope; do not universalize a vendor-specific workaround.
+
+- **Market-data contracts.** Freeze symbol/venue identity, entitlement and redistribution rights, delayed-versus-real-time semantics, trading calendar/timezone, corporate-action handling, precision, rate limits, staleness policy, and fallback behavior. Validate representative and boundary records against the provider's documented response contract before production use.
+- **Least-privilege repository and OAuth probe.** Start with read-only identity, repository/workspace visibility, granted scopes, callback/redirect allowlist, and one harmless API read. Increase only the missing scope and read back the resulting grant. Never infer profile access from host-global login or use a write probe when a read proves readiness.
+- **Secure secret handoff.** Agents may request secret metadata or locators only, never secret bytes: ask for secret names, owner, scope, destination, consumers, rotation, and revocation—not values. Require direct user entry into an approved secret store, provider UI, authenticated device flow, or official CLI prompt. Verify only redacted metadata and consumer readback; never persist a credential in chat, durable reports, shell history, logs, screenshots, fixtures, or source.
+- **Consent and tracking.** Classify strictly necessary, analytics, advertising, and messaging storage separately. Do not initialize optional tracking before consent; test accept, reject, withdrawal, regional defaults, and server-side forwarding. Persist consent evidence without sensitive payloads.
+- **Source licensing and feed policy.** Record source URL/provider, license/terms, attribution, allowed transformations, retention/cache and redistribution limits, freshness, takedown owner, and fallback order. A transport-successful feed is not licensed publication authority.
+- **Human-gated messaging acceptance.** Use sandbox/test recipients first. Require an authorized human to approve audience, exact content/template, sender identity, timing, budget, and production channel before live delivery. Read back provider acceptance and final delivery state; queued or API-accepted is not delivered.
+- **Attributed API fallback.** A fallback must preserve publisher/source attribution, canonical source URL, observed timestamp, license policy, and quality/freshness labels. Never present aggregator or model output as the original source, and fail closed when attribution cannot be retained.
+- **Analytics configured-state evidence.** Independently prove project identity, environment, data region/retention, authorized events/properties, consent mode, dashboards, exclusions, and a real allowed test event through ingestion/query readback. A dashboard toggle, SDK import, or copied screenshot is not configured-state evidence.
+
+Do not import or execute an unreviewed convenience wrapper that forwards profile state or credentials to design tooling. In particular, the profile-local Figma wrapper is excluded from the canonical package; use the provider's reviewed MCP/OAuth setup with least privilege instead.
 
 ## Account Setup Request Template
 
@@ -104,7 +119,7 @@ Please do this:
 1. Open <provider dashboard/login URL> or run `<official CLI login command>`.
 2. Select/create workspace/project: <name>.
 3. Grant role/scopes needed for this integration: <exact scopes/role>.
-4. If an API key is required, create a scoped key named `<project>-<environment>-ned-integrator` and store it in <secret store or provider/CI secret name>. Do not commit it or paste long-lived secrets into chat.
+4. If an API key is required, create a scoped key named `<project>-<environment>-ned-integrator` and enter it directly into <approved secret store, provider UI, authenticated device flow, official CLI prompt, or provider/CI secret name>. Do not send the value to me or paste any credential into chat, including short-lived or scoped credentials.
 5. Tell me only these non-secret identifiers: <workspace id/project id/client id/domain/environment/account email if non-sensitive>.
 
 I will verify access with <read-only CLI/API command>, finish the integration, and document where the credentials live without exposing their values.
@@ -185,7 +200,7 @@ Follow-up issues should include owner, blocker, exact next action, provider URL,
 
 - Do not choose a tool solely because it has a popular SDK; match the product constraints and operating model.
 - Do not ask the user for one credential at a time when the full integration clearly needs workspace, billing, secret, webhook, and deployment access.
-- Do not paste secrets into docs, issue bodies, logs, screenshots, or committed fixtures.
+- Do not request, accept, or paste secret bytes into chat or durable reports, even as a short-lived fallback; require direct user entry through an approved secret store, provider UI, authenticated device flow, or official CLI prompt.
 - Do not perform billing-sensitive operations, send real customer communications, charge payment methods, or enable production automation without explicit user confirmation.
 - Do not skip verification because a dashboard shows a green check; test the path the product actually uses.
 - Do not let provider-specific lessons disappear into chat history; capture them as project docs, support files, or skills.

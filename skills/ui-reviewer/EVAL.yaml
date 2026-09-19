@@ -21,6 +21,9 @@ expectations:
   - "rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one"
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "Positive scenario: uses an immutable local prototype fallback with disposable Chromium byte binding cleanup and exact multi-state copy visual carousel geometry and interaction receipts."
+  - "Boundary/negative scenario: rejects a mutable or byte-mismatched server screenshot-only carousel evidence stale later-round commit and parent-native suite that lacks the candidate regression assertion."
+  - "Uses a parent-transplant negative control and distinguishes expected assertion failure from dependency or harness failure."
 setupCommands: []
 teardownCommands: []
 parameters:

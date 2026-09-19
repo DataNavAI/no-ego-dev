@@ -26,6 +26,9 @@ expectations:
   - "rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one"
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "Positive scenario: applies proportional low-risk MVP controls with configurable thresholds and reviews sibling allowlists with positive controls archive continuity cross-document authority and recomputable digest closure."
+  - "Boundary/negative scenario: blocks average-based capacity arithmetic false outage independence incomplete versioned-key lookup and stateful remediation that loses ambiguity or permits stale completion after restart."
+  - "Requires durable evidence architecture without demanding high-risk machinery for a genuinely recoverable low-risk operation."
 setupCommands: []
 teardownCommands: []
 parameters:

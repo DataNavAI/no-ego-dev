@@ -8,6 +8,8 @@ expectations:
   - "requires emulator device preview screenshot or QA follow-up evidence for UI-bearing work"
   - "blocks Play Store internal testing publishing or release handoff until the Android app is installed and QA-smoked on an emulator with device API build artifact and pass fail evidence"
   - "considers Android accessibility lifecycle resources and release constraints when relevant"
+  - "positive: Expo/EAS Android release identity and emulator QA traces non-secret variables to consumers and binds visible version identity through AAB installed QA and Play track readback"
+  - "boundary/negative: must not retrieve secret values or assume date-based versionCode without an explicit collision-safe project policy"
 setupCommands: []
 teardownCommands: []
 parameters:

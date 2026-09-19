@@ -1,7 +1,7 @@
 ---
 name: technical-design-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact technical design or tech-spec revision for integrity, minimal complexity, automatic testability, operability, and sustainable self-monitoring."
-version: 0.3.6
+version: 0.3.9
 author: NoEgoDev
 license: MIT
 metadata:
@@ -25,6 +25,12 @@ Prioritize architecture findings by consequence and reversibility. Spend the dee
 Ignore reversible nits that can safely be fixed later, such as naming taste, formatting, minor organization, optional abstractions, speculative optimization, and implementation polish that does not change the architecture contract. **Omit them entirely** from findings and follow-up; never spend another technical-design round on them.
 
 ## First-round completeness
+
+### Proportional low-risk MVP path
+
+Use a **proportional low-risk MVP** review for exact, isolated, recoverable, owner-authorized, non-user-data cleanup. Require an exact allowlist, protected-resource denylist, readable preflight, stop-on-mismatch, no blind retry, and independent final readback. Thresholds such as user count or revenue are examples and must remain a **configurable threshold** owned by the product/risk policy, never universal architecture law. This path does not cover identity/auth, credentials, billing, regulated/user data, shared resources, publication/deployment, irreversible mutation, or weak recovery.
+
+Round 1 must enumerate each bounded **sibling allowlist** member and ancestor-path swallowing, with a realistic **positive control** beside hostile cases so rejecting everything cannot pass.
 
 **Round 1 is the comprehensive architecture review.** Present all independently discoverable findings in round one as much as possible. Walk the complete integrity, failure, security, testability, operability, migration, and rollback matrices; inspect every bounded sibling instance of a discovered defect class; and give one deduplicated correction packet with evidence, consequence, constraints, and a safe design direction. Do not stop at the first unsound boundary or reserve obvious comments for later.
 
@@ -109,8 +115,17 @@ Exit action: <concrete issue/owner; never another design review when architectur
 
 When `Architecture revisions required: none`, do not recommend another technical-review round. The orchestrator should create/assign the routed issue and proceed automatically.
 
-## Review Iteration Index
+## Archive, authority, and stateful evidence probes
 
+When cwd/object resolution is unreliable, require an exact candidate/base **archive/continuity packet** with archive hashes, prior reports, stable dispositions, remediation map, and candidate-bound context digest. Verify hashes before judgment and never transfer a verdict across SHAs.
+
+Require **cross-document authority closure** across every current, normative, blocking, runbook, index, handoff, release, and migration sibling; one override sentence cannot retire independently authoritative contradictions. Every claimed candidate/release/schema digest needs a **recomputable handoff digest** from explicit producer bytes, canonical serialization, omission rules, and consumer-side comparison.
+
+Perform executable **capacity arithmetic** from maximum legal item sizes and mandatory multiplicities, including retries, pagination, maintenance, and reserves. For **outage independence**, trace every mandatory nonce, key lookup, intent, CAS, receipt, and readback; one dependency on the failed subsystem disproves independence.
+
+Apply **versioned-key** and **stateful remediation** probes to key rotation, TTL refresh, mutable reducers, response loss, persisted intent revision, stale completion, and restart. Require a **durable evidence architecture** in which every terminal state is constructible, identity-bearing generations segment aggregates, ambiguous external publication converges, and evidence remains queryable outside the worker that produced it. Use [references/proportional-and-stateful-design-probes.md](references/proportional-and-stateful-design-probes.md).
+
+## Review Iteration Index
 
 ## Required Review Method
 

@@ -27,6 +27,16 @@ expectations:
   - "does not take non-bug feedback literally and instead identifies user context, underlying problem, and simplest solution"
   - "does not react to random one-off feedback unless it aligns with core product value or reveals a bug or risk"
   - "acts on repeated feedback patterns when more than a few users report the same underlying problem"
+  - "For a suitable single-audience MVP prefers one problem one primary audience exactly one primary CUJ and no more than two necessary supporting CUJs and classifies all scope as must-ship manual/internal or parking lot."
+  - "For an inherently multi-sided multi-role or regulated product defines the smallest complete set of co-primary role journeys and verifies cross-role handoffs instead of forcing exactly one primary CUJ."
+  - "When the product or changed journey has a material visual interface creates two to three visual mock options before PRD freeze and records the selected direction and rationale."
+  - "For API/backend/CLI work without a material visual interface uses interface examples/contracts and does not block on unavailable visual tools."
+  - "Maintains the supported-device-interfaces registry with executable coverage and exact-candidate evidence for every supported interface."
+  - "Defines stable analytics definitions canonical terminology a feedback-to-work ledger scope-reset reconciliation and ranked source coverage."
+  - "Treats Google Trends as relative sampled evidence with geo language time category surface and caveats rather than absolute demand."
+  - "Requires explicit consent budget thresholds qualified conversion metric and stop-loss before paid smoke publication or spend."
+  - "Uses no fixed round limit and Round 4 or later approval-convergence rather than the stale three-round review cap."
+  - "Rejects paid smoke execution without approval unsupported interface release stale scope authority and approval by exhaustion."
 setupCommands: []
 teardownCommands: []
 parameters:

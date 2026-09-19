@@ -20,6 +20,9 @@ expectations:
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "Selects only applicable domain-scoped recipes for exact-SHA recovery, archive execution hygiene, exact-base child PR conflict recovery, candidate ledgers and approval registration, tamper-evident receipts, checksum-pinned installers, opaque persistent-ID migration, or security-boundary canonicalization."
+  - "Rejects a retroactive lineage that tries to turn advisory reports without the original immutable summary receipt identities and report digests into authoritative later rounds."
+  - "Never weakens aggregate approval-convergence: a correction requires fresh exact-SHA review and unresolved material blockers cannot be approved by exhaustion."
 setupCommands: []
 teardownCommands: []
 parameters:

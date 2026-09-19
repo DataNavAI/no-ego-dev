@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: "Use when clarifying client requests, turning them into core or feature PRDs, defining user-feedback loops, and interpreting feedback into product decisions."
-version: 0.2.4
+version: 0.3.6
 author: NoEgoDev
 license: MIT
 metadata:
@@ -23,7 +23,7 @@ Product management also owns the learning loop. Every PRD should include a pract
 Include:
 
 - Value proposition: the promise in one sentence.
-- Single CUJ: the one critical user journey the MVP must nail.
+- Critical journey topology: for a suitable single-audience MVP, the one primary CUJ it must nail; for an inherently multi-sided, multi-role, or regulated product, the smallest complete set of co-primary role journeys and required handoffs.
 - Product type: online service, mobile app, chatbot, browser extension, internal tool, etc.
 - Target users and non-goals.
 - Product stage definition: prototype, MVP, beta, or production iteration, with explicit rationale.
@@ -33,6 +33,32 @@ Include:
 - User feedback path: where users can submit feedback, who reviews it, and how it is linked to the issue/product planning system.
 - Daily feedback check: when feedback is reviewed, which channels are checked, and where findings/actions are recorded.
 - MVP deployment and serviceability plan when the requested outcome is an MVP: live environment, release path, ownership, monitoring, support, data/backups, QA gates, rollback, and operational follow-up tasks.
+
+## Product-definition freeze contract
+
+For **suitable single-audience MVPs**, prefer one primary CUJ: select **one problem**, one primary audience, and **exactly one primary CUJ**; allow no more than two supporting CUJs when they are necessary to complete or recover the primary journey. For **inherently multi-sided**, multi-role, or regulated products, do not force the work into a fictitious single-user journey: define the **smallest complete set of co-primary role journeys** needed to deliver the promised, compliant end-to-end value. Name each participating role, keep each role journey minimal, identify approval/data/state transitions between roles, and verify the **cross-role handoffs** end to end. Put every capability, screen, interface, integration, and service into one of `must-ship`, `manual/internal`, or `parking lot`. Park anything that does not enable a selected journey or required handoff, and do not expose parked scope in the shipped interface.
+
+When the product or changed journey has a **material visual interface**, create 2–3 concrete **visual mock options** as runnable prototypes/screenshots with meaningful differences, present them in user language, and ask the user to choose, combine, or reject them **before PRD freeze**. Record the selected direction, rationale, artifact links, and rejected tradeoffs. If visual tooling is unavailable for such a surface, block visual selection rather than substituting prose. For an **API/backend/CLI** product or changed journey with no material visual interface, do not require visual mocks: use concrete **interface examples/contracts** such as request/response/schema examples, command/output/error transcripts, or executable contract cases, and the PRD is **not blocked by unavailable visual tools**.
+
+Maintain `.projects/<project>/product/supported-device-interfaces.yaml` as the canonical interface registry. For every candidate surface record support status, user/CUJ scope, minimum implementation, concrete target environment, owner, intentional differences, and at least one executable coverage case. A supported or undecided interface without fresh exact-release-candidate evidence is a release blocker.
+
+Define **stable analytics definitions** before instrumentation: canonical event names, stable user identity, qualifying activity, activation, churn/inactivity window, cohort timezone, late-event handling, bot/internal exclusions, and versioned ownership. For an MVP, keep DAU, daily new users, daily newly churned users, and D1/D7 new-user cohort retention as primary outputs when recurring use applies; treat funnels, acquisition, revenue, errors, and CUJ completion as diagnostics. Never silently redefine a metric after launch.
+
+Use one **canonical terminology** registry for product entities, lifecycle states, event names, interface names, and decision labels. PRDs, mocks, analytics, QA, and issue work should link to it rather than inventing local synonyms.
+
+Create a durable **feedback-to-work** ledger that links each feedback cluster to evidence, underlying problem, selected disposition, issue/PRD/decision, owner, and verification. After a material decision or scope reset, run **scope-reset reconciliation** across PRD, mocks, terminology, supported interfaces, analytics, acceptance criteria, backlog, QA, launch artifacts, and open review threads; stale artifacts cannot remain release authority.
+
+For ranked catalogs or source-backed feeds, define **ranked source coverage**: authoritative source cohort, rank/key stability, minimum coverage, freshness, attribution/rights, missing/duplicate policy, fallback order, and executable positive/substitution tests. Never infer semantic coverage from row counts alone.
+
+## Demand and paid-smoke boundaries
+
+Google Trends is a relative, sampled search-interest signal—not absolute demand. Record target geography, language, time range, category, and search surface; inspect Top and Rising queries/topics; cluster by intent; cross-check with another source; preserve links/exports/screenshots and caveats; never fabricate unavailable values.
+
+A paid landing-page smoke may use 2–4 query-informed, message-matched variants and one qualified CTA only with honest availability. Before spend or publication require **explicit consent** from the authorized user plus a predeclared budget, sample/conversion thresholds, UTMs, qualified conversion metric, **stop-loss**, and continue/iterate/stop rules. Never use fake testimonials, false scarcity, unsupported claims, charge for unavailable features, or execute paid smoke without approval.
+
+## PRD review convergence
+
+Freeze each PRD revision and have a fresh independent reviewer return structured material findings tied to the exact revision. Round 1 is comprehensive; later rounds receive complete reports, stable finding dispositions, the remediation map, and a contradiction check. There is **no fixed round limit**. Round 4 and later use **approval-convergence mode** and approve as soon as no unresolved material blocker remains; reversible nits are omitted. Never self-approve, approve by exhaustion, or suppress a genuine material correctness, safety, privacy, legal, or scope defect. Any revision invalidates older approval.
 
 ## Prototype vs MVP Rules
 
@@ -44,7 +70,7 @@ An **MVP** is a real product with the smallest coherent set of core features tha
 
 For an MVP PRD, include the minimum serviceable-product plan:
 
-- Core feature set: the smallest features required for the primary CUJ to work end to end without manual agent intervention.
+- Core feature set: the smallest features required for the selected primary journey, or complete set of co-primary role journeys, to work end to end without manual agent intervention.
 - Real deployment/release target: production, staging-to-production path, app-store/TestFlight/internal release, hosted web URL, bot/channel deployment, API endpoint, or explicit exception when deployment is genuinely not applicable.
 - Serviceability requirements: account/auth model, persistence, error handling, recovery states, backups or data-retention expectations, admin/support access, basic abuse/privacy/safety considerations, and dependency ownership.
 - Operability: monitoring/logging, alerts or daily health check, rollback/redeploy path, incident owner, support/feedback intake, and handoff notes.
@@ -52,7 +78,7 @@ For an MVP PRD, include the minimum serviceable-product plan:
 - Measurement and learning: analytics/events, dashboard/report location, feedback loop, and review cadence after launch.
 - Scope cuts: features intentionally excluded from MVP because they are not required for core value, plus follow-up parking lot.
 
-Do not call something an MVP if users cannot complete the primary CUJ in a real environment, if critical data is not persisted, if there is no support/feedback path, or if the team cannot operate/recover it after launch. Label it a prototype instead and define the path from prototype to MVP.
+Do not call something an MVP if users cannot complete the selected primary journey or required co-primary role journeys and cross-role handoffs in a real environment, if critical data is not persisted, if there is no support/feedback path, or if the team cannot operate/recover it after launch. Label it a prototype instead and define the path from prototype to MVP.
 
 ## Feature PRD for Existing Projects
 
@@ -211,7 +237,8 @@ Daily platform parity review — <project> — <date/time + timezone>
 Before finishing, include a brief verification note that states what artifact was created or updated, where it lives, and how the PRD was checked against the request.
 
 - [ ] PRD has value proposition or user problem.
-- [ ] PRD has one primary CUJ.
+- [ ] PRD prefers one primary CUJ for a suitable single-audience MVP, or defines the smallest complete set of co-primary role journeys and verifies cross-role handoffs for inherently multi-sided, multi-role, or regulated work.
+- [ ] Material visual interfaces have 2–3 visual mock options selected before PRD freeze; API/backend/CLI work without a material visual surface uses interface examples/contracts and is not blocked by unavailable visual tools.
 - [ ] PRD explicitly classifies the work as prototype, MVP, beta, or production iteration with rationale.
 - [ ] Prototype plans identify mocked/manual/incomplete pieces and the decision the prototype should unlock.
 - [ ] MVP plans define a fully working and serviceable core product, not merely a stakeholder demo.

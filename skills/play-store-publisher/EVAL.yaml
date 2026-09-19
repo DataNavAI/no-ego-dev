@@ -11,6 +11,10 @@ expectations:
   - "captures opt-in link or exact blocker and writes a project-local Google Play publishing report/runbook"
   - "publishing report and every non-silent user update use Purpose Executive summary Action needed and Detailed information while leading with tester or release impact"
   - "hands off store listing copy ads localization build fixes or policy unknowns to the appropriate NoEgoDev skills"
+  - "Requires a non-secret GitHub EAS and Play credential inventory with explicit consumer binding and grants CI upload capability only after identity scope package project repository environment and track readback."
+  - "Binds the exact AAB checksum package version source build and signing identity through upload processing release creation and explicit review submission."
+  - "Records multi-track identity and rejects a track artifact package or credential-binding mismatch rather than falling back to another track."
+  - "Handles policy-rejection resubmission as a new evidenced release and uses date-based versioning only under an explicit project policy."
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -8,6 +8,9 @@ expectations:
   - "maps acceptance criteria and UI states to React Native components hooks services tests or native config changes"
   - "requires Android emulator or device evidence for Android UI or native work, or creates an explicit QA follow-up if blocked"
   - "mentions relevant checks such as typecheck lint tests Expo doctor React Native doctor run-android or Gradle assemble/lint"
+  - "Positive scenario: performs prerequisite inspection without judge optimization and binds Android back Expo Go dev-client JDK device EAS Firebase prebuild release and installed artifact identity evidence."
+  - "Boundary/negative scenario: does not infer cross-client parity notification readiness analytics privacy or version/build identity from web preview source config or a different installed binary."
+  - "Scopes News-policy contact discoverability and date-based visible version rules to News products while retaining an independent build number."
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.8.6
+version: 1.8.8
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -297,6 +297,18 @@ A test failure is not required for `FAIL`; untested behavior that demonstrably v
 - Accepting type/schema values without required status evidence.
 - Running a canonical command that dirties tracked generated output during an immutable audit.
 - Forgetting the final SHA/cleanliness check.
+
+## Harvested cross-layer closure protocol
+
+Treat a dirty or misbound checkout as an identity problem, not a reason to clean shared state. Locate the repository containing both exact base and candidate objects; otherwise use authenticated immutable archives and record **archive binding** for candidate, base, tree, extracted bytes, and explicit command cwd. A branch or PR number from another repository never overrides named SHAs.
+
+Build one **catalog/allowlist authority closure** table across source catalog, released IDs, runtime selector/router, static route writer, manifest, fallback, tests, and public output. Require **required-argument closure** for authority-bearing inputs and **empty-state parity** across static/runtime layers. At JavaScript trust boundaries, distinguish omission from an **own property** whose value is `undefined` before normalization.
+
+Trace **publication consumer closure** from emitted bytes through every production loader/projector/link renderer and stale constant/host rule. Probe lock/source races with a fixed seam: candidate source replacement, stale lock owner, publication rename failure, and reader visibility must converge to the previous complete generation or one complete new generation. Model multi-artifact publication and async UI/provider work as an **async lifecycle transaction** with version-bound start, completion, cancellation, stale-result rejection, and recovery.
+
+When authentication blocks a production-shaped probe, use a disposable **local auth-broker probe** that exercises the registered route and credential/header contract without weakening production auth or printing secrets. After writing the durable review report, perform **post-report recovery**: verify sidecar/report bytes, rerun any host-required command made stale by the report write, restore only reviewer-owned residue, and reconfirm candidate identity.
+
+Keep provider/domain recipes scoped. Apply AWS optional-event, DynamoDB version/key, mobile-store contact, source-backed publication, or push-provider probes only when that boundary exists; do not turn one product's provider workaround into a universal finding. See [references/harvested-cross-layer-closure.md](references/harvested-cross-layer-closure.md).
 
 ## Post-Round-3 approval convergence
 

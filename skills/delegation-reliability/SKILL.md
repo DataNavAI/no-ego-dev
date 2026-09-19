@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.14.9
+version: 1.14.10
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -18,6 +18,18 @@ Use when work depends on one or more `delegate_task` subagents, especially on ga
 - A child completion notification establishes only that one child stopped running; its full completion payload and independently verified artifacts—not the handle alone—establish results.
 - A `completed` child can still be **deliverable-partial** when the worker exhausted its tool/iteration budget after an early push and only self-reported later isolated edits. Run state, requested-deliverable completeness, and remote durability are separate dimensions.
 - Never invent a verdict or artifact from dispatch/completion metadata. Verify returned report paths, hashes, remote SHAs/PRs, or other durable handles.
+
+## Durable delivery and controller authority
+
+Require a **durable draft-PR checkpoint** early for implementation work: exact base/head, acceptance TODOs, RED/GREEN evidence, manual verification, remaining gates, and current blocker. Resume the same coherent PR/worktree after interruption instead of creating a replacement branch merely because the worker stopped.
+
+Use **exact Kanban board pinning** for durable mode: record one board ID, repository/workdir, canonical issue/task mapping, and run ID, then read them back before dispatch. Board names or search results alone are not identity. Enforce **controller tick versus worker ownership**: a tick reconciles durable state and may dispatch only unowned eligible work; a worker owns its claimed task and artifacts until terminal readback. A tick never refills capacity blindly or mutates a worker-owned candidate.
+
+Perform **persisted prompt reconciliation** before dispatch: compare the installed scheduler/controller prompt, board/task context, dependency state, and current repository/PR identities. Verify **GUI readiness** separately when acceptance depends on a desktop/browser surface: process health is not enough; require rendered target, interaction readiness, and captured evidence.
+
+For **current-base multi-PR convergence**, freeze each PR's identity, merge dependency-safe PRs serially where they overlap, refresh remaining bases, reuse only unaffected evidence, and obtain final current-base/current-head approval for the selected aggregate. Parallel independent work is the default; **sequential focus is explicit** only when the owner or overlap/dependency contract declares it. Maintain **no competing controller authority**: one controller/board owns dispatch, while hooks and cron ticks are bounded wake/reconciliation mechanisms, not schedulers with separate truth.
+
+See [`references/durable-controller-authority.md`](references/durable-controller-authority.md).
 
 ## Completion-triggered work
 

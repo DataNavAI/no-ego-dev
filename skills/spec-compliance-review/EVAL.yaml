@@ -23,6 +23,9 @@ expectations:
   - "Rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
   - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
+  - "Positive scenario: binds a dirty or misbound exact-SHA review to the correct repository or authenticated archive and closes catalog allowlist required-argument empty-state own-property and publication-consumer contracts."
+  - "Boundary/negative scenario: rejects static-only parity tests lock/source race false success stale async completion and a local auth bypass that does not exercise the registered production contract."
+  - "Performs post-report recovery and scopes provider or domain recipes to the boundary actually present."
 setupCommands: []
 teardownCommands: []
 parameters:

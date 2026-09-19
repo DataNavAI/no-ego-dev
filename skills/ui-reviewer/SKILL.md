@@ -1,7 +1,7 @@
 ---
 name: ui-reviewer
 description: "Use as a fresh read-only reviewer for frozen UI evidence, benchmarking comparable market leaders and giving prioritized design feedback against the canonical project UI guideline."
-version: 0.2.7
+version: 0.2.8
 author: NoEgoDev
 license: MIT
 metadata:
@@ -140,6 +140,7 @@ For a frozen candidate reviewed against a finite set of authoritative comments, 
 3. **Inspect the UI/design evidence**
    - For images: inspect layout, hierarchy, components, text, states implied by the design, and viewport assumptions.
    - For real UI: use browser/app interaction where possible, capture screenshots, check responsive/device variants, and note console/network only when they explain UI failures.
+   - Use the **immutable local prototype fallback** when normal browser tooling cannot navigate a local prototype: export only the exact archive to a temporary directory, byte-compare served HTML/CSS/JS to the candidate, use a reviewer-owned port and disposable Chromium/CDP session, save evidence outside the candidate, then shut down browser/server and verify cleanup. Never serve a mutable shared checkout.
    - Bind the review to one frozen evidence generation. Screenshot pixels, rendered HTML, CSS/JS assets, and stated commit/status must come from the same immutable snapshot; do not inspect a shared checkout while another process is generating, building, restoring, or cleaning it. If concurrent mutation occurred, keep observations as hypotheses but withhold the candidate verdict and re-review a frozen snapshot or isolated worktree.
    - For content-driven UIs, review both a production-truthful snapshot and labeled deterministic fixtures for required populated, empty, fallback, error, and interaction states. Do not demand fabricated production content to demonstrate a component state; fail production only when it misrepresents its real inventory or the fixture-driven state itself is inadequate.
    - When comparing multiple visual directions for an existing product, follow `references/multi-direction-responsive-selection.md`: inspect the production baseline, score product-contract criteria, verify exact viewport geometry, separate direction selection from implementation readiness, and permit hybridization only for narrowly evidenced elements.
@@ -285,6 +286,16 @@ Recommended fix:
 ## Implementation Guardrails if Approved
 - <what coder must preserve>
 ```
+
+## Exact-state, copy, and interaction receipts
+
+For **multi-state settings**, reconcile every declared state ID across clean screenshots, annotations, runtime DOM, source copy, controls, transitions, pending/confirmed truth, retry, withdrawal, and stale-completion behavior. Run a **copy + visual** gate: semantic claims and policy wording must match the state machine while native-resolution pixels satisfy hierarchy, clipping, contrast, and safe-area requirements.
+
+For horizontal carousels, collect a **carousel geometry** and **interaction receipt** at every supported viewport: viewport/card rectangles, initial `scrollLeft`, visible next-card width, counter and selected shortcut, keyboard/forward/reverse transitions, accessible outbound link, console status, and an element screenshot. Normalize offset-parent coordinates; a passing screenshot alone is not interaction proof.
+
+In **later-round exact-commit reconciliation**, verify the complete continuity chain and materialize the named commit without switching a shared checkout. Reconcile stable IDs and the exact parent-to-candidate correction scope before verdict. Prove new regressions with a **parent-transplant negative control**: candidate test passes on candidate implementation and the same new assertion fails for the expected old behavior when transplanted alone into an archived parent. Dependency/harness failures are not proof.
+
+Use [references/immutable-prototype-and-interaction-receipts.md](references/immutable-prototype-and-interaction-receipts.md) for exact commands, byte binding, evidence fields, and cleanup.
 
 ## Comparable Visual-Pattern Research
 

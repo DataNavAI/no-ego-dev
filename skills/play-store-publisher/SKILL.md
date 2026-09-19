@@ -1,7 +1,7 @@
 ---
 name: play-store-publisher
 description: "Publish Android apps to Google Play, including daily change detection, mandatory versionCode updates, closed-testing uploads, and Play Console UI fallback."
-version: 0.3.0
+version: 0.4.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -65,6 +65,20 @@ Do not start uploading random artifacts. First verify:
 5. **Local sanity checks passed.** Run the repo's typecheck/tests/export/build checks or link to CI.
 6. **Privacy/policy claims are truthful.** Do not guess Data safety, ads, location, account deletion, or content rating answers.
 7. **Testing track has testers.** Internal testing release publication is not useful until at least one tester list is saved and selected.
+
+## Credential, artifact, and release identity controls
+
+Maintain a **non-secret credential inventory** for GitHub, EAS, and Google Play: credential holder, public account/service-account identity, secret-store reference, scopes/roles, repository/app/environment consumers, rotation owner, and last verified readback. Pair every credential with an explicit **consumer binding** to package ID, EAS project, GitHub repository/environment, workflow, and exact allowed Play tracks. Inventory never includes private keys, tokens, service-account JSON, or secret values.
+
+A CI credential holder may receive upload capability only after binding and readback prove the expected GitHub repository/environment, EAS project, Play developer account, package ID, and allowed track. Keep build/test jobs unable to read Play credentials. Reject a credential that is broad, ambiguously bound, or whose live identity/scopes cannot be read back.
+
+For API, EAS, CLI, or UI publishing, bind one **exact AAB** by SHA-256, package ID, version name/code, source SHA, build ID, signing identity, and size. Upload that artifact once, then read back the processed bundle identity before creating the edit/release and making the explicit **review submission**. Upload success, draft save, review submission, approval, and rollout are distinct states.
+
+Record **multi-track identity** as developer account + package ID + immutable artifact checksum/versionCode + exact track ID/name + release/edit ID + tester cohort + rollout status. Never infer track from a display label or fall back across internal, closed, open, or production. A track mismatch, artifact mismatch, or ambiguous package blocks submission.
+
+For **policy-rejection resubmission**, preserve the rejected release and policy coordinates, classify whether code, listing, declaration, access instructions, or evidence must change, obtain owner/legal input where required, create a new immutable artifact/versionCode when binary bytes change, rerun all affected gates, and submit a newly identified release. Never relabel an unchanged rejection as approved or reuse stale evidence.
+
+Use a date-based version name or versionCode only when an **explicit project policy** defines timezone, same-day collision handling, monotonicity against Play, rollback semantics, and the authoritative source. Otherwise use the repository's normal semantic version name and allocate versionCode from Play readback as specified here.
 
 ## Daily Closed-Testing Release Loop
 

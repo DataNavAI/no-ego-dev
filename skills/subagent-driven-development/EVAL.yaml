@@ -36,6 +36,8 @@ expectations:
   - "keeps provider configured-state deletion rollback deployment and publication behind their original gates and blocks when tracker mutation is not authorized"
   - "closes a merged parent only after every literal acceptance row has immutable or authenticated evidence distinct required review kinds remain distinct and reviewed blobs are present in the merge tree"
   - "verifies explicit tracker comment and closure authority before closeout mutations and otherwise returns a read-only closeout assessment blocked on owner action"
+  - "Positive scenario: honors sequential-mode override or counts distinct workstreams while reconciling durable owner leases artifact durability stacked-parent integration review-pending holds and the next frontier."
+  - "Boundary/negative scenario: refuses summary-only artifacts wrong-workdir verification child-approval transfer duplicate lease replacement and cleanup without exact ownership terminal state no-unpushed-work and evidence-preservation gates."
 setupCommands: []
 teardownCommands: []
 parameters:

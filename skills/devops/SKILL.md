@@ -1,7 +1,7 @@
 ---
 name: devops
 description: "Use when setting up CI/CD, deployments, environment management, or operational health checks."
-version: 0.7.0
+version: 0.7.4
 author: NoEgoDev
 license: MIT
 metadata:
@@ -342,6 +342,20 @@ When the user or provider requires a new API key:
 5. Add the corresponding CI/provider encrypted secret by reading from the store or by having the user paste directly into the provider's secret UI.
 6. Verify with a harmless command (`whoami`, project list, test API call) while masking output.
 7. Document the secret name, store path, scope, owner, consumers, and rotation instructions in the deployment/monitoring runbook.
+
+## Release and infrastructure closure
+
+Perform a **safe Expo/EAS secret inventory** using authenticated project metadata only: owner/slug/project ID, variable name, environment, visibility/type, update time, build profile, and consumer path. Never retrieve values or run an inherited secret-loading script without review. Trace names through app config, workflow, EAS profile, native build, and runtime consumers before calling a credential missing.
+
+Use **immutable deployment** inputs: exact source commit, image/artifact digest, configuration and migration identity, environment, and rollback target. Apply **CI lane governance** so PR validation, staging, production, mobile release, and scheduled operations have explicit triggers and authorities; preserve unrelated lanes byte-for-byte. **Exact-commit enablement** requires the enabling workflow/run and deployed control-plane/runtime readback to name the intended commit—not merely the latest branch.
+
+For **retained or imported infrastructure**, inventory exact live IDs, data and dependents; verify provider import support; obtain owner authority for destructive/import actions; use an import-only fail-closed change; and read back ownership and retention before feature changes. Require **live acceptance** after control-plane success: exercise the public/customer path, persistence, logs/metrics, and rollback signal against the deployed identity.
+
+For **cross-repository CD**, bind producer artifact schema/digest and consumer repository/ref, isolate deployment authority transitively, validate both ends, and retain a promotion receipt. Include **installer and outage recovery**: verify installer bytes/grammar before atomic activation, preserve the last known-good generation, and during CI/provider outage distinguish candidate failure from unavailable evidence rather than weakening gates.
+
+Keep **deployment versus content quality** separate: healthy infrastructure does not prove current, complete, or correct content; content regression does not authorize ad hoc infrastructure mutation. Diagnose **analytics forwarding** separately from first-party collection: prove local emission/storage/query first, then optional provider secret wiring, egress, delivery, dashboard filter/version parity, and explicit degraded behavior.
+
+Do not import nested skill packages as support files, and do not adopt unaudited secret scripts. Synthesize only the reusable contract and reviewed references. See [`references/release-infrastructure-closure.md`](references/release-infrastructure-closure.md).
 
 ## Deployment and Monitoring Documentation
 

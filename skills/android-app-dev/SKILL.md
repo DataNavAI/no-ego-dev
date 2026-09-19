@@ -1,7 +1,7 @@
 ---
 name: android-app-dev
 description: "Use when implementing, testing, debugging, packaging, or reviewing Android app work, especially Jetpack Compose/Kotlin features that must follow PRDs, UI guidelines, and Android release quality gates."
-version: 0.1.0
+version: 0.1.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -81,6 +81,16 @@ If the work changes UI and no guideline/brief exists, create a blocker/follow-up
    - Capture emulator evidence: device/API level, build variant/artifact, commands used, pass/fail result, and screenshots/video for changed UI or failures.
    - Do not approve publishing if emulator QA is unavailable, skipped, or failing. Create a blocking QA/release issue with exact emulator setup/run commands and hand it to `qa`, `play-store-publisher`, or `play-store-cli` as appropriate.
    - Do not invent signing credentials. If missing, create a DevOps/release blocker.
+
+## Expo/EAS and Play release contract
+
+For an Expo/EAS Android project, begin with a **non-secret Expo/EAS variable inventory**: variable name, environment, visibility/type, update timestamp, project/profile, and owning store. Never retrieve or print secret values. Perform **consumer tracing** from `app.json`/dynamic app config and `eas.json` through workflow inputs, native configuration, runtime reads, and the exact build profile; a variable name existing in a dashboard does not prove the candidate consumes it.
+
+The implementing agent owns **agent-owned emulator QA** rather than delegating the first launch check by default. Install the exact APK/AAB-derived candidate, exercise launch, the critical journey, **system back** navigation (gesture and button where available), permissions, deep links, process recreation, and changed error states. Analytics evidence must be **privacy-safe analytics**: event names and controlled fields only, with no tokens, free text, personal data, or secret values.
+
+Carry one **visible version identity** through source configuration, build request, AAB manifest, installed-app UI/about or diagnostic surface, QA receipt, and Play Console. Verify package, `versionName`, `versionCode`, source commit, build ID, artifact digest, intended Play track, release status, tester availability, and required account/API capability; this is **Play track and capability verification**, not merely upload success. A **date-based versionCode** is allowed only when an explicit project policy defines timezone, collision handling, Play monotonicity, and recovery; otherwise allocate a fresh integer above the latest uploaded code.
+
+See [`references/expo-eas-release-evidence.md`](references/expo-eas-release-evidence.md) for the safe inventory and identity matrix.
 
 ## Android Task Template
 

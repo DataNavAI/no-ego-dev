@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.8
+version: 1.12.9
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -24,6 +24,18 @@ Execute a plan as small dependency-safe slices. Each slice gets a fresh implemen
 For scheduled controllers, never rely on async completion reinjection. Dispatch at most one reviewer per run, require a durable external report or marked tracker comment, end as `REVIEW_PENDING`, and reconcile the durable sink before the next retry. Attach only the controller skill to the cron job by default; each child loads its role-specific review skills.
 
 ## Controller Contract
+
+### Sequential-mode override and workstream accounting
+
+An explicit **sequential-mode override** sets active capacity to one product workstream through implementation, verification, review, merge, and parent/frontier reconciliation. A blocked stream is not permission to fan out. Otherwise count the user cap as **distinct workstreams**, not helper invocations: implementers, reviewers, fixers, and re-reviewers remain continuations of one stable workstream ID.
+
+Maintain one durable **owner lease** per active outcome with repository, issue/PR, exact base/candidate, dependencies, worker/run handle, expected durable artifact, heartbeat/expiry, and last verified evidence. Reconcile runtime and durable state before expiring or replacing it; a lease alone proves neither liveness nor completion.
+
+Before review or promotion, enforce artifact durability: read the bytes from a canonical checkout or remote commit/PR, verify paths/hashes and remote object existence, and classify a summary-only/local-only handoff as `UNDELIVERED`. For stacked work, perform **stacked-parent integration** explicitly: child approval does not move or approve the parent; bridge into the actual parent branch when needed, then review the refreshed aggregate.
+
+Create a durable **review-pending merge hold** for the exact SHA before reviewer dispatch. CI never substitutes for its exact-SHA verdict. Scheduled controllers must use an **explicit scheduler workdir** or absolute repository arguments, verify the repository marker before commands, and classify wrong-cwd failures as controller failures.
+
+After every terminal worker event and merge, perform **mandatory frontier reconciliation**: reread tracker, remote refs, artifacts, dependencies, holds, and capacity; dispatch the highest-priority eligible owner or persist the exact blocker. See [references/durable-workstream-reconciliation.md](references/durable-workstream-reconciliation.md). Product examples belong in project-local plans/fixtures, not this canonical skill.
 
 1. Read the plan and governing artifacts once; create the tracked task list.
 2. Pass the timeout and contract preflights before the first delegation.
@@ -223,6 +235,10 @@ A timeout is transport state, not proof of implementation failure. Follow [refer
 ### Reviewer timeout or missing verdict
 
 Keep the gate closed. Read the complete attempt-scoped report and checksum if present. Reuse trustworthy exact-candidate CI, narrow only missing evidence, and never dispatch duplicate broad reviews for an unchanged `(SHA, review kind)`.
+
+### Automatic task-residue cleanup
+
+Cleanup needs no extra approval only when all gates are proven together: exact task ownership, terminal worker state with no open handle, **no unpushed changes**, and preserved commits/reports/canonical artifacts as durable evidence. Remove only inventoried task-owned worktrees, temporary homes, branches, scratch/cache files, and stale metadata. Shared/user-owned paths, credentials, production resources, uncertain ownership/liveness, or sole evidence remain blocked.
 
 ### Questions and blockers
 

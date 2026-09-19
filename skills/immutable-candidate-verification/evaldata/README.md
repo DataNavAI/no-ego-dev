@@ -16,3 +16,9 @@ A passing response must keep process state, tests, artifacts, and authorization 
 
 
 Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence mode** with no fixed round limit. The reviewer first tries to prove the exact candidate approvable by reconciling all prior blocking findings and correction regressions. It returns `APPROVED` when no material blocker remains and must not extend the lineage for reversible nits, preferences, optional hardening, or out-of-contract evidence. A genuine material defect or `MATERIAL_PROCESS_ESCAPE` remains blocking and produces one smallest complete correction set rather than automatic approval or drip-fed feedback.
+
+## Harvested domain-recipe boundaries
+
+Positive scenario: an exact-SHA review needs an archive-safe disposable execution, a child PR based on a recorded parent head, a candidate ledger plus approval registration, and a tamper-evident external-operation receipt. The response selects those domain-scoped recipes, verifies readback and exact identities, and retains normal aggregate approval-convergence.
+
+Boundary scenario: legacy advisory reports have no original pre-review summary or controller receipt, and a mutable installer is offered as `curl | bash`. Rejects a retroactive lineage, starts fresh at Round 1, requires a checksum-pinned installer, and never approves by exhaustion. Opaque persistent-ID migration and security-boundary canonicalization are applied only when those domains are in scope.
