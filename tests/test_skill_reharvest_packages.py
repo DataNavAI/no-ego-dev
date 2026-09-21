@@ -71,8 +71,10 @@ def test_ui_designer_complete_reharvest_support_files_and_controls():
         assert marker in path.read_text(encoding="utf-8").lower()
         assert f"references/{filename}" in skill
 
-    assert "concise-user-review-updates.md" not in skill
-    assert not (package / "references" / "concise-user-review-updates.md").exists()
+    concise = package / "references" / "concise-user-review-updates.md"
+    assert concise.is_file() and concise.stat().st_size > 0
+    assert "concise-user-review-updates.md" in skill
+    assert "human action needed" in concise.read_text(encoding="utf-8").lower()
 
 
 def test_ui_designer_evals_cover_harvested_lifecycle_boundaries():

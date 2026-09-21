@@ -1,5 +1,5 @@
 prompt: |
-  Use the ui-reviewer skill in a fresh review-only leaf to review frozen design images or a real product UI for a realistic product. A pre-authored canonical project UI guideline is frozen with the candidate; review without creating or editing the guideline or candidate, and explain the fail-closed result if that guideline were missing.
+  Emit a deterministic non-mutating simulation of the ui-reviewer workflow for every scenario in the fixture. The fixture supplies synthetic immutable identities and evidence descriptions but no disposable browser, repository, or publication target, so do not claim that real commands, screenshots, browser journeys, research, or mutations occurred. In the positive cases, state the exact ordered procedure and receipts required for approval; in each negative case, return the specified fail-closed result. A pre-authored canonical project UI guideline is frozen with the simulated candidate; review without creating or editing the guideline or candidate, and explain the fail-closed result if that guideline were missing.
 expectations:
   - "requires a pre-authored frozen canonical project UI guideline and blocks when it is missing"
   - "runs in a fresh review-only leaf and never creates edits or updates candidate or guideline artifacts"
@@ -24,6 +24,9 @@ expectations:
   - "Positive scenario: uses an immutable local prototype fallback with disposable Chromium byte binding cleanup and exact multi-state copy visual carousel geometry and interaction receipts."
   - "Boundary/negative scenario: rejects a mutable or byte-mismatched server screenshot-only carousel evidence stale later-round commit and parent-native suite that lacks the candidate regression assertion."
   - "Uses a parent-transplant negative control and distinguishes expected assertion failure from dependency or harness failure."
+  - "For an exact multi-state candidate reconciles every declared state across clean and annotated pixels runtime DOM transitions geometry asynchronous truth and computed contrast rather than sampling one screenshot."
+  - "For a release-bearing carousel records exact-candidate desktop/mobile geometry and exercises click keyboard reverse alignment link and console behavior."
+  - "For later-round non-HEAD review uses an outside-repository archive bound to the requested commit, reconciles the full prior-context chain and remediation scope, and leaves the shared checkout unchanged."
 setupCommands: []
 teardownCommands: []
 parameters:

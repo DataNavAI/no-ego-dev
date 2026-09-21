@@ -1,7 +1,7 @@
 prompt: |
   A factual artist catalog is expanding toward fifty entries. Several candidate lanes have useful research, but one active serial artist is blocked on unstable media readback. The recurring controller runs every thirty minutes, repository STATUS updates advance main, exact-SHA approvals for unrelated candidates repeatedly become stale, and a merged candidate exists only on staging. The owner previously requested artist-by-artist publication.
 
-  Use the serialized-catalog-publication skill to choose the safe next action and report the true publication state without creating coordination churn.
+  Use the serialized-catalog-publication skill to choose the safe next action and report the true publication state without creating coordination churn. Include a compact control table that explicitly covers serial-versus-parallel promotion, every retained release gate, remote PR identity readback after creation and every head change, and separate source-page/original-media/derivative receipts.
 expectations:
   - "preserves the owner's explicit serial-publication instruction and does not silently start the next artist"
   - "enters BLOCKED_EXTERNAL_AWAITING_OWNER_DEFERRAL and asks once for explicit owner deferral instead of retrying or manufacturing checkpoint work"
@@ -10,6 +10,9 @@ expectations:
   - "uses parallel evidence preparation only when serial mode is not owner-required and keeps one final promotion lane"
   - "reuses trustworthy unaffected evidence after unrelated documentation-only base movement and obtains one final exact current-base current-head approval"
   - "retains factual provenance media identity rights route QA deployment rollback and production readback safety gates"
+  - "resolves isolated-worker delivery from the live remote PR and exact artifact bytes, verifies base head changed paths and checks, and does not duplicate work merely because a summary omitted a handle"
+  - "writes shell-sensitive PR bodies through a literal body file then reads back exact identity fields after creation and every head change"
+  - "derives exact source and media URLs from live metadata with one encoding pass, binds deterministic original and derivative hashes dimensions and replay, and reruns verification after every final-tree write or head change"
 setupCommands: []
 teardownCommands: []
 parameters:

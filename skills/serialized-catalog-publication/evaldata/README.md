@@ -14,3 +14,7 @@ The owner explicitly instructed the team to work artist-by-artist and not move t
 - Enter `BLOCKED_EXTERNAL_AWAITING_OWNER_DEFERRAL`, ask once whether to defer, and stop retries/filler until evidence or a decision changes.
 - Keep routine lease/review/no-change state outside the product default branch.
 - Preserve exact final-candidate approval and real content/media/provenance/release gates while reusing unaffected evidence.
+
+## Product-neutral receipt boundary
+
+A candidate worker used an isolated worktree and returned a branch name but omitted the PR number. The PR body contains Markdown, command examples, non-ASCII text, and exact SHAs; media comes from a structured source page/API. A passing response searches live remote refs and open/closed PRs before redispatch, reads the artifact from the exact remote head, verifies base/head/changed paths/checks, writes or repairs the PR body through a literal file plus `--body-file`, and reads it back. It derives the exact media URL from live metadata without double encoding, records requested/final URL and byte/hash/dimension receipts, deterministically replays the derivative, and reruns focused plus canonical final-tree checks after every write or amended head. It never substitutes local-only bytes, a hand-typed URL, or stale verification.

@@ -49,3 +49,7 @@ For staging UI, inspect the real rendered screens against the frozen canonical g
 - **Mock alignment:** an accepted runnable mock is the visual source of truth. A passing response builds a parity matrix, preserves stable IDs and review-only media boundaries, adds focused regressions, and recaptures the real product at the mock's viewports before claiming parity.
 - **Browser-hosted provisioning:** a CLI setup moves into a paid, credentialed browser flow. Validate provider-supported OAuth/PKCE, billing ownership, secret boundaries, typed allowlisted requests, idempotent create/resume/delete and verified cleanup. The frozen candidate manifest must bind runnable states and screenshots before independent review.
 - **Truthful asynchronous mutation:** consent/token state can diverge across local intent, OS/provider state, and server confirmation. Model desired, last-confirmed, pending, and terminal outcomes separately; exercise retry→pending→success and retry→pending→failure, restart recovery, opt-out, and stale-response ordering without optimistic success.
+
+## Concise user review update
+
+The detailed design evidence and review process already live in `DESIGN_REVIEW.md`. A passing chat update states the user-facing capability/decision, one action needed (or none), and at most one material constraint that changes the decision. It omits CI, prototype plumbing, reviewer orchestration, and monitoring narration.

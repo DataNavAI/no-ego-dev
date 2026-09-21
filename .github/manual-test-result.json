@@ -1,16 +1,21 @@
 {
-  "candidate_sha": "2f2bfb82bd5a6b5088a54aaf0e2deda0874f882f",
-  "tested_at": "2026-09-19T10:42:40Z",
-  "environment": "macOS 26.6.2; Python 3.11.16; Node.js 25.6.1; dependencies installed with npm install in a disposable exact-SHA clone",
+  "candidate_sha": "d17fe48cf8357c6d59df3ff87f454189e1727ce5",
+  "tested_at": "2026-09-21T10:48:15Z",
+  "environment": "macOS 26.6.2; Python 3.11.16 from the Hermes runtime; Node.js 25.6.1; dependencies installed with npm ci in the isolated harvest worktree",
   "result": "pass",
   "commands": [
-    "npm install --ignore-scripts --no-audit --no-fund",
+    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest",
     "npm test",
     "npm run check",
-    "python -m pytest -q",
-    "python -m compileall -q eval_runner tests",
+    "python3 -m eval_runner.cli skills/product-bootstrap/EVAL.yaml --hermes-command 'hermes chat -t skills,file,terminal' --judge-command 'hermes chat -t skills'",
+    "python3 -m eval_runner.cli skills/project-manager/EVAL.execution-sequencing.yaml",
+    "python3 -m eval_runner.cli skills/reviewable-artifacts/EVAL.yaml",
+    "python3 -m eval_runner.cli skills/serialized-catalog-publication/EVAL.yaml",
+    "python3 -m eval_runner.cli skills/ui-designer/EVAL.yaml",
+    "python3 -m eval_runner.cli skills/ui-reviewer/EVAL.yaml",
     "npm pack --dry-run --json",
-    "git diff --check 66ab0bb999964162fda0fd4b6455738ce76f0bc1...2f2bfb82bd5a6b5088a54aaf0e2deda0874f882f"
+    "git diff --check d82a4aaea8c52610063c8865d19f8afd9a51d7c2...d17fe48cf8357c6d59df3ff87f454189e1727ce5",
+    "gitleaks protect --staged --redact --no-banner"
   ],
-  "observations": "Exact code candidate 2f2bfb82bd5a6b5088a54aaf0e2deda0874f882f was exercised in a disposable clone outside the repository worktree. The Node repository suite passed 160/160, the Python repository suite passed 545 with 9 platform skips, syntax checks and Python compilation passed, the package dry run contained 440 files with no __pycache__ or .pyc artifacts, and the diff check passed. The exact code candidate also received independent approval with no material findings after lifecycle/product scoping and credential-channel contradictions were corrected."
+  "observations": "Exact code candidate d17fe48cf8357c6d59df3ff87f454189e1727ce5 was exercised in the isolated harvest worktree. The Node repository suite passed 160/160; the Python repository suite passed 545 with 9 platform skips; repository checks, package dry run, diff validation, and secret scan passed. Behavioral evaluations passed for all six changed skill packages, including a mutation-capable isolated product-bootstrap run and deterministic simulations for non-mutating review/publication scenarios. Independent exact-SHA review approved the candidate with no material findings after prototype-lifecycle and parallel-issue contradictions were corrected."
 }

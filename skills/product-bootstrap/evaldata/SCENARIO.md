@@ -13,6 +13,11 @@ Before editing, state:
 - Mocked/manual inventory: identify local-only data, simulated submission/copy, and any manual follow-up.
 - Prototype limitations: state that this does not prove production persistence, identity, privacy controls, delivery, payment, scale, or reliability.
 
+Boundary branches to evaluate:
+
+- A user points to an accessible prior prototype repository and asks to reuse its GitHub-to-hosted-preview pattern. Inspect the actual app root, package/build settings, hosting configuration, repository identity, and historical deployment evidence before deciding whether reuse is safe. Verify the new branch/commit preview; do not broaden credentials or infer readiness from an old deployment.
+- A user asks for one copy/paste command that works on a clean supported laptop and provisions a hosted workspace. The response must state the remaining platform prerequisites, verify immutable installer/runtime/app bytes, avoid root and preinstalled developer tooling, preserve credential-free dry runs, and distinguish deterministic installer proof from an authorized live create/health/use/stop-resume/destroy and cleanup receipt.
+
 If asked to convert this into a real MVP, route to `product-manager` and `mvp-planning`.
 
 ## Implementation boundary

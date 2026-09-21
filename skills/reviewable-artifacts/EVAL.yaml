@@ -1,6 +1,6 @@
 name: reviewable-artifacts
 prompt: |
-  Using the supplied scenarios, emit a deterministic non-mutating simulation of the reviewable-artifacts workflow. No disposable GitHub coordinates are available, so do not call GitHub, deploy, delete resources, or fabricate success. For each scenario state the decision, ordered gates, exact identity fields or read-only command shape with placeholders where useful, and evidence required before the next state. Distinguish REVIEW_ONLY from MERGEABLE, preserve accepted work before cleanup, and make every failed identity/readback/cleanup gate fail closed.
+  Using the supplied scenarios, emit a deterministic non-mutating simulation of the reviewable-artifacts workflow. No disposable GitHub coordinates are available, so do not call GitHub, deploy, delete resources, or fabricate success. Address every numbered scenario, including construction of the rendered review bundle and both list and inspect thread-inventory paths. For each scenario state the decision, ordered gates, exact identity fields or read-only command shape with placeholders where useful, and evidence required before the next state. Distinguish REVIEW_ONLY from MERGEABLE, preserve accepted work before cleanup, and make every failed identity/readback/cleanup gate fail closed.
 expectations:
   - "Builds a rendered Markdown and visual review bundle with stable IDs, canonical source, explicit decision requests, desktop/mobile evidence, runnable visuals, and a durable disposition log."
   - "Treats ambiguous approval as object-specific and does not infer artifact, merge, deployment, or destructive authority from a bare approval."
@@ -11,6 +11,8 @@ expectations:
   - "Omit reversible nits entirely from findings and follow-up in every round; active cumulative lineage carries material unresolved findings only, never reversible nits from an earlier report or follow-up."
   - "In Round 4 and later, return `APPROVED` immediately when no material blocker remains; requesting continuation for a reversible nit is rejected. Never approve by exhaustion: a genuine material blocker remains `REQUEST_CHANGES` regardless of round count."
   - "Preserves each scoped specialist verdict vocabulary and authority rather than rewriting specialist terminal states."
+  - "Freezes immutable source separately from outside-candidate specialist reports, verifies complete manifests and prior reports, and invalidates an approval when its approved bytes change."
+  - "For visual review publication runtimes, binds stable semantic targets and screenshots to an exact source revision, then tests the composed staging runtime with injected review UI, authentication, CSP, responsive geometry, accessibility, console, and source-pin readback."
   - "Preserves accepted work and durable review history before closing REVIEW_ONLY without merge; cleanup failures become explicit residual tasks with owner and evidence rather than false success."
   - "Leaves MERGEABLE landing PRs free of review-only markers and subject to normal CI review and merge gates."
 parameters:

@@ -28,7 +28,7 @@ def test_group_c_versions_are_monotonic() -> None:
         "spec-compliance-review": "version: 1.8.8",
         "subagent-driven-development": "version: 1.12.9",
         "technical-design-reviewer": "version: 0.3.9",
-        "ui-reviewer": "version: 0.2.8",
+        "ui-reviewer": "version: 0.3.0",
     }
     for skill, version in expected.items():
         assert version in (SKILLS / skill / "SKILL.md").read_text(encoding="utf-8")

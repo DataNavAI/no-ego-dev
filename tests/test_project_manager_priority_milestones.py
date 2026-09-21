@@ -21,7 +21,7 @@ def test_priority_labels_and_issue_creation_are_fail_closed():
     evaluation = yaml.safe_load(EVAL_PATH.read_text(encoding="utf-8"))
     expectations = "\n".join(evaluation["expectations"])
 
-    assert frontmatter["version"] == "0.29.0"
+    assert frontmatter["version"] == "0.32.0"
     for definition in (
         "`P0` = **MUST-FIX**",
         "`P1` = **critical to a product milestone**",
