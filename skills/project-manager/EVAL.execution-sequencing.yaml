@@ -1,0 +1,11 @@
+name: project-manager-execution-sequencing
+prompt: |
+  Using the supplied three cases, emit a deterministic non-mutating project-manager analysis in three numbered sections, one per case. In each section state the dependency order, immutable integration identity, allowed concurrency, completion boundary, and evidence required before the next transition. Do not use a table. Do not invent issues, URLs, CI, reviews, merges, releases, or cleanup results.
+expectations:
+  - "sequences verified backend API access control input checking persistence and runtime prerequisites before dependent frontend or mobile coding without inventing backend work for unrelated or pure-client changes"
+  - "when decomposing accumulated draft work freezes the latest draft SHA and evidence preserves it as the integration target gives shared files one owner and requires fresh aggregate review"
+  - "defaults to completing one canonical issue through review merge authorized release acceptance reconciliation and cleanup; partial PR pending review or CI does not free the slot, and parallel issues need explicit current user authorization"
+parameters:
+  fixture: evaldata/execution-sequencing.md
+setupCommands: []
+teardownCommands: []

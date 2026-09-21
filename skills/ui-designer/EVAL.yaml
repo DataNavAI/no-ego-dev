@@ -1,5 +1,5 @@
 prompt: |
-  Use the ui-designer skill for the scenarios in the fixture. Explain the durable artifacts, visual and implementation handoff, MVP and mobile rules, responsive verification, and independent review gates. Distinguish material user-visible work from a trivial non-visual edit.
+  Use the ui-designer skill for every scenario in the fixture. Explain the durable artifacts, visual and implementation handoff, MVP and mobile rules, responsive verification, and independent review gates. Distinguish material user-visible work from a trivial non-visual edit. Explicitly record the canonical token/component version or date and the focused regression assertions that enforce accepted mock-to-product parity.
 expectations:
   - "stores a feature-local UI brief and clean plus annotated design images beside or cross-linked to the PRD and expected tech spec"
   - "uses stable interaction annotation IDs and maps each ID to action destination transition states validation and accessibility behavior"
@@ -24,6 +24,7 @@ expectations:
   - "when an accepted mock is the source of truth builds a mock-to-product parity matrix preserves review-only boundaries and recaptures the real implementation at matching viewports"
   - "for browser-hosted provisioning validates OAuth billing secret typed-request idempotency cleanup and truth-copy boundaries then freezes a manifest-bound candidate and behaviorally reviews it"
   - "for truthful asynchronous mutation states keeps desired last-confirmed pending and terminal outcomes separate tests retry success and failure plus stale response ordering and never projects optimistic success"
+  - "keeps user-facing review updates to the capability or decision, one requested action if any, and at most one decision-changing blocker while leaving process and evidence detail in the durable review surface"
 setupCommands: []
 teardownCommands: []
 parameters:

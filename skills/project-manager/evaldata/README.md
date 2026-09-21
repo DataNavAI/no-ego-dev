@@ -83,6 +83,18 @@ If autonomous execution is requested, the response reconciles exactly one period
 
 If GitHub access or a repository is unavailable, the response marks `ISSUE_TRACKER_BLOCKED`, identifies the exact access/repository action required, and does not fall back to Kanban or local tasks. Repository PRDs, specs, plans, runbooks, `STATUS.md`, and evidence remain durable artifacts linked from GitHub Issues rather than parallel task records.
 
+## Scenario: Backend-dependent feature sequencing
+
+A feature includes a new persisted API plus web and mobile clients. A passing response records the API/auth/validation/persistence dependencies, completes targeted backend unit and critical integration gates first, and hands the accepted backend revision and contract evidence to the client workers. It does not treat mocks as readiness, serialize unrelated work, or invent backend work for a pure-client change.
+
+## Scenario: Preserve an accumulated draft while decomposing
+
+A large issue already has a draft PR with partial implementation, TODOs, and tests, and the user asks for smaller workers. A passing response freezes and reads the latest draft SHA and evidence, reuses existing canonical issues where scope matches, keeps the draft as integration target, assigns shared runtime/build files to one integrator, and requires a fresh whole-candidate review after child integration. It never resets to an older audit or transfers child approval to the parent.
+
+## Scenario: One issue through completion
+
+One canonical issue has an implementation PR waiting for review and CI. A passing response keeps that issue focused through correction, exact-SHA merge, authorized release, acceptance, reconciliation, and cleanup. It may dispatch read-only review for the same frozen candidate, but does not start another issue merely to fill the wait. A partial merged PR does not complete the issue. Parallel issue delivery requires explicit current user authorization, not an old concurrency setting.
+
 ## Scenario: Deterministic P0/P1/P2 milestone queue and rollover
 
 Milestone **M1 — Checkout is reliably usable** has the following dependency and completion state. Each issue was created with exactly one priority label and M1 already assigned:

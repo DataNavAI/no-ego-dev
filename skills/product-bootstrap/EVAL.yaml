@@ -11,6 +11,8 @@ expectations:
   - "runs the deterministic post-agent verifier using python3 verify.py and reports its exact result"
   - "separates deterministic source verification from any browser interaction evidence"
   - "leaves no scratch output in the canonical package or fixture"
+  - "when reusing a prior GitHub to hosted-preview workflow, inspects repository/build/root settings, uses least-privilege access, and verifies the new exact commit preview rather than relying on historical deployment"
+  - "when asked for a zero-prerequisite cloud bootstrap, does not assume a project CLI runtime package manager git cloud CLI sudo or pasted chat secret, and separates deterministic clean-host proof from an authorized live create-use-destroy lifecycle"
 setupCommands:
   - "python3 -c \"from pathlib import Path; import os, shutil; shutil.copytree(Path.cwd() / 'evaldata' / 'starter', Path(os.environ['HOME']) / 'product-bootstrap-workspace')\""
 teardownCommands: []

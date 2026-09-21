@@ -1,7 +1,7 @@
 ---
 name: product-bootstrap
 description: "Use when creating a small, disposable or publishable product prototype from benchmark notes, screenshots, or a starter app in order to answer one explicit learning question."
-version: 1.0.0
+version: 1.1.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -41,6 +41,14 @@ Do not start implementation until the stage, learning decision, and feedback pat
 6. **Make feedback possible.** Add the declared feedback path to the artifact or provide a concrete facilitation procedure. “Show it to users” is not a feedback path.
 7. **Verify deterministically.** Run the repository's configured checks and the fixture's deterministic post-agent verifier when provided. For the canonical fixture, run `python3 verify.py`. Then exercise the primary interaction in a browser when browser tooling is available.
 8. **Inspect the final diff.** Keep only durable prototype artifacts. Report exact files and exact command results.
+
+### Reusing an existing GitHub-to-preview workflow
+
+When the user says to build the next prototype “the same way,” inspect the referenced repository before scaffolding. Verify its actual prototype root, default branch, package/lock files, hosting configuration, build/output settings, authenticated repository identity, and exact-commit deployment evidence. Reuse the established folder, tokens, and preview integration only when they are isolated from production data and secrets. Historical deployment proves prior integration, not that the new branch is deployable; verify the new commit's status and preview URL. Request only repository-scoped access needed for inspection or branch/PR work, and never embed credentials in remotes, logs, chat, or repository files. See [`references/github-preview-prototype-reuse.md`](references/github-preview-prototype-reuse.md).
+
+### Zero-prerequisite cloud CLI bootstrap
+
+Scope this branch here only to prototype and deterministically verify the copy/paste installer and its credential-free boundary. “Nothing installed” means the happy path cannot require a preinstalled project CLI, language runtime, package manager, Git, cloud CLI, or root access; state the small platform prerequisite set that remains. Pin and verify the installer before execution, install a private pinned runtime and app transactionally under user-owned paths, make reruns integrity-checking and idempotent, and preserve credential-free dry runs. A request to create or operate the hosted workspace is a durable-service boundary: route that work to `product-manager`, `mvp-planning`, and the applicable implementation/DevOps skills. Their acceptance contract must still require clean macOS/Linux installation plus an authorized create → health/use → stop/resume → destroy lifecycle, with remote resource and credential cleanup read back. If provider authorization is absent, this prototype may verify only the non-cloud boundary and must report live provisioning as out of scope rather than requesting secrets in chat or treating the missing lifecycle as prototype failure. See [`references/zero-prerequisite-cloud-cli-bootstrap.md`](references/zero-prerequisite-cloud-cli-bootstrap.md).
 
 ## Build rules
 
@@ -100,3 +108,5 @@ If the next decision is to build a real MVP, hand off to `product-manager` and `
 - [ ] Deterministic checks and the configured post-agent verifier passed.
 - [ ] Browser evidence is reported separately when available.
 - [ ] Only durable prototype artifacts changed.
+- [ ] Any reused GitHub/preview workflow was inspected and verified at the new exact commit rather than inferred from history.
+- [ ] Any zero-prerequisite installer proved its clean-host and hosted lifecycle claims, or reported the exact authorization gate honestly.

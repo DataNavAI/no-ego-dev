@@ -1,7 +1,7 @@
 ---
 name: ui-reviewer
 description: "Use as a fresh read-only reviewer for frozen UI evidence, benchmarking comparable market leaders and giving prioritized design feedback against the canonical project UI guideline."
-version: 0.2.8
+version: 0.3.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -153,6 +153,11 @@ For a frozen candidate reviewed against a finite set of authoritative comments, 
    - Treat typecheck/export as build evidence only. If native UI was not exercised on an emulator/device, label native findings as code-level and require real-device visual QA before release approval.
    - Review the main user path first, then secondary states.
    - See `references/implemented-ui-responsive-a11y-probes.md` for concrete responsive, large-text, SPA-focus, and cross-platform evidence probes.
+   - For a frozen multi-state candidate, use [`references/exact-candidate-multi-state-review.md`](references/exact-candidate-multi-state-review.md): reconcile declared states against clean/annotated pixels, source strings, runtime DOM, controls, transitions, geometry, asynchronous truth, and computed contrast.
+   - For a narrow copy/visual handoff, use [`references/focused-copy-visual-artifact-gate.md`](references/focused-copy-visual-artifact-gate.md) and return only the allowed verdict plus smallest material correction set.
+   - For a release-bearing horizontal carousel, use [`references/horizontal-carousel-interaction-receipt.md`](references/horizontal-carousel-interaction-receipt.md); screenshots never replace click, keyboard, alignment, link, and console receipts.
+   - For Round 2+ review of a non-HEAD candidate, use [`references/later-round-exact-commit-ui-reconciliation.md`](references/later-round-exact-commit-ui-reconciliation.md) and inspect an archive-bound exact commit without switching a shared checkout.
+   - When a new test is claimed to prevent the parent defect, use [`references/regression-test-parent-transplant.md`](references/regression-test-parent-transplant.md): candidate positive control plus a test-only transplant into an archived parent that fails on the expected old behavior.
    - For dated market/comparable research, use `references/live-comparable-mobile-capture.md`: capture exact first/later mobile viewports, record final URL and geometry, inspect pixels plus DOM evidence, separate observation from transfer risk, and verify any scratch capture utility before reporting completion.
 
 4. **Score against the bar**

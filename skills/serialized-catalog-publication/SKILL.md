@@ -1,7 +1,7 @@
 ---
 name: serialized-catalog-publication
 description: "Use when expanding a factual/content catalog under provenance, media, release, and deployment gates. Supports owner-authorized serial publication or parallel evidence preparation with one promotion lane, exact final-candidate verification, and production readback before counting publication."
-version: 1.1.0
+version: 1.4.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -100,6 +100,8 @@ Select the nearest evidence-complete artist for promotion. Rebase that candidate
 - Treat fixture failures as real release-contract evidence; fix the canonical authority or expectation rather than weakening the gate.
 - Require independent review with explicit `APPROVE` or `REQUEST_CHANGES` against the immutable candidate SHA.
 
+For candidate work performed in isolated worktrees, treat a worker summary as an observation rather than delivery. Resolve omitted handles through live remote branches and pull requests, read the artifact from the exact remote head, verify base/head/path/check state, and keep the lane incomplete when no durable remote artifact exists. Build PR bodies as literal files and pass them with `--body-file`; after creation or any amended head, read back the body and exact base/head/changed paths. Derive source/media URLs from live structured metadata with one encoding pass, bind them to deterministic original/derivative receipts, and rerun the final verification envelope after every final-tree write or candidate-head change. See [`references/remote-candidate-and-media-receipts.md`](references/remote-candidate-and-media-receipts.md).
+
 #### Durable blocked-checkpoint merge
 
 A blocked, fail-closed candidate may be merged as durable non-production state when repository policy permits it and the live PR is clean, mergeable, and covered by successful required checks. Before merging, reconcile the PR body with the actual head SHA (stale copied metadata is an audit defect), mark the PR ready if it is only draft because verification was pending, and confirm the changed-path set contains only candidate/checkpoint, verifier, and focused-test artifacts. Use the repository's normal merge method, then verify the merged PR, main ref, merge commit, exact changed files, and persisted checkpoint fields (`state=blocked`, `mustNotPublish=true`, zero admitted claims/questions/evidence, quarantine/rights uncertainty). Do not manually deploy or promote; distinguish an automatic staging-only post-merge workflow from production publication and report it separately.
@@ -143,7 +145,10 @@ Lead with product state: which artist is active, whether it is candidate/blocked
 - Using fan sites as official evidence or inferring permission from a Creative Commons label without recording the license/source tuple.
 - Lowering claim/question counts informally without updating the PRD, release criteria, schemas, validators, fixtures, and UX contract together.
 - Declaring live success when protected endpoints return 403 or the browser cannot verify rendered content.
+- Treating a local worker summary, hand-typed URL, interpolated shell PR body, or pre-final-write test run as a current durable receipt.
 
 ## Reference
 
 See `references/kpop-heaven-serial-release.md` for the compact research, media, GitHub, and release-readback checklist distilled from prior execution.
+
+See [`references/remote-candidate-and-media-receipts.md`](references/remote-candidate-and-media-receipts.md) for the product-neutral remote-PR handoff, literal PR-body serialization, exact URL derivation, deterministic media receipts, and final-tree freshness contract.

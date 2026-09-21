@@ -91,6 +91,9 @@ expectations:
   - "the watchdog queries GitHub Issues and linked PR or branch evidence launches exactly one focused worker only when a dependency-ready issue exists and no worker is corroborated active and otherwise performs a silent no-op"
   - "stores ownership dependencies retries blockers branches PRs tests and terminal evidence in GitHub Issues and linked PRs while scheduler receipts remain non-task execution evidence"
   - "preserves explicit user pause verifies scheduler state by fresh readback and never creates a Kanban board card or parallel queue"
+  - "sequences verified backend API authorization validation persistence and runtime prerequisites before dependent frontend or mobile coding without inventing backend work for unrelated or pure-client changes"
+  - "when decomposing accumulated draft work freezes the latest draft SHA and evidence preserves it as the integration target gives shared files one owner and requires fresh aggregate review"
+  - "defaults to completing one canonical issue through review merge authorized release acceptance reconciliation and cleanup; partial PR pending review or CI does not free the slot, and parallel issues need explicit current user authorization"
 setupCommands: []
 teardownCommands: []
 parameters:

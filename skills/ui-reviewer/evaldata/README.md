@@ -1,16 +1,21 @@
 # UI Reviewer Eval Fixture
 
-This fixture describes realistic NoEgoDev scenarios for evaluating the `ui-reviewer` skill.
+This fixture describes a deterministic non-mutating procedural simulation for evaluating the `ui-reviewer` skill. It does not provide a real repository, browser, server, market-research target, or images. The response must never claim those actions occurred; it must state the exact ordered gates and receipts that a production review would require.
 
 Project: LaunchLens, a lightweight web app that helps indie founders compare launch pages and plan improvements.
 
 Context:
+- Synthetic candidate identity: base `1111111111111111111111111111111111111111`, candidate `2222222222222222222222222222222222222222`, archived-prototype SHA-256 `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`.
+- Synthetic lineage identity: Round 2, complete Round-1 report digest `bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb`, disposition-ledger digest `cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc`, remediation-map digest `dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd`, prior-context digest `eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`.
+- Synthetic state inventory includes default, loading, empty, validation-error, pending, retry, success, offline, and recovery states at 390x844 and 1440x900.
+- Synthetic carousel evidence declares 280px cards, a 24px gap, forward/reverse controls, keyboard navigation, link semantics, and a clean console; the response must specify how each claim would be measured and exercised rather than accepting the declaration as proof.
+- Synthetic parent/candidate outcomes: the candidate regression passes on the candidate and fails with the expected old-behavior assertion when transplanted alone to the parent; dependency or harness failure is inconclusive.
 - The product has a PRD at `.projects/launchlens/prds/mvp.md`.
 - The ui-designer has generated desktop and mobile landing-page mockup images under `.projects/launchlens/features/landing-page/design/images/`.
 - The ui-designer has authored and frozen `.projects/launchlens/design/ui-guidelines.md`.
 - The user expects the product to feel credible next to top tools used by founders, not like a generic AI template.
 
-A passing `ui-reviewer` response should:
+A passing `ui-reviewer` simulation should:
 
 - Run in a fresh review-only leaf, read `.projects/launchlens/design/ui-guidelines.md`, and leave the guideline and evidence unchanged.
 - Research or ask for at least three relevant top-of-market comparables, such as Linear, Vercel, Framer, Webflow, Product Hunt, or high-quality adjacent SaaS/launch tools, and extract UI lessons without copying their branding.
@@ -39,3 +44,6 @@ Negative scenario: Round 2 and later must omit ordinary visual feedback that was
 - **Positive:** serve an exact archived prototype from a temporary directory, prove byte binding, exercise every settings state and copy/visual rule, capture carousel geometry plus keyboard/click transitions, then terminate Chromium/server and remove reviewer-owned residue.
 - **Boundary/negative:** an occupied dev port serves another worktree, one screenshot stands in for interactions, later-round evidence targets a different commit, or the parent-native suite passes because it lacks the new regression assertion. Withhold approval.
 - **Negative control:** transplant only the candidate regression test into the archived parent and require the expected old-behavior assertion failure; unrelated setup failure is inconclusive.
+- **Exact multi-state receipt:** reconcile every declared state against clean and annotated captures, source/runtime strings, controls, transitions, exact viewport geometry, async pending/retry truth, and computed text contrast.
+- **Carousel receipt:** bind the served bytes to the exact candidate, measure card/scroller geometry at desktop and mobile, exercise shortcut, keyboard-forward, reverse/reset, link semantics, screenshots, and console state.
+- **Later-round exact commit:** when shared `HEAD` has advanced, inspect `parent..candidate` from Git objects and run the requested commit from a reviewer-owned archive; verify complete prior-report/digest lineage and remediation paths, then prove shared HEAD/status stayed unchanged.

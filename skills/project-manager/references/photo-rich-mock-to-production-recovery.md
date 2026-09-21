@@ -39,11 +39,11 @@ Create dependency-ordered children rather than one broad “add pictures” task
 
 Update the parent objective, child hierarchy, native dependencies, counts, acceptance criteria, and `STATUS.md` when the correction changes milestone truth.
 
-## Continuous execution while reviews run
+## Authorized continuous execution while reviews run
 
-A pending asynchronous review blocks only the reviewed branch’s merge or production deployment. It should not idle the project when another dependency-safe, non-overlapping child in the same active milestone can proceed in its own branch/worktree. Keep one merge owner, preserve immutable review heads, and do not combine branches merely to appear busy.
+A pending asynchronous review retains the active canonical issue's focus and blocks that reviewed branch’s merge or production deployment. Without explicit current user authorization for parallel issue delivery, continue only with independent stages or read-only reviewers of that same issue. When the user has explicitly authorized parallel issue delivery, another dependency-safe, non-overlapping child issue in the authorized set may proceed in its own branch/worktree. Keep one merge owner, preserve immutable review heads, and do not combine branches merely to appear busy.
 
-Before dispatching parallel work, prove:
+Before dispatching any parallel work, record the applicable current authorization and prove:
 
 - no shared files or generated-output ownership conflict;
 - no dependency on unmerged behavior;
@@ -57,5 +57,5 @@ Before dispatching parallel work, prove:
 - Keeping a blanket raster ban after the product direction explicitly requires photography, instead of replacing it with a closed manifest-bound allowlist.
 - Copying review assets directly into production while their disposition remains `NOT_APPROVED` or review-only.
 - Calling abstract fallback art “pictures” after the user explicitly asked for photographs.
-- Waiting idle for one reviewer even though an independent milestone child is safe to start.
+- Starting another milestone child while review is pending without explicit current user authorization for parallel issue delivery.
 - Adding photo files without matching build-manifest, cache/MIME, public-boundary, credits, browser, and broken-image tests.

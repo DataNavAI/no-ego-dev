@@ -68,7 +68,7 @@ def _page(threads, *, head="a" * 40, has_next=False, cursor=None):
 
 def test_reviewable_artifacts_curated_package_contract():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
-    assert "version: 1.3.0" in skill
+    assert "version: 1.4.0" in skill
     for marker in (
         "REVIEW_ONLY",
         "MERGEABLE",
