@@ -253,7 +253,7 @@ def test_project_manager_message_templates_include_mandatory_envelope() -> None:
         assert "Detailed information:" in template
 
 
-def test_all_changed_user_facing_templates_use_mandatory_envelope() -> None:
+def test_changed_user_facing_templates_use_their_governing_envelope() -> None:
     project = skill_text("project-manager")
     service_template = project.split("Use this shape for each periodic checkup report:", 1)[
         1
@@ -266,12 +266,18 @@ def test_all_changed_user_facing_templates_use_mandatory_envelope() -> None:
     play = skill_text("play-store-publisher")
     play_report = play.split("Use this report shape:", 1)[1].split("```", 2)[1]
 
-    for template in (service_template, single_email, portfolio_email, issue, play_report):
+    for template in (service_template, single_email, portfolio_email, play_report):
         assert "Purpose:" in template
         assert "Executive summary:" in template
         assert "Action needed:" in template
         assert "Detailed information:" in template
 
+    assert "Purpose:" not in issue
+    assert "Action needed:" not in issue
+    assert "natural project-specific opening" in issue
+    assert "Executive summary:" in issue
+    assert "Human action needed:" in issue
+    assert "Detailed information:" in issue
     assert "Daily release alert envelope" in play
 
 

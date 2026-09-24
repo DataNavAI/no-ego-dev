@@ -1077,5 +1077,5 @@ def test_evals_cover_readiness_dedup_composite_and_metrics() -> None:
     assert "specification review before code-quality review" not in text
     issue = yaml.safe_load((SKILLS / "issue-monitor" / "EVAL.yaml").read_text(encoding="utf-8"))
     expectations = "\n".join(issue["expectations"]).lower()
-    assert "metrics" in expectations
+    assert "model usage accounting" in expectations
     assert "merge-only" in expectations

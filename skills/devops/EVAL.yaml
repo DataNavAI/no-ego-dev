@@ -1,5 +1,6 @@
 prompt: |
   Use the devops skill to respond to a realistic client/project request: set up CI/CD and staging/production deployment for a web app whose domain DNS is managed in GoDaddy. The user wants the setup to be doable through chat after they perform any required one-time provider login or API-key creation.
+  Produce a complete operational response covering every applicable scenario and invariant in the supplied fixture, including exact default-branch CI incident handling, monitoring, immutable release evidence, cost visibility, and the third-party mutation boundary. This eval provides no authenticated disposable repository, provider account, or cron target, so treat side-effecting scenarios as an explicit non-mutating deterministic simulation: never fabricate execution; instead give ordered state transitions, exact production command shapes with placeholders, evidence gates, and cleanup for every terminal path, and state that production runs with verified coordinates must execute them. For the GoDaddy mutation, explicitly verify the account/project/environment and read scope, inventory before mutation, require production authority, allowlist writes, read back provider IDs/status/counts, retain a non-secret receipt, remove temporary files, and revoke or rotate operation-bounded credentials. Explicitly name the reviewed local secret-loader path/reference. When neither a latency objective nor baseline exists, choose and label one conservative provisional threshold and sustained window for the simulation, schedule baseline replacement, and preserve immutable test-alert delivery, acknowledgement, recovery, and runbook evidence.
 expectations:
   - "mentions durable artifact"
   - "includes verification"
@@ -48,6 +49,8 @@ expectations:
   - "must verify the replacement run and all required workflows on the exact repaired or default branch SHA before closing the incident"
   - "positive: immutable cross-repository deployment and live acceptance binds exact commit and artifact identity, CI lanes, retained infrastructure, installer recovery, content-quality separation, and analytics forwarding evidence"
   - "boundary/negative: must not import nested skills or run unaudited secret scripts, retrieve Expo/EAS secret values, or treat control-plane deployment success as live acceptance"
+  - "Third-party mutation boundary verifies exact account project environment and read scope, inventories first, requires explicit production authority, and restricts writes to allowlisted mutations."
+  - "Reads back provider IDs status and counts, records a non-secret receipt, removes temporary files, and revokes or rotates operation-bounded credentials on every terminal path."
 setupCommands: []
 teardownCommands: []
 parameters:

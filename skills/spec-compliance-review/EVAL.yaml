@@ -26,6 +26,8 @@ expectations:
   - "Positive scenario: binds a dirty or misbound exact-SHA review to the correct repository or authenticated archive and closes catalog allowlist required-argument empty-state own-property and publication-consumer contracts."
   - "Boundary/negative scenario: rejects static-only parity tests lock/source race false success stale async completion and a local auth bypass that does not exercise the registered production contract."
   - "Performs post-report recovery and scopes provider or domain recipes to the boundary actually present."
+  - "Positive API-to-consumer contract audit follows the linked reference and verifies continuation caller-state retention canonical IDs cache membership and post-write readback."
+  - "Boundary/negative adversarial probes catch stale cache display-as-ID consumer state loss catalog-membership drift double submit and ambiguous write/readback false success."
 setupCommands: []
 teardownCommands: []
 parameters:

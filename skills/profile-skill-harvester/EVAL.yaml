@@ -42,6 +42,8 @@ expectations:
   - "Rejects null scalar mapping blank-entry and dual-alias setup or teardown command fields consistently in inventory validation and the production eval loader."
   - "Treats a stale controller runtime as a restart boundary rather than publication: bounded reconciliation may persist exact remaining gates, but review merge rollout state advancement and new inventory wait for fresh runtime proof."
   - "Derives the complete rollout package set from immutable base-to-merge coordinates, exports rollout bytes only from verified remote default, and never treats candidate or open-PR bytes as canonical."
+  - "Transactional rollout keeps stage rollback failed-swap and duplicate-retirement package copies outside every active skills discovery root, preferably in a same-filesystem adjacent root."
+  - "Recursively proves exactly one targeted frontmatter identity before preload and exports rollout bytes only from the verified remote-default merge."
 setupCommands: []
 teardownCommands: []
 parameters:

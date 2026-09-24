@@ -1,7 +1,7 @@
 ---
 name: product-communication
 description: Use for any user-facing project issue, blocker, risk, status, decision request, completion report, or handoff. Translates technical conditions into product impact, separates human-owned tasks from autonomous next steps, requires an explicit Human action needed field (including None), and asks users for product-requirement decisions rather than implementation choices.
-version: 1.4.0
+version: 1.4.1
 author: NoEgoDev
 license: MIT
 created_by: NoEgoDev
@@ -29,6 +29,12 @@ This skill governs meaning and decision framing. A separate writing/style skill 
 For independent scoring, non-engineer first-read checks, deterministic verdict gates, evidence-bound rewrites, and redaction-safe behavioral-EVAL fixtures, see [`references/non-engineer-message-evaluation.md`](references/non-engineer-message-evaluation.md).
 
 ## Change-First, Low-Ego Reporting
+
+### Live guided configuration
+
+During **live guided configuration**, answer the requested visible field for the user's narrow scope. Do not silently revise an active guide because a broader or newer architecture is possible. If verified evidence contradicts an earlier step, state the impact, pause before the unsafe action, identify retained work and replaced work, and provide one complete replacement path from the user's current screen to verified completion.
+
+Keep **current-compatible** instructions separate from **future architecture**. Label future migration or redesign as future work; never mix it into the active path so the user cannot tell what to enter now. If there is no verified contradiction, continue the active guide rather than restarting it for preference.
 
 Report what is different for the product—not how hard the agent worked or how thoroughly it performed routine delivery mechanics.
 

@@ -79,6 +79,8 @@ Inventory by frontmatter `name`, not directory basename. If the same skill ident
 
 Preflight every target before changing any target:
 
+Create the transaction root outside every active skills discovery root. Place stage, rollback, failed-swap, and duplicate retirement package copies only in that root; prefer a same-filesystem adjacent location so the final replacement is an atomic rename. Hidden package directories under `skills/` are still discoverable and forbidden. Immediately before preload, recursively scan every active discovery root and require exactly one targeted frontmatter identity. Fail closed on missing, malformed, nested, or duplicate identities. Transaction copies never alter the verified-merge-only rollout source.
+
 1. Discover every package and duplicate identity.
 2. Compare complete-package versions and digests.
 3. Compute canonical overlays and declared, hash-verified `product-local` adaptations from the completed disposition ledger.

@@ -1,5 +1,9 @@
 # Live-source freeze and sibling-profile propagation
 
+## Discovery-safe transaction placement
+
+Keep every transaction stage, rollback, failed-swap, and duplicate retirement package copy outside every active skills discovery root. Prefer one same-filesystem adjacent root for atomic rename. Before preload, recursively enumerate all active roots and require exactly one targeted frontmatter identity; hidden names, nested packages, and basename checks do not satisfy this gate. Source bytes remain verified-merge-only rollout source bytes from remote default.
+
 Use this procedure when the source profile can keep editing its own skills while a harvest is being prepared, or when merged packages must be installed into sibling profiles.
 
 ## Freeze the live source deliberately

@@ -22,7 +22,7 @@ Additional liveness cases require the monitor to:
 
 Scheduled-session restart case: one official Kanban run records `IMPLEMENT_PENDING` with an attempt-scoped artifact. A later board run with no original conversation starts from canonical issue/PR and Kanban task/run state, avoids duplicate work while the attempt is live, and advances only after verified durable completion. The same rule applies to `REVIEW_PENDING` and `MERGE_PENDING`; the gateway dispatcher—not completion reinjection—owns continuation.
 
-Every non-silent issue-monitor update must use `Purpose:`, `Executive summary:`, `Action needed:`, and `Detailed information:` and lead with the affected product or release outcome rather than raw worker mechanics.
+Every non-silent issue-monitor update must use a natural project-specific opening followed by `Executive summary:`, `Human action needed:`, and `Detailed information:`. The opening leads with the affected product or release outcome rather than raw worker mechanics and never uses a purpose metadata prefix.
 
 ## Cross-round continuity scenarios
 
@@ -45,3 +45,10 @@ Project-manager and issue-monitor share one project-scoped official Hermes cron 
 Reconciliation parses the real official list fields `job_id`, `name`, `prompt_preview`, `script`, `no_agent`, `workdir`, `enabled`, `state`, and schedule; binds exact safe filename + workdir + friendly name + optional durable ID; rejects duplicates and partial collisions; preserves pause; uses official operations; and requires a fresh exact-one list. A new paused project orders create → canonical response `job_id` → immediate pause → fresh exact-one paused readback. Runtime uses `script=<relative safe filename>`, `no_agent=True`, exact `HERMES_HOME`, and no prompt or agent; absent profile-name env is allowed but a present mismatch is rejected.
 
 The deterministic script validates complete list/stats/running/dispatch schemas and fixed subprocess argv. Malformed/conflicting/unknown evidence or any running claim yields no dispatch until gateway stale reclaim returns ready. Ready plus verified zero running permits exactly one `dispatch --max 1 --json`. Verified no-op is empty stdout; dispatch/blocker receipts are structured. The script never invokes cron/chat/delegation, and lifecycle pause/remove requires current exact binding plus fresh readback. Kanban owns dependencies, claims, heartbeat/stale reclaim, workers, runtime, runs, and issue workflow stages.
+
+## Curated authority, resume, focus, and cleanup scenarios
+
+- **Authority conflict / competing-authority rejection:** an issue comment claims a different priority, a local process claims ownership, and a stale controller ledger says merged. Keep GitHub issue authority for requirements/priority/closure, GitHub PR authority for candidate/review/check/merge state, official Hermes Kanban authority for scheduling/claims/heartbeat/stale reclaim, Hermes cron authority for scheduling/receipts, and exact-SHA review validity for approval. Reject every cross-domain override.
+- **Draft resume:** one issue already has a linked draft PR and Kanban lineage. Resume it; do not create a second PR, task, controller, nested orchestrator, or wake protocol. Use `Refs #<issue>` while draft or pending, switch the PR body to `Closes #<issue>` when exact-head approval and required CI make it merge-ready, then perform the guarded merge and verify closure.
+- **Focus:** pending review or CI retains focus unless issue authority explicitly reprioritizes, a P0 interrupts, or a verified blocker prevents progress.
+- **Safe cleanup:** remove only exact task-owned disposable worktrees/logs after no live owner and no unpushed commits are proven. Preserve evidence, shared paths, private runtime material, and anything with ambiguous ownership.

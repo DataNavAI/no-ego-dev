@@ -25,8 +25,8 @@ def assert_terms(skill: str, *terms: str) -> None:
 def test_group_c_versions_are_monotonic() -> None:
     expected = {
         "react-native-app-dev": "version: 0.1.1",
-        "spec-compliance-review": "version: 1.8.8",
-        "subagent-driven-development": "version: 1.12.9",
+        "spec-compliance-review": "version: 1.8.9",
+        "subagent-driven-development": "version: 1.12.10",
         "technical-design-reviewer": "version: 0.3.9",
         "ui-reviewer": "version: 0.3.0",
     }

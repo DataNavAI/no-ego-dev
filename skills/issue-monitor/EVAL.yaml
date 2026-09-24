@@ -8,13 +8,46 @@ prompt: |
   new SHA. Also explain how an exact-SHA APPROVED result can merge safely when
   CI finishes after the reviewer's cron run has ended, without relying on
   GitHub auto-merge.
+  Cover every applicable scenario and invariant in the supplied fixture. Also
+  explain the GitHub issue/PR, official Kanban, cron, and exact-SHA review
+  authority boundaries; how to resume an existing linked draft PR without
+  duplicating its issue or Kanban lineage; when pending review/CI retains
+  focus; and when exact task-owned cleanup is safe. Include compact checklists
+  for runtime budgets (including increasing both child and gateway when a
+  legitimate stage exceeds the child cap while preserving gateway > child),
+  closure reserve, readiness (explicitly requiring a successful private-data scan),
+  ordinary composite versus named high-risk specialist bundles and
+  aggregate approval, separate model-usage accounting that distinguishes a newly assigned
+  independent reviewer from a timeout continuation, Round-1 completeness that
+  prioritizes hard-to-reverse high-consequence risks, lifecycle-backed claim
+  reconciliation using official heartbeat JSON and a lifecycle-backed active-worker
+  lease, and exact cron-list schema plus durable watchdog binding.
+  Explicitly include durable board identity, installed script hash, and cron-job
+  binding in the project status record; parse/recompute-digest/persist/pass-
+  through of the unchanged closed-schema pre-review summary; atomic locked
+  persistence of controller-derived review mode; Kanban ownership of worker
+  isolation and runtime limits; and official cron operations for create/update/
+  pause/resume/remove and duplicate convergence.
+
+  Your response must satisfy these explicit output rules:
+  - Open with the affected product or release outcome, not PR, SHA, reviewer,
+    worker, or controller mechanics.
+  - Use the exact redaction-safe labels `private-data scan` and `model usage
+    accounting`; do not substitute alternative labels. Require the controller to
+    durably persist separate per-generation, per-bundle, and per-attempt model usage accounting
+    together with suppression, recovery, verdict, and runtime measurements.
+  - For Round 1, omit reversible nits and return every independently discoverable material finding with sufficient correction direction.
+  - For each later-round new blocker, state why it was not reasonably discoverable in Round 1.
+  - If Round-3 cumulative history lacks the Round-1 exact report or generation
+    identity, fail closed before substantive Round-3 review.
+  Use the canonical product-communication envelope, not a `Purpose:` metadata prefix.
 expectations:
   - "The unchanged SHA is not reviewed again after a structurally valid REQUEST_CHANGES result."
   - "One fixer receives the complete blocking set, and review resumes only for the resulting new SHA."
   - "Timeout recovery inspects the attempt-scoped artifact before any replacement is dispatched."
   - "A scheduled run dispatches at most one reviewer and never relies on async completion reinjection."
   - "A green review-readiness receipt is validated before reviewer launch; ordinary candidates use one composite review bundle and specialized review requires a named high-risk expertise gap."
-  - "Stores all predeclared review bundles under one candidate generation, requires aggregate bundle approval before merge, and persists separate candidate bundle attempt suppression recovery verdict runtime and token metrics."
+  - "Stores all predeclared review bundles under one candidate generation, requires aggregate bundle approval before merge, and durably persists separate model usage accounting plus candidate bundle attempt suppression recovery verdict and runtime measurements."
   - "Checks the effective runtime budget before dispatch, increases both child and gateway budgets when a legitimate stage can exceed the child cap, and keeps gateway greater than child."
   - "Reconciles agent:in-progress claims with a lifecycle-backed active-worker lease and durable repository evidence instead of treating a label or OS process list as proof of a live worker."
   - "A replacement reuses trustworthy exact-SHA CI and recovered checks, running only missing focused or adversarial evidence."
@@ -28,7 +61,7 @@ expectations:
   - "Uses official Kanban running-task status run and heartbeat JSON as the durable activity evidence and leaves worker continuation to the gateway dispatcher."
   - "A cron tick performs one bounded board reconciliation and at most one official dispatch while Kanban owns every task lifecycle stage."
   - "Each fresh scheduled run starts from official cron and Kanban durable state rather than relying on the original conversation or completion reinjection."
-  - "Every non-silent user delivery uses Purpose Executive summary Action needed and Detailed information while leading with product or release impact."
+  - "Every non-silent user delivery uses a natural project-specific opening followed by Executive summary Human action needed and Detailed information while leading with product or release impact and never using a Purpose metadata prefix."
   - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
   - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
   - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
@@ -40,6 +73,10 @@ expectations:
   - "The standalone script uses fixed subprocess argv, validates complete official list stats running and dispatch schemas, emits empty stdout for verified no-op, and invokes exactly one dispatch --max 1 --json only for ready work plus mutually verified zero running."
   - "Any malformed conflicting unknown or hostile evidence and any running claim prevent dispatch until official gateway stale reclaim returns ready; dry-run never dispatches; pause/remove requires exact current binding plus fresh post-operation readback."
   - "Runtime cron uses script=<relative safe filename> and no_agent=True with exact HERMES_HOME, optional matching profile-name env, and no prompt agent recursive cron chat or delegate_task, while Kanban owns claims heartbeats stale reclaim worker isolation runtime runs dependencies and lifecycle stages."
+  - "Authority-conflict scenario: keeps GitHub issue requirements/priority/closure, GitHub PR candidate/review/check/merge state, official Kanban scheduling/claims/heartbeat/stale reclaim, cron schedule/receipts, and exact-SHA review validity in separate authority domains and rejects competing authority."
+  - "Draft-resume scenario: preserves one issue to one Kanban lineage, resumes its linked draft PR, uses Refs while draft or pending, switches from Refs to Closes when exact-head approval and required CI make the PR merge-ready, then performs guarded merge and closure verification."
+  - "Focus scenario: pending review or CI retains focus except explicit issue-authority reprioritization, a P0 interruption, or a verified blocker."
+  - "Safe-cleanup scenario: removes only exact task-owned disposable worktrees/logs with no live owner or unpushed commits while preserving evidence shared paths and private runtime material."
 setupCommands: []
 teardownCommands: []
 parameters:

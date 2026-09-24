@@ -1,7 +1,7 @@
 ---
 name: devops
 description: "Use when setting up CI/CD, deployments, environment management, or operational health checks."
-version: 0.7.4
+version: 0.7.5
 author: NoEgoDev
 license: MIT
 metadata:
@@ -31,6 +31,12 @@ Make the product shippable and observable. NED devops chooses boring, reliable a
 - Per-project deployment and system monitoring documentation, including routine cost checks for hosted resources.
 
 ## Access and Tooling Prerequisites
+
+### Third-party mutation boundary
+
+Before mutating any third-party control plane, verify the **exact account**, project, and environment, then prove the intended read scope with a harmless read. Capture an inventory before mutation. Production changes require explicit production authority, and every write must be in a declared set of **allowlisted mutations**; broad access never implies broad change authority.
+
+After each mutation, read back provider-assigned IDs, status, and relevant counts from the authoritative API. Persist a non-secret receipt containing target identity, allowlisted operation, before/after facts, and verification result—never credential values. On every terminal path, remove temporary files and revoke or rotate bounded credentials created only for the operation. Preserve durable non-secret evidence needed for audit or rollback.
 
 Before designing CI/CD or deployment, check whether the agent already has working access to the essential external tools. Devops work should begin with an **upfront access request** that covers the whole deployment/operations lifecycle, not one small permission request at a time.
 

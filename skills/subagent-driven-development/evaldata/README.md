@@ -35,3 +35,8 @@ Post-Round-3 scenario: **Round 4 and later** must enter **approval-convergence m
 
 - **Positive:** three requested product workstreams may use many helpers but count as three; each has one reconciled lease, durable remote artifacts, exact review hold, explicit workdir, and immediate frontier refill. Sequential mode instead keeps exactly one stream through merge and parent reconciliation.
 - **Boundary/negative:** a child merged into a synthetic base does not update the parent; a local-only artifact is undelivered; a scheduled test from the profile cwd is controller-only; cleanup is blocked if ownership, terminal state, unpushed-work absence, or durable evidence preservation is unproved.
+
+## Existing-solution/reuse preflight scenarios
+
+- **Positive:** a task proposes a new authentication service and shared queue abstraction. Before delegation, inspect repository code, lockfiles, internal APIs, approved dependencies, existing services, framework facilities, integrations, infrastructure, and ecosystem options. Record evidence and one decision per major capability: `adopt`, `configure`, `extend`, `wrap`, or `build_new`; `build_new` names the material unmet constraint.
+- **Boundary:** a localized null-handling fix records `not_applicable` with its reason rather than doing irrelevant ecosystem research. The implementer/review packet contains the decision evidence, but independent composite review and modern `tasks=[...]` child semantics remain unchanged.

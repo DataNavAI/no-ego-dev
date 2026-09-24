@@ -13,3 +13,7 @@ MVP durable system-of-record and lifecycle architecture: define migration, backu
 ## Boundary/negative scenario
 
 Must not use a fixed review-round cap. Do not call ephemeral instance storage an MVP system of record, execute destructive retained-resource adoption without authority, or leave the approved architecture only in chat.
+
+## API-to-consumer journey scenario
+
+Design a paginated catalog picker followed by an irreversible publish action. The contract must trace request → response → retained caller state → next action; preserve opaque backend continuation and raw canonical IDs separately from display; revalidate cache on every read and immediately before the write; and define confirmation, idempotency, uncertain readback, and no blind retry. Separate the current contract from future design. For operational datasets, cover purpose, authority, minimization, linkability, retention, access, and aggregate outputs.
