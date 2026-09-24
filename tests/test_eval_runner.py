@@ -190,7 +190,7 @@ def _lingering_child_hermes_command(tmp_path: Path) -> str:
         "if 'Return only JSON' in prompt:\n"
         "    print(json.dumps({'passed': True, 'failure_reasons': []}))\n"
         "else:\n"
-        "    subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(5)'])\n"
+        "    subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(15)'])\n"
         "    print('done appears')\n"
     )
     return f"{sys.executable} {script}"
@@ -2268,7 +2268,9 @@ def test_run_eval_does_not_hang_on_descendant_holding_output_pipes(tmp_path):
     )
 
     assert result.passed is True
-    assert time.monotonic() - started < 2
+    # Keep the bound well below the descendant's 15-second sleep while allowing
+    # slower Windows runners enough time for process-job cleanup.
+    assert time.monotonic() - started < 5
 
 
 def test_oneshot_escalates_when_descendant_ignores_sigterm(tmp_path):
