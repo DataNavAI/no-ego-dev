@@ -7,3 +7,7 @@ Request: this is a responsive website. Route its canonical core-QA authoring and
 Positive extension: preserve Website QA routing while building the release's supported-interface matrix. Bind browser evidence immutably to the exact candidate, run declared cross-engine Playwright targets, compare capability parity, verify responsive and focus order, inspect production analytics through privacy-safe CDP plus ingestion readback, and test generated/static accessibility after hydration. Label each result as smoke, journey, or complete under the applicable lifecycle scope.
 
 Boundary extension: rejects screenshots not bound to the candidate, emission-only analytics claims, stale interface evidence, and calling one smoke or journey run complete QA. UX journey recording stays a separate optional skill; no nested UX `SKILL.md` is imported into this package.
+
+## API-assisted journey matrix fixture
+
+The dashboard loads a paginated API catalog into a cache, retains a raw ID while showing a display label, and submits one irreversible action. Cover pagination boundaries plus malformed/stale continuation; cache hit, cache miss, cache expiry; stale selection and transient control recovery; duplicate submit, timeout, malformed-success, and 5xx with authoritative readback/idempotency; raw ID versus display label; and production-data minimization with explicit prohibited fields in captures, logs, fixtures, and reports.

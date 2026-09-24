@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's GitHub issues are executed through a durable Hermes Kanban board from reproduction through independently reviewed exact-SHA merge."
-version: 1.16.0
+version: 1.17.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -27,6 +27,24 @@ Set up a durable Hermes cron job that periodically checks a target repository fo
 The project-scoped scheduled job is only a bounded capacity reconciler: it inspects official Kanban JSON and may invoke one official dispatch. A dispatched Kanban worker processes one focused issue workflow from durable board context. Implementation and review use distinct attempts and immutable handoffs. The reviewer owns the approval decision; only a narrowly authorized merge-only executor may consume that exact approval. The implementer and coordinator must not merge.
 
 **Core rule:** no issue is fixed without first reproducing the missing/broken behavior in an automated test, and no implementation agent reviews or merges its own work.
+
+## Authority matrix and single-lineage execution
+
+Use this **authority matrix**; no source may impersonate another:
+
+| Source | Sole authority |
+|---|---|
+| **GitHub issue authority** | Requirements, user-visible acceptance, priority, and issue closure. |
+| **GitHub PR authority** | Candidate bytes, draft/review state, checks, and merge state. |
+| **Official Hermes Kanban authority** | Scheduling, claims, dependencies, heartbeat, and stale reclaim. |
+| **Hermes cron authority** | Tick schedule, enabled state, execution receipts, and bounded reconciliation launch. |
+| **Exact-SHA review validity** | Whether an independent verdict applies to the current candidate bytes. |
+
+Enforce **one issue ↔ one Kanban lineage**. A cron tick may reconcile that lineage but may not create a parallel controller, nested orchestrator, private wake protocol, or second task for the same issue. On restart, discover and **resume the linked draft PR** and its existing Kanban lineage before creating anything. Reject a competing label, local ledger, comment, process, or agent summary as **competing-authority rejection** rather than allowing it to override official state.
+
+Keep safe checkpoints visible without closing unfinished work: use `Refs #<issue>` while the PR is draft or pending, and switch the PR body to `Closes #<issue>` only once exact-head approval and required CI make it merge-ready, immediately before the guarded merge and closure verification. Pending review or CI retains focus. Move away only for explicit reprioritization by the issue authority, a P0 interruption, or a verified blocker; routine waiting is not permission to start unrelated work.
+
+Cleanup is ownership-scoped. Remove only an **exact task-owned disposable** worktree or log after proving terminal lineage state, **no live owner**, and **no unpushed commits**. Preserve evidence, shared paths, credentials, durable receipts, and any artifact not proven disposable; never broad-clean similarly named directories.
 
 ## Bounded durable review protocol
 
@@ -204,9 +222,9 @@ If no issue is eligible, respond with exactly `[SILENT]` so the cron tick is rec
 For any non-silent worker-authored user update, preserve the mandatory product-first envelope; the no-agent capacity script's closed receipts are the only exception:
 
 ```text
-Purpose: <why this update is sent>
+<natural project-specific opening that leads with the product or release outcome>
 Executive summary: <verified product/release outcome and impact>
-Action needed: <None or one exact action>
+Human action needed: <None or one exact human-owned action>
 Detailed information: <official Kanban/issue/PR evidence>
 ```
 
@@ -262,7 +280,7 @@ The implementer is a leaf subagent and must:
 7. Make the smallest code change that turns RED to GREEN.
 8. Run the focused test, affected suite, full required suite, lint/type/build checks, and a secret scan.
 9. Commit only intended files, push the branch, and open a PR containing:
-   - issue link and `Closes #N`;
+   - issue link with `Refs #N` while the PR is draft or pending, then `Closes #N` only once exact-head approval and required CI make it merge-ready;
    - root cause;
    - RED command/evidence;
    - GREEN and full-suite commands/results;

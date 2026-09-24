@@ -23,7 +23,7 @@ def test_product_communication_is_a_complete_production_loadable_package():
     spec = load_eval(SKILL_DIR / "EVAL.yaml")
 
     assert re.search(r"^name: product-communication$", skill, re.MULTILINE)
-    assert re.search(r"^version: 1\.4\.0$", skill, re.MULTILINE)
+    assert re.search(r"^version: 1\.4\.1$", skill, re.MULTILINE)
     assert spec.fixture_path == SKILL_DIR / "evaldata" / "README.md"
     assert spec.fixture_text.strip()
     for reference in (

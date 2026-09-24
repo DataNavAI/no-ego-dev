@@ -38,7 +38,7 @@ REQUIRED = {
         "boundary": "must not retrieve secret values or assume date-based versioncode",
     },
     "architect": {
-        "version": "0.2.11",
+        "version": "0.2.12",
         "skill": [
             "system of record",
             "backup and restore",
@@ -85,7 +85,7 @@ REQUIRED = {
         "boundary": "must not create a competing controller or force sequential focus",
     },
     "devops": {
-        "version": "0.7.4",
+        "version": "0.7.5",
         "skill": [
             "safe expo/eas secret inventory",
             "immutable deployment",

@@ -25,3 +25,7 @@ Negative scenario: Round 2 and later must omit ordinary feedback that was reason
 - **Positive:** the caller cwd is dirty and wrong, but a sibling repository contains both SHAs. The review binds there, then verifies released-catalog parity, required/empty arguments, own-`undefined`, emitted-byte consumers, transactional publication, local auth-broker behavior, and final report recovery.
 - **Boundary/negative:** a static helper passes while runtime uses a hard-coded allowlist; a stale async completion overwrites a newer state; or a report checksum is created before final verification. Keep the verdict fail-closed.
 - **Scoped recipe:** apply provider-specific probes only when the candidate actually includes that provider/domain boundary.
+
+## API-to-consumer adversarial fixture
+
+Apply `references/api-to-consumer-contract-audit.md` to a paginated catalog and irreversible write. Probe continuation corruption, stale cache, display-as-ID substitution, consumer state loss between response and next action, catalog membership drift, double submit, and ambiguous write/readback. A green API unit test is not sufficient when the consumer drops state or retries blindly.

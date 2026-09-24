@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.60
+version: 1.5.61
 author: NoEgoDev
 license: MIT
 metadata:
@@ -289,6 +289,12 @@ Every production-service plan must include a **release-blocking task** to add or
 Start with a failing cross-package contract test that enumerates every in-scope package and its behavioral EVAL expectation. Materialize the task and launch blocker in generated-plan templates, scan for semantic waiver paths, run focused plus repository-wide validation, and require fresh exact-SHA review after any correction. Follow [`references/production-metric-pipeline-regression-propagation.md`](references/production-metric-pipeline-regression-propagation.md) for the full propagation map, full-chain test contract, and reviewer probes.
 
 ## Live Source Freeze and Sibling Propagation
+
+### Discovery-safe rollout transaction roots
+
+Every transaction stage, rollback, failed-swap, and duplicate retirement package copy must remain **outside every active skills discovery root** for the entire transaction. Prefer a **same-filesystem adjacent** transaction root so final package replacement can use atomic rename without briefly exposing a second package. Hidden names inside `skills/` are not safe.
+
+Before explicit preload, recursively enumerate every active discovery root and require **exactly one targeted frontmatter identity**. Reject duplicate, missing, malformed, or nested matching identities; checking directory basenames or top-level entries is insufficient. Keep the **verified-merge-only rollout source** rule: transaction bytes come from the verified remote-default merge, never from a stage, rollback, failed-swap copy, live profile, candidate worktree, or open PR.
 
 Treat profile packages as mutable until the canonical candidate is committed. Recompare every live-source file immediately before freeze, allow only recorded canonical adaptations, and restart validation if unexpected drift appears. After merge, back up target packages, replace only authorized skill directories, verify canonical digests, smoke-test discovery/provider operation, advance state, and release the exact lock on every exit.
 

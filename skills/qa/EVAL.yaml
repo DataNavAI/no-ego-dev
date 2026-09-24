@@ -20,6 +20,8 @@ expectations:
   - "Checks responsive fit semantic reading and focus order production analytics CDP ingestion readback and generated/static accessibility after hydration."
   - "Labels smoke journey and complete scopes honestly and applies lifecycle scope without waiving a supported primary interface or material safety check."
   - "Rejects screenshots not bound to the candidate nested UX skill packages emission-only analytics proof and calling one smoke or journey run complete QA."
+  - "Positive API-assisted journey matrix covers pagination boundaries malformed and stale continuation cache hit miss expiry stale selection transient control recovery raw ID versus display label and production-data minimization."
+  - "Boundary/negative mutation cases cover duplicate submit timeout malformed-success and 5xx with authoritative readback and idempotency, and prohibit sensitive fields in production evidence."
 setupCommands: []
 teardownCommands: []
 parameters:

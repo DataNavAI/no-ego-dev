@@ -1,7 +1,7 @@
 ---
 name: spec-compliance-review
 description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
-version: 1.8.8
+version: 1.8.9
 platforms: [linux, macos, windows]
 metadata:
   hermes:
@@ -14,6 +14,8 @@ metadata:
 Use this skill when the user asks for an independent spec audit, immutable commit review, release-gate review, or exact PASS/FAIL verdict against written requirements.
 
 **Core principle:** Passing tests are evidence, not the contract. Build an explicit requirement matrix from the authoritative plan, technical specification, failure matrix, and acceptance checklist, then seek false-success cases.
+
+When an implementation crosses an API-to-consumer boundary, apply [`references/api-to-consumer-contract-audit.md`](references/api-to-consumer-contract-audit.md). Its adversarial probes cover continuation integrity, stale cache, display-as-ID substitution, consumer state loss, catalog membership, double submit, and ambiguous write/readback outcomes; include each applicable probe in the requirement/failure matrix.
 
 ## Risk-weighted review priority
 

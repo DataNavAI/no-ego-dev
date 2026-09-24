@@ -1,7 +1,7 @@
 ---
 name: subagent-driven-development
 description: "Execute plans through fresh Hermes leaf subagents with immutable consolidated review."
-version: 1.12.9
+version: 1.12.10
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
@@ -48,6 +48,12 @@ After every terminal worker event and merge, perform **mandatory frontier reconc
 `delegate_task` returns immediately. A top-level `tasks=[...]` call creates **N independent background children**: each receives its own handle and each completion re-enters the parent as a separate message. The parent should finish the dispatch turn and reconcile each completion independently; do not poll background children. Use separate single-task calls only when the controller needs explicit per-call ownership, timing, retry, or capacity boundaries—not to manufacture completion behavior that a modern batch already provides.
 
 ## Upfront Requirement Confirmation and Automatic Continuation
+
+### Applicability-scoped existing-solution/reuse preflight
+
+Before assigning implementation of a major capability, dependency, service, framework, integration, infrastructure component, or cross-cutting subsystem, run an **existing-solution/reuse preflight**. Inspect the repository, lockfiles, internal APIs, approved dependencies, deployed services, framework facilities, and the relevant ecosystem. Record evidence and one decision: `adopt`, `configure`, `extend`, `wrap`, or `build_new`. A `build_new` decision requires a **material unmet constraint** that the inspected options cannot satisfy; preference or unfamiliarity is not enough.
+
+Scope this gate to work where solution choice has material lifecycle or integration cost. A localized fix or refactor may record `not_applicable` with a concrete reason instead of manufacturing ecosystem research. Put the evidence and decision in the **implementer/review packet** so the implementer follows it and the reviewer can challenge it. It supplements rather than replaces the **independent composite review**, candidate freeze, or modern independent `tasks=[...]` child semantics.
 
 Before production work, derive the contract from the plan, governing artifacts, repository, tests, and recorded decisions. Escalate only unanswered requirements whose later reversal would materially change scope, public or persisted contracts, security/privacy, supported interfaces, provider/runtime, cost, or destructive behavior.
 

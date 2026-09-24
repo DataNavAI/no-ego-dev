@@ -1,7 +1,7 @@
 prompt: |
   Execute a six-task implementation plan with Hermes subagents. The tasks share a governing schema and UI brief, some are independent, and every completed implementation must pass one composite independent review for ordinary risk. The gateway may restart, reviewers may time out, and no two writers may race on the same worktree.
 
-  Use the subagent-driven-development skill to describe and execute the workflow from contract preflight through final integration review, including recovery and continuation behavior.
+  Use the subagent-driven-development skill to describe and execute the workflow from contract preflight through final integration review, including recovery and continuation behavior. Cover every applicable scenario and invariant in the supplied fixture, including the atomic candidate-review index, ordinary attached-delegation status from Hermes's process-local active-child registry and completion events, the sequential-mode override that keeps exactly one workstream active through parent/frontier reconciliation, the conservative gateway-process-start versus config-mtime fallback when timeout-specific adoption evidence is unavailable, and cumulative generation ordering for every prior exact review report in later-round packets. Use only the current `delegate_task(tasks=[...])` or single-task shapes: never pass removed `background` or `toolsets` arguments. Quote the exact queued status request from the skill, including its unknown-liveness rule. Explicitly retain configured-state proof, retention deletion, and rollback contraction behind the parent gates, in addition to deployment and publication.
 expectations:
   - "Uses current delegate_task arguments with fresh role=leaf workers, treats dispatch as asynchronous, and never relies on removed toolsets/background parameters."
   - "Asks at most one upfront batch of no more than three costly-to-reverse unanswered questions with recommended defaults, then continues without routine phase approval."
@@ -38,6 +38,8 @@ expectations:
   - "verifies explicit tracker comment and closure authority before closeout mutations and otherwise returns a read-only closeout assessment blocked on owner action"
   - "Positive scenario: honors sequential-mode override or counts distinct workstreams while reconciling durable owner leases artifact durability stacked-parent integration review-pending holds and the next frontier."
   - "Boundary/negative scenario: refuses summary-only artifacts wrong-workdir verification child-approval transfer duplicate lease replacement and cleanup without exact ownership terminal state no-unpushed-work and evidence-preservation gates."
+  - "Positive reuse preflight: for major capabilities inspects the repository lockfiles internal APIs approved dependencies services frameworks integrations infrastructure and ecosystem, then records adopt configure extend wrap or build_new with evidence."
+  - "Boundary reuse preflight: build_new requires a material unmet constraint; a localized fix or refactor may use not_applicable with a reason, and the evidence enters the implementer/review packet without replacing independent composite review."
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -1,7 +1,7 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.11
+version: 0.2.12
 author: NoEgoDev
 license: MIT
 metadata:
@@ -10,6 +10,16 @@ metadata:
 ---
 
 # Architect
+
+## API-to-consumer journey contracts
+
+For every API-assisted journey, specify the complete chain **request → response → retained caller state → next action**. Treat backend continuation tokens and IDs as opaque: preserve an **opaque backend continuation** exactly, retain raw canonical identifiers separately from display labels, and never reconstruct an ID from presentation text. Specify catalog-membership and pagination behavior, including malformed or stale continuations and lost caller state.
+
+Define cache revalidation on every read and **immediately before writes** that depend on cached membership or selection. Separate the **current contract** from **future design** so a future architecture does not become false current-compatible guidance.
+
+For an irreversible write, define deterministic confirmation, idempotency identity, timeout/ambiguous-success handling, and uncertain readback. Require authoritative readback before retry and **no blind retry**. State how duplicate submits converge to one result.
+
+Operational datasets require privacy governance: document purpose, authority, minimization, linkability, retention, access, deletion where applicable, and aggregate outputs. Raw records and canonical IDs must not leak into display, telemetry, fixtures, or aggregate reports without explicit necessity and authority.
 
 ## Overview
 

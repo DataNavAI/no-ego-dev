@@ -15,6 +15,8 @@ expectations:
   - "asks the user to choose only when provider tradeoffs materially affect cost, architecture, compliance, or access"
   - "positive: MVP durable system-of-record and lifecycle architecture includes migrations backup restore retention rollback ownership public identity compatibility evidence timestamps refactoring and retirement"
   - "boundary/negative: must not use a fixed review-round cap, treat ephemeral local state as an MVP system of record, or hand off architecture only in chat"
+  - "Positive API-to-consumer journey: specifies request response retained caller state next action, opaque continuations and raw canonical identifiers, cache revalidation, and deterministic idempotent writes with uncertain readback."
+  - "Boundary/negative: rejects display labels as IDs, blind retry after ambiguous writes, future design presented as current contract, and operational datasets lacking purpose authority minimization linkability retention access and aggregate-output governance."
 setupCommands: []
 teardownCommands: []
 parameters:

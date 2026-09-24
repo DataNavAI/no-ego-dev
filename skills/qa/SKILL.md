@@ -1,7 +1,7 @@
 ---
 name: qa
 description: "Use for general QA plans, UI execution, evidence-backed reports, and bug filing; route website core-QA authoring and website smoke/full runs to website-qa."
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -26,6 +26,18 @@ Continue to use this `qa` skill for shared bug triage, issue filing, pass/fail r
 This **Website QA routing** remains authoritative after applying the controls below; these controls supplement rather than replace `website-qa`.
 
 ## Candidate-bound interface and browser gates
+
+### API-assisted journey matrix
+
+For any UI journey backed by APIs, add an **API-assisted journey matrix** that exercises the consumer and API state together:
+
+- pagination boundaries, empty/final pages, malformed continuation, and stale continuation;
+- cache hit, cache miss, cache expiry, revalidation on each read, and stale selection or transient control recovery;
+- duplicate submit, timeout, malformed-success, and 5xx outcomes with authoritative readback and idempotency evidence before any retry;
+- raw ID versus display label handling, including a negative probe that a label cannot be submitted as identity; and
+- production-data minimization, an explicit prohibited fields list, and evidence that captures, fixtures, logs, and reports exclude those fields.
+
+Test retained caller state through the next action, not merely the API response. An HTTP success without consumer-state continuity, catalog membership, or post-write readback is not journey success.
 
 - Read the canonical supported-interface registry and construct a **supported-interface matrix** with one concrete executable target and a separate current `PASS`, `FAIL`, or `BLOCKED` result for every supported interface. Missing, stale, failed, blocked, or undecided required coverage blocks release.
 - Bind **candidate-bound browser evidence** to exact source SHA, deployment/release identity, build/artifact digest, route, viewport/device, browser engine/version, trusted capture time, case ID, and result. Read back the served revision where possible. A screenshot from an unshipped route, mutable local server, or unknown deployment is not release evidence.
