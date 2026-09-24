@@ -1,21 +1,18 @@
 {
-  "candidate_sha": "d17fe48cf8357c6d59df3ff87f454189e1727ce5",
-  "tested_at": "2026-09-21T10:48:15Z",
-  "environment": "macOS 26.6.2; Python 3.11.16 from the Hermes runtime; Node.js 25.6.1; dependencies installed with npm ci in the isolated harvest worktree",
+  "candidate_sha": "46e480a2a48768140d7baa1b1bf244071e383a0f",
+  "tested_at": "2026-09-24T14:39:11Z",
+  "environment": "macOS 26.6.2; Python 3.11.16; Node.js 25.6.1; isolated harvest worktree",
   "result": "pass",
   "commands": [
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest",
+    "python -m pytest",
     "npm test",
     "npm run check",
-    "python3 -m eval_runner.cli skills/product-bootstrap/EVAL.yaml --hermes-command 'hermes chat -t skills,file,terminal' --judge-command 'hermes chat -t skills'",
-    "python3 -m eval_runner.cli skills/project-manager/EVAL.execution-sequencing.yaml",
-    "python3 -m eval_runner.cli skills/reviewable-artifacts/EVAL.yaml",
-    "python3 -m eval_runner.cli skills/serialized-catalog-publication/EVAL.yaml",
-    "python3 -m eval_runner.cli skills/ui-designer/EVAL.yaml",
-    "python3 -m eval_runner.cli skills/ui-reviewer/EVAL.yaml",
+    "python -m pytest tests/test_eval_runner.py::test_run_eval_does_not_hang_on_descendant_holding_output_pipes -q",
+    "python -m eval_runner.cli skills/architect/EVAL.yaml --output-root /Users/moonk/.hermes/state/profile-skill-harvester/evidence-46e480a/architect",
+    "python -m eval_runner.cli skills/devops/EVAL.yaml --output-root /Users/moonk/.hermes/state/profile-skill-harvester/evidence-46e480a/devops",
     "npm pack --dry-run --json",
-    "git diff --check d82a4aaea8c52610063c8865d19f8afd9a51d7c2...d17fe48cf8357c6d59df3ff87f454189e1727ce5",
-    "gitleaks protect --staged --redact --no-banner"
+    "git diff --check 2cba5282a0a89bfc7db75c6a8b24952babbff3c3...46e480a2a48768140d7baa1b1bf244071e383a0f",
+    "gitleaks git --redact --no-banner --log-opts=2cba5282a0a89bfc7db75c6a8b24952babbff3c3..46e480a2a48768140d7baa1b1bf244071e383a0f"
   ],
-  "observations": "Exact code candidate d17fe48cf8357c6d59df3ff87f454189e1727ce5 was exercised in the isolated harvest worktree. The Node repository suite passed 160/160; the Python repository suite passed 545 with 9 platform skips; repository checks, package dry run, diff validation, and secret scan passed. Behavioral evaluations passed for all six changed skill packages, including a mutation-capable isolated product-bootstrap run and deterministic simulations for non-mutating review/publication scenarios. Independent exact-SHA review approved the candidate with no material findings after prototype-lifecycle and parallel-issue contradictions were corrected."
+  "observations": "Exact code candidate 46e480a2a48768140d7baa1b1bf244071e383a0f was exercised in the isolated harvest worktree. The Python suite passed 557 tests with 9 platform skips; the Node suite passed 160 tests; repository checks, package dry run, diff validation, and secret scan passed. The Windows timing regression now keeps a five-second ceiling against a fifteen-second lingering child, preserving failure detection while allowing observed Windows job-cleanup overhead. Architect and DevOps behavioral evaluations passed. All skill-package blobs are identical to independently approved candidate 71474538a9f3a0185876b7f7fb1cb5c3719dc355, whose changed-package behavioral evidence remains applicable. A supplemental fresh issue-monitor model attempt omitted five required details and was not counted as passing evidence; deterministic issue-monitor contract tests remained green. Independent exact-SHA review approved 46e480a2a48768140d7baa1b1bf244071e383a0f with no material findings."
 }
