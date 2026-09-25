@@ -31,7 +31,7 @@ export function createDaytonaProvider({
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
 } = {}) {
   if (!apiKey) {
-    throw new Error('Daytona authorization is required. Set DAYTONA_API_KEY in your shell; do not paste it into chat.');
+    throw new Error('Daytona authorization requires NED\'s owner-only runtime credential file.');
   }
   const client = new DaytonaClass({ apiKey });
   const debug = (message) => {

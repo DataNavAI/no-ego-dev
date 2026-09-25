@@ -8,19 +8,12 @@ DAYTONA_KEY_FILE="$SECRETS_DIR/daytona_api_key"
 HERMES_AUTH_FILE="${NED_HERMES_AUTH_FILE:-$SECRETS_DIR/hermes_auth.json}"
 STATE_DIR="${NED_STATE_DIR:-$SECRETS_DIR/state}"
 
-if [[ -z "${DAYTONA_API_KEY:-}" && -r "$DAYTONA_KEY_FILE" ]]; then
-  DAYTONA_API_KEY="$(<"$DAYTONA_KEY_FILE")"
-  export DAYTONA_API_KEY
-fi
-
-if [[ -z "${DAYTONA_API_KEY:-}" ]]; then
-  printf 'Set DAYTONA_API_KEY or store it at %s; it is passed only to the container runtime.\n' "$DAYTONA_KEY_FILE" >&2
+if [[ ! -r "$DAYTONA_KEY_FILE" ]]; then
+  printf 'The owner-only Daytona runtime credential file is required at %s.\n' "$DAYTONA_KEY_FILE" >&2
   exit 2
 fi
 
 umask 077
-mkdir -p "$SECRETS_DIR"
-chmod 700 "$SECRETS_DIR"
 mkdir -p "$STATE_DIR"
 chmod 700 "$STATE_DIR"
 if [[ ! -e "$HERMES_AUTH_FILE" ]]; then
@@ -49,7 +42,11 @@ The container will now run `ned create --verbose` interactively.
 INFO
 
 exec docker run --rm --init --interactive --tty \
-  --env DAYTONA_API_KEY \
-  --volume "$HERMES_AUTH_FILE:/root/.hermes/auth.json:rw" \
-  --volume "$STATE_DIR:/root/.ned:rw" \
+  --user "$(id -u):$(id -g)" \
+  --env HOME=/tmp/ned-home \
+  --tmpfs "/tmp/ned-home:uid=$(id -u),gid=$(id -g),mode=700" \
+  --tmpfs "/tmp/ned-home/.hermes:uid=$(id -u),gid=$(id -g),mode=700" \
+  --volume "$SECRETS_DIR:/tmp/ned-home/.config/no-ego-dev/secrets:ro" \
+  --volume "$HERMES_AUTH_FILE:/tmp/ned-home/.hermes/auth.json:rw" \
+  --volume "$STATE_DIR:/tmp/ned-home/.ned:rw" \
   "$IMAGE" create --verbose
