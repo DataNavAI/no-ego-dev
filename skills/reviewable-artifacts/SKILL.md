@@ -1,7 +1,7 @@
 ---
 name: reviewable-artifacts
 description: "Use when durable Markdown, plans, specifications, screenshots, prototypes, or design directions need a rendered human-review surface with anchored feedback, explicit PR mode, cumulative review lineage, and safe cleanup."
-version: 1.4.0
+version: 1.5.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -32,6 +32,8 @@ Use it for consequential plans, PRDs, specifications, runbooks, UX directions, o
 
 Use `templates/review-index.md` for a rendered Markdown review index. A path or raw source file alone is not a completed review surface.
 
+For a visual-first deck, validate links against the renderer that will publish it: enumerate relative paths and fragments, apply that renderer's heading-anchor and duplicate-heading rules, render and click the links, and keep paired regression assertions for both the source path/fragment and the destination heading. Reject known stale fragments. Follow [`references/visual-first-review-deck-validation.md`](references/visual-first-review-deck-validation.md).
+
 ### Visual bundles
 
 For visual decisions, prose cannot replace pixels. Provide runnable prototype/source, realistic content, key default/loading/empty/error/success states, clean desktop and mobile screenshots, and annotations when interaction hotspots need explanation. Embed each direction or screen under its stable ID in a rendered `DESIGN_REVIEW.md`; include a concise comparison and an explicit choose/combine/revise/reject prompt. A text-only visual proposal is `BLOCKED` unless the decision owner explicitly requested text-only work.
@@ -42,6 +44,8 @@ For visual decisions, prose cannot replace pixels. Provide runnable prototype/so
 - `REVIEW_ONLY`: it is a temporary presentation/discussion surface. It must not merge. Preserve accepted work at a canonical branch or separate mergeable PR before cleanup.
 
 Do not infer mode from “please review.” Converting `REVIEW_ONLY` to `MERGEABLE` requires explicit decision-owner approval, removal of every review-only marker, a recorded conversion, and fresh normal gates.
+
+Audit PR mode cross-layer whenever this policy changes: global/profile guidance, orchestrators, specialist skills, templates, evals, tests, user-facing docs, and deployed copies must agree. Keep a negative regression for the old blanket review-only instruction, and require landing PR fixtures to state that they must not receive review-only branch/title/body/label markers. Follow [`references/pr-mode-consistency-audit.md`](references/pr-mode-consistency-audit.md).
 
 For `REVIEW_ONLY`, use an isolated `review-only/*` branch/worktree and a draft PR with `[REVIEW ONLY — DO NOT MERGE]` in the title, the same warning atop the body, `PR mode: REVIEW_ONLY`, and available `review-only`/`do-not-merge` labels. Preflight labels; unavailable labels do not waive the title, body, draft, mode, or branch markers. Never enable auto-merge or a merge queue. Use `templates/review-only-pr-body.md`.
 
@@ -108,6 +112,10 @@ There is no fixed round cap. In **Round 4** and later, enter approval-convergenc
 
 When the review surface embeds a scoped specialist report, preserve that specialist's verdict vocabulary and scope; do not translate its valid terminal states into a different generic vocabulary. The artifact-level convergence decision does not broaden or overwrite specialist authority.
 
+### Frozen orchestrator and review-gate audit
+
+When a review bundle can authorize later side effects, hash the byte-exact frozen reports before strict decoding and after the final probe; CRLF normalization must not change the authoritative digest. Bind authority to the gate-selected latest terminal attempt and exact report digest, make every terminal claim consume-once, and reject reclaim after failed finalization. Verify provider checks by name plus App/integration identity, with provider-accurate `~ALL`, `~DEFAULT_BRANCH`, wildcard, and exclusion semantics. Probe delayed nonzero wake completion and receipt-write failure, and require launch compensation or private fallback evidence after a claim. Follow [`references/frozen-orchestrator-review-gate-audit.md`](references/frozen-orchestrator-review-gate-audit.md).
+
 ## Review-Only Close Lifecycle
 
 Cleanup begins only after explicit `APPROVED`, `ABANDONED`, or `SUPERSEDED`; silence is not completion.
@@ -136,6 +144,9 @@ Keep source canonical, render local HTML plus visual media, retain stable IDs, a
 - [ ] Bundled thread tooling remained read-only; any authorized GitHub/UI mutation followed immediate revalidation and records that no atomic exact-head guarantee exists.
 - [ ] Specialist verdicts bind exact immutable artifacts, retain their own vocabulary/scope, and reports live outside the candidate.
 - [ ] Separately published visual/runtime surfaces prove the exact source pin, composed DOM/policy behavior, and environment readback.
+- [ ] Renderer-aware fragment checks include paired source and destination assertions and reject stale fragments.
+- [ ] Cross-layer PR-mode guidance passes both positive mode checks and the blanket review-only negative regression.
+- [ ] Authority-bearing frozen reports use byte-exact hashes, latest-terminal-attempt binding, consume-once claims, provider App/ruleset semantics, and wake/compensation failure probes.
 - [ ] Production-first has explicit authority and all independent gates pass.
 - [ ] Accepted work is preserved before review-only cleanup.
 - [ ] Review-only PR is closed without merge and exact cleanup is verified.
