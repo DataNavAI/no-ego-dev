@@ -68,7 +68,7 @@ def _page(threads, *, head="a" * 40, has_next=False, cursor=None):
 
 def test_reviewable_artifacts_curated_package_contract():
     skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
-    assert "version: 1.4.0" in skill
+    assert "version: 1.5.0" in skill
     for marker in (
         "REVIEW_ONLY",
         "MERGEABLE",
@@ -91,6 +91,9 @@ def test_reviewable_artifacts_curated_package_contract():
         "scripts/github_review_threads.py",
         "templates/review-index.md",
         "templates/review-only-pr-body.md",
+        "references/visual-first-review-deck-validation.md",
+        "references/pr-mode-consistency-audit.md",
+        "references/frozen-orchestrator-review-gate-audit.md",
     ):
         assert (SKILL_DIR / support).is_file()
     combined = "\n".join(
@@ -100,6 +103,63 @@ def test_reviewable_artifacts_curated_package_contract():
     ).lower()
     for private_architecture in ("review hub", "shared review-comment api", "private html review surface"):
         assert private_architecture not in combined
+
+
+def test_renderer_links_require_paired_source_and_destination_assertions():
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    reference = (SKILL_DIR / "references" / "visual-first-review-deck-validation.md").read_text(
+        encoding="utf-8"
+    )
+    fixture = (SKILL_DIR / "evaldata" / "README.md").read_text(encoding="utf-8")
+
+    for surface in (skill, reference, fixture):
+        assert "renderer" in surface.lower()
+        assert "fragment" in surface.lower()
+        assert "source" in surface.lower()
+        assert "destination" in surface.lower()
+    assert "duplicate-heading suffixes" in reference
+    assert "reject known stale fragments" in reference
+
+
+def test_pr_mode_audit_contains_cross_layer_negative_regression():
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    reference = (SKILL_DIR / "references" / "pr-mode-consistency-audit.md").read_text(
+        encoding="utf-8"
+    )
+    fixture = (SKILL_DIR / "evaldata" / "README.md").read_text(encoding="utf-8")
+    combined = "\n".join((skill, reference, fixture))
+
+    for marker in (
+        "cross-layer",
+        "blanket review-only",
+        "MERGEABLE",
+        "must not receive review-only",
+        "negative regression",
+    ):
+        assert marker in combined
+
+
+def test_frozen_gate_audit_covers_exact_bytes_attempt_authority_and_recovery():
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    reference = (
+        SKILL_DIR / "references" / "frozen-orchestrator-review-gate-audit.md"
+    ).read_text(encoding="utf-8")
+    fixture = (SKILL_DIR / "evaldata" / "README.md").read_text(encoding="utf-8")
+    expectations = "\n".join(load_eval(SKILL_DIR / "EVAL.yaml").expectations)
+    combined = "\n".join((skill, reference, fixture, expectations))
+
+    for marker in (
+        "byte-exact",
+        "CRLF",
+        "latest terminal attempt",
+        "consume-once",
+        "App/integration identity",
+        "~ALL",
+        "~DEFAULT_BRANCH",
+        "delayed nonzero wake",
+        "Launch compensation",
+    ):
+        assert marker in combined
 
 
 def test_eval_loads_as_non_mutating_deterministic_simulation():

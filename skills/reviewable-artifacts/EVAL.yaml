@@ -15,6 +15,9 @@ expectations:
   - "For visual review publication runtimes, binds stable semantic targets and screenshots to an exact source revision, then tests the composed staging runtime with injected review UI, authentication, CSP, responsive geometry, accessibility, console, and source-pin readback."
   - "Preserves accepted work and durable review history before closing REVIEW_ONLY without merge; cleanup failures become explicit residual tasks with owner and evidence rather than false success."
   - "Leaves MERGEABLE landing PRs free of review-only markers and subject to normal CI review and merge gates."
+  - "Validates Markdown fragments with the publication renderer's anchor rules and paired source-path/fragment plus destination-heading assertions, including duplicate headings and stale-fragment rejection."
+  - "Audits PR mode cross-layer and includes a negative regression that rejects blanket review-only guidance and forbids review-only markers on MERGEABLE landing PRs."
+  - "For authority-bearing frozen gates, hashes byte-exact report bytes including CRLF, binds authority to the latest terminal attempt and exact digest, enforces consume-once terminal claims, verifies required checks by App/integration identity and provider-accurate ruleset semantics, and probes delayed wake and launch-compensation failures."
 parameters:
   fixture: evaldata/README.md
 setupCommands: []
