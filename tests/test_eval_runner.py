@@ -2059,7 +2059,10 @@ def test_run_eval_terminates_verifier_during_sustained_output_overflow(tmp_path,
         judge_command=judge,
     )
 
-    assert time.monotonic() - started < 3
+    # Windows job-object startup and teardown can be materially slower on a
+    # loaded hosted runner. Keep the bound below half the 30-second verifier
+    # timeout while retaining the tighter regression signal elsewhere.
+    assert time.monotonic() - started < (15 if os.name == "nt" else 3)
     assert result.passed is False
     assert result.infrastructure_failure is False
     assert result.failure_reasons == ["post-agent verifier exceeded output limit"]
@@ -2327,7 +2330,7 @@ def test_run_eval_setup_does_not_hang_on_descendant_holding_output_pipes(tmp_pat
     setup_script = tmp_path / "setup_with_lingering_child.py"
     setup_script.write_text(
         "import subprocess, sys\n"
-        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(5)'])\n"
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(15)'])\n"
         "print('setup complete')\n"
     )
     eval_dir = tmp_path / "skill"
@@ -2343,7 +2346,9 @@ def test_run_eval_setup_does_not_hang_on_descendant_holding_output_pipes(tmp_pat
     result = run_eval(eval_path, output_root=tmp_path / "runs", hermes_command=_fake_hermes_command(tmp_path))
 
     assert result.passed is True
-    assert time.monotonic() - started < 2
+    # Prove the runner does not wait for the 15-second descendant while
+    # allowing the same Windows cleanup margin used by the agent-path test.
+    assert time.monotonic() - started < (5 if os.name == "nt" else 2)
 
 
 def test_oneshot_output_limit_includes_truncation_marker_within_bound(tmp_path):
