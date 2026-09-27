@@ -1,16 +1,17 @@
 {
-  "candidate_sha": "69281d5ec2763c62de81104cbd610ec64ffc6869",
-  "tested_at": "2026-09-27T10:19:23Z",
-  "environment": "macOS 26.6.2; Python 3.11.16 Hermes venv; Node.js 25.6.1; isolated harvest worktree",
+  "candidate_sha": "1196eee0192816b5f6b01e7acb65a87f05e7f030",
+  "tested_at": "2026-09-27T10:37:21Z",
+  "environment": "macOS 26.6.2; Python 3.11.16 Hermes venv; Node.js 25.6.1; isolated harvest worktree; GitHub Windows CI failure logs inspected",
   "result": "pass",
   "commands": [
+    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest tests/test_eval_runner.py::test_run_eval_terminates_verifier_during_sustained_output_overflow tests/test_eval_runner.py::test_run_eval_setup_does_not_hang_on_descendant_holding_output_pipes -v",
     "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest",
     "npm test",
     "npm run check",
     "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m eval_runner.cli skills/profile-skill-harvester/EVAL.archive-discovery.yaml --output-root /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260927-archive-discovery --report /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260927-archive-discovery-report --markdown",
     "npm pack --dry-run --json",
-    "git diff --check b6ef986af54237f4d602ab4ddb51c722f948d8cf...69281d5ec2763c62de81104cbd610ec64ffc6869",
-    "gitleaks git --redact --no-banner --log-opts=b6ef986af54237f4d602ab4ddb51c722f948d8cf..69281d5ec2763c62de81104cbd610ec64ffc6869"
+    "git diff --check b6ef986af54237f4d602ab4ddb51c722f948d8cf...1196eee0192816b5f6b01e7acb65a87f05e7f030",
+    "gitleaks git --redact --no-banner --log-opts=b6ef986af54237f4d602ab4ddb51c722f948d8cf..1196eee0192816b5f6b01e7acb65a87f05e7f030"
   ],
-  "observations": "Exact code candidate 69281d5ec2763c62de81104cbd610ec64ffc6869 was exercised in the isolated harvest worktree. The Python suite passed 561 tests with 9 platform skips; the Node suite passed 160 tests. Repository syntax checks, package dry run, diff validation, gitleaks, and the focused archive-discovery behavioral evaluation passed. Independent exact-SHA review approved the clean code candidate with no material findings."
+  "observations": "Exact code candidate 1196eee0192816b5f6b01e7acb65a87f05e7f030 was exercised in the isolated harvest worktree. Python passed 561 tests with 9 platform skips; Node passed 160 tests; repository syntax, packaging, diff, gitleaks, and archive-discovery behavioral evaluation passed. Two distinct Windows hosted-runner failures were timing-only assertions after semantic behavior completed; Windows-only bounds now remain below half the verifier timeout and below the 15-second descendant duration while POSIX bounds are unchanged. Independent exact-SHA review approved the clean code candidate with no material findings."
 }
