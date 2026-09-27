@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.61
+version: 1.5.62
 author: NoEgoDev
 license: MIT
 metadata:
@@ -159,6 +159,8 @@ Every package whose complete digest differs from remote-default is a semantic sy
 **Initial enrollment is a baseline, not a historical bulk import.** When no state file exists, record the current source/profile digests as `initialized_at` inventory and report the baseline counts. Unless the user explicitly asks for a backfill, do not treat every pre-existing difference as newly updated. This prevents the first scheduled run from importing an entire bundled/global skill library by accident.
 
 By default, harvest only skill names already owned by the canonical distribution repository. A profile-only skill may be proposed only when its frontmatter/provenance identifies it as NoEgoDev-authored or adapted, it contains a complete reusable package with eval coverage, and it is not merely a bundled/global skill copied into that profile. Ambiguous profile-only skills are reported but not uploaded.
+
+Treat archival roots as historical storage, not active skill discovery. The inventory scanner must ignore every package below a `.archive/` path segment while continuing to discover active nested category packages. Historical archive analysis requires an explicit separate audit; archived packages must never become live harvest candidates merely because they retain a complete `SKILL.md`.
 
 ### 5. Classify each difference
 

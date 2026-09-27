@@ -1,0 +1,19 @@
+prompt: |
+  A Hermes profile skill root contains these complete packages:
+
+  - `skills/software-development/active-coder/SKILL.md`
+  - `skills/creative/active-designer/SKILL.md`
+  - `skills/.archive/creative/retired-designer/SKILL.md`
+  - `skills/software-development/.archive/retired-coder/SKILL.md`
+
+  Explain how the profile-skill harvester must inventory this root for an ordinary daily harvest. State which packages are active candidates, which are excluded, why nested active categories must remain discoverable, and what is required before archived packages may be considered. Do not treat timestamps, version strings, or a complete archived package as authority.
+expectations:
+  - "Includes active-coder and active-designer as active inventory candidates."
+  - "Excludes retired-designer and retired-coder because every package below any .archive path segment is historical storage."
+  - "Preserves recursive discovery of active nested category packages rather than flattening or disabling nested traversal."
+  - "Requires a separate explicit historical audit before archived packages may be considered for canonical synthesis."
+  - "Rejects timestamps version strings and package completeness as authority for activating archived packages."
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/archive-discovery.md

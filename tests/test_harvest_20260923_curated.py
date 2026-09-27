@@ -11,7 +11,7 @@ SKILLS = ROOT / "skills"
 
 VERSIONS = {
     "issue-monitor": "1.17.0",
-    "profile-skill-harvester": "1.5.61",
+    "profile-skill-harvester": "1.5.62",
     "subagent-driven-development": "1.12.10",
     "architect": "0.2.12",
     "qa": "0.3.1",
