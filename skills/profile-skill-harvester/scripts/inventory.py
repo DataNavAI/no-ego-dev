@@ -28,6 +28,7 @@ IGNORED_DIRS = {
     ".git",
     ".hg",
     ".svn",
+    ".archive",
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",

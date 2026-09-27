@@ -663,6 +663,23 @@ def test_lease_lock_never_signals_an_unverified_live_pid(tmp_path):
         sleeper.wait(timeout=5)
 
 
+def test_inventory_ignores_archived_skills_without_hiding_active_categories(tmp_path):
+    module = _module()
+    active = _package(tmp_path, "active-skill")
+    archived = tmp_path / "skills" / ".archive" / "creative" / "archived-skill"
+    archived.mkdir(parents=True)
+    (archived / "SKILL.md").write_text(
+        "---\nname: archived-skill\ndescription: historical only\n---\n",
+        encoding="utf-8",
+    )
+
+    packages, errors = module.discover(tmp_path / "skills")
+
+    assert not errors
+    assert set(packages) == {"active-skill"}
+    assert packages["active-skill"].path == str(active.resolve())
+
+
 def test_inventory_detects_divergent_complete_packages(tmp_path):
     module = _module()
     repo = tmp_path / "repo"
