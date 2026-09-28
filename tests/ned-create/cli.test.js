@@ -93,6 +93,7 @@ test('v1 CLI keeps optional providers out of the default ChatGPT OAuth journey',
     error: (message) => stderr.push(message),
   }, {
     env: { DAYTONA_API_KEY: 'daytona-test-value', GEMINI_API_KEY: 'gemini-test-value' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     appFactory: async () => { throw new Error('must reject before provisioning'); },
   });
   assert.equal(exitCode, 2);
@@ -298,6 +299,7 @@ test('CLI create uses a Hermes-compatible ChatGPT OAuth connection without print
     error: (message) => stderr.push(message),
   }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => codexConnection('codex-secret'),
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
@@ -330,6 +332,7 @@ test('CLI create passes verbose diagnostics through without exposing credentials
   const stderr = [];
   const exitCode = await runCli(['create', '--verbose'], { log() {}, error: (message) => stderr.push(message) }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => codexConnection('codex-secret'),
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async (options) => {
@@ -350,6 +353,7 @@ test('CLI reports rejected Daytona credentials before prompting for model or Tel
   let telegramPrompted = false;
   const exitCode = await runCli(['create'], { log() {}, error: (message) => stderr.push(message) }, {
     env: { DAYTONA_API_KEY: 'sandbox-only-key' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => { modelPrompted = true; return codexConnection(); },
     getTelegramConnection: async () => { telegramPrompted = true; return telegramConnection(); },
     appFactory: async () => ({
@@ -372,6 +376,7 @@ test('CLI create invokes exactly one ChatGPT OAuth resolver when no credential i
   let credentials;
   const exitCode = await runCli(['create'], { log() {}, error: assert.fail }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => { oauthCalls += 1; return codexConnection('oauth-codex-access'); },
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
@@ -394,6 +399,7 @@ test('CLI chat accepts the product request as arguments and prints only NED outp
     error: assert.fail,
   }, {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => codexConnection(),
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
@@ -469,6 +475,7 @@ test('CLI refuses Telegram tokens through argv before authentication or provisio
     error: (message) => stderr.push(message),
   }, {
     env: { DAYTONA_API_KEY: 'provider-test-value' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => assert.fail('argv secret must reject first'),
     getTelegramConnection: async () => assert.fail('argv secret must reject first'),
     appFactory: async () => assert.fail('argv secret must reject first'),
@@ -487,6 +494,7 @@ test('CLI redacts Telegram token-shaped provider errors before output', async ()
     error: (message) => stderr.push(message),
   }, {
     env: { DAYTONA_API_KEY: 'provider-test-value' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => codexConnection(),
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
@@ -507,6 +515,7 @@ test('CLI pairing approves exactly one Hermes Telegram owner code in the saved w
     error: assert.fail,
   }, {
     env: { DAYTONA_API_KEY: 'provider-test-value' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({
       async verifyAuthorization() { calls.push('verify'); },
@@ -527,6 +536,7 @@ test('CLI pairing validates Daytona authorization before asking for an existing 
     error: (message) => stderr.push(message),
   }, {
     env: { DAYTONA_API_KEY: 'rejected-key' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getTelegramConnection: async () => { telegramPrompted = true; return telegramConnection(); },
     appFactory: async () => ({
       async verifyAuthorization() {
@@ -595,6 +605,7 @@ test('CLI dispatches doctor, repair, legacy reset, and explicit destroy without 
   const io = { log() {}, error: assert.fail };
   const dependencies = {
     env: { DAYTONA_API_KEY: 'daytona-secret' },
+    readDaytonaCredential: () => 'synthetic-test-runtime-credential',
     getModelConnection: async () => codexConnection(),
     getTelegramConnection: async () => telegramConnection(),
     appFactory: async () => ({

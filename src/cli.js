@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { createNedApp } from './app.js';
 import { authorizeOpenAICodex } from './auth/openai-codex.js';
+import { readDaytonaCredential } from './daytona-credential.js';
 import { getModelProviderRuntime } from './model-providers.js';
 import { createDryRunPlan } from './plan.js';
 import { createProfileArchive } from './profile-archive.js';
@@ -18,10 +19,10 @@ import {
 const require = createRequire(import.meta.url);
 const { version: NED_VERSION } = require('../package.json');
 
-async function defaultAppFactory({ env, verbose = false, log = () => {}, progress = () => {} }) {
+async function defaultAppFactory({ daytonaApiKey, verbose = false, log = () => {}, progress = () => {} }) {
   return createNedApp({
     provider: createDaytonaProvider({
-      apiKey: env.DAYTONA_API_KEY,
+      apiKey: daytonaApiKey,
       verbose,
       log,
       profileArchive: createProfileArchive,
@@ -80,6 +81,25 @@ export async function runCli(argv, io = console, dependencies = {}) {
   // Unit-level dependency injection must not accidentally use a developer's real telemetry config.
   const telemetry = dependencies.telemetry
     || (Object.keys(dependencies).length === 0 ? createFileTelemetry() : NOOP_TELEMETRY);
+  let daytonaApiKey;
+  const requireDaytonaCredential = () => {
+    if (daytonaApiKey) return daytonaApiKey;
+    try {
+      if (dependencies.daytonaApiKey) {
+        daytonaApiKey = dependencies.daytonaApiKey;
+      } else if (dependencies.readDaytonaCredential) {
+        daytonaApiKey = dependencies.readDaytonaCredential();
+      } else if (Object.keys(dependencies).length > 0) {
+        throw new Error('NED test dependencies must inject the Daytona runtime credential.');
+      } else {
+        daytonaApiKey = readDaytonaCredential();
+      }
+      return daytonaApiKey;
+    } catch (error) {
+      io.error(error.message);
+      return null;
+    }
+  };
 
   if (flags.some((flag) => flag === '--telegram-token' || flag.startsWith('--telegram-token='))) {
     io.error(`NED never accepts Telegram tokens through argv, shell history, chat, URLs, logs, or analytics. Use hidden TTY input. See ${TELEGRAM_DOCS_URL}`);
@@ -169,15 +189,15 @@ export async function runCli(argv, io = console, dependencies = {}) {
       capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
       return 2;
     }
-    if (!env.DAYTONA_API_KEY) {
+    if (!requireDaytonaCredential()) {
       capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
-      io.error('Daytona API authorization is needed to create and manage your private Sandbox. Get a key at https://app.daytona.io/dashboard/keys, grant write:sandboxes, delete:sandboxes, and manage:secrets, set DAYTONA_API_KEY, then rerun ned create. Do not paste secrets into chat.');
+
       return 2;
     }
     try {
       const provider = getModelProviderRuntime(providerId);
       verboseLog('create: initializing Daytona provider');
-      const app = await appFactory({ env, verbose, log: verboseLog, progress: (message) => io.log(message) });
+      const app = await appFactory({ env, daytonaApiKey, verbose, log: verboseLog, progress: (message) => io.log(message) });
       verboseLog('create: validating Daytona authorization');
       await app.verifyAuthorization?.();
       verboseLog('create: Daytona authorization accepted');
@@ -211,9 +231,9 @@ export async function runCli(argv, io = console, dependencies = {}) {
 
   if (command === 'chat') {
     const startedAt = Date.now();
-    if (!env.DAYTONA_API_KEY) {
+    if (!requireDaytonaCredential()) {
       capture(telemetry, TELEMETRY_EVENTS.chatFailed, startedAt, 'validation_error');
-      io.error('Daytona API authorization is needed to access your existing private Sandbox. Set DAYTONA_API_KEY from a key created at https://app.daytona.io/dashboard/keys, then rerun ned chat.');
+
       return 2;
     }
     const prompt = flags.join(' ').trim();
@@ -224,7 +244,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
     try {
       const modelConnection = await getModelConnection();
-      const app = await appFactory({ env });
+      const app = await appFactory({ env, daytonaApiKey });
       const telegramConnection = await getTelegramConnection();
       const response = await app.chat(prompt, modelConnection, telegramConnection);
       capture(telemetry, TELEMETRY_EVENTS.chatCompleted, startedAt, 'success');
@@ -238,8 +258,8 @@ export async function runCli(argv, io = console, dependencies = {}) {
   }
 
   if (command === 'pair') {
-    if (!env.DAYTONA_API_KEY) {
-      io.error(`Daytona authorization required. Repair your local Daytona credential, then retry. See ${CREDENTIALS_DOCS_URL}`);
+    if (!requireDaytonaCredential()) {
+
       return 2;
     }
     const code = String(flags[0] || '').toUpperCase();
@@ -248,7 +268,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       return 2;
     }
     try {
-      const app = await appFactory({ env });
+      const app = await appFactory({ env, daytonaApiKey });
       await app.verifyAuthorization?.();
       const telegramConnection = await getTelegramConnection();
       await app.pair(code, telegramConnection);
@@ -268,8 +288,8 @@ export async function runCli(argv, io = console, dependencies = {}) {
       reset: TELEMETRY_EVENTS.resetCompleted,
       destroy: TELEMETRY_EVENTS.destroyCompleted,
     }[command];
-    if (!env.DAYTONA_API_KEY) {
-      io.error(`Daytona API authorization is needed to manage your private Sandbox. Set DAYTONA_API_KEY from a key created at https://app.daytona.io/dashboard/keys, then retry ned ${command}.`);
+    if (!requireDaytonaCredential()) {
+
       return 2;
     }
     if (command === 'destroy' && !flags.includes('--yes')) {
@@ -277,7 +297,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       return 2;
     }
     try {
-      const app = await appFactory({ env });
+      const app = await appFactory({ env, daytonaApiKey });
       if (command === 'doctor') {
         const telegramConnection = await getTelegramConnection();
         const health = await app.doctor(await getModelConnection(), telegramConnection);
