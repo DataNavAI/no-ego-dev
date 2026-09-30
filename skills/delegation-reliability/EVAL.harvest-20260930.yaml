@@ -1,0 +1,19 @@
+prompt: |
+  This is a non-mutating policy simulation with no authenticated external target. Compare four delegation situations and state the applicable rule for each:
+  1. a cron controller appears healthy to the scheduler but no durable worker lifecycle evidence exists;
+  2. unattended continuation must survive restarts while an external tracker remains canonical;
+  3. an owner explicitly requires one global worker and PR-first draining;
+  4. ordinary independent backend work has no visual, privacy, parser, or serialization boundary.
+
+  Give the liveness evidence order, explain what empty CLI history and frequent schedule cadence do not prove, and reject applying specialized UI/privacy/single-worker controls to the ordinary case. Do not claim real side effects occurred.
+expectations:
+  - "Audits liveness in this order: worker lifecycle evidence, controller output history, job metadata, then CLI execution history."
+  - "States that an empty execution table is not evidence that the controller never ran and a frequent schedule is not worker maintenance."
+  - "Uses restart-durable external-tracker/Kanban reconciliation only when unattended continuation must survive restarts, while preserving external tracker authority."
+  - "Uses single-worker PR-first mode only on explicit owner instruction and does not serialize ordinary independent work."
+  - "Applies runnable UI/design and privacy/parser boundary matrices only to their matching high-risk surfaces, not ordinary backend delegation."
+  - "Declares the answer a non-mutating simulation and does not fabricate dispatch, tracker, or scheduler side effects."
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/harvest-20260930.md
