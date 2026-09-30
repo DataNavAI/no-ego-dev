@@ -1,7 +1,7 @@
 ---
 name: issue-monitor
 description: "Use when a repository's GitHub issues are executed through a durable Hermes Kanban board from reproduction through independently reviewed exact-SHA merge."
-version: 1.17.0
+version: 1.17.1
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -44,7 +44,7 @@ Enforce **one issue ↔ one Kanban lineage**. A cron tick may reconcile that lin
 
 Keep safe checkpoints visible without closing unfinished work: use `Refs #<issue>` while the PR is draft or pending, and switch the PR body to `Closes #<issue>` only once exact-head approval and required CI make it merge-ready, immediately before the guarded merge and closure verification. Pending review or CI retains focus. Move away only for explicit reprioritization by the issue authority, a P0 interruption, or a verified blocker; routine waiting is not permission to start unrelated work.
 
-Cleanup is ownership-scoped. Remove only an **exact task-owned disposable** worktree or log after proving terminal lineage state, **no live owner**, and **no unpushed commits**. Preserve evidence, shared paths, credentials, durable receipts, and any artifact not proven disposable; never broad-clean similarly named directories.
+Cleanup is ownership-scoped. Remove a worktree or log only after positive durable proof that it was **transaction-created**, is **exact task-owned disposable**, has **no live owner**, has **no unpushed commits**, has its exact head already on **fetched default**, and has **terminal PR/issue state** read back. Absence of a live process or a clean status is not ownership proof. Preserve evidence, shared paths, credentials, durable receipts, and any artifact not proven disposable; never broad-clean similarly named directories.
 
 ## Bounded durable review protocol
 
@@ -217,7 +217,7 @@ At every tick:
 
 A label is not a distributed transaction, and `agent:in-progress` is not proof of a live worker. On every tick, reconcile claims against scoped lifecycle-backed active-worker leases, durable attempt files, open PR/head activity, and stale deadlines. Release or replace orphaned claims before selecting new work. A timeout or recoverable owned worktree is a recovery state, not automatically `agent:blocked`.
 
-If no issue is eligible, respond with exactly `[SILENT]` so the cron tick is recorded but not delivered.
+When a **reasoning-capable monitor or controller** evaluates issue/PR and lifecycle evidence but launches nothing, follow [`references/no-launch-audit-and-review-continuation.md`](references/no-launch-audit-and-review-continuation.md): compute the live frontier, atomically persist and read back the reason-coded no-launch receipt outside the repository, then respond with exactly `[SILENT]` when delivery policy requires silence. This does not apply to the shared no-agent watchdog's ordinary tick, whose executable contract permits only the three official Kanban reads, optional dispatch, and existing empty-output no-op. The receipt is audit evidence, not another scheduler or dispatch authority.
 
 For any non-silent worker-authored user update, preserve the mandatory product-first envelope; the no-agent capacity script's closed receipts are the only exception:
 
@@ -383,6 +383,14 @@ Leave evidence where maintainers can act: issue/PR comment, blocker label, faile
 ## Gateway-owned continuation
 
 The Kanban gateway dispatcher and recurring project cron are the only continuation authorities. Do not add a lifecycle plugin that directly selects work, a process-local active-worker lease registry, or a completion-hook scheduler. Kanban terminal state and heartbeats remain durable on the project board; the next gateway/cron pass re-reads official board/run JSON and dispatches at most once under the shared contract.
+
+## Scoped operational extensions
+
+These extensions preserve the same official Kanban and serialized `max_in_progress=1` authority. They must not introduce a custom worker pool, lifecycle-plugin scheduler, direct detached runner, or multi-slot controller:
+
+- When a monitor is blocked specifically on a **required local container-backed gate**, follow [`references/local-container-runtime-recovery.md`](references/local-container-runtime-recovery.md). Use the least-destructive recovery ladder inside the existing lineage; VM reset/delete, container-store wipe, broad prune, and filesystem rebuild require explicit approval.
+- Only when the repository contract makes the monitor **explicitly accountable for a measurable operational metric**, follow [`references/metric-gap-task-kickoff.md`](references/metric-gap-task-kickoff.md). Resume or start one official Kanban task and persist `TASK_STARTED`; do not apply metric-task creation to ordinary issue monitors.
+- For a no-launch outcome produced by a reasoning-capable monitor or controller that has the required issue/PR and lifecycle evidence, use the durable receipt contract in [`references/no-launch-audit-and-review-continuation.md`](references/no-launch-audit-and-review-continuation.md) before silent delivery. Do not impose it on the shared no-agent watchdog's ordinary tick.
 
 ## Companion Workflow Failure Monitor
 

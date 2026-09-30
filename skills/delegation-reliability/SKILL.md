@@ -1,6 +1,6 @@
 ---
 name: delegation-reliability
-version: 1.14.10
+version: 1.14.11
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
@@ -103,6 +103,18 @@ Treat worker capacity as a resource to keep productively occupied while the exec
 - It is valid to have zero workers only when every unfinished task is genuinely blocked by dependencies, missing auth, an explicit user decision, a safety gate, or an already-running external operation. Mark those tasks blocked/waiting with the concrete reason; do not manufacture busywork.
 - **Never use tracker-only work to fill capacity.** A status rewrite, blocked-checkpoint restatement, verifier hardening with no concrete release defect, or duplicate frontier audit is not a substitute for a runnable product slice. Preserve a blocked result once, then select an independent eligible outcome or report the real blocked capacity.
 - Before sending a status-only or final response, run this liveness check. Never end with a promise that a later hook will dispatch work when a runnable task can be dispatched now.
+
+### Scheduled-controller audit and scoped controller modes
+
+Audit a scheduled controller by evidence strength, not cadence or optimistic prose: worker lifecycle evidence first, then retained controller output, job metadata, and CLI execution history. An empty CLI execution table is not proof that the controller never ran, and a frequent schedule is not worker maintenance. Read back claimed artifacts and report advancement, confirmed worker liveness, revival reliability, and the concrete dispatch gap separately. See [`references/cron-controller-liveness-audit.md`](references/cron-controller-liveness-audit.md).
+
+Apply the following controls only inside their declared boundaries; they extend rather than replace the canonical hook-only, durable-controller, parallel-work, and no-busywork rules above:
+
+- Use [`references/external-tracker-kanban-reconciliation.md`](references/external-tracker-kanban-reconciliation.md) **only when unattended continuation must survive restarts** and an external tracker remains canonical. It **must not replace hook-only continuation** when the user rejects a duplicate queue.
+- Use [`references/single-worker-pr-first-controller.md`](references/single-worker-pr-first-controller.md) **only when an owner explicitly requires one global worker and all pull requests before issues**. It **must not serialize independent work by default**.
+- Use [`references/visual-product-review-remediation.md`](references/visual-product-review-remediation.md) **only for runnable UI/design pull requests** that claim product or design readiness; do not impose screenshot/browser gates on non-visual changes.
+- Use [`references/boundary-matrix-review.md`](references/boundary-matrix-review.md) **only after a privacy, schema, parser, normalization, timeout, or concurrency finding**, then close applicable high-risk rows with [`references/remediation-closure-matrix.md`](references/remediation-closure-matrix.md).
+- Use [`references/ambiguous-privacy-classifier.md`](references/ambiguous-privacy-classifier.md) only for URI/body-like privacy classification where ordinary prose must remain accepted. This classifier matrix is not a generic delegation-payload rule.
 
 ### Material base-advance rule
 

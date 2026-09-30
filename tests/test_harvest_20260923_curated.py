@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 
 VERSIONS = {
-    "issue-monitor": "1.17.0",
+    "issue-monitor": "1.17.1",
     "profile-skill-harvester": "1.5.62",
     "subagent-driven-development": "1.12.10",
     "architect": "0.2.12",

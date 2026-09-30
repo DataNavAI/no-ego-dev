@@ -70,7 +70,7 @@ REQUIRED = {
         "boundary": "must not execute untrusted model output in-process",
     },
     "delegation-reliability": {
-        "version": "1.14.10",
+        "version": "1.14.11",
         "skill": [
             "durable draft-pr checkpoint",
             "exact kanban board pinning",
