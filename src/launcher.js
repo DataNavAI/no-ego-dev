@@ -17,7 +17,7 @@ function redactStreamedStderr(value, credentials) {
 
 export function needsDaytona(argv) {
   const [command, ...flags] = argv;
-  if (['--version', 'version', '--help', '-h', 'help'].includes(command)) return false;
+  if (['--version', 'version', '--help', '-h', 'help', 'serve', 'com'].includes(command)) return false;
   return command === 'create' ? !flags.includes('--dry-run') : Boolean(command);
 }
 
@@ -117,9 +117,30 @@ async function runChild(node, appEntry, argv, env) {
     pendingOutput += text;
     writeRedactedLines();
   });
-  const code = await new Promise((resolve) => child.once('close', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
-  writeRedactedLines(true);
-  return { code, rejectedKey: /(?:HTTP\s+401|API key was rejected)/i.test(rawStderr) };
+  let interrupted = false, killTimer, spawnError;
+  const forward = (signal) => {
+    if (interrupted) return; // Give the child time to finish its own cleanup.
+    interrupted = true;
+    child.kill(signal);
+    killTimer = setTimeout(() => child.kill('SIGKILL'), 5000);
+    killTimer.unref();
+  };
+  const onTerm = () => forward('SIGTERM');
+  const onInt = () => forward('SIGINT');
+  process.on('SIGTERM', onTerm);
+  process.on('SIGINT', onInt);
+  child.once('error', (error) => { spawnError = error; });
+  try {
+    // close (not exit) also waits for drained stderr and handles failed spawns.
+    const code = await new Promise((resolve) => child.once('close', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
+    if (spawnError) throw new Error('NED: CLI child could not start; verify the Node installation.');
+    return { code, rejectedKey: !interrupted && /(?:HTTP\s+401|API key was rejected)/i.test(rawStderr) };
+  } finally {
+    clearTimeout(killTimer);
+    process.off('SIGTERM', onTerm);
+    process.off('SIGINT', onInt);
+    writeRedactedLines(true);
+  }
 }
 
 export async function runLauncher(argv, options = {}) {

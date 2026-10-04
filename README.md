@@ -79,6 +79,10 @@ Install github.com/knoomdevbot/no-ego-dev on a new profile named no-ego-dev.
 
 NED works best when you describe the outcome rather than prescribing technical choices. Give it the product intent and examples; let it infer the simplest practical way to build and share the prototype.
 
+## Share session artifacts with NED COM
+
+Use `ned serve --root <approved-review-directory> --state <private-receipt.json>` and `ned com link <absolute-artifact-path> --state <private-receipt.json>` to share final files through a browser reader. The `ned-com` skill stages only approved shareable artifacts and verifies each exact HTTPS link. Public mode requires installed `cloudflared`; links are bearer access, temporary, and work only while the host stays awake and the server/tunnel run. `--local` is local-only. See the [NED COM guide](docs/ned-com/README.md) for privacy, refresh, and shutdown.
+
 ## Minimum requirements
 
 - [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 / v0.14.0 or newer.

@@ -91,6 +91,20 @@ test('version and help never require Daytona authorization', () => {
   assert.equal(needsDaytona(['chat', 'hello']), true);
 });
 
+test('serve and COM delegate without any Daytona credential lookup', async () => {
+ for (const argv of [['serve','--root','/approved','--local'],['com','link','/approved/report.md']]) {
+  assert.equal(needsDaytona(argv),false);
+  let captured;
+  assert.equal(await runLauncher(argv, {
+   env:{HOME:'/unused',DAYTONA_API_KEY:'must-not-propagate'},generation:'/unused',exists:()=>true,
+   readCredential:async()=>{throw new Error('credential lookup must not run');},
+   spawn:(_node,args,options)=>{captured={args,options};return {status:0};},
+  }),0);
+  assert.deepEqual(captured.args.slice(1),argv);
+  assert.equal(captured.options.env.DAYTONA_API_KEY,undefined);
+ }
+});
+
 test('launcher passes credentials only through the child environment', () => {
   const env = buildLaunchEnvironment({ baseEnv: { PATH: '/bin' }, token: 'secret-token' });
   assert.equal(env.DAYTONA_API_KEY, 'secret-token');

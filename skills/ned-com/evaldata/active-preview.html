@@ -1,0 +1,6 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Inert handling probe</title></head>
+<body><h1>Untrusted active-content fixture</h1>
+<script>document.documentElement.dataset.nedFixtureExecuted = "unsafe";</script>
+<img src="https://example.invalid/fixture-only.png" onerror="document.body.dataset.nedFixtureEvent='unsafe'" alt="External load must not run in the artifact reader">
+<p>Never execute this fixture. Use inert presentation or safe download.</p></body></html>

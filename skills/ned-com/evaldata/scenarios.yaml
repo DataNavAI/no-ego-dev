@@ -1,0 +1,34 @@
+synthetic: true
+instances:
+- id: owned-candidate
+  owned: true
+  receipt_root: /approved/review-root
+  requested_root: /approved/review-root
+  live_readback: not supplied; must verify
+  decision: REUSE_ONLY_AFTER_LIVE_VERIFICATION
+- id: stale
+  owned: true
+  process_alive: false
+  decision: DO_NOT_REUSE
+- id: unrelated-listener
+  owned: false
+  port: 4311
+  decision: DO_NOT_REUSE_OR_KILL
+- id: wrong-root
+  owned: true
+  receipt_root: /other/root
+  requested_root: /approved/review-root
+  homepage_status: 200
+  decision: DO_NOT_REUSE
+inventory:
+- final-report.md
+- 'design/최종 화면 #1?.png'
+- media/demo clip.mp4
+false_health:
+  homepage_status: 200
+  selected_artifact_status: 404
+  decision: BLOCK_PUBLIC_HANDOFF
+network_failure:
+  link_command_success: true
+  https_verified: false
+  decision: BLOCK_PUBLIC_HANDOFF

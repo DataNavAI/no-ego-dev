@@ -62,6 +62,10 @@ function createVerboseLogger(io, enabled) {
 
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (command === 'serve' || command === 'com') {
+    const { runCom } = await import('./com/cli.js');
+    return runCom(command, flags, io);
+  }
   const env = dependencies.env || process.env;
   const verbose = flags.includes('--verbose');
   const verboseLog = createVerboseLogger(io, verbose);
@@ -91,6 +95,8 @@ export async function runCli(argv, io = console, dependencies = {}) {
       `NED — private hosted product partner (version ${NED_VERSION})`,
       '',
       'Usage:',
+      '  ned serve --root <approved-artifact-directory> [--state <receipt.json>] [--port <0–65535>] [--local]',
+      '  ned com link <absolute-artifact-path> [--state <receipt.json>]',
       '  ned --version',
       '  ned version',
       '  ned create [--dry-run --json] [--verbose]',

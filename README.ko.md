@@ -54,6 +54,10 @@ Install github.com/knoomdevbot/no-ego-dev on a new profile named no-ego-dev.
 
 NED는 기술 선택을 세세하게 지시할 때보다 원하는 결과를 설명할 때 더 잘 작동합니다. 제품 의도와 참고 사례를 주면, NED가 가장 단순하고 실용적인 방식으로 만들고 공유할 방법을 추론합니다.
 
+## NED COM으로 세션 결과물 공유하기
+
+`ned serve --root <승인된-검토-디렉터리> --state <비공개-receipt.json>`과 `ned com link <결과물의-절대경로> --state <비공개-receipt.json>`으로 최종 파일을 브라우저 리더 링크로 공유할 수 있습니다. `ned-com` 스킬은 공유가 승인된 파일만 준비하고 각 HTTPS 링크의 실제 결과물을 검증합니다. 공개 모드는 설치된 `cloudflared`가 필요하며, 링크를 가진 사람은 공유 루트에 접근할 수 있습니다. 임시 링크는 호스트가 깨어 있고 서버와 터널이 실행 중일 때만 사용할 수 있으며 `--local`은 로컬 전용입니다. 개인정보 보호, 갱신, 종료 방법은 [NED COM 가이드](docs/ned-com/README.md)를 참고하세요.
+
 ## 최소 요구사항
 
 - [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 / v0.14.0 이상.
