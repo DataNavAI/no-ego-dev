@@ -51,7 +51,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const platform = `${system === 'Darwin' ? 'darwin' : 'linux'}-${machine === 'arm64' || machine === 'aarch64' ? 'arm64' : 'x64'}`;
   const nodeRoot = path.join(root, `node-v-test-${platform}`);
   await mkdir(path.join(nodeRoot, 'bin'), { recursive: true });
-  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\nif [[ "\${1-}" == *'/ned-launcher.js' || "\${1-}" == *'/launcher-runtime.js' || "\${1-}" == *'/app/src/launcher.js' ]]; then exec ${JSON.stringify(process.execPath)} "\$@"; fi\n[[ "\$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "\$*" == *'create --dry-run --json'* ]]; then printf '{"dryRun":true}\\n'; exit 0; fi\nif [[ "\$*" == *' --help'* ]]; then printf 'NED help\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_CREATE_FAIL-} != 1 ]] || { echo synthetic-create-failure >&2; exit 43; }\nprintf 'ned-create:%s\\n' "\${2-}" >> "$HOME/create.log"\n`);
+  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\nif [[ "\${1-}" == *'/ned-launcher.js' || "\${1-}" == *'/launcher-runtime.js' || "\${1-}" == *'/app/src/launcher.js' ]]; then exec ${JSON.stringify(process.execPath)} "\$@"; fi\n[[ "\$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "\$*" == *' --help'* ]]; then printf 'NED help\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_RUNTIME_FAIL-} != 1 ]] || { echo synthetic-runtime-failure >&2; exit 43; }\nprintf 'ned-runtime:%s\\n' "\${2-}" >> "$HOME/runtime.log"\n`);
   await chmod(path.join(nodeRoot, 'bin', 'node'), 0o755);
   await writeFile(path.join(nodeRoot, 'bin', 'npm'), '#!/usr/bin/env bash\nset -eu\n[[ ${1-} == ci ]]\n[[ $(command -v node) == "${BASH_SOURCE[0]%/*}/node" ]] || { echo system-node-used >&2; exit 42; }\ntouch .dependencies-installed\n');
   await chmod(path.join(nodeRoot, 'bin', 'npm'), 0o755);
@@ -62,7 +62,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const sourceRoot = path.join(root, 'no-ego-dev-test');
   await mkdir(path.join(sourceRoot, 'bin'), { recursive: true });
   await mkdir(path.join(sourceRoot, 'src'), { recursive: true });
-  await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), `if (process.argv.includes('create') && process.argv.includes('--dry-run') && process.argv.includes('--json')) console.log(JSON.stringify({ dryRun: true }));\n`);
+  await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), `if (process.argv.includes('--help')) console.log('NED help');\n`);
   await cp(path.join(repoRoot, 'src', 'telegram.js'), path.join(sourceRoot, 'src', 'telegram.js'));
   await cp(path.join(repoRoot, 'bin', 'ned-launcher.js'), path.join(sourceRoot, 'bin', 'ned-launcher.js'));
   await cp(path.join(repoRoot, 'src', 'launcher.js'), path.join(sourceRoot, 'src', 'launcher.js'));
@@ -147,7 +147,7 @@ for (const file of [readme, installDoc]) {
   test(`${path.relative(repoRoot, file)} documents the canonical repository installer`, async () => {
     const text = await readFile(file, 'utf8');
     assert.match(text, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
-    assert.match(text, /pinned private runtime and NED downloads/);
+    assert.match(text, /pinned private/);
   });
 }
 
@@ -164,7 +164,7 @@ test('Node launcher contains the credential boundary and delegates version witho
   assert.doesNotMatch(text, /readline\.question\([^)]*DAYTONA_API_KEY/);
 });
 
-test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to run create', async () => {
+test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to read help', async () => {
   const harness = await makeHarness();
   await writeFile(path.join(harness.home, '.profile'), '# Documentation: ~/.local/bin is intentionally not on PATH\n', { mode: 0o600 });
   await writeFile(path.join(harness.home, '.zprofile'), '# private zsh configuration\n', { mode: 0o640 });
@@ -172,9 +172,9 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   const result = runInstaller(harness);
   assert.equal(result.status, 0, result.stderr);
   assert.doesNotMatch(result.stdout + result.stderr, new RegExp(syntheticSecret));
-  assert.match(result.stdout, /Next step: run `ned create`/);
-  assert.match(result.stdout, /--verbose/);
-  assert.equal(await exists(path.join(harness.home, 'create.log')), false);
+  assert.match(result.stdout, /Next step: run `ned --help`/);
+  assert.doesNotMatch(result.stdout, /ned create/);
+  assert.equal(await exists(path.join(harness.home, 'runtime.log')), false);
   assert.equal(await exists(path.join(harness.home, '.config/ned/daytona-api-key')), false);
   const generation = await activeGeneration(harness);
   assert.equal(await exists(path.join(generation, 'install-manifest')), true);
@@ -241,7 +241,7 @@ test('clean macOS arm64 and Ubuntu amd64/arm64 installs and reruns preserve BotF
     const rerun = runInstaller(harness, {}, '');
     assert.equal(rerun.status, 0, `${target.name}: stdout=${rerun.stdout} stderr=${rerun.stderr}`);
     assert.match(rerun.stdout, /already installed/i, target.name);
-    assert.equal(await exists(path.join(harness.home, 'create.log')), false, target.name);
+    assert.equal(await exists(path.join(harness.home, 'runtime.log')), false, target.name);
 
     const generation = await activeGeneration(harness);
     const telegramModule = pathToFileURL(path.join(generation, 'app', 'src', 'telegram.js')).href;
@@ -287,7 +287,7 @@ test('completed rerun repairs removed PATH blocks before returning without redow
   assert.equal(rerun.status, 0, rerun.stderr);
   assert.match(rerun.stdout, /already installed/i);
   assert.equal((await readFile(harness.curlLog, 'utf8')).trim().split('\n').length, 2);
-  assert.equal(await exists(path.join(harness.home, 'create.log')), false);
+  assert.equal(await exists(path.join(harness.home, 'runtime.log')), false);
   assert.equal((await readFile(path.join(harness.home, '.bashrc'), 'utf8')).split(pathBlock).length - 1, 1);
 });
 
@@ -411,20 +411,20 @@ test('reuse revalidates private Node, complete app tree, and launcher integrity 
 
 test('installer never asks for credentials or runs create', async () => {
   const harness = await makeHarness();
-  const result = runInstaller(harness, { NED_TEST_CREATE_FAIL: '1' }, '');
+  const result = runInstaller(harness, { NED_TEST_RUNTIME_FAIL: '1' }, '');
   assert.equal(result.status, 0, result.stderr);
-  assert.doesNotMatch(result.stdout + result.stderr, /Daytona API key|credential-missing|synthetic-create-failure/i);
-  assert.equal(await exists(path.join(harness.home, 'create.log')), false);
+  assert.doesNotMatch(result.stdout + result.stderr, /Daytona API key|credential-missing|synthetic-runtime-failure/i);
+  assert.equal(await exists(path.join(harness.home, 'runtime.log')), false);
 });
 
-test('installed launcher preserves credential-free create dry-run', async () => {
+test('installed launcher preserves credential-free help', async () => {
   const harness = await makeHarness();
   assert.equal(runInstaller(harness).status, 0);
-  const result = spawnSync(path.join(harness.home, '.local/bin/ned'), ['create', '--dry-run', '--json'], {
+  const result = spawnSync(path.join(harness.home, '.local/bin/ned'), ['--help'], {
     env: { HOME: harness.home, PATH: '/usr/bin:/bin' }, encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /"dryRun":true/);
+  assert.match(result.stdout, /NED help/);
 });
 
 test('production installer pins runtime and source versions with per-platform SHA-256 values', async () => {

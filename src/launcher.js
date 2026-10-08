@@ -16,9 +16,9 @@ function redactStreamedStderr(value, credentials) {
 }
 
 export function needsDaytona(argv) {
-  const [command, ...flags] = argv;
+  const [command] = argv;
   if (['--version', 'version', '--help', '-h', 'help'].includes(command)) return false;
-  return command === 'create' ? !flags.includes('--dry-run') : Boolean(command);
+  return ['chat', 'doctor', 'pair', 'repair', 'reset', 'destroy'].includes(command);
 }
 
 export function buildLaunchEnvironment({ baseEnv = process.env, token }) {

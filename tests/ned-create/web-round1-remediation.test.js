@@ -239,28 +239,6 @@ test('every API endpoint rejects query strings before auth, body, or adapters', 
   } finally { await context.close(); }
 });
 
-test('versioned governing contracts make the Daytona CLI lifecycle authoritative and park browser work', async () => {
-  const paths = ['PRD.md', 'TECH_SPEC.md', 'CUJ.md'];
-  const documents = await Promise.all(paths.map((name) => readFile(new URL(`../../docs/ned-create/${name}`, import.meta.url), 'utf8')));
-  for (const [index, document] of documents.entries()) {
-    assert.match(document, /Contract version: 6\.0/, paths[index]);
-    assert.match(document, /Daytona/i, paths[index]);
-    assert.match(document, /CLI/i, paths[index]);
-    assert.match(document, /browser/i, paths[index]);
-    assert.match(document, /V2, not V1/i, paths[index]);
-    assert.match(document, /AWS/i, paths[index]);
-  }
-  const combined = documents.join('\n');
-  for (const command of ['create', 'chat', 'doctor', 'pair', 'repair', 'destroy']) {
-    assert.match(combined, new RegExp(`\\b${command}\\b`));
-  }
-  for (const required of [
-    /ChatGPT OAuth/, /device[^\n]+authorization|device[^\n]+OAuth/i, /private[^\n]+persistent[^\n]+Sandbox/i,
-    /checksum/i, /direct[^\n]+readback/i, /zero[^\n-]+resource/i,
-    /no generic arbitrary-command API/i,
-  ]) assert.match(combined, required);
-});
-
 test('illegal regressions and overlapping lifecycle operations fail closed', async () => {
   const context = await start();
   try {

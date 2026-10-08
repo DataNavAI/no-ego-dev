@@ -24,7 +24,7 @@ A missing local ownership state does not authorize broad deletion. It means `ned
 ## Live lifecycle
 
 1. After a successful zero-resource preflight, run the candidate's live acceptance runner.
-2. Verify its create, gateway readiness, first response, `ned repair`, second response, and final `ned destroy --yes` path.
+2. Verify existing-workspace gateway readiness, first response, `ned repair`, second response, and final `ned destroy --yes` path.
 3. Treat any failed cleanup readback, extra NED-managed sandbox, credential disclosure, gateway failure, or missing second response as a release blocker.
 4. The runner's `finally` cleanup is required but does not replace the preflight cleanup.
 
@@ -34,7 +34,7 @@ Each manual live QA report must include:
 
 - candidate revision and host/interface;
 - preflight managed-sandbox count and final zero-resource readback;
-- create, repair, and destroy outcomes;
+- repair and destroy outcomes;
 - the separate user-visible response evidence for both pre-repair and post-repair markers;
 - cleanup result and any remaining blocker.
 

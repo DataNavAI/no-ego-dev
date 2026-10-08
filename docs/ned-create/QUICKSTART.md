@@ -1,26 +1,5 @@
-# NED V1 quickstart
+# NED CLI quickstart
 
-Canonical public page: https://ned.datanav.app/docs/v1/quickstart/
+Install using [INSTALL.md](INSTALL.md), then run `ned --help`.
 
-## Outcome
-
-The installer prepares the Daytona-only CLI. `ned create` then creates one private, persistent Daytona Sandbox; connects ChatGPT with Hermes-native OAuth; validates a new Telegram bot; starts the pinned Hermes Telegram gateway; and verifies both inference and gateway readiness. The Sandbox is always-on by default (`auto-stop=0`). OpenRouter is not required or prompted.
-
-## Journey
-
-1. Run the immutable one-line installer from `README.md` or `INSTALL.md`.
-2. Complete ChatGPT device authorization only if no safe reusable Hermes credential exists.
-3. Follow the numbered BotFather actions shown by NED.
-4. Enter the Telegram token only at `Paste the Telegram bot token (input hidden): `.
-5. Open the verified bot link, tap **Start**, and send `hello`.
-6. If Hermes returns an owner-pairing code, run `ned pair <code>` and send `hello` again.
-
-The value moment is the first response from the verified Telegram bot. The Telegram token is injected only at runtime through the Daytona SDK environment channel; it is not saved as a Daytona Secret. V1 has no browser onboarding or AWS provisioning: those are V2 scope.
-
-## Recovery
-
-1. Run `ned doctor`.
-2. Run `ned repair` to restore the exact saved Sandbox and Telegram gateway session.
-3. Use `ned destroy --yes` only when replacement is required; local state clears after direct remote absence readback.
-
-See [Telegram setup](TELEGRAM.md) and [Credentials, revocation, destroy, and troubleshooting](CREDENTIALS.md).
+V0 does not provision workspaces. For an existing saved workspace, use `ned chat "your request"`, `ned doctor`, `ned repair`, and `ned destroy --yes`. Destroy permanently deletes the saved remote workspace and its model Secret. See [credentials](CREDENTIALS.md) and the public Telegram recovery guide.

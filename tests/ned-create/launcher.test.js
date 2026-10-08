@@ -86,8 +86,9 @@ test('version and help never require Daytona authorization', () => {
   assert.equal(needsDaytona(['--version']), false);
   assert.equal(needsDaytona(['version']), false);
   assert.equal(needsDaytona(['--help']), false);
-  assert.equal(needsDaytona(['create', '--dry-run']), false);
-  assert.equal(needsDaytona(['create']), true);
+  assert.equal(needsDaytona(['create']), false);
+  assert.equal(needsDaytona(['telemetry', 'status']), false);
+  assert.equal(needsDaytona(['doctor']), true);
   assert.equal(needsDaytona(['chat', 'hello']), true);
 });
 
@@ -121,14 +122,14 @@ test('an explicitly exported Daytona key takes precedence over stored credential
   );
 });
 
-test('spawned create errors stream before exit without exposing child credentials', async () => {
+test('spawned doctor errors stream before exit without exposing child credentials', async () => {
   const root = await mkdtemp(join(tmpdir(), 'ned-launcher-stderr-'));
   const appEntry = join(root, 'app', 'bin', 'ned.js');
   const telegramToken = `123456789:${'A'.repeat(35)}`;
   const daytonaKey = 'synthetic-daytona-api-key-for-stderr-redaction';
   await mkdir(join(root, 'app', 'bin'), { recursive: true });
   await writeFile(appEntry, [
-    "process.stderr.write('NED create failed: normal child error\\n');",
+    "process.stderr.write('NED doctor failed: normal child error\\n');",
     'setTimeout(() => {',
     `  process.stderr.write('request https://api.telegram.org/bot${telegramToken}/getMe\\n');`,
     "  process.stderr.write(`DAYTONA_API_KEY=${process.env.DAYTONA_API_KEY}\\n`);",
@@ -142,12 +143,12 @@ test('spawned create errors stream before exit without exposing child credential
   let launcherSettled = false;
   process.stderr.write = (chunk) => {
     emitted += String(chunk);
-    if (emitted.includes('NED create failed: normal child error')) sawNormal?.();
+    if (emitted.includes('NED doctor failed: normal child error')) sawNormal?.();
     return true;
   };
   try {
     const normalOutput = new Promise((resolve) => { sawNormal = resolve; });
-    const launcher = runLauncher(['create'], {
+    const launcher = runLauncher(['doctor'], {
       env: { HOME: root },
       generation: root,
       exists: () => true,
@@ -159,7 +160,7 @@ test('spawned create errors stream before exit without exposing child credential
     ]);
     assert.equal(launcherSettled, false, 'normal child stderr must stream before child exit');
     assert.equal(await launcher, 17);
-    assert.match(emitted, /NED create failed: normal child error/);
+    assert.match(emitted, /NED doctor failed: normal child error/);
     assert.equal(/api\.telegram\.org\/bot/i.test(emitted), false, 'Telegram Bot API URL must be redacted');
     assert.equal(emitted.includes(telegramToken), false, 'Telegram token must be redacted');
     assert.equal(emitted.includes(daytonaKey), false, 'Daytona API key must be redacted');

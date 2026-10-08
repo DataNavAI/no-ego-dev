@@ -24,13 +24,3 @@ export const NED_PLAN = Object.freeze({
   ...defaultPlan,
   resources: Object.freeze({ ...defaultPlan.resources }),
 });
-
-export function createDryRunPlan(options) {
-  const { hermesModelProvider: _hermesModelProvider, model: _model, ...publicPlan } = createNedPlan(options);
-  return {
-    action: 'create',
-    dryRun: true,
-    ...publicPlan,
-    questionsAsked: 0,
-  };
-}

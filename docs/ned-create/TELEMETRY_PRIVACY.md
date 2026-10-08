@@ -46,9 +46,6 @@ Only these event names can leave the CLI:
 
 | Event | Boundary |
 | --- | --- |
-| `cli_create_started` | A non-dry-run create invocation starts |
-| `cli_create_completed` | The workspace is bootstrapped, healthy, and activated |
-| `cli_create_failed` | Create validation or operation failure |
 | `cli_chat_completed` | The primary chat journey returns successfully |
 | `cli_chat_failed` | Chat validation or operation failure |
 | `cli_doctor_completed` | Doctor returns a health result |

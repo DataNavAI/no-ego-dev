@@ -37,8 +37,7 @@ jobs:
           package="$(npm pack --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s)[0].filename))")"
           prefix="$(mktemp -d)"
           npm install --global --prefix "$prefix" "$package"
-          "$prefix/bin/ned" create --dry-run --json | tee /tmp/ned-dry-run.json
-          node -e "const p=require('/tmp/ned-dry-run.json'); if(p.questionsAsked!==0 || p.provider!=='daytona') process.exit(1)"
+          "$prefix/bin/ned" --help
 
   windows-eval-runner:
     name: windows-eval-runner
@@ -72,4 +71,4 @@ jobs:
           prefix="$(mktemp -d)"
           npm install --global --prefix "$prefix" "$package"
           "$prefix/bin/ned" --help
-          "$prefix/bin/ned" create --dry-run --json
+          "$prefix/bin/ned" --version

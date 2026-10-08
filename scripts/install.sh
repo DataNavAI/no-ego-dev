@@ -205,7 +205,7 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/ned-install.XXXXXX")
 
 if installation_valid; then
   repair_path
-  printf 'NED %s is already installed. Run: ned create\n' "$NED_REVISION"
+  printf 'NED %s is already installed. Run: ned --help\n' "$NED_REVISION"
   exit 0
 else
   install_ready=0
@@ -279,6 +279,5 @@ if [[ "$install_ready" != 1 ]]; then
 fi
 
 printf 'NED installed under %s (no sudo or system Node.js used).\n' "$INSTALL_ROOT"
-printf 'Next step: run `ned create` to connect Daytona, ChatGPT, and Telegram and create your private workspace.\n'
-printf 'If `ned create` fails, rerun it with `--verbose` for redacted stage diagnostics.\n'
+printf 'Next step: run `ned --help` to see available commands.\n'
 printf 'Install complete. Open a new shell, or run: export PATH="$HOME/.local/bin:$PATH"\n'

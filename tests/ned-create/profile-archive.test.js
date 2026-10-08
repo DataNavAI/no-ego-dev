@@ -26,7 +26,7 @@ test('profile archive contains the distribution but excludes runtime state and r
   assert.ok(entries.includes('skills/identity-for-agent/references/profile-credential-policy.yaml'));
   assert.ok(entries.includes('skills/identity-for-agent/scripts/ifa_profile_guard.py'));
   assert.ok(entries.some((entry) => entry.startsWith('eval_runner/')));
-  assert.ok(entries.includes('evaldata/ned-create/EVAL.yaml'));
+  assert.equal(entries.includes('evaldata/ned-create/EVAL.yaml'), false);
   assert.equal(entries.some((entry) => entry.startsWith('.git/')), false);
   assert.equal(entries.includes('.env'), false);
   assert.equal(entries.includes('auth.json'), false);

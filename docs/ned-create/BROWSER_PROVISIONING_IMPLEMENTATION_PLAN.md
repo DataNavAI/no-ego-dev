@@ -28,7 +28,7 @@ Primary journey: sign in → connect compute → connect model provider → crea
 - Add an allowlisted model-provider registry and public capability contract.
 - Keep credentials transient and non-serializing; expose one-time consumption to the compute adapter.
 - Add provider-specific Daytona secret names, environment variables, egress hosts, Hermes providers, and fixed models.
-- Add `ned create --model-provider <openai|anthropic|gemini|openrouter>` while retaining OpenRouter as the backwards-compatible CLI default.
+- CLI provisioning was removed in V0; model-provider selection belongs to a separately scoped hosted flow.
 - Persist only the selected provider ID with existing non-secret workspace metadata.
 
 ### Slice 2 — browser session and connection API

@@ -1,6 +1,6 @@
 # KakaoTalk Hermes Decision
 
-Decision: **defer from `ned create` v0.2.0 and do not ship an unofficial adapter.**
+Decision: **defer from the NED CLI and do not ship an unofficial adapter.**
 
 ## Why
 

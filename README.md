@@ -6,58 +6,18 @@ NoEgoDev — NED for short — is a Hermes profile that turns a plain request in
 
 NED is best for people who want to test an idea quickly with something real enough to share with users, teammates, or customers.
 
-## Create a private hosted NED — V1 Daytona-only CLI
+## NED CLI — V0 cornerstone
 
-On clean supported macOS/Linux x64 or arm64, install and start setup with one command:
+Install the CLI on supported macOS/Linux:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/install.sh | bash
+ned --help
 ```
 
-No sudo, git, system Node.js, or system npm is required. This command executes the canonical installer in this repository; that installer verifies pinned private runtime and NED downloads before installation. It reads no cloud credentials and does not provision a workspace; after installation, run `ned create` yourself. The `main` URL intentionally tracks the latest repository installer; use a full commit SHA in the URL when you need a reproducible installation. See [installer security, cleanup, and pin details](docs/ned-create/INSTALL.md).
+The installer verifies pinned private runtime and package downloads. No sudo, Git, system Node.js, or npm is required. The CLI no longer provisions new workspaces. Existing saved Daytona workspaces retain `chat`, `doctor`, `pair`, `repair`, and `destroy --yes` support.
 
-For a temporary, credential-free npm path, use the package directly:
-
-```bash
-npx --yes no-ego-dev --version
-npx --yes no-ego-dev create --dry-run --json
-```
-
-`ned create` asks no infrastructure or model-selection questions. It securely reuses a compatible existing Hermes ChatGPT OAuth credential when available; otherwise it opens one fixed ChatGPT device-authorization page. It then guides the user through official [@BotFather](https://t.me/BotFather), receives the bot token only through the exact hidden prompt or named macOS Keychain item, validates Telegram `getMe`, and injects the Telegram token only at runtime through the Daytona SDK environment channel. One private persistent Daytona Sandbox runs pinned Hermes `openai-codex` plus its long-polling Telegram gateway. OpenRouter and a Telegram webhook are not required.
-
-After setup, open the verified bot link, tap **Start**, send `hello`, and approve any returned owner code:
-
-```bash
-ned pair <8-character-code>
-ned chat "Build the smallest useful version of my product idea"  # optional terminal path
-ned doctor
-ned repair
-ned destroy --yes
-```
-
-Public V1 guides: [quickstart](https://ned.datanav.app/docs/v1/quickstart/), [Telegram setup](https://ned.datanav.app/docs/v1/telegram/), and [credentials/revocation/destroy/troubleshooting](https://ned.datanav.app/docs/v1/credentials/). These stable routes are versioned in this repository; production availability is a separate deployment gate.
-
-### Optional product telemetry
-
-Telemetry is **off by default**. NED only sends the small, versioned event schema in
-[`docs/ned-create/TELEMETRY_PRIVACY.md`](docs/ned-create/TELEMETRY_PRIVACY.md) after you affirm
-consent with `--yes`. The default destination is NED's centralized PostHog project; custom
-collector flags remain available for operators who need them.
-
-```bash
-ned telemetry enable --yes
-ned telemetry status
-ned telemetry disable
-ned telemetry delete
-```
-
-The project ingest key is public ingestion configuration, not a PostHog personal/admin API key.
-Never provide an admin secret. `delete` removes the local random installation ID and collector
-configuration; the collector operator's published policy controls deletion of already-ingested data.
-
-The messaging-enabled workspace is configured for always-on operation and must be destroyed explicitly when no longer needed. Provider outages, quota limits, crashes, and maintenance are not an uptime SLA. ChatGPT subscription/usage terms apply to the OAuth-backed model connection.
-
-See [`docs/ned-create/PRD.md`](docs/ned-create/PRD.md), [`CUJ.md`](docs/ned-create/CUJ.md), and [`TECH_SPEC.md`](docs/ned-create/TECH_SPEC.md) for the product and security contract.
+See [installation](docs/ned-create/INSTALL.md) and [credential recovery](docs/ned-create/CREDENTIALS.md). Telemetry remains off by default; use `ned telemetry status`, `enable --yes`, `disable`, or `delete`.
 
 ## Install into an existing Hermes profile
 

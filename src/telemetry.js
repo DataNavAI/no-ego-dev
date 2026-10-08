@@ -15,9 +15,6 @@ export const CENTRAL_TELEMETRY = Object.freeze({
   privacyPolicy: 'https://github.com/DataNavAI/no-ego-dev/blob/main/docs/ned-create/TELEMETRY_PRIVACY.md',
 });
 export const TELEMETRY_EVENTS = Object.freeze({
-  createStarted: 'cli_create_started',
-  createCompleted: 'cli_create_completed',
-  createFailed: 'cli_create_failed',
   chatCompleted: 'cli_chat_completed',
   chatFailed: 'cli_chat_failed',
   doctorCompleted: 'cli_doctor_completed',

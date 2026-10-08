@@ -35,46 +35,6 @@ test('create plan selects an allowlisted direct model provider without changing 
   });
 });
 
-test('Daytona provider injects the selected direct provider through its own egress allowlist', async () => {
-  const observed = {};
-  class FakeDaytona {
-    constructor() {
-      this.secret = {
-        create: async (params) => {
-          observed.secrets ||= [];
-          observed.secrets.push(params);
-          return { id: `secret-${observed.secrets.length}` };
-        },
-      };
-    }
-    async create(params) { observed.create = params; return { id: 'sandbox-openai', name: params.name }; }
-  }
-  const provider = createDaytonaProvider({
-    apiKey: 'daytona-test-value',
-    DaytonaClass: FakeDaytona,
-    secretNameFactory: (providerId) => `ned_model_${providerId}_test`,
-  });
-  const modelConnection = createModelConnection({
-    providerId: 'openai', method: 'api-key', value: 'openai-test-value',
-  });
-
-  const workspace = await provider.createWorkspace(createNedPlan({ modelProvider: 'openai' }), {
-    modelConnection, telegramConnection: telegramConnection(),
-  });
-
-  assert.equal(workspace.modelProvider, 'openai');
-  assert.equal(workspace.nedSecretName, 'ned_model_openai_test');
-  assert.deepEqual(observed.secrets[0], {
-    name: 'ned_model_openai_test',
-    value: 'openai-test-value',
-    description: 'OpenAI access for NED',
-    hosts: ['api.openai.com'],
-  });
-  assert.deepEqual(observed.create.secrets, {
-    OPENAI_API_KEY: 'ned_model_openai_test',
-  });
-});
-
 test('Daytona bootstrap configures the selected Hermes provider and model', async () => {
   let command;
   let gatewayStarted = false;

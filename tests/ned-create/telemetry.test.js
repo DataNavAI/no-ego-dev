@@ -147,7 +147,7 @@ test('delivery is bounded and failure-safe', async () => {
   });
 
   const started = Date.now();
-  assert.equal(await telemetry.capture('cli_create_completed', { durationMs: 5, resultClass: 'success' }), false);
+  assert.equal(await telemetry.capture('cli_chat_completed', { durationMs: 5, resultClass: 'success' }), false);
   assert.ok(Date.now() - started < 500);
 });
 
@@ -185,7 +185,6 @@ test('CLI emits lifecycle events at activation and primary journey completion bo
     getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
     telemetry,
     appFactory: async () => ({
-      async create() { return { ready: true }; },
       async chat() { return 'done'; },
       async doctor() { return { ok: true, checks: [] }; },
       async reset() { return { ok: true }; },
@@ -193,14 +192,13 @@ test('CLI emits lifecycle events at activation and primary journey completion bo
     }),
   };
 
-  await runCli(['create'], io, dependencies);
   await runCli(['chat', 'do not collect me'], io, dependencies);
   await runCli(['doctor'], io, dependencies);
   await runCli(['reset'], io, dependencies);
   await runCli(['destroy', '--yes'], io, dependencies);
 
   assert.deepEqual(events.map(([event]) => event), [
-    'cli_create_started', 'cli_create_completed', 'cli_chat_completed',
+    'cli_chat_completed',
     'cli_doctor_completed', 'cli_reset_completed', 'cli_destroy_completed',
   ]);
   assert.equal(JSON.stringify(events).includes('do not collect me'), false);
@@ -223,7 +221,7 @@ test('CLI telemetry delivery is detached from product completion', async () => {
   assert.equal(result, 0);
 });
 
-test('CLI emits create and chat failure classes without error messages', async () => {
+test('CLI emits chat failure classes without error messages', async () => {
   const events = [];
   const telemetry = { capture: async (event, properties) => events.push([event, properties]) };
   const dependencies = {
@@ -232,17 +230,14 @@ test('CLI emits create and chat failure classes without error messages', async (
     getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
     telemetry,
     appFactory: async () => ({
-      async create() { throw new Error('workspace private-name failed'); },
       async chat() { throw new Error('prompt contents leaked'); },
     }),
   };
   const io = { log() {}, error() {} };
 
-  await runCli(['create'], io, dependencies);
   await runCli(['chat', 'private prompt'], io, dependencies);
 
   assert.deepEqual(events.map(([event, properties]) => [event, properties.resultClass]), [
-    ['cli_create_started', 'started'], ['cli_create_failed', 'operation_error'],
     ['cli_chat_failed', 'operation_error'],
   ]);
   const serialized = JSON.stringify(events);
