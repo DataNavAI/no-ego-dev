@@ -13,3 +13,4 @@ state.db*
 .eval-runs/
 .projects/
 .DS_Store
+.beads/

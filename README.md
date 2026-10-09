@@ -19,6 +19,10 @@ The installer verifies pinned private runtime and package downloads. No sudo, Gi
 
 See [installation](docs/ned-create/INSTALL.md) and [credential recovery](docs/ned-create/CREDENTIALS.md). Telemetry remains off by default; use `ned telemetry status`, `enable --yes`, `disable`, or `delete`.
 
+### Track project work
+
+Install Beads (`bd`), then run `ned task init`, `ned goal create "Build login" --json`, and `ned ready --json`. NED tracks goals, subgoals, tasks, discovered issues, dependencies, ownership, and derived progress. See [task commands and setup](docs/tasks.md).
+
 ## Install into an existing Hermes profile
 
 Minimum requirement: [Hermes Agent](https://hermes-agent.nousresearch.com/docs) v2026.5.16 / v0.14.0 or newer. That is the first release line with profile distribution support.

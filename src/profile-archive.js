@@ -15,6 +15,7 @@ const PROFILE_PATHS = [
   'LICENSE',
   'README.md',
   'README.ko.md',
+  'docs/tasks.md',
 ];
 
 export async function createProfileArchive() {

@@ -18,6 +18,7 @@ test('profile archive contains the distribution but excludes runtime state and r
   const entries = listed.stdout.split('\n');
   assert.ok(entries.includes('distribution.yaml'));
   assert.ok(entries.includes('SOUL.md'));
+  assert.ok(entries.includes('docs/tasks.md'));
   assert.ok(entries.includes('config.yaml'));
   assert.ok(entries.some((entry) => entry.startsWith('skills/coder/')));
   assert.ok(entries.includes('skills/identity-for-agent/SKILL.md'));

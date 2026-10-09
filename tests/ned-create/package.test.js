@@ -25,6 +25,8 @@ test('published npm package contains the NED distribution and excludes runtime s
   assert.ok(files.includes('skills/identity-for-agent/references/profile-credential-policy.yaml'));
   assert.ok(files.includes('skills/identity-for-agent/scripts/ifa_profile_guard.py'));
   assert.ok(files.some((file) => file.startsWith('eval_runner/')));
+  assert.ok(files.includes('src/tasks.js'));
+  assert.ok(files.includes('docs/tasks.md'));
   assert.equal(files.includes('evaldata/ned-create/EVAL.yaml'), false);
   assert.equal(files.includes('.env'), false);
   assert.equal(files.includes('auth.json'), false);

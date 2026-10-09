@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { runTaskCli } from './task-cli.js';
 import { createNedApp } from './app.js';
 import { authorizeOpenAICodex } from './auth/openai-codex.js';
 import { createProfileArchive } from './profile-archive.js';
@@ -45,6 +46,9 @@ function capture(telemetry, event, startedAt, resultClass) {
 
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (['goal', 'subgoal', 'task', 'issue', 'ready', 'status', 'tree'].includes(command)) {
+    return runTaskCli(argv, io, dependencies);
+  }
   const env = dependencies.env || process.env;
   if (command === '--version' || command === 'version') {
     io.log(NED_VERSION);
@@ -74,6 +78,10 @@ export async function runCli(argv, io = console, dependencies = {}) {
       'Usage:',
       '  ned --version',
       '  ned version',
+      '  ned task init [--project <directory>]',
+      '  ned <goal|subgoal|task|issue> create <title> [--parent <id>] [--json]',
+      '  ned task <list|get|start|block|unblock|done|history|children> [id] [--json]',
+      '  ned <ready|status|tree> [--json]',
       '  ned chat "What should NED build?"',
       '  ned doctor',
       '  ned pair <8-character-code>',
