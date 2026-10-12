@@ -2,7 +2,7 @@
 
 Canonical location: `docs/features/<stable-feature-name>/SPEC.md`. Follow [AGENTS.md](../../AGENTS.md) for format, lifecycle, and traceability.
 
-This baseline inventories capabilities found in the current source, tests, profile skills, and documented plans. Task management and the spec test runner have canonical feature specs. All other entries explicitly remain coverage gaps; this inventory does not claim complete specification coverage or identify every possible future feature. Add newly discovered capabilities and their specs as the product evolves.
+This baseline inventories capabilities found in the current source, tests, profile skills, and documented plans. Task management, the spec test runner and test-writing guidance have canonical feature specs. All other entries explicitly remain coverage gaps; this inventory does not claim complete specification coverage or identify every possible future feature. Add newly discovered capabilities and their specs as the product evolves.
 
 `implemented` means source or a profile capability is present, not that it is shipped or has passed acceptance. `draft` distinguishes partial implementations or discussion from accepted release scope. Planned/parked entries reflect documented future intent, not scheduling or deployment authorization. Retired entries are excluded from active coverage. No planned feature should be implemented merely because it appears here.
 
@@ -68,6 +68,7 @@ Each self-contained skill is an agent-facing capability that needs corresponding
 | `skill-creator` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/skill-creator/SKILL.md); [eval](../../skills/skill-creator/EVAL.yaml) |
 | `spec-compliance-review` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/spec-compliance-review/SKILL.md); [eval](../../skills/spec-compliance-review/EVAL.yaml) |
 | `subagent-driven-development` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/subagent-driven-development/SKILL.md); [eval](../../skills/subagent-driven-development/EVAL.yaml) |
+| `test-writing` | implemented (behavioral acceptance verified) | [SPEC.md](test-writing/SPEC.md) | [instructions](../../skills/test-writing/SKILL.md); [eval](../../skills/test-writing/EVAL.yaml) |
 | `technical-design-reviewer` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/technical-design-reviewer/SKILL.md); [eval](../../skills/technical-design-reviewer/EVAL.yaml) |
 | `ui-designer` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/ui-designer/SKILL.md); [eval](../../skills/ui-designer/EVAL.yaml) |
 | `ui-reviewer` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/ui-reviewer/SKILL.md); [eval](../../skills/ui-reviewer/EVAL.yaml) |

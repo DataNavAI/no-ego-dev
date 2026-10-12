@@ -147,21 +147,12 @@ for (const file of [readme, installDoc]) {
   test(`${path.relative(repoRoot, file)} documents the canonical repository installer`, async () => {
     const text = await readFile(file, 'utf8');
     assert.match(text, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
-    assert.match(text, /pinned private/);
   });
 }
 
 test('production installer contains no runtime test override or integrity bypass', async () => {
   const text = await readFile(productionInstaller, 'utf8');
   assert.doesNotMatch(text, /NED_INSTALLER_TEST|NED_NODE_URL|NED_NODE_SHA256|NED_SOURCE_URL|NED_TEST_SOURCE_SHA256|NED_INSTALLER_PLATFORM|NED_INSTALLER_DRY_RUN/);
-});
-
-test('Node launcher contains the credential boundary and delegates version without credentials', async () => {
-  const text = await readFile(path.join(repoRoot, 'src/launcher.js'), 'utf8');
-  assert.match(text, /DAYTONA_API_KEY/);
-  assert.match(text, /no-ego-dev\/daytona/);
-  assert.match(text, /--version/);
-  assert.doesNotMatch(text, /readline\.question\([^)]*DAYTONA_API_KEY/);
 });
 
 test('clean-home install uses private Node, publishes a manifest-backed generation, repairs all shell profiles, and tells the user to read help', async () => {

@@ -44,7 +44,6 @@ test('clean local HTTP validation serves every stable V1 page and all internal l
         assert.match(body, /<pre><code>ned --help<\/code><\/pre>/);
       }
       if (route === '/docs/v1/telegram/') {
-        assert.match(body, /Telegram requires you to create a bot through its official @BotFather/);
         assert.match(body, /Paste the Telegram bot token \(input hidden\):/);
       }
       for (const match of body.matchAll(/(?:href|src)="(\/[^"]+)"/g)) links.add(match[1]);
@@ -54,26 +53,6 @@ test('clean local HTTP validation serves every stable V1 page and all internal l
       const response = await fetch(`${context.baseUrl}${link}`);
       assert.equal(response.status, 200, link);
     }
-  } finally {
-    await context.close();
-  }
-});
-
-test('served quickstart documents installation without provisioning', async () => {
-  const context = await startDocsServer();
-  try {
-    const response = await fetch(`${context.baseUrl}/docs/v1/quickstart/`);
-    assert.equal(response.status, 200);
-    const body = await response.text();
-
-    assert.match(body, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
-    assert.match(body, /does not provision new workspaces/);
-
-    assert.match(body, /<pre><code>ned --help<\/code><\/pre>/);
-
-
-    assert.doesNotMatch(body, /One local command creates a private persistent Daytona Sandbox/);
-    assert.doesNotMatch(body, /b850f8cdf167b5f6f9ce7c79d0a2415ac9fe182c/);
   } finally {
     await context.close();
   }

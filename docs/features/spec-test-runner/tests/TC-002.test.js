@@ -14,6 +14,9 @@ test('TC-002: only fully executed passing cases satisfy the commit gate', async 
     path.join(dir, 'fixture/SPEC.md'),
     '### TC-001: Fixture\n- Journey / requirements: CUJ-001 / FR-001.\n',
   );
+  await mkdir(path.join(dir, 'manual'));
+  await writeFile(path.join(dir, 'manual/SPEC.md'),
+    '### TC-002: Agent evaluation\n- Journey / requirements: CUJ-002 / FR-004.\n- Level / automation: manual; separate evidence.\n');
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const module = pathToFileURL(path.join(root, 'scripts/run-spec-tests.mjs')).href;
   const worker = path.join(dir, 'gate.mjs');
@@ -43,7 +46,13 @@ test('TC-002: only fully executed passing cases satisfy the commit gate', async 
       timeout: 5000,
     });
     assert.equal(child.status, expected, `${name}: ${child.stderr}`);
+    assert.match(child.stdout, /Manual cases NOT RUN: manual\/TC-002/);
+    if (name === 'pass') assert.match(child.stdout, /^# tests 1$/m);
   }
+  const manualOnly = spawnSync(process.execPath, [worker, dir, '--feature', 'manual'],
+    { encoding: 'utf8', timeout: 5000 });
+  assert.notEqual(manualOnly.status, 0);
+  assert.match(manualOnly.stderr, /manual cases require separate evaluation/);
   assert.equal(
     specExecutionPassed(0, '# tests 1\n# fail 0\n# skipped 0\n# cancelled 0\n# todo 0'),
     true,

@@ -40,6 +40,18 @@ test('TC-001: validate spec discovery and all selector combinations', async (t) 
     ['--case', 'TC-001', '--journey', 'CUJ-002'],
   ])
     await assert.rejects(selectSpecTests(args, dir));
+  await mkdir(path.join(dir, 'manual'));
+  await writeFile(path.join(dir, 'manual', 'SPEC.md'),
+    spec('TC-003', 'CUJ-003') + '- Level / automation: manual; agent evaluation.\n');
+  const mixed = await selectSpecTests(['--all'], dir);
+  assert.equal(mixed.length, 2);
+  assert.equal(mixed.manualCases.length, 1);
+  assert.equal(mixed.manualCases[0].feature, 'manual');
+  await assert.rejects(selectSpecTests(['--feature', 'manual'], dir), /manual cases require/);
+  await mkdir(path.join(dir, 'manual', 'tests'));
+  await writeFile(path.join(dir, 'manual', 'tests', 'TC-003.test.js'), "test('TC-003: wrong',()=>{})");
+  await assert.rejects(selectSpecTests([], dir), /Manual case has an automated file/);
+  await rm(path.join(dir, 'manual'), { recursive: true });
   await writeFile(
     path.join(dir, 'alpha', 'SPEC.md'),
     spec('TC-001', 'CUJ-001') + spec('TC-001', 'CUJ-001'),

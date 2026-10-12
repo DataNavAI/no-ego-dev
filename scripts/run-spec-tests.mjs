@@ -46,6 +46,14 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
     if (new Set(ids).size !== ids.length) throw new Error(`Duplicate case ID in ${entry.name}.`);
     const cases = [];
     for (const match of blocks) {
+      const manual = /^- Level \/ automation: manual(?:[;.]|$)/m.test(match[2]);
+      const journeys = (
+        match[2].split('\n').find((line) => line.includes('Journey / requirements:')) || ''
+      ).match(/CUJ-\d{3}/g) || [];
+      if (manual) {
+        cases.push({ feature: entry.name, id: match[1], journeys, manual: true });
+        continue;
+      }
       const file = path.join(featuresRoot, entry.name, 'tests', `${match[1]}.test.js`);
       try {
         await access(file);
@@ -64,7 +72,13 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
         journeys: journeyLine.match(/CUJ-\d{3}/g) || [],
       });
     }
-    for (const file of await readdir(path.join(featuresRoot, entry.name, 'tests'))) {
+    const files = await readdir(path.join(featuresRoot, entry.name, 'tests')).catch((error) => {
+      if (error.code === 'ENOENT' && cases.every((entry) => entry.manual)) return [];
+      throw error;
+    });
+    for (const file of files) {
+      if (cases.some((entry) => entry.manual && file === `${entry.id}.test.js`))
+        throw new Error(`Manual case has an automated file: ${entry.name}/${file}`);
       if (/^TC-.*\.test\.js$/.test(file) && !ids.includes(file.replace('.test.js', '')))
         throw new Error(`Undeclared test case: ${entry.name}/${file}`);
     }
@@ -81,12 +95,14 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
   for (const id of filters.journey)
     if (!scope.some((entry) => entry.journeys.includes(id)))
       throw new Error(`Unknown journey: ${id}`);
-  const selected = scope.filter(
+  const matching = scope.filter(
     (entry) =>
       (!filters.case.length || filters.case.includes(entry.id)) &&
       (!filters.journey.length || entry.journeys.some((id) => filters.journey.includes(id))),
   );
-  if (!selected.length) throw new Error('No matching automated spec cases.');
+  const selected = matching.filter((entry) => !entry.manual);
+  selected.manualCases = matching.filter((entry) => entry.manual);
+  if (!selected.length) throw new Error('No matching automated spec cases; manual cases require separate evaluation.');
   return selected;
 }
 
@@ -101,6 +117,10 @@ export function specExecutionPassed(status, output) {
 
 export async function runSpecTests(args = [], featuresRoot) {
   const selected = await selectSpecTests(args, featuresRoot);
+  if (selected.manualCases.length)
+    process.stdout.write(
+      `Manual cases NOT RUN: ${selected.manualCases.map((entry) => `${entry.feature}/${entry.id}`).join(', ')}; separate evidence required.\n`,
+    );
   process.stdout.write(
     `Spec gate: ${selected.map((entry) => `${entry.feature}/${entry.id}`).join(', ')}\n`,
   );

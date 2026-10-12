@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import { cp, mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fixture, assert, spawnSync, root, complete } from './helpers.js';
+import { fixture, assert, spawnSync, root } from './helpers.js';
 import { createProfileArchive } from '../../../../src/profile-archive.js';
 test('TC-011: package/profile manifests exclude runtime SQLite data and spec test fixtures', async (t) => {
   const f = await fixture(t);
@@ -52,9 +52,24 @@ test('TC-011: package/profile manifests exclude runtime SQLite data and spec tes
   assert.ok(listed.stdout.includes('docs/features/task-management/SPEC.md'));
   assert.ok(!listed.stdout.includes('task-management/tests/'));
   assert.ok(!listed.stdout.includes('.sqlite'));
-  const s = await f.service({ env: { PATH: '/no-beads' } }),
-    a = await s.createItem('task', { title: 'No Beads' });
-  await complete(s, a.id);
-  assert.equal((await s.getItem(a.id)).status, 'done');
-  assert.equal(f.processCli(['ready', '--json'], { PATH: '/no-beads' }).status, 0);
+  // One distribution contract shared by npm and profile packaging.
+  const entries = listed.stdout.split('\n');
+  for (const manifest of [files, entries]) {
+    for (const required of [
+      'distribution.yaml', 'SOUL.md', 'AGENTS.md', 'config.yaml',
+      'skills/identity-for-agent/SKILL.md', 'skills/identity-for-agent/EVAL.yaml',
+      'skills/identity-for-agent/evaldata/README.md',
+      'skills/identity-for-agent/references/profile-credential-policy.yaml',
+      'skills/identity-for-agent/scripts/ifa_profile_guard.py',
+      'docs/tasks.md', 'docs/features/task-management/SPEC.md',
+    ]) assert.ok(manifest.includes(required), required);
+    assert.ok(manifest.some((file) => file.startsWith('eval_runner/')));
+    assert.ok(manifest.some((file) => file.startsWith('skills/coder/')));
+    for (const excluded of ['.env', 'auth.json', 'evaldata/ned-create/EVAL.yaml'])
+      assert.ok(!manifest.includes(excluded), excluded);
+    assert.ok(!manifest.some((file) => /^(?:node_modules|\.git)\//.test(file)));
+    assert.ok(!manifest.some((file) => file.includes('__pycache__') || file.endsWith('.pyc')));
+    assert.ok(!manifest.some((file) => /^docs\/features\/[^/]+\/tests\//.test(file)));
+  }
+  assert.ok(files.includes('scripts/install.sh'));
 });

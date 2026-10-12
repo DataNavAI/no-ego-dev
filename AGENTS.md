@@ -6,6 +6,20 @@ When editing skills, keep each skill self-contained, include an EVAL.yaml, and k
 
 Run `python -m pytest` before committing changes to this distribution.
 
+## Default NED skill usage
+
+For work in this project, use relevant NED skills from `skills/` by default. Read the selected `SKILL.md` before applying it; load only supporting references needed for the task. Prefer the repository's version when a similarly named installed skill exists. Do not load every skill or turn a skill's workflow into permission for unrelated work.
+
+Codex discovers these same canonical folders through relative symlinks under `.agents/skills/`. When adding or retiring a skill, update that directory as well. If a skill is absent from the session catalog, read its repository file directly. Discovery makes skills available; this instruction governs their use. Keep user instructions and the current task scope authoritative.
+
+Before writing, changing, or pruning tests, read [test-writing](skills/test-writing/SKILL.md). Use the smallest reliable test layer for each material risk, reuse coverage, and give each test a distinct observable failure it detects. Do not require a separate code test for every requirement or duplicate the same contract at every layer.
+
+## Skill evaluation policy
+
+Evaluate skills through realistic agent tasks using each skill's `EVAL.yaml` and synthetic `evaldata/` scenarios. Do not add code-based skill tests, including prose/heading/version assertions or tests of skill-specific bundled helpers. Code tests remain appropriate for NED runtime and evaluation-engine behavior; evaluation-engine tests may use synthetic skill packages to verify isolation and orchestration. Package-boundary checks may verify distribution contents without claiming skill quality.
+
+Document behavioral skill cases as manual/evaluation cases in their feature specs, linked to the skill eval. Report them separately from automated code tests; merely loading YAML or finding a phrase is not a behavioral pass.
+
 ## Feature specifications
 
 Use the version-controlled `docs/features/` directory as the canonical home for feature specifications. Every no-ego-dev feature must have its own folder containing an uppercase `SPEC.md`:
@@ -35,7 +49,7 @@ Write plain Markdown, adapting [GitHub Spec Kit's feature specification template
 - Update the spec, linked tests, and inventory with the implementation. Keep stable requirement, journey, and test-case IDs; do not renumber existing IDs when inserting cases.
 - On renaming or merging features, update all spec links and preserve traceability to old IDs. Mark removed features as retired and describe the replacement or removal behavior; exclude retired features from active coverage.
 - Keep optional diagrams, synthetic fixtures, or supporting design notes in the feature folder and link them from `SPEC.md`. Keep skill eval fixtures under their skill's `evaldata/` directory as required above. Never store runtime databases, secrets, logs, sessions, or local workspaces in a spec folder.
-- Colocate automated spec cases under `docs/features/<feature>/tests/TC-NNN.test.js`, with one file per case and named assertions/subtests covering every required variant. Store synthetic fixtures and helpers inside that `tests/` folder. Keep broader regression tests under `tests/`. Use `npm run test:spec -- --all` for the commit gate; select a feature, case, or journey with `--feature`, `--case`, or `--journey` for development. A selected case must execute fully; missing files, skips, cancellations, and TODOs fail the gate.
+- Colocate automated spec cases under `docs/features/<feature>/tests/TC-NNN.test.js`, with one file per case and named assertions/subtests covering every required variant. Store synthetic fixtures and helpers inside that `tests/` folder. Keep broader regression tests under `tests/`. Use `npm run test:spec -- --all` for the commit gate; select a feature, case, or journey with `--feature`, `--case`, or `--journey` for development. A selected automated case must execute fully; missing files, skips, cancellations, and TODOs fail the gate. Declare skill behavioral cases with `- Level / automation: manual; ...` and link their EVAL.yaml/procedure. The runner reports these as NOT RUN; manual-only selections return nonzero. Separate evaluation evidence is required.
 
 ### Required `SPEC.md` content
 

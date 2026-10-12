@@ -5,14 +5,14 @@ Related work: [#111](https://github.com/DataNavAI/no-ego-dev/issues/111); [proje
 
 ## User outcome and scope
 
-Contributors run all or selected feature test cases colocated with their SPEC.md. The runner discovers declarations, checks mappings and executes Node test files. It does not claim missing/manual cases passed, install dependencies, run live providers, or infer full coverage from an unrelated test. Current canonical specs have only automated local cases; future manual/live cases need an explicit gate design before adoption.
+Contributors run all or selected feature test cases colocated with their SPEC.md. The runner discovers declarations, checks mappings and executes Node test files. It does not claim missing/manual cases passed, install dependencies, run live providers, or infer full coverage from an unrelated test. Explicit `- Level / automation: manual; ...` declarations are reported as NOT RUN and require separate evidence; manual-only selections return nonzero. Automated cases still require executable files.
 
 ## Requirements
 
-- **FR-001:** Discover all `docs/features/<feature>/SPEC.md` declarations and corresponding `tests/TC-NNN.test.js` files. Reject duplicate/missing/undeclared mappings, missing specs, empty declarations, and files without a named TC test.
+- **FR-001:** Discover all `docs/features/<feature>/SPEC.md` declarations and corresponding `tests/TC-NNN.test.js` files. Reject duplicate/missing/undeclared automated mappings, missing specs, empty declarations, files without a named TC test, and automated files attached to manual cases. Explicit manual declarations do not require code files.
 - **FR-002:** Select all, feature, case, journey, or intersections of selectors. Case/journey selectors resolve from each case's Journey / requirements line. Reject unknown selectors, malformed arguments, contradictory --all plus filters, and empty selections. Paths are discovered, never built from untrusted command arguments.
 - **FR-003:** Run Node test files with argument-array spawning. Success requires every selected case and variant to execute and pass; any test failure, missing execution, skip, TODO, cancellation, signal or runner error fails the gate. Errors are nonzero and never silently downgrade coverage.
-- **FR-004:** `npm test` runs regressions and the all-spec gate; `npm run test:spec -- --all` is the per-commit gate. Selection changes developer scope only, not the all-case commit requirement. Runtime test results are not committed.
+- **FR-004:** `npm test` runs regressions and the all-spec gate; `npm run test:spec -- --all` is the per-commit gate. Selection changes developer scope only, not the all-case commit requirement. Manual cases are listed as NOT RUN and never included in automated pass counts. Runtime test results are not committed.
 
 ## Critical user journeys
 
@@ -28,7 +28,7 @@ Contributors run all or selected feature test cases colocated with their SPEC.md
 - Given / preconditions / fixtures: disposable feature root containing two specs with matching synthetic named test files and journey mappings.
 - When / steps: discover all; select by feature/case/journey and intersection; inject unknown/contradictory/missing selectors, duplicate IDs, missing SPEC.md/file, undeclared file and nameless test.
 - Then / assertions: exact selected paths/IDs match; malformed inventory/arguments always reject before execution; no outside path is used.
-- Variants: comma-separated/repeated selectors, empty match, path traversal input, zero-case specs, missing/undeclared mapping and nameless case.
+- Variants: comma-separated/repeated selectors, empty match, path traversal input, zero-case specs, missing/undeclared mapping, nameless case, mixed/manual-only selection, and manual declarations with conflicting code files.
 - Cleanup: remove only temporary fixture directories; no user DB/provider credentials involved.
 - Pass evidence: all assertions pass with no skipped/cancelled variants. Live/manual cases are inapplicable.
 
@@ -56,4 +56,4 @@ Run `npm run test:spec -- --feature spec-test-runner` or `npm run test:spec -- -
 
 ## Open questions and coverage gaps
 
-No manual/live spec execution format is implemented. The runner cannot prove a testcase's assertions fully express its prose contract; review must maintain that mapping. General Python spec cases are not automatically discovered: existing Python regression checks run separately as required by AGENTS.md. No such cases are declared in the current feature specs.
+Manual declarations are recognized and reported but are not executed; separate human/agent evaluation evidence remains required. The runner cannot prove a testcase's assertions fully express its prose contract; review must maintain that mapping. General Python spec cases are not automatically discovered: existing Python regression checks run separately as required by AGENTS.md. No such cases are declared in the current feature specs.

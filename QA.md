@@ -2,6 +2,12 @@
 
 This runbook governs manual live-provider QA. It is separate from credential-free CI and must never cause credentials or user-owned Telegram tokens to enter source control, logs, command arguments, URLs, or chat.
 
+## Code tests and skill evaluation
+
+Run `npm test`, `npm run check`, and `python -m pytest` for NED runtime, packaging and evaluation-engine changes. Code tests do not evaluate NED skills, their wording, historical versions, or bundled helpers. Evaluate skills with their EVAL.yaml and synthetic evaldata scenarios, recording actual agent outcomes and material failures separately. The spec runner lists declared manual skill cases as NOT RUN; a green code suite does not imply they passed.
+
+Read [test-writing](skills/test-writing/SKILL.md) before adding or pruning tests. Prefer one strong contract check per distinct risk, retaining unique assertions when consolidating. The distribution packaging contract is covered by task-management TC-011; launcher behavior is covered by process tests rather than source phrase checks.
+
 ## Preconditions
 
 - Run from an installed NED candidate or an explicit candidate checkout.
