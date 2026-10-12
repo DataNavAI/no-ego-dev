@@ -1,76 +1,79 @@
 # NED task management
 
-NED owns the work model and CLI. Beads is its single persistence backend; no task-manager selection or external tracker synchronization is implemented. Planning and decomposition remain the agent's job. A future dashboard can call the exported `createTaskService` methods instead of invoking Beads or querying its database.
+Behavioral contract and required test coverage: [feature spec](features/task-management/SPEC.md). This file is the CLI usage guide.
 
-## Setup
+NED stores project work in its shared database. No Beads installation, external task service, model authorization, Daytona account, or Hermes restart is required.
 
-Install Beads (`bd`) 1.3.1 or newer using its official installation instructions at https://github.com/gastownhall/beads. The first supported contract was verified with 1.3.1. This does not require Daytona, ChatGPT OAuth, Telegram, or a running Hermes session.
+## Shared database configuration
+
+The default is a local SQLite database at `~/.ned/ned.sqlite`. All projects share the file and are isolated by canonical project ID. Other NED features can use `openNedDatabase` from `src/database.js` and its namespaced feature records or versioned feature tables. Task initialization never replaces unrelated feature data. Existing workspace and telemetry JSON files remain unchanged.
+
+Choose a different SQLite file with `NED_DATABASE_URL` or `--database`. The explicit flag wins over the environment. Local file URLs and paths are supported:
 
 ```bash
-ned task init --project /absolute/project/path
-ned goal create "Build authentication" --project /absolute/project/path --json
+export NED_DATABASE_URL=file:/absolute/path/ned.sqlite
+ned task init --project /absolute/project
+ned task init --project /absolute/project --database /another/path/ned.sqlite
 ```
 
-Every command accepts `--project <directory>`, `--actor agent:<id>` or `--actor human:<id>`, and `--json`. The default project is the current directory, resolved through realpath; commands from different subdirectories must use the same explicit project path. The default actor is `human:<OS username>`; agents should supply a stable actor ID.
+Database engine support in this revision is SQLite. PostgreSQL/MySQL/remote URLs are rejected explicitly. `:memory:` is available for programmatic temporary tests; use a file for persistence across CLI processes. The SQLite dependency is installed with the NED npm package, including its platform binding; source builds may require platform build tools if a prebuilt binding is unavailable.
 
-Each canonical project path gets an isolated database under `~/.ned/tasks/<sha256-of-path>/.beads/`. Initialization is explicit and idempotent, and does not edit the project's agent instructions or install Git hooks. Database state survives separate processes and Hermes sessions. Moving a project path creates a new project identity; migration is not automatic. Keep runtime state and credentials out of Git and distribution archives.
+The project defaults to cwd, resolved through realpath. Explicitly pass the same root path from nested working directories. Moving the project creates a different identity; symlink aliases resolve to the same project. Actors default to `human:<OS username>`; agents should pass a stable `--actor agent:<id>`. Actor labels are not authenticated identities.
 
-Beads' embedded mode is used initially. It serializes writes through its database; a contending process may receive a backend error and must retry after inspecting state. Atomic claims are delegated to Beads, so two actors cannot both become the owner. Multi-host synchronization and server administration are outside this CLI slice.
-
-## Commands
+## Create and inspect work
 
 ```bash
-ned goal create "Launch login" --description "Verified sign-in" --priority 1 --json
-ned subgoal create "Authentication" --parent <goal-id> --json
-ned task create "Implement OAuth" --parent <subgoal-id> --json
-ned issue create "Token refresh regression" --parent <subgoal-id> --discovered-from <task-id> --json
+ned task init --project /absolute/project
+ned goal create "Build authentication" --json
+ned subgoal create "Sign-in" --parent <goal-id> --json
+ned task create "Implement OAuth" --parent <subgoal-id> --description "Synthetic acceptance" --priority 1 --json
+ned issue create "Refresh regression" --parent <subgoal-id> --discovered-from <task-id> --json
 
-ned task list --json
 ned goal list --json
+ned task list --json
 ned task get <id> --json
-ned task children <goal-id> --json
+ned task children <id> --json
 ned task history <id> --json
-ned task block <id> --on <prerequisite-id> --json
-ned task start <id> --actor agent:coder --json
-ned task done <id> --reason "Implemented and tests passing" --actor agent:coder --json
-
 ned ready --json
 ned status --json
 ned tree --json
 ```
 
-Use the IDs returned by creation; do not construct IDs yourself. Goals and subgoals map to Beads epics, tasks to tasks, and issues to bugs. A stored NED type distinguishes subgoals from goals. Parent links organize work without blocking it. Dependencies block work until their prerequisites close; discovered-from records provenance without blocking. Beads rejects cyclic dependencies. Priorities are 0–4, with 0 highest. Titles are required and limited to 500 characters.
+Creation returns stable IDs; use them literally. Titles are nonempty and at most 500 characters, descriptions at most 20,000, and priority is 0–4 with 0 highest. A subgoal needs a parent; supplied parents must be unfinished goals/subgoals in the same project. Discovery provenance does not imply a parent or blocker. The generic `task` noun can inspect any work item; other nouns require matching types.
 
-`ned task` can inspect and operate on any work item ID. Other item nouns require a matching type. Creation supports title, description, priority, parent, and (issues only) discovered-from. Generic update, reparenting, custom workflows, and deletion are not exposed in this initial slice.
-
-## States and progress
-
-Beads open work maps to `planned`, eligible open work to `ready`, in-progress to `working`, blocked to `blocked`, and closed to `done`. Readiness comes from Beads, not agent guesses. Only ready tasks/issues can be claimed. The assigned actor completes claimed work; repeated claims by the same actor are idempotent. Completion of prerequisites restores dependent readiness automatically.
-
-`status` counts execution tasks/issues. `tree` derives goal/subgoal status and progress from descendant execution leaves, counting each leaf once. A goal's displayed completion does not automatically close its stored record: `storedStatus` preserves that distinction, and explicit completion still uses Beads' child/blocker checks. An empty unfinished goal has 0% progress.
-
-## User-action blockers
+## Claim, block and complete
 
 ```bash
-ned task block <id> --reason "Connect GitHub to continue" --service github --json
-ned task unblock <id> --json
+ned task block <dependent-id> --on <prerequisite-id> --json
+ned task start <ready-id> --actor agent:coder --json
+ned task done <id> --reason "Implemented and verified" --actor agent:coder --json
+
+ned task block <id> --reason "Connect GitHub to continue" --service github --actor agent:coder --json
+ned task unblock <id> --actor agent:coder --json
 ```
 
-This stores `{reason, service, requiresUserAction}` metadata and prevents claiming or completing blocked work. After access is restored, unblock the task and retry the original work; no Hermes restart is needed. Unblock clears a user-action blocker, while dependency blockers resolve through prerequisite completion. This feature does not connect accounts, retrieve credentials, or implement `ned access`.
+Ready work is computed from the database. A claim atomically records the actor, working state, and history. Another actor cannot claim or complete that work; repeated claims by its owner are idempotent. Execution work must be claimed before completion. Completion unblocks dependents automatically. Cycles and invalid references are rejected transactionally. Duplicate dependencies and repeated owner completion do not duplicate history.
 
-## Output and errors
+Reason blockers store only explanatory metadata. Clear them after the external condition is resolved; remaining dependencies still apply. This feature does not obtain credentials or check service access. Blocked work cannot finish; another actor cannot alter a claim. Explicit goal completion requires done children. Goal progress/tree state is derived from execution leaves without changing the goal's stored state.
 
-Readable output is the default. `--json` writes one JSON result to stdout; errors write `{error, message}` to stderr. Exit code 0 means success, 2 means invalid input/missing setup/not-ready work, and 1 means backend failure. Backend failures deliberately omit raw subprocess output and arguments. Use `bd version` and inspect local backend availability when diagnosing failures.
+## Durability, errors and limits
 
-The shared service exposes initialization, item creation/read/list, children, dependencies, ready work, claiming, blocking/unblocking, completion, goal progress, activity, status, and tree. No public HTTP API or dashboard is added here; future HTTP routes must authenticate users and bind their project before calling this service.
+Mutation and history commit in the same transaction; a failed or interrupted transaction rolls back. SQLite writes serialize, with a 5-second busy timeout. Reopen and inspect state/history after a response is lost; committed creation has no exactly-once request token, so blind retries can duplicate items. No automatic import of earlier Beads prototype databases exists, and they are left untouched.
 
-## Verification
+JSON success writes one result to stdout with exit 0. Errors write `{error,message}` to stderr, exit 2 for invalid input/configuration/setup/ownership and exit 1 for database failures. Raw SQL, database paths, and private inputs are omitted from DB error messages. Normal output is readable. CLI-owned connections close after each operation; programmatic callers close their service or shared database explicitly.
+
+No generic editing, reparenting, deletion, cloud execution, public HTTP task API, or dashboard is included. GitHub Issues manages development of NED itself; the task CLI records the work NED performs for user projects. No synchronization between those trackers is implemented.
+
+## Verify all or selected spec cases
 
 ```bash
+npm run test:spec -- --all
+npm run test:spec -- --feature task-management
+npm run test:spec -- --feature task-management --case TC-004
+npm run test:spec -- --feature task-management --journey CUJ-003
 npm test
 npm run check
-NED_TEST_BEADS=/absolute/path/to/bd node --test tests/ned-create/tasks.test.js
 python -m pytest
 ```
 
-The real-backend test creates temporary project databases and covers hierarchy, persistence, isolation, dependency cycles, automatic readiness, competing claims, discovered provenance, user-action blockers, history, and derived progress. It is skipped when `NED_TEST_BEADS` is absent. The standard unit tests still validate parsing, domain projection, project routing, and cloud-independent dispatch.
+Tests are colocated in `docs/features/task-management/tests/TC-NNN.test.js`. The runner validates spec mappings and rejects missing/unknown cases, skips, cancellations, and TODOs. All task-management cases run locally against disposable SQLite files, including process races and crash recovery; no manual or live-provider case is required. The commit gate runs every automated feature case, not only the selected developer subset.

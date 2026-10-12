@@ -21,7 +21,7 @@ See [installation](docs/ned-create/INSTALL.md) and [credential recovery](docs/ne
 
 ### Track project work
 
-Install Beads (`bd`), then run `ned task init`, `ned goal create "Build login" --json`, and `ned ready --json`. NED tracks goals, subgoals, tasks, discovered issues, dependencies, ownership, and derived progress. See [task commands and setup](docs/tasks.md).
+Run `ned task init`, `ned goal create "Build login" --json`, and `ned ready --json`. NED tracks goals, subgoals, tasks, discovered issues, dependencies, ownership, and derived progress in its shared SQLite database. Set `NED_DATABASE_URL` or use `--database` to choose another SQLite file. See [task commands and setup](docs/tasks.md).
 
 ## Install into an existing Hermes profile
 

@@ -14,3 +14,7 @@ state.db*
 .projects/
 .DS_Store
 .beads/
+**/*.sqlite*
+**/*.db
+**/*.db-*
+docs/features/**/tests/**

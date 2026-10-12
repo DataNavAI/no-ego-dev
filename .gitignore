@@ -17,3 +17,6 @@ __pycache__/
 .projects/
 .DS_Store
 .beads/
+*.sqlite*
+*.db
+*.db-*
