@@ -42,3 +42,6 @@ Local process hosting is product scope; no cloud provider or extra account/cost.
 Implement only current contracts and TC-001/002. Parent records TC-003 browser evidence and exact-candidate independent review. Existing onboarding plus lint/all Node/spec/Python gates before commit. Temporary fixtures outside distribution. Evidence SHA/time/browser identity. Rollback/retirement removes communicator assets/routes and later CLI wiring, retains NED DB/project files; prove retired routes unreachable and other CLI/onboarding unchanged. Coordinator schedules scoped refactoring after aggregate milestone for proven duplication only.
 
 Update SPEC status/coverage from actual implementation; future gaps remain explicit. Subsequent issues extend this feature. No writable DB opener and no successful stub domain routes.
+
+## #115 CLI dispatch
+Dispatch com before provider/telemetry construction into src/communicator/cli.js. Strict --port/--database/--help flags follow SPEC CUJ-004. Pass resolved databasePath into server options without opening DB. Install signal handlers before listen; serialize shutdown, remove handlers, release all connections. Print actual URL only after successful listen. No browser launch or domain/API changes.

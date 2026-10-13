@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { runCommunicatorCli } from './communicator/cli.js';
 import { runTaskCli } from './task-cli.js';
 import { createNedApp } from './app.js';
 import { authorizeOpenAICodex } from './auth/openai-codex.js';
@@ -46,6 +47,7 @@ function capture(telemetry, event, startedAt, resultClass) {
 
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (command === 'com') return runCommunicatorCli(flags, io, dependencies);
   if (['goal', 'subgoal', 'task', 'issue', 'ready', 'status', 'tree'].includes(command)) {
     return runTaskCli(argv, io, dependencies);
   }
@@ -77,6 +79,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '',
       'Usage:',
       '  ned --version',
+      '  ned com [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--help]',
       '  ned version',
       '  ned task init [--project <directory>] [--database <SQLite-path-or-file-URL>]',
       '  ned <goal|subgoal|task|issue> create <title> [--parent <id>] [--json]',

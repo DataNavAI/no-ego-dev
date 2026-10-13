@@ -96,6 +96,10 @@ async function runChild(node, appEntry, argv, env) {
     env,
     stdio: ['inherit', 'inherit', 'pipe'],
   });
+  const forwardSignal = signal => child.kill(signal);
+  const interrupt = () => forwardSignal('SIGINT');
+  const terminate = () => forwardSignal('SIGTERM');
+  if (argv[0] === 'com') { process.on('SIGINT', interrupt); process.on('SIGTERM', terminate); }
   let rawStderr = '';
   let pendingOutput = '';
   const credentials = [env.DAYTONA_API_KEY];
@@ -117,7 +121,15 @@ async function runChild(node, appEntry, argv, env) {
     pendingOutput += text;
     writeRedactedLines();
   });
-  const code = await new Promise((resolve) => child.once('close', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0))));
+  let code;
+  try {
+    code = await new Promise((resolve, reject) => {
+      child.once('error', reject);
+      child.once('close', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0)));
+    });
+  } finally {
+    if (argv[0] === 'com') { process.off('SIGINT', interrupt); process.off('SIGTERM', terminate); }
+  }
   writeRedactedLines(true);
   return { code, rejectedKey: /(?:HTTP\s+401|API key was rejected)/i.test(rawStderr) };
 }

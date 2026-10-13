@@ -12,7 +12,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 | --- | --- | --- | --- |
 | Local commit checks | implemented | [SPEC.md](commit-checks/SPEC.md) | `.githooks/pre-commit`; `npm run hooks:install`; lint and full local suites |
 | Spec test runner | implemented | [SPEC.md](spec-test-runner/SPEC.md) | `scripts/run-spec-tests.mjs`; colocated cases and npm commit gate |
-| NED Communicator | planned | [SPEC.md](communicator/SPEC.md) | Local project workbench; serial #114–#118; CLI/domain coverage planned |
+| NED Communicator | planned | [SPEC.md](communicator/SPEC.md) | Local project workbench; serial #114–#118; Skeleton merged; CLI TC-004 implemented pending review; domain coverage planned |
 | Task management | implemented | [SPEC.md](task-management/SPEC.md) | [CLI guide](../tasks.md); `src/tasks.js`, `src/task-cli.js` |
 | CLI installation and credential-aware launcher | implemented | Missing — coverage gap | `scripts/install.sh`, `src/launcher.js`; [install guide](../cli/INSTALL.md) |
 | Hermes profile installation/distribution | implemented | Missing — coverage gap | `distribution.yaml`, `config.yaml`, `src/profile-archive.js`; root README |

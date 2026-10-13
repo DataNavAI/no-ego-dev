@@ -6,7 +6,7 @@ Related issues: [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skel
 ## User outcome and scope
 Local NED users browse a selected project's work through a web app. Delivery is serial. #114 supplies server lifecycle and an honest navigation shell; it does not open databases/project folders or implement CLI/domain routes. Existing onboarding is separate. See [technical design](TECH_SPEC.md), [UI brief](design/ui-brief.md), [tokens](design/design-system.md) and [specimen](design/mockup.html).
 
-Non-goals: remote hosting, multi-user auth, editing, GitHub sync, credential brokering, arbitrary app startup/build/deploy or duplicate artifact/task stores. The #114 server and navigation shell are implemented; browser acceptance and remaining CLI/domain behavior are pending. Production must never show synthetic projects as registered data.
+Non-goals: remote hosting, multi-user auth, editing, GitHub sync, credential brokering, arbitrary app startup/build/deploy or duplicate artifact/task stores. The #114 server and navigation shell are implemented; skeleton acceptance is complete; CLI review and domain behavior are pending. Production must never show synthetic projects as registered data.
 
 ## Requirements
 Parent IDs remain stable:
@@ -31,7 +31,11 @@ Actor: browser user. Critical because unavailable capability must differ from em
 ### CUJ-003: Reject unintended local access
 Actor: local owner. With running skeleton, send foreign Host/Origin, mutation methods and unknown/traversal paths. Success: sanitized rejections and no writes/leakage; subsequent valid reads work. Shutdown releases resources.
 
-Future journeys remain gaps: CUJ-004 CLI start/restart (#115); CUJ-005 project selection/preview availability (#116); CUJ-006 safe artifact list/open (#117); CUJ-007 task hierarchy/history/CLI refresh (#118). Each owner must add detailed first/repeat/error/interruption/isolation cases before implementation.
+Future journeys remain gaps: CUJ-005 project selection/preview availability (#116); CUJ-006 safe artifact list/open (#117); CUJ-007 task hierarchy/history/CLI refresh (#118). Each owner must add detailed first/repeat/error/interruption/isolation cases before implementation.
+
+### CUJ-004: CLI start, stop and restart
+Actor: local user. Prerequisites: Node/dependencies, no listener. Run `ned com`, open printed URL, stop with SIGINT/SIGTERM, restart released port. Critical public entry point. Flags: --port decimal integer 0–65535 (default 0 ephemeral), --database SQLite-path/local-fileURL, --help. Explicit database > NED_DATABASE_URL > ~/.ned/ned.sqlite. Unknown/duplicate/missing flags and invalid configuration exit 2/no URL; startup failures exit 1/no URL. Normal shutdown exits 0. No browser launch, credentials or telemetry.
+The command passes resolved databasePath to server options but never opens/creates/writes a DB. Missing DB is allowed; domain unavailable state belongs to #116. HTTP never exposes this path.
 
 ## Detailed test cases
 ### TC-001: Lifecycle, read contracts and HTTP perimeter
@@ -70,15 +74,27 @@ Future journeys remain gaps: CUJ-004 CLI start/restart (#115); CUJ-005 project s
 - Cleanup: remove interception, close browser/server; no runtime fixture/log commit.
 - Pass evidence: candidate SHA/time/browser/version, viewport/state captures, keyboard/contrast results and independent UI review. HTML source alone is insufficient.
 
+### TC-004: CLI entry and cleanup
+- Purpose / journey / requirements: credential-free lifecycle; CUJ-004 / FR-001, FR-006, FR-007, FR-010.
+- Level / automation: integration; [tests/TC-004.test.js](tests/TC-004.test.js), spawned-process and injected configuration assertions.
+- Preconditions / fixtures: temporary HOME and sentinel DB bytes; Node/dependencies; no provider authorization/listener.
+- Given: isolated HOME, no listener, explicit/environment/default database configuration.
+- When: spawn `node bin/ned.js com`, fetch printed URL/health, signal, restart same port.
+- Then: loopback URL remains live until signal; exits 0, listener released, fixture bytes/directories unchanged; config precedence reaches server options. Missing DB does not get created.
+- Steps and assertions: bounded readiness/exit waits, root/health reads, SIGINT and SIGTERM separate runs, exact-port restart. Help exits 0 with usage and no listener.
+- Variants / negative cases: default/explicit 0; file URL overrides invalid environment; environment/default resolution; missing DB succeeds; invalid remote/empty DB, negative/fractional/>65535/missing port, unknown/duplicate flags -> 2/no URL; occupied port -> 1/no URL. Provider auth inapplicable; domain DB failures deferred #116.
+- Cleanup: terminate/await children, close collision listener, remove only temporary directories.
+- Pass evidence: named assertions/exact candidate output; coordinator records printed-URL browser acceptance separately.
+
 ## Coverage and acceptance
 | Requirement | Journey | Coverage |
 | --- | --- | --- |
-| FR-001 | CUJ-001/004 | TC-001/003 internal; CLI gap #115 |
+| FR-001 | CUJ-001/004 | TC-001/003 internal; TC-004 CLI |
 | FR-002 | CUJ-005 | #116 domain gap; TC-002/003 shell only |
 | FR-003 | CUJ-007 | #118 gap |
 | FR-004 | CUJ-006 | #117 gap |
 | FR-005 | CUJ-005 | #116 gap |
-| FR-006 | CUJ-005/007 | readonly DB gap #116/#118 |
+| FR-006 | CUJ-004/005/007 | TC-004 configuration; readonly DB gap #116/#118 |
 | FR-007 | CUJ-003/005–007 | TC-001/003 perimeter; domain isolation gaps |
 | FR-008 | CUJ-002/005–007 | TC-002/003 renderer; actual domain error gaps |
 | FR-009 | CUJ-002 | TC-002/003 |
@@ -87,4 +103,4 @@ Future journeys remain gaps: CUJ-004 CLI start/restart (#115); CUJ-005 project s
 Skeleton acceptance needs TC-001/002 automated, TC-003 rendered evidence and onboarding regression. Before commit run lint, all Node/spec cases and Python pytest. Parent closure additionally needs all serial domain/CLI cases and integrated two-project/CLI-refresh/preview evidence.
 
 ## Open questions and coverage gaps
-TC-001/002 focused automated cases pass on the dirty implementation candidate; exact commit evidence and TC-003 rendered acceptance remain pending. Future owners freeze artifact formats/limits/enumeration, preview metadata/probe and readonly task adapter before coding. Add future TC headings with executable tests/manual procedure; no phantom automated paths. Planned browser interfaces are not certification.
+Skeleton TC-001/002/003 acceptance landed in PR #120. TC-004 CLI tests pass locally; final candidate gates, printed-URL browser evidence and independent review remain pending. Future owners freeze artifact formats/limits/enumeration, preview metadata/probe and readonly task adapter before coding. Add future TC headings with executable tests/manual procedure; no phantom automated paths. Planned browser interfaces are not certification.
