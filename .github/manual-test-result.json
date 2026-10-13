@@ -1,16 +1,19 @@
 {
-  "candidate_sha": "fde5ad72cadeb019f8d854b0baf865187c62dcf0",
+  "candidate_sha": "1e1d808d24de93ed108667198b61ffbfa623a14c",
   "result": "pass",
-  "tested_at": "2026-10-13T05:58:55.039277+00:00",
-  "environment": "Local macOS candidate; isolated synthetic loopback/project/SQLite fixtures; Node22 and Python3.14 pytest/PyYAML. Bounded desktop/responsive browser acceptance through CUA; no live providers.",
+  "tested_at": "2026-10-13T19:47:40.378663+00:00",
+  "environment": "macOS; host Node25.6.1 full gates; pinned Node22.14.0 actual isolated native Hermes runtime/CLI; Python3.14 pytest/PyYAML; synthetic loopback projects and SQLite only.",
   "commands": [
     "npm run lint",
     "npm run test:all",
     "python -m pytest",
-    "gitleaks scan of staged diff",
-    "CUA bounded browser acceptance described by linked specification and candidate QA report"
+    "Configured gitleaks staged-diff scan",
+    "Actual native isolated setup/config/skill-loader/foreground-background terminal/npm/ownership probes",
+    "Installed staging CLI Alpha/Beta isolation and active-work update deferral",
+    "CUA installed staging desktop/new-tab/WIP Retry and390/320 IAB acceptance"
   ],
-  "observations": "Issue #116 bounded acceptance passed for exact code candidate tree 4eeb9bda8d0e2214c3a4d6578c59ebd3cf98f5a0. Independent composite source review approved without material findings. Local commit hook reran all automated Node/feature cases and Python before the code commit. Browser evidence was recorded separately; unchanged renderer evidence may be reused only with byte equality. Unrelated manual skill cases were NOT RUN; Python platform skips are not counted as passes. No broad provider, physical-phone/LAN or screenreader certification claimed. Parent communicator feature remains active until all child outcomes pass.",
-  "acceptance_report_sha256": "3524e29c349f3b4085b5470e59f161ef40b3a3e9d5ad4effb9a1ec5603a0609b",
-  "review_report_sha256": "c51124d130c340f41247cbb0f0793f7a8beb13eafe4d9c8b789a07b577155124"
+  "observations": "Issue123 source acceptance passed for exact source tree 7717f694f6bb925883de1b80e6559bf570515df3. Full gates:129general Node tests,27automated featureTCs,208Python passed;9existing platform skips not passes. Native source/installed controller,bridge,worker byte hashes match; second-preflight release-identity race fixed with explicit RED/GREEN barrier; corrected native wrapper smoke passed; no normal credential copying/model calls. Actual focused installed IAB acceptance passed; unchanged merged GUI baseline reused by exact source/CLI digest, native Safari/Chrome and200%zoom not rerun. Skill behavioral cases NOT RUN. Permanent owner installation, real heartbeat registration and model authorization remain pending after source merge; source readiness is not operational completion. Work remains serial;117 preserved,118 queued.",
+  "acceptance_report_sha256": "282a0d75e399125b88b1052740c3196e7f9293b1f01e5baa12fbf688610b88f0",
+  "review_status": "Fresh exact-head composite R3 pending; no publication authority claimed",
+  "native_receipt_sha256": "299eabd3b48cd66cdd5e3129ece9feee8395b78a0b90ad79557d995ed3607f26"
 }
