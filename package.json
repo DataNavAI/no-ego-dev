@@ -1,7 +1,7 @@
 {
   "name": "no-ego-dev",
   "version": "0.2.1",
-  "description": "Create and run a private NED product partner on Daytona.",
+  "description": "Manage NED projects and existing Hermes workspaces.",
   "type": "module",
   "bin": {
     "ned": "./bin/ned.js",
@@ -21,7 +21,8 @@
     "evaldata/",
     "!**/__pycache__/**",
     "!**/*.pyc",
-    "docs/ned-create/",
+    "docs/cli/",
+    "docs/browser/",
     ".env.EXAMPLE",
     "README.md",
     "README.ko.md",
@@ -38,7 +39,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test tests/ned-create/*.test.js && npm run test:spec -- --all",
+    "test": "node --test tests/cli/*.test.js && npm run test:spec -- --all",
     "test:all": "npm test && python -m pytest",
     "check": "bash -n scripts/install.sh && node --check scripts/verify-manual-test-result.mjs && node --check bin/ned.js && node --check bin/ned-launcher.js && node --check src/launcher.js && node --check bin/ned-web.js && node --check src/app.js && node --check src/cli.js && node --check src/model-providers.js && node --check src/plan.js && node --check src/profile-archive.js && node --check src/state.js && node --check src/telemetry.js && node --check src/auth/openai-codex.js && node --check src/auth/openrouter.js && node --check src/providers/daytona.js && node --check src/web/app.js && node --check src/web/dev-server.js && node --check src/web/public/app.js && node --check src/tasks.js && node --check src/task-cli.js && node --check src/database.js && node --check scripts/run-spec-tests.mjs",
     "web:dev": "NED_WEB_DEV_MODE=1 node bin/ned-web.js",

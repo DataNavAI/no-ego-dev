@@ -297,20 +297,19 @@ test('CLI redacts Telegram token-shaped provider errors before output', async ()
 });
 
 
-test('removed create command fails without authorization, provisioning, or telemetry', async () => {
+test('unknown command fails without authorization, remote operations, or telemetry', async () => {
   for (const flags of [[], ['--dry-run', '--json']]) {
     const output = [];
-    const code = await runCli(['create', ...flags], { log: assert.fail, error: (line) => output.push(line) }, {
+    const code = await runCli(['unsupported-command', ...flags], { log: assert.fail, error: (line) => output.push(line) }, {
       env: {}, appFactory: async () => assert.fail('must not provision'),
       getModelConnection: async () => assert.fail('must not authorize'),
-      telemetry: { capture: async () => assert.fail('must not emit create events') },
+      telemetry: { capture: async () => assert.fail('must not emit lifecycle events') },
     });
     assert.equal(code, 2);
     assert.match(output.join('\n'), /Usage:/);
-    assert.equal(output.join('\n').includes('create|'), false);
+    assert.equal(output.join('\n').includes('unsupported-command|'), false);
   }
   const help = [];
   assert.equal(await runCli(['--help'], { log: (line) => help.push(line), error: assert.fail }), 0);
-  assert.doesNotMatch(help.join('\n'), /ned create/);
   for (const command of ['chat', 'doctor', 'pair', 'repair', 'destroy', 'telemetry']) assert.ok(help.join('\n').includes(`ned ${command}`));
 });

@@ -79,7 +79,7 @@ written to the package or workspace.
 Run the deterministic event verification (it uses a local fake transport and no live account):
 
 ```bash
-node --test tests/ned-create/telemetry.test.js
+node --test tests/cli/telemetry.test.js
 ```
 
 The verification asserts default-off behavior, affirmative consent, local deletion, every lifecycle

@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { runCli } from '../../src/cli.js';
-import { createModelConnection } from '../../src/model-providers.js';
 import { createNedPlan } from '../../src/plan.js';
 import { createDaytonaProvider as createProvider } from '../../src/providers/daytona.js';
 
@@ -10,16 +8,7 @@ function createDaytonaProvider(options = {}) {
   return createProvider({ runtimeTelegramTokenFactory: () => '123456789:' + 'A'.repeat(35), ...options });
 }
 
-function telegramConnection() {
-  let value = ['123456789', ':', 'A'.repeat(35)].join('');
-  return {
-    botUsername: 'ned_disposable_bot',
-    botUrl: 'https://t.me/ned_disposable_bot',
-    consumeToken() { const token = value; value = ''; return token; },
-  };
-}
-
-test('create plan selects an allowlisted direct model provider without changing compute defaults', () => {
+test('runtime plan selects an allowlisted direct model provider without changing compute defaults', () => {
   assert.deepEqual(createNedPlan({ modelProvider: 'openai' }), {
     provider: 'daytona',
     region: 'auto',

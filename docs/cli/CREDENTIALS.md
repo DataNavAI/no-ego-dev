@@ -16,16 +16,20 @@ Create a **Personal Access Key** at <https://app.daytona.io/dashboard/keys> and 
 - `delete:sandboxes`
 - `manage:secrets`
 
-The read-only preflight runs before ChatGPT OAuth, Telegram setup, or resource creation. If Daytona rejects the key, NED reports that a Sandbox-only key is insufficient and points back to this key-creation page.
+These credentials authorize access to the saved workspace and its model Secret. Recovery commands report authorization failures from that access; the CLI does not create new resources.
 - Logs, analytics, errors, state, screenshots, fixtures, and evidence contain no credential values.
 
 ## Maintainer manual live-QA protocol
 
 Existing-workspace recovery acceptance is separate from credential-free CI. Keep all host-local QA credentials outside the distribution repository.
 
-Before a live run, verify only that the configured directory is owner-only (`0700`) and its regular credential files are owner-only (`0600`). Do not print, copy, enumerate into reports, pass through argv or URLs, or place credential values in chat, source, logs, screenshots, fixtures, or persistent state. The accepted credential handoff remains hidden and runtime-only. After the run, record only the candidate SHA, PASS/FAIL/BLOCKED outcome, redacted evidence locations, created lifecycle handle status, and provider/local cleanup readback.
+Before a live run, verify only that the configured directory is owner-only (`0700`) and its regular credential files are owner-only (`0600`). Do not print, copy, enumerate into reports, pass through argv or URLs, or place credential values in chat, source, logs, screenshots, fixtures, or persistent state. The accepted credential handoff remains hidden and runtime-only. After the run, record only the candidate SHA, PASS/FAIL/BLOCKED outcome, redacted evidence locations, existing lifecycle handle status, and provider/local cleanup readback.
 
-## Revoke and destroy
+## Replace a revoked Telegram token
+
+Regenerate the token for the same disposable bot in BotFather. If macOS Keychain contains the stale token, remove only its named entry with `security delete-generic-password -s no-ego-dev/telegram -a TELEGRAM_BOT_TOKEN`, then run `ned repair` and supply the replacement through hidden input. Keep saved workspace state; do not destroy a workspace to replace a bot token.
+
+## Permanently revoke and destroy
 
 1. In BotFather, use `/revoke` for only the disposable NED bot.
 2. Run `ned destroy --yes`.
@@ -37,7 +41,7 @@ Destroy is idempotent. If cleanup fails, keep local ownership state and retry. N
 
 ## Troubleshooting
 
-- Token rejected: do not put it in a command. Revoke it and use a new disposable bot through hidden input.
+- Token rejected: do not put it in a command. Regenerate it for the same disposable bot, clear its stale local Keychain entry if present, and run `ned repair` using hidden input.
 - Gateway disconnected: run `ned doctor`, then `ned repair`.
 - Bot does not answer: send `hello`, approve the fresh code with `ned pair <code>`, and retry.
 - Cleanup blocked: retry `ned destroy --yes`; do not clear local ownership state manually.

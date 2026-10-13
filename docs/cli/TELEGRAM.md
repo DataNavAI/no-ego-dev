@@ -26,7 +26,7 @@ The pinned Hermes adapter uses polling by default, deletes stale webhook state b
 
 ## Recovery
 
-- Invalid or revoked token: revoke the disposable bot with BotFather, destroy the installation, and create a new disposable bot.
+- Invalid or revoked token: regenerate the token for the same disposable bot in BotFather. Remove its stale local Keychain entry if present (see the credentials guide), then run `ned repair` and enter the replacement token through hidden input. Keep the saved workspace and pairing state.
 - No reply: run `ned doctor`, then `ned repair`.
 - Expired pairing code: send `hello` for a fresh code and rerun `ned pair <code>`.
 

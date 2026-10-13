@@ -159,7 +159,7 @@ All tests use disposable homes/projects/SQLite files and clean them in `t.after`
 - Level / automation: integration and unit assertions in [TC-011.test.js](tests/TC-011.test.js); named variants are mandatory.
 - Preconditions / fixtures / Given: Dependencies installed, disposable packaging checkout with synthetic DB/WAL/journal/Beads/test fixtures.
 - When / ordered steps: Inspect npm dry-run manifest and profile archive against a shared distribution contract.
-- Then / assertions: Packages contain the distribution, shared DB/tasks/docs/spec and complete identity skill; exclude credentials, caches, repository metadata, runtime SQLite/Beads data and colocated tests. Credential-free task execution is covered by TC-001 and TC-009.
+- Then / assertions: Packages contain the distribution, shared DB/tasks/docs/spec, current CLI/browser guides and complete identity skill; exclude credentials, caches, repository metadata, runtime SQLite/Beads data and colocated tests. Credential-free task execution is covered by TC-001 and TC-009.
 - Variants / negative cases: All SQLite sidecar suffixes, nested fixture DBs, preserved broader regression discovery, usage/spec documentation paths and default installer runtime compatibility.
 - Cleanup: close all DB connections and child processes; remove only test-created directories through fixture cleanup; verify no source-tree state.
 - Pass evidence: all assertions in this case and its subtests pass with no skip/cancel; runner output identifies this case. Live/manual/authentication QA is inapplicable because all inputs and databases are synthetic/local.

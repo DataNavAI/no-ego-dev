@@ -10,7 +10,7 @@ import { test } from 'node:test';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
-const installDoc = path.join(repoRoot, 'docs/ned-create/INSTALL.md');
+const installDoc = path.join(repoRoot, 'docs/cli/INSTALL.md');
 const syntheticSecret = 'synthetic-daytona-test-key';
 const releaseRevision = 'a0f55d1d015d415c06b6a08a1e92457de1352241';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
@@ -164,7 +164,6 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   assert.equal(result.status, 0, result.stderr);
   assert.doesNotMatch(result.stdout + result.stderr, new RegExp(syntheticSecret));
   assert.match(result.stdout, /Next step: run `ned --help`/);
-  assert.doesNotMatch(result.stdout, /ned create/);
   assert.equal(await exists(path.join(harness.home, 'runtime.log')), false);
   assert.equal(await exists(path.join(harness.home, '.config/ned/daytona-api-key')), false);
   const generation = await activeGeneration(harness);

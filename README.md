@@ -17,7 +17,7 @@ ned --help
 
 The installer verifies pinned private runtime and package downloads. No sudo, Git, system Node.js, or npm is required. The CLI no longer provisions new workspaces. Existing saved Daytona workspaces retain `chat`, `doctor`, `pair`, `repair`, and `destroy --yes` support.
 
-See [installation](docs/ned-create/INSTALL.md) and [credential recovery](docs/ned-create/CREDENTIALS.md). Telemetry remains off by default; use `ned telemetry status`, `enable --yes`, `disable`, or `delete`.
+See [installation](docs/cli/INSTALL.md) and [credential recovery](docs/cli/CREDENTIALS.md). Telemetry remains off by default; use `ned telemetry status`, `enable --yes`, `disable`, or `delete`.
 
 ### Track project work
 

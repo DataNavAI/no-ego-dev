@@ -16,6 +16,8 @@ const PROFILE_PATHS = [
   'README.md',
   'README.ko.md',
   'docs/tasks.md',
+  'docs/cli',
+  'docs/browser',
   'docs/features',
 ];
 

@@ -12,22 +12,22 @@ This baseline inventories capabilities found in the current source, tests, profi
 | --- | --- | --- | --- |
 | Spec test runner | implemented | [SPEC.md](spec-test-runner/SPEC.md) | `scripts/run-spec-tests.mjs`; colocated cases and npm commit gate |
 | Task management | implemented | [SPEC.md](task-management/SPEC.md) | [CLI guide](../tasks.md); `src/tasks.js`, `src/task-cli.js` |
-| CLI installation and credential-aware launcher | implemented | Missing — coverage gap | `scripts/install.sh`, `src/launcher.js`; [install guide](../ned-create/INSTALL.md) |
+| CLI installation and credential-aware launcher | implemented | Missing — coverage gap | `scripts/install.sh`, `src/launcher.js`; [install guide](../cli/INSTALL.md) |
 | Hermes profile installation/distribution | implemented | Missing — coverage gap | `distribution.yaml`, `config.yaml`, `src/profile-archive.js`; root README |
-| Existing workspace chat and recovery | implemented | Missing — coverage gap | `src/app.js`, `src/providers/daytona.js`; [quickstart](../ned-create/QUICKSTART.md) |
-| Telegram connection and owner pairing | implemented | Missing — coverage gap | `src/telegram.js`; [Telegram guide](../ned-create/TELEGRAM.md) |
-| Model-provider authorization and credential lifecycle | implemented | Missing — coverage gap | `src/auth/`, `src/model-providers.js`; [credentials](../ned-create/CREDENTIALS.md) |
-| Opt-in telemetry and deletion | implemented | Missing — coverage gap | `src/telemetry.js`; [privacy contract](../ned-create/TELEMETRY_PRIVACY.md) |
+| Existing workspace chat and recovery | implemented | Missing — coverage gap | `src/app.js`, `src/providers/daytona.js`; [quickstart](../cli/QUICKSTART.md) |
+| Telegram connection and owner pairing | implemented | Missing — coverage gap | `src/telegram.js`; [Telegram guide](../cli/TELEGRAM.md) |
+| Model-provider authorization and credential lifecycle | implemented | Missing — coverage gap | `src/auth/`, `src/model-providers.js`; [credentials](../cli/CREDENTIALS.md) |
+| Opt-in telemetry and deletion | implemented | Missing — coverage gap | `src/telemetry.js`; [privacy contract](../cli/TELEMETRY_PRIVACY.md) |
 | Browser onboarding and connection flows | draft | Missing — coverage gap | `src/web/app.js`, `src/web/public/`; adapter-backed implementation, production wiring not established |
 | Browser job execution, cancellation, and session isolation | draft | Missing — coverage gap | `src/web/app.js` and web lifecycle/security tests; production adapters not established |
 | Local browser development preview | implemented | Missing — coverage gap | `src/web/dev-server.js`, `bin/ned-web.js`; local development adapter |
 | Skill evaluation runner and reports | implemented | Missing — coverage gap | `eval_runner/`; `tests/test_eval_runner.py` |
 | Manual release acceptance gate | implemented | Missing — coverage gap | [manual test gate](../MANUAL_TEST_GATE.md); `scripts/verify-manual-test-result.mjs`; [QA runbook](../../QA.md) |
 | Task dashboard and authenticated task HTTP API | planned (deferred) | Missing — coverage gap | [task guide](../tasks.md); future integration boundary, no current task HTTP routes |
-| Hosted compute onboarding and production release | planned (parked) | Missing — coverage gap | [parked browser plan](../ned-create/BROWSER_PROVISIONING_IMPLEMENTATION_PLAN.md); not current release authority |
+| Hosted compute onboarding and production release | planned (parked) | Missing — coverage gap | [browser scope](../browser/README.md); not current release authority |
 | Authenticated external-command access broker | draft (discussion only) | Missing — coverage gap | [task decision source](https://chatgpt.com/share/6ac730b2-f424-83e8-a551-df48686e1b40); task metadata exists, credential broker does not |
-| CLI workspace provisioning (`ned create`) | retired | Missing — retirement spec gap | Removal commit `a808317`; issue [#112](https://github.com/DataNavAI/no-ego-dev/issues/112) |
-| KakaoTalk channel gateway | planned (deferred) | Missing — coverage gap | [decision](../ned-create/KAKAOTALK_DECISION.md); no implemented gateway |
+| CLI workspace provisioning | retired | Retired — removal tracked in #112 | Removal commit `a808317`; issue [#112](https://github.com/DataNavAI/no-ego-dev/issues/112) |
+| KakaoTalk channel gateway | planned (deferred) | Missing — coverage gap | [decision](../cli/KAKAOTALK_DECISION.md); no implemented gateway |
 
 ## Profile skill capabilities
 
@@ -82,5 +82,5 @@ Each self-contained skill is an agent-facing capability that needs corresponding
 - Backfill remaining specs from current code, tests, confirmed decisions, and the evidence above before changing the corresponding feature's observable behavior. Keep the same folder for later enhancements.
 - Record each missing spec and missing test as a gap until addressed; an inventory entry or existing eval alone is not conformance.
 - GitHub Issues governs development of NED; the task CLI governs user-project execution. No automatic tracker synchronization is implemented.
-- The parked browser plan still refers to removed V1 contracts and closed legacy issues. Treat it as historical/planning evidence, not the current product contract; review its intended scope during backfill.
+- Browser production scope remains parked; create a canonical spec before extending it. Obsolete CLI provisioning plans have been removed.
 - Maintain stable FR/CUJ/TC IDs within each feature. When splitting or merging entries, preserve old ID references and update this inventory.
