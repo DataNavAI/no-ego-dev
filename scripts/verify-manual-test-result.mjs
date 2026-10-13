@@ -28,7 +28,7 @@ let evidence;
 try {
   evidence = JSON.parse(await readFile(evidencePath, 'utf8'));
 } catch (error) {
-  throw new Error(`Manual test gate: ${evidencePath} is required for code changes (${error.message})`);
+  throw new Error(`Manual test gate: ${evidencePath} is required for code changes (${error.message})`, { cause: error });
 }
 
 const requiredStrings = ['candidate_sha', 'tested_at', 'environment', 'observations'];

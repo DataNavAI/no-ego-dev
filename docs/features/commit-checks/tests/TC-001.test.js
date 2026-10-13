@@ -1,0 +1,24 @@
+import { test } from 'node:test';
+import path from 'node:path';
+import { mkdir, cp } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { fixture, assert } from './helpers.js';
+test('TC-001: install repeatably and run checks through a real Git commit', async (t) => {
+  const f = await fixture(t), before = f.head();
+  assert.equal(f.install().status, 0);
+  assert.equal(f.install().status, 0);
+  assert.equal(f.run(['config', '--local', '--get', 'core.hooksPath']).stdout.trim(), '.githooks');
+  const committed = f.commit();
+  assert.equal(committed.status, 0, committed.stderr);
+  assert.notEqual(f.head(), before);
+  assert.deepEqual(await f.calls(), ['lint', 'test:all']);
+  assert.equal(f.run(['config', 'core.hooksPath', 'custom-hooks']).status, 0);
+  assert.notEqual(f.install().status, 0);
+  assert.equal(f.run(['config', '--get', 'core.hooksPath']).stdout.trim(), 'custom-hooks');
+  const nested = path.join(f.dir, 'installed-package/scripts');
+  await mkdir(nested, { recursive: true });
+  await cp(path.join(f.dir, 'scripts/install-git-hooks.mjs'), path.join(nested, 'install-git-hooks.mjs'));
+  const result = spawnSync(process.execPath, [path.join(nested, 'install-git-hooks.mjs')], { env: f.env, encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /requires a NED Git checkout/);
+});

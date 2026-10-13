@@ -1,10 +1,9 @@
 import { existsSync, readFileSync, openSync, closeSync, readSync, writeSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { redactTelegramText } from './telegram.js';
 
-const launcherRoot = dirname(fileURLToPath(import.meta.url));
 
 function redactStreamedStderr(value, credentials) {
   let redacted = redactTelegramText(value);
@@ -16,9 +15,9 @@ function redactStreamedStderr(value, credentials) {
 }
 
 export function needsDaytona(argv) {
-  const [command, ...flags] = argv;
+  const [command] = argv;
   if (['--version', 'version', '--help', '-h', 'help'].includes(command)) return false;
-  return command === 'create' ? !flags.includes('--dry-run') : Boolean(command);
+  return ['chat', 'doctor', 'pair', 'repair', 'reset', 'destroy'].includes(command);
 }
 
 export function buildLaunchEnvironment({ baseEnv = process.env, token }) {
@@ -71,6 +70,7 @@ export async function readHiddenDaytonaKey(prompt = 'Daytona API key (input hidd
     return value;
   } catch (error) {
     if (error?.message === 'Daytona API key entry cancelled.') throw error;
+    // eslint-disable-next-line preserve-caught-error -- Sanitize provider/TTY errors rather than retaining credential-bearing causes.
     throw new Error('NED: interactive terminal with hidden input is required to enter the Daytona API key.');
   } finally {
     if (echoDisabled) spawnSync('stty', ['echo'], { stdio: [ttyFd, 'ignore', 'ignore'] });

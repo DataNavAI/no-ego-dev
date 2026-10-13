@@ -1,5 +1,4 @@
-import { Daytona } from '@daytona/sdk';
-import { randomUUID } from 'node:crypto';
+import { DaytonaClient } from './daytona-client.js';
 import { getModelProviderRuntime } from '../model-providers.js';
 
 const HERMES_COMMIT = '3ef6bbd201263d354fd83ec55b3c306ded2eb72a';
@@ -21,10 +20,8 @@ function isAuthorizationFailure(error) {
 
 export function createDaytonaProvider({
   apiKey,
-  DaytonaClass = Daytona,
+  DaytonaClass = DaytonaClient,
   profileArchive,
-  secretNameFactory = (providerId) => `ned_model_${providerId.replaceAll(/[^a-z0-9]/g, '_')}_${randomUUID().replaceAll('-', '')}`,
-  createAttemptIdFactory = () => randomUUID().replaceAll('-', ''),
   runtimeTelegramTokenFactory = () => null,
   verbose = false,
   log = () => {},
@@ -171,7 +168,7 @@ PY`,
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
     const workspaceId = sandbox.id;
-    let lastDiagnostic = '';
+    let lastDiagnostic;
     const existing = await telegramGatewayReady(sandbox, profile, workspaceId);
     if (existing.ready) return;
     lastDiagnostic = existing.diagnostic;
@@ -187,128 +184,22 @@ PY`,
   }
 
   return {
-    async listManagedWorkspaces() {
-      const workspaces = [];
-      for await (const sandbox of client.list({ labels: { app: 'ned', managedBy: 'ned-cli' } })) {
-        workspaces.push({ id: sandbox.id, name: sandbox.name, state: sandbox.state });
-      }
-      return workspaces;
-    },
-
     async verifyAuthorization() {
       try {
-        // Read-only calls validate the key before OAuth, Telegram prompts, or resource creation.
-        for await (const _sandbox of client.list({ labels: { app: 'ned', managedBy: 'ned-cli' } })) break;
+        // Read-only calls validate access to saved workspaces and model Secrets.
+        for await (const sandbox of client.list({ labels: { app: 'ned', managedBy: 'ned-cli' } })) {
+          void sandbox; // The list request validates access; resource contents are irrelevant.
+          break;
+        }
         await client.secret.list();
       } catch (error) {
         if (isAuthorizationFailure(error)) {
           const status = error?.status || error?.statusCode || error?.response?.status;
           const suffix = status ? ` (HTTP ${status})` : '';
+          // eslint-disable-next-line preserve-caught-error -- Sanitize provider/TTY errors rather than retaining credential-bearing causes.
           throw new Error(
-            `Daytona API key was rejected${suffix}. Create a Personal Access Key at https://app.daytona.io/dashboard/keys with write:sandboxes, delete:sandboxes, and manage:secrets permissions. A Sandbox-only key cannot run ned create.`,
+            `Daytona API key was rejected${suffix}. Create a Personal Access Key at https://app.daytona.io/dashboard/keys with write:sandboxes, delete:sandboxes, and manage:secrets permissions. A Sandbox-only key cannot manage the model Secret.`,
           );
-        }
-        throw error;
-      }
-    },
-
-    async createWorkspace(plan, credentials = {}) {
-      const modelConnection = credentials.modelConnection || null;
-      const telegramConnection = credentials.telegramConnection || null;
-      if (!modelConnection) {
-        throw new Error('Model-provider authorization is required before compute can be created.');
-      }
-      if (!telegramConnection?.botUsername || typeof telegramConnection.consumeToken !== 'function') {
-        throw new Error('Verified Telegram bot authorization is required before compute can be created.');
-      }
-      if (modelConnection.providerId !== plan.modelProvider) {
-        throw new Error('Model-provider connection does not match the provisioning plan');
-      }
-      const modelProvider = getModelProviderRuntime(modelConnection.providerId);
-
-      const secretName = secretNameFactory(modelConnection.providerId);
-      const createAttemptId = createAttemptIdFactory();
-      if (!/^ned_model_[a-z0-9_]+_[A-Za-z0-9]+$/.test(secretName)
-          || !/^[A-Za-z0-9]{8,64}$/.test(createAttemptId)) {
-        throw new Error('Invalid generated Daytona resource identity');
-      }
-      const secret = await runStage('create-model-secret', () => client.secret.create({
-        name: secretName,
-        value: modelConnection.consumeCredential(),
-        description: `${modelProvider.label} access for NED`,
-        hosts: modelProvider.allowedHosts,
-      }));
-      try {
-        const sandbox = await runStage('create-sandbox', () => client.create({
-          name: 'ned-product-partner',
-          image: plan.image,
-          language: 'typescript',
-          public: false,
-          ephemeral: false,
-          resources: { ...plan.resources },
-          autoStopInterval: plan.autoStopMinutes,
-          autoArchiveInterval: plan.autoArchiveMinutes,
-          autoDeleteInterval: -1,
-          labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: createAttemptId },
-          secrets: {
-            [modelProvider.sandboxEnvironmentVariable]: secretName,
-          },
-        }, { timeout: 300 }));
-        consumeRuntimeTelegramToken(sandbox.id, telegramConnection);
-        return {
-          id: sandbox.id,
-          name: sandbox.name,
-          nedSecretId: secret.id,
-          nedSecretName: secretName,
-          telegramBotUsername: telegramConnection.botUsername,
-          telegramBotUrl: telegramConnection.botUrl,
-          createAttemptId,
-          modelProvider: modelConnection.providerId,
-        };
-      } catch (error) {
-        const cleanupErrors = [];
-        let unresolvedWorkspace = null;
-        if (typeof client.list === 'function') {
-          try {
-            const query = { labels: { app: 'ned', managedBy: 'ned-cli', createAttempt: createAttemptId } };
-            for await (const acceptedSandbox of client.list(query)) {
-              try {
-                if (!(await deleteSandboxAndProveAbsence(acceptedSandbox))) {
-                  unresolvedWorkspace ||= acceptedSandbox;
-                  cleanupErrors.push(new Error(`sandbox cleanup readback did not prove absence for ${acceptedSandbox.id}`));
-                }
-              } catch (cleanupError) {
-                unresolvedWorkspace ||= acceptedSandbox;
-                cleanupErrors.push(cleanupError);
-              }
-            }
-          } catch (reconciliationError) {
-            cleanupErrors.push(new Error(`sandbox reconciliation failed for create attempt ${createAttemptId}: ${reconciliationError.message}`));
-          }
-        }
-        for (const ownedSecret of [secret]) {
-          if (!ownedSecret) continue;
-          try {
-            if (!(await deleteSecretAndProveAbsence(ownedSecret.id))) {
-              cleanupErrors.push(new Error(`secret cleanup readback did not prove absence for ${ownedSecret.id}`));
-            }
-          } catch (cleanupError) {
-            cleanupErrors.push(cleanupError);
-          }
-        }
-        if (cleanupErrors.length) {
-          const aggregate = new AggregateError(
-            [error, ...cleanupErrors],
-            `Daytona sandbox creation failed and exact secret cleanup was incomplete: ${error.message}; ${cleanupErrors.map((item) => item.message).join('; ')}`,
-          );
-          aggregate.recoveryState = {
-            workspaceId: unresolvedWorkspace?.id || null,
-            workspaceName: unresolvedWorkspace?.name || null,
-            createAttemptId,
-            secretId: secret.id,
-            secretName,
-          };
-          throw aggregate;
         }
         throw error;
       }
@@ -465,7 +356,7 @@ PY`,
       await startAndVerifyTelegramGateway(sandbox, profile);
     },
 
-    async pair(workspaceId, profile, code, telegramConnection) {
+    async pair(workspaceId, profile, code) {
       if (!/^[a-z0-9-]+$/.test(profile) || !/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
         throw new Error('Invalid Telegram owner pairing request');
       }

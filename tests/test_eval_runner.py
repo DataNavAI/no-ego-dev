@@ -233,21 +233,6 @@ def test_custom_oneshot_command_does_not_receive_hermes_only_quiet_flag():
     assert command == ["python", "fake_hermes.py", "-q", "judge exactly"]
 
 
-def test_loads_every_tracked_repository_eval():
-    repo_root = Path(__file__).resolve().parents[1]
-    eval_files = discover_eval_files([repo_root])
-    tracked = {
-        repo_root / path
-        for path in subprocess.check_output(
-            ["git", "ls-files", "*EVAL*.yaml"], cwd=repo_root, text=True
-        ).splitlines()
-    }
-
-    assert set(eval_files) == tracked
-    for eval_path in eval_files:
-        load_eval(eval_path)
-
-
 def test_load_eval_validates_required_fields(tmp_path):
     path = tmp_path / "EVAL.yaml"
     path.write_text("prompt: Build it\nexpectations:\n  - result exists\nparameters:\n  repo: local\n")

@@ -26,6 +26,8 @@ The project manager also owns the routine service status loop for live projects:
 
 ## GitHub Issues Work Tracking Policy
 
+This policy governs development and maintenance of the NED distribution itself. For execution work NED performs in a user project, the native NED task CLI is the work graph, backed by the shared NED SQLite database: use `ned goal`, `ned subgoal`, `ned task`, `ned issue`, and `ned ready` with an explicit project and stable actor. Do not use Beads. GitHub remains the development tracker for NED; no automatic synchronization or duplicate work graph is required. Direct user instructions choosing a tracker for their own project take precedence.
+
 GitHub Issues is the only work tracker used by the project manager. Use GitHub milestones and parent/sub-issues for hierarchy; use GitHub issue fields, labels, assignees, comments, linked branches, and PRs for status and evidence.
 
 - Search open and closed GitHub Issues before creating work. Reuse or reopen the matching canonical issue when appropriate; do not create duplicates.

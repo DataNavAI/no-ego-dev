@@ -1,0 +1,19 @@
+prompt: |
+  Use the test-writing skill to complete the three requests in the fixture.
+  Produce runnable automated test code for requests A and B in an isolated
+  temporary workspace, run it, and explain the distinct risks protected.
+  For C, propose a behavioral skill evaluation without writing skill tests.
+  Preserve the source checkout and do not call external services.
+expectations:
+  - Produces runnable tests with explicit fixtures, awaited operations, precise results and isolated cleanup.
+  - Preserves credential, persistence, ownership and failure-side-effect regression coverage.
+  - Consolidates duplicate packaging checks while retaining every unique exclusion.
+  - Tests concurrent claims through independent real SQLite connections with exactly one winner, one conflict and durable owner/event readback.
+  - Demonstrates an intended assertion failure for a bounded defect probe and restores the candidate before a final passing run.
+  - Rejects code-based skill prose and version tests in favor of realistic agent outcomes.
+  - Avoids broad end-to-end matrices, arbitrary sleeps, blind retries and implementation-mirroring assertions.
+  - Reports actual commands and gaps without claiming unexecuted evaluations passed.
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/scenarios.md

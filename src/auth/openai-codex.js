@@ -199,6 +199,7 @@ async function acquireNedAuthLock(storePath, { now = Date.now, sleep = (ms) => n
       };
     } catch (error) {
       if (error?.code !== 'EEXIST' || now() >= deadline) {
+        // eslint-disable-next-line preserve-caught-error -- OAuth errors may contain credentials; expose only fixed recovery text.
         throw new Error('Hermes OAuth store is busy; retry after the other authorization process exits.');
       }
       await sleep(50);
@@ -356,7 +357,7 @@ async function runDeviceLogin({
       throw new Error(`ChatGPT device authorization polling failed with status ${poll.status}.`);
     }
   }
-  if (!authorization) throw new Error('ChatGPT authorization timed out; rerun ned create to restart safely.');
+  if (!authorization) throw new Error('ChatGPT authorization timed out; rerun the command to restart safely.');
   if (typeof authorization.authorization_code !== 'string' || !authorization.authorization_code
       || typeof authorization.code_verifier !== 'string' || !authorization.code_verifier) {
     throw new Error('ChatGPT device authorization exchange data was incomplete.');

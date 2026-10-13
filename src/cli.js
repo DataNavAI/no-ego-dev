@@ -1,8 +1,7 @@
 import { createRequire } from 'node:module';
+import { runTaskCli } from './task-cli.js';
 import { createNedApp } from './app.js';
 import { authorizeOpenAICodex } from './auth/openai-codex.js';
-import { getModelProviderRuntime } from './model-providers.js';
-import { createDryRunPlan } from './plan.js';
 import { createProfileArchive } from './profile-archive.js';
 import { createDaytonaProvider } from './providers/daytona.js';
 import { createFileStateStore } from './state.js';
@@ -10,7 +9,6 @@ import { createFileTelemetry, TELEMETRY_EVENTS } from './telemetry.js';
 import {
   acquireTelegramConnection,
   CREDENTIALS_DOCS_URL,
-  QUICKSTART_DOCS_URL,
   redactTelegramText,
   TELEGRAM_DOCS_URL,
 } from './telegram.js';
@@ -38,15 +36,6 @@ function flagValue(flags, name) {
   return index >= 0 ? flags[index + 1] : undefined;
 }
 
-function validateV1ModelProvider(flags, io) {
-  const providerId = flagValue(flags, '--model-provider') || 'openai-codex';
-  if (providerId !== 'openai-codex') {
-    io.error('NED V1 defaults to ChatGPT OAuth. Optional provider integrations are available only through documented advanced extension points.');
-    return null;
-  }
-  return providerId;
-}
-
 function capture(telemetry, event, startedAt, resultClass) {
   try {
     void telemetry.capture(event, { durationMs: Date.now() - startedAt, resultClass }).catch(() => {});
@@ -55,16 +44,12 @@ function capture(telemetry, event, startedAt, resultClass) {
   }
 }
 
-function createVerboseLogger(io, enabled) {
-  if (!enabled) return () => {};
-  return (message) => io.log(`[verbose] ${redactTelegramText(String(message))}`);
-}
-
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (['goal', 'subgoal', 'task', 'issue', 'ready', 'status', 'tree'].includes(command)) {
+    return runTaskCli(argv, io, dependencies);
+  }
   const env = dependencies.env || process.env;
-  const verbose = flags.includes('--verbose');
-  const verboseLog = createVerboseLogger(io, verbose);
   if (command === '--version' || command === 'version') {
     io.log(NED_VERSION);
     return 0;
@@ -93,7 +78,10 @@ export async function runCli(argv, io = console, dependencies = {}) {
       'Usage:',
       '  ned --version',
       '  ned version',
-      '  ned create [--dry-run --json] [--verbose]',
+      '  ned task init [--project <directory>] [--database <SQLite-path-or-file-URL>]',
+      '  ned <goal|subgoal|task|issue> create <title> [--parent <id>] [--json]',
+      '  ned task <list|get|start|block|unblock|done|history|children> [id] [--json]',
+      '  ned <ready|status|tree> [--json]',
       '  ned chat "What should NED build?"',
       '  ned doctor',
       '  ned pair <8-character-code>',
@@ -145,67 +133,6 @@ export async function runCli(argv, io = console, dependencies = {}) {
     } catch (error) {
       io.error(`NED telemetry ${action || 'command'} failed: ${redactTelegramText(error.message)}`);
       return 2;
-    }
-  }
-
-  if (command === 'create' && flags.includes('--dry-run')) {
-    const providerId = validateV1ModelProvider(flags, io);
-    if (!providerId) return 2;
-    const plan = createDryRunPlan({ modelProvider: providerId });
-    if (flags.includes('--json')) {
-      io.log(JSON.stringify(plan));
-    } else {
-      io.log('NED create plan');
-      io.log(JSON.stringify(plan, null, 2));
-    }
-    return 0;
-  }
-
-  if (command === 'create') {
-    const startedAt = Date.now();
-    capture(telemetry, TELEMETRY_EVENTS.createStarted, startedAt, 'started');
-    const providerId = validateV1ModelProvider(flags, io);
-    if (!providerId) {
-      capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
-      return 2;
-    }
-    if (!env.DAYTONA_API_KEY) {
-      capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'validation_error');
-      io.error('Daytona API authorization is needed to create and manage your private Sandbox. Get a key at https://app.daytona.io/dashboard/keys, grant write:sandboxes, delete:sandboxes, and manage:secrets, set DAYTONA_API_KEY, then rerun ned create. Do not paste secrets into chat.');
-      return 2;
-    }
-    try {
-      const provider = getModelProviderRuntime(providerId);
-      verboseLog('create: initializing Daytona provider');
-      const app = await appFactory({ env, verbose, log: verboseLog, progress: (message) => io.log(message) });
-      verboseLog('create: validating Daytona authorization');
-      await app.verifyAuthorization?.();
-      verboseLog('create: Daytona authorization accepted');
-      verboseLog(`create: authorizing ${provider.label}`);
-      const modelConnection = await getModelConnection();
-      verboseLog(`create: ${provider.label} authorization accepted`);
-      io.log(`Connecting ${provider.label} as your model provider...`);
-      verboseLog('create: starting Telegram bot setup');
-      const telegramConnection = await getTelegramConnection();
-      verboseLog(`create: Telegram bot validated as @${telegramConnection.botUsername}`);
-      const botUrl = telegramConnection.botUrl;
-      io.log('Creating your private NED workspace and Telegram gateway...');
-      io.log('This can take a few minutes. NED will print each completed step.');
-      verboseLog('create: provisioning Daytona workspace and gateway');
-      await app.create({ modelConnection, telegramConnection });
-      verboseLog('create: workspace health verified and local state persisted');
-      capture(telemetry, TELEMETRY_EVENTS.createCompleted, startedAt, 'success');
-      io.log('✓ Your product partner is ready.');
-      io.log(`1. Open ${botUrl}.`);
-      io.log('2. Tap Start.');
-      io.log('3. Send hello.');
-      io.log('4. If the bot sends a pairing code, run: ned pair <code>');
-      io.log(`Quickstart and recovery: ${QUICKSTART_DOCS_URL}`);
-      return 0;
-    } catch (error) {
-      capture(telemetry, TELEMETRY_EVENTS.createFailed, startedAt, 'operation_error');
-      io.error(`NED create failed: ${redactTelegramText(error.message)}`);
-      return 1;
     }
   }
 
@@ -302,6 +229,6 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
   }
 
-  io.error('Usage: ned <create|chat|doctor|pair|repair|destroy|telemetry>');
+  io.error('Usage: ned <chat|doctor|pair|repair|destroy|telemetry>');
   return 2;
 }

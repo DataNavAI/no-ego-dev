@@ -13,3 +13,8 @@ state.db*
 .eval-runs/
 .projects/
 .DS_Store
+.beads/
+**/*.sqlite*
+**/*.db
+**/*.db-*
+docs/features/**/tests/**

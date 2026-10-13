@@ -661,12 +661,7 @@ export function createBrowserServer({
             submission: durableSubmission,
           };
           await persistSession(session);
-          let job;
-          try {
-            job = safeJob(await jobService.create(submission), body.operation);
-          } catch (error) {
-            throw error;
-          }
+          const job = safeJob(await jobService.create(submission), body.operation);
           const record = { ...job, ownerId: session.userId, sessionId: session.id };
           if (TERMINAL_JOB_STATUSES.has(record.status)) await finalizeTransition(session, record, record);
           jobs.set(`${session.id}:${job.id}`, record);

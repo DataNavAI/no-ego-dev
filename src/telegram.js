@@ -54,6 +54,7 @@ export async function readHiddenTelegramToken(prompt = 'Paste the Telegram bot t
     return value;
   } catch (error) {
     if (error?.message?.includes('Telegram setup cancelled')) throw error;
+    // eslint-disable-next-line preserve-caught-error -- TTY failures are sanitized; raw causes may expose credential input.
     throw new Error(`Telegram setup needs an interactive TTY. See ${TELEGRAM_DOCS_URL}`);
   } finally {
     if (echoDisabled) spawnSync('stty', ['echo'], { stdio: [ttyFd, ttyFd, ttyFd] });
@@ -120,6 +121,7 @@ export async function acquireTelegramConnection({
   }
 
   let credential = token;
+  // eslint-disable-next-line no-useless-assignment -- Clear the original credential binding after transfer to the one-use closure.
   token = '';
   let consumed = false;
   return Object.freeze({

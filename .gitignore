@@ -16,3 +16,7 @@ __pycache__/
 .eval-runs/
 .projects/
 .DS_Store
+.beads/
+*.sqlite*
+*.db
+*.db-*
