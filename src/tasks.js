@@ -183,7 +183,8 @@ export async function createTaskService({
       };
     }
     function clean(entry) {
-      const { leaves, ...rest } = entry;
+      const rest = { ...entry };
+      delete rest.leaves;
       return { ...rest, children: rest.children.map(clean) };
     }
     return items.filter((entry) => !entry.parentId).map((entry) => clean(node(entry)));

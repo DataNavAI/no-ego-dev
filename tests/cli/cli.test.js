@@ -6,7 +6,6 @@ import path from 'node:path';
 import { createNedApp } from '../../src/app.js';
 import { runCli } from '../../src/cli.js';
 import { createModelConnection } from '../../src/model-providers.js';
-import { NED_PLAN } from '../../src/plan.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 

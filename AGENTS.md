@@ -6,6 +6,10 @@ When editing skills, keep each skill self-contained, include an EVAL.yaml, and k
 
 Run `python -m pytest` before committing changes to this distribution.
 
+## Local commit hook
+
+After `npm ci`, run `npm run hooks:install` in this checkout. Activate a Python environment with pytest and PyYAML before committing. The versioned hook runs `npm run lint` and `npm run test:all` (all Node/spec cases plus `python -m pytest`). It rejects unstaged tracked edits, untracked non-ignored files and candidate changes during checks, preserving user work instead of stashing or discarding it. Existing custom hooksPath settings are not overwritten automatically. Manual skill acceptance still requires separate evidence. See [commit checks](docs/features/commit-checks/SPEC.md).
+
 ## Default NED skill usage
 
 For work in this project, use relevant NED skills from `skills/` by default. Read the selected `SKILL.md` before applying it; load only supporting references needed for the task. Prefer the repository's version when a similarly named installed skill exists. Do not load every skill or turn a skill's workflow into permission for unrelated work.

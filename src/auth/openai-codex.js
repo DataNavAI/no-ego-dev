@@ -199,6 +199,7 @@ async function acquireNedAuthLock(storePath, { now = Date.now, sleep = (ms) => n
       };
     } catch (error) {
       if (error?.code !== 'EEXIST' || now() >= deadline) {
+        // eslint-disable-next-line preserve-caught-error -- OAuth errors may contain credentials; expose only fixed recovery text.
         throw new Error('Hermes OAuth store is busy; retry after the other authorization process exits.');
       }
       await sleep(50);

@@ -1,6 +1,6 @@
 import { createNedPlan } from './plan.js';
 
-export function createNedApp({ provider, stateStore, progress = () => {} }) {
+export function createNedApp({ provider, stateStore }) {
   if (!provider || !stateStore) {
     throw new TypeError('provider and stateStore are required');
   }

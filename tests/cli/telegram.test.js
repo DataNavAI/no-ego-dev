@@ -7,7 +7,6 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import {
-  BOTFATHER_URL,
   TELEGRAM_DOCS_URL,
   acquireTelegramConnection,
   redactTelegramText,

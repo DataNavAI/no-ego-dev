@@ -35,7 +35,7 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
     try {
       spec = await readFile(path.join(featuresRoot, entry.name, 'SPEC.md'), 'utf8');
     } catch (error) {
-      if (error.code === 'ENOENT') throw new Error(`Feature ${entry.name} is missing SPEC.md.`);
+      if (error.code === 'ENOENT') throw new Error(`Feature ${entry.name} is missing SPEC.md.`, { cause: error });
       throw error;
     }
     const blocks = [

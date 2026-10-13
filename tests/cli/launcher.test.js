@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
-import { buildLaunchEnvironment, defaultReadCredential, needsDaytona, readHiddenDaytonaKey, runLauncher } from '../../src/launcher.js';
+import { buildLaunchEnvironment, defaultReadCredential, needsDaytona, runLauncher } from '../../src/launcher.js';
 
 function runHiddenDaytonaKeyPty(env = process.env) {
   const moduleUrl = pathToFileURL(resolve('src/launcher.js')).href;

@@ -38,7 +38,7 @@ test('Daytona bootstrap configures the selected Hermes provider and model', asyn
       },
     },
     process: {
-      async executeCommand(value, cwd, env) {
+      async executeCommand(value) {
         if (value.includes('gateway status')) return { exitCode: 0 };
         if (value.includes('gateway run --replace')) { gatewayStarted = true; return { exitCode: 0 }; }
         command = value;

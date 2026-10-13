@@ -14,15 +14,6 @@ function createDaytonaProvider(options = {}) {
   return createProvider({ runtimeTelegramTokenFactory: () => '123456789:' + 'A'.repeat(35), ...options });
 }
 
-function telegramConnection() {
-  let value = ['123456789', ':', 'A'.repeat(35)].join('');
-  return {
-    botUsername: 'ned_disposable_bot',
-    botUrl: 'https://t.me/ned_disposable_bot',
-    consumeToken() { const token = value; value = ''; return token; },
-  };
-}
-
 test('installed Daytona SDK exposes the SecretService contract used for cleanup', () => {
   const client = new Daytona({ apiKey: 'contract-shape-only' });
   assert.equal(typeof client.secret.create, 'function');

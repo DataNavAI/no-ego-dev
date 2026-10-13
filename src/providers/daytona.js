@@ -168,7 +168,7 @@ PY`,
 
   async function startAndVerifyTelegramGateway(sandbox, profile) {
     const workspaceId = sandbox.id;
-    let lastDiagnostic = '';
+    let lastDiagnostic;
     const existing = await telegramGatewayReady(sandbox, profile, workspaceId);
     if (existing.ready) return;
     lastDiagnostic = existing.diagnostic;
@@ -186,13 +186,17 @@ PY`,
   return {
     async verifyAuthorization() {
       try {
-        // Read-only calls validate the key before OAuth, Telegram prompts, or resource creation.
-        for await (const _sandbox of client.list({ labels: { app: 'ned', managedBy: 'ned-cli' } })) break;
+        // Read-only calls validate access to saved workspaces and model Secrets.
+        for await (const sandbox of client.list({ labels: { app: 'ned', managedBy: 'ned-cli' } })) {
+          void sandbox; // The list request validates access; resource contents are irrelevant.
+          break;
+        }
         await client.secret.list();
       } catch (error) {
         if (isAuthorizationFailure(error)) {
           const status = error?.status || error?.statusCode || error?.response?.status;
           const suffix = status ? ` (HTTP ${status})` : '';
+          // eslint-disable-next-line preserve-caught-error -- Sanitize provider/TTY errors rather than retaining credential-bearing causes.
           throw new Error(
             `Daytona API key was rejected${suffix}. Create a Personal Access Key at https://app.daytona.io/dashboard/keys with write:sandboxes, delete:sandboxes, and manage:secrets permissions. A Sandbox-only key cannot manage the model Secret.`,
           );
@@ -352,7 +356,7 @@ PY`,
       await startAndVerifyTelegramGateway(sandbox, profile);
     },
 
-    async pair(workspaceId, profile, code, telegramConnection) {
+    async pair(workspaceId, profile, code) {
       if (!/^[a-z0-9-]+$/.test(profile) || !/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
         throw new Error('Invalid Telegram owner pairing request');
       }

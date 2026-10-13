@@ -51,7 +51,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const platform = `${system === 'Darwin' ? 'darwin' : 'linux'}-${machine === 'arm64' || machine === 'aarch64' ? 'arm64' : 'x64'}`;
   const nodeRoot = path.join(root, `node-v-test-${platform}`);
   await mkdir(path.join(nodeRoot, 'bin'), { recursive: true });
-  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\nif [[ "\${1-}" == *'/ned-launcher.js' || "\${1-}" == *'/launcher-runtime.js' || "\${1-}" == *'/app/src/launcher.js' ]]; then exec ${JSON.stringify(process.execPath)} "\$@"; fi\n[[ "\$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "\$*" == *' --help'* ]]; then printf 'NED help\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_RUNTIME_FAIL-} != 1 ]] || { echo synthetic-runtime-failure >&2; exit 43; }\nprintf 'ned-runtime:%s\\n' "\${2-}" >> "$HOME/runtime.log"\n`);
+  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\nif [[ "\${1-}" == *'/ned-launcher.js' || "\${1-}" == *'/launcher-runtime.js' || "\${1-}" == *'/app/src/launcher.js' ]]; then exec ${JSON.stringify(process.execPath)} "$@"; fi\n[[ "$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "$*" == *' --help'* ]]; then printf 'NED help\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_RUNTIME_FAIL-} != 1 ]] || { echo synthetic-runtime-failure >&2; exit 43; }\nprintf 'ned-runtime:%s\\n' "\${2-}" >> "$HOME/runtime.log"\n`);
   await chmod(path.join(nodeRoot, 'bin', 'node'), 0o755);
   await writeFile(path.join(nodeRoot, 'bin', 'npm'), '#!/usr/bin/env bash\nset -eu\n[[ ${1-} == ci ]]\n[[ $(command -v node) == "${BASH_SOURCE[0]%/*}/node" ]] || { echo system-node-used >&2; exit 42; }\ntouch .dependencies-installed\n');
   await chmod(path.join(nodeRoot, 'bin', 'npm'), 0o755);
@@ -84,7 +84,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const expectedStatArgs = system === 'Darwin'
     ? '[[ ${1-} == -f && ${2-} == %Lp ]] || exit 2'
     : '[[ ${1-} == -c && ${2-} == %a ]] || exit 2';
-  await writeFile(path.join(fakeBin, 'stat'), `#!/usr/bin/env bash\nset -eu\n${expectedStatArgs}\n${nativeModeStat} "\$3"\n`);
+  await writeFile(path.join(fakeBin, 'stat'), `#!/usr/bin/env bash\nset -eu\n${expectedStatArgs}\n${nativeModeStat} "$3"\n`);
   await chmod(path.join(fakeBin, 'stat'), 0o755);
   const profileTempModeLog = path.join(root, 'profile-temp-modes.log');
   await writeFile(path.join(fakeBin, 'mktemp'), `#!/usr/bin/env bash\nset -eu\ncreated=$(/usr/bin/mktemp "$@")\ncase "$created" in "$HOME/.profile.ned."*|"$HOME/.zprofile.ned."*|"$HOME/.bashrc.ned."*) mode=$(${nativeModeStat} "$created"); printf 'created:%s\\n' "$mode" >>'${profileTempModeLog}';; esac\nprintf '%s\\n' "$created"\n`);
