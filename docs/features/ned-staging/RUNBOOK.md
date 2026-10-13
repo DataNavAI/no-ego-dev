@@ -70,7 +70,7 @@ Non-secret setup JSON specifies canonical absent root; immutable Node/npm paths;
 
 Operational manager/native archive are separately pinned maintenance tools. Generated root/projects/AGENTS.md is reserved owned content; edits cause a preservation error. No service start/stop commands exist. Schedule pause/resume/removal uses exact Codex automation ID `ned-staging-updates`; do not delete locks or protected snapshots manually.
 
-Staging browser acceptance is focused on unchanged merged NEDCOM GUI at the actual staging instance: desktop/newtab and390/320 IAB plus exact source provenance. Existing merged native Safari/Chrome baseline is reused only for unchanged GUI and is not a fresh native staging pass. New artifact/task GUI slices retain their separate acceptance. The owner installation and schedule readback passed. A controlled subsequent-main promotion/rollback is recorded separately after the operations documentation merges; registration is not evidence of a completed scheduled run.
+Staging browser acceptance is focused on unchanged merged NEDCOM GUI at the actual staging instance: desktop/newtab and390/320 IAB plus exact source provenance. Existing merged native Safari/Chrome baseline is reused only for unchanged GUI and is not a fresh native staging pass. New artifact/task GUI slices retain their separate acceptance. The owner installation and schedule readback passed. Controlled verified-main promotion, rollback and repeat promotion passed with retained task/profile/project data. Actual schedule pause/resume also passed and the schedule is ACTIVE again. Registration is not evidence of a completed scheduled run; see [ACCEPTANCE.md](ACCEPTANCE.md).
 
 ## Recover interrupted owned work
 
