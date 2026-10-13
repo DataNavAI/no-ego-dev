@@ -1,0 +1,6 @@
+# NEDCOM scoped UI guidelines
+Scope: communicator only, separate from existing onboarding. Users browse a project's work, review artifacts and its app. Project identity precedes project content. Each section has one primary job. Plain labels: Project, Projects, Tasks, Artifacts, WIP app, Retry. Recovery explains user action without exceptions/sensitive paths.
+
+Canonical [tokens](../../../docs/features/communicator/design/design-system.md) and [brief](../../../docs/features/communicator/design/ui-brief.md) govern implementation. Use native controls and header/navigation/main landmarks, one H1, skip link, visible focus, polite loading and transition error alerts. Keep project name visible and clear stale content on project changes. Keep loading/empty/error distinct. Wrap long names. Stack mobile navigation without reordered DOM, hidden controls or fixed overlays. No remote resources or motion. Read-only UI must never imply editing or app startup. Use recoverable access/database/folder failure copy. No extra themes/components until a journey needs them.
+
+Evidence required: desktop/mobile captures, 320px reflow, 200% text, keyboard and screen-reader order, contrast and focus. Reviewers inspect contracts read-only; author remediates. Browser support belongs to existing interface registry; this guideline does not claim untested support.
