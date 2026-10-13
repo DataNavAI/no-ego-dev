@@ -1,4 +1,4 @@
-import { Daytona } from '@daytona/sdk';
+import { DaytonaClient } from './daytona-client.js';
 import { getModelProviderRuntime } from '../model-providers.js';
 
 const HERMES_COMMIT = '3ef6bbd201263d354fd83ec55b3c306ded2eb72a';
@@ -20,7 +20,7 @@ function isAuthorizationFailure(error) {
 
 export function createDaytonaProvider({
   apiKey,
-  DaytonaClass = Daytona,
+  DaytonaClass = DaytonaClient,
   profileArchive,
   runtimeTelegramTokenFactory = () => null,
   verbose = false,

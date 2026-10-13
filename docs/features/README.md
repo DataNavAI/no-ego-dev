@@ -15,6 +15,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 | Task management | implemented | [SPEC.md](task-management/SPEC.md) | [CLI guide](../tasks.md); `src/tasks.js`, `src/task-cli.js` |
 | CLI installation and credential-aware launcher | implemented | Missing — coverage gap | `scripts/install.sh`, `src/launcher.js`; [install guide](../cli/INSTALL.md) |
 | Hermes profile installation/distribution | implemented | Missing — coverage gap | `distribution.yaml`, `config.yaml`, `src/profile-archive.js`; root README |
+| Daytona workspace transport | implemented | [SPEC.md](daytona-workspace-access/SPEC.md) | Official generated clients; local HTTP contract cases; live-provider verification remains separate |
 | Existing workspace chat and recovery | implemented | Missing — coverage gap | `src/app.js`, `src/providers/daytona.js`; [quickstart](../cli/QUICKSTART.md) |
 | Telegram connection and owner pairing | implemented | Missing — coverage gap | `src/telegram.js`; [Telegram guide](../cli/TELEGRAM.md) |
 | Model-provider authorization and credential lifecycle | implemented | Missing — coverage gap | `src/auth/`, `src/model-providers.js`; [credentials](../cli/CREDENTIALS.md) |

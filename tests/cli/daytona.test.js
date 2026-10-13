@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Daytona } from '@daytona/sdk';
+import { DaytonaClient } from '../../src/providers/daytona-client.js';
 
 import { createModelConnection } from '../../src/model-providers.js';
 import { createDaytonaProvider as createProvider } from '../../src/providers/daytona.js';
@@ -14,9 +14,8 @@ function createDaytonaProvider(options = {}) {
   return createProvider({ runtimeTelegramTokenFactory: () => '123456789:' + 'A'.repeat(35), ...options });
 }
 
-test('installed Daytona SDK exposes the SecretService contract used for cleanup', () => {
-  const client = new Daytona({ apiKey: 'contract-shape-only' });
-  assert.equal(typeof client.secret.create, 'function');
+test('Daytona transport exposes exact Secret operations used for cleanup', () => {
+  const client = new DaytonaClient({ apiKey: 'contract-shape-only' });
   assert.equal(typeof client.secret.delete, 'function');
   assert.equal(typeof client.deleteSecret, 'undefined');
 });
