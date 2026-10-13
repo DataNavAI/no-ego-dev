@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, cp, writeFile, symlink, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, cp, writeFile, symlink, rm, readFile, readdir, lstat, chmod } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
@@ -6,14 +6,27 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 export { assert, writeFile, readFile, rm };
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+// Immutable source archives are read-only. Every copy here is owned mutable
+// scratch state; preserve executable bits while restoring only owner access.
+async function writableScratchCopy(src, dest, options = {}) {
+  await cp(src, dest, options);
+  async function restoreOwnerAccess(entry) {
+    const stat = await lstat(entry);
+    if (stat.isSymbolicLink()) return;
+    await chmod(entry, (stat.mode & 0o777) | (stat.isDirectory() ? 0o700 : 0o200));
+    if (stat.isDirectory())
+      for (const name of await readdir(entry)) await restoreOwnerAccess(path.join(entry, name));
+  }
+  await restoreOwnerAccess(dest);
+}
 export async function fixture(t) {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'ned-hook '));
   t.after(() => rm(dir, { recursive: true, force: true }));
   await mkdir(path.join(dir, 'bin'));
   await mkdir(path.join(dir, 'scripts'));
-  await cp(path.join(source, '.githooks'), path.join(dir, '.githooks'), { recursive: true });
+  await writableScratchCopy(path.join(source, '.githooks'), path.join(dir, '.githooks'), { recursive: true });
   for (const file of ['pre-commit.mjs', 'install-git-hooks.mjs'])
-    await cp(path.join(source, 'scripts', file), path.join(dir, 'scripts', file));
+    await writableScratchCopy(path.join(source, 'scripts', file), path.join(dir, 'scripts', file));
   const gitPath = spawnSync('/bin/sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
   await symlink(gitPath, path.join(dir, 'bin/git'));
   await symlink(process.execPath, path.join(dir, 'bin/node'));

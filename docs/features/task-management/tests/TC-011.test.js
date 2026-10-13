@@ -1,8 +1,17 @@
 import { test } from 'node:test';
-import { cp, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile, readFile, lstat, chmod, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fixture, assert, spawnSync, root } from './helpers.js';
 import { createProfileArchive } from '../../../../src/profile-archive.js';
+// These package copies are mutable test-owned fixtures, even when the
+// authoritative source is immutable. Restore owner access only, retaining exec.
+async function writablePackageFixture(entry) {
+  const stat = await lstat(entry);
+  if (stat.isSymbolicLink()) return;
+  await chmod(entry, (stat.mode & 0o777) | (stat.isDirectory() ? 0o700 : 0o600));
+  if (stat.isDirectory())
+    for (const name of await readdir(entry)) await writablePackageFixture(path.join(entry, name));
+}
 test('TC-011: package/profile manifests exclude runtime SQLite data and spec test fixtures', async (t) => {
   const f = await fixture(t);
   const copy = path.join(f.directory, 'package');
@@ -15,6 +24,7 @@ test('TC-011: package/profile manifests exclude runtime SQLite data and spec tes
   ])) {
     try {
       await cp(path.join(root, name), path.join(copy, name), { recursive: true });
+      await writablePackageFixture(path.join(copy, name));
     } catch (e) {
       if (e.code !== 'ENOENT') throw e;
     }
