@@ -36,19 +36,19 @@ interfaces:
     verification_tier: mvp-local
     scope: Communicator only; existing browser onboarding remains separate
     primary_cuj: Project-first communicator browsing
-    test_case_ids: []
+    test_case_ids: [TC-003, TC-005, TC-006]
     latest_result: not-run
     evidence: []
     blockers:
-      - Implementation and exact-candidate desktop keyboard/state/render evidence pending under issue 114
+      - Project/preview exact-candidate desktop keyboard/state/render evidence pending under issue 116
   - id: nedcom-mobile-web
     support_status: planned
     target: Responsive local browser at 390x844 and 320 CSS px reflow; no LAN/public binding
     verification_tier: mvp-local
     scope: Responsive browser on host machine; physical phone access is not promised
     primary_cuj: Project-first communicator browsing
-    test_case_ids: []
+    test_case_ids: [TC-003, TC-005, TC-006]
     latest_result: not-run
     evidence: []
     blockers:
-      - Implementation and exact-candidate mobile reflow/touch/state evidence pending under issue 114
+      - Project/preview exact-candidate mobile reflow/touch/state evidence pending under issue 116

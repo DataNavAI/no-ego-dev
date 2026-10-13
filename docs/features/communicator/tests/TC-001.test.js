@@ -28,11 +28,11 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
     assert.ok(get.headers['content-security-policy'].includes("frame-ancestors 'none'")); assert.equal(get.headers['access-control-allow-origin'],undefined);
   }
   assert.deepEqual(JSON.parse((await request(app.url,'/api/health')).body),{status:'ok',service:'nedcom'});
-  assert.deepEqual(JSON.parse((await request(app.url,'/api/capabilities')).body),{service:'nedcom',readOnly:true,capabilities:{projects:false,tasks:false,artifacts:false,preview:false}});
+  assert.deepEqual(JSON.parse((await request(app.url,'/api/capabilities')).body),{service:'nedcom',readOnly:true,capabilities:{projects:true,tasks:false,artifacts:false,preview:true}});
   for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/health',{headers,method:'POST'})).status,403);
   assert.equal((await request(app.url,'/api/health',{headers:{Origin:app.url}})).status,200);
   for (const method of ['POST','PUT','PATCH','DELETE','OPTIONS']) { const res = await request(app.url,'/absent',{method}); assert.equal(res.status,405); assert.equal(res.headers.allow,'GET, HEAD'); }
-  for (const path of ['/api/projects','/../package.json','/%2e%2e/package.json','/app.js/extra','/%ZZ']) {
+  for (const path of ['/../package.json','/%2e%2e/package.json','/app.js/extra','/%ZZ']) {
     const res = await request(app.url,path); assert.equal(res.status,404); assert.deepEqual(JSON.parse(res.body),{error:{code:'not_found',message:'Not found.'}});
   }
   assert.equal((await request(app.url,'/app.js?file=../package.json')).status,200);
