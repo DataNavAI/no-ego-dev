@@ -1,21 +1,16 @@
 {
-  "candidate_sha": "0c2f7eea3ec8dfa2718de1139915758c98449fd6",
+  "candidate_sha": "6b7c32a89144892aead89c9e781256567020dc2c",
   "result": "pass",
-  "tested_at": "2026-10-13T04:44:14.933792+00:00",
-  "environment": "macOS local worktree based on current main; Node 22; Python 3.14 isolated pytest/PyYAML environment. Credential-free loopback NEDCOM; native Safari26.6.2, Chrome155.0.8059.40 and Codex in-app browser. Temporary synthetic project fixtures outside repository.",
+  "tested_at": "2026-10-13T05:03:45.470836+00:00",
+  "environment": "Local macOS candidate; isolated synthetic loopback/project/SQLite fixtures; Node22 and Python3.14 pytest/PyYAML. Bounded desktop/responsive browser acceptance through CUA; no live providers.",
   "commands": [
-    "npm ci",
-    "npm run hooks:install",
     "npm run lint",
-    "npm test",
+    "npm run test:all",
     "python -m pytest",
-    "gitleaks dir src/communicator --no-banner --redact",
-    "gitleaks dir docs/features/communicator --no-banner --redact",
-    "CUA: production shell in native Safari and Google Chrome",
-    "CUA: Safari Page Menu / Zoom / 200%, restore 100%, close test tab",
-    "CUA: responsive 390/320px and synthetic project/empty/error/retry states; native keyboard Retry focus regression"
+    "gitleaks scan of staged diff",
+    "CUA bounded browser acceptance described by linked specification and candidate QA report"
   ],
-  "observations": "Bounded skeleton #114 acceptance PASS. Code commit tree exactly equals independently approved staged tree. Local hook reran lint,129 CLI tests,all20 automated spec cases and Python208passed9platformskips before codecommit. TC003 browser evidence separately establishes production honest-unavailable state, semantic/navigation/keyboard behavior, literal hostile names, project switch reset, responsive containment/44px controls and corrected delayed Retry focus. Native Safari200% full-page zoom scales text and keeps content readable; nativeChrome production shell works. No text-only zoom, screenreader, physical-phone/LAN, live-provider or complete NEDCOM-domain acceptance claimed. CLI/project/artifact/task browsers remain planned. No production fixtures/data access/writes or new dependencies. Existing unrelated manual skill cases not rerun and remain separately reported NOT RUN.",
-  "acceptance_report_sha256": "87a3cf193698a11efd12133d3a1f22802fa6f41000def442a7c83b32d41f4701",
-  "review_report_sha256": "6f4ec1dc508fe1f6e8765f536c9be70dd4be34f5f1124cbb00be5436289a1125"
+  "observations": "Issue #115 bounded acceptance passed for exact code candidate tree 0d0cf8f1f6fe11c153ba9f5c50f1d058f0de4e5d. Independent composite source review approved without material findings. Local commit hook reran all automated Node/feature cases and Python before the code commit. Browser evidence was recorded separately; unchanged renderer evidence may be reused only with byte equality. Unrelated manual skill cases were NOT RUN; Python platform skips are not counted as passes. No broad provider, physical-phone/LAN or screenreader certification claimed. Parent communicator feature remains active until all child outcomes pass.",
+  "acceptance_report_sha256": "4a6859a7f103e2ab9b084b7c1190b670c66014a4d5e9a3c14127f96192ba720e",
+  "review_report_sha256": "7f55acc78ed9f2e72bb53df225d85e644972f3703a8274540932d02c09eb4fbc"
 }
