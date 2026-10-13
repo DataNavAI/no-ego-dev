@@ -11,7 +11,7 @@ Contributors run all or selected feature test cases colocated with their SPEC.md
 
 - **FR-001:** Discover all `docs/features/<feature>/SPEC.md` declarations and corresponding `tests/TC-NNN.test.js` files. Reject duplicate/missing/undeclared automated mappings, missing specs, empty declarations, files without a named TC test, and automated files attached to manual cases. Explicit manual declarations do not require code files.
 - **FR-002:** Select all, feature, case, journey, or intersections of selectors. Case/journey selectors resolve from each case's Journey / requirements line. Reject unknown selectors, malformed arguments, contradictory --all plus filters, and empty selections. Paths are discovered, never built from untrusted command arguments.
-- **FR-003:** Run Node test files with argument-array spawning. Success requires every selected case and variant to execute and pass; any test failure, missing execution, skip, TODO, cancellation, signal or runner error fails the gate. Errors are nonzero and never silently downgrade coverage.
+- **FR-003:** Run each Node test file independently with argument-array spawning and require successful runtime execution of its named TC ID. An unrelated helper or another file cannot mask a missing, commented-out or conditionally unregistered case. Success requires every selected case and variant to execute and pass; any test failure, missing execution, skip, TODO, cancellation, signal or runner error fails the gate. Errors are nonzero and never silently downgrade coverage.
 - **FR-004:** `npm test` runs regressions and the all-spec gate; `npm run test:spec -- --all` is the per-commit gate. Selection changes developer scope only, not the all-case commit requirement. Manual cases are listed as NOT RUN and never included in automated pass counts. Runtime test results are not committed.
 
 ## Critical user journeys
@@ -39,7 +39,7 @@ Contributors run all or selected feature test cases colocated with their SPEC.md
 - Given / preconditions / fixtures: temporary spec root whose single testcase is alternately passing, failing, skipped, TODO, or cancelled; installed Node runtime; package manifest accessible.
 - When / steps: execute each gate in a separate process; inspect status, output and package scripts.
 - Then / assertions: only fully passing execution returns 0; failure/skip/TODO/cancellation return nonzero; all npm tests include the spec gate; malformed selection returns nonzero. No partial execution is reported as pass.
-- Variants: valid focused case versus all cases, child termination/error semantics; missing execution report rejects, signals are nonzero.
+- Variants: valid focused case versus all cases, child termination/error semantics; missing execution report, commented/conditionally unregistered case and wrong-case/helper masking reject; signals are nonzero.
 - Cleanup: stop workers and delete temporary fixtures. No live provider resources are used.
 - Pass evidence: process results plus all assertions pass; no skipped/cancelled outer tests. These fixtures intentionally test rejected inner skips; those rejections are assertions, not skipped feature cases.
 

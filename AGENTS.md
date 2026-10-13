@@ -14,7 +14,7 @@ After `npm ci`, run `npm run hooks:install` in this checkout. Activate a Python 
 
 For work in this project, use relevant NED skills from `skills/` by default. Read the selected `SKILL.md` before applying it; load only supporting references needed for the task. Prefer the repository's version when a similarly named installed skill exists. Do not load every skill or turn a skill's workflow into permission for unrelated work.
 
-Codex discovers these same canonical folders through relative symlinks under `.agents/skills/`. When adding or retiring a skill, update that directory as well. If a skill is absent from the session catalog, read its repository file directly. Discovery makes skills available; this instruction governs their use. Keep user instructions and the current task scope authoritative.
+Codex discovers these same canonical folders through small discovery files under `.agents/skills/`. Keep each discovery file’s name and description in sync with its canonical skill, and link to that skill’s instructions; do not copy workflow bodies. Update discovery files when adding, editing, or retiring a skill. Hermes profile sources must not contain symlinks. If a skill is absent from the session catalog, read its repository file directly. Discovery makes skills available; this instruction governs their use. Keep user instructions and the current task scope authoritative.
 
 Before writing, changing, or pruning tests, read [test-writing](skills/test-writing/SKILL.md). Use the smallest reliable test layer for each material risk, reuse coverage, and give each test a distinct observable failure it detects. Do not require a separate code test for every requirement or duplicate the same contract at every layer.
 

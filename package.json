@@ -18,7 +18,6 @@
     "config.yaml",
     "skills/",
     "eval_runner/",
-    "evaldata/",
     "!**/__pycache__/**",
     "!**/*.pyc",
     "docs/cli/",

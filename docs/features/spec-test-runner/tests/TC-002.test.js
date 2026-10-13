@@ -34,6 +34,9 @@ test('TC-002: only fully executed passing cases satisfy the commit gate', async 
       "const controller=new AbortController();test('TC-001: fixture',{signal:controller.signal},()=>new Promise(()=>{}));controller.abort();",
       1,
     ],
+    ['commented', "// test('TC-001: absent',()=>{});\ntest('unrelated helper',()=>{});", 1],
+    ['conditional', "if(false)test('TC-001: absent',()=>{});test('unrelated helper',()=>{});", 1],
+    ['empty', "// test('TC-001: absent',()=>{});", 1],
     ['signal', "test('TC-001: fixture',()=>process.kill(process.pid,'SIGTERM'));", 1],
   ];
   for (const [name, body, expected] of examples) {
@@ -49,6 +52,17 @@ test('TC-002: only fully executed passing cases satisfy the commit gate', async 
     assert.match(child.stdout, /Manual cases NOT RUN: manual\/TC-002/);
     if (name === 'pass') assert.match(child.stdout, /^# tests 1$/m);
   }
+  // Another selected file with a genuine named case cannot hide the missing case.
+  await writeFile(path.join(dir, 'fixture/tests/TC-001.test.js'),
+    "import {test} from 'node:test';test('TC-001: real',()=>{});");
+  await mkdir(path.join(dir, 'other/tests'), { recursive: true });
+  await writeFile(path.join(dir, 'other/SPEC.md'), '### TC-002: Other\n- Journey / requirements: CUJ-001 / FR-003.\n');
+  await writeFile(path.join(dir, 'other/tests/TC-002.test.js'),
+    "import {test} from 'node:test';// test('TC-002: absent',()=>{});\ntest('TC-001: wrongly attributed',()=>{});");
+  const masked = spawnSync(process.execPath, [worker, dir, '--all'],
+    { encoding: 'utf8', timeout: 5000 });
+  assert.equal(masked.status, 1);
+  assert.match(masked.stderr, /other\/TC-002 must execute/);
   const manualOnly = spawnSync(process.execPath, [worker, dir, '--feature', 'manual'],
     { encoding: 'utf8', timeout: 5000 });
   assert.notEqual(manualOnly.status, 0);

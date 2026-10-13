@@ -106,9 +106,10 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
   return selected;
 }
 
-export function specExecutionPassed(status, output) {
+export function specExecutionPassed(status, output, caseId) {
   return (
     status === 0 &&
+    (!caseId || new RegExp(`^ok \\d+ - ${caseId}:`, 'm').test(output)) &&
     /^# fail 0$/m.test(output) &&
     /^# tests [1-9]\d*$/m.test(output) &&
     !/^# (?:skipped|cancelled|todo) [1-9]\d*$/m.test(output)
@@ -126,27 +127,31 @@ export async function runSpecTests(args = [], featuresRoot) {
   );
   const env = { ...process.env };
   delete env.NODE_TEST_CONTEXT;
-  const child = spawn(
-    process.execPath,
-    ['--test', '--test-reporter=tap', ...selected.map((entry) => entry.file)],
-    { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] },
-  );
-  let output = '';
-  child.stdout.on('data', (chunk) => {
-    output += chunk;
-    process.stdout.write(chunk);
-  });
-  child.stderr.pipe(process.stderr);
-  const status = await new Promise((resolve, reject) => {
-    child.on('error', reject);
-    child.on('close', (code, signal) => resolve(signal ? 1 : code));
-  });
-  if (!specExecutionPassed(status, output)) {
-    process.stderr.write(
-      'Spec gate failed: every selected case must execute and pass without skips, cancellations, or TODOs.\n',
+  // Validate each file independently: another TC or a helper must not mask missing execution.
+  for (const entry of selected) {
+    const child = spawn(
+      process.execPath,
+      ['--test', '--test-reporter=tap', entry.file],
+      { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] },
     );
-    return 1;
+    let output = '';
+    child.stdout.on('data', (chunk) => {
+      output += chunk;
+      process.stdout.write(chunk);
+    });
+    child.stderr.pipe(process.stderr);
+    const status = await new Promise((resolve, reject) => {
+      child.on('error', reject);
+      child.on('close', (code, signal) => resolve(signal ? 1 : code));
+    });
+    if (!specExecutionPassed(status, output, entry.id)) {
+      process.stderr.write(
+        `Spec gate failed: ${entry.feature}/${entry.id} must execute its named TC and pass without skips, cancellations, or TODOs.\n`,
+      );
+      return 1;
+    }
   }
+
   return 0;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

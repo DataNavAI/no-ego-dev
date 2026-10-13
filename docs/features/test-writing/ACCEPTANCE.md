@@ -25,8 +25,12 @@ The old-skill baseline also produced passing manifest/persistence tests and inte
 
 A fresh agent received a generic regression-test strategy request with repository AGENTS.md, without naming test-writing in the request. Its initial catalog contained the repository skill; it read AGENTS.md and canonical skills/test-writing/SKILL.md, and produced a focused real-SQLite test strategy. It did not load every skill or write code tests of skill instructions.
 
-The agent demonstrated direct-file fallback by reading the canonical file without catalog selection. A clearly nonexistent temporary skill path returned a missing-file result; the agent reported absence without inventing instructions. Relative discovery links resolve to the canonical version. The explicit read-only/no-services/no-code-based-skill-tests constraints were preserved.
+The agent demonstrated direct-file fallback by reading the canonical file without catalog selection. A clearly nonexistent temporary skill path returned a missing-file result; the agent reported absence without inventing instructions. The original symlink discovery links resolved to the canonical version at that evaluation; current regular-file routing is verified below. The explicit read-only/no-services/no-code-based-skill-tests constraints were preserved.
 
 For scenario C, agents described ownership-preserving recovery evaluation using synthetic interrupted state, durable before/after readback and forbidden side effects. They explicitly identified this as a proposal, not an executed recovery run. The acceptance criterion here is correct evaluation design and honest reporting; execution of a different recovery skill is outside this skill's scope.
 
 The discovery evidence is a fresh isolated Codex agent task using this checkout's catalog and instructions; it does not claim that every desktop host, profile or long-lived session was refreshed.
+
+## Discovery compatibility correction — PASS
+
+Fresh CI showed Hermes rejects symlinks in profile sources. Discovery now uses regular `.agents/skills/<name>/SKILL.md` files carrying name/description and a link to the canonical workflow, rather than symlinks or copied workflow bodies. A fresh read-only agent loaded the test-writing and unblocker discovery files, followed their canonical links, produced the requested SQLite concurrency strategy, demonstrated direct canonical fallback, and reported a nonexistent skill path without inventing instructions. It preserved source and contacted no providers. The recovery evaluation remained explicitly proposed rather than executed. Canonical skill/eval/fixture hashes above are unchanged; this supplements TC-002's routing evidence and does not claim universal host refresh.

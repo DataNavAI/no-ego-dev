@@ -11,7 +11,6 @@ distribution_owned:
   - skills/
   - skills/identity-for-agent/
   - eval_runner/
-  - evaldata/
   - README.md
   - README.ko.md
   - .env.EXAMPLE

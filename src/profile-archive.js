@@ -10,7 +10,6 @@ const PROFILE_PATHS = [
   'config.yaml',
   'skills',
   'eval_runner',
-  'evaldata',
   '.env.EXAMPLE',
   'LICENSE',
   'README.md',

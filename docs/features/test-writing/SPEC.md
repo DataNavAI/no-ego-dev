@@ -43,11 +43,11 @@ Actor: contributor agent in a NED Codex session. Critical because code assertion
 
 - Journey / requirements: CUJ-002 / FR-002, FR-003.
 - Level / automation: manual; agent behavioral evaluation and fresh Codex session check.
-- Preconditions / fixtures: checkout containing AGENTS.md and relative `.agents/skills` links; synthetic scenario C; clean session without external credentials.
+- Preconditions / fixtures: checkout containing AGENTS.md and regular `.agents/skills` discovery files; synthetic scenario C; clean session without external credentials.
 - Given: a wording-only skill edit and an interrupted job requiring ownership preservation.
 - When: start a Codex task in the repo asking for a test strategy; confirm it reads the canonical test-writing skill; present scenario C. Repeat with catalog discovery unavailable and direct file access available.
 - Then: the agent uses relevant NED guidance, proposes agent-outcome recovery evaluation, and rejects prose/version assertions and unexecuted pass claims. Direct file fallback works; no wholesale skill loading or external action occurs.
-- Steps and assertions: record selected path/read evidence and response; apply scenario C rubric; inspect that symlinks resolve to canonical files. A missing path must be reported, not invented.
+- Steps and assertions: record selected path/read evidence and response; apply scenario C rubric; inspect that discovery files link to canonical files. A missing path must be reported, not invented.
 - Variants / negative cases: explicit user constraints retain authority; copied/stale instructions, unrelated skill invocation and code-based skill testing fail. Concurrent DB mutation, authentication and live provider cleanup are inapplicable because this case is read-only.
 - Cleanup: discard temporary session artifacts; preserve checkout and all user data.
 - Pass evidence: fresh-session read evidence and reviewed response; file existence alone does not prove default invocation.
