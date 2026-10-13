@@ -1,17 +1,20 @@
 {
-  "candidate_sha": "1196eee0192816b5f6b01e7acb65a87f05e7f030",
-  "tested_at": "2026-09-27T10:37:21Z",
-  "environment": "macOS 26.6.2; Python 3.11.16 Hermes venv; Node.js 25.6.1; isolated harvest worktree; GitHub Windows CI failure logs inspected",
+  "candidate_sha": "0ca3c302e3b5920b52053906406fafe3f0bdca4a",
   "result": "pass",
+  "tested_at": "2026-10-13T02:27:46Z",
+  "environment": "Fresh detached macOS checkout; Node 22.14.0; Python 3.14.3 test venv; isolated HOME/HERMES_HOME/SQLite/project roots/global package prefix; Docker daemon unavailable; synthetic loopback HTTP only.",
   "commands": [
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest tests/test_eval_runner.py::test_run_eval_terminates_verifier_during_sustained_output_overflow tests/test_eval_runner.py::test_run_eval_setup_does_not_hang_on_descendant_holding_output_pipes -v",
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m pytest",
+    "npm ci",
+    "npm run lint",
     "npm test",
-    "npm run check",
-    "/Users/moonk/.hermes/hermes-agent/venv/bin/python -m eval_runner.cli skills/profile-skill-harvester/EVAL.archive-discovery.yaml --output-root /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260927-archive-discovery --report /Users/moonk/.hermes/state/profile-skill-harvester/eval-20260927-archive-discovery-report --markdown",
-    "npm pack --dry-run --json",
-    "git diff --check b6ef986af54237f4d602ab4ddb51c722f948d8cf...1196eee0192816b5f6b01e7acb65a87f05e7f030",
-    "gitleaks git --redact --no-banner --log-opts=b6ef986af54237f4d602ab4ddb51c722f948d8cf..1196eee0192816b5f6b01e7acb65a87f05e7f030"
+    "python -m pytest",
+    "npm audit --json",
+    "node --test docs/features/daytona-workspace-access/tests/TC-001.test.js docs/features/daytona-workspace-access/tests/TC-002.test.js docs/features/daytona-workspace-access/tests/TC-003.test.js",
+    "python /var/folders/_5/pc0mst9956sdt25yf5hxh4vr0000gn/T/ned-dependency-accept-pq4uyobp/acceptance.py",
+    "node /var/folders/_5/pc0mst9956sdt25yf5hxh4vr0000gn/T/ned-dependency-accept-pq4uyobp/installed-adapter.mjs",
+    "python /var/folders/_5/pc0mst9956sdt25yf5hxh4vr0000gn/T/ned-dependency-accept-pq4uyobp/verify-no-provider.py"
   ],
-  "observations": "Exact code candidate 1196eee0192816b5f6b01e7acb65a87f05e7f030 was exercised in the isolated harvest worktree. Python passed 561 tests with 9 platform skips; Node passed 160 tests; repository syntax, packaging, diff, gitleaks, and archive-discovery behavioral evaluation passed. Two distinct Windows hosted-runner failures were timing-only assertions after semantic behavior completed; Windows-only bounds now remain below half the verifier timeout and below the 15-second descendant duration while POSIX bounds are unchanged. Independent exact-SHA review approved the clean code candidate with no material findings."
+  "observations": "Exact candidate passed fresh checkout lint, 129 Node regressions and all 18 automated feature cases (37 tests with variants). Python: 208 passed, 9 platform skips (not counted as passes). Audit: zero vulnerabilities without exceptions. CLI goal/task lifecycle, owner rejection, persistence/history, project isolation and former create rejection with no network calls passed. Packed global installation, installed task lifecycle and synthetic installed Daytona adapter binary/auth/command round trips passed. Profile archive and 41 regular discovery routers passed. Checkout stayed clean. Independent exact-SHA composite review approved. No live-provider acceptance claimed; manual skill cases retain separate prior behavioral evidence and were not rerun by npm tests.",
+  "acceptance_report_sha256": "2610ed6a2b41cdcb9f5689d6519f0d115df3f09bdf4b24ba16d7f13e905624e0",
+  "review_report_sha256": "1b8658f73d2243844d6d25e3b3d30dab2317cf1f4e88d0650956da22271348d6"
 }
