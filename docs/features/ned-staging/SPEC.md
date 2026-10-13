@@ -1,6 +1,6 @@
 # Feature: Isolated main-tracking NED staging
 
-Status: draft
+Status: implemented
 Related issues: [#123](https://github.com/DataNavAI/no-ego-dev/issues/123)
 
 ## User outcome and scope
@@ -19,7 +19,7 @@ Non-goals: remote/cloud provisioning; cloning normal profiles; copying productio
 - FR-004: A recurring Codex automation reconciles `main` after setup. Only the exact current main SHA with all configured required main-push workflow jobs successful may promote. Missing, pending, cancelled, stale, failed or ambiguous results fail closed. No new SHA causes no build, restart or data reset.
 - FR-005: Updates prepare a clean manifest-owned profile source independently of the CLI dependency installation (native installer rejects all source symlinks), build immutable release directories, verify source/runtime/dependency identities and local smoke checks, then serialize promotion. Candidate preparation preserves the current service and staging data. Native profile update refreshes distribution-owned SOUL/AGENTS/skills from the immutable release while preserving existing config/auth/.env/sessions/memories; no force-config or install --force is used. SHA-bound source hashes and a fresh credential-free runtime prompt/skill loading probe must pass. Final promotion rechecks main SHA and CI identity. Unmerged or superseded candidates never become current.
 - FR-006: Failed promotion restores the prior verified release and matching pre-promotion SQLite backup and protected full staging-profile snapshot, then verifies bounded CLI health; the configured stable URL is available when the owner starts NEDCOM. Interrupted promotion has a durable recoverable transaction record. Concurrent updates converge to one promotion. Live owned children/background groups survive launcher/controller death and block mutation. Completed owned groups converge after verified quiescence; interrupted uncertain ownership requires the guarded recover-work action or investigation. Unknown processes are never killed from an unverified PID file.
-- FR-007: Staging SQLite and profile config/auth/.env/session/memory data survive ordinary updates. Profile snapshot/restore occurs only while the profile is quiesced; sensitive snapshot contents remain local with restrictive permissions and are never printed or committed. Destructive synthetic-data reset requires an explicit reset command; backup/restore is tested before migration-bearing updates. Automatic reconciliation stops on incompatible schema or failed restore rather than discarding data.
+- FR-007: Staging SQLite and profile config/auth/.env/session/memory data survive ordinary updates. Profile snapshot/restore occurs only while the profile is quiesced; sensitive snapshot contents remain local with restrictive permissions and are never printed or committed. No public destructive reset is exposed. Any future destructive reset requires an explicit owner request; backup/restore is tested before migration-bearing updates. Automatic reconciliation stops on incompatible schema or failed restore rather than discarding data.
 - FR-008: The owner can inspect active SHA, last check/promotion/error and health; start/stop user-owned communicator sessions; pause/resume automation; roll back; and remove owned runtime resources while retaining data by default. Failure or required action triggers notification; unchanged healthy checks remain quiet.
 
 ## Critical user journeys
@@ -79,18 +79,18 @@ Actor: owner. Critical because persistent local services and updates need a reve
 ### TC-004: Service control, retention and retirement
 - Journey / requirements: CUJ-004 / FR-007–008
 - Level / automation: integration; [TC-004.test.js](tests/TC-004.test.js).
-- Preconditions / fixtures: staging A running, synthetic data present, scheduler registration deferred to root after merge, unrelated process and production sentinels.
+- Preconditions / fixtures: staging A running, synthetic data present, external scheduler registration verified separately after merge, unrelated process and production sentinels.
 - Given: staging and automation are active.
 - When: status, pause, stop, start, rollback and remove operations execute.
 - Then: status accurately reports SHA/check/health; paused updates do not promote; stopped service releases port; restart retains data; removal unregisters only owned resources and retains SQLite and profile user data by default; normal active-profile and aliases remain unchanged.
-- Steps and assertions: assert status schema and no sensitive values; scheduler registration/pause is root-owned external acceptance; user-started communicator lifecycle is verified separately; no service start/stop interface is implemented; remove twice converges and sentinel/unrelated process survives; explicit reset reinitializes only owned synthetic DB/projects.
+- Steps and assertions: assert status schema and no sensitive values; scheduler registration/pause is root-owned external acceptance; user-started communicator lifecycle is verified separately; no service start/stop interface is implemented; default retirement retains data and sentinel/unrelated process survives. Public destructive reset is not implemented or claimed.
 - Variants / negative cases: stale process identity cannot authorize signals; symlinked owned root or path escaping fails before removal; running update lock prevents destructive reset until quiescent.
 - Cleanup: remove only owned temporary data after final assertions.
 - Pass evidence: persisted records, service/port/process identity and root-owned scheduler readback after merge.
 
 ### TC-005: Owner browser acceptance at the promoted revision
 - Journey / requirements: CUJ-001–002 / FR-001, FR-003, FR-005
-- Level / automation: manual; procedure below, not run.
+- Level / automation: manual; procedure below; affected-scope installed IAB/native acceptance PASS, linked in [ACCEPTANCE.md](ACCEPTANCE.md).
 - Preconditions / fixtures: disposable local profile installed; active SHA/CLI/profile/native archive identities recorded; synthetic Alpha/Beta; GUI files unchanged from merged project-browsing baseline. Owner install and scheduler readback occur after source review/merge.
 - Given: readiness checks passed for that exact SHA.
 - When: owner opens the stable URL, chooses Alpha, tests each available merged browse capability, then Beta; refreshes after update.
@@ -104,8 +104,8 @@ Actor: owner. Critical because persistent local services and updates need a reve
 
 | Requirement | Journey | Test cases | Verification |
 | --- | --- | --- | --- |
-| FR-001–003 | CUJ-001 | TC-001, TC-005 | Integration implemented; native/browser acceptance pending |
-| FR-004–005 | CUJ-002 | TC-002, TC-003, TC-005 | Integration implemented; native/browser acceptance pending |
+| FR-001–003 | CUJ-001 | TC-001, TC-005 | Integration and affected-scope native/browser acceptance PASS; see ACCEPTANCE.md |
+| FR-004–005 | CUJ-002 | TC-002, TC-003, TC-005 | Integration and affected-scope native/browser acceptance PASS; see ACCEPTANCE.md |
 | FR-006 | CUJ-003 | TC-003 | Integration implemented |
 | FR-007 | CUJ-001,003,004 | TC-001, TC-003–004 | Integration implemented |
 | FR-008 | CUJ-002,004 | TC-002, TC-004 | Integration implemented |
@@ -114,14 +114,15 @@ Acceptance: all applicable automated cases pass; exact-SHA local readiness succe
 
 ## Open questions and coverage gaps
 
-- Local Hermes profile target is selected. Source-bound disposable native installation/load/terminal/config/npm probes are separate from adapter cases; final receipt binds the exact candidate. Permanent owner setup and scheduling remain downstream delivery gates.
-- Final local root, stable port, runtime identity/source and scheduler interval are routine implementation choices to record, not a new target approval request.
-- Required main-push workflows are NED CLI and Smoke test; required jobs are test (20), test (22), macos-smoke, windows-eval-runner and install-profile. Current exact-main enumeration is recorded in disposable evidence.
-- Controller/wrappers/native adapter and automated cases implemented; final source-bound disposable acceptance and scheduler installation remain release gates. No final owner installation or complete acceptance claimed.
-- Model access choice separate login versus explicit reuse is pending; separate stage-only OpenRouter preparation is the safe default, no inference/network until owner authorization. Codex/Qwen/external fallback routes are denied until separately proven compatible. Staging-only model authorization may require owner action after concrete setup. Shared provider auth fallback and inherited external CLI credentials must be prevented and tested; named profile identity alone is insufficient.
+- Permanent owner root `~/Library/Application Support/NED/staging` is healthy at initial main SHA `0e599dd14a0fff82eb98c048e71f03a8b12f6f52`. Native load/config/terminal/npm/ownership evidence and affected-scope installed IAB/browser/CLI acceptance passed; [ACCEPTANCE.md](ACCEPTANCE.md) separates actual results from planned checks.
+- Codex heartbeat `ned-staging-updates` is registered ACTIVE every 15 minutes. Registration/readback passed; a scheduled execution has not yet been observed. Host/app availability can delay it; active owned sessions defer promotion.
+- Required main-push workflows: NED CLI and Smoke test. Required jobs: test (20), test (22), macos-smoke, windows-eval-runner, install-profile. All five passed for the initial installed SHA.
+- Controlled subsequent-main promotion/rollback with retained synthetic data is pending the operations documentation merge, then recorded in external receipts before issue closure. Automated failure/interruption/rollback cases already pass; no physical power-loss claim.
+- Model access remains `login_required`. Separate stage-owned OpenRouter authorization is required for chat; no normal credentials are copied. Live inference and skill behavioral evaluation are NOT RUN and are not prerequisites for credential-free browsing/install acceptance. Codex/Qwen/external fallback remain denied.
+- Scheduler pause/removal is a Codex app operation, not a controller API. Pause/remove the exact schedule before runtime retirement. There is no daemon/service-control or public destructive-reset command.
 
-Supporting design: [TECH.md](TECH.md). Operations proposal: [RUNBOOK.md](RUNBOOK.md).
+Supporting design: [TECH.md](TECH.md). Operations: [RUNBOOK.md](RUNBOOK.md). Acceptance: [ACCEPTANCE.md](ACCEPTANCE.md).
 
-Implementation ownership: manager and complete clean native Hermes runtime archive are separately pinned; automatic changes refresh NED profile distribution/CLI. Source dotenv fallback is closed with owned archive PYTHONPATH, required stage .env and environment-key/secret-source preflight; empty .env alone is insufficient. Generated root/projects/AGENTS.md has an ownership digest and actual native context loading; edits are preserved with a fail-closed error. Initial setup has an ownership-backed retry. Fixture-backed automated cases are separate from real native/browser evidence. Final owner installation, live model authorization and scheduler remain external acceptance gaps.
+Implementation ownership: manager and complete clean native Hermes runtime archive are separately pinned; automatic changes refresh NED profile distribution/CLI. Source dotenv fallback is closed with owned archive PYTHONPATH, required stage .env and environment-key/secret-source preflight; empty .env alone is insufficient. Generated root/projects/AGENTS.md has an ownership digest and actual native context loading; edits are preserved with a fail-closed error. Initial setup has an ownership-backed retry. Fixture-backed automated cases are separate from real native/browser evidence. Owner installation and scheduler readback passed; live model authorization remains optional owner work.
 
-TC-005 scope rationale: staging adds no rendered GUI source. Focused disposable IAB actual-instance checks and unchanged-UI baseline provenance are sufficient for its web subset; locked native browsers are not an additional invented staging gate. Actual native profile load, full source identity, environment/provider/argv rejection, foreground/background shell execution and durable recovery remain mandatory. Root completes owner install plus automation ID/status and quiet no-change readback after merge. Live model inference stays NOT RUN until authorized.
+TC-005 scope rationale: staging adds no rendered GUI source. Focused disposable IAB actual-instance checks and unchanged-UI baseline provenance are sufficient for its web subset; locked native browsers are not an additional invented staging gate. Actual native profile load, full source identity, environment/provider/argv rejection, foreground/background shell execution and durable recovery remain mandatory. Owner install, automation ID/status and no-change readback are verified. Live model inference stays NOT RUN until authorized.
