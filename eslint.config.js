@@ -8,5 +8,5 @@ export default [
     rules: { ...js.configs.recommended.rules, 'no-eval': 'error', 'no-implied-eval': 'error', 'no-new-func': 'error' },
     languageOptions: { globals: globals.node },
   },
-  { files: ['src/web/public/**/*.js'], languageOptions: { globals: globals.browser } },
+  { files: ['src/web/public/**/*.js', 'src/communicator/public/**/*.js'], languageOptions: { globals: globals.browser } },
 ];
