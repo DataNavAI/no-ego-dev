@@ -6,7 +6,7 @@ Related issues: [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skel
 ## User outcome and scope
 Local NED users browse a selected project's work through a web app. Delivery is serial. #114 supplies server lifecycle and an honest navigation shell; it does not open databases/project folders or implement CLI/domain routes. Existing onboarding is separate. See [technical design](TECH_SPEC.md), [UI brief](design/ui-brief.md), [tokens](design/design-system.md) and [specimen](design/mockup.html).
 
-Non-goals: remote hosting, multi-user auth, editing, GitHub sync, credential brokering, arbitrary app startup/build/deploy or duplicate artifact/task stores. The #114 server and navigation shell are implemented; skeleton acceptance is complete; CLI review and domain behavior are pending. Production must never show synthetic projects as registered data.
+Non-goals: remote hosting, multi-user auth, editing, GitHub sync, credential brokering, arbitrary app startup/build/deploy or duplicate artifact/task stores. The #114 server and navigation shell are implemented; skeleton acceptance is complete; project/preview implementation and domain acceptance are pending. Production must never show synthetic projects as registered data.
 
 ## Requirements
 Parent IDs remain stable:
@@ -15,7 +15,7 @@ Parent IDs remain stable:
 - FR-003: Read selected-project goals/subgoals/tasks/issues with hierarchy, state, ownership, blockers, dependencies, history and derived progress where available. #118.
 - FR-004: Browse supported canonical artifacts without duplicate store/tracker. #117.
 - FR-005: Open a configured running local WIP app or explain unavailability; never build/start/deploy it. #116.
-- FR-006: Reuse shared database resolution and task read semantics; explicit configuration > NED_DATABASE_URL > ~/.ned/ned.sqlite. Preserve unrelated data/project isolation. Future readonly opener is required; skeleton opens no DB.
+- FR-006: Reuse shared database resolution and task read semantics; explicit configuration > NED_DATABASE_URL > ~/.ned/ned.sqlite. Preserve unrelated data/project isolation. The #116 slice adds an explicitly readonly existing-database opener; no init/migration/chmod/mkdir or application writes. SQLite live WAL may coordinate through sidecars; record actual sidecar behavior separately from preserved database records/project files.
 - FR-007: Loopback only and read-only; restrict files to registered selected project; reject traversal, symlink escapes, sensitive runtime/auth files and cross-project leaks. Safely render untrusted content. Skeleton owns HTTP perimeter; domain slices own data enforcement.
 - FR-008: Loading, empty, folder/preview unavailable and database-error states recover without task/file changes. Skeleton owns shell states; actual domain recovery is planned.
 - FR-009: Skeleton semantic responsive project-first shell follows A1–A6/UI-AC-01–05 in UI brief, with honest capability-unavailable state and no demo inventory.
@@ -31,11 +31,14 @@ Actor: browser user. Critical because unavailable capability must differ from em
 ### CUJ-003: Reject unintended local access
 Actor: local owner. With running skeleton, send foreign Host/Origin, mutation methods and unknown/traversal paths. Success: sanitized rejections and no writes/leakage; subsequent valid reads work. Shutdown releases resources.
 
-Future journeys remain gaps: CUJ-005 project selection/preview availability (#116); CUJ-006 safe artifact list/open (#117); CUJ-007 task hierarchy/history/CLI refresh (#118). Each owner must add detailed first/repeat/error/interruption/isolation cases before implementation.
+Future journeys remain gaps: CUJ-006 safe artifact list/open (#117); CUJ-007 task hierarchy/history/CLI refresh (#118). Their owners add detailed cases before implementation.
 
 ### CUJ-004: CLI start, stop and restart
 Actor: local user. Prerequisites: Node/dependencies, no listener. Run `ned com`, open printed URL, stop with SIGINT/SIGTERM, restart released port. Critical public entry point. Flags: --port decimal integer 0–65535 (default 0 ephemeral), --database SQLite-path/local-fileURL, --help. Explicit database > NED_DATABASE_URL > ~/.ned/ned.sqlite. Unknown/duplicate/missing flags and invalid configuration exit 2/no URL; startup failures exit 1/no URL. Normal shutdown exits 0. No browser launch, credentials or telemetry.
-The command passes resolved databasePath to server options but never opens/creates/writes a DB. Missing DB is allowed; domain unavailable state belongs to #116. HTTP never exposes this path.
+The command passes resolved databasePath to server options without initializing or creating a DB. #116 server reads an existing DB; missing DB permits startup with recoverable database error. Raw DB path is not an HTTP field; registered project folder context is deliberately visible metadata.
+
+### CUJ-005: Browse registered projects and open a local preview
+Actor: local project owner; critical first useful project workbench. Prerequisites: existing schema-v1 NED DB with registered canonical directories; app started separately. Start NEDCOM, choose a project by readable folder context, inspect Tasks/Artifacts placeholders or WIP app, open reachable app, change projects and retry failures. No automatic selection. Repeat refresh reads current registry/config; CLI registry changes appear on next request. Missing DB/schema/empty registry/folder/removed project produce distinct recoverable states without application writes. Preview failure never breaks valid project selection. Interrupted/stale reads cannot restore another project's link; shutdown closes every DB/probe handle.
 
 ## Detailed test cases
 ### TC-001: Lifecycle, read contracts and HTTP perimeter
@@ -86,21 +89,45 @@ The command passes resolved databasePath to server options but never opens/creat
 - Cleanup: terminate/await children, close collision listener, remove only temporary directories.
 - Pass evidence: named assertions/exact candidate output; coordinator records printed-URL browser acceptance separately.
 
+### TC-005: Read-only registry and project-root isolation
+- Purpose / journey / requirements: live registered selection and safe recovery; CUJ-005 / FR-002, FR-006–008.
+- Level / automation: integration; [tests/TC-005.test.js](tests/TC-005.test.js).
+- Preconditions / fixtures: temporary HOME, database schema v1 initialized by fixture writer, two real directories `a/shop` and `b/shop`, distinct registered opaque IDs, sentinel project bytes and unrelated task/feature rows; fixtures/helper remain inside tests/, runtime files in temp only.
+- Given: running loopback NEDCOM configured for existing fixture DB.
+- When: GET registry, choose each ID, modify registry with separate CLI/domain writer, refresh, close/restart.
+- Then: capability projects/preview true, tasks/artifacts false; registry returns both matching names with distinct readable displayPath and opaque IDs. Detail returns only requested registered project metadata; no scanning/auto-registration. Next read observes committed writer update. Registry empty is 200 empty; absent/unreadable/corrupt/unsupported-schema DB is sanitized 503 database_unavailable, shell still boots; unknown/malformed ID 404 project_unavailable; missing/non-directory/replaced-symlink root 404 project_folder_unavailable. Preview failures remain separate from valid metadata.
+- Steps and assertions: inspect GET/HEAD shapes; compare main DB logical task/feature/project records, project bytes and permissions before/after; assert opener cannot execute writes and no initialization/migration/chmod/mkdir/journal-mode change; close all connections; repeat read after restoration recovers. Separate writer-authorized modifications from communicator effects.
+- Variants / negative cases: explicit/env/default config precedence; missing parent DB directory stays absent; unsupported schema; concurrent reads/live WAL writer; duplicate names; arbitrary path/encoded separators/other nonregistered ID; replace registered directory with symlink to other project's root, deny until restored. Record WAL/SHM sidecar creation or coordination honestly; do not assert impossible zero SQLite coordination writes. No remote provider authentication applies.
+- Cleanup: stop NEDCOM/fixture writer, restore replaced roots, remove temp fixture only; no production DB touched.
+- Pass evidence: named variants, before/after records/files/permissions and observed sidecars on exact candidate, plus browser project switch evidence under TC-003.
+
+### TC-006: Preview validation, probe and stale selection
+- Purpose / journey / requirements: truthful safe WIP access; CUJ-005 / FR-002, FR-005, FR-007–009.
+- Level / automation: integration and client-state assertions; [tests/TC-006.test.js](tests/TC-006.test.js).
+- Preconditions / fixtures: TC-005 projects; temporary preview HTTP servers with HEAD 204, 302, 500 and >1s delay; fixed `.nedcom.json` configs; injected deferred client responses. No actual project execution.
+- Given: selected registered project, no cached authority for preview link.
+- When: read detail/preview, vary config/probe, Retry or switch selected ID while old success/error is pending.
+- Then: validated configured HEAD 2xx -> available with safe URL; absent config -> unconfigured; invalid config/URL -> invalid; unreadable config -> unavailable; timeout/refused/non2xx/redirect -> stopped. Detail remains selected. Only available current response produces Open app link with target=_blank, rel=noopener noreferrer and accessible new-tab label. Switch/retry immediately removes link; stale successes and errors ignored; chooser remains enabled during detail load; Retry single-flight for current generation.
+- Steps and assertions: assert 4096-byte config bound, HEAD/no credentials/no redirects/<bounded completion>, full raw URL validation before normalization, no query/body data or unsafe target traffic, zero app spawn/build/write calls; inspect task/artifact placeholders and refresh config recovery.
+- Variants / negative cases: missing config, >4096 bytes, non-object/malformed/unknown keys/wrong version/nonstring URL, symlink config, path-root escape; remote hostname/localhost/nonliteral IP/nonloopback/alternate numeral IPv4/userinfo/query/fragment/HTTPS/missing explicit port; HEAD 200/204 success, 302 denied without follow, 500/refused/timeout stopped; delayed A after B success/error and after same-project retry; invalid config never probes. Only exact IPv4 127.0.0.1 accepted this revision, IPv6 deferred.
+- Cleanup: close probe fixture servers/client requests and temp files; restore intercepted browser traffic.
+- Pass evidence: named validation/probe/stale-response assertions, byte/record preservation, TC-003 desktop/mobile running/unavailable/retry/duplicate-name keyboard/link evidence at candidate SHA. No source-only browser pass.
+
 ## Coverage and acceptance
 | Requirement | Journey | Coverage |
 | --- | --- | --- |
 | FR-001 | CUJ-001/004 | TC-001/003 internal; TC-004 CLI |
-| FR-002 | CUJ-005 | #116 domain gap; TC-002/003 shell only |
+| FR-002 | CUJ-005 | TC-005/006 implemented; TC-003 browser evidence pending |
 | FR-003 | CUJ-007 | #118 gap |
 | FR-004 | CUJ-006 | #117 gap |
-| FR-005 | CUJ-005 | #116 gap |
-| FR-006 | CUJ-004/005/007 | TC-004 configuration; readonly DB gap #116/#118 |
-| FR-007 | CUJ-003/005–007 | TC-001/003 perimeter; domain isolation gaps |
-| FR-008 | CUJ-002/005–007 | TC-002/003 renderer; actual domain error gaps |
+| FR-005 | CUJ-005 | TC-006 implemented; TC-003 browser evidence pending |
+| FR-006 | CUJ-004/005/007 | TC-004 configuration; TC-005 readonly registry; task adapter gap #118 |
+| FR-007 | CUJ-003/005–007 | TC-001/003 perimeter; TC-005/006 projects/preview; artifact/task isolation gaps |
+| FR-008 | CUJ-002/005–007 | TC-002/003 renderer; TC-005/006 project/preview recovery; task/artifact gaps |
 | FR-009 | CUJ-002 | TC-002/003 |
 | FR-010 | CUJ-001/003 | TC-001 |
 
 Skeleton acceptance needs TC-001/002 automated, TC-003 rendered evidence and onboarding regression. Before commit run lint, all Node/spec cases and Python pytest. Parent closure additionally needs all serial domain/CLI cases and integrated two-project/CLI-refresh/preview evidence.
 
 ## Open questions and coverage gaps
-Skeleton TC-001/002/003 acceptance landed in PR #120. TC-004 CLI tests pass locally; final candidate gates, printed-URL browser evidence and independent review remain pending. Future owners freeze artifact formats/limits/enumeration, preview metadata/probe and readonly task adapter before coding. Add future TC headings with executable tests/manual procedure; no phantom automated paths. Planned browser interfaces are not certification.
+Skeleton TC-001/002/003 acceptance landed in PR #120. TC-004 CLI tests pass locally; final candidate gates, printed-URL browser evidence and independent review remain pending. TC-005/006 are implemented and pass focused checks, including live WAL/SHM coordination, independent CLI registration, readonly preservation and bounded preview/config trust boundaries. #116 TC-003 browser evidence and exact-candidate independent review remain pending; automated results do not establish browser acceptance. Artifact formats/limits/enumeration and readonly task adapter remain future gaps; preview contract is frozen in TECH_SPEC. Add future TC headings with executable tests/manual procedure; no phantom automated paths. Planned browser interfaces are not certification.

@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { mkdirSync, chmodSync } from 'node:fs';
+import { mkdirSync, chmodSync, statSync, accessSync, constants } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
@@ -135,4 +135,20 @@ export function openNedDatabase(options = {}) {
       connection.close();
     },
   };
+}
+
+// Existing-file reads intentionally avoid the writable opener's initialization policy.
+export function openNedDatabaseReadOnly({databasePath} = {}) {
+  let connection;
+  try {
+    if (!databasePath || databasePath === ':memory:' || !statSync(databasePath).isFile()) throw new Error();
+    accessSync(databasePath,constants.R_OK);
+    connection = new Database(databasePath,{readonly:true,fileMustExist:true,timeout:100});
+    if (connection.prepare('SELECT version FROM ned_schema WHERE id=1').get()?.version !== 1) throw new Error();
+    connection.prepare('SELECT id,path,initialized_at FROM ned_projects LIMIT 0').all();
+    return connection;
+  } catch {
+    connection?.close();
+    throw new DatabaseError('database_unavailable','Project data could not be loaded.');
+  }
 }
