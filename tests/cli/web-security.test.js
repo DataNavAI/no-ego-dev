@@ -106,7 +106,7 @@ test('untrusted adapter identifiers fail closed before entering session state or
         'X-CSRF-Token': session.csrfToken,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ providerId: 'daytona' }),
+      body: JSON.stringify({ providerId: 'development' }),
     });
     assert.equal(response.status, 500);
     assert.deepEqual(await response.json(), { error: 'internal_error' });

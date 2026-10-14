@@ -42,7 +42,7 @@ Cost, plan limits, and retention can change; collector operators must confirm th
 
 ## Schema version 1
 
-Only these event names can leave the CLI:
+The runtime schema retains these historical allowlisted event names for compatibility. The removed hosted CLI commands no longer emit them; current local task commands do not capture lifecycle events:
 
 | Event | Boundary |
 | --- | --- |

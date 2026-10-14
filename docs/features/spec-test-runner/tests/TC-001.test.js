@@ -40,6 +40,17 @@ test('TC-001: validate spec discovery and all selector combinations', async (t) 
     ['--case', 'TC-001', '--journey', 'CUJ-002'],
   ])
     await assert.rejects(selectSpecTests(args, dir));
+  await mkdir(path.join(dir, 'retired'));
+  await writeFile(path.join(dir, 'retired', 'SPEC.md'), '# Historical feature\nStatus: retired\n### TC-999: discontinued\n');
+  const active = await selectSpecTests(['--all'], dir);
+  assert.equal(active.length, 2);
+  assert.deepEqual(active.retiredFeatures, ['retired']);
+  await assert.rejects(selectSpecTests(['--feature', 'retired'], dir), /Retired feature.*excluded/);
+  await assert.rejects(selectSpecTests(['--case', 'TC-999'], dir), /Unknown case/);
+  // An ordinary feature with no cases must still fail closed.
+  await writeFile(path.join(dir, 'retired', 'SPEC.md'), '# Historical feature\nStatus: planned\n');
+  await assert.rejects(selectSpecTests(['--all'], dir), /no declared test cases/);
+  await writeFile(path.join(dir, 'retired', 'SPEC.md'), '# Historical feature\nStatus: retired\n');
   await mkdir(path.join(dir, 'manual'));
   await writeFile(path.join(dir, 'manual', 'SPEC.md'),
     spec('TC-003', 'CUJ-003') + '- Level / automation: manual; agent evaluation.\n');

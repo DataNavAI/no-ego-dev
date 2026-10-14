@@ -25,8 +25,6 @@ const STATIC_FILES = Object.freeze({
   '/styles.css': { path: new URL('./public/styles.css', import.meta.url), type: 'text/css; charset=utf-8' },
   '/docs.css': { path: new URL('./public/docs.css', import.meta.url), type: 'text/css; charset=utf-8' },
   '/docs/v1/quickstart/': { path: new URL('./public/docs/v1/quickstart/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
-  '/docs/v1/telegram/': { path: new URL('./public/docs/v1/telegram/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
-  '/docs/v1/credentials/': { path: new URL('./public/docs/v1/credentials/index.html', import.meta.url), type: 'text/html; charset=utf-8' },
 });
 
 class HttpError extends Error {
@@ -526,14 +524,16 @@ export function createBrowserServer({
         const body = await readJson(request);
         const result = await withSessionLock(session.id, async () => {
           rejectUnavailableSession(session);
-          if (body.providerId !== 'daytona' || Object.keys(body).some((key) => key !== 'providerId')) {
+          // This parked contract supports only the synthetic local preview connector.
+          // A real provider requires a separately specified production integration.
+          if (body.providerId !== 'development' || Object.keys(body).some((key) => key !== 'providerId')) {
             throw new HttpError(400, 'unsupported_compute_connection');
           }
-          const connected = await computeConnector.connect({ ownerId: session.userId, providerId: 'daytona' });
+          const connected = await computeConnector.connect({ ownerId: session.userId, providerId: 'development' });
           const connectionId = safeExternalId(connected?.id, 'Compute connector');
           session.computeConnectionId = connectionId;
           await persistSession(session);
-          return { id: connectionId, providerId: 'daytona', status: 'connected' };
+          return { id: connectionId, providerId: 'development', status: 'connected' };
         });
         sendJson(response, 201, result);
         return;
