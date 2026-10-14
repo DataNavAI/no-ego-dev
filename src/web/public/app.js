@@ -133,7 +133,7 @@ document.getElementById('compute-button').addEventListener('click', async () => 
   try {
     setStatus('Connecting isolated compute…');
     await api('/api/compute-connections', {
-      method: 'POST', body: JSON.stringify({ providerId: 'daytona' }),
+      method: 'POST', body: JSON.stringify({ providerId: 'development' }),
     });
     showStep(3);
   } catch { setStatus('Compute authorization is not available.', 'error'); }

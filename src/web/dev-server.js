@@ -43,7 +43,7 @@ export function createDevelopmentServer({ env = process.env, port = 4173 } = {})
     authenticate: async () => ({ userId: 'local-development-owner', displayName: 'Local developer' }),
     secretVault: createEncryptedMemoryVault(),
     computeConnector: {
-      async connect() { return { id: 'development-compute-simulation', providerId: 'daytona' }; },
+      async connect() { return { id: 'development-compute-simulation', providerId: 'development' }; },
     },
     jobService: {
       async create({ operation }) {

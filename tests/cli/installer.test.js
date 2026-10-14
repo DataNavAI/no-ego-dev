@@ -4,15 +4,15 @@ import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/cli/INSTALL.md');
-const syntheticSecret = 'synthetic-daytona-test-key';
-const releaseRevision = 'a0f55d1d015d415c06b6a08a1e92457de1352241';
+const syntheticSecret = 'synthetic-unused-legacy-key';
+const releaseRevision = '104aa7386bfc247becc6b29ab9f478b61c3cc7ee';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
 
 async function sha256(file) {
@@ -51,9 +51,9 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const platform = `${system === 'Darwin' ? 'darwin' : 'linux'}-${machine === 'arm64' || machine === 'aarch64' ? 'arm64' : 'x64'}`;
   const nodeRoot = path.join(root, `node-v-test-${platform}`);
   await mkdir(path.join(nodeRoot, 'bin'), { recursive: true });
-  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\nif [[ "\${1-}" == *'/ned-launcher.js' || "\${1-}" == *'/launcher-runtime.js' || "\${1-}" == *'/app/src/launcher.js' ]]; then exec ${JSON.stringify(process.execPath)} "$@"; fi\n[[ "$*" != *'${syntheticSecret}'* ]] || { echo credential-in-argv >&2; exit 40; }\nif [[ "$*" == *' --help'* ]]; then printf 'NED help\\n'; exit 0; fi\n[[ \${DAYTONA_API_KEY-} == '${syntheticSecret}' ]] || { echo credential-missing >&2; exit 41; }\n[[ \${NED_TEST_RUNTIME_FAIL-} != 1 ]] || { echo synthetic-runtime-failure >&2; exit 43; }\nprintf 'ned-runtime:%s\\n' "\${2-}" >> "$HOME/runtime.log"\n`);
+  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\n[[ \${NED_TEST_RUNTIME_FAIL-} != 1 ]] || { echo synthetic-runtime-failure >&2; exit 43; }\nexec ${JSON.stringify(process.execPath)} "$@"\n`);
   await chmod(path.join(nodeRoot, 'bin', 'node'), 0o755);
-  await writeFile(path.join(nodeRoot, 'bin', 'npm'), '#!/usr/bin/env bash\nset -eu\n[[ ${1-} == ci ]]\n[[ $(command -v node) == "${BASH_SOURCE[0]%/*}/node" ]] || { echo system-node-used >&2; exit 42; }\ntouch .dependencies-installed\n');
+  await writeFile(path.join(nodeRoot, 'bin', 'npm'), '#!/usr/bin/env bash\nset -eu\n[[ ${1-} == ci ]]\n[[ "$*" != *--ignore-scripts* ]] || { echo native-install-script-disabled >&2; exit 44; }\n[[ $(command -v node) == "${BASH_SOURCE[0]%/*}/node" ]] || { echo system-node-used >&2; exit 42; }\ntouch .dependencies-installed\n');
   await chmod(path.join(nodeRoot, 'bin', 'npm'), 0o755);
   const nodeArchive = path.join(fixtures, 'node.tar.gz');
   let result = spawnSync('tar', ['-czf', nodeArchive, '-C', root, path.basename(nodeRoot)], { encoding: 'utf8' });
@@ -63,7 +63,6 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   await mkdir(path.join(sourceRoot, 'bin'), { recursive: true });
   await mkdir(path.join(sourceRoot, 'src'), { recursive: true });
   await writeFile(path.join(sourceRoot, 'bin', 'ned.js'), `if (process.argv.includes('--help')) console.log('NED help');\n`);
-  await cp(path.join(repoRoot, 'src', 'telegram.js'), path.join(sourceRoot, 'src', 'telegram.js'));
   await cp(path.join(repoRoot, 'bin', 'ned-launcher.js'), path.join(sourceRoot, 'bin', 'ned-launcher.js'));
   await cp(path.join(repoRoot, 'src', 'launcher.js'), path.join(sourceRoot, 'src', 'launcher.js'));
   await mkdir(path.join(sourceRoot, 'src', 'web', 'public'), { recursive: true });
@@ -92,19 +91,21 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   await writeFile(path.join(fakeBin, 'mv'), `#!/usr/bin/env bash\nset -eu\nsource=\${@: -2:1}\ndestination=\${@: -1}\ncase "$destination" in "$HOME/.profile"|"$HOME/.zprofile"|"$HOME/.bashrc") source_mode=$(${nativeModeStat} "$source"); if [[ -e "$destination" ]]; then destination_mode=$(${nativeModeStat} "$destination"); else destination_mode=600; fi; printf 'final:%s:%s\\n' "$source_mode" "$destination_mode" >>'${profileTempModeLog}'; [[ "$source_mode" == "$destination_mode" ]] || exit 91;; esac\nexec /bin/mv "$@"\n`);
   await chmod(path.join(fakeBin, 'mv'), 0o755);
 
+  const lockFile = path.join(root, 'installer-owner.lock');
   let text = await readFile(productionInstaller, 'utf8');
   text = text
+    // Keep cross-TMPDIR serialization inside this fixture without colliding
+    // with other suites or a real installation under the current user's UID.
+    .replace('LOCK_FILE="/tmp/ned-install-${UID:-$(id -u)}.lock"', `LOCK_FILE=${JSON.stringify(lockFile)}`)
     .replace(/node_url="[^"]+"/, 'node_url="https://fixtures/node"')
     .replace(/source_url="[^"]+"/, 'source_url="https://fixtures/ned"')
     .replace(new RegExp(`${platform.replace('-', '\\-')}\\) node_sha=[a-f0-9]{64}`), `${platform}) node_sha=${await sha256(nodeArchive)}`)
     .replace(/NED_SOURCE_SHA256=[a-f0-9]{64}/, `NED_SOURCE_SHA256=${await sha256(sourceArchive)}`)
-    .replace("if [[ -t 0 && -r /dev/tty ]]; then", 'if true; then')
-    .replace("IFS= read -r -s -p 'Daytona API key (input hidden): ' DAYTONA_API_KEY </dev/tty", 'IFS= read -r -s DAYTONA_API_KEY')
-    .replace("printf '\\n' >/dev/tty", "printf '\\n'");
+;
   const installer = path.join(root, 'install-under-test.sh');
   await writeFile(installer, text, { mode: 0o700 });
 
-  return { root, home, sourceRoot, curlLog, profileTempModeLog, installer, platform, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
+  return { root, home, sourceRoot, curlLog, profileTempModeLog, installer, platform, lockFile, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
 }
 
 function runInstaller(harness, env = {}, input = `${syntheticSecret}\n`, installer = harness.installer) {
@@ -219,53 +220,22 @@ test('candidate checkout installer installs its exact checked-out identity while
   assert.match(releaseManifest, new RegExp(`^revision=${releaseRevision}$`, 'm'));
 });
 
-test('clean macOS arm64 and Ubuntu amd64/arm64 installs and reruns preserve BotFather copy and CLI-linked docs', async () => {
+test('clean platform installs and reruns preserve credential-free installed help', async () => {
   for (const target of [
     { name: 'macOS arm64', system: 'Darwin', machine: 'arm64' },
     { name: 'Ubuntu amd64', system: 'Linux', machine: 'x86_64' },
     { name: 'Ubuntu arm64', system: 'Linux', machine: 'aarch64' },
   ]) {
     const harness = await makeHarness(target);
-    const first = runInstaller(harness);
-    assert.equal(first.status, 0, `${target.name}: ${first.stderr}`);
+    assert.equal(runInstaller(harness, {}, '').status, 0, target.name);
     const rerun = runInstaller(harness, {}, '');
-    assert.equal(rerun.status, 0, `${target.name}: stdout=${rerun.stdout} stderr=${rerun.stderr}`);
-    assert.match(rerun.stdout, /already installed/i, target.name);
-    assert.equal(await exists(path.join(harness.home, 'runtime.log')), false, target.name);
-
-    const generation = await activeGeneration(harness);
-    const telegramModule = pathToFileURL(path.join(generation, 'app', 'src', 'telegram.js')).href;
-    const probe = spawnSync(process.execPath, ['--input-type=module', '-e', `
-      import { acquireTelegramConnection, QUICKSTART_DOCS_URL, TELEGRAM_DOCS_URL, CREDENTIALS_DOCS_URL } from ${JSON.stringify(telegramModule)};
-      const lines=[];
-      const token = '1'.repeat(10) + ':' + 'A'.repeat(35);
-      await acquireTelegramConnection({
-        platform: 'linux',
-        log: (line) => lines.push(line),
-        readStoredToken: async () => null,
-        openExternal: async () => {},
-        promptHidden: async () => token,
-        fetchImpl: async () => ({ ok: true, json: async () => ({ ok: true, result: { id: 1, is_bot: true, username: 'clean_matrix_bot' } }) }),
-      });
-      console.log(JSON.stringify({ lines, urls: [QUICKSTART_DOCS_URL, TELEGRAM_DOCS_URL, CREDENTIALS_DOCS_URL] }));
-    `], { encoding: 'utf8' });
-    assert.equal(probe.status, 0, `${target.name}: ${probe.stderr}`);
-    const contract = JSON.parse(probe.stdout);
-    assert.deepEqual(contract.lines.slice(-5), [
-      '1. Open BotFather: https://t.me/BotFather',
-      '2. Send /newbot.',
-      '3. Choose a display name for the disposable bot.',
-      '4. Choose a unique username ending in bot.',
-      '5. Copy the token. NED will ask for it next with hidden input.',
-    ], target.name);
-    assert.deepEqual(contract.urls, [
-      'https://ned.datanav.app/docs/v1/quickstart/',
-      'https://ned.datanav.app/docs/v1/telegram/',
-      'https://ned.datanav.app/docs/v1/credentials/',
-    ], target.name);
-    for (const route of ['quickstart', 'telegram', 'credentials']) {
-      assert.equal(await exists(path.join(generation, 'app', 'src', 'web', 'public', 'docs', 'v1', route, 'index.html')), true, `${target.name}: ${route}`);
-    }
+    assert.equal(rerun.status, 0, rerun.stderr);
+    assert.match(rerun.stdout, /already installed/i);
+    const result = spawnSync(path.join(harness.home, '.local/bin/ned'), ['--help'], {
+      env: harness.env, encoding: 'utf8', timeout: 5000,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /NED help/);
   }
 });
 
@@ -283,7 +253,7 @@ test('completed rerun repairs removed PATH blocks before returning without redow
 
 test('stale installation lock fails closed with actionable recovery guidance', async () => {
   const harness = await makeHarness();
-  const lock = `/tmp/ned-install-${process.getuid()}.lock`;
+  const lock = harness.lockFile;
   await writeFile(lock, '99999999\n', { mode: 0o600 });
   try {
     const result = runInstaller(harness);
@@ -326,7 +296,7 @@ test('TERM after trap setup exits 143 and leaves no active or partial installati
   const result = runInstaller(harness, {}, '', interrupted);
   assert.equal(result.status, 143, result.stderr);
   assert.deepEqual(await snapshot(harness.home), before);
-  assert.equal(await exists(`/tmp/ned-install-${process.getuid()}.lock`), false);
+  assert.equal(await exists(harness.lockFile), false);
 });
 
 test('space-containing HOME and TMPDIR complete installation', async () => {
@@ -376,8 +346,8 @@ test('failed upgrade integrity leaves a seeded complete installation byte-for-by
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /integrity verification failed/i);
   assert.deepEqual(await snapshot(path.join(harness.home, '.local')), before);
-  const doctor = spawnSync(path.join(harness.home, '.local/bin/ned'), ['doctor'], {
-    env: { ...harness.env, DAYTONA_API_KEY: syntheticSecret }, encoding: 'utf8',
+  const doctor = spawnSync(path.join(harness.home, '.local/bin/ned'), ['--help'], {
+    env: harness.env, encoding: 'utf8',
   });
   assert.equal(doctor.status, 0, doctor.stderr);
 });

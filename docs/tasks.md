@@ -2,7 +2,7 @@
 
 Behavioral contract and required test coverage: [feature spec](features/task-management/SPEC.md). This file is the CLI usage guide.
 
-NED stores project work in its shared database. No Beads installation, external task service, model authorization, Daytona account, or Hermes restart is required.
+NED stores project work in its shared database. No Beads installation, external task service, model authorization, cloud account, or Hermes restart is required.
 
 ## Shared database configuration
 

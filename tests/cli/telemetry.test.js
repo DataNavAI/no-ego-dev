@@ -175,72 +175,11 @@ test('telemetry CLI supports status, explicit enable, disable, and delete', asyn
   }]);
 });
 
-test('CLI emits lifecycle events at activation and primary journey completion boundaries', async () => {
+test('retired commands emit no telemetry events', async () => {
   const events = [];
-  const telemetry = { capture: async (event, properties) => events.push([event, properties.resultClass]) };
-  const io = { log() {}, error() {} };
-  const dependencies = {
-    env: { DAYTONA_API_KEY: 'daytona-public-test' },
-    getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
-    getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
-    telemetry,
-    appFactory: async () => ({
-      async chat() { return 'done'; },
-      async doctor() { return { ok: true, checks: [] }; },
-      async reset() { return { ok: true }; },
-      async destroy() {},
-    }),
-  };
-
-  await runCli(['chat', 'do not collect me'], io, dependencies);
-  await runCli(['doctor'], io, dependencies);
-  await runCli(['reset'], io, dependencies);
-  await runCli(['destroy', '--yes'], io, dependencies);
-
-  assert.deepEqual(events.map(([event]) => event), [
-    'cli_chat_completed',
-    'cli_doctor_completed', 'cli_reset_completed', 'cli_destroy_completed',
-  ]);
-  assert.equal(JSON.stringify(events).includes('do not collect me'), false);
-});
-
-test('CLI telemetry delivery is detached from product completion', async () => {
-  const telemetry = { capture: async () => new Promise(() => {}) };
-  const command = runCli(['chat', 'private prompt'], { log() {}, error: assert.fail }, {
-    env: { DAYTONA_API_KEY: 'test' },
-    getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
-    getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
-    telemetry,
-    appFactory: async () => ({ async chat() { return 'done'; } }),
-  });
-
-  const result = await Promise.race([
-    command,
-    new Promise((resolve) => setTimeout(() => resolve('timed-out'), 100)),
-  ]);
-  assert.equal(result, 0);
-});
-
-test('CLI emits chat failure classes without error messages', async () => {
-  const events = [];
-  const telemetry = { capture: async (event, properties) => events.push([event, properties]) };
-  const dependencies = {
-    env: { DAYTONA_API_KEY: 'test' },
-    getModelConnection: async () => ({ providerId: 'openai-codex', method: 'oauth-device-code' }),
-    getTelegramConnection: async () => ({ botUsername: 'ned_disposable_bot', botUrl: 'https://t.me/ned_disposable_bot' }),
-    telemetry,
-    appFactory: async () => ({
-      async chat() { throw new Error('prompt contents leaked'); },
-    }),
-  };
-  const io = { log() {}, error() {} };
-
-  await runCli(['chat', 'private prompt'], io, dependencies);
-
-  assert.deepEqual(events.map(([event, properties]) => [event, properties.resultClass]), [
-    ['cli_chat_failed', 'operation_error'],
-  ]);
-  const serialized = JSON.stringify(events);
-  assert.equal(serialized.includes('workspace private-name'), false);
-  assert.equal(serialized.includes('private prompt'), false);
+  const telemetry = { capture: async (event) => events.push(event) };
+  for (const command of ['chat', 'doctor', 'repair', 'reset', 'pair', 'destroy']) {
+    assert.equal(await runCli([command], { log() {}, error() {} }, { telemetry }), 2);
+  }
+  assert.deepEqual(events, []);
 });

@@ -43,7 +43,7 @@ test('concurrent duplicate create submissions execute one job-service call', asy
       'Content-Type': 'application/json',
     };
     await fetch(`${baseUrl}/api/compute-connections`, {
-      method: 'POST', headers, body: JSON.stringify({ providerId: 'daytona' }),
+      method: 'POST', headers, body: JSON.stringify({ providerId: 'development' }),
     });
     await fetch(`${baseUrl}/api/model-connections`, {
       method: 'POST', headers,

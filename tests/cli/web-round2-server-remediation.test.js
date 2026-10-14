@@ -86,7 +86,7 @@ function headers(auth) {
 
 async function connect(context, auth) {
   assert.equal((await fetch(`${context.baseUrl}/api/compute-connections`, {
-    method: 'POST', headers: headers(auth), body: JSON.stringify({ providerId: 'daytona' }),
+    method: 'POST', headers: headers(auth), body: JSON.stringify({ providerId: 'development' }),
   })).status, 201);
   assert.equal((await fetch(`${context.baseUrl}/api/model-connections`, {
     method: 'POST', headers: headers(auth),

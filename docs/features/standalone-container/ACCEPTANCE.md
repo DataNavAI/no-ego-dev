@@ -58,3 +58,7 @@ FR-007 / TC-003/004: the committed source script `tests/container_acceptance.py`
 - ESLint/Ruff and shell/source syntax gate passed. Existing fast integration cases remain TC-001/002; default spec gate still reports on-demand TC-003/004 as NOT RUN and requires this separate evidence.
 
 No real model key or host profile was used. Compose's original acceptance remains the unchanged wiring evidence; this script tests the actual Docker image directly.
+
+## Compatibility with current main — 2026-10-14
+
+Main `02b39209e48778e02a3514be8b6e7b565e54eb0f` removed the retired Daytona transport. The PR was reconciled with that authoritative main without restoring removed integrations. `npm run test:container -- --context colima-ned-container` passed against the combined contents: image `sha256:5dfa1d204d5641315a71dc883a7bdafbfeaae643d867a4630cf9fc39346e0104`, timestamp `2026-10-14T07:24:31.033520+00:00`, ARM64, stop exit0 in 3.3 seconds. The same actual HTTP/authentication, unprivileged-service, recovery, volume persistence and negative-startup assertions passed, and all owned resources/credentials were removed. Earlier evidence and suite counts above describe their original snapshots; the current suite excludes main's retired Daytona cases.

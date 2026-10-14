@@ -13,7 +13,7 @@ curl -fsSL https://raw.githubusercontent.com/DataNavAI/no-ego-dev/main/scripts/i
 ned --help
 ```
 
-CLI는 새 workspace를 생성하지 않습니다. 기존 Daytona workspace에 대해서는 `chat`, `doctor`, `pair`, `repair`, `destroy --yes`를 계속 지원합니다.
+CLI는 공유 SQLite 데이터베이스에서 로컬 프로젝트 작업을 관리합니다. `ned task init`으로 시작하고, `ned com`으로 로컬 프로젝트 브라우저를 엽니다. 클라우드 계정이나 별도 인증은 필요하지 않습니다.
 
 ## 기존 Hermes 프로필에 설치하기
 
