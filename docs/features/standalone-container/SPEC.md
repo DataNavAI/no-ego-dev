@@ -14,6 +14,7 @@ Assumptions: Docker supports Linux arm64 or amd64; ports are published on host l
 - FR-003: Supervise both services, restart failed processes, forward logs, stop gracefully on SIGTERM, and declare healthy only when both HTTP services respond correctly. Startup/config failures fail visibly.
 - FR-004: Seed a fresh persistent profile with complete distribution contents and container-specific workspace configuration. Repeated startup preserves edited profile/config, credentials, SQLite state and projects. Existing unrecognized nonempty profile volumes fail closed. No automatic overwrites or migrations of operator profile content.
 - FR-005: Use separate persistent volumes for Hermes profile, NED database and projects; services run as the upstream unprivileged user. Credentials are supplied only at runtime by environment/secret file, never baked or copied from host profiles.
+- FR-007: Provide `npm run test:container` for on-demand actual image build/run acceptance. It must create only uniquely named test containers/volumes, use synthetic runtime credentials outside the checkout, verify both services/authentication/recovery/persistence and negative startup, and remove test containers/volumes/credential files on success or failure. Missing Docker or failed checks exit nonzero, never skip as a pass. It must not use host Hermes profiles or provider credentials.
 - FR-006: Document build/run/Compose, service URLs, runtime auth, health/log inspection, backup, upgrade and explicit cleanup. State COM's current projects/preview capability and unavailable artifact/tasks honestly.
 
 ## Critical user journeys
@@ -57,24 +58,24 @@ Success: missing dashboard auth fails visibly/unhealthy, hostile requests return
 - Cleanup: delete temporary fixture roots only.
 - Pass evidence: named automated assertions.
 ### TC-003: Build and run both actual services
-- Journey / requirements: CUJ-001, CUJ-003 / FR-001, FR-002, FR-003, FR-005, FR-006
-- Level / automation: manual; [procedure](RUNBOOK.md#acceptance)
+- Journey / requirements: CUJ-001, CUJ-003 / FR-001, FR-002, FR-003, FR-005, FR-006, FR-007
+- Level / automation: manual; scripted end-to-end `npm run test:container` ([script](tests/container_acceptance.py)); [procedure](RUNBOOK.md#acceptance)
 - Preconditions / fixtures: Linux Docker daemon; fresh test-owned volumes; synthetic dashboard password at runtime; no model key or host profile mount.
 - Given: image built from clean candidate using default pinned Hermes base.
 - When: launch documented command and request both services and dashboard authenticated API.
 - Then: Docker health healthy; dashboard HTML renders and authenticated API responds; unauthenticated protected API refuses; COM /api/projects returns 200 empty list; CLI version works; all distribution-owned files are present. Image/context contains no host state; services run unprivileged.
-- Steps and assertions: follow runbook acceptance commands, recording digest, platform, statuses and redacted service identity.
+- Steps and assertions: run `npm run test:container -- --context <Docker-context>` (or omit context to use the current daemon), then follow runbook Compose acceptance; record digest, platform, statuses and redacted service identity.
 - Variants / negative cases: run without dashboard password and verify fail-closed; bad COM Host/Origin returns 403. Missing Docker blocks manual acceptance; no skip counts as pass.
 - Cleanup: stop/remove test container; retain volumes for TC-004.
 - Pass evidence: redacted acceptance report bound to candidate contents, no passwords/log payloads.
 ### TC-004: Service crash, restart, persistence and cleanup
-- Journey / requirements: CUJ-002, CUJ-003 / FR-003, FR-004, FR-005, FR-006
-- Level / automation: manual; [procedure](RUNBOOK.md#acceptance)
+- Journey / requirements: CUJ-002, CUJ-003 / FR-003, FR-004, FR-005, FR-006, FR-007
+- Level / automation: manual; scripted end-to-end `npm run test:container` ([script](tests/container_acceptance.py)); [procedure](RUNBOOK.md#acceptance)
 - Preconditions / fixtures: TC-003 healthy installation; synthetic DB task, project and profile sentinel files.
 - Given: persistent state and running processes.
 - When: kill each service separately, wait for recovery; stop within 30 seconds; recreate with same volumes.
 - Then: replacement process and successful HTTP prove recovery; shutdown clean; DB/project/profile sentinel bytes persist; no host profiles changed.
-- Steps and assertions: record before/after PIDs and HTTP codes, stop exit/time, recreate and verify sentinels and SQLite readback; remove only test resources.
+- Steps and assertions: run the same script, which records service process replacement and fresh live HTTP readiness, checks stop exit/time, recreates and verifies sentinels and public CLI task readback, and removes only its unique test resources in finally cleanup. Use `--image <existing-image>` to reuse an image; that image must be preserved. A caller interruption exits nonzero and still cleans owned resources. Docker-host crashes may require explicit removal of the printed unique test resource names.
 - Variants / negative cases: occupied unrelated profile rejected; concurrent volume sharing unsupported; interrupted init rejected; incompatible schema recovery uses backup/compatible image rather than destructive reset.
 - Cleanup: remove test container and explicitly named test volumes only; preserve host credentials/staging/candidate worktrees.
 - Pass evidence: redacted acceptance report with exact commands and observed outcomes.
@@ -88,6 +89,7 @@ Success: missing dashboard auth fails visibly/unhealthy, hostile requests return
 | FR-004 | CUJ-001, CUJ-002 | TC-002, TC-004 | initializer / volume retention |
 | FR-005 | CUJ-001, CUJ-003 | TC-002, TC-003, TC-004 | context and runtime inspection |
 | FR-006 | CUJ-001, CUJ-003 | TC-003, TC-004 | documented commands exercised |
+| FR-007 | CUJ-001, CUJ-002, CUJ-003 | TC-003, TC-004 | `npm run test:container`; on-demand actual Docker script |
 
 ## Open questions and coverage gaps
 Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPTANCE.md). Native browser visual inspection and amd64 execution were not performed. Live model calls are outside credential-free acceptance; operators configure a provider through Hermes. No claim of artifact/task support before those independent changes merge.

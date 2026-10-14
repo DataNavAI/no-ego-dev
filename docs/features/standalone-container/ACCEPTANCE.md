@@ -45,3 +45,16 @@ Runtime input bindings (SHA-256):
 Focused container integration cases: 12 assertions/subtests passed. Full spec gate passed all 29 automated case files; it separately reports manual cases NOT RUN. `npm test` passed CLI/regression and all automated spec cases. `python -m pytest`: 208 passed, 9 pre-existing opt-in cases skipped; those skips do not establish behavioral acceptance. ESLint and pinned Ruff passed; shell/bootstrap syntax checks passed.
 
 HTTP acceptance meets the requested browser-or-HTTP boundary. Native browser visual inspection, Linux amd64 execution, remote exposure, UID remapping and actual model replies were not performed. No changes to existing Hermes profiles, unfinished artifact worktree, old staging data or schedules were made. No claim that unrelated manual cases or planned COM artifact/tasks are complete.
+
+## Repeatable image-test script — 2026-10-14
+
+FR-007 / TC-003/004: the committed source script `tests/container_acceptance.py` (SHA-256 `eaa3d8ac3f7a527a9dffe51fd26b8582d0fd2292d8cbf58a16bb4be5c05490da`) is exposed by `npm run test:container`. It is an on-demand end-to-end test, separate from the fast default spec gate.
+
+- `npm run test:container -- --context colima-ned-container`: PASS, actual image `sha256:e870db72004ad0b96e27baf7cfcfdcde1d9f2e98ff57cb2dbaeef3ccfee72621`, Linux arm64, timestamp `2026-10-14T07:07:24.719363+00:00`. Both services/auth/HTTP perimeter, complete profile/CLI, unprivileged service PIDs, separate service replacement, retained task/profile/project state, missing auth and unrelated-profile refusal passed. Shutdown exited0 in 3.3 seconds. Owned containers/volumes/runtime credential file removed before emitting PASS.
+- `--image ned-standalone:final`: PASS against a supplied image, which was preserved. Random Docker-assigned host ports allowed concurrent runs without fixed-port collisions.
+- Deliberately failing-entrypoint image: expected failure, exit1, no PASS receipt; authoritative Docker inventory confirmed every owned container/volume absent. The supplied fixture image was preserved by the script and separately removed by its fixture owner.
+- SIGTERM during a real running test: expected exit1, no PASS receipt; owned resources removed.
+- Docker absent from PATH: expected exit1 with `Docker is required; no acceptance cases were run`; no skip/pass claimed.
+- ESLint/Ruff and shell/source syntax gate passed. Existing fast integration cases remain TC-001/002; default spec gate still reports on-demand TC-003/004 as NOT RUN and requires this separate evidence.
+
+No real model key or host profile was used. Compose's original acceptance remains the unchanged wiring evidence; this script tests the actual Docker image directly.

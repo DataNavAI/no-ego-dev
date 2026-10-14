@@ -71,6 +71,19 @@ Checked 2026-10-13 (America/Los_Angeles; registry timestamps UTC). [Official Her
 
 Credential-free automated cases: activate Python, install `python -m pip install -r requirements-dev.txt` (pinned pytest, PyYAML and Ruff), run `node --test docs/features/standalone-container/tests/*.test.js`, `npm run lint`, `npm run test:spec -- --all`, `npm test`, `python -m pytest`. Manual TC-003/004 must be run against the actual image and recorded separately; NOT RUN in the spec runner is not a pass.
 
+The repeatable image acceptance script runs TC-003/004 against real Docker services, using unique containers/volumes and synthetic runtime credentials. It builds by default and cleans test resources on success or failure. An existing image passed with `--image` is preserved. Docker resources are local to the selected daemon, but the HTTP checks run on this machine: use a locally reachable Docker context. The script uses random host ports and the default COM Host/Origin headers to avoid colliding with other installations. It intentionally requires Docker and is separate from the fast, credential-free spec gate.
+
+```sh
+python -m pip install -r requirements-dev.txt
+npm run test:container
+# Choose a local Docker context explicitly:
+npm run test:container -- --context colima-ned-container
+# Reuse a built image without rebuilding or removing it:
+npm run test:container -- --context colima-ned-container --image ned-standalone:local
+```
+
+A successful run prints a JSON receipt with test-case IDs, image ID, platform, timestamp, shutdown duration and cleanup status. Failure exits nonzero and does not print a pass receipt. Resource names print before setup so a Docker-host crash can be recovered by removing only those named resources. Never use this script to test a shared host profile. Compose wiring still uses the procedure below.
+
 1. Build as above. Launch with **test-owned names** `ned-container-acceptance` and `ned-container-test-{profile,db,projects}` and a generated synthetic runtime password in a private temporary env file. Do not mount host profiles or provider credentials.
 2. Wait boundedly (up to 180 seconds) for Docker healthy. Assert dashboard HTML 200, `/api/health` says `ok:true, auth_required:true`, unauthenticated `/api/config` is 401, and login form submission to `/auth/password-login` yields a cookie and authenticated `/api/config` is 200. Assert COM health/capabilities/projects endpoints are 200 with real service identity and empty projects. Host `evil.example` or Origin `https://evil.example` returns 403. Verify `ned --version`, unprivileged service PIDs and all manifest components under `/opt/data`.
 3. Create synthetic project `/projects/acceptance`, profile/project sentinels and a CLI task. Record database readback and sentinel hashes. Kill the s6 dashboard child and COM child one at a time; boundedly wait for new PIDs and correct HTTP responses. No blind retry masks a failed acceptance: report each transition.
