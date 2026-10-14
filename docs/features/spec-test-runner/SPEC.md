@@ -28,7 +28,7 @@ Contributors run all or selected feature test cases colocated with their SPEC.md
 - Given / preconditions / fixtures: disposable feature root containing two specs with matching synthetic named test files and journey mappings.
 - When / steps: discover all; select by feature/case/journey and intersection; inject unknown/contradictory/missing selectors, duplicate IDs, missing SPEC.md/file, undeclared file and nameless test.
 - Then / assertions: exact selected paths/IDs match; malformed inventory/arguments always reject before execution; no outside path is used.
-- Variants: comma-separated/repeated selectors, empty match, path traversal input, zero-case specs, missing/undeclared mapping, nameless case, mixed/manual-only selection, and manual declarations with conflicting code files.
+- Variants: comma-separated/repeated selectors, empty match, path traversal input, zero-case specs, missing/undeclared mapping, nameless case, mixed/manual-only selection, manual declarations with conflicting code files, and retired history. A synthetic `Status: retired` spec with absent historical test files is excluded from all-selection and appears in retired metadata; selecting its feature rejects, and its old case ID is unknown. Changing that fixture to `Status: planned` with no cases must fail closed.
 - Cleanup: remove only temporary fixture directories; no user DB/provider credentials involved.
 - Pass evidence: all assertions pass with no skipped/cancelled variants. Live/manual cases are inapplicable.
 

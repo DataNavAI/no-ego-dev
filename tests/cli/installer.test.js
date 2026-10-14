@@ -12,7 +12,7 @@ const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
 const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/cli/INSTALL.md');
 const syntheticSecret = 'synthetic-unused-legacy-key';
-const releaseRevision = 'a0f55d1d015d415c06b6a08a1e92457de1352241';
+const releaseRevision = '104aa7386bfc247becc6b29ab9f478b61c3cc7ee';
 const pathBlock = '# >>> NED user commands >>>\nexport PATH="$HOME/.local/bin:$PATH"\n# <<< NED user commands <<<';
 
 async function sha256(file) {
@@ -91,8 +91,12 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   await writeFile(path.join(fakeBin, 'mv'), `#!/usr/bin/env bash\nset -eu\nsource=\${@: -2:1}\ndestination=\${@: -1}\ncase "$destination" in "$HOME/.profile"|"$HOME/.zprofile"|"$HOME/.bashrc") source_mode=$(${nativeModeStat} "$source"); if [[ -e "$destination" ]]; then destination_mode=$(${nativeModeStat} "$destination"); else destination_mode=600; fi; printf 'final:%s:%s\\n' "$source_mode" "$destination_mode" >>'${profileTempModeLog}'; [[ "$source_mode" == "$destination_mode" ]] || exit 91;; esac\nexec /bin/mv "$@"\n`);
   await chmod(path.join(fakeBin, 'mv'), 0o755);
 
+  const lockFile = path.join(root, 'installer-owner.lock');
   let text = await readFile(productionInstaller, 'utf8');
   text = text
+    // Keep cross-TMPDIR serialization inside this fixture without colliding
+    // with other suites or a real installation under the current user's UID.
+    .replace('LOCK_FILE="/tmp/ned-install-${UID:-$(id -u)}.lock"', `LOCK_FILE=${JSON.stringify(lockFile)}`)
     .replace(/node_url="[^"]+"/, 'node_url="https://fixtures/node"')
     .replace(/source_url="[^"]+"/, 'source_url="https://fixtures/ned"')
     .replace(new RegExp(`${platform.replace('-', '\\-')}\\) node_sha=[a-f0-9]{64}`), `${platform}) node_sha=${await sha256(nodeArchive)}`)
@@ -101,7 +105,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const installer = path.join(root, 'install-under-test.sh');
   await writeFile(installer, text, { mode: 0o700 });
 
-  return { root, home, sourceRoot, curlLog, profileTempModeLog, installer, platform, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
+  return { root, home, sourceRoot, curlLog, profileTempModeLog, installer, platform, lockFile, env: { HOME: home, TMPDIR: tmpDir, PATH: `${fakeBin}:/usr/bin:/bin` } };
 }
 
 function runInstaller(harness, env = {}, input = `${syntheticSecret}\n`, installer = harness.installer) {
@@ -249,7 +253,7 @@ test('completed rerun repairs removed PATH blocks before returning without redow
 
 test('stale installation lock fails closed with actionable recovery guidance', async () => {
   const harness = await makeHarness();
-  const lock = `/tmp/ned-install-${process.getuid()}.lock`;
+  const lock = harness.lockFile;
   await writeFile(lock, '99999999\n', { mode: 0o600 });
   try {
     const result = runInstaller(harness);
@@ -292,7 +296,7 @@ test('TERM after trap setup exits 143 and leaves no active or partial installati
   const result = runInstaller(harness, {}, '', interrupted);
   assert.equal(result.status, 143, result.stderr);
   assert.deepEqual(await snapshot(harness.home), before);
-  assert.equal(await exists(`/tmp/ned-install-${process.getuid()}.lock`), false);
+  assert.equal(await exists(harness.lockFile), false);
 });
 
 test('space-containing HOME and TMPDIR complete installation', async () => {
