@@ -28,6 +28,7 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
     throw new Error('--all cannot be combined with selectors.');
   const entries = await readdir(featuresRoot, { withFileTypes: true });
   const features = [];
+  const retiredFeatures = [];
   for (const entry of entries
     .filter((entry) => entry.isDirectory())
     .sort((a, b) => a.name.localeCompare(b.name))) {
@@ -37,6 +38,10 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
     } catch (error) {
       if (error.code === 'ENOENT') throw new Error(`Feature ${entry.name} is missing SPEC.md.`, { cause: error });
       throw error;
+    }
+    if (/^Status: retired\s*$/m.test(spec)) {
+      retiredFeatures.push(entry.name);
+      continue;
     }
     const blocks = [
       ...spec.matchAll(/^### (TC-\d{3}):[^\n]*\n([\s\S]*?)(?=^### TC-|^## |$(?![\s\S]))/gm),
@@ -84,9 +89,12 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
     }
     features.push({ name: entry.name, cases });
   }
-  for (const feature of filters.feature)
+  for (const feature of filters.feature) {
+    if (retiredFeatures.includes(feature))
+      throw new Error(`Retired feature ${feature} is excluded from active verification.`);
     if (!features.some((entry) => entry.name === feature))
       throw new Error(`Unknown feature: ${feature}`);
+  }
   const scope = features
     .filter((entry) => !filters.feature.length || filters.feature.includes(entry.name))
     .flatMap((entry) => entry.cases);
@@ -101,6 +109,7 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
       (!filters.journey.length || entry.journeys.some((id) => filters.journey.includes(id))),
   );
   const selected = matching.filter((entry) => !entry.manual);
+  selected.retiredFeatures = retiredFeatures;
   selected.manualCases = matching.filter((entry) => entry.manual);
   if (!selected.length) throw new Error('No matching automated spec cases; manual cases require separate evaluation.');
   return selected;
@@ -118,6 +127,8 @@ export function specExecutionPassed(status, output, caseId) {
 
 export async function runSpecTests(args = [], featuresRoot) {
   const selected = await selectSpecTests(args, featuresRoot);
+  if (selected.retiredFeatures.length)
+    process.stdout.write(`Retired features NOT RUN: ${selected.retiredFeatures.join(', ')}.\n`);
   if (selected.manualCases.length)
     process.stdout.write(
       `Manual cases NOT RUN: ${selected.manualCases.map((entry) => `${entry.feature}/${entry.id}`).join(', ')}; separate evidence required.\n`,

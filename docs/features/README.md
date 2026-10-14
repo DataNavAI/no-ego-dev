@@ -15,12 +15,9 @@ This baseline inventories capabilities found in the current source, tests, profi
 | NED Communicator | planned | [SPEC.md](communicator/SPEC.md) | Local project workbench; serial #114–#118; Skeleton/CLI merged; project/preview TC-005/006 implemented with browser acceptance pending; artifact/task coverage planned |
 | Isolated main-tracking NED staging | implemented | [SPEC.md](ned-staging/SPEC.md) | [#123](https://github.com/DataNavAI/no-ego-dev/issues/123); isolated owner profile/CLI and active 15-minute Codex heartbeat verified; [acceptance](ned-staging/ACCEPTANCE.md); actual main promotion/rollback/data retention PASS, live model login separate; scheduled execution not yet observed |
 | Task management | implemented | [SPEC.md](task-management/SPEC.md) | [CLI guide](../tasks.md); `src/tasks.js`, `src/task-cli.js` |
-| CLI installation and credential-aware launcher | implemented | Missing — coverage gap | `scripts/install.sh`, `src/launcher.js`; [install guide](../cli/INSTALL.md) |
+| CLI installation and direct local launcher | implemented | Missing — coverage gap | `scripts/install.sh`, `src/launcher.js`; [install guide](../cli/INSTALL.md) |
 | Hermes profile installation/distribution | implemented | Missing — coverage gap | `distribution.yaml`, `config.yaml`, `src/profile-archive.js`; root README |
-| Daytona workspace transport | implemented | [SPEC.md](daytona-workspace-access/SPEC.md) | Official generated clients; local HTTP contract cases; live-provider verification remains separate |
-| Existing workspace chat and recovery | implemented | Missing — coverage gap | `src/app.js`, `src/providers/daytona.js`; [quickstart](../cli/QUICKSTART.md) |
-| Telegram connection and owner pairing | implemented | Missing — coverage gap | `src/telegram.js`; [Telegram guide](../cli/TELEGRAM.md) |
-| Model-provider authorization and credential lifecycle | implemented | Missing — coverage gap | `src/auth/`, `src/model-providers.js`; [credentials](../cli/CREDENTIALS.md) |
+| Hosted workspace access, chat/recovery and owner pairing | retired | [SPEC.md](daytona-workspace-access/SPEC.md) | [#127](https://github.com/DataNavAI/no-ego-dev/issues/127); transport/auth/state removed; removal covered by task-management TC-009 |
 | Opt-in telemetry and deletion | implemented | Missing — coverage gap | `src/telemetry.js`; [privacy contract](../cli/TELEMETRY_PRIVACY.md) |
 | Browser onboarding and connection flows | draft | Missing — coverage gap | `src/web/app.js`, `src/web/public/`; adapter-backed implementation, production wiring not established |
 | Browser job execution, cancellation, and session isolation | draft | Missing — coverage gap | `src/web/app.js` and web lifecycle/security tests; production adapters not established |
@@ -31,7 +28,6 @@ This baseline inventories capabilities found in the current source, tests, profi
 | Hosted compute onboarding and production release | planned (parked) | Missing — coverage gap | [browser scope](../browser/README.md); not current release authority |
 | Authenticated external-command access broker | draft (discussion only) | Missing — coverage gap | [task decision source](https://chatgpt.com/share/6ac730b2-f424-83e8-a551-df48686e1b40); task metadata exists, credential broker does not |
 | CLI workspace provisioning | retired | Retired — removal tracked in #112 | Removal commit `a808317`; issue [#112](https://github.com/DataNavAI/no-ego-dev/issues/112) |
-| KakaoTalk channel gateway | planned (deferred) | Missing — coverage gap | [decision](../cli/KAKAOTALK_DECISION.md); no implemented gateway |
 
 ## Profile skill capabilities
 

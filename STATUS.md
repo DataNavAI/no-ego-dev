@@ -1,6 +1,6 @@
 # Project status
 
-Status: active. Updated: 2026-10-12 (America/Los_Angeles).
+Status: active. Updated: 2026-10-13 (America/Los_Angeles).
 
 Current objective: deliver the local NED Communicator serially under [#113](https://github.com/DataNavAI/no-ego-dev/issues/113). Current source provides the credential-free `ned com` command, project chooser backed by the shared NED registry, and verified local WIP preview links. The skeleton landed in [PR #120](https://github.com/DataNavAI/no-ego-dev/pull/120).
 
@@ -11,3 +11,5 @@ Remaining outcomes: [artifact browsing #117](https://github.com/DataNavAI/no-ego
 Canonical sources: [project/preview issue #116](https://github.com/DataNavAI/no-ego-dev/issues/116), [communicator SPEC](docs/features/communicator/SPEC.md), [technical design](docs/features/communicator/TECH_SPEC.md), [QA](QA.md), [task management](docs/features/task-management/SPEC.md).
 
 Local Hermes staging [#123](https://github.com/DataNavAI/no-ego-dev/issues/123) is installed under `~/Library/Application Support/NED/staging`, independently of normal profiles/global `ned`. [PR #124](https://github.com/DataNavAI/no-ego-dev/pull/124) merged after exact-head review and all checks. Owner browser/CLI acceptance, healthy main identity and normal-profile metadata preservation passed. Codex automation `ned-staging-updates` is ACTIVE every 15 minutes; active sessions defer updates. Actual verified-main promotion, rollback and repeat promotion preserved staged task/profile/project data and normal-profile metadata. Schedule pause/resume and disposable native retirement passed. Credential-free staging acceptance is complete; no scheduled execution or live model inference claimed. [Contract](docs/features/ned-staging/SPEC.md), [test guide](docs/features/ned-staging/RUNBOOK.md), [acceptance](docs/features/ned-staging/ACCEPTANCE.md). Artifact #117 remains preserved, task #118 queued; execution stays serial.
+
+Hosted-workspace retirement [#127](https://github.com/DataNavAI/no-ego-dev/issues/127) is in progress on `codex/remove-daytona`. It removes obsolete CLI commands, provider clients and credential prompts while preserving local tasks, Communicator, staging, telemetry consent and profile distribution. Historical resources and local credentials remain untouched. Independent review, exact-candidate installed acceptance and protected CI are pending; no merge or completion is claimed.

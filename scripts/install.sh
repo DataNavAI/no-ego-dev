@@ -26,10 +26,7 @@ readonly NODE_VERSION RELEASE_NED_REVISION CANDIDATE_REPOSITORY NED_REVISION NED
 
 INSTALL_ROOT="${HOME:?HOME must be set}/.local/share/ned"
 BIN_DIR="$HOME/.local/bin"
-CONFIG_DIR="$HOME/.config/ned"
-CREDENTIAL_FILE="$CONFIG_DIR/daytona-api-key"
 CURRENT="$INSTALL_ROOT/current"
-CREATE_MARKER="$INSTALL_ROOT/create-complete"
 LOCK_FILE="/tmp/ned-install-${UID:-$(id -u)}.lock"
 
 fail() {
@@ -178,7 +175,6 @@ old_current=
 cleanup() {
   status=$1
   trap - EXIT HUP INT TERM
-  unset DAYTONA_API_KEY 2>/dev/null || true
   if [[ "$activation_pending" == 1 ]]; then
     if [[ -n "$old_current" ]]; then
       ln -s "$old_current" "$INSTALL_ROOT/.current-rollback.$$" 2>/dev/null || true
@@ -234,7 +230,7 @@ if [[ "$install_ready" != 1 ]]; then
   [[ -f "$staging/app/package-lock.json" && -f "$staging/app/bin/ned.js" && -f "$staging/app/bin/ned-launcher.js" ]] || fail 'NED source archive is incomplete.'
   (
     cd "$staging/app"
-    PATH="$staging/runtime/bin:$PATH" "$staging/runtime/bin/npm" ci --omit=dev --ignore-scripts --no-audit --no-fund
+    PATH="$staging/runtime/bin:$PATH" "$staging/runtime/bin/npm" ci --omit=dev --no-audit --no-fund
   )
 
   write_launcher "$staging/ned-launcher"

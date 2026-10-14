@@ -2,17 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { createBrowserServer } from '../../src/web/app.js';
-import {
-  CREDENTIALS_DOCS_URL,
-  QUICKSTART_DOCS_URL,
-  TELEGRAM_DOCS_URL,
-} from '../../src/telegram.js';
-
-const ROUTES = [
-  '/docs/v1/quickstart/',
-  '/docs/v1/telegram/',
-  '/docs/v1/credentials/',
-];
+const ROUTES = ['/docs/v1/quickstart/'];
 
 async function startDocsServer() {
   const server = createBrowserServer({
@@ -43,11 +33,15 @@ test('clean local HTTP validation serves every stable V1 page and all internal l
         assert.match(body, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
         assert.match(body, /<pre><code>ned --help<\/code><\/pre>/);
       }
-      if (route === '/docs/v1/telegram/') {
-        assert.match(body, /Paste the Telegram bot token \(input hidden\):/);
-      }
+
       for (const match of body.matchAll(/(?:href|src)="(\/[^"]+)"/g)) links.add(match[1]);
       assert.doesNotMatch(body, /\d{5,20}:[A-Za-z0-9_-]{30,}/);
+    }
+    for (const retiredRoute of ['/docs/v1/telegram/', '/docs/v1/credentials/']) {
+      const response = await fetch(`${context.baseUrl}${retiredRoute}`);
+      assert.equal(response.status, 401, retiredRoute);
+      assert.match(response.headers.get('content-type'), /^application\/json/);
+      assert.doesNotMatch(await response.text(), /BotFather|Sandbox|<html/i);
     }
     for (const link of links) {
       const response = await fetch(`${context.baseUrl}${link}`);
@@ -56,15 +50,4 @@ test('clean local HTTP validation serves every stable V1 page and all internal l
   } finally {
     await context.close();
   }
-});
-
-test('CLI recovery URLs use the stable public V1 documentation contract', () => {
-  assert.equal(QUICKSTART_DOCS_URL, 'https://ned.datanav.app/docs/v1/quickstart/');
-  assert.equal(TELEGRAM_DOCS_URL, 'https://ned.datanav.app/docs/v1/telegram/');
-  assert.equal(CREDENTIALS_DOCS_URL, 'https://ned.datanav.app/docs/v1/credentials/');
-  assert.deepEqual(ROUTES.map((route) => `https://ned.datanav.app${route}`), [
-    'https://ned.datanav.app/docs/v1/quickstart/',
-    'https://ned.datanav.app/docs/v1/telegram/',
-    'https://ned.datanav.app/docs/v1/credentials/',
-  ]);
 });

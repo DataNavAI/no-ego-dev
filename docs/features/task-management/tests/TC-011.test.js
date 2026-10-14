@@ -72,7 +72,7 @@ test('TC-011: package/profile manifests exclude runtime SQLite data and spec tes
       'skills/identity-for-agent/references/profile-credential-policy.yaml',
       'skills/identity-for-agent/scripts/ifa_profile_guard.py',
       'docs/tasks.md', 'docs/features/task-management/SPEC.md',
-      'docs/cli/INSTALL.md', 'docs/cli/CREDENTIALS.md',
+      'docs/cli/INSTALL.md', 'docs/cli/QUICKSTART.md',
       'docs/cli/TELEMETRY_PRIVACY.md', 'docs/browser/README.md',
     ]) assert.ok(manifest.includes(required), required);
     assert.ok(manifest.some((file) => file.startsWith('eval_runner/')));

@@ -21,7 +21,7 @@ async function start(overrides = {}) {
       },
     },
     computeConnector: {
-      async connect(value) { computeCalls.push(value); return { id: 'compute-1', providerId: 'daytona' }; },
+      async connect(value) { computeCalls.push(value); return { id: 'compute-1', providerId: 'development' }; },
     },
     jobService: {
       async create(value) { jobCalls.push(value); return { id: 'job-1', status: 'queued', operation: value.operation }; },
@@ -143,7 +143,7 @@ test('compute connection is separate and create jobs are typed, session-bound, i
   try {
     const auth = await signIn(context);
     const compute = await fetch(`${context.baseUrl}/api/compute-connections`, {
-      method: 'POST', headers: authorizedHeaders(auth), body: JSON.stringify({ providerId: 'daytona' }),
+      method: 'POST', headers: authorizedHeaders(auth), body: JSON.stringify({ providerId: 'development' }),
     });
     assert.equal(compute.status, 201);
     await fetch(`${context.baseUrl}/api/model-connections`, {
@@ -207,7 +207,7 @@ test('mutating browser requests are rate-limited per authenticated session', asy
     let response;
     for (let index = 0; index < 31; index += 1) {
       response = await fetch(`${context.baseUrl}/api/compute-connections`, {
-        method: 'POST', headers: authorizedHeaders(auth), body: JSON.stringify({ providerId: 'daytona' }),
+        method: 'POST', headers: authorizedHeaders(auth), body: JSON.stringify({ providerId: 'development' }),
       });
     }
     assert.equal(response.status, 429);
@@ -220,7 +220,7 @@ test('jobs cannot be read or cancelled across sessions and oversized bodies fail
   try {
     const owner = await signIn(context);
     await fetch(`${context.baseUrl}/api/compute-connections`, {
-      method: 'POST', headers: authorizedHeaders(owner), body: JSON.stringify({ providerId: 'daytona' }),
+      method: 'POST', headers: authorizedHeaders(owner), body: JSON.stringify({ providerId: 'development' }),
     });
     await fetch(`${context.baseUrl}/api/model-connections`, {
       method: 'POST', headers: authorizedHeaders(owner),

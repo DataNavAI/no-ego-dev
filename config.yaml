@@ -77,7 +77,6 @@ terminal:
   docker_env: {}
   singularity_image: docker://nikolaik/python-nodejs:python3.11-nodejs20
   modal_image: nikolaik/python-nodejs:python3.11-nodejs20
-  daytona_image: nikolaik/python-nodejs:python3.11-nodejs20
   vercel_runtime: node24
   container_cpu: 1
   container_memory: 5120
