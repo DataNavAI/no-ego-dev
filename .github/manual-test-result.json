@@ -1,19 +1,20 @@
 {
-  "candidate_sha": "1e1d808d24de93ed108667198b61ffbfa623a14c",
+  "candidate_sha": "6e5c949e1544c635220a93cc34c4c6c1ee10dc7f",
   "result": "pass",
-  "tested_at": "2026-10-13T19:47:40.378663+00:00",
-  "environment": "macOS; host Node25.6.1 full gates; pinned Node22.14.0 actual isolated native Hermes runtime/CLI; Python3.14 pytest/PyYAML; synthetic loopback projects and SQLite only.",
+  "tested_at": "2026-10-14T06:49:56.327733+00:00",
+  "environment": "Fresh Linux arm64 Docker 29.3.0 containers on isolated Colima VM; official Hermes pinned digest; image sha256:ab40381d79adc10c479699a151cf45caab1a9661f927a5abf4c58a5c569249f6; synthetic runtime-only dashboard credentials; no host profiles/model credentials.",
   "commands": [
+    "docker --context colima-ned-container build -t ned-standalone:final .",
+    "Fresh docker run with three isolated named volumes and runtime credential file; actual dashboard and COM HTTP/auth/perimeter assertions",
+    "docker exec --user hermes: distribution manifest/cwd readback and public NED CLI task init/create/list",
+    "s6-svc -k dashboard and ned-com separately; new PID plus live HTTP health readiness; authenticated HTTP readback",
+    "docker stop --timeout 30; remove/recreate container with retained volumes; task and profile/project sentinel readback",
     "npm run lint",
-    "npm run test:all",
-    "python -m pytest",
-    "Configured gitleaks staged-diff scan",
-    "Actual native isolated setup/config/skill-loader/foreground-background terminal/npm/ownership probes",
-    "Installed staging CLI Alpha/Beta isolation and active-work update deferral",
-    "CUA installed staging desktop/new-tab/WIP Retry and390/320 IAB acceptance"
+    "npm test (all automated spec cases)",
+    "python -m pytest"
   ],
-  "observations": "Issue123 source acceptance passed for exact source tree 7717f694f6bb925883de1b80e6559bf570515df3. Full gates:129general Node tests,27automated featureTCs,208Python passed;9existing platform skips not passes. Native source/installed controller,bridge,worker byte hashes match; second-preflight release-identity race fixed with explicit RED/GREEN barrier; corrected native wrapper smoke passed; no normal credential copying/model calls. Actual focused installed IAB acceptance passed; unchanged merged GUI baseline reused by exact source/CLI digest, native Safari/Chrome and200%zoom not rerun. Skill behavioral cases NOT RUN. Permanent owner installation, real heartbeat registration and model authorization remain pending after source merge; source readiness is not operational completion. Work remains serial;117 preserved,118 queued.",
-  "acceptance_report_sha256": "282a0d75e399125b88b1052740c3196e7f9293b1f01e5baa12fbf688610b88f0",
-  "review_status": "Fresh exact-head composite R3 pending; no publication authority claimed",
-  "native_receipt_sha256": "299eabd3b48cd66cdd5e3129ece9feee8395b78a0b90ad79557d995ed3607f26"
+  "observations": "Exact committed candidate: fresh profile manifest/CLI, authenticated dashboard and COM HTTP/perimeter, separate service process replacement, stop exit0 under30s, profile/project/SQLite task retention after recreation passed. No model calls. Stop duration 3.3 seconds. Test containers/volumes/synthetic credentials removed. Earlier Compose and negative startup acceptance bound to unchanged runtime hashes in docs/features/standalone-container/ACCEPTANCE.md. Python208pass/9existing opt-in skips; unrelated manual cases NOT RUN. No amd64/native browser/live model verification.",
+  "runtime_acceptance_report_sha256": "914bcb95aa4a573f8b783a3a0a32d3690527de7693fb98d59fada62fa117b40c",
+  "reviewed_code_tree": "160ebf9c826b2e934dc24e2f49d7d7120d49a9a8",
+  "independent_review_report_sha256": "17ab7526aea57b88f37ce64c06353b6b42a458cce8086ed7f2965cdcb820167a"
 }
