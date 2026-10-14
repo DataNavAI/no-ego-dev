@@ -1,20 +1,17 @@
 {
-  "candidate_sha": "6e5c949e1544c635220a93cc34c4c6c1ee10dc7f",
+  "candidate_sha": "3b27a0b6cc8b78c9d87fdd969fb5762bb43d7862",
   "result": "pass",
-  "tested_at": "2026-10-14T06:49:56.327733+00:00",
-  "environment": "Fresh Linux arm64 Docker 29.3.0 containers on isolated Colima VM; official Hermes pinned digest; image sha256:ab40381d79adc10c479699a151cf45caab1a9661f927a5abf4c58a5c569249f6; synthetic runtime-only dashboard credentials; no host profiles/model credentials.",
+  "tested_at": "2026-10-14T07:13:34.831579+00:00",
+  "environment": "Fresh Linux arm64 Docker29.3.0 on isolated Colima VM; image sha256:5307852214ffafff44ceaa7886fd48697d66d61c17768f6d84df7e98e639f430; synthetic runtime-only credentials; no host profiles/model keys.",
   "commands": [
-    "docker --context colima-ned-container build -t ned-standalone:final .",
-    "Fresh docker run with three isolated named volumes and runtime credential file; actual dashboard and COM HTTP/auth/perimeter assertions",
-    "docker exec --user hermes: distribution manifest/cwd readback and public NED CLI task init/create/list",
-    "s6-svc -k dashboard and ned-com separately; new PID plus live HTTP health readiness; authenticated HTTP readback",
-    "docker stop --timeout 30; remove/recreate container with retained volumes; task and profile/project sentinel readback",
+    "npm run test:container -- --context colima-ned-container",
     "npm run lint",
-    "npm test (all automated spec cases)",
-    "python -m pytest"
+    "npm run test:all (all29automated spec cases and Python tests)",
+    "Expected failure probes: supplied failing-entrypoint image, SIGTERM during live test, missing Docker executable"
   ],
-  "observations": "Exact committed candidate: fresh profile manifest/CLI, authenticated dashboard and COM HTTP/perimeter, separate service process replacement, stop exit0 under30s, profile/project/SQLite task retention after recreation passed. No model calls. Stop duration 3.3 seconds. Test containers/volumes/synthetic credentials removed. Earlier Compose and negative startup acceptance bound to unchanged runtime hashes in docs/features/standalone-container/ACCEPTANCE.md. Python208pass/9existing opt-in skips; unrelated manual cases NOT RUN. No amd64/native browser/live model verification.",
-  "runtime_acceptance_report_sha256": "914bcb95aa4a573f8b783a3a0a32d3690527de7693fb98d59fada62fa117b40c",
-  "reviewed_code_tree": "160ebf9c826b2e934dc24e2f49d7d7120d49a9a8",
-  "independent_review_report_sha256": "17ab7526aea57b88f37ce64c06353b6b42a458cce8086ed7f2965cdcb820167a"
+  "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls. owned containers, volumes and synthetic runtime credentials removed. Exact postcommit script pass; stop0 in 3.28sec; negative startup checks passed; unprivileged service PIDs verified. Supplied-image path also passed and preserved that image. Broken-image and SIGTERM probes exit1 without pass and remove owned resources. MissingDocker exits1 without skip/pass. Python208pass9existing skips; manual/on-demand cases still NOT RUN in default spec runner. No amd64/native browser/live-model run.",
+  "runtime_acceptance_report_sha256": "cdcbf0a07582585f1dc7a126cc27f3f8cbe23fd756c31ae6f02843373e49b29b",
+  "container_test_script_sha256": "eaa3d8ac3f7a527a9dffe51fd26b8582d0fd2292d8cbf58a16bb4be5c05490da",
+  "reviewed_code_tree": "df94770a0e6d36fc3d0770542c4593df363cd7b3",
+  "independent_review_report_sha256": "21ae41ec256f5be3896308580819007a1dc957f55065c78683fcf46d8916e30e"
 }
