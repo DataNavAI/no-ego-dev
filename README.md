@@ -177,3 +177,7 @@ MIT. See [LICENSE](LICENSE).
 Use Node 20.19+ or 22.13+ for the development lint toolchain. Install dependencies with `npm ci`, activate a Python environment containing pytest and PyYAML, then run `npm run hooks:install` once per checkout. This installs the version-controlled pre-commit hook locally without changing global Git configuration.
 
 Commits run `npm run lint` (ESLint and syntax checks), followed by `npm run test:all` (Node regressions, every automated feature case, and Python tests). Stage the complete intended candidate first: partial tracked edits and untracked non-ignored files are rejected so tests apply to committed contents. The hook never stashes or discards work. Existing custom hook paths are preserved; integrate the checks before replacing them. Manual skill acceptance remains separate.
+
+## Standalone Docker container
+
+Run the complete NED profile and CLI with the Hermes dashboard (9119) and NED COM (8787), using isolated persistent volumes and runtime credentials. See the [container runbook](docs/features/standalone-container/RUNBOOK.md) for Docker and Compose commands, authentication and acceptance evidence.
