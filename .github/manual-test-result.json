@@ -1,7 +1,7 @@
 {
-  "candidate_sha": "4ce083caa5badb9e40752387157fdcea82ad5ca1",
+  "candidate_sha": "7e83503c3c5bf3a8d1e6d1e395e6dc8cf0c0c2cf",
   "result": "pass",
-  "tested_at": "2026-10-15T05:12:26.927588+00:00",
+  "tested_at": "2026-10-15T05:35:30.739280+00:00",
   "environment": "Native GitHub Linux AMD64 and ARM64 runners; isolated local ARM64 Docker for authorized live OpenAI Codex access-only token test. No refresh tokens supplied; source auth unchanged.",
   "commands": [
     "Native CI: python docs/features/standalone-container/tests/container_acceptance.py --expected-architecture amd64",
@@ -10,8 +10,8 @@
     "Runbook export procedure: private mode0600, access-only, exclusive-create, expired/missing rejection, unchanged source",
     "npm run lint; npm run test:all via installed full commit hooks (all automated spec cases and python -m pytest)"
   ],
-  "observations": "TC003/004 passed natively on AMD64=x64=x86-64 and ARM64, with host/daemon/image/executed Node checks. Authenticated actual dashboard/COM HTTP, complete profile/CLI, unprivileged service replacement, shutdown, retained state, negative startup and exact cleanup passed. Separate TC005 live model query exited0 with expected NED_CONTAINER_MODEL_OK reply; no refresh token or unrelated credentials imported; host auth SHA256 unchanged; authoritative successful Docker inventories verified test container and exact volumes absent. Temporary runtime file removed. Earlier local QEMU startup crashes remain historical emulation reliability limitations, not native failures or hidden retries. ESLint/Ruff, current automated Node/spec suite, Python208pass9existing opt-in skips; default manual NOT RUN cases are separate from these actual Docker/model results. No native browser visual acceptance or remote exposure claimed.",
-  "native_ci_run": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38685312893",
+  "observations": "TC003/004 passed natively on AMD64=x64=x86-64 and ARM64, with host/daemon/image/executed Node checks. Authenticated actual dashboard/COM HTTP, complete profile/CLI, unprivileged service replacement, shutdown, retained state, negative startup and exact cleanup passed. Separate TC005 live model query exited0 with expected NED_CONTAINER_MODEL_OK reply; no refresh token or unrelated credentials imported; host auth SHA256 unchanged; authoritative successful Docker inventories verified test container and exact volumes absent. Temporary runtime file removed. Earlier local QEMU startup crashes remain historical emulation reliability limitations, not native failures or hidden retries. ESLint/Ruff, current automated Node/spec suite, Python208pass9existing opt-in skips; default manual NOT RUN cases are separate from these actual Docker/model results. No native browser visual acceptance or remote exposure claimed. Current main679f923 README retirement preserved (both root files empty); current installer tests retained. Full combined PR independently reviewed with no material findings. Native matrix and authorized live model reply repeated after combined code commit; exact cleanup/source-preservation assertions passed.",
+  "native_ci_run": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38687383279",
   "native_execution_receipts": [
     {
       "result": "pass",
@@ -19,9 +19,9 @@
         "TC-003",
         "TC-004"
       ],
-      "image_id": "sha256:f2d461cbd4dfef6cdf2b132a49caa5e8bc056bd10ec97adac23deb26b59b60f6",
-      "tested_at": "2026-10-15T05:11:53.390479+00:00",
-      "stop_seconds": 3.35,
+      "image_id": "sha256:f20e79f31d370d62385dc5e338c1c12fb2c111f7fc56a5c890b9d03749716eaf",
+      "tested_at": "2026-10-15T05:35:07.478086+00:00",
+      "stop_seconds": 3.31,
       "platform": "x86_64",
       "host_architecture": "amd64",
       "docker_architecture": "amd64",
@@ -31,7 +31,7 @@
       "native_execution": true,
       "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
       "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
-      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38685312893/job/116258704130"
+      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38687383279/job/116265239810"
     },
     {
       "result": "pass",
@@ -39,9 +39,9 @@
         "TC-003",
         "TC-004"
       ],
-      "image_id": "sha256:44e6b6ff191e478bd5a72c74c8c84b860ba32f09a442dcb6f9c30f3be8d5223c",
-      "tested_at": "2026-10-15T05:11:54.758446+00:00",
-      "stop_seconds": 3.39,
+      "image_id": "sha256:258539fd204805914e55597052280251871a2ee0fca81e5bfd2ff5b7f058c3fa",
+      "tested_at": "2026-10-15T05:35:00.028208+00:00",
+      "stop_seconds": 3.33,
       "platform": "aarch64",
       "host_architecture": "arm64",
       "docker_architecture": "arm64",
@@ -51,7 +51,7 @@
       "native_execution": true,
       "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
       "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
-      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38685312893/job/116258703930"
+      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38687383279/job/116265239603"
     }
   ],
   "live_model": {
@@ -63,8 +63,8 @@
     "host_auth_unchanged": true,
     "test_container_and_volumes_absent": true
   },
-  "reviewed_code_tree": "75e68c99e400f05772d53074c100db0d0314138c",
-  "independent_review_report_sha256": "46b258ed6266363b90fd18f53051c2a7145dd346b2143d448e5ca7d1e503d10d",
+  "reviewed_code_tree": "7eaf14920aebc158f0848e5842ea9a93c4cd75fb",
+  "independent_review_report_sha256": "2c642b6b3f01af11aefe872aa030bad0099ff4e974a57c681eee9aab108e5b3a",
   "container_test_script_sha256": "ef8acf79dae4bec056eb4def1bbab3d151925135bec3fcfe70dd81a305256879",
   "runtime_acceptance_report_path": "docs/features/standalone-container/ACCEPTANCE.md"
 }
