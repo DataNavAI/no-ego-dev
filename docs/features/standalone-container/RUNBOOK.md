@@ -100,4 +100,45 @@ Record commands, image ID/base digest/platform, HTTP codes, process replacement,
 
 AMD64, x64 and x86-64 name the same 64-bit x86 architecture; ARM64 is separate. The native container workflow runs this complete script on `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64), without QEMU setup. `--expected-architecture` checks the local host, Docker daemon, built image metadata and an actually executed Node process. A mismatch exits nonzero. Receipts identify all four architectures and whether execution matched natively. A successful pull or cross-build alone is not execution acceptance. The workflow is scoped to image inputs/test changes; it needs no provider credentials and makes no paid model requests. See [GitHub runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
-Live model acceptance is a separate provider-authenticated operation. It requires a dedicated runtime-only test credential file supplied outside the repository and an explicit provider/model; existing host profiles are never copied into the image or test volume. Service/architecture PASS does not claim a live model reply.
+Live model acceptance is a separate provider-authenticated operation. It requires explicit authorization and a runtime-only credential file outside the repository, with an explicit provider/model; whole host profiles are never copied into the image or test volume. Service/architecture PASS does not claim a live model reply.
+
+## Reuse a local OpenAI Codex token
+
+An operator may authorize using an existing Hermes token without mounting the host profile. The pinned upstream image supports `HERMES_AUTH_JSON_BOOTSTRAP` on first boot only. Export an **access-only** credential pool into a new private runtime env file outside the checkout. This deliberately excludes refresh tokens, preventing the container from rotating the host login. The snapshot works only until its access token expires; for ongoing use, authenticate independently inside the container. Do not share a writable host auth file between processes.
+
+Run this on the host, changing the two absolute paths. The destination must not already exist. No secret values are printed:
+
+```sh
+python3 - /absolute/local/hermes/auth.json /absolute/private/ned-model-runtime.env <<'PYTHON'
+import base64, json, os, secrets, sys, time
+from pathlib import Path
+source, destination = map(Path, sys.argv[1:])
+auth = json.loads(source.read_text())
+token = auth['providers']['openai-codex']['tokens']['access_token']
+claims = json.loads(base64.urlsafe_b64decode(token.split('.')[1] + '==='))
+if claims.get('exp', 0) <= time.time() + 300:
+    raise SystemExit('Access token expires too soon; reauthenticate in the host first')
+bootstrap = {'version': 1, 'active_provider': 'openai-codex', 'providers': {},
+    'credential_pool': {'openai-codex': [{'id': 'runtime-access',
+        'label': 'operator authorized access snapshot', 'auth_type': 'oauth',
+        'priority': 0, 'source': 'manual', 'access_token': token,
+        'base_url': 'https://chatgpt.com/backend-api/codex'}]}}
+with os.fdopen(os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as f:
+    f.write('HERMES_DASHBOARD_BASIC_AUTH_USERNAME=operator\n')
+    f.write('HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=' + secrets.token_urlsafe(32) + '\n')
+    f.write('HERMES_AUTH_JSON_BOOTSTRAP=' + json.dumps(bootstrap, separators=(',', ':')) + '\n')
+PYTHON
+```
+
+Use this file with the normal `docker run --env-file` command and **fresh test-owned volumes**. Docker administrators can inspect runtime environment values. The token is persisted in the container profile volume; it is never an image layer. Existing profile auth is preserved, so changing the env file does not overwrite a previous login. Keep the generated dashboard password in the private file; do not print it into reports.
+
+For TC-005, record a private SHA-256 of the source auth file before/after and compare equality. After health is ready, run this bounded request (replace only the test container name and, if necessary, the entitled model):
+
+```sh
+docker exec --user hermes ned-model-test /opt/hermes/.venv/bin/python \
+  /opt/hermes/hermes_cli/main.py chat --safe-mode --provider openai-codex \
+  --model gpt-6.1-sol --toolsets none --max-turns 1 --run-budget 90 -Q \
+  -q 'Reply with exactly NED_CONTAINER_MODEL_OK and do not call tools.'
+```
+
+Require exit0 and the expected final reply. Capture provider output privately and report only the reply assertion; errors may contain sensitive provider details. Expired/rejected tokens, missing entitlement, network failure or quota exhaustion do not count as a pass. Remove the exact test container with `docker rm -f -v`, its explicitly named test volumes, and the exported env file; preserve the original host auth file. The credential-free `npm run test:container` never performs this import or model call.
