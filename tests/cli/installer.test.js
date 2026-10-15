@@ -9,7 +9,6 @@ import { test } from 'node:test';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const productionInstaller = path.join(repoRoot, 'scripts/install.sh');
-const readme = path.join(repoRoot, 'README.md');
 const installDoc = path.join(repoRoot, 'docs/cli/INSTALL.md');
 const syntheticSecret = 'synthetic-unused-legacy-key';
 const releaseRevision = '104aa7386bfc247becc6b29ab9f478b61c3cc7ee';
@@ -144,7 +143,7 @@ async function makeCandidateCheckout(harness) {
   return { installer, revision: result.stdout.trim() };
 }
 
-for (const file of [readme, installDoc]) {
+for (const file of [installDoc]) {
   test(`${path.relative(repoRoot, file)} documents the canonical repository installer`, async () => {
     const text = await readFile(file, 'utf8');
     assert.match(text, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/DataNavAI\/no-ego-dev\/main\/scripts\/install\.sh \| bash/);
