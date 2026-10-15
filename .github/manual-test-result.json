@@ -1,18 +1,70 @@
 {
-  "candidate_sha": "9557e6415c6486c6f1ac66679df87a96c2bb9ca8",
+  "candidate_sha": "4ce083caa5badb9e40752387157fdcea82ad5ca1",
   "result": "pass",
-  "tested_at": "2026-10-14T07:29:53.890798+00:00",
-  "environment": "Fresh Linux arm64 Docker29.3.0 on isolated Colima VM; current-main image sha256:ac806cd1821d2f9dc4f02514e4c158144550f8fa745061965315f72f70751413; synthetic runtime-only credentials; no host profiles/model keys.",
+  "tested_at": "2026-10-15T05:12:26.927588+00:00",
+  "environment": "Native GitHub Linux AMD64 and ARM64 runners; isolated local ARM64 Docker for authorized live OpenAI Codex access-only token test. No refresh tokens supplied; source auth unchanged.",
   "commands": [
-    "npm run test:container -- --context colima-ned-container",
-    "npm run lint",
-    "npm run test:all (all current automated spec cases and Python tests)",
-    "Expected failure probes: supplied failing-entrypoint image, SIGTERM during live test, missing Docker executable"
+    "Native CI: python docs/features/standalone-container/tests/container_acceptance.py --expected-architecture amd64",
+    "Native CI: python docs/features/standalone-container/tests/container_acceptance.py --expected-architecture arm64",
+    "Authorized runtime HERMES_AUTH_JSON_BOOTSTRAP access-only import; hermes chat --safe-mode --provider openai-codex --model gpt-6.1-sol --toolsets none --max-turns 1 --run-budget 90 -Q (TC-005 bounded expected-reply query)",
+    "Runbook export procedure: private mode0600, access-only, exclusive-create, expired/missing rejection, unchanged source",
+    "npm run lint; npm run test:all via installed full commit hooks (all automated spec cases and python -m pytest)"
   ],
-  "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls. owned containers, volumes and synthetic runtime credentials removed. Current main02b3920 retirement preserved, no restored Daytona transport. Stop0 in 3.39sec. Source passed full hooks on merged contents. Supplied-image reuse, deliberate broken-image failure, SIGTERM cleanup and missing-Docker failure previously verified with unchanged script bytes. Python208pass9existing opt-in skips; all current automated spec cases passed; manual/on-demand cases NOT RUN in default runner. No amd64/browser-visual/live-model run.",
-  "runtime_acceptance_report_sha256": "bcb020287ef6091c22ba63dfd8a660864a8072707166385f143f2088871d4477",
-  "container_test_script_sha256": "eaa3d8ac3f7a527a9dffe51fd26b8582d0fd2292d8cbf58a16bb4be5c05490da",
-  "reviewed_code_tree": "06ef8f3042899da73a0292ecb88176f4b7d4a029",
-  "independent_review_report_sha256": "8f52c7ffa8621c9b3901d2dc887a384a26b9a610d2f31e99b76770e15021164d",
+  "observations": "TC003/004 passed natively on AMD64=x64=x86-64 and ARM64, with host/daemon/image/executed Node checks. Authenticated actual dashboard/COM HTTP, complete profile/CLI, unprivileged service replacement, shutdown, retained state, negative startup and exact cleanup passed. Separate TC005 live model query exited0 with expected NED_CONTAINER_MODEL_OK reply; no refresh token or unrelated credentials imported; host auth SHA256 unchanged; authoritative successful Docker inventories verified test container and exact volumes absent. Temporary runtime file removed. Earlier local QEMU startup crashes remain historical emulation reliability limitations, not native failures or hidden retries. ESLint/Ruff, current automated Node/spec suite, Python208pass9existing opt-in skips; default manual NOT RUN cases are separate from these actual Docker/model results. No native browser visual acceptance or remote exposure claimed.",
+  "native_ci_run": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38685312893",
+  "native_execution_receipts": [
+    {
+      "result": "pass",
+      "cases": [
+        "TC-003",
+        "TC-004"
+      ],
+      "image_id": "sha256:f2d461cbd4dfef6cdf2b132a49caa5e8bc056bd10ec97adac23deb26b59b60f6",
+      "tested_at": "2026-10-15T05:11:53.390479+00:00",
+      "stop_seconds": 3.35,
+      "platform": "x86_64",
+      "host_architecture": "amd64",
+      "docker_architecture": "amd64",
+      "image_architecture": "amd64",
+      "node_architecture": "amd64",
+      "expected_architecture": "amd64",
+      "native_execution": true,
+      "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
+      "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
+      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38685312893/job/116258704130"
+    },
+    {
+      "result": "pass",
+      "cases": [
+        "TC-003",
+        "TC-004"
+      ],
+      "image_id": "sha256:44e6b6ff191e478bd5a72c74c8c84b860ba32f09a442dcb6f9c30f3be8d5223c",
+      "tested_at": "2026-10-15T05:11:54.758446+00:00",
+      "stop_seconds": 3.39,
+      "platform": "aarch64",
+      "host_architecture": "arm64",
+      "docker_architecture": "arm64",
+      "image_architecture": "arm64",
+      "node_architecture": "arm64",
+      "expected_architecture": "arm64",
+      "native_execution": true,
+      "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
+      "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
+      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38685312893/job/116258703930"
+    }
+  ],
+  "live_model": {
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol",
+    "expected_reply_present": true,
+    "exit_code": 0,
+    "refresh_token_supplied": false,
+    "host_auth_unchanged": true,
+    "test_container_and_volumes_absent": true
+  },
+  "reviewed_code_tree": "75e68c99e400f05772d53074c100db0d0314138c",
+  "independent_review_report_sha256": "46b258ed6266363b90fd18f53051c2a7145dd346b2143d448e5ca7d1e503d10d",
+  "container_test_script_sha256": "ef8acf79dae4bec056eb4def1bbab3d151925135bec3fcfe70dd81a305256879",
   "runtime_acceptance_report_path": "docs/features/standalone-container/ACCEPTANCE.md"
 }
