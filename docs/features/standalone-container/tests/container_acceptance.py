@@ -4,6 +4,7 @@ import datetime
 import http.cookiejar
 import json
 from pathlib import Path
+import platform
 import secrets
 import shutil
 import signal
@@ -20,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--context", help="Docker context (default: current Docker context)")
     parser.add_argument("--image", help="Reuse an existing image; otherwise build a test image")
+    parser.add_argument("--expected-architecture", choices=("amd64", "arm64"), help="Require native host/daemon/image/binary execution for this architecture")
     args = parser.parse_args()
     executable = shutil.which("docker")
     if not executable:
@@ -57,13 +59,22 @@ def main():
         signal.signal(signum, interrupted)
 
     try:
-        docker("info", "--format", "{{.OSType}}")
+        aliases = {"x86_64": "amd64", "amd64": "amd64", "AMD64": "amd64", "aarch64": "arm64", "arm64": "arm64"}
+        host_architecture = aliases.get(platform.machine(), platform.machine())
+        daemon_raw = docker("info", "--format", "{{.Architecture}}")
+        daemon_architecture = aliases.get(daemon_raw, daemon_raw)
+        if args.expected_architecture and (host_architecture != args.expected_architecture or daemon_architecture != args.expected_architecture):
+            raise RuntimeError("Host and Docker daemon must match the requested native architecture")
+        assert docker("info", "--format", "{{.OSType}}") == "linux"  # noqa: S101
         if not args.image:
             stage = "Image build"
             # No auth input exists during build; context uses the committed allowlist.
             docker("build", "-t", image, ".", timeout=1800)
             built = True
         image_id = docker("image", "inspect", image, "--format", "{{.Id}}")
+        image_architecture = docker("image", "inspect", image, "--format", "{{.Architecture}}")
+        if args.expected_architecture:
+            assert image_architecture == args.expected_architecture  # noqa: S101
         with tempfile.TemporaryDirectory(prefix=identity + "-") as temp:
             envfile = Path(temp) / "runtime.env"
             password = secrets.token_urlsafe(32)
@@ -129,6 +140,10 @@ def main():
             stage = "TC-003 fresh startup and authenticated HTTP"
             launch()
             healthy()
+            node_architecture = docker("exec", name, "node", "-p", "process.arch")
+            node_architecture = {"x64": "amd64", "arm64": "arm64"}.get(node_architecture, node_architecture)
+            if args.expected_architecture:
+                assert node_architecture == args.expected_architecture  # noqa: S101
             assert http_checks() == {"projects": []}  # noqa: S101
             assert docker("exec", "--user", "hermes", name, "ned", "--version") == json.loads((ROOT / "package.json").read_text())["version"]  # noqa: S101
             docker("exec", "--user", "hermes", name, "/opt/ned/python/bin/python", "-c",
@@ -189,7 +204,11 @@ def main():
             assert content == "unchanged"  # noqa: S101
             receipt = {"result": "pass", "cases": ["TC-003", "TC-004"], "image_id": image_id,
                        "tested_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                       "stop_seconds": round(stop_seconds, 2), "platform": docker("info", "--format", "{{.Architecture}}"),
+                       "stop_seconds": round(stop_seconds, 2), "platform": daemon_raw,
+                       "host_architecture": host_architecture, "docker_architecture": daemon_architecture,
+                       "image_architecture": image_architecture, "node_architecture": node_architecture,
+                       "expected_architecture": args.expected_architecture,
+                       "native_execution": host_architecture == daemon_architecture == image_architecture == node_architecture,
                        "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls."}
     except Exception as error:
         raise RuntimeError(f"{stage}: acceptance failed ({type(error).__name__}); no pass recorded") from None

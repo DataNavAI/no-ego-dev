@@ -76,6 +76,9 @@ The repeatable image acceptance script runs TC-003/004 against real Docker servi
 ```sh
 python -m pip install -r requirements-dev.txt
 npm run test:container
+# Require native host, daemon, image and executed Node architecture:
+npm run test:container -- --expected-architecture amd64
+# ARM64 equivalent: --expected-architecture arm64
 # Choose a local Docker context explicitly:
 npm run test:container -- --context colima-ned-container
 # Reuse a built image without rebuilding or removing it:
@@ -92,3 +95,9 @@ A successful run prints a JSON receipt with test-case IDs, image ID, platform, t
 6. Run Compose configuration and startup with an isolated project name and external synthetic env file, verify both services and retained volumes, then `compose down -v` only for that test project. Remove only named test containers/volumes and synthetic secret file. No changes to existing Hermes profiles, old staging data/schedules or artifact worktree.
 
 Record commands, image ID/base digest/platform, HTTP codes, process replacement, stop outcome, volume readbacks, cleanup and limitations in [ACCEPTANCE.md](ACCEPTANCE.md). Never store runtime logs/databases/credentials in this feature folder.
+
+## Architecture coverage
+
+AMD64, x64 and x86-64 name the same 64-bit x86 architecture; ARM64 is separate. The native container workflow runs this complete script on `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64), without QEMU setup. `--expected-architecture` checks the local host, Docker daemon, built image metadata and an actually executed Node process. A mismatch exits nonzero. Receipts identify all four architectures and whether execution matched natively. A successful pull or cross-build alone is not execution acceptance. The workflow is scoped to image inputs/test changes; it needs no provider credentials and makes no paid model requests. See [GitHub runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+
+Live model acceptance is a separate provider-authenticated operation. It requires a dedicated runtime-only test credential file supplied outside the repository and an explicit provider/model; existing host profiles are never copied into the image or test volume. Service/architecture PASS does not claim a live model reply.

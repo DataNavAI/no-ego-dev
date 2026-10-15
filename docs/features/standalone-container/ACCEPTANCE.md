@@ -62,3 +62,14 @@ No real model key or host profile was used. Compose's original acceptance remain
 ## Compatibility with current main — 2026-10-14
 
 Main `02b39209e48778e02a3514be8b6e7b565e54eb0f` removed the retired Daytona transport. The PR was reconciled with that authoritative main without restoring removed integrations. `npm run test:container -- --context colima-ned-container` passed against the combined contents: image `sha256:5dfa1d204d5641315a71dc883a7bdafbfeaae643d867a4630cf9fc39346e0104`, timestamp `2026-10-14T07:24:31.033520+00:00`, ARM64, stop exit0 in 3.3 seconds. The same actual HTTP/authentication, unprivileged-service, recovery, volume persistence and negative-startup assertions passed, and all owned resources/credentials were removed. Earlier evidence and suite counts above describe their original snapshots; the current suite excludes main's retired Daytona cases.
+
+## Explicit architecture verification — 2026-10-14
+
+AMD64, x64 and x86-64 mean the same CPU architecture. Earlier verified container executions were ARM64 only. The new `--expected-architecture` option compares host, Docker daemon, built image and executed Node binary; the new native CI matrix runs both AMD64 and ARM64.
+
+- Fresh `--expected-architecture arm64`: PASS, image `sha256:246c34ac3dd9db39c86dde82bbe6def248a7782b0fba0c8c36028eb093817843`, timestamp `2026-10-15T04:56:55.380650+00:00`; host/daemon/image/Node all ARM64, native execution true; full TC-003/004 and cleanup passed.
+- Requesting `--expected-architecture amd64` on this ARM64 machine: expected nonzero rejection and no PASS receipt.
+- Initial local AMD64 execution under QEMU exited during initialization (139), and a subsequent diagnostic instance showed a supervised child SIGSEGV before later becoming ready. This is not a native x64 PASS or a waived test; native x64 CI must establish the architecture result.
+- A subsequent complete local AMD64 acceptance run passed under QEMU: image `sha256:7efac03875553205d542ab75bd86a4dcb60cb5a7ecdbcc8e066987bbd453e441`, timestamp `2026-10-15T05:03:56.840614+00:00`, image/Node AMD64 with host/daemon ARM64, native execution false; full TC-003/004 and cleanup passed. Earlier startup failures remain unresolved emulation reliability evidence.
+- Native GitHub matrix results are recorded in the PR checks and final `.github/manual-test-result.json`, with actual run links and candidate identity. This document alone does not establish a native AMD64 pass.
+- No live provider credentials exist in the task environment or repository CI secrets. A live model reply requires a dedicated runtime-only test credential file and explicit provider/model; existing Hermes profile credentials will not be copied. No live reply is claimed.

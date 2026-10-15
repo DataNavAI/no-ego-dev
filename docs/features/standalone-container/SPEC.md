@@ -17,6 +17,8 @@ Assumptions: Docker supports Linux arm64 or amd64; ports are published on host l
 - FR-007: Provide `npm run test:container` for on-demand actual image build/run acceptance. It must create only uniquely named test containers/volumes, use synthetic runtime credentials outside the checkout, verify both services/authentication/recovery/persistence and negative startup, and remove test containers/volumes/credential files on success or failure. Missing Docker or failed checks exit nonzero, never skip as a pass. It must not use host Hermes profiles or provider credentials.
 - FR-006: Document build/run/Compose, service URLs, runtime auth, health/log inspection, backup, upgrade and explicit cleanup. State COM's current projects/preview capability and unavailable artifact/tasks honestly.
 
+- FR-008: Image acceptance must execute both Linux AMD64 (also called x64/x86-64) and ARM64 binaries and record native versus emulated execution honestly. The CI matrix runs natively on each architecture; `--expected-architecture` verifies the host, Docker daemon, image and executed Node binary against its expected architecture and fails on mismatch. Native CI results are a final PR verification gate. Keep live provider testing separate from synthetic-credential image tests.
+
 ## Critical user journeys
 ### CUJ-001: First run
 Actor: operator. Critical because assembling both actual services and the entire profile cannot be proven by syntax tests.
@@ -58,9 +60,9 @@ Success: missing dashboard auth fails visibly/unhealthy, hostile requests return
 - Cleanup: delete temporary fixture roots only.
 - Pass evidence: named automated assertions.
 ### TC-003: Build and run both actual services
-- Journey / requirements: CUJ-001, CUJ-003 / FR-001, FR-002, FR-003, FR-005, FR-006, FR-007
+- Journey / requirements: CUJ-001, CUJ-003 / FR-001, FR-002, FR-003, FR-005, FR-006, FR-007, FR-008
 - Level / automation: manual; scripted end-to-end `npm run test:container` ([script](tests/container_acceptance.py)); [procedure](RUNBOOK.md#acceptance)
-- Preconditions / fixtures: Linux Docker daemon; fresh test-owned volumes; synthetic dashboard password at runtime; no model key or host profile mount.
+- Preconditions / fixtures: Linux Docker with AMD64/ARM64 image execution available; CI uses native runners (`ubuntu-24.04` and `ubuntu-24.04-arm`); local emulation must be labeled as such; fresh test-owned volumes; synthetic dashboard password at runtime; no model key or host profile mount.
 - Given: image built from clean candidate using default pinned Hermes base.
 - When: launch documented command and request both services and dashboard authenticated API.
 - Then: Docker health healthy; dashboard HTML renders and authenticated API responds; unauthenticated protected API refuses; COM /api/projects returns 200 empty list; CLI version works; all distribution-owned files are present. Image/context contains no host state; services run unprivileged.
@@ -69,7 +71,7 @@ Success: missing dashboard auth fails visibly/unhealthy, hostile requests return
 - Cleanup: stop/remove test container; retain volumes for TC-004.
 - Pass evidence: redacted acceptance report bound to candidate contents, no passwords/log payloads.
 ### TC-004: Service crash, restart, persistence and cleanup
-- Journey / requirements: CUJ-002, CUJ-003 / FR-003, FR-004, FR-005, FR-006, FR-007
+- Journey / requirements: CUJ-002, CUJ-003 / FR-003, FR-004, FR-005, FR-006, FR-007, FR-008
 - Level / automation: manual; scripted end-to-end `npm run test:container` ([script](tests/container_acceptance.py)); [procedure](RUNBOOK.md#acceptance)
 - Preconditions / fixtures: TC-003 healthy installation; synthetic DB task, project and profile sentinel files.
 - Given: persistent state and running processes.
@@ -91,5 +93,7 @@ Success: missing dashboard auth fails visibly/unhealthy, hostile requests return
 | FR-006 | CUJ-001, CUJ-003 | TC-003, TC-004 | documented commands exercised |
 | FR-007 | CUJ-001, CUJ-002, CUJ-003 | TC-003, TC-004 | `npm run test:container`; on-demand actual Docker script |
 
+| FR-008 | CUJ-001, CUJ-002 | TC-003, TC-004 | Native GitHub matrix; `--expected-architecture amd64` / `arm64` |
+
 ## Open questions and coverage gaps
-Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPTANCE.md). Native browser visual inspection and amd64 execution were not performed. Live model calls are outside credential-free acceptance; operators configure a provider through Hermes. No claim of artifact/task support before those independent changes merge.
+Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPTANCE.md). Native AMD64 and ARM64 matrix acceptance is required for the new architecture coverage; recorded results below must identify actual executed candidates. Native browser visual inspection remains separate. Live model calls are outside credential-free acceptance; operators configure a provider through Hermes. No claim of artifact/task support before those independent changes merge.
