@@ -44,8 +44,9 @@
     "web:dev": "NED_WEB_DEV_MODE=1 node bin/ned-web.js",
     "pack:check": "npm pack --dry-run",
     "test:spec": "node scripts/run-spec-tests.mjs",
-    "lint": "eslint src bin scripts tests docs/features eslint.config.js --max-warnings=0 && npm run check",
-    "hooks:install": "node scripts/install-git-hooks.mjs"
+    "lint": "eslint src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check scripts/container/initialize.py docs/features/standalone-container/tests/container_acceptance.py && npm run check",
+    "hooks:install": "node scripts/install-git-hooks.mjs",
+    "test:container": "python docs/features/standalone-container/tests/container_acceptance.py"
   },
   "dependencies": {
     "better-sqlite3": "12.11.1",

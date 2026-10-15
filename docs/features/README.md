@@ -10,6 +10,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 
 | Feature | Status | Canonical spec | Current evidence / supporting material |
 | --- | --- | --- | --- |
+| Standalone NED container | implemented | [SPEC.md](standalone-container/SPEC.md) | Complete profile + CLI, real Hermes dashboard and COM; [arm64 build/run HTTP acceptance](standalone-container/ACCEPTANCE.md); `npm run test:container` for repeatable image acceptance; amd64/live-model checks separate |
 | Local commit checks | implemented | [SPEC.md](commit-checks/SPEC.md) | `.githooks/pre-commit`; `npm run hooks:install`; lint and full local suites |
 | Spec test runner | implemented | [SPEC.md](spec-test-runner/SPEC.md) | `scripts/run-spec-tests.mjs`; colocated cases and npm commit gate |
 | NED Communicator | planned | [SPEC.md](communicator/SPEC.md) | Local project workbench; serial #114–#118; Skeleton/CLI merged; project/preview TC-005/006 implemented with browser acceptance pending; artifact/task coverage planned |

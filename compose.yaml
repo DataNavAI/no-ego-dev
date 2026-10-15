@@ -1,0 +1,21 @@
+services:
+  ned:
+    build: .
+    image: ned-standalone:local
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "127.0.0.1:9119:9119"
+      - "127.0.0.1:8787:8787"
+    env_file:
+      - path: ${NED_RUNTIME_ENV_FILE:?Set NED_RUNTIME_ENV_FILE to an external credential file}
+        required: true
+    volumes:
+      - hermes-profile:/opt/data
+      - ned-database:/var/lib/ned
+      - projects:/projects
+    shm_size: 1gb
+volumes:
+  hermes-profile:
+  ned-database:
+  projects:

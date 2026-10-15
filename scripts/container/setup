@@ -1,0 +1,13 @@
+#!/command/with-contenv sh
+set -eu
+: "${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?Set runtime dashboard username}"
+if [ -z "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-}${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH:-}" ]; then
+    echo "Set runtime dashboard password or password hash" >&2
+    exit 1
+fi
+# Run before upstream seeds anything, so unrelated volumes remain untouched.
+/opt/ned/python/bin/python /opt/ned/scripts/container/initialize.py /opt/ned /opt/data /projects
+mkdir -p /var/lib/ned /projects
+chown -R hermes:hermes /opt/data /var/lib/ned /projects
+s6-setuidgid hermes node /opt/ned/scripts/container/database.mjs
+exec /opt/hermes/docker/stage2-hook.sh

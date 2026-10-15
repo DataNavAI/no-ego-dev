@@ -1,0 +1,5 @@
+#!/command/with-contenv sh
+set -eu
+export HOME=/opt/data
+cd /projects
+exec s6-setuidgid hermes node /opt/ned/scripts/container/com.mjs
