@@ -1,7 +1,7 @@
 # Feature: NED Communicator
 
 Status: planned
-Related issues: [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skeleton #114, CLI #115, projects/previews #116, artifacts #117, tasks #118.
+Related issues: [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skeleton #114, CLI #115, projects/previews #116, artifacts #117, tasks #118, Retry focus [#131](https://github.com/DataNavAI/no-ego-dev/issues/131).
 
 ## User outcome and scope
 Local NED users browse a selected project's work through a web app. Delivery is serial. #114 supplies server lifecycle and an honest navigation shell; it does not open databases/project folders or implement CLI/domain routes. Existing onboarding is separate. See [technical design](TECH_SPEC.md), [UI brief](design/ui-brief.md), [tokens](design/design-system.md) and [specimen](design/mockup.html).
@@ -17,7 +17,7 @@ Parent IDs remain stable:
 - FR-005: Open a configured running local WIP app or explain unavailability; never build/start/deploy it. #116.
 - FR-006: Reuse shared database resolution and task read semantics; explicit configuration > NED_DATABASE_URL > ~/.ned/ned.sqlite. Preserve unrelated data/project isolation. The #116 slice adds an explicitly readonly existing-database opener; no init/migration/chmod/mkdir or application writes. SQLite live WAL may coordinate through sidecars; record actual sidecar behavior separately from preserved database records/project files.
 - FR-007: Loopback only and read-only; restrict files to registered selected project; reject traversal, symlink escapes, sensitive runtime/auth files and cross-project leaks. Safely render untrusted content. Skeleton owns HTTP perimeter; domain slices own data enforcement.
-- FR-008: Loading, empty, folder/preview unavailable and database-error states recover without task/file changes. Skeleton owns shell states; actual domain recovery is planned.
+- FR-008: Loading, empty, folder/preview unavailable and database-error states recover without task/file changes. A keyboard-activated Retry restores focus to Retry when it remains actionable after settlement, or the content heading when Retry disappears. Never override focus moved to another control during loading; project/section navigation cancels the prior Retry focus intent. Skeleton owns shell states; actual domain recovery is planned.
 - FR-009: Skeleton semantic responsive project-first shell follows A1–A6/UI-AC-01–05 in UI brief, with honest capability-unavailable state and no demo inventory.
 - FR-010: Fixed assets and GET/HEAD health/capability contracts are stable; invalid local context/method/routes fail safely. Close is idempotent, releases listener, and startup rejection leaks no listener.
 
@@ -55,7 +55,7 @@ Actor: local project owner; critical first useful project workbench. Prerequisit
 
 ### TC-002: Client states, identity and retry
 - Purpose / journey / requirements: honest unavailable/navigation/recovery; CUJ-002 / FR-008/009.
-- Level / automation: unit; [`tests/TC-002.test.js`](tests/TC-002.test.js), inline synthetic inventory fixtures.
+- Level / automation: unit and client integration; [`tests/TC-002.test.js`](tests/TC-002.test.js), inline synthetic inventory fixtures and deferred fetches through the actual browser client.
 - Preconditions / fixtures: pure state helpers; production capabilities from TECH_SPEC; injected rows `{id:"fixture-a",name:"Alpha"}` / `{id:"fixture-b",name:"Beta <script>"}`, empty rows, sanitized project_unavailable/database_unavailable errors. No production mock adapter.
 - Given: loading without selected project.
 - When: success/failure, retry, select ID, select section, switch project; resolve delayed old response.
@@ -64,6 +64,8 @@ Actor: local project owner; critical first useful project workbench. Prerequisit
 - Variants / negative cases: error->success/error; long names; delayed response after selection change. Pagination/providers/mutation inapplicable to skeleton.
 - Cleanup: reset state/mock requests, no persistence.
 - Pass evidence: named state assertions on exact candidate.
+
+TC-002 Retry regression: start with one selected project and an unconfigured preview, focus Retry and activate it. Hold its detail response; assert Retry is disabled and duplicate activation makes no request. Release with unconfigured preview or database error: Retry is visible, enabled and focused. Release with available preview: Retry is hidden and heading focused. Move focus to Project during the hold: settlement preserves Project focus. Switch project or section during the hold: stale completion cannot restore old Retry focus. No database/files are used or changed by this client integration case; discard the isolated harness after each variant. Browser pass evidence additionally records the same keyboard interaction on the served candidate.
 
 ### TC-003: Rendered browser acceptance
 - Purpose / journey / requirements: usable responsive read-only shell; CUJ-001–003 / FR-007–010.

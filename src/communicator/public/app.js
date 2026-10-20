@@ -23,7 +23,10 @@ function render() {
   announcement.setAttribute('role',state.error ? 'alert' : 'status');announcement.setAttribute('aria-live',state.error ? 'assertive' : 'polite');
   const text = `${model.title} ${model.body}`.trim(); if (announcement.textContent !== text) announcement.textContent = text;
   if (retry.hidden && (retryFocused || (retryFocusIntent && document.activeElement === document.body))) heading.focus();
-  if (state.status !== 'loading' && !state.detailLoading) retryFocusIntent = false;
+  if (state.status !== 'loading' && !state.detailLoading) {
+    if (retryFocusIntent && document.activeElement === document.body && !retry.hidden && !retry.disabled) retry.focus();
+    retryFocusIntent = false;
+  }
 }
 async function json(resource) {
   const response=await fetch(resource);const data=await response.json();if(!response.ok)throw Object.assign(new Error('Unavailable'),{code:data.error?.code});return data;
@@ -48,6 +51,6 @@ retry.addEventListener('click',() => {
   const next=state.projectId ? beginDetail(state) : beginLoad(state);if(next===state)return;
   retryFocusIntent=document.activeElement===retry;state=next;render();void (state.projectId ? loadDetail() : load());
 });
-project.addEventListener('change',() => {state=selectProject(state,project.value);render();if(state.projectId)void loadDetail();});
-for (const button of document.querySelectorAll('[data-section]')) button.addEventListener('click',() => {state = selectSection(state,button.dataset.section); render();});
+project.addEventListener('change',() => {retryFocusIntent=false;state=selectProject(state,project.value);render();if(state.projectId)void loadDetail();});
+for (const button of document.querySelectorAll('[data-section]')) button.addEventListener('click',() => {retryFocusIntent=false;state = selectSection(state,button.dataset.section); render();});
 render(); void load();
