@@ -14,7 +14,7 @@ A project workbench matches project-first browsing: choose project → choose se
 | A2 | Tasks | Selected project tasks; skeleton: Task browsing is not available yet. | Tab/Enter/Space; aria-current=page; retain focus. |
 | A3 | Artifacts | Selected project artifacts; skeleton: Artifact browsing is not available yet. | Same as A2. |
 | A4 | WIP app | Selected project preview; skeleton: App previews are not available yet. Never launch app on selection. | Same as A2. |
-| A5 | Retry | Re-read failed resource; preserve selection, disable concurrent retry, show loading then success/empty/error. | Native button, 44px; when removed focus content heading. |
+| A5 | Retry | Re-read failed resource; preserve selection, disable concurrent retry, show loading then success/empty/error. | Native button, 44px; restore focus to Retry after loading if still actionable, otherwise content heading when removed. Preserve focus moved to another control; navigation cancels pending Retry focus intent. |
 | A6 | Skip to content | Focus main heading/anchor. | First tab target, visible on focus. |
 
 ## Exact state copy
