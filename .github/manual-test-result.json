@@ -1,112 +1,23 @@
 {
-  "candidate_sha": "0276c3ecd0258dba871bfbeb8de34c154d7a842f",
+  "candidate_sha": "4ffeef2c0ceb7f809add6350387f0a4018c949c1",
   "result": "pass",
-  "tested_at": "2026-10-20T04:52:10.853433+00:00",
-  "environment": "Native Linux AMD64 and ARM64 GitHub runners plus isolated local ARM64 Docker29.2.1/Compose5.6.0. Chrome155.0.8059.85,1175x570. Synthetic dashboard auth; separately authorized runtime-only Codex access snapshot; no refresh token.",
+  "tested_at": "2026-10-20T05:50:43.037847+00:00",
+  "environment": "macOS ARM64, Node25.6.1/Python3.14; fresh Codex executor/auditor subagents; real local Chrome CUA visual fixture. Synthetic inputs and external retained artifacts only.",
   "commands": [
+    "Fresh delegated qa EVAL execution: CALC-01..04 actual Node commands, real command logs, frozen report/manifest and independent qa-audit approval.",
+    "Fresh delegated VIS-01 browser run: Add one interaction, actual screenshot, first audit correction, preserved r1, new r2 and fresh image-inspecting auditor approval.",
+    "Fresh qa-audit scenarios: honest-fail, overclaim, broken-evidence, actual missing input; fresh corrected-r2 audit with prior finding disposition.",
+    "Fresh delivery-worker check: recompute report/manifest/all5 artifact checksums; unchanged accurate FAIL deliverable; report-only and artifact-only mutations BLOCKED.",
+    "Verify evaluated skill/EVAL/fixture bytes against exact code candidate using git show and SHA256.",
     "npm run lint",
-    "npm run test:all (all27 automated feature-case files and python -m pytest via exact-candidate commit hook)",
-    "node --test docs/features/standalone-container/tests/TC-*.test.js (23 assertions/subtests)",
-    "Native CI: python docs/features/standalone-container/tests/container_acceptance.py --expected-architecture amd64",
-    "Native CI: python docs/features/standalone-container/tests/container_acceptance.py --expected-architecture arm64",
-    "Postcommit local npm run test:container -- --context colima-ned-container --expected-architecture arm64",
-    "Real Compose custom-port healthy startup/recreation, profile/project sentinel readback and exact cleanup",
-    "Chrome root sign-in, complete Sessions view and profile/query retention on first use, after recreation and after code commit",
-    "Guarded upstream patch drift rejection; exact original-source identity and resulting Python compilation",
-    "Postcommit runtime-only access snapshot; hermes chat --safe-mode --provider openai-codex --model gpt-6.1-sol --toolsets none --max-turns 1 --run-budget 90 -Q with expected-reply query"
+    "npm test (73 CLI tests and all automated spec cases pass)",
+    "python -m pytest (208 passed,9 existing opt-in skips)",
+    "Installed pre-commit hook repeats lint and full Node/spec/Python gate before both commits."
   ],
-  "observations": "Fixes132/133 passed RED-to-GREEN: original fetch failed correct-authority tests, original unpatched image failed the new root assertion; corrected real HTTP checks pass11variants and existing focused tests total23pass. Actual native AMD64 and ARM64 TC003/004 passed default8787 and recreated8790 COM authorities, authenticated /sessions redirect with profile/query preserved, Host/Origin refusal, real dashboard/COM, unprivileged service replacement, shutdown, task/profile/project persistence and exact resource cleanup. Chrome first login/recreation/postcommit login show Sessions counters/filters/empty state without extra navigation/refresh. Runtime production file hashes match the candidate; package metadata differs only by the declared npm native-script approval. Deliberately changed upstream module rejected before patch. Local full hooks: Node73pass, all27 automated feature cases pass, Python208pass9existing opt-in skips. Default manual NOT RUN cases and Python opt-in skips are not behavioral passes; actual Docker/model evidence is separate. Dedicated VM stopped and original Docker context restored. Browser/Compose/model resources and private runtime files removed. No mobile/cross-engine/load/remote-exposure claim. Fresh combined main-bd4a candidate preserves the COM Retry keyboard-focus fix byte-for-byte; all local hooks, postcommit image/model, first-login and recreated Chrome screenshots, source hashes and both native CI jobs were rerun for code0276c3e. Historical receipts elsewhere remain tied to their original revisions.",
-  "native_ci_run": "https://github.com/DataNavAI/no-ego-dev/actions/runs/39371620657",
-  "native_execution_receipts": [
-    {
-      "result": "pass",
-      "cases": [
-        "TC-003",
-        "TC-004"
-      ],
-      "image_id": "sha256:e322a8dc3854c416a85971e37586638047c90de957e226d7a78e2ed4a41eddec",
-      "tested_at": "2026-10-20T04:51:48.289965+00:00",
-      "stop_seconds": 3.39,
-      "platform": "x86_64",
-      "host_architecture": "amd64",
-      "docker_architecture": "amd64",
-      "image_architecture": "amd64",
-      "node_architecture": "amd64",
-      "expected_architecture": "amd64",
-      "native_execution": true,
-      "com_origins": [
-        "http://127.0.0.1:8787",
-        "http://127.0.0.1:8790"
-      ],
-      "dashboard_root": "authenticated /sessions redirect with query retained",
-      "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
-      "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
-      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/39371620657/job/118460547032"
-    },
-    {
-      "result": "pass",
-      "cases": [
-        "TC-003",
-        "TC-004"
-      ],
-      "image_id": "sha256:3d7450254ee8e499591e78b59df7b103e4a62a9e321f0f2e1e0ae3691620d335",
-      "tested_at": "2026-10-20T04:51:45.109169+00:00",
-      "stop_seconds": 3.47,
-      "platform": "aarch64",
-      "host_architecture": "arm64",
-      "docker_architecture": "arm64",
-      "image_architecture": "arm64",
-      "node_architecture": "arm64",
-      "expected_architecture": "arm64",
-      "native_execution": true,
-      "com_origins": [
-        "http://127.0.0.1:8787",
-        "http://127.0.0.1:8790"
-      ],
-      "dashboard_root": "authenticated /sessions redirect with query retained",
-      "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
-      "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
-      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/39371620657/job/118460547299"
-    }
-  ],
-  "local_postcommit_receipt": {
-    "result": "pass",
-    "cases": [
-      "TC-003",
-      "TC-004"
-    ],
-    "image_id": "sha256:f68bed7f41297f89443e12d3f3e588648313dfb4cc3998cd6cf91445393422a3",
-    "tested_at": "2026-10-20T04:50:28.566274+00:00",
-    "stop_seconds": 3.37,
-    "platform": "aarch64",
-    "host_architecture": "arm64",
-    "docker_architecture": "arm64",
-    "image_architecture": "arm64",
-    "node_architecture": "arm64",
-    "expected_architecture": "arm64",
-    "native_execution": true,
-    "com_origins": [
-      "http://127.0.0.1:8787",
-      "http://127.0.0.1:8790"
-    ],
-    "dashboard_root": "authenticated /sessions redirect with query retained",
-    "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
-    "cleanup": "owned containers, volumes and synthetic runtime credentials removed"
+  "observations": "Manual qa-reporting TC-001/002 behavioral acceptance PASS. CLI intentionally reports2PASS1FAIL1BLOCKED; independent audit approves report accuracy, not product readiness. Actual visual capture exposed wrong image-format/dimension metadata; first auditor required correction, fresh second auditor inspected actual JPEG1175x570 and approved corrected r2. Missing/corrupt/stale/contradictory evidence rejected; hostile log instruction ignored; no credentials/providers/real product touched. Current report/manifest and all artifact digests checked before delivery; post-approval mutations block. Baseline agents also found obvious defects; no statistical improvement claim. Delegation-outage/timeout checks were policy simulations, not forced failures. Browser version/CSS viewport/device scale unavailable. Existing normal Hermes profiles not altered; this is instruction guidance, not runtime enforcement. No code-based skill tests added; automated runner manual NOT RUN entries remain separate from actual behavioral evidence. Full acceptance and retained-hash identities in docs/features/qa-reporting/ACCEPTANCE.md.",
+  "skill_sha256": {
+    "qa": "0f6b9419bb01312ccb65f22844a655f5ef0fd3da606c3c5bacf610c1799493d4",
+    "qa-audit": "6c4fca48fb3f0809350fd95efc0370d770c9f8b4210c0119f31240e1be455e0b"
   },
-  "live_model": {
-    "provider": "openai-codex",
-    "model": "gpt-6.1-sol",
-    "refresh_token_supplied": false,
-    "exit_code": 0,
-    "expected_reply_present": true,
-    "result": "pass",
-    "test_container_and_volumes_absent": true,
-    "host_auth_unchanged": true,
-    "runtime_file_removed": true
-  },
-  "reviewed_code_tree": "19ccd17b9741a2c830b582c29ff69d0e935ed7a4",
-  "independent_review_report_sha256": "3125dd6eb5213068546932c6049c7fa8741feefa13d8e6b473aa8d1efce4000b",
-  "container_test_script_sha256": "b809df6e06774d20df9eac019072be2515ad3cdbd92b39843b23424c19826211",
-  "runtime_acceptance_report_path": "docs/features/standalone-container/ACCEPTANCE.md",
-  "browser_runtime_binding_sha256": "e0f119552c83511f01a1f0e1bed886425203d3eef76f8308260991703546b687"
+  "acceptance": "docs/features/qa-reporting/ACCEPTANCE.md"
 }
