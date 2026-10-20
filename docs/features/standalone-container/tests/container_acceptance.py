@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -81,9 +82,11 @@ def main():
             envfile.touch(mode=0o600)
             envfile.write_text("HERMES_DASHBOARD_BASIC_AUTH_USERNAME=acceptance\n"
                                "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=" + password + "\n")
+            com_origin = "http://127.0.0.1:8787"
 
             def launch():
                 docker("run", "-d", "--name", name, "--env-file", str(envfile),
+                       "-e", "NED_COM_ORIGIN=" + com_origin,
                        "-p", "127.0.0.1::9119", "-p", "127.0.0.1::8787",
                        "-v", volumes[0] + ":/opt/data", "-v", volumes[1] + ":/var/lib/ned",
                        "-v", volumes[2] + ":/projects", image)
@@ -114,9 +117,9 @@ def main():
                         return error.code, error.read()
 
                 def com_get(path, headers=None):
-                    # Random Docker host ports avoid collisions. The proxy still requires
-                    # the default image's exact public Host/Origin contract.
-                    return get(com + path, {"Host": "127.0.0.1:8787", **(headers or {})})
+                    # Random Docker host ports avoid collisions; requests must use
+                    # the configured external authority, including on recreation.
+                    return get(com + path, {"Host": urllib.parse.urlsplit(com_origin).netloc, **(headers or {})})
 
                 assert get(dashboard + "/")[0] == 200  # noqa: S101 - executable test assertions
                 health = json.loads(get(dashboard + "/api/health")[1])
@@ -127,6 +130,11 @@ def main():
                                                  headers={"Content-Type": "application/json", "Origin": dashboard})  # noqa: S310 - loopback-only Docker dashboard URL
                 with client.open(request, timeout=5) as response:
                     assert response.status == 200 and json.load(response)["ok"]  # noqa: S101
+                with client.open(dashboard + "/?profile=default&qa=landing", timeout=5) as response:  # noqa: S310 - loopback-only dashboard
+                    landing = urllib.parse.urlsplit(response.url)
+                    assert response.status == 200 and landing.path == "/sessions"  # noqa: S101
+                    assert urllib.parse.parse_qs(landing.query) == {"profile": ["default"], "qa": ["landing"]}  # noqa: S101
+                assert get(dashboard + "/sessions?profile=default")[0] == 200  # noqa: S101
                 assert get(dashboard + "/api/config")[0] == 200  # noqa: S101
                 assert com_get("/")[0] == 200  # noqa: S101
                 status, body = com_get("/api/health")
@@ -181,6 +189,7 @@ def main():
             stop_seconds = time.monotonic() - started
             assert stop_seconds < 30 and docker("inspect", name, "--format", "{{.State.ExitCode}}") == "0"  # noqa: S101
             docker("rm", name)
+            com_origin = "http://127.0.0.1:8790"
             launch()
             healthy()
             assert http_checks()["projects"][0]["displayPath"] == "/projects/acceptance"  # noqa: S101
@@ -209,6 +218,8 @@ def main():
                        "image_architecture": image_architecture, "node_architecture": node_architecture,
                        "expected_architecture": args.expected_architecture,
                        "native_execution": host_architecture == daemon_architecture == image_architecture == node_architecture,
+                       "com_origins": ["http://127.0.0.1:8787", com_origin],
+                       "dashboard_root": "authenticated /sessions redirect with query retained",
                        "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls."}
     except Exception as error:
         raise RuntimeError(f"{stage}: acceptance failed ({type(error).__name__}); no pass recorded") from None
