@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic QA counter</title>
+<style>body{font:20px system-ui;margin:32px}button{font:inherit;padding:12px}output{display:block;margin:24px 0}</style>
+<main><h1>Synthetic QA counter</h1><output aria-live="polite" id="count">Count: 0</output><button id="add" type="button">Add one</button></main>
+<script>let count=0;document.getElementById('add').addEventListener('click',()=>{count+=1;document.getElementById('count').textContent='Count: '+count;});</script>
+</html>
