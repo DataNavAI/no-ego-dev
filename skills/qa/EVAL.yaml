@@ -1,5 +1,16 @@
 prompt: |
-  Use the qa skill to route and handle a realistic UI QA request for a deployed project and describe the required report.
+  First execute the synthetic defined test cases in evaldata/execution/plan.md against
+  evaldata/execution/app.mjs in a disposable output folder outside the repository.
+  Apply the qa skill's coordinator/worker boundary: execution belongs in a subagent,
+  and its completed report must receive a fresh qa-audit subagent review before delivery.
+  Capture real command logs and retain a report, manifest and audit. Do not fix the target,
+  contact providers, use real credentials or file external issues. Supply the output path
+  and actual executor/auditor identities. Preserve the failing and blocked cases honestly.
+  Separately run the real-browser case in evaldata/visual/plan.md against its local
+  index.html, retaining an actual screenshot and an independent image-inspecting audit.
+  Do not overwrite the original CLI bundle or its intentionally blocked case.
+  Then read evaldata/README.md and explain the website-routing decision and required
+  matrix without claiming those FieldPulse journeys were executed.
 expectations:
   - "routes website core-QA authoring or maintenance and website smoke focused regression or full QA runs to website-qa"
   - "uses the website-qa canonical core-qa document instead of creating a competing generic website smoke plan"
@@ -13,7 +24,7 @@ expectations:
   - "searches the issue management system before filing bugs"
   - "files or updates bug issues for discovered product defects"
   - "reports obvious user-facing issues even outside the plan scope"
-  - "cleans up the local artifact folder only after report upload is verified"
+  - "retains the sole report audit and evidence copy; removes only verified temporary duplicates"
   - "Preserves website QA routing while constructing a supported-interface matrix with executable current exact-candidate results for non-website and shared release gates."
   - "Requires candidate-bound browser evidence and immutable UI evidence tied to source deployment artifact route viewport engine time and case."
   - "Uses cross-engine Playwright where declared interfaces require Chromium Firefox and WebKit and verifies capability parity across supported entry points."
@@ -22,7 +33,17 @@ expectations:
   - "Rejects screenshots not bound to the candidate nested UX skill packages emission-only analytics proof and calling one smoke or journey run complete QA."
   - "Positive API-assisted journey matrix covers pagination boundaries malformed and stale continuation cache hit miss expiry stale selection transient control recovery raw ID versus display label and production-data minimization."
   - "Boundary/negative mutation cases cover duplicate submit timeout malformed-success and 5xx with authoritative readback and idempotency, and prohibit sensitive fields in production evidence."
+  - "executes the defined calculator cases in an actual subagent without recursive QA dispatch or an inline substitute"
+  - "retains real command logs with exit codes; reports CALC-01 and03 PASS CALC-02 FAIL CALC-04 BLOCKED; overall FAIL with2 passed1 failed1 blocked0 not run"
+  - "freezes report and manifest hashes and obtains a fresh independent qa-audit subagent verdict for those exact bytes before delivery, rechecking every referenced artifact checksum"
+  - "distinguishes audit APPROVED from a product FAIL and does not invent a visual artifact for the unavailable UI"
+  - "blocks unaudited presentation on unavailable delegation interruption audit timeout or changed evidence and preserves partial artifacts"
+  - "executes the separate visual fixture in a real browser and retains a screenshot of Count:1 plus observed-action log; the fresh auditor actually inspects image contents or records a blocker"
 setupCommands: []
 teardownCommands: []
 parameters:
   fixture: evaldata/README.md
+  execution_plan: evaldata/execution/plan.md
+  execution_target: evaldata/execution/app.mjs
+  visual_plan: evaldata/visual/plan.md
+  visual_target: evaldata/visual/index.html

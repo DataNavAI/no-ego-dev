@@ -1,0 +1,5 @@
+2026-10-19T12:00:00Z run audit-fixture target fixture:calculator-v1
+$ calc --help
+stdout: calc sum <a> <b>
+stderr: (empty)
+exit:0

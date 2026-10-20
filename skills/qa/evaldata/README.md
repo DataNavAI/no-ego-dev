@@ -11,3 +11,5 @@ Boundary extension: rejects screenshots not bound to the candidate, emission-onl
 ## API-assisted journey matrix fixture
 
 The dashboard loads a paginated API catalog into a cache, retains a raw ID while showing a display label, and submits one irreversible action. Cover pagination boundaries plus malformed/stale continuation; cache hit, cache miss, cache expiry; stale selection and transient control recovery; duplicate submit, timeout, malformed-success, and 5xx with authoritative readback/idempotency; raw ID versus display label; and production-data minimization with explicit prohibited fields in captures, logs, fixtures, and reports.
+
+The synthetic execution plan in execution/plan.md is the executable skill-acceptance task. FieldPulse above is a routing/planning scenario only: no real staging URL or credentials are supplied, so do not claim a deployed browser run. Apply the new delegated executor → fresh evidence auditor → verified delivery workflow to any actual report. No available auditor or changed report bytes blocks audited presentation; preserve the sole evidence bundle on interruption.

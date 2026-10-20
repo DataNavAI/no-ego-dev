@@ -1,6 +1,6 @@
 ---
 name: qa
-description: Use for general QA plans, UI execution, evidence-backed reports, and bug filing; route website core-QA authoring and website smoke/full runs to website-qa.
+description: "Run defined QA cases in a subagent, collect logs/screenshots and produce an evidence-backed report audited by a separate qa-audit subagent before delivery. Use for QA execution, reports and bug triage; route website case design and browser coverage to website-qa."
 ---
 
 # NED skill discovery: qa

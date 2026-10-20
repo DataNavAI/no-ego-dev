@@ -1,0 +1,32 @@
+{
+  "run_id": "audit-fixture",
+  "revision": "r1",
+  "target": "fixture:calculator-v1",
+  "environment": "synthetic CLI",
+  "artifacts": [
+    {
+      "id": "HELP",
+      "case_ids": [
+        "C1"
+      ],
+      "path": "artifacts/missing.log",
+      "sha256": "bfea617a897c18dc277ebbdc5c5c918221ce8f260855fc4c63f080fa065e9b31",
+      "media_type": "text/plain",
+      "captured_at": "2026-10-19T12:00:00Z",
+      "target": "fixture:calculator-v1",
+      "environment": "synthetic CLI"
+    },
+    {
+      "id": "SUM",
+      "case_ids": [
+        "C2"
+      ],
+      "path": "artifacts/sum.log",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "media_type": "text/plain",
+      "captured_at": "2026-10-19T12:00:01Z",
+      "target": "fixture:stale",
+      "environment": "synthetic CLI"
+    }
+  ]
+}
