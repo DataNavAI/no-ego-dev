@@ -1,17 +1,22 @@
 {
-  "candidate_sha": "7e83503c3c5bf3a8d1e6d1e395e6dc8cf0c0c2cf",
+  "candidate_sha": "ef5165e898c43c892a63a56e4015397c913248d1",
   "result": "pass",
-  "tested_at": "2026-10-15T05:35:30.739280+00:00",
-  "environment": "Native GitHub Linux AMD64 and ARM64 runners; isolated local ARM64 Docker for authorized live OpenAI Codex access-only token test. No refresh tokens supplied; source auth unchanged.",
+  "tested_at": "2026-10-20T04:42:08.508536+00:00",
+  "environment": "Native Linux AMD64 and ARM64 GitHub runners plus isolated local ARM64 Docker29.2.1/Compose5.6.0. Chrome155.0.8059.85,1175x570. Synthetic dashboard auth; separately authorized runtime-only Codex access snapshot; no refresh token.",
   "commands": [
+    "npm run lint",
+    "npm run test:all (all27 automated feature-case files and python -m pytest via exact-candidate commit hook)",
+    "node --test docs/features/standalone-container/tests/TC-*.test.js (23 assertions/subtests)",
     "Native CI: python docs/features/standalone-container/tests/container_acceptance.py --expected-architecture amd64",
     "Native CI: python docs/features/standalone-container/tests/container_acceptance.py --expected-architecture arm64",
-    "Authorized runtime HERMES_AUTH_JSON_BOOTSTRAP access-only import; hermes chat --safe-mode --provider openai-codex --model gpt-6.1-sol --toolsets none --max-turns 1 --run-budget 90 -Q (TC-005 bounded expected-reply query)",
-    "Runbook export procedure: private mode0600, access-only, exclusive-create, expired/missing rejection, unchanged source",
-    "npm run lint; npm run test:all via installed full commit hooks (all automated spec cases and python -m pytest)"
+    "Postcommit local npm run test:container -- --context colima-ned-container --expected-architecture arm64",
+    "Real Compose custom-port healthy startup/recreation, profile/project sentinel readback and exact cleanup",
+    "Chrome root sign-in, complete Sessions view and profile/query retention on first use, after recreation and after code commit",
+    "Guarded upstream patch drift rejection; exact original-source identity and resulting Python compilation",
+    "Postcommit runtime-only access snapshot; hermes chat --safe-mode --provider openai-codex --model gpt-6.1-sol --toolsets none --max-turns 1 --run-budget 90 -Q with expected-reply query"
   ],
-  "observations": "TC003/004 passed natively on AMD64=x64=x86-64 and ARM64, with host/daemon/image/executed Node checks. Authenticated actual dashboard/COM HTTP, complete profile/CLI, unprivileged service replacement, shutdown, retained state, negative startup and exact cleanup passed. Separate TC005 live model query exited0 with expected NED_CONTAINER_MODEL_OK reply; no refresh token or unrelated credentials imported; host auth SHA256 unchanged; authoritative successful Docker inventories verified test container and exact volumes absent. Temporary runtime file removed. Earlier local QEMU startup crashes remain historical emulation reliability limitations, not native failures or hidden retries. ESLint/Ruff, current automated Node/spec suite, Python208pass9existing opt-in skips; default manual NOT RUN cases are separate from these actual Docker/model results. No native browser visual acceptance or remote exposure claimed. Current main679f923 README retirement preserved (both root files empty); current installer tests retained. Full combined PR independently reviewed with no material findings. Native matrix and authorized live model reply repeated after combined code commit; exact cleanup/source-preservation assertions passed.",
-  "native_ci_run": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38687383279",
+  "observations": "Fixes132/133 passed RED-to-GREEN: original fetch failed correct-authority tests, original unpatched image failed the new root assertion; corrected real HTTP checks pass11variants and existing focused tests total23pass. Actual native AMD64 and ARM64 TC003/004 passed default8787 and recreated8790 COM authorities, authenticated /sessions redirect with profile/query preserved, Host/Origin refusal, real dashboard/COM, unprivileged service replacement, shutdown, task/profile/project persistence and exact resource cleanup. Chrome first login/recreation/postcommit login show Sessions counters/filters/empty state without extra navigation/refresh. Runtime production file hashes match the candidate; package metadata differs only by the declared npm native-script approval. Deliberately changed upstream module rejected before patch. Local full hooks: Node73pass, all27 automated feature cases pass, Python208pass9existing opt-in skips. Default manual NOT RUN cases and Python opt-in skips are not behavioral passes; actual Docker/model evidence is separate. Dedicated VM stopped and original Docker context restored. Browser/Compose/model resources and private runtime files removed. No mobile/cross-engine/load/remote-exposure claim.",
+  "native_ci_run": "https://github.com/DataNavAI/no-ego-dev/actions/runs/39370699303",
   "native_execution_receipts": [
     {
       "result": "pass",
@@ -19,9 +24,9 @@
         "TC-003",
         "TC-004"
       ],
-      "image_id": "sha256:f20e79f31d370d62385dc5e338c1c12fb2c111f7fc56a5c890b9d03749716eaf",
-      "tested_at": "2026-10-15T05:35:07.478086+00:00",
-      "stop_seconds": 3.31,
+      "image_id": "sha256:f5950960f47af3d2087295fc1e74ec17626e504d25da63f5c5c3cef5f2cb5676",
+      "tested_at": "2026-10-20T04:41:13.376927+00:00",
+      "stop_seconds": 3.38,
       "platform": "x86_64",
       "host_architecture": "amd64",
       "docker_architecture": "amd64",
@@ -29,9 +34,14 @@
       "node_architecture": "amd64",
       "expected_architecture": "amd64",
       "native_execution": true,
+      "com_origins": [
+        "http://127.0.0.1:8787",
+        "http://127.0.0.1:8790"
+      ],
+      "dashboard_root": "authenticated /sessions redirect with query retained",
       "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
       "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
-      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38687383279/job/116265239810"
+      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/39370699303/job/118457683245"
     },
     {
       "result": "pass",
@@ -39,9 +49,9 @@
         "TC-003",
         "TC-004"
       ],
-      "image_id": "sha256:258539fd204805914e55597052280251871a2ee0fca81e5bfd2ff5b7f058c3fa",
-      "tested_at": "2026-10-15T05:35:00.028208+00:00",
-      "stop_seconds": 3.33,
+      "image_id": "sha256:e6d3fe397e718d15d782c77ed80bdae4137f71fc72de28e977c9670481d72f77",
+      "tested_at": "2026-10-20T04:41:00.581766+00:00",
+      "stop_seconds": 3.35,
       "platform": "aarch64",
       "host_architecture": "arm64",
       "docker_architecture": "arm64",
@@ -49,22 +59,54 @@
       "node_architecture": "arm64",
       "expected_architecture": "arm64",
       "native_execution": true,
+      "com_origins": [
+        "http://127.0.0.1:8787",
+        "http://127.0.0.1:8790"
+      ],
+      "dashboard_root": "authenticated /sessions redirect with query retained",
       "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
       "cleanup": "owned containers, volumes and synthetic runtime credentials removed",
-      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/38687383279/job/116265239603"
+      "job_url": "https://github.com/DataNavAI/no-ego-dev/actions/runs/39370699303/job/118457683121"
     }
   ],
+  "local_postcommit_receipt": {
+    "result": "pass",
+    "cases": [
+      "TC-003",
+      "TC-004"
+    ],
+    "image_id": "sha256:ec755d62ad0197f1681c985b8d08c88a67035d36ef3110f0994f648b52e8c4f1",
+    "tested_at": "2026-10-20T04:39:51.585166+00:00",
+    "stop_seconds": 3.48,
+    "platform": "aarch64",
+    "host_architecture": "arm64",
+    "docker_architecture": "arm64",
+    "image_architecture": "arm64",
+    "node_architecture": "arm64",
+    "expected_architecture": "arm64",
+    "native_execution": true,
+    "com_origins": [
+      "http://127.0.0.1:8787",
+      "http://127.0.0.1:8790"
+    ],
+    "dashboard_root": "authenticated /sessions redirect with query retained",
+    "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
+    "cleanup": "owned containers, volumes and synthetic runtime credentials removed"
+  },
   "live_model": {
     "provider": "openai-codex",
     "model": "gpt-6.1-sol",
-    "expected_reply_present": true,
-    "exit_code": 0,
     "refresh_token_supplied": false,
+    "exit_code": 0,
+    "expected_reply_present": true,
+    "result": "pass",
+    "test_container_and_volumes_absent": true,
     "host_auth_unchanged": true,
-    "test_container_and_volumes_absent": true
+    "runtime_file_removed": true
   },
-  "reviewed_code_tree": "7eaf14920aebc158f0848e5842ea9a93c4cd75fb",
-  "independent_review_report_sha256": "2c642b6b3f01af11aefe872aa030bad0099ff4e974a57c681eee9aab108e5b3a",
-  "container_test_script_sha256": "ef8acf79dae4bec056eb4def1bbab3d151925135bec3fcfe70dd81a305256879",
-  "runtime_acceptance_report_path": "docs/features/standalone-container/ACCEPTANCE.md"
+  "reviewed_code_tree": "c10657849d62dc52a64060471f530e0c7cfa4588",
+  "independent_review_report_sha256": "4a92e3b3cd42c9cf55f36fae9103e9d3968458f596977f942b290c02bdf47728",
+  "container_test_script_sha256": "b809df6e06774d20df9eac019072be2515ad3cdbd92b39843b23424c19826211",
+  "runtime_acceptance_report_path": "docs/features/standalone-container/ACCEPTANCE.md",
+  "browser_runtime_binding_sha256": "fd60d5882b4e7245953f9424cd1961a33ff6e7813ea572155c43c19ab7637fcf"
 }
