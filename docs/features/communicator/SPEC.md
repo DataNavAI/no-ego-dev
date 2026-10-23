@@ -9,6 +9,8 @@ Local NED users browse a selected project's work through a web app. Delivery is 
 Non-goals: provisioning remote hosting, multi-user auth, editing, GitHub sync, credential brokering, arbitrary app startup/build/deploy or duplicate artifact/task stores. The #114 server and navigation shell are implemented; skeleton acceptance is complete; project/preview implementation and domain acceptance are pending. Production must never show synthetic projects as registered data.
 
 ## Requirements
+Chat extension: FR-011–014, CUJ-008 and TC-007/008 below govern chat; [CHAT.md](CHAT.md) supplies research, responsive design and connection details. These additions permit explicit authenticated chat writes while project/task/file browsing remains read-only; FR-007's read-only restriction applies to project data. The new three-pane/mobile layout supersedes the earlier two-pane shell for chat-enabled NED COM.
+
 Parent IDs remain stable:
 - FR-001: `ned com` starts NEDCOM, reports usable local URL and handles startup/shutdown failures. #114 internal lifecycle; #115 CLI.
 - FR-002: List registered projects; retain one explicit selected-project context. #116.
@@ -20,6 +22,12 @@ Parent IDs remain stable:
 - FR-008: Loading, empty, folder/preview unavailable and database-error states recover without task/file changes. A keyboard-activated Retry restores focus to Retry when it remains actionable after settlement, or the content heading when Retry disappears. Never override focus moved to another control during loading; project/section navigation cancels the prior Retry focus intent. Skeleton owns shell states; actual domain recovery is planned.
 - FR-009: Skeleton semantic responsive project-first shell follows A1–A6/UI-AC-01–05 in UI brief, with honest capability-unavailable state and no demo inventory.
 - FR-010: Fixed assets and GET/HEAD health/capability contracts are stable; invalid local context/method/routes fail safely. Close is idempotent, releases listener, and startup rejection leaks no listener.
+- FR-011: Chat uses a server-side authenticated, loopback-only, allowlisted Hermes adapter. Require exact Origin and JSON for writes; bound request/response sizes and duration. Browser never receives the configured key or raw provider errors.
+- FR-012: List, create, select, send and reopen persisted gateway-profile sessions, independently of selected NED project. Single-flight UI writes; preserve drafts and require Reload after uncertain delivery. Never automatically replay a send.
+- FR-013: Initially fetch latest 50 messages, progressively load older/newer pages, and render at most 200 message articles. Preserve the visible anchor when prepending and retain older reading position during a reply; Latest reconciles changed history. Respect reduced motion when scrolling.
+- FR-013 continuation integrity: accept only bounded pages with unique stable message IDs. Before applying older/newer results, re-read the latest bounded page and compare its newest ID with the retained initial history head. Unexpected overlaps, changed head, missing or repeated IDs must preserve the current transcript/scroll position and require Latest/Reload reconciliation rather than displaying false successful continuation. Deliberate partial-newer-page overlap must match the retained boundary exactly.
+- FR-014: Chat occupies the middle desktop pane with project navigation left and project detail right at >=1024px. On mobile <768px View defaults Chat and offers Project. Controls remain keyboard/touch accessible with 44px targets, wrapping and status feedback; intermediate widths use navigation/chat with detail below.
+- FR-015: By default connect to the local Hermes profile selected by HERMES_HOME, otherwise ~/.hermes. Read its API endpoint and credential server-side from config.yaml/.env without exporting unrelated credentials. Explicit NED_HERMES_URL/NED_HERMES_API_KEY override discovery; explicit remote endpoint configuration never receives a discovered profile credential. Default host is literal 127.0.0.1, port 8642. Re-read local settings on each request so Retry observes configuration/credential changes. Missing/malformed/insecure profile settings yield sanitized unavailability; never initialize a profile or silently start/reconfigure a gateway from NED COM.
 
 - FR-016: A stable NED_INSTANCE_NAME (default: the normalized operating-system hostname), the selected Hub origin and an explicit or saved Hub credential configure authenticated automatic registration only after COM listens; optional NED_HUB_NAME defaults to slug. Slugs match authoritative Hub admission: first lowercase letter, then 2–39 lowercase letters/digits/hyphens, excluding api/auth/tunnel/healthz/assets/connect/favicon/robots/login/logout; retained trailing-hyphen identities remain valid. A saved per-origin token automatically connects COM using the default hostname. Fresh installations without credentials or explicit registration configuration remain local-only. Explicit invalid names reject before credential/network access. Hostnames normalize to lowercase ASCII letters/digits/hyphens, prefixed with ned- when needed for a lowercase initial letter, padded to at least three and truncated to forty characters; reserved results receive ned- prefix. Hostname collisions require an explicit distinct NED_INSTANCE_NAME; permanent claims never transfer. Obsolete NED_HUB_ENV/NED_HUB_SLUG reject with migration guidance before credential/network access. Partial/invalid configuration exits 2 with sanitized guidance. Remote origins require HTTPS and tokens stay server-side.
 - FR-017: Register via bearer POST /api/instances with {slug,name}; retry transient failures using bounded backoff, including reconnect with unchanged identity. Registration 400/401/403/409 stops remote retries while local COM remains available. Never follow redirects or send credentials to an untrusted returned tunnel endpoint. Default trusted proxy is proxy.<Hub hostname>; explicit NED_HUB_PROXY_URL overrides it (required for differing local proxy ports). For loopback-only local API/proxy origins, NED_HUB_INSTANCE_ORIGINS defaults false (shared origin) and explicit true uses slug.localhost; remote origins require isolation and reject false. Other mode values reject. API and proxy URLs are HTTP(S) origins without credentials, path, query or fragment.
@@ -53,6 +61,9 @@ Actor: COM operator; priority P1. Starting state: a selected Hub origin and a br
 
 ### CUJ-009: Connect running COM through NED Hub
 Actor: an invited Hub owner with a CLI token and permanent instance slug. Set the variables described in [Hub setup](HUB.md), run ned com and open that instance from Hub. Local URL prints first; remote registration occurs after readiness. Repeated starts use the same slug. A transient Hub outage reports offline/retrying while local access remains usable; recovery registers the same identity and resumes the tunnel. Invalid/revoked credentials require a new token/restart. SIGINT/SIGTERM closes remote and local resources. This journey is critical because browser registration is intentionally absent.
+
+### CUJ-008: Converse and resume long sessions
+Actor: configured Hermes gateway owner; critical because communication must remain usable while inspecting project work. Starting state: local NED COM and private API server/key configured, no selected session. First use New chat, enter Message, Send; repeat use selects a persisted session and resumes its latest page. Load older/newer to inspect long histories and Latest to return. Gateway outage preserves draft and offers Reload; uncertain sends require reconciliation before another send. A reader scrolling up during a reply retains their transcript and sees a Latest action; history pagination pauses until reconciled. Success: persisted gateway turn survives browser refresh without browser transcript storage. Cleanup closes browser/server, retaining gateway sessions. Project choice never relabels or rebinds the selected chat.
 
 ## Detailed test cases
 ### TC-001: Lifecycle, read contracts and HTTP perimeter
@@ -153,7 +164,49 @@ TC-002 Retry regression: start with one selected project and an unconfigured pre
 - Cleanup: stop connection and COM, terminate fixture channels, close all fixture servers; no real credentials/files are created. Existing manual browser cases remain independently required for UI changes; this CLI-only enhancement changes no COM UI.
 - Pass evidence: named automated assertions at exact candidate; hosted verification recorded separately by Hub operator.
 
+### TC-007: Hermes session transport and bounded history window
+- Purpose / journey / requirements: CUJ-003/008; FR-007, FR-011–013; preserve credentials and persistent session identity while paging long history.
+- Level / automation: integration; [tests/TC-007.test.js](tests/TC-007.test.js).
+- Preconditions / fixtures: Node dependencies; isolated synthetic loopback HTTP gateway, synthetic key, no real gateway or DB; zero initial calls. In-memory chronological 10,000-message sequence for window logic.
+- Given: NED COM configured with the synthetic gateway.
+- When: list, create, read history offset 50, send one turn, then submit forbidden or invalid requests.
+- Then: exact gateway source/limit/order/offset and Bearer header; browser responses contain only projected fields. Invalid requests never reach gateway. Missing key/provider error yields sanitized 503; unsafe configured URL rejects startup. History windows preserve order, contain distinct rows and never exceed 200 entries after 99 prepend pages and a newer page.
+- Steps and assertions: execute `node --test docs/features/communicator/tests/TC-007.test.js`; named HTTP test checks precise paths, bodies, response projections, 403 missing/foreign Origin/wrong MIME, 400 empty/oversized input/bad pagination, 413 byte bound and 404 unknown route. Named history test checks chronological boundaries and cap at every page.
+- Variants / negative cases: provider redirect, malformed JSON and oversized response return sanitized 503 automatically. Network timeout and interrupted sends also need browser/manual acceptance below; process environment never uses production auth. Concurrent external clients remain gateway-owned; client double-send is TC-008.
+- Cleanup: runner closes all fixture sockets and servers; no DB/project files written.
+- Pass evidence: two named automated tests; browser behavior is separate.
+
+### TC-008: Desktop/mobile chat and long-session recovery
+- Purpose / journey / requirements: CUJ-008; FR-012–014, working middle pane and default mobile navigation.
+- Level / automation: manual; [CHAT.md procedure](CHAT.md#browser-acceptance-procedure-spec-tc-008).
+- Preconditions / fixtures: synthetic gateway with 10,000 messages, 55 sessions, deferred response, hostile text; browser at 1280×800, 390×844, 320px, reduced motion and 200% text. No real gateway data.
+- Given: latest 50 messages in selected session; When load older/newer, send, refresh, switch mobile View and recover failures; Then DOM <=200 message articles, anchor preserved, recent history reachable, only one send pending, draft retained on uncertain outcome, Reload required before another send, mobile defaults Chat and Project remains reachable.
+- Steps and assertions: follow the linked ordered procedure, capture desktop/mobile and error states, inspect network pagination and text safety, test keyboard focus and scrolling during delayed replies. Verify refreshed transcript from gateway, no token or transcript in browser storage, no horizontal overflow. Network disconnection does not claim agent cancellation.
+- Variants / negative cases: offline/missing key, deleted session, malformed/large reply, ambiguous delivery, delayed history selection, long content; explicit Retry for reads only. Detailed procedure includes cleanup and pass evidence.
+- Cleanup: close browser/server and remove only test-owned fixtures; retain redacted evidence outside runtime state.
+- Pass evidence: real rendered screenshots, keyboard/geometry/network assertions and independent review; no live-model pass implied.
+
+### TC-009: Default local Hermes connection discovery
+- Purpose / journey / requirements: CUJ-008 / FR-011, FR-015; connect existing local Hermes without copying credentials into NED configuration.
+- Level / automation: integration; [tests/TC-009.test.js](tests/TC-009.test.js).
+- Preconditions / fixtures: temporary home with private .hermes/.env, synthetic gateway HTTP listener, no real HOME/auth; optional YAML at selected HERMES_HOME. Initial listener observations empty.
+- Given: configured local Hermes profile and no NED_HERMES overrides; When NED COM lists sessions; Then the discovered endpoint receives its profile's bearer key, browser receives only projected session fields. Replacing the private key is observed on next request without restarting COM.
+- Steps and assertions: run `node --test docs/features/communicator/tests/TC-009.test.js`. Assert exact synthetic bearer header/path, default port 8642 when unconfigured, environment > dotenv > YAML precedence, gateway.api_server > top-level platforms > gateway.platforms merging with extra precedence, explicit overrides and isolated HERMES_HOME, and no mutation of provided environment.
+- Variants / negative cases: a different explicit endpoint receives no discovered key; malformed YAML, symlink .env, oversized settings and invalid port fail without unsafe traffic. Missing files leave gateway unavailable without creating any profile. Browser error is sanitized; unrelated settings never appear in response. Both .env and credential-bearing YAML require current-user/private POSIX permissions checked from the opened file metadata. Real permission tests and a mocked process UID against real file metadata cover both rejection paths; UID comparison is inapplicable on platforms without process.getuid. Concurrent reads use independent file handles; config rotation may produce safe temporary unavailability, recovered by Reload.
+- Cleanup: close listener/COM and remove only temporary profile fixture; real gateway/model testing remains separately evidenced.
+- Pass evidence: named discovery/credential-isolation assertions; live browser session creation, minimal test prompt, reload/persisted history readback and deletion of test-owned session recorded in CHAT_ACCEPTANCE.md.
+
 ## Coverage and acceptance
+### TC-010: Chat controller unit regressions
+- Purpose / journey / requirements: CUJ-008 / FR-012–014; deterministic asynchronous controller coverage without a browser or live gateway.
+- Level / automation: unit/client integration; [tests/TC-010.test.js](tests/TC-010.test.js), isolated DOM and deferred network boundary in [tests/chat-harness.js](tests/chat-harness.js).
+- Preconditions / fixtures: load shipped controller in an isolated VM, fake semantic elements, synthetic session IDs and 50-row chronological pages, no persisted state or credentials.
+- Given: a selected session; When duplicate submit, send/readback failure, recovery, reader scroll, session switch and history/session pagination occur; Then one pending send, unchanged failed draft, Send disabled until successful Reload, stable reading content, immediately cleared prior-session transcript, chronological unique 200-row history window and opaque session IDs retained.
+- Steps and assertions: run `node --test docs/features/communicator/tests/TC-010.test.js`; named assertions prove no automatic replay and next action identity, full/partial-page boundaries, reduced-motion instant versus smooth scroll intent, safe text rendering and mobile View state.
+- Variants / negative cases: failed post-send read, disabled duplicate send, 225-message partial oldest page with 25-row overlap on returning newer, duplicate session list entry, hostile markup-like title/content, unexpected overlapping pages after an external append, a whole-page external append detected by retained head, and repeated/missing IDs. Rejected continuation preserves the old transcript and scroll, disables further paging and recovers through Latest. Browser geometry, real scroll animation and provider persistence remain TC-008/live acceptance; not asserted by simulated DOM.
+- Cleanup: discard isolated VM and deferred requests per case; no files, network sockets or environment changes.
+- Pass evidence: seven named controller tests plus TC-007 unit paging test and TC-009 settings boundary tests; source loading alone is not a pass.
+
 | Requirement | Journey | Coverage |
 | --- | --- | --- |
 | FR-001 | CUJ-001/004 | TC-001/003 internal; TC-004 CLI |
@@ -168,6 +221,10 @@ TC-002 Retry regression: start with one selected project and an unconfigured pre
 | FR-010 | CUJ-001/003 | TC-001 |
 | FR-019–021 | CUJ-010 | TC-016 native fixture; hosted provider acceptance separate |
 | FR-016–018 | CUJ-009 | TC-015 real COM/protocol fixture; hosted provider acceptance separate |
+
+| FR-011/012 | CUJ-008 | TC-007 transport; TC-010 controller; TC-008 browser/live acceptance |
+| FR-013/014 | CUJ-008 | TC-007 window; TC-010 controller; TC-008 browser acceptance |
+| FR-015 | CUJ-008 | TC-009 discovery and credential isolation; CHAT_ACCEPTANCE.md live default gateway |
 
 Skeleton acceptance needs TC-001/002 automated, TC-003 rendered evidence and onboarding regression. Before commit run lint, all Node/spec cases and Python pytest. Parent closure additionally needs all serial domain/CLI cases and integrated two-project/CLI-refresh/preview evidence.
 

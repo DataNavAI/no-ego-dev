@@ -1,5 +1,7 @@
 # NEDCOM technical design
 
+Chat extension: [CHAT.md](CHAT.md) supersedes the GET/HEAD-only and two-pane contracts below for the explicitly allowlisted `/api/chat/` routes and chat-enabled shell. Project data remains read-only. New gateway adapter is `src/communicator/chat.js`; browser entry/controller are `public/chat-entry.js` and `public/chat-ui.js`. SPEC TC-007/008 govern verification.
+
 Status: proposed handoff for #114, 2026-10-12. [SPEC](SPEC.md) is behavioral authority. Task foundation `v0-task-management` at 355e2dd, open PR119; reconcile before aggregate release. [UI brief](design/ui-brief.md), [tokens](design/design-system.md), [specimen](design/mockup.html), [guidelines](../../../.projects/no-ego-dev/design/ui-guidelines.md).
 
 ## Current architecture and components

@@ -1,4 +1,5 @@
 # NEDCOM UI brief — candidate 1
+Chat layout extension: [chat UI brief](../CHAT.md#ui-brief--implementation-acceptance) supersedes this document's two-pane composition, default Tasks behavior on mobile and read-only header. Existing project interactions and tokens are retained; Chat is independent of project selection.
 Status: proposed; no visual or browser acceptance claimed. Owner: ui-designer. Issue: #114; domain slices #116–#118. Sources: [SPEC](../SPEC.md), expected `../TECH_SPEC.md`, [guidelines](../../../../.projects/no-ego-dev/design/ui-guidelines.md), [foundations](design-system.md), [interface registry](../../../../.projects/no-ego-dev/product/supported-device-interfaces.yaml).
 
 ## Direction
