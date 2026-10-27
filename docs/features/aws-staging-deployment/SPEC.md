@@ -41,7 +41,7 @@ Actor: operator. Critical to avoid mixed image/database state. Start with a fail
 - When: deploy successfully, repeat same revision, inject build/backup/readiness/restore failures, interrupt after replacement, and invoke recovery.
 - Then: build failure never stops old service; success preserves all data/auth, repeated revision is unchanged; readiness failure restores all three original values; incomplete backup never restores partial state; recovery rejects foreign candidate/volume users and missing snapshots; lock contention cannot mutate. Failed rollback preserves journal and reports recovery required.
 - Steps and assertions: execute the real transaction controller with the boundary fixture, inspect durable journal and independent state values after each injected failure. Recovery uses a new controller instance, simulating process loss.
-- Variants / negative cases: SIGTERM-equivalent exception, explicit hard interruption, foreign ownership, missing backups, concurrent lock, missing-container diagnostics with uppercase/lowercase Docker variants; daemon failures must still block. Network/real credential details remain TC-003.
+- Variants / negative cases: SIGTERM-equivalent exception, explicit hard interruption, foreign ownership, missing backups, concurrent lock, missing-container diagnostics with uppercase/lowercase Docker variants; daemon failures must still block; repeated builds use distinct retained tags and journal-pinned helper digests for snapshot/restore. Network/real credential details remain TC-003.
 - Cleanup: temporary fixture roots only.
 - Pass evidence: named assertions, not source-text checks.
 

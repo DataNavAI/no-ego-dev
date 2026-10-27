@@ -143,6 +143,7 @@ class FakeDriver:
         self.calls.append('build')
         if self.fail == 'build':
             raise RuntimeError('fixture build failure')
+        return 'sha256:' + '9' * 64
 
     def stop(self, _):
         self.calls.append('stop')
@@ -156,7 +157,7 @@ class FakeDriver:
         (snapshot / 'fixture.json').write_text(json.dumps(self.state['data']))
         return {volume: '1' * 64 for volume in remote.VOLUMES}
 
-    def replace(self, journal, commit):
+    def replace(self, journal, commit, image):
         self.calls.append('replace')
         self.state.update(revision=commit, running=True, old_retained=True)
         self.state['data'] = {name: 'candidate changed ' + name for name in ORIGINAL}
@@ -204,6 +205,7 @@ class TransactionCases(unittest.TestCase):
         driver = FakeDriver(self.root)
         self.assertEqual(remote.deploy(driver, self.root, COMMIT)['status'], 'deployed')
         self.assertLess(driver.calls.index('build'), driver.calls.index('stop'))
+        self.assertEqual(json.loads((self.root / 'deployment.json').read_text())['snapshot_image'], 'sha256:' + '9' * 64)
         self.assertEqual(driver.state['data'], ORIGINAL)
         self.assertFalse(driver.state['old_retained'])
         driver.calls.clear()
@@ -310,6 +312,28 @@ class RemoteBoundaryCases(unittest.TestCase):
             with tarfile.open(path, 'w'):
                 pass
             self.journal['snapshot_hashes'][volume] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def test_build_uses_unique_tags_and_snapshot_helper_is_journal_pinned(self):
+        source = self.root / 'source.tar'
+        with tarfile.open(source, 'w'):
+            pass
+        driver = remote.Driver(self.root, COMMIT, source)
+        calls = []
+        image = 'sha256:' + '9' * 64
+        def docker(*args, **_):
+            calls.append(args)
+            if args[:2] == ('image', 'inspect'):
+                return json.dumps([{'Id': image, 'Config': {'Labels': {'org.opencontainers.image.revision': COMMIT}}}])
+            return ''
+        with patch.object(driver, 'docker', side_effect=docker):
+            self.assertEqual(driver.build(COMMIT), image)
+            self.assertEqual(driver.build(COMMIT), image)
+        tags = [call[call.index('-t') + 1] for call in calls if call[0] == 'buildx']
+        self.assertEqual(len(set(tags)), 2)
+        self.journal['snapshot_image'] = image
+        self.driver.rollback(self.journal, self.root)
+        restores = [call for call in self.driver.calls if call[0] == 'run']
+        self.assertTrue(all(image in call and OLD['image'] not in call for call in restores))
 
     def test_inspect_missing_container_case_variants_and_daemon_failure(self):
         driver = remote.Driver(self.root)

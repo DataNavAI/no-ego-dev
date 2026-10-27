@@ -62,6 +62,8 @@ def validate_journal(root, journal):
     require(journal['rollback_name'] == NAME + '-rollback-' + journal['transaction'])
     require(journal['phase'] in ('prepared', 'backed_up', 'replacing', *TERMINAL))
     require(not root.is_symlink())
+    if 'snapshot_image' in journal:
+        require(re.fullmatch(r'sha256:[a-f0-9]{64}', journal['snapshot_image']))
     if journal['phase'] in ('backed_up', 'replacing', 'committed') or 'snapshot_hashes' in journal:
         require(set(journal['snapshot_hashes']) == set(VOLUMES))
         require(all(re.fullmatch(r'[a-f0-9]{64}', value) for value in journal['snapshot_hashes'].values()))
@@ -97,16 +99,17 @@ def deploy(driver, root, commit, force=False, timeout=180):
         driver.ready(timeout)
         return {'status': 'unchanged', 'commit': commit}
     # A build failure cannot stop or alter the existing container.
-    driver.build(commit)
+    image = driver.build(commit)
     transaction = uuid.uuid4().hex
     journal = {'version': 1, 'transaction': transaction, 'old': old,
-               'rollback_name': NAME + '-rollback-' + transaction, 'phase': 'prepared'}
+               'rollback_name': NAME + '-rollback-' + transaction, 'phase': 'prepared',
+               'snapshot_image': image}
     snapshot = root / 'snapshots' / transaction
     snapshot.mkdir(mode=0o700, parents=True)
     atomic(path, journal)
     try:
         driver.stop(old['id'])
-        journal['snapshot_hashes'] = driver.backup(old, snapshot)
+        journal['snapshot_hashes'] = driver.backup({**old, 'image': image}, snapshot)
         directory = os.open(snapshot, os.O_RDONLY)
         try:
             os.fsync(directory)
@@ -116,7 +119,7 @@ def deploy(driver, root, commit, force=False, timeout=180):
         atomic(path, journal)
         journal['phase'] = 'replacing'
         atomic(path, journal)
-        driver.replace(journal, commit)
+        driver.replace(journal, commit, image)
         driver.ready(timeout)
         # Commit durably before deleting the old container. Completed backups remain private.
         journal['phase'] = 'committed'
@@ -190,11 +193,14 @@ class Driver:
         source.mkdir(mode=0o700, parents=True)
         with tarfile.open(self.archive) as archive:
             archive.extractall(source, filter='data')
+        tag = 'ned-staging:' + commit + '-' + uuid.uuid4().hex
         self.docker('buildx', 'build', '--load', '--label',
                     'org.opencontainers.image.revision=' + commit,
-                    '-t', 'ned-staging:' + commit, str(source), timeout=1800)
-        image = json.loads(self.docker('image', 'inspect', 'ned-staging:' + commit))[0]
+                    '-t', tag, str(source), timeout=1800)
+        image = json.loads(self.docker('image', 'inspect', tag))[0]
         require(image['Config']['Labels']['org.opencontainers.image.revision'] == commit)
+        require(re.fullmatch(r'sha256:[a-f0-9]{64}', image['Id']))
+        return image['Id']
 
     def stop(self, identity):
         self.docker('stop', '--time', '30', identity, timeout=60)
@@ -218,7 +224,7 @@ class Driver:
                 hashes[volume] = hashlib.file_digest(file, 'sha256').hexdigest()
         return hashes
 
-    def replace(self, journal, commit):
+    def replace(self, journal, commit, image):
         self.docker('rename', journal['old']['id'], journal['rollback_name'])
         args = ['run', '-d', '--name', NAME, '--restart', 'unless-stopped', '--stop-timeout',
                 '30', '--env-file', str(self.root / 'runtime.env'), '--shm-size=256m',
@@ -227,7 +233,7 @@ class Driver:
             args += ['-p', '127.0.0.1:' + str(port) + ':' + str(port)]
         for volume, destination in zip(VOLUMES, DESTINATIONS):
             args += ['-v', volume + ':' + destination]
-        self.docker(*args, 'ned-staging:' + commit)
+        self.docker(*args, image)
 
     def rollback(self, journal, snapshot):
         old = self.inspect(journal['old']['id'])
@@ -258,7 +264,7 @@ class Driver:
             for volume in VOLUMES:
                 self.docker('run', '--rm', '--network', 'none', '--user', 'root', '--entrypoint',
                             '/bin/sh', '-v', volume + ':/data', '-v', str(snapshot) + ':/backup:ro',
-                            old['Image'], '-ec',
+                            journal.get('snapshot_image', old['Image']), '-ec',
                             'find /data -mindepth 1 -delete; tar --numeric-owner --acls --xattrs -xpf "$1" -C /data',
                             'restore', '/backup/' + volume + '.tar', timeout=600)
         if old['Name'] != '/' + NAME:
