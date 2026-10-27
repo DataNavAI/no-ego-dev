@@ -10,6 +10,16 @@ Run `python -m pytest` before committing changes to this distribution.
 
 After `npm ci`, run `npm run hooks:install` in this checkout. Activate a Python environment with pytest and PyYAML before committing. The versioned hook runs `npm run lint` and `npm run test:all` (all Node/spec cases plus `python -m pytest`). It rejects unstaged tracked edits, untracked non-ignored files and candidate changes during checks, preserving user work instead of stashing or discarding it. Existing custom hooksPath settings are not overwritten automatically. Manual skill acceptance still requires separate evidence. See [commit checks](docs/features/commit-checks/SPEC.md).
 
+## AWS staging deployment
+
+From a repository checkout, use the version-controlled `python3 scripts/deploy-aws-staging.py` command for the existing Lightsail staging host. See the [deployment runbook](docs/features/aws-staging-deployment/RUNBOOK.md) and [behavioral spec](docs/features/aws-staging-deployment/SPEC.md). This is separate from the local native Hermes staging controller.
+
+- Supply the expected AWS account, region, instance, external private SSH key, pinned known-hosts file and a full reviewed commit SHA. Fetch the commit locally and require passing applicable CI. The default command plans without changing the host; append `--apply` only for an authorized staging rollout. Never deploy uncommitted filesystem contents.
+- The existing project target is account `061039762362`, region `us-west-2`, instance `ned-staging-trial`, public COM `https://staging.ned.datanav.app`. Keep credentials, host keys, provider tokens, runtime env files, snapshots and receipts outside this repository. Do not print secrets or copy host profiles.
+- Quiesce staging agent work first. The updater builds before downtime, then stops the container and snapshots all three volumes together before replacement. It preserves existing dashboard/COM passwords, Caddy/DNS and profile state; updating the image does not automatically migrate an existing seeded Hermes profile.
+- Use `--recover` with the same target/SSH arguments (omit `--commit`/`--apply`) after an interrupted transaction. Failed health rolls back data and the old container; unresolved recovery must block another update. Never prune volumes, discard snapshots or bypass ownership checks to make deployment pass.
+- The command updates an already provisioned Ubuntu Docker/Buildx host. It does not create AWS resources, change DNS/firewall/passwords, provision Kubernetes, make model calls, or authorize production deployment. Do not rerun historical private one-time provisioning scripts as an updater.
+
 ## Default NED skill usage
 
 For work in this project, use relevant NED skills from `skills/` by default. Read the selected `SKILL.md` before applying it; load only supporting references needed for the task. Prefer the repository's version when a similarly named installed skill exists. Do not load every skill or turn a skill's workflow into permission for unrelated work.
