@@ -1,12 +1,12 @@
 # Feature: NED Communicator
 
 Status: planned
-Related issues: [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skeleton #114, CLI #115, projects/previews #116, artifacts #117, tasks #118, Retry focus [#131](https://github.com/DataNavAI/no-ego-dev/issues/131).
+Related issues: Hub registration [#138](https://github.com/DataNavAI/no-ego-dev/issues/138), [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skeleton #114, CLI #115, projects/previews #116, artifacts #117, tasks #118, Retry focus [#131](https://github.com/DataNavAI/no-ego-dev/issues/131).
 
 ## User outcome and scope
 Local NED users browse a selected project's work through a web app. Delivery is serial. #114 supplies server lifecycle and an honest navigation shell; it does not open databases/project folders or implement CLI/domain routes. Existing onboarding is separate. See [technical design](TECH_SPEC.md), [UI brief](design/ui-brief.md), [tokens](design/design-system.md) and [specimen](design/mockup.html).
 
-Non-goals: remote hosting, multi-user auth, editing, GitHub sync, credential brokering, arbitrary app startup/build/deploy or duplicate artifact/task stores. The #114 server and navigation shell are implemented; skeleton acceptance is complete; project/preview implementation and domain acceptance are pending. Production must never show synthetic projects as registered data.
+Non-goals: provisioning remote hosting, multi-user auth, editing, GitHub sync, credential brokering, arbitrary app startup/build/deploy or duplicate artifact/task stores. The #114 server and navigation shell are implemented; skeleton acceptance is complete; project/preview implementation and domain acceptance are pending. Production must never show synthetic projects as registered data.
 
 ## Requirements
 Parent IDs remain stable:
@@ -20,6 +20,10 @@ Parent IDs remain stable:
 - FR-008: Loading, empty, folder/preview unavailable and database-error states recover without task/file changes. A keyboard-activated Retry restores focus to Retry when it remains actionable after settlement, or the content heading when Retry disappears. Never override focus moved to another control during loading; project/section navigation cancels the prior Retry focus intent. Skeleton owns shell states; actual domain recovery is planned.
 - FR-009: Skeleton semantic responsive project-first shell follows A1–A6/UI-AC-01–05 in UI brief, with honest capability-unavailable state and no demo inventory.
 - FR-010: Fixed assets and GET/HEAD health/capability contracts are stable; invalid local context/method/routes fail safely. Close is idempotent, releases listener, and startup rejection leaks no listener.
+
+- FR-016: Explicit NED_HUB_URL, NED_HUB_TOKEN and stable NED_HUB_SLUG configure authenticated automatic registration only after COM listens; optional NED_HUB_NAME defaults to slug. No configuration preserves local-only startup without outbound calls. Partial/invalid configuration exits 2 with sanitized guidance. Remote origins require HTTPS and tokens stay server-side.
+- FR-017: Register via bearer POST /api/instances with {slug,name}; retry transient failures using bounded backoff, including reconnect with unchanged identity. Registration 400/401/403/409 stops remote retries while local COM remains available. Never follow redirects or send credentials to an untrusted returned tunnel endpoint. Default trusted proxy is proxy.<Hub hostname>; explicit NED_HUB_PROXY_URL overrides it (required for differing local proxy ports). API and proxy URLs are HTTP(S) origins without credentials, path, query or fragment.
+- FR-018: Stream authenticated Hub HTTP traffic to loopback COM without buffering responses. At most 64 concurrent channels; bounded registration body, connection deadlines, heartbeat and idle resources; stop releases timers, sockets and listeners. Validate forwarded instance host, scheme, slug and exact browser Origin before translating Host/Origin to the local COM origin. Preserve unchanged local COM perimeter. The bridge has no public listener; only token-authenticated outbound data channels reach it.
 
 ## Critical user journeys
 ### CUJ-001: Start, inspect, stop and restart
@@ -39,6 +43,9 @@ The command passes resolved databasePath to server options without initializing 
 
 ### CUJ-005: Browse registered projects and open a local preview
 Actor: local project owner; critical first useful project workbench. Prerequisites: existing schema-v1 NED DB with registered canonical directories; app started separately. Start NEDCOM, choose a project by readable folder context, inspect Tasks/Artifacts placeholders or WIP app, open reachable app, change projects and retry failures. No automatic selection. Repeat refresh reads current registry/config; CLI registry changes appear on next request. Missing DB/schema/empty registry/folder/removed project produce distinct recoverable states without application writes. Preview failure never breaks valid project selection. Interrupted/stale reads cannot restore another project's link; shutdown closes every DB/probe handle.
+
+### CUJ-009: Connect running COM through NED Hub
+Actor: an invited Hub owner with a CLI token and permanent instance slug. Set the variables described in [Hub setup](HUB.md), run ned com and open that instance from Hub. Local URL prints first; remote registration occurs after readiness. Repeated starts use the same slug. A transient Hub outage reports offline/retrying while local access remains usable; recovery registers the same identity and resumes the tunnel. Invalid/revoked credentials require a new token/restart. SIGINT/SIGTERM closes remote and local resources. This journey is critical because browser registration is intentionally absent.
 
 ## Detailed test cases
 ### TC-001: Lifecycle, read contracts and HTTP perimeter
@@ -115,6 +122,18 @@ TC-002 Retry regression: start with one selected project and an unconfigured pre
 - Cleanup: close probe fixture servers/client requests and temp files; restore intercepted browser traffic.
 - Pass evidence: named validation/probe/stale-response assertions, byte/record preservation, TC-003 desktop/mobile running/unavailable/retry/duplicate-name keyboard/link evidence at candidate SHA. No source-only browser pass.
 
+### TC-015: Hub registration, real COM streaming and trust boundary
+- Purpose / journey / requirements: CUJ-009 / FR-016–018; automatically publish only a running COM while keeping credentials and local isolation intact.
+- Level / automation: integration; [tests/TC-015.test.js](tests/TC-015.test.js).
+- Preconditions / fixtures: ephemeral loopback HTTP/WebSocket Hub protocol fixture, real COM server with nonexistent synthetic database path, synthetic ned_ token; no provider login or persisted records.
+- Given: either no Hub environment, incomplete/invalid environment, or complete explicit configuration.
+- When: run CLI; registration first receives503 then201; authenticate control/data channels, request health/assets, disconnect/reconnect, return hostile endpoint and stop.
+- Then: unconfigured startup makes no Hub call; invalid config rejects; registration follows local readiness; stable {slug,name} and bearer are sent only to configured origins; health/assets stream through real COM; foreign Origin and protocol-relative path reject; reconnect repeats same identity; stopping tunnel leaves local health usable until CLI stops.
+- Steps and assertions: run node --test docs/features/communicator/tests/TC-015.test.js. Named cases assert exact ordering, POST route/body/auth,503 recovery,200health/CSS,403foreignOrigin,400invalidpath, repeated stable registration, endpoint rejection and no hostile request.
+- Variants / negative cases: insecure remote URL, missing fields, malformed token/slug and non-origin proxy rejected. Real ownership/permanent slug enforcement lives in Hub API tests. Live hosted SSO, TLS, cross-account browser access and deployment are separate Hub acceptance; this local fixture does not certify them.
+- Cleanup: stop connection and COM, terminate fixture channels, close all fixture servers; no real credentials/files are created. Existing manual browser cases remain independently required for UI changes; this CLI-only enhancement changes no COM UI.
+- Pass evidence: named automated assertions at exact candidate; hosted verification recorded separately by Hub operator.
+
 ## Coverage and acceptance
 | Requirement | Journey | Coverage |
 | --- | --- | --- |
@@ -128,6 +147,7 @@ TC-002 Retry regression: start with one selected project and an unconfigured pre
 | FR-008 | CUJ-002/005–007 | TC-002/003 renderer; TC-005/006 project/preview recovery; task/artifact gaps |
 | FR-009 | CUJ-002 | TC-002/003 |
 | FR-010 | CUJ-001/003 | TC-001 |
+| FR-016–018 | CUJ-009 | TC-015 real COM/protocol fixture; hosted provider acceptance separate |
 
 Skeleton acceptance needs TC-001/002 automated, TC-003 rendered evidence and onboarding regression. Before commit run lint, all Node/spec cases and Python pytest. Parent closure additionally needs all serial domain/CLI cases and integrated two-project/CLI-refresh/preview evidence.
 

@@ -1,3 +1,4 @@
+import {readHubConfiguration,startHubConnection} from './hub.js';
 import {resolveDatabasePath} from '../database.js';
 import {createCommunicatorServer} from './server.js';
 const usage = 'Usage: ned com [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--help]';
@@ -19,11 +20,14 @@ export async function runCommunicatorCli(flags, io = console, dependencies = {})
     }
   } catch { io.error(usage); return 2; }
   if (seen.has('--help')) { io.log(usage); return 0; }
+  let hub;
+  try { hub = readHubConfiguration(dependencies.env || process.env); }
+  catch { io.error('NEDCOM: configure NED_HUB_URL, NED_HUB_TOKEN and NED_HUB_SLUG together, with an optional NED_HUB_NAME.'); return 2; }
   let databasePath;
   try { databasePath = resolveDatabasePath({databaseUrl:options.databaseUrl, env:dependencies.env || process.env, home:dependencies.home}); }
   catch { io.error('NEDCOM: configure a SQLite file path or local file: URL with --database or NED_DATABASE_URL.'); return 2; }
   const signals = dependencies.signals || process;
-  let app;
+  let app,hubConnection;
   let stopping = false;
   let finish;
   const stopped = new Promise(resolve => { finish = resolve; });
@@ -33,6 +37,7 @@ export async function runCommunicatorCli(flags, io = console, dependencies = {})
     app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath});
     const url = await app.listen();
     if (!stopping) io.log(`NEDCOM: ${url}`);
+    if (hub && !stopping) hubConnection = (dependencies.startHub || startHubConnection)(hub,url,{onStatus:status=>io.log(`NED Hub: ${status}`)});
     await stopped;
     await app.close();
     return 0;
@@ -40,6 +45,7 @@ export async function runCommunicatorCli(flags, io = console, dependencies = {})
     io.error('NEDCOM could not start or stop. Check the requested port and local resources, then retry.');
     return 1;
   } finally {
+    await hubConnection?.close();
     signals.off('SIGINT',stop); signals.off('SIGTERM',stop);
     await app?.close().catch(() => {});
   }
