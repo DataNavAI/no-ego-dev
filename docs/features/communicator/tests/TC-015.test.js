@@ -12,7 +12,7 @@ test('TC-015: explicit configuration and COM readiness precede registration; cle
   assert.equal(readHubConfiguration({}),null);
   for(const bad of [{NED_HUB_NAME:'x'},{...config,NED_HUB_URL:'http://remote.example'},{...config,NED_HUB_TOKEN:'bad'},{...config,NED_HUB_SLUG:'UPPER'},{...config,NED_HUB_PROXY_URL:'https://proxy.example/path'}])assert.throws(()=>readHubConfiguration(bad));
   assert.equal(readHubConfiguration(config).proxy.origin,'https://proxy.hub.example');
-  assert.equal(readHubConfiguration({...config,NED_HUB_URL:'http://localhost:3000',NED_HUB_PROXY_URL:'http://localhost:4000'}).instance.origin,'http://fixture.localhost:4000');
+  assert.equal(readHubConfiguration({...config,NED_HUB_URL:'http://localhost:3000',NED_HUB_PROXY_URL:'http://localhost:4000',NED_HUB_INSTANCE_ORIGINS:'true'}).instance.origin,'http://fixture.localhost:4000');
   for(const configured of [false,true]){
     const signals=new EventEmitter();const order=[];
     const result=await runCommunicatorCli([],{log(){setImmediate(()=>signals.emit('SIGTERM'));},error(){assert.fail();}},{env:configured?config:{},home:'/synthetic',signals,createServer(){return {async listen(){order.push('ready');return 'http://127.0.0.1:1234';},async close(){order.push('closed');}};},startHub(_config,url){assert.equal(url,'http://127.0.0.1:1234');order.push('registered');return {async close(){order.push('tunnel closed');}};}});
@@ -86,4 +86,33 @@ test('TC-015: rejected authentication stops retry and stopping aborts an outstan
     assert.equal(count,1);assert.ok(statuses.every(status=>!status.includes(token)));
     if(reject)assert.deepEqual(statuses,['connecting','registration rejected (401); local COM remains available']);
   }
+});
+
+test('TC-015: permanent slug admission matches Hub and local origin mode is explicit',()=>{
+  for(const slug of ['moon-','abc','a'.repeat(40)]) assert.equal(readHubConfiguration({...config,NED_HUB_SLUG:slug}).slug,slug);
+  for(const slug of ['1ned','ab','a'.repeat(41),'api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout']) assert.throws(()=>readHubConfiguration({...config,NED_HUB_SLUG:slug}));
+  const local={...config,NED_HUB_URL:'http://localhost:3000',NED_HUB_PROXY_URL:'http://localhost:4000'};
+  assert.equal(readHubConfiguration(local).instance.origin,'http://localhost:4000');
+  assert.equal(readHubConfiguration({...local,NED_HUB_INSTANCE_ORIGINS:'false'}).instance.origin,'http://localhost:4000');
+  assert.equal(readHubConfiguration({...local,NED_HUB_INSTANCE_ORIGINS:'true'}).instance.origin,'http://fixture.localhost:4000');
+  assert.equal(readHubConfiguration(config).instance.origin,'https://fixture.proxy.hub.example');
+  assert.throws(()=>readHubConfiguration({...config,NED_HUB_INSTANCE_ORIGINS:'false'}));
+  assert.throws(()=>readHubConfiguration({...local,NED_HUB_INSTANCE_ORIGINS:'yes'}));
+});
+
+test('TC-015: normal and isolated localhost Hub modes stream real COM with exact Origin checks',async t=>{
+  for(const isolated of [false,true]) await t.test(isolated?'explicit isolated localhost':'default shared localhost',async t=>{
+    const com=createCommunicatorServer({databasePath:'/nonexistent/synthetic.sqlite'});const local=await com.listen();t.after(()=>com.close());
+    const server=http.createServer((_req,res)=>res.end(JSON.stringify({tunnelUrl:`ws://localhost:${server.address().port}/tunnel/control?slug=fixture`})));
+    await new Promise(resolve=>server.listen(0,resolve));t.after(()=>new Promise(resolve=>server.close(resolve)));
+    const port=server.address().port;const origin=`http://localhost:${port}`;const expectedOrigin=`http://${isolated?'fixture.':''}localhost:${port}`;
+    const wss=new WebSocketServer({server});t.after(()=>wss.close());let control,opened;const ready=new Promise(resolve=>{opened=resolve;});const pending=new Map();
+    wss.on('connection',(ws,req)=>{if(req.url.startsWith('/tunnel/control')){control=ws;ws.send(JSON.stringify({type:'ready'}));opened();}else pending.get(new URL(req.url,origin).searchParams.get('id'))(createWebSocketStream(ws));});
+    const env={...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin,...(isolated?{NED_HUB_INSTANCE_ORIGINS:'true'}:{})};
+    const connection=startHubConnection(readHubConfiguration(env),local);t.after(()=>connection.close());await ready;
+    let n=0;async function request(requestOrigin){const id=String(++n).padStart(43,'b');const waiting=new Promise(resolve=>pending.set(id,resolve));control.send(JSON.stringify({type:'open',id}));const stream=await waiting;let text='';stream.on('data',chunk=>{text+=chunk;});stream.write(`GET /api/health HTTP/1.1\r\nHost: ned-com\r\nx-ned-instance: fixture\r\nx-forwarded-host: ${new URL(expectedOrigin).host}\r\nx-forwarded-proto: http\r\nOrigin: ${requestOrigin}\r\nConnection: close\r\n\r\n`);await once(stream,'end');stream.destroy();return text;}
+    assert.match(await request(expectedOrigin),/200 OK[\s\S]*"status":"ok"/);
+    assert.match(await request(`http://${isolated?'':'fixture.'}localhost:${port}`),/403 Forbidden/);
+    await connection.close();for(const ws of wss.clients)ws.terminate();
+  });
 });

@@ -2,22 +2,29 @@ import http from 'node:http';
 import {pipeline} from 'node:stream';
 import WebSocket, {createWebSocketStream} from 'ws';
 
+// Keep admission identical to Hub store.validSlug: public slugs are permanent identities.
+const reservedSlugs = new Set(['api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout']);
 const loopback = hostname => ['127.0.0.1','localhost','[::1]'].includes(hostname);
 export function readHubConfiguration(env = process.env) {
-  const keys = ['NED_HUB_URL','NED_HUB_TOKEN','NED_HUB_SLUG','NED_HUB_NAME','NED_HUB_PROXY_URL'];
+  const keys = ['NED_HUB_URL','NED_HUB_TOKEN','NED_HUB_SLUG','NED_HUB_NAME','NED_HUB_PROXY_URL','NED_HUB_INSTANCE_ORIGINS'];
   if (!keys.some(key => env[key] !== undefined)) return null;
   const {NED_HUB_URL: hubUrl,NED_HUB_TOKEN: token,NED_HUB_SLUG: slug} = env;
   let hub;
   try { hub = new URL(hubUrl); } catch { throw new Error('Invalid NED Hub configuration.'); }
-  if (!['http:','https:'].includes(hub.protocol) || hub.username || hub.password || hub.pathname !== '/' || hub.search || hub.hash || (hub.protocol !== 'https:' && !loopback(hub.hostname)) || !/^ned_[A-Za-z0-9_-]{20,}$/.test(token || '') || !/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(slug || '')) throw new Error('Invalid NED Hub configuration.');
+  if (!['http:','https:'].includes(hub.protocol) || hub.username || hub.password || hub.pathname !== '/' || hub.search || hub.hash || (hub.protocol !== 'https:' && !loopback(hub.hostname)) || !/^ned_[A-Za-z0-9_-]{20,}$/.test(token || '') || (!/^[a-z][a-z0-9-]{2,39}$/.test(slug || '') || reservedSlugs.has(slug))) throw new Error('Invalid NED Hub configuration.');
   const name = env.NED_HUB_NAME ?? slug;
   if (!name.trim() || name.length > 80) throw new Error('Invalid NED Hub configuration.');
   let proxy;
   try { proxy = new URL(env.NED_HUB_PROXY_URL ?? hub); } catch { throw new Error('Invalid NED Hub configuration.'); }
   if (!env.NED_HUB_PROXY_URL && !loopback(hub.hostname)) proxy.hostname = `proxy.${hub.hostname}`;
   if (!['http:','https:'].includes(proxy.protocol) || proxy.username || proxy.password || proxy.pathname !== '/' || proxy.search || proxy.hash || (proxy.protocol !== 'https:' && !loopback(proxy.hostname))) throw new Error('Invalid NED Hub configuration.');
+  const local = loopback(hub.hostname) && loopback(proxy.hostname);
+  const mode = env.NED_HUB_INSTANCE_ORIGINS;
+  if ((mode !== undefined && !['true','false'].includes(mode)) || (!local && mode === 'false')) throw new Error('Invalid NED Hub configuration.');
+  const isolated = mode === 'true' || !local;
+  if (isolated && ['127.0.0.1','[::1]'].includes(proxy.hostname)) throw new Error('Isolated local instances require a localhost proxy hostname.');
   const instance = new URL(proxy);
-  if (!['127.0.0.1','[::1]'].includes(proxy.hostname)) instance.hostname = `${slug}.${proxy.hostname}`;
+  if (isolated) instance.hostname = `${slug}.${proxy.hostname}`;
   return {hub,proxy,instance,token,slug,name};
 }
 
