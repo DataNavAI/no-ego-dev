@@ -1,23 +1,165 @@
 {
-  "candidate_sha": "4ffeef2c0ceb7f809add6350387f0a4018c949c1",
   "result": "pass",
-  "tested_at": "2026-10-20T05:50:43.037847+00:00",
-  "environment": "macOS ARM64, Node25.6.1/Python3.14; fresh Codex executor/auditor subagents; real local Chrome CUA visual fixture. Synthetic inputs and external retained artifacts only.",
+  "environment": "Existing AWS Lightsail ned-staging-trial, us-west-2, Ubuntu24.04, Docker/Buildx/Caddy; local macOS ARM64 Python3.14/Node25.6.1; explicit account and strict pinned SSH. No new AWS resources.",
   "commands": [
-    "Fresh delegated qa EVAL execution: CALC-01..04 actual Node commands, real command logs, frozen report/manifest and independent qa-audit approval.",
-    "Fresh delegated VIS-01 browser run: Add one interaction, actual screenshot, first audit correction, preserved r1, new r2 and fresh image-inspecting auditor approval.",
-    "Fresh qa-audit scenarios: honest-fail, overclaim, broken-evidence, actual missing input; fresh corrected-r2 audit with prior finding disposition.",
-    "Fresh delivery-worker check: recompute report/manifest/all5 artifact checksums; unchanged accurate FAIL deliverable; report-only and artifact-only mutations BLOCKED.",
-    "Verify evaluated skill/EVAL/fixture bytes against exact code candidate using git show and SHA256.",
     "npm run lint",
-    "npm test (73 CLI tests and all automated spec cases pass)",
+    "npm run test:all (all automated feature cases; Python208 passed,9 existing opt-in skips)",
     "python -m pytest (208 passed,9 existing opt-in skips)",
-    "Installed pre-commit hook repeats lint and full Node/spec/Python gate before both commits."
+    "python3 scripts/deploy-aws-staging.py --account 061039762362 --region us-west-2 --instance ned-staging-trial --ssh-key <external-private-key> --known-hosts <external-pinned-hosts> --commit 950afcf17de99dd54cedcee1e769631654ef715c (read-only plan)",
+    "Same explicit target with --apply --force (deployed); repeated --apply (unchanged)",
+    "Same compatible source --apply --force --health-timeout 1 (expected exit1, full rollback); --recover (rolled_back changedfalse)",
+    "Private real SQLite integrity/sentinel and profile/projects sentinel readback; private byte-equality checks for runtime env, COM credentials and Caddyfile",
+    "Fresh postcommit plan and forced compatible-source rollout; final readback and removal of only synthetic sentinel files/SQLite row."
   ],
-  "observations": "Manual qa-reporting TC-001/002 behavioral acceptance PASS. CLI intentionally reports2PASS1FAIL1BLOCKED; independent audit approves report accuracy, not product readiness. Actual visual capture exposed wrong image-format/dimension metadata; first auditor required correction, fresh second auditor inspected actual JPEG1175x570 and approved corrected r2. Missing/corrupt/stale/contradictory evidence rejected; hostile log instruction ignored; no credentials/providers/real product touched. Current report/manifest and all artifact digests checked before delivery; post-approval mutations block. Baseline agents also found obvious defects; no statistical improvement claim. Delegation-outage/timeout checks were policy simulations, not forced failures. Browser version/CSS viewport/device scale unavailable. Existing normal Hermes profiles not altered; this is instruction guidance, not runtime enforcement. No code-based skill tests added; automated runner manual NOT RUN entries remain separate from actual behavioral evidence. Full acceptance and retained-hash identities in docs/features/qa-reporting/ACCEPTANCE.md.",
-  "skill_sha256": {
-    "qa": "0f6b9419bb01312ccb65f22844a655f5ef0fd3da606c3c5bacf610c1799493d4",
-    "qa-audit": "6c4fca48fb3f0809350fd95efc0370d770c9f8b4210c0119f31240e1be455e0b"
-  },
-  "acceptance": "docs/features/qa-reporting/ACCEPTANCE.md"
+  "observations": "TC-003 actual AWS acceptance PASS. Build-before-stop rollout succeeds with authenticated public COM200, anonymous401, foreign-Origin403, internal exact service health and dashboard authentication. Healthy repeat preserves same container ID. Deliberate one-second readiness failure restores previous exact container ID and all three stopped-volume snapshots; SQLite integrity and three synthetic sentinels pass. Explicit terminal recovery changes nothing. Runtime credentials/Caddy bytes remain equal; no DNS/firewall/resource or password changes. Real Docker lowercase missing-object diagnostic exposed repeat-deploy defect; regression failed before fix and passed afterward; corrected live repeat and rollback pass.18 credential-free Python cases cover target/archive, durable journal, real child-process hard exit, snapshot corruption, ownership and HTTP credential destination boundaries. Existing opt-in Python skips and unrelated manual spec NOT RUN cases are not claimed as new acceptance. No paid model requests, provisioning, browser matrix or off-host disaster-recovery claim. A subsequent committed-script forced rebuild exposed Docker same-tag load eviction of the old image manifest; it failed safely during snapshot preparation and is not a pass. The correction uses unique retained build tags and a journal-pinned immutable helper digest for snapshots/restoration/replacement. Its actual forced rollout, unchanged repeat, deliberate failure rollback and terminal recovery all pass with exact prior container ID and data/auth equality. Fresh plan and forced rollout from exact code commit74b5c81 PASS; final readback healthy with data/auth preserved. Only synthetic sentinels and their private comparison record were removed. Retained private snapshots/images remain. Application commit950afcf is deliberately separate from the tested deployment-script commit. Receipts below contain only sanitized outcomes, not secret hashes/values.",
+  "application_commit": "950afcf17de99dd54cedcee1e769631654ef715c",
+  "reviewed_source_tree": "88045e768044c2fc54a474fb9a41644dba99f181",
+  "receipts": [
+    {
+      "name": "ned-aws-live-image-fixed-apply.txt",
+      "sha256": "6f2cd6a13b9aa2fc02fe3a22099fc25a9c3154270d7de8354ecf4e41379beed9",
+      "result": {
+        "status": "deployed",
+        "commit": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "snapshot": "/opt/ned-staging/snapshots/6122016c00744872ad9299a05f0b7f11",
+        "account": "061039762362",
+        "region": "us-west-2",
+        "instance": "ned-staging-trial"
+      }
+    },
+    {
+      "name": "ned-aws-live-image-fixed-readback.txt",
+      "sha256": "a0cad24d05b54f534745776e9d4f460b7b4c5f6a20665a31bd5d0380985e29b7",
+      "result": {
+        "mode": "check",
+        "sentinels": "pass",
+        "secret_caddy_bytes": "unchanged",
+        "container_id": "dde385c9f70591e7c9badafe6284c8de66928e694cbc676573adc43ac06c485e",
+        "revision": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "health": "healthy"
+      }
+    },
+    {
+      "name": "ned-aws-live-image-fixed-noop.txt",
+      "sha256": "c6a637f3d6bf359401126ddf8b9fe7b65dc504afcb007bd78757956e53f1d263",
+      "result": {
+        "status": "unchanged",
+        "commit": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "account": "061039762362",
+        "region": "us-west-2",
+        "instance": "ned-staging-trial"
+      }
+    },
+    {
+      "name": "ned-aws-live-image-fixed-rollback.txt",
+      "sha256": "a55594b4dbaa61684cf594b8bd263defed13a43b1af10e2adf2e5ae46041f713",
+      "result": {
+        "status": "failed",
+        "error": "Deployment failed or connection interrupted. Run --recover to verify/restore host state; private snapshots are retained."
+      }
+    },
+    {
+      "name": "ned-aws-live-image-fixed-rollback-readback.txt",
+      "sha256": "a0cad24d05b54f534745776e9d4f460b7b4c5f6a20665a31bd5d0380985e29b7",
+      "result": {
+        "mode": "check",
+        "sentinels": "pass",
+        "secret_caddy_bytes": "unchanged",
+        "container_id": "dde385c9f70591e7c9badafe6284c8de66928e694cbc676573adc43ac06c485e",
+        "revision": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "health": "healthy"
+      }
+    },
+    {
+      "name": "ned-aws-live-image-fixed-recover.txt",
+      "sha256": "80cde70b8ead9788d48d0294878796cceb7a8a6060b0a7e00b49ffee26c0397d",
+      "result": {
+        "status": "rolled_back",
+        "changed": false,
+        "account": "061039762362",
+        "region": "us-west-2",
+        "instance": "ned-staging-trial"
+      }
+    },
+    {
+      "name": "ned-aws-live-final-plan.txt",
+      "sha256": "35d1b805e39aee54125fd728b300022ccaff75fa3af5e6abab9cbf8ba678073d",
+      "result": {
+        "status": "planned",
+        "current_commit": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "account": "061039762362",
+        "region": "us-west-2",
+        "instance": "ned-staging-trial"
+      }
+    },
+    {
+      "name": "ned-aws-live-final-apply.txt",
+      "sha256": "194a34999cdfc5780fd3704785d21c1576c9ab0a595bd5a91cde8068dec43baa",
+      "result": {
+        "status": "deployed",
+        "commit": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "snapshot": "/opt/ned-staging/snapshots/335ea1180ae542afb878a61e44ef7f65",
+        "account": "061039762362",
+        "region": "us-west-2",
+        "instance": "ned-staging-trial"
+      }
+    },
+    {
+      "name": "ned-aws-live-final-readback.txt",
+      "sha256": "f693a3d65a1016d0d9cc8f71bead034bcb3b6e4f39845b6a87ca824e2a305bd2",
+      "result": {
+        "mode": "check",
+        "sentinels": "pass",
+        "secret_caddy_bytes": "unchanged",
+        "container_id": "0bc7c751e143852327c6cbc528fed8bbb708cda8e9a51b92dddbf9c1c6c5db89",
+        "revision": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "health": "healthy"
+      }
+    },
+    {
+      "name": "ned-aws-live-final-cleanup.txt",
+      "sha256": "8a9d5a980dd144f34819522bae7d4fb437db35a563062a3d4b6054083644512d",
+      "result": {
+        "mode": "cleanup",
+        "sentinels": "pass",
+        "secret_caddy_bytes": "unchanged",
+        "container_id": "0bc7c751e143852327c6cbc528fed8bbb708cda8e9a51b92dddbf9c1c6c5db89",
+        "revision": "950afcf17de99dd54cedcee1e769631654ef715c",
+        "health": "healthy"
+      }
+    },
+    {
+      "name": "ned-aws-live-image-retention.txt",
+      "sha256": "18c50f9d8f0fc955759c7b9df680c6722b9c5b5de4fddde98525433c635c676c",
+      "result": {
+        "current_and_snapshot_images": "available_with_unique_retained_tags",
+        "phase": "rolled_back",
+        "container_health": "healthy"
+      }
+    }
+  ],
+  "review_reports": [
+    {
+      "round": 1,
+      "sha256": "e1bf9bccb4f4a8593dcb62528640417426fe552bc87931e746b12fd481e68bde"
+    },
+    {
+      "round": 2,
+      "sha256": "f98f1ee4f5b6b815806490de5f920aca40454781eecaa023491edfa41b265311"
+    },
+    {
+      "round": 3,
+      "sha256": "49ec028c465ef050a5f0010b5a858c3b28439930150c67f21e4875c89892611c"
+    },
+    {
+      "round": 4,
+      "sha256": "d93ffa9373a357dcb242ff3b8f81b32cfc4d770a9ee7c98a67ea4d1f0dcd1c3b"
+    },
+    {
+      "round": 5,
+      "sha256": "28535113e9232dfd4f4ec31f07fc777615f558475b0c47f8e1bed8e69c42051b"
+    }
+  ],
+  "candidate_sha": "74b5c81b79d6c1b33cf2467c3a73c3e7b7a05adc",
+  "tested_at": "2026-10-27T03:45:27.019869+00:00"
 }
