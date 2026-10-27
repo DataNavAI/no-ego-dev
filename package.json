@@ -44,7 +44,7 @@
     "web:dev": "NED_WEB_DEV_MODE=1 node bin/ned-web.js",
     "pack:check": "npm pack --dry-run",
     "test:spec": "node scripts/run-spec-tests.mjs",
-    "lint": "eslint src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check scripts/container docs/features/standalone-container/tests/container_acceptance.py && npm run check",
+    "lint": "eslint src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check scripts/container scripts/aws-staging scripts/deploy-aws-staging.py docs/features/aws-staging-deployment/tests/cases.py docs/features/standalone-container/tests/container_acceptance.py && npm run check",
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "test:container": "python docs/features/standalone-container/tests/container_acceptance.py"
   },

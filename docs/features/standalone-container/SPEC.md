@@ -5,7 +5,8 @@ Related issues: [#132](https://github.com/DataNavAI/no-ego-dev/issues/132) (cust
 
 ## User outcome and scope
 Operators run the complete NED profile and CLI with Hermes's real browser dashboard and NED COM in one container. Fresh named volumes isolate this installation from existing host profiles. Image-owned code is immutable; profile, SQLite database and project work persist independently. This replaces the proposed local staging approach without changing its files or schedules.
-Non-goals: hosted deployment, messaging delivery, model billing/login automation, new COM artifact/task capabilities, mounting a Docker socket, automatically importing host profiles or deleting old staging data. Live model calls require operator-supplied runtime credentials and are separate from credential-free service acceptance.
+Hosted deployment is owned by [AWS staging deployment](../aws-staging-deployment/SPEC.md).
+Non-goals: cloud provisioning, messaging delivery, model billing/login automation, new COM artifact/task capabilities, mounting a Docker socket, automatically importing host profiles or deleting old staging data. Live model calls require operator-supplied runtime credentials and are separate from credential-free service acceptance.
 Assumptions: Docker supports Linux arm64 or amd64; ports are published on host loopback. Each installation owns its volumes; concurrent containers sharing volumes are unsupported.
 
 ## Requirements
