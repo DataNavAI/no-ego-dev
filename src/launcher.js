@@ -11,7 +11,7 @@ async function runChild(node, appEntry, argv, env) {
   const forwardSignal = signal => child.kill(signal);
   const interrupt = () => forwardSignal('SIGINT');
   const terminate = () => forwardSignal('SIGTERM');
-  if (argv[0] === 'com') { process.on('SIGINT', interrupt); process.on('SIGTERM', terminate); }
+  if (['com','hub'].includes(argv[0])) { process.on('SIGINT', interrupt); process.on('SIGTERM', terminate); }
   let code;
   try {
     code = await new Promise((resolve, reject) => {
@@ -19,7 +19,7 @@ async function runChild(node, appEntry, argv, env) {
       child.once('close', (exitCode, signal) => resolve(exitCode ?? (signal ? 1 : 0)));
     });
   } finally {
-    if (argv[0] === 'com') { process.off('SIGINT', interrupt); process.off('SIGTERM', terminate); }
+    if (['com','hub'].includes(argv[0])) { process.off('SIGINT', interrupt); process.off('SIGTERM', terminate); }
   }
   return code;
 }

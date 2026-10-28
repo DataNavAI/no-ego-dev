@@ -1,7 +1,7 @@
 # Feature: NED Communicator
 
 Status: planned
-Related issues: Hub registration [#138](https://github.com/DataNavAI/no-ego-dev/issues/138), [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skeleton #114, CLI #115, projects/previews #116, artifacts #117, tasks #118, Retry focus [#131](https://github.com/DataNavAI/no-ego-dev/issues/131).
+Related issues: native Hub OAuth [#140](https://github.com/DataNavAI/no-ego-dev/issues/140), Hub registration [#138](https://github.com/DataNavAI/no-ego-dev/issues/138), [#113](https://github.com/DataNavAI/no-ego-dev/issues/113), skeleton #114, CLI #115, projects/previews #116, artifacts #117, tasks #118, Retry focus [#131](https://github.com/DataNavAI/no-ego-dev/issues/131).
 
 ## User outcome and scope
 Local NED users browse a selected project's work through a web app. Delivery is serial. #114 supplies server lifecycle and an honest navigation shell; it does not open databases/project folders or implement CLI/domain routes. Existing onboarding is separate. See [technical design](TECH_SPEC.md), [UI brief](design/ui-brief.md), [tokens](design/design-system.md) and [specimen](design/mockup.html).
@@ -21,9 +21,13 @@ Parent IDs remain stable:
 - FR-009: Skeleton semantic responsive project-first shell follows A1–A6/UI-AC-01–05 in UI brief, with honest capability-unavailable state and no demo inventory.
 - FR-010: Fixed assets and GET/HEAD health/capability contracts are stable; invalid local context/method/routes fail safely. Close is idempotent, releases listener, and startup rejection leaks no listener.
 
-- FR-016: Explicit NED_HUB_URL, NED_HUB_TOKEN and stable NED_HUB_SLUG configure authenticated automatic registration only after COM listens; optional NED_HUB_NAME defaults to slug. Slugs match authoritative Hub admission: first lowercase letter, then 2–39 lowercase letters/digits/hyphens, excluding api/auth/tunnel/healthz/assets/connect/favicon/robots/login/logout; retained trailing-hyphen identities remain valid. No configuration preserves local-only startup without outbound calls. Partial/invalid configuration exits 2 with sanitized guidance. Remote origins require HTTPS and tokens stay server-side.
+- FR-016: Explicit NED_HUB_URL, stable NED_HUB_SLUG and an explicit or saved Hub credential configure authenticated automatic registration only after COM listens; optional NED_HUB_NAME defaults to slug. Slugs match authoritative Hub admission: first lowercase letter, then 2–39 lowercase letters/digits/hyphens, excluding api/auth/tunnel/healthz/assets/connect/favicon/robots/login/logout; retained trailing-hyphen identities remain valid. No configuration preserves local-only startup without outbound calls. Partial/invalid configuration exits 2 with sanitized guidance. Remote origins require HTTPS and tokens stay server-side.
 - FR-017: Register via bearer POST /api/instances with {slug,name}; retry transient failures using bounded backoff, including reconnect with unchanged identity. Registration 400/401/403/409 stops remote retries while local COM remains available. Never follow redirects or send credentials to an untrusted returned tunnel endpoint. Default trusted proxy is proxy.<Hub hostname>; explicit NED_HUB_PROXY_URL overrides it (required for differing local proxy ports). For loopback-only local API/proxy origins, NED_HUB_INSTANCE_ORIGINS defaults false (shared origin) and explicit true uses slug.localhost; remote origins require isolation and reject false. Other mode values reject. API and proxy URLs are HTTP(S) origins without credentials, path, query or fragment.
 - FR-018: Stream authenticated Hub HTTP traffic to loopback COM without buffering responses. At most 64 concurrent channels; bounded registration body, connection deadlines, heartbeat and idle resources; stop releases timers, sockets and listeners. Validate forwarded instance host, scheme, slug and exact browser Origin before translating Host/Origin to the local COM origin. Preserve unchanged local COM perimeter. The bridge has no public listener; only token-authenticated outbound data channels reach it.
+
+- FR-019: `ned hub login [--hub <origin>] [--no-browser]` uses external-browser authorization code OAuth with S256 PKCE, random state and an ephemeral `http://127.0.0.1:<port>/oauth/callback`; only explicit --hub or NED_HUB_URL selects an issuer. The Hub public client is `ned-cli`. No Google client secret, provider access token or refresh token is handled by NED CLI. A five-minute deadline, SIGINT/SIGTERM and exact callback Host/path/state validation bound the attempt. No secrets appear in URLs or output.
+- FR-020: Exchange the single callback code by JSON POST to the exact configured origin's /api/oauth/token without redirects, with bounded response and timeout. Require a Bearer ned_ token, token identity and account shape before atomically saving per-canonical-origin credentials under ~/.ned/hub-credentials (directory0700/file0600, owned regular files, no symlinks or unsafe write permissions). Failed/denied/cancelled login preserves existing credentials. COM uses explicit NED_HUB_TOKEN first, then the configured origin's saved token; absent all Hub configuration remains local-only.
+- FR-021: `ned hub logout [--hub <origin>]` sends native bearer DELETE /api/oauth/token, accepts 204 or already-revoked401, then removes only the matching local credential. Network/server failure returns1 and retains it for retry. No saved credential succeeds without a network request. No global provider logout or other Hub credential deletion occurs.
 
 ## Critical user journeys
 ### CUJ-001: Start, inspect, stop and restart
@@ -43,6 +47,9 @@ The command passes resolved databasePath to server options without initializing 
 
 ### CUJ-005: Browse registered projects and open a local preview
 Actor: local project owner; critical first useful project workbench. Prerequisites: existing schema-v1 NED DB with registered canonical directories; app started separately. Start NEDCOM, choose a project by readable folder context, inspect Tasks/Artifacts placeholders or WIP app, open reachable app, change projects and retry failures. No automatic selection. Repeat refresh reads current registry/config; CLI registry changes appear on next request. Missing DB/schema/empty registry/folder/removed project produce distinct recoverable states without application writes. Preview failure never breaks valid project selection. Interrupted/stale reads cannot restore another project's link; shutdown closes every DB/probe handle.
+
+### CUJ-010: Authenticate the native CLI with the Hub
+Actor: COM operator; priority P1. Starting state: an explicit Hub origin and a browser account eligible for that Hub. Run `ned hub login --hub <origin>` (or set NED_HUB_URL), approve the named CLI request in the browser, and return to the terminal. Success saves a private per-origin credential and subsequent configured COM startup uses it without copying a token. Denial, timeout, interruption, malformed callback, wrong state or failed exchange leave the previous credential unchanged. `ned hub logout` revokes the saved token and then removes that matching local credential; offline failure keeps it for retry. This is critical because browser identity must never be guessed or copied across Hub origins.
 
 ### CUJ-009: Connect running COM through NED Hub
 Actor: an invited Hub owner with a CLI token and permanent instance slug. Set the variables described in [Hub setup](HUB.md), run ned com and open that instance from Hub. Local URL prints first; remote registration occurs after readiness. Repeated starts use the same slug. A transient Hub outage reports offline/retrying while local access remains usable; recovery registers the same identity and resumes the tunnel. Invalid/revoked credentials require a new token/restart. SIGINT/SIGTERM closes remote and local resources. This journey is critical because browser registration is intentionally absent.
@@ -122,6 +129,18 @@ TC-002 Retry regression: start with one selected project and an unconfigured pre
 - Cleanup: close probe fixture servers/client requests and temp files; restore intercepted browser traffic.
 - Pass evidence: named validation/probe/stale-response assertions, byte/record preservation, TC-003 desktop/mobile running/unavailable/retry/duplicate-name keyboard/link evidence at candidate SHA. No source-only browser pass.
 
+### TC-016: Native OAuth, credential isolation and COM reuse
+- Purpose / journey / requirements: CUJ-010 / FR-019–021; authenticate public native clients without exposing credentials to URLs or terminal logs.
+- Level / automation: integration; [tests/TC-016.test.js](tests/TC-016.test.js), local HTTP issuer/browser callback and real private temporary credential files.
+- Preconditions / fixtures: Node20+, synthetic issuer using the frozen Hub public client `ned-cli`, fresh temporary home, no live provider credentials. Hub origin is explicit; HTTP is permitted only for loopback fixtures.
+- Given: a fresh or previously authenticated native installation with a stable configured COM slug.
+- When: login starts, the browser fixture returns an authorization code, and the CLI exchanges its original PKCE verifier; repeat with wrong state/Host/path, denial, timeout, cancellation, exchange failure and logout failure.
+- Then: callback listener is loopback-only and bounded; only the exact successful code/state exchange writes a private credential. Tokens/verifiers never appear in the browser URL or output. Failures preserve the prior credential; logout revokes then removes only the matching saved token. Different Hub origins cannot reuse it. COM prefers an explicit environment token and otherwise loads only its configured Hub's saved credential after valid configuration.
+- Steps and assertions: run `node --test docs/features/communicator/tests/TC-016.test.js`; named cases assert S256 challenge, exact redirect/token endpoint with redirect rejection, callback validation and single settlement, mode0700 directories/mode0600 files, unsafe/symlink rejection, host separation, logout semantics and COM token selection.
+- Variants / negatives: malformed response, denial, wrong callback/state, timed-out and interrupted login, unsafe existing file, unconfigured local COM. No live Google grant is performed by automated fixtures.
+- Cleanup: stop each loopback issuer/callback listener and remove only test-owned temporary homes. No runtime credentials are committed.
+- Pass evidence: focused assertions and canonical gates on the exact candidate. Hosted Google approval and real remote-COM access remain separate release evidence; these fixtures do not certify them.
+
 ### TC-015: Hub registration, real COM streaming and trust boundary
 - Purpose / journey / requirements: CUJ-009 / FR-016–018; automatically publish only a running COM while keeping credentials and local isolation intact.
 - Level / automation: integration; [tests/TC-015.test.js](tests/TC-015.test.js).
@@ -147,6 +166,7 @@ TC-002 Retry regression: start with one selected project and an unconfigured pre
 | FR-008 | CUJ-002/005–007 | TC-002/003 renderer; TC-005/006 project/preview recovery; task/artifact gaps |
 | FR-009 | CUJ-002 | TC-002/003 |
 | FR-010 | CUJ-001/003 | TC-001 |
+| FR-019–021 | CUJ-010 | TC-016 native fixture; hosted provider acceptance separate |
 | FR-016–018 | CUJ-009 | TC-015 real COM/protocol fixture; hosted provider acceptance separate |
 
 Skeleton acceptance needs TC-001/002 automated, TC-003 rendered evidence and onboarding regression. Before commit run lint, all Node/spec cases and Python pytest. Parent closure additionally needs all serial domain/CLI cases and integrated two-project/CLI-refresh/preview evidence.

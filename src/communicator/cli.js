@@ -1,3 +1,4 @@
+import {createHubCredentialStore,canonicalHubOrigin} from '../hub-credentials.js';
 import {readHubConfiguration,startHubConnection} from './hub.js';
 import {resolveDatabasePath} from '../database.js';
 import {createCommunicatorServer} from './server.js';
@@ -21,8 +22,15 @@ export async function runCommunicatorCli(flags, io = console, dependencies = {})
   } catch { io.error(usage); return 2; }
   if (seen.has('--help')) { io.log(usage); return 0; }
   let hub;
-  try { hub = readHubConfiguration(dependencies.env || process.env); }
-  catch { io.error('NEDCOM: configure NED_HUB_URL, NED_HUB_TOKEN and NED_HUB_SLUG together, with an optional NED_HUB_NAME.'); return 2; }
+  try {
+    let env=dependencies.env||process.env;
+    if(env.NED_HUB_URL&&env.NED_HUB_SLUG&&env.NED_HUB_TOKEN===undefined){
+      const saved=await (dependencies.hubCredentialStore||createHubCredentialStore({home:dependencies.home})).read(canonicalHubOrigin(env.NED_HUB_URL));
+      if(saved)env={...env,NED_HUB_TOKEN:saved.token};
+    }
+    hub = readHubConfiguration(env);
+  }
+  catch { io.error('NEDCOM: configure NED_HUB_URL and NED_HUB_SLUG, then run ned hub login or set NED_HUB_TOKEN; NED_HUB_NAME is optional.'); return 2; }
   let databasePath;
   try { databasePath = resolveDatabasePath({databaseUrl:options.databaseUrl, env:dependencies.env || process.env, home:dependencies.home}); }
   catch { io.error('NEDCOM: configure a SQLite file path or local file: URL with --database or NED_DATABASE_URL.'); return 2; }

@@ -1,0 +1,166 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {spawn} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {EventEmitter} from 'node:events';
+import {loginToHub,runHubCli} from '../../../../src/hub-cli.js';
+import {createHubCredentialStore,canonicalHubOrigin} from '../../../../src/hub-credentials.js';
+import {runCommunicatorCli} from '../../../../src/communicator/cli.js';
+const token='ned_synthetic_oauth_credential_0000000000';
+const account={id:'account-fixture',name:'Fixture operator',email:'fixture@example.test'};
+const code='synthetic_authorization_code_00000000';
+async function fixture(t,handler){
+  const server=http.createServer(handler);await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  t.after(()=>{server.closeAllConnections();return new Promise(resolve=>server.close(resolve));});
+  return `http://127.0.0.1:${server.address().port}`;
+}
+async function storage(t){const home=await fs.mkdtemp(path.join(os.tmpdir(),'ned-oauth-'));t.after(()=>fs.rm(home,{recursive:true,force:true}));return {home,store:createHubCredentialStore({home})};}
+function callbackUrl(authorize,params={code}){const a=new URL(authorize),callback=new URL(a.searchParams.get('redirect_uri'));callback.searchParams.set('state',a.searchParams.get('state'));for(const [k,v]of Object.entries(params))callback.searchParams.set(k,v);return callback;}
+const quiet={log(){},error(){}};
+
+test('TC-016: native PKCE login saves the returned account privately and never puts credentials in the browser URL or output',async t=>{
+  const {home,store}=await storage(t);let authorization,exchanged=0;
+  const origin=await fixture(t,async(req,res)=>{
+    assert.equal(req.url,'/api/oauth/token');assert.equal(req.method,'POST');assert.equal(req.headers.origin,undefined);
+    let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);exchanged++;
+    assert.deepEqual(Object.keys(body).sort(),['client_id','code','code_verifier','grant_type','redirect_uri']);
+    assert.equal(body.code,code);assert.equal(body.client_id,'ned-cli');assert.equal(body.grant_type,'authorization_code');
+    assert.equal(body.redirect_uri,authorization.searchParams.get('redirect_uri'));
+    assert.equal(createHash('sha256').update(body.code_verifier).digest('base64url'),authorization.searchParams.get('code_challenge'));
+    assert.equal(authorization.href.includes(body.code_verifier),false);
+    res.setHeader('Content-Type','application/json');res.end(JSON.stringify({access_token:token,token_type:'Bearer',token_id:'token-fixture',account}));
+  });
+  const output=[];
+  const credential=await loginToHub(origin,{store,io:{log:s=>output.push(s)},openBrowser:async url=>{
+    authorization=new URL(url);assert.equal(authorization.origin,origin);assert.equal(authorization.pathname,'/api/oauth/authorize');
+    assert.equal(authorization.searchParams.get('code_challenge_method'),'S256');assert.equal(authorization.searchParams.get('response_type'),'code');
+    assert.match(authorization.searchParams.get('state'),/^[A-Za-z0-9_-]{43}$/);
+    const callback=callbackUrl(url);assert.equal(callback.hostname,'127.0.0.1');
+    const response=await fetch(callback);assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal(response.headers.get('referrer-policy'),'no-referrer');
+    assert.equal((await response.text()).includes(code),false);
+  }});
+  assert.equal(exchanged,1);assert.deepEqual(await store.read(origin),credential);assert.deepEqual(credential.account,account);
+  assert.equal(output.join('\n').includes(token),false);assert.equal(output.join('\n').includes(code),false);
+  const directory=path.join(home,'.ned','hub-credentials');assert.equal((await fs.stat(directory)).mode&0o777,0o700);
+  const files=await fs.readdir(directory);assert.equal(files.length,1);assert.equal((await fs.stat(path.join(directory,files[0]))).mode&0o777,0o600);
+  assert.equal(await store.read('https://other.example'),null);
+});
+
+test('TC-016: wrong Host, path, duplicate state and wrong state cannot consume the pending login',async t=>{
+  const {store}=await storage(t);let exchanges=0;
+  const origin=await fixture(t,(_req,res)=>{exchanges++;res.setHeader('content-type','application/json');res.end(JSON.stringify({access_token:token,token_type:'Bearer',token_id:'token-fixture',account}));});
+  let browser;
+  await loginToHub(origin,{store,io:quiet,openBrowser:async url=>{
+    browser=(async()=>{
+      const callback=callbackUrl(url),wrong=new URL(callback);wrong.searchParams.set('state','x'.repeat(43));assert.equal((await fetch(wrong)).status,400);
+      const duplicate=new URL(callback);duplicate.searchParams.append('state',new URL(url).searchParams.get('state'));assert.equal((await fetch(duplicate)).status,400);
+      const badPath=new URL(callback);badPath.pathname='/other';assert.equal((await fetch(badPath)).status,400);
+      await new Promise((resolve,reject)=>{const request=http.get(callback,{headers:{Host:'attacker.example'}},response=>{assert.equal(response.statusCode,400);response.resume();response.on('end',resolve);});request.on('error',reject);});
+      assert.equal((await fetch(callback)).status,200);
+    })();return browser;
+  }});
+  await browser;assert.equal(exchanges,1);
+});
+
+test('TC-016: denial, failed exchange, redirect, oversized response, timeout and interruption preserve a good credential',async t=>{
+  for(const mode of ['denied','exchange-failure','redirect','oversized','invalid-token','timeout','interrupted'])await t.test(mode,async t=>{
+    const {store}=await storage(t);let foreignCalls=0;
+    const foreign=await fixture(t,(_req,res)=>{foreignCalls++;res.end();});
+    const origin=await fixture(t,(_req,res)=>{
+      if(mode==='exchange-failure'){res.writeHead(503);res.end();return;}
+      if(mode==='redirect'){res.writeHead(302,{location:foreign});res.end();return;}
+      res.setHeader('content-type','application/json');
+      res.end(mode==='oversized'?'x'.repeat(8193):JSON.stringify({access_token:'bad',token_type:'Bearer',token_id:'id',account}));
+    });
+    const previous={hub:origin,token,tokenId:'previous',account};await store.write(previous);
+    const controller=new AbortController();let callback;
+    await assert.rejects(loginToHub(origin,{store,io:quiet,signal:controller.signal,timeoutMs:mode==='timeout'?10:2000,openBrowser:async url=>{
+      callback=callbackUrl(url);
+      if(mode==='timeout')return;
+      if(mode==='interrupted'){controller.abort();return;}
+      if(mode==='denied')callback=callbackUrl(url,{error:'access_denied'});
+      await fetch(callback);
+    }}));
+    assert.deepEqual(await store.read(origin),previous);assert.equal(foreignCalls,0);
+    await assert.rejects(fetch(callback)); // listener was released on every settlement path
+  });
+});
+
+test('TC-016: credential storage rejects symlinks and insecure files without changing a good credential',async t=>{
+  const {home,store}=await storage(t);const origin='https://hub.example';const value={hub:origin,token,tokenId:'id',account};
+  await store.write(value);const directory=path.join(home,'.ned','hub-credentials');const file=path.join(directory,(await fs.readdir(directory))[0]);
+  await fs.chmod(file,0o644);await assert.rejects(store.read(origin));await assert.rejects(store.write({...value,tokenId:'changed'}));await fs.chmod(file,0o600);assert.deepEqual(await store.read(origin),value);
+  const target=path.join(home,'target');await fs.rename(file,target);await fs.symlink(target,file);await assert.rejects(store.read(origin));await assert.rejects(store.write(value));assert.deepEqual(JSON.parse(await fs.readFile(target,'utf8')),value);
+  await fs.unlink(file);await fs.rename(target,file);await fs.chmod(directory,0o755);await assert.rejects(store.read(origin));await fs.chmod(directory,0o700);
+  await store.remove(origin,'different-token');assert.deepEqual(await store.read(origin),value);await store.remove(origin,token);assert.equal(await store.read(origin),null);
+  assert.equal(canonicalHubOrigin('https://HUB.example:443/'),origin);
+  for(const invalid of ['http://remote.example','https://hub.example/path','https://user@hub.example','https://hub.example/?x=1'])assert.throws(()=>canonicalHubOrigin(invalid));
+});
+
+test('TC-016: logout revokes only the saved origin and offline failure retains it; no saved credential makes no request',async t=>{
+  const {store}=await storage(t);let calls=0,status=503;
+  const origin=await fixture(t,(req,res)=>{calls++;assert.equal(req.method,'DELETE');assert.equal(req.url,'/api/oauth/token');assert.equal(req.headers.authorization,`Bearer ${token}`);res.writeHead(status);res.end();});
+  const other={hub:'https://other.example',token,tokenId:'other',account};await store.write(other);
+  const value={hub:origin,token,tokenId:'id',account};await store.write(value);const signals=new EventEmitter();
+  assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),1);assert.deepEqual(await store.read(origin),value);
+  status=204;assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),0);assert.equal(await store.read(origin),null);assert.deepEqual(await store.read(other.hub),other);
+  assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),0);assert.equal(calls,2);
+  await store.write(value);status=401;assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),0);
+  assert.equal(signals.listenerCount('SIGINT'),0);assert.equal(signals.listenerCount('SIGTERM'),0);
+});
+
+test('TC-016: COM uses saved credentials only for its configured origin and explicit environment token wins',async()=>{
+  const origin='https://hub.example',saved={hub:origin,token,tokenId:'id',account};
+  for(const mode of ['saved','override','local']){
+    const signals=new EventEmitter();let reads=0,connected=0;
+    const env=mode==='local'?{}:{NED_HUB_URL:origin,NED_HUB_SLUG:'fixture',...(mode==='override'?{NED_HUB_TOKEN:'ned_explicit_override_0000000000'}:{})};
+    const result=await runCommunicatorCli([],quiet,{env,home:'/synthetic',signals,hubCredentialStore:{async read(hub){reads++;assert.equal(hub,origin);return saved;}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected++;assert.equal(config.token,mode==='override'?env.NED_HUB_TOKEN:token);return {async close(){}};}});
+    assert.equal(result,0);assert.equal(reads,mode==='saved'?1:0);assert.equal(connected,mode==='local'?0:1);
+  }
+});
+
+
+test('TC-016: installed login command forwards interruption and releases its callback listener',async t=>{
+  const {home}=await storage(t);const bin=path.join(home,'.local/share/ned/current/app/bin');await fs.mkdir(bin,{recursive:true});
+  await fs.writeFile(path.join(bin,'../package.json'),'{"type":"module"}');
+  await fs.writeFile(path.join(bin,'ned.js'),`import {runCli} from ${JSON.stringify(new URL('../../../../src/cli.js',import.meta.url).href)}; process.exitCode=await runCli(process.argv.slice(2));`);
+  for(const signal of ['SIGINT','SIGTERM']){
+    const child=spawn(process.execPath,[fileURLToPath(new URL('../../../../bin/ned-launcher.js',import.meta.url)),'hub','login','--hub','https://hub.example','--no-browser'],{env:{PATH:process.env.PATH,HOME:home,NED_LAUNCHER_MODULE:fileURLToPath(new URL('../../../../src/launcher.js',import.meta.url))},stdio:['ignore','pipe','pipe']});
+    let output='',errors='';let ready,rejectReady;const started=new Promise((resolve,reject)=>{ready=resolve;rejectReady=reject;});
+    child.stdout.on('data',chunk=>{output+=chunk;const url=output.match(/https:\/\/hub\.example\/api\/oauth\/authorize\?[^\s]+/);if(url)ready(new URL(new URL(url[0]).searchParams.get('redirect_uri')));});child.stderr.on('data',chunk=>{errors+=chunk;});
+    const ended=new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',(code,received)=>resolve({code,received}));});
+    const deadline=setTimeout(()=>{child.kill('SIGKILL');rejectReady(new Error('login startup deadline'));},5000);
+    t.after(async()=>{clearTimeout(deadline);if(child.exitCode===null)child.kill('SIGKILL');await ended;});
+    const callback=await started;clearTimeout(deadline);child.kill(signal);
+    const exitDeadline=setTimeout(()=>child.kill('SIGKILL'),5000);const result=await ended;clearTimeout(exitDeadline);
+    assert.deepEqual(result,{code:1,received:null});assert.match(errors,/interrupted/);await assert.rejects(fetch(callback));assert.equal(output.includes(token),false);
+  }
+});
+
+test('TC-016: concurrent replacement and stale logout retain the new credential',async t=>{
+  const {home,store}=await storage(t),origin='https://hub.example';
+  const old={hub:origin,token,tokenId:'old',account},replacement={...old,token:'ned_new_synthetic_credential_0000000000',tokenId:'new'};
+  await store.write(old);
+  const directory=path.join(home,'.ned','hub-credentials'),file=path.join(directory,(await fs.readdir(directory))[0]),lock=`${file}.lock`;
+  await fs.mkdir(lock,{mode:0o700});
+  const writing=store.write(replacement),removing=store.remove(origin,token);
+  assert.deepEqual(await store.read(origin),old);
+  await fs.rmdir(lock);await Promise.all([writing,removing]);
+  assert.deepEqual(await store.read(origin),replacement);
+  assert.equal((await fs.readdir(directory)).length,1);
+});
+
+test('TC-016: a repeated valid callback is consumed once while exchange is pending',async t=>{
+  const {store}=await storage(t);let finishExchange,exchangeStarted;
+  const started=new Promise(resolve=>{exchangeStarted=resolve;});const held=new Promise(resolve=>{finishExchange=resolve;});let exchanges=0,browser;
+  const origin=await fixture(t,async(_req,res)=>{exchanges++;exchangeStarted();await held;res.setHeader('content-type','application/json');res.end(JSON.stringify({access_token:token,token_type:'Bearer',token_id:'id',account}));});
+  const login=loginToHub(origin,{store,io:quiet,openBrowser:async url=>{
+    browser=(async()=>{const callback=callbackUrl(url);assert.equal((await fetch(callback)).status,200);await started;assert.equal((await fetch(callback)).status,410);finishExchange();})();return browser;
+  }});
+  await login;await browser;assert.equal(exchanges,1);
+});

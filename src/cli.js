@@ -1,3 +1,4 @@
+import {runHubCli} from './hub-cli.js';
 import { createRequire } from 'node:module';
 import { runCommunicatorCli } from './communicator/cli.js';
 import { runTaskCli } from './task-cli.js';
@@ -13,6 +14,7 @@ function flagValue(flags, name) {
 
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (command === 'hub') return runHubCli(flags, io, dependencies);
   if (command === 'com') return runCommunicatorCli(flags, io, dependencies);
   if (['goal', 'subgoal', 'task', 'issue', 'ready', 'status', 'tree'].includes(command)) {
     return runTaskCli(argv, io, dependencies);
@@ -30,6 +32,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '  ned --version',
       '  ned com [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--help]',
       '  ned version',
+      '  ned hub <login|logout> [--hub <origin>] [--no-browser (login only)]',
       '  ned task init [--project <directory>] [--database <SQLite-path-or-file-URL>]',
       '  ned <goal|subgoal|task|issue> create <title> [--parent <id>] [--json]',
       '  ned task <list|get|start|block|unblock|done|history|children> [id] [--json]',
@@ -82,6 +85,6 @@ export async function runCli(argv, io = console, dependencies = {}) {
     }
   }
 
-  io.error('Usage: ned <task|goal|subgoal|issue|ready|status|tree|com|telemetry> (see ned --help)');
+  io.error('Usage: ned <task|goal|subgoal|issue|ready|status|tree|com|hub|telemetry> (see ned --help)');
   return 2;
 }
