@@ -1,30 +1,33 @@
 {
   "result": "pass",
-  "candidate_sha": "3a5db6398a4f9947cf9f21c9ca128758cda1b5d1",
-  "tested_at": "2026-10-28T04:43:39.502591Z",
-  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3; exact NED native OAuth source 3a5db6398a4f9947cf9f21c9ca128758cda1b5d1 and Hub 0c2ea94a17c28963a281af4f4b2a85e0739686a2; actual native CLI, Hub API/control/data broker and COM, temporary SQLite, synthetic local development browser session. No live Google credentials.",
+  "candidate_sha": "9e460d77f9f114cf4825b6db52361e326b9f050a",
+  "tested_at": "2026-10-28T05:23:50.080523+00:00",
+  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3; exact NED source9e460d77f9f114cf4825b6db52361e326b9f050a and existing Hub runtime25e1b1b096c035e8d8a461df18cfae1eb546983d. Actual Hub API/broker, native COM --login/--logout, real COM, temporary SQLite and private temporary credentials; synthetic browser session and CSRF approval. No live Google grant.",
   "commands": [
     "npm run lint",
     "npm test",
-    "npm run test:spec -- --all",
     "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-016.test.js",
-    "Parent ran npx tsx .artifacts/verification/native-oauth-smoke.ts from the Hub checkout against exact native source 3a5db6398a4f9947cf9f21c9ca128758cda1b5d1 and Hub 0c2ea94a17c28963a281af4f4b2a85e0739686a2; sanitized raw result retained separately."
+    "node --test docs/features/communicator/tests/TC-016.test.js docs/features/communicator/tests/TC-015.test.js",
+    "Parent: npx tsx .artifacts/verification/com-login-smoke.ts against exact source9e460d77f9f114cf4825b6db52361e326b9f050a",
+    "Parent: hosted OAuth compatibility checks against https://staging.hub.datanav.app"
   ],
-  "observations": "PASS for exact source: actual runHubCli used S256 PKCE and its real loopback listener through the actual Hub authorization request, explicit CSRF-protected synthetic account approval and code exchange. Private per-origin credentials were saved; actual runCommunicatorCli automatically loaded them without NED_HUB_TOKEN and connected through the real Hub broker to real COM HTML/CSS/JS/health/projects (200). Actual native logout revoked the token, removed the matching local credential and invalidated the browser lease; SIGTERM returned0 and released resources. Focused TC-01618/18 passes include wrong Host/path/state, duplicate callback, failed/denied/timed-out/interrupted preservation, redirect/oversize rejection, permissions/symlinks/host isolation/concurrent replacement, logout offline retention and installed-launcher signal cleanup. NATIVE-OAUTH-R1-001 correction adds real-store post-rename/post-unlink unlock-EIO cases: completed login retains its saved token with zero extra revocations, completed logout remains deleted/revoked, both return success with fixed recovery warning; original precommit error and prior credential survive failed replacement, stale-logout compare protection remains, and a replacement lock is never removed. Fault test was RED before correction and GREEN afterward. Lint and canonical full Node/spec suites pass; Python208passed9existing environment/optional skips. Other existing unrelated manual spec cases remain NOT RUN. This evidence does not certify actual Google consent, hosted OAuth/TLS, PostgreSQL, backup/restore, remote-machine COM or Windows saved-storage support. Hub source was tested but is not claimed independently approved or deployed by this receipt. Original dirty checkout was untouched. This follow-up changes only this evidence file.",
+  "observations": "PASS: actual ned com --login uses Hub-owned S256 PKCE authorization with explicit synthetic session/CSRF consent, saves a private per-origin credential, then starts real COM in the same command. Saved account token registers the running COM through the real Hub broker; proxied HTML/CSS/JS/health/projects return200. Actual --logout revokes token and removes matching file; browser lease denied; SIGTERM returns0. Focused TC01625/25 and TC0158/8: defaults staging/production/custom, issuer isolation, retired command/address flag rejection, login-before-COM, denied login starts no COM, explicit-token ambiguity rejected, post-login credential-lookup interruption, retained PKCE/callback/storage/concurrency/revocation and installed-launcher signal checks. Default-selection test was RED before implementation; actual login local-only test caught URL-only configuration admission and passed after correction. Canonical lint and all Node/spec tests pass; Python208 passed9 existing optional/environment skips. Source precommit hook repeats lint, all Node/spec and pytest successfully. Other unrelated manual/evaluation spec cases remain NOT RUN. Hosted checks establish current staging health/provider availability and rejection contracts, not completed Google personal consent. No claim of live Google approval, remote-machine COM, production deployment, PostgreSQL/backup restore or Windows saved-storage acceptance. Hub runtime already supports this flow; no runtime change or redeployment was needed. Original dirty developer checkout remains untouched. This follow-up changes only this evidence file.",
   "related_issues": [
-    "DataNavAI/no-ego-dev#140",
-    "DataNavAI/ned-hub#14"
+    "DataNavAI/no-ego-dev#142"
   ],
-  "hub_candidate_sha": "0c2ea94a17c28963a281af4f4b2a85e0739686a2",
+  "hub_candidate_sha": "25e1b1b096c035e8d8a461df18cfae1eb546983d",
   "evidence": [
     {
-      "path": "DataNavAI/ned-hub/.artifacts/verification/native-oauth-round-2-smoke.json",
-      "sha256": "18c89d94bf2524d52e1b949081ae0ea2eac95becc8a12f42d94def05f8f41862"
+      "path": "DataNavAI/ned-hub/.artifacts/verification/com-login-source-smoke.json",
+      "sha256": "e0018311ec9952e751dea7ac27d4dce6661c967d58df3131c8ec13b3468f9a55"
     },
     {
-      "path": "DataNavAI/ned-hub/.artifacts/verification/native-oauth-smoke.ts",
-      "sha256": "1188a764cf7243b0c78716235b7ac4c898ebe5768010102c991591f8c2b6c16d"
+      "path": "DataNavAI/ned-hub/.artifacts/verification/com-login-smoke.ts",
+      "sha256": "1ee31493b3c21888eb64d41616727aaf44e68dde0f93d6c5c6bb1e602092694a"
+    },
+    {
+      "path": "DataNavAI/ned-hub/.artifacts/verification/com-login-hosted-compatibility.json",
+      "sha256": "b27b248abeb1aad661b429f0d0bbbd719641ea238905638e414eef46233eb61b"
     }
   ]
 }
