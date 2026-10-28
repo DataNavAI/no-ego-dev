@@ -48,7 +48,17 @@ export function createHubCredentialStore({home=homedir()}={}) {
       try {await fs.mkdir(lock,{mode:0o700});break;}
       catch(error){if(error.code!=='EEXIST'||Date.now()>=deadline)throw new Error('Hub credential is busy. Retry login/logout.',{cause:error});await new Promise(resolve=>setTimeout(resolve,25));}
     }
-    try {return await operation();}finally {await fs.rmdir(lock);}
+    const owned=await fs.lstat(lock);
+    let result,operationError,cleanupWarning=false;
+    try {result=await operation();}catch(error){operationError=error;}
+    try {
+      const current=await fs.lstat(lock);
+      if(current.dev!==owned.dev||current.ino!==owned.ino)throw new Error('Credential lock ownership changed.');
+      await fs.rmdir(lock);
+    }catch {cleanupWarning=true;}
+    if(operationError)throw operationError;
+    // A completed rename/unlink is authoritative even if releasing its lock failed.
+    return {ok:true,...result,cleanupWarning};
   }
   return {
     read,
@@ -58,12 +68,12 @@ export function createHubCredentialStore({home=homedir()}={}) {
       return mutate(origin,async()=>{
       await read(origin); // Reject unsafe existing files; a failed login never replaces a good credential.
       const temporary=path.join(directory,`.${randomBytes(24).toString('hex')}.tmp`);
-      let handle;
+      let handle,published=false;
       try {
         handle=await fs.open(temporary,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);
         await handle.writeFile(JSON.stringify(value));await handle.sync();await handle.close();handle=null;
-        await fs.rename(temporary,filename(origin));
-      }finally {await handle?.close();await fs.unlink(temporary).catch(error=>{if(error.code!=='ENOENT')throw error;});}
+        await fs.rename(temporary,filename(origin));published=true;
+      }finally {await handle?.close().catch(()=>{});if(!published)await fs.unlink(temporary).catch(()=>{});}
       });
     },
     async remove(origin,expectedToken) {

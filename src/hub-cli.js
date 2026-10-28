@@ -3,6 +3,7 @@ import {createHash,randomBytes} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {canonicalHubOrigin,createHubCredentialStore,validHubCredential} from './hub-credentials.js';
 
+const cleanupWarning='NED Hub credential lock cleanup failed. Credentials reflect the completed command; see the Hub setup guide for recovery before another login/logout.';
 const usage='Usage: ned hub <login|logout> [--hub <origin>] [--no-browser (login only)]';
 async function jsonResponse(response) {
   if(!response.ok){await response.body?.cancel();throw new Error('Hub request rejected.');}
@@ -66,7 +67,8 @@ export async function loginToHub(origin,{store,io=console,openBrowser=openHubBro
     credential={hub:origin,token:result.access_token,tokenId:result.token_id,account:result.account};
     if(result.token_type!=='Bearer'||!validHubCredential(credential,origin))throw new Error('Invalid Hub credential response.');
     controller.signal.throwIfAborted();
-    await store.write(credential);saved=true;
+    const stored=await store.write(credential);saved=true;
+    if(stored?.cleanupWarning)io.error?.(cleanupWarning);
     io.log(`Signed in to NED Hub at ${origin}.`);
     return credential;
   }finally {
@@ -94,7 +96,7 @@ export async function runHubCli(flags,io=console,dependencies={}) {
     if(action==='login')await loginToHub(hub,{store,io,noBrowser,openBrowser:dependencies.openBrowser,signal:controller.signal,timeoutMs:dependencies.timeoutMs});
     else {
       const saved=await store.read(hub);
-      if(saved){await revoke(hub,saved.token,AbortSignal.any([controller.signal,AbortSignal.timeout(15000)]));await store.remove(hub,saved.token);}
+      if(saved){await revoke(hub,saved.token,AbortSignal.any([controller.signal,AbortSignal.timeout(15000)]));const removed=await store.remove(hub,saved.token);if(removed?.cleanupWarning)io.error(cleanupWarning);}
       io.log(`Signed out of NED Hub at ${hub}.`);
     }
     return 0;

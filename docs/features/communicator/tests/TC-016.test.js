@@ -164,3 +164,51 @@ test('TC-016: a repeated valid callback is consumed once while exchange is pendi
   }});
   await login;await browser;assert.equal(exchanges,1);
 });
+
+test('TC-016: committed login/logout survives unlock EIO and precommit failure preserves the previous credential',async t=>{
+  const {home,store}=await storage(t);let exchanges=0,revocations=0;
+  const replacement='ned_replacement_synthetic_credential_00000000';
+  const origin=await fixture(t,async(req,res)=>{
+    if(req.method==='DELETE'){revocations++;res.writeHead(204);res.end();return;}
+    exchanges++;for await(const chunk of req)assert.ok(chunk.length);
+    res.setHeader('content-type','application/json');res.end(JSON.stringify({access_token:replacement,token_type:'Bearer',token_id:'new',account}));
+  });
+  const previous={hub:origin,token,tokenId:'old',account};await store.write(previous);
+  const directory=path.join(home,'.ned','hub-credentials');const lock=path.join(directory,(await fs.readdir(directory))[0]+'.lock');
+  const rmdir=fs.rmdir,rename=fs.rename;const fault=()=>Object.assign(new Error('synthetic cleanup failure'),{code:'EIO'});
+  const signals=new EventEmitter(),logs=[],errors=[];const io={log:s=>logs.push(s),error:s=>errors.push(s)};
+  const dependencies={store,signals,openBrowser:async url=>{assert.equal((await fetch(callbackUrl(url))).status,200);}};
+  try {
+    fs.rmdir=async target=>{if(target===lock)throw fault();return rmdir(target);};
+    assert.equal(await runHubCli(['login','--hub',origin],io,dependencies),0);
+    assert.equal((await store.read(origin)).token,replacement);assert.equal(revocations,0);
+    assert.match(logs.at(-1),/^Signed in/);assert.match(errors.at(-1),/lock cleanup failed/);assert.equal(errors.join(' ').includes('Previous credentials were preserved'),false);
+    assert.equal((await fs.lstat(lock)).isDirectory(),true);
+    fs.rmdir=rmdir;await rmdir(lock); // operator recovery only after the completed operation
+    fs.rmdir=async target=>{if(target===lock)throw fault();return rmdir(target);};
+    assert.equal(await runHubCli(['logout','--hub',origin],io,dependencies),0);
+    assert.equal(await store.read(origin),null);assert.equal(revocations,1);assert.match(logs.at(-1),/^Signed out/);assert.match(errors.at(-1),/lock cleanup failed/);
+    fs.rmdir=rmdir;await rmdir(lock);
+    assert.equal(await runHubCli(['logout','--hub',origin],io,dependencies),0);assert.equal(revocations,1);
+    await store.write(previous);
+    fs.rename=async()=>{throw Object.assign(new Error('synthetic precommit failure'),{code:'EACCES'});};
+    assert.equal(await runHubCli(['login','--hub',origin],io,dependencies),1);
+    assert.deepEqual(await store.read(origin),previous);assert.equal(revocations,2);assert.equal(exchanges,2);
+    assert.match(errors.at(-1),/Previous credentials were preserved/);assert.deepEqual(await fs.readdir(directory),[path.basename(lock).slice(0,-5)]);
+  }finally {fs.rmdir=rmdir;fs.rename=rename;}
+});
+
+test('TC-016: unlock never removes a replacement lock and precommit errors retain their original cause',async t=>{
+  const {home,store}=await storage(t),origin='https://hub.example',old={hub:origin,token,tokenId:'old',account};await store.write(old);
+  const directory=path.join(home,'.ned','hub-credentials'),file=path.join(directory,(await fs.readdir(directory))[0]),lock=`${file}.lock`;
+  const rename=fs.rename,rmdir=fs.rmdir;
+  try {
+    fs.rename=async(from,to)=>{await rename(from,to);await rename(lock,`${lock}.retired`);await fs.mkdir(lock,{mode:0o700});};
+    const result=await store.write({...old,tokenId:'new'});assert.deepEqual(result,{ok:true,cleanupWarning:true});
+    assert.equal((await fs.lstat(lock)).isDirectory(),true);assert.equal((await store.read(origin)).tokenId,'new');
+    fs.rename=rename;await rmdir(lock);await rmdir(`${lock}.retired`);
+    const failure=Object.assign(new Error('synthetic precommit failure'),{code:'EACCES'});
+    fs.rename=async()=>{throw failure;};fs.rmdir=async()=>{throw Object.assign(new Error('synthetic cleanup failure'),{code:'EIO'});};
+    await assert.rejects(store.write(old),error=>error===failure);assert.equal((await store.read(origin)).tokenId,'new');
+  }finally {fs.rename=rename;fs.rmdir=rmdir;}
+});
