@@ -1,36 +1,30 @@
 {
   "result": "pass",
-  "candidate_sha": "47b5b2e72ba4f279326fde85e2e0055e965bc379",
-  "tested_at": "2026-10-27T06:35:12Z",
-  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3; real native NED CLI and COM from corrected source47b5b2e, real Hub API/TunnelHub04c49397646bfd3aec9cbf5b9e407a2f78fc34e8, temporary SQLite, synthetic owner/token/grant. Both default shared localhost and explicit isolated localhost modes; no live provider credentials.",
+  "candidate_sha": "d0925466fe477ec8ef746f9ed470ef605d94e5ce",
+  "tested_at": "2026-10-28T04:31:12.725642Z",
+  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3; exact NED native OAuth source d0925466fe477ec8ef746f9ed470ef605d94e5ce and Hub f73bd139be63e61e0560ddd5da6e0aae2c140ecc; actual native CLI, Hub API/control/data broker and COM, temporary SQLite, synthetic local development browser session. No live Google credentials.",
   "commands": [
     "npm run lint",
-    "npm run test:spec -- --all",
     "npm test",
+    "npm run test:spec -- --all",
     "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-015.test.js",
-    "Parent executed Hub .artifacts/verification/real-ned-smoke.ts with NED_SMOKE_ISOLATED=false against exact corrected NED source",
-    "Parent executed the same actual CLI/API/broker/COM harness with isolated mode and NED_HUB_INSTANCE_ORIGINS=true",
-    "Parent browser exercised local Hub development sign-in, registered instance list and Connect to actual COM; retained real-ned-browser.png (unchanged COM UI)."
+    "node --test docs/features/communicator/tests/TC-016.test.js",
+    "Parent ran npx tsx .artifacts/verification/native-oauth-smoke.ts from the Hub checkout against exact native source d0925466fe477ec8ef746f9ed470ef605d94e5ce and Hub f73bd139be63e61e0560ddd5da6e0aae2c140ecc; sanitized raw result retained separately."
   ],
-  "observations": "PASS for exact corrected source in both local modes: actual runCommunicatorCli registers only after listening, becomes online through actual Hub API and control/data broker, keeps local COM reachable, and returns COM HTML/CSS/JS plus root health and project list200 using an owner grant. Foreign Origin403; absence of lease denied; SIGTERM exits0 and cleans up. The default localhost mode and explicit isolated localhost mode both pass. Focused automated TC-015 has8 passing assertions including permanent moon- admission, complete reserved slug rejection, strict local mode and remote isolation rejection, retry/reconnect, endpoint credential confinement,401 and cancellation cleanup. Full canonical suites and code-commit hook passed; Python208passed9existing optional/environment skips. Existing unrelated manual spec cases remain NOT RUN; the prior browser smoke proves unchanged local COM UI only. No hosted OAuth, remote-machine COM, PostgreSQL, hosted TLS, backup/restore, general browser matrix, or future COM WebSocket support is claimed. Original dirty no-ego-dev checkout was untouched. This evidence-only commit changes no source.",
+  "observations": "PASS for exact source: actual runHubCli used S256 PKCE and its real loopback listener through the actual Hub authorization request, explicit CSRF-protected synthetic account approval and code exchange. Private per-origin credentials were saved; actual runCommunicatorCli automatically loaded them without NED_HUB_TOKEN and connected through the real Hub broker to real COM HTML/CSS/JS/health/projects (200). Actual native logout revoked the token, removed the matching local credential and invalidated the browser lease; SIGTERM returned0 and released resources. Focused TC-01616/16 passes include wrong Host/path/state, duplicate callback, failed/denied/timed-out/interrupted preservation, redirect/oversize rejection, permissions/symlinks/host isolation/concurrent replacement, logout offline retention and installed-launcher signal cleanup. Lint and canonical full Node/spec suites pass; Python208passed9existing environment/optional skips. Other existing unrelated manual spec cases remain NOT RUN. This evidence does not certify actual Google consent, hosted OAuth/TLS, PostgreSQL, backup/restore, remote-machine COM or Windows saved-storage support. Hub source was tested but is not claimed independently approved or deployed by this receipt. Original dirty checkout was untouched. This follow-up changes only this evidence file.",
   "related_issues": [
-    "DataNavAI/no-ego-dev#138",
-    "DataNavAI/ned-hub#4"
+    "DataNavAI/no-ego-dev#140",
+    "DataNavAI/ned-hub#14"
   ],
-  "hub_candidate_sha": "04c49397646bfd3aec9cbf5b9e407a2f78fc34e8",
+  "hub_candidate_sha": "f73bd139be63e61e0560ddd5da6e0aae2c140ecc",
   "evidence": [
     {
-      "path": "DataNavAI/ned-hub/.artifacts/verification/native-final-smoke.json",
-      "sha256": "f06563155b0de46d47e834ebeb15269cb453b6557afacf5e8849d1741e76ddb9"
+      "path": "DataNavAI/ned-hub/.artifacts/verification/native-oauth-final-smoke.json",
+      "sha256": "e5a701d48612ea2a53e240e53e5eec382718435cf7a2e385b528a3e331676280"
     },
     {
-      "path": "DataNavAI/ned-hub/.artifacts/verification/real-ned-smoke.ts",
-      "sha256": "1b3da2ac5eb08a3d21a5b50a7a73c3c20f84ce7a767ae9426ec2ca8daedb6d44"
-    },
-    {
-      "path": "DataNavAI/ned-hub/.artifacts/verification/real-ned-browser.png",
-      "sha256": "f21dd90fe2f4678c82f6672c9afe762fb8c8ca1842f070df15922af5e5b2b02d"
+      "path": "DataNavAI/ned-hub/.artifacts/verification/native-oauth-smoke.ts",
+      "sha256": "1188a764cf7243b0c78716235b7ac4c898ebe5768010102c991591f8c2b6c16d"
     }
   ]
 }
