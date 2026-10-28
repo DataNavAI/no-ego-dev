@@ -1,26 +1,26 @@
 {
   "result": "pass",
-  "candidate_sha": "d0925466fe477ec8ef746f9ed470ef605d94e5ce",
-  "tested_at": "2026-10-28T04:31:12.725642Z",
-  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3; exact NED native OAuth source d0925466fe477ec8ef746f9ed470ef605d94e5ce and Hub f73bd139be63e61e0560ddd5da6e0aae2c140ecc; actual native CLI, Hub API/control/data broker and COM, temporary SQLite, synthetic local development browser session. No live Google credentials.",
+  "candidate_sha": "3a5db6398a4f9947cf9f21c9ca128758cda1b5d1",
+  "tested_at": "2026-10-28T04:43:39.502591Z",
+  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3; exact NED native OAuth source 3a5db6398a4f9947cf9f21c9ca128758cda1b5d1 and Hub 0c2ea94a17c28963a281af4f4b2a85e0739686a2; actual native CLI, Hub API/control/data broker and COM, temporary SQLite, synthetic local development browser session. No live Google credentials.",
   "commands": [
     "npm run lint",
     "npm test",
     "npm run test:spec -- --all",
     "python -m pytest",
     "node --test docs/features/communicator/tests/TC-016.test.js",
-    "Parent ran npx tsx .artifacts/verification/native-oauth-smoke.ts from the Hub checkout against exact native source d0925466fe477ec8ef746f9ed470ef605d94e5ce and Hub f73bd139be63e61e0560ddd5da6e0aae2c140ecc; sanitized raw result retained separately."
+    "Parent ran npx tsx .artifacts/verification/native-oauth-smoke.ts from the Hub checkout against exact native source 3a5db6398a4f9947cf9f21c9ca128758cda1b5d1 and Hub 0c2ea94a17c28963a281af4f4b2a85e0739686a2; sanitized raw result retained separately."
   ],
-  "observations": "PASS for exact source: actual runHubCli used S256 PKCE and its real loopback listener through the actual Hub authorization request, explicit CSRF-protected synthetic account approval and code exchange. Private per-origin credentials were saved; actual runCommunicatorCli automatically loaded them without NED_HUB_TOKEN and connected through the real Hub broker to real COM HTML/CSS/JS/health/projects (200). Actual native logout revoked the token, removed the matching local credential and invalidated the browser lease; SIGTERM returned0 and released resources. Focused TC-01616/16 passes include wrong Host/path/state, duplicate callback, failed/denied/timed-out/interrupted preservation, redirect/oversize rejection, permissions/symlinks/host isolation/concurrent replacement, logout offline retention and installed-launcher signal cleanup. Lint and canonical full Node/spec suites pass; Python208passed9existing environment/optional skips. Other existing unrelated manual spec cases remain NOT RUN. This evidence does not certify actual Google consent, hosted OAuth/TLS, PostgreSQL, backup/restore, remote-machine COM or Windows saved-storage support. Hub source was tested but is not claimed independently approved or deployed by this receipt. Original dirty checkout was untouched. This follow-up changes only this evidence file.",
+  "observations": "PASS for exact source: actual runHubCli used S256 PKCE and its real loopback listener through the actual Hub authorization request, explicit CSRF-protected synthetic account approval and code exchange. Private per-origin credentials were saved; actual runCommunicatorCli automatically loaded them without NED_HUB_TOKEN and connected through the real Hub broker to real COM HTML/CSS/JS/health/projects (200). Actual native logout revoked the token, removed the matching local credential and invalidated the browser lease; SIGTERM returned0 and released resources. Focused TC-01618/18 passes include wrong Host/path/state, duplicate callback, failed/denied/timed-out/interrupted preservation, redirect/oversize rejection, permissions/symlinks/host isolation/concurrent replacement, logout offline retention and installed-launcher signal cleanup. NATIVE-OAUTH-R1-001 correction adds real-store post-rename/post-unlink unlock-EIO cases: completed login retains its saved token with zero extra revocations, completed logout remains deleted/revoked, both return success with fixed recovery warning; original precommit error and prior credential survive failed replacement, stale-logout compare protection remains, and a replacement lock is never removed. Fault test was RED before correction and GREEN afterward. Lint and canonical full Node/spec suites pass; Python208passed9existing environment/optional skips. Other existing unrelated manual spec cases remain NOT RUN. This evidence does not certify actual Google consent, hosted OAuth/TLS, PostgreSQL, backup/restore, remote-machine COM or Windows saved-storage support. Hub source was tested but is not claimed independently approved or deployed by this receipt. Original dirty checkout was untouched. This follow-up changes only this evidence file.",
   "related_issues": [
     "DataNavAI/no-ego-dev#140",
     "DataNavAI/ned-hub#14"
   ],
-  "hub_candidate_sha": "f73bd139be63e61e0560ddd5da6e0aae2c140ecc",
+  "hub_candidate_sha": "0c2ea94a17c28963a281af4f4b2a85e0739686a2",
   "evidence": [
     {
-      "path": "DataNavAI/ned-hub/.artifacts/verification/native-oauth-final-smoke.json",
-      "sha256": "e5a701d48612ea2a53e240e53e5eec382718435cf7a2e385b528a3e331676280"
+      "path": "DataNavAI/ned-hub/.artifacts/verification/native-oauth-round-2-smoke.json",
+      "sha256": "18c89d94bf2524d52e1b949081ae0ea2eac95becc8a12f42d94def05f8f41862"
     },
     {
       "path": "DataNavAI/ned-hub/.artifacts/verification/native-oauth-smoke.ts",
