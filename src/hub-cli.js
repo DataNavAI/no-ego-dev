@@ -79,12 +79,26 @@ export async function loginToHub(origin,{store,io=console,openBrowser=openHubBro
 export async function runHubAuthentication(action,io=console,dependencies={}) {
   let hub;
   try {hub=resolveHubOrigin(dependencies.env||process.env);}
-  catch {io.error('NEDCOM: configure a valid NED_HUB_ENV or NED_HUB_URL.');return 2;}
+  catch(error) {io.error(`NEDCOM: ${error.message} Configure a valid NED_ENV or NED_HUB_URL.`);return 2;}
   const store=dependencies.hubCredentialStore||createHubCredentialStore({home:dependencies.home});
   const signals=dependencies.signals||process;const controller=new AbortController();const stop=()=>controller.abort();
   signals.on('SIGINT',stop);signals.on('SIGTERM',stop);
   try {
-    if(action==='login')await loginToHub(hub,{store,io,noBrowser:dependencies.noBrowser,openBrowser:dependencies.openBrowser,signal:controller.signal,timeoutMs:dependencies.timeoutMs});
+    if(action==='login'){
+      const saved=await store.read(hub);
+      let reuse=false;
+      if(saved){
+        const response=await fetch(new URL('/api/oauth/token',hub),{headers:{Authorization:`Bearer ${saved.token}`},redirect:'error',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])});
+        if(response.status===401)await response.body?.cancel();
+        else {
+          const result=await jsonResponse(response);
+          if(result.account?.id!==saved.account.id)throw new Error('Cached account mismatch.');
+          controller.signal.throwIfAborted();reuse=true;
+        }
+      }
+      if(reuse)io.log(`Signed in to NED Hub at ${hub} using saved credentials.`);
+      else await loginToHub(hub,{store,io,noBrowser:dependencies.noBrowser,openBrowser:dependencies.openBrowser,signal:controller.signal,timeoutMs:dependencies.timeoutMs});
+    }
     else {
       const saved=await store.read(hub);
       if(saved){await revoke(hub,saved.token,AbortSignal.any([controller.signal,AbortSignal.timeout(15000)]));const removed=await store.remove(hub,saved.token);if(removed?.cleanupWarning)io.error(cleanupWarning);}

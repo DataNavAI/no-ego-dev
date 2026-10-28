@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {hostname} from 'node:os';
 import {resolveHubOrigin} from '../hub-credentials.js';
 import {pipeline} from 'node:stream';
 import WebSocket, {createWebSocketStream} from 'ws';
@@ -6,11 +7,23 @@ import WebSocket, {createWebSocketStream} from 'ws';
 // Keep admission identical to Hub store.validSlug: public slugs are permanent identities.
 const reservedSlugs = new Set(['api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout']);
 const loopback = hostname => ['127.0.0.1','localhost','[::1]'].includes(hostname);
+export function resolveInstanceName(env=process.env,host=hostname()) {
+  if(env.NED_HUB_ENV!==undefined||env.NED_HUB_SLUG!==undefined)throw new Error('Replace NED_HUB_ENV with NED_ENV and NED_HUB_SLUG with NED_INSTANCE_NAME.');
+  let name=env.NED_INSTANCE_NAME;
+  if(name===undefined){
+    name=host.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'');
+    if(!/^[a-z]/.test(name)||reservedSlugs.has(name))name=`ned-${name}`;
+    name=name.padEnd(3,'-').slice(0,40);
+  }
+  if(!/^[a-z][a-z0-9-]{2,39}$/.test(name)||reservedSlugs.has(name))throw new Error('Configure a valid NED_INSTANCE_NAME.');
+  return name;
+}
 export function readHubConfiguration(env = process.env) {
   const hubUrl=resolveHubOrigin(env);
-  const keys = ['NED_HUB_TOKEN','NED_HUB_SLUG','NED_HUB_NAME','NED_HUB_PROXY_URL','NED_HUB_INSTANCE_ORIGINS'];
+  const slug=resolveInstanceName(env);
+  const keys = ['NED_HUB_TOKEN','NED_INSTANCE_NAME','NED_HUB_NAME','NED_HUB_PROXY_URL','NED_HUB_INSTANCE_ORIGINS'];
   if (!keys.some(key => env[key] !== undefined)) return null;
-  const {NED_HUB_TOKEN: token,NED_HUB_SLUG: slug} = env;
+  const {NED_HUB_TOKEN: token} = env;
   let hub;
   try { hub = new URL(hubUrl); } catch { throw new Error('Invalid NED Hub configuration.'); }
   if (!['http:','https:'].includes(hub.protocol) || hub.username || hub.password || hub.pathname !== '/' || hub.search || hub.hash || (hub.protocol !== 'https:' && !loopback(hub.hostname)) || !/^ned_[A-Za-z0-9_-]{20,}$/.test(token || '') || (!/^[a-z][a-z0-9-]{2,39}$/.test(slug || '') || reservedSlugs.has(slug))) throw new Error('Invalid NED Hub configuration.');

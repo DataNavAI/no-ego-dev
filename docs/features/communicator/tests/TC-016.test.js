@@ -119,9 +119,9 @@ test('TC-016: COM uses saved credentials only for its configured origin and expl
   const origin='https://hub.example',saved={hub:origin,token,tokenId:'id',account};
   for(const mode of ['saved','override','local']){
     const signals=new EventEmitter();let reads=0,connected=0;
-    const env=mode==='local'?{}:{NED_HUB_URL:origin,NED_HUB_SLUG:'fixture',...(mode==='override'?{NED_HUB_TOKEN:'ned_explicit_override_0000000000'}:{})};
-    const result=await runCommunicatorCli([],quiet,{env,home:'/synthetic',signals,hubCredentialStore:{async read(hub){reads++;assert.equal(hub,origin);return saved;}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected++;assert.equal(config.token,mode==='override'?env.NED_HUB_TOKEN:token);return {async close(){}};}});
-    assert.equal(result,0);assert.equal(reads,mode==='saved'?1:0);assert.equal(connected,mode==='local'?0:1);
+    const env=mode==='local'?{}:{NED_HUB_URL:origin,NED_INSTANCE_NAME:'fixture',...(mode==='override'?{NED_HUB_TOKEN:'ned_explicit_override_0000000000'}:{})};
+    const result=await runCommunicatorCli([],quiet,{env,home:'/synthetic',signals,hubCredentialStore:{async read(hub){reads++;if(mode==='local')return null;assert.equal(hub,origin);return saved;}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected++;assert.equal(config.token,mode==='override'?env.NED_HUB_TOKEN:token);return {async close(){}};}});
+    assert.equal(result,0);assert.equal(reads,mode==='override'?0:1);assert.equal(connected,mode==='local'?0:1);
   }
 });
 
@@ -171,6 +171,7 @@ test('TC-016: committed login/logout survives unlock EIO and precommit failure p
   const replacement='ned_replacement_synthetic_credential_00000000';
   const origin=await fixture(t,async(req,res)=>{
     if(req.method==='DELETE'){revocations++;res.writeHead(204);res.end();return;}
+    if(req.method==='GET'){res.writeHead(401);res.end();return;}
     exchanges++;for await(const chunk of req)assert.ok(chunk.length);
     res.setHeader('content-type','application/json');res.end(JSON.stringify({access_token:replacement,token_type:'Bearer',token_id:'new',account}));
   });
@@ -215,15 +216,15 @@ test('TC-016: unlock never removes a replacement lock and precommit errors retai
 });
 
 test('TC-016: default staging, production and explicit custom Hub selection share isolated credentials',async()=>{
-  for(const [env,expected]of [[{},'https://staging.hub.datanav.app'],[{NED_HUB_ENV:'production'},'https://hub.datanav.app'],[{NED_HUB_ENV:'staging'},'https://staging.hub.datanav.app'],[{NED_HUB_ENV:'production',NED_HUB_URL:'http://localhost:4321'},'http://localhost:4321']]){
+  for(const [env,expected]of [[{},'https://staging.hub.datanav.app'],[{NED_ENV:'production'},'https://hub.datanav.app'],[{NED_ENV:'staging'},'https://staging.hub.datanav.app'],[{NED_ENV:'production',NED_HUB_URL:'http://localhost:4321'},'http://localhost:4321']]){
     let read,started=0;
     assert.equal(await runCommunicatorCli(['--logout'],quiet,{env,signals:new EventEmitter(),hubCredentialStore:{async read(origin){read=origin;return null;}},createServer(){started++;}}),0);
     assert.equal(read,expected);assert.equal(started,0);
     const signals=new EventEmitter();let connected;
-    assert.equal(await runCommunicatorCli([],quiet,{env:{...env,NED_HUB_SLUG:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(origin){assert.equal(origin,expected);return {hub:origin,token,tokenId:'id',account};}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected=config;return {async close(){}};}}),0);
+    assert.equal(await runCommunicatorCli([],quiet,{env:{...env,NED_INSTANCE_NAME:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(origin){assert.equal(origin,expected);return {hub:origin,token,tokenId:'id',account};}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected=config;return {async close(){}};}}),0);
     assert.equal(connected.hub.origin,expected);
   }
-  for(const env of [{NED_HUB_ENV:'prod'},{NED_HUB_URL:'https://hub.example/path'},{NED_HUB_ENV:'unknown',NED_HUB_URL:'https://hub.example'}]){
+  for(const env of [{NED_ENV:'prod'},{NED_HUB_URL:'https://hub.example/path'},{NED_ENV:'unknown',NED_HUB_URL:'https://hub.example'}]){
     assert.equal(await runCommunicatorCli(['--logout'],quiet,{env,hubCredentialStore:{async read(){assert.fail('invalid issuer accessed credentials');}}}),2);
   }
 });
@@ -234,13 +235,13 @@ test('TC-016: retired hub command and address flags reject without browser, cred
   for(const argv of [['hub','login'],['hub','logout'],['com','--hub','https://hub.example'],['com','--no-browser'],['com','--logout','--port','0'],['com','--logout','--logout'],['com','--login','--logout'],['com','--login','--login']])assert.equal(await runCli(argv,quiet,dependencies),2);
 });
 
-test('TC-016: COM login waits for Hub authorization, saves the account, then starts local or connected COM',async t=>{
-  for(const publish of [false,true])await t.test(publish?'registered':'local-only',async t=>{
+test('TC-016: COM login waits for Hub authorization, saves the account, then connects using default or explicit identity',async t=>{
+  for(const publish of [false,true])await t.test(publish?'explicit name':'default hostname',async t=>{
     const {store,home}=await storage(t);const events=[];let started=0,connections=0;
     const origin=await fixture(t,(_req,res)=>{events.push('exchange');res.setHeader('content-type','application/json');res.end(JSON.stringify({access_token:token,token_type:'Bearer',token_id:'issued',account}));});
     const signals=new EventEmitter();
-    const result=await runCli(['com','--login','--port','1234'],quiet,{env:{NED_HUB_URL:origin,...(publish?{NED_HUB_SLUG:'fixture'}:{})},home,signals,hubCredentialStore:store,openBrowser:async url=>{events.push('browser');assert.equal(started,0);await fetch(callbackUrl(url));},createServer(options){started++;events.push('server');assert.equal(options.port,1234);return {async listen(){assert.equal((await store.read(origin)).account.id,account.id);setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connections++;assert.equal(config.token,token);assert.equal(config.hub.origin,origin);return {async close(){}};}});
-    assert.equal(result,0);assert.deepEqual(events,['browser','exchange','server']);assert.equal(started,1);assert.equal(connections,publish?1:0);assert.equal(signals.listenerCount('SIGINT'),0);assert.equal(signals.listenerCount('SIGTERM'),0);
+    const result=await runCli(['com','--login','--port','1234'],quiet,{env:{NED_HUB_URL:origin,...(publish?{NED_INSTANCE_NAME:'fixture'}:{})},home,signals,hubCredentialStore:store,openBrowser:async url=>{events.push('browser');assert.equal(started,0);await fetch(callbackUrl(url));},createServer(options){started++;events.push('server');assert.equal(options.port,1234);return {async listen(){assert.equal((await store.read(origin)).account.id,account.id);setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connections++;assert.equal(config.token,token);assert.equal(config.hub.origin,origin);return {async close(){}};}});
+    assert.equal(result,0);assert.deepEqual(events,['browser','exchange','server']);assert.equal(started,1);assert.equal(connections,1);assert.equal(signals.listenerCount('SIGINT'),0);assert.equal(signals.listenerCount('SIGTERM'),0);
   });
 });
 
@@ -253,6 +254,62 @@ test('TC-016: denied login and explicit token ambiguity never start COM or publi
 
 test('TC-016: interruption during post-login credential lookup cannot start COM',async()=>{
   const signals=new EventEmitter();let reads=0;
-  const result=await runCli(['com'],quiet,{env:{NED_HUB_SLUG:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(){reads++;signals.emit('SIGTERM');return {token};}},createServer(){assert.fail('COM started after interrupt');}});
+  const result=await runCli(['com'],quiet,{env:{NED_INSTANCE_NAME:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(){reads++;signals.emit('SIGTERM');return {token};}},createServer(){assert.fail('COM started after interrupt');}});
   assert.equal(result,0);assert.equal(reads,1);assert.equal(signals.listenerCount('SIGTERM'),0);
+});
+
+test('TC-016: hostname identities are deterministic and explicit invalid or obsolete configuration has no effects',async()=>{
+  const {resolveInstanceName}=await import('../../../../src/communicator/hub.js');
+  for(const [host,expected]of [['MoonK.local','moonk-local'],['123','ned-123'],['','ned-'],['A','a--'],['API','ned-api'],['x'.repeat(60),'x'.repeat(40)]])assert.equal(resolveInstanceName({},host),expected);
+  for(const env of [{NED_INSTANCE_NAME:'Bad_Name'},{NED_INSTANCE_NAME:'api'},{NED_INSTANCE_NAME:''},{NED_HUB_ENV:'production'},{NED_HUB_SLUG:'fixture'}]){
+    const errors=[];
+    assert.equal(await runCommunicatorCli(['--login'],{log(){},error:s=>errors.push(s)},{env,hubCredentialStore:{read(){assert.fail('credential read');}},openBrowser(){assert.fail('browser');},createServer(){assert.fail('server');}}),2);
+    assert.match(errors.join(' '),/NED_INSTANCE_NAME|NED_ENV/);
+  }
+});
+
+test('TC-016: cached login reuses identity; only revoked401 reauthenticates and transient or invalid responses preserve it',async t=>{
+  for(const mode of ['valid','revoked','server','mismatch','redirect','oversized','interrupted'])await t.test(mode,async t=>{
+    const {home,store}=await storage(t);let validations=0,exchanges=0,browsers=0;const signals=new EventEmitter();
+    const origin=await fixture(t,async(req,res)=>{
+      if(req.url==='/api/oauth/token'&&req.method==='GET'){
+        validations++;assert.equal(req.headers.authorization,`Bearer ${token}`);
+        if(mode==='interrupted')signals.emit('SIGTERM');
+        if(mode==='revoked'||mode==='server'){res.writeHead(mode==='revoked'?401:503);res.end();return;}
+        if(mode==='redirect'){res.writeHead(302,{location:'/api/oauth/token'});res.end();return;}
+        res.setHeader('content-type','application/json');res.end(mode==='oversized'?'x'.repeat(8193):JSON.stringify({account:{...account,id:mode==='mismatch'?'other':account.id}}));return;
+      }
+      exchanges++;for await(const chunk of req)assert.ok(chunk.length);
+      res.setHeader('content-type','application/json');res.end(JSON.stringify({access_token:token,token_type:'Bearer',token_id:'fresh',account}));
+    });
+    const previous={hub:origin,token,tokenId:'old',account};await store.write(previous);
+    const result=await runHubAuthentication('login',quiet,{env:{NED_HUB_URL:origin},home,signals,hubCredentialStore:store,openBrowser:async url=>{browsers++;await fetch(callbackUrl(url));}});
+    assert.equal(validations,1);assert.equal(result,['valid','revoked'].includes(mode)?0:1);assert.equal(browsers,mode==='revoked'?1:0);assert.equal(exchanges,mode==='revoked'?1:0);
+    assert.equal((await store.read(origin)).tokenId,mode==='revoked'?'fresh':'old');assert.equal(signals.listenerCount('SIGTERM'),0);
+  });
+});
+
+test('TC-016: separate installed COM processes reuse the private cached credential and default hostname',async t=>{
+  const {home,store}=await storage(t);let registrations=0,validations=0;
+  const bin=path.join(home,'.local/share/ned/current/app/bin');await fs.mkdir(bin,{recursive:true});
+  await fs.writeFile(path.join(bin,'../package.json'),'{"type":"module"}');
+  await fs.writeFile(path.join(bin,'ned.js'),`import {runCli} from ${JSON.stringify(new URL('../../../../src/cli.js',import.meta.url).href)}; process.exitCode=await runCli(process.argv.slice(2));`);
+  const origin=await fixture(t,async(req,res)=>{
+    assert.equal(req.headers.authorization,`Bearer ${token}`);
+    if(req.url==='/api/oauth/token'&&req.method==='GET'){validations++;res.setHeader('content-type','application/json');res.end(JSON.stringify({account:account}));return;}
+    assert.equal(req.url,'/api/instances');let body='';for await(const chunk of req)body+=chunk;
+    const expected=os.hostname().toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'');
+    assert.equal(JSON.parse(body).slug,/^[a-z]/.test(expected)&&!['api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout'].includes(expected)?expected.padEnd(3,'-').slice(0,40):`ned-${expected}`.padEnd(3,'-').slice(0,40));
+    registrations++;res.writeHead(401);res.end();
+  });
+  await store.write({hub:origin,token,tokenId:'cached',account});
+  for(const flags of [[],['--login']]){
+    const child=spawn(process.execPath,[fileURLToPath(new URL('../../../../bin/ned-launcher.js',import.meta.url)),'com',...flags],{env:{PATH:process.env.PATH,HOME:home,NED_HUB_URL:origin,NED_LAUNCHER_MODULE:fileURLToPath(new URL('../../../../src/launcher.js',import.meta.url))},stdio:['ignore','pipe','pipe']});
+    t.after(()=>child.kill('SIGKILL'));let output='',errors='';
+    const ready=new Promise((resolve,reject)=>{const deadline=setTimeout(()=>reject(new Error('registration deadline')),10000);child.stdout.on('data',chunk=>{output+=chunk;if(output.includes('registration rejected (401)')){clearTimeout(deadline);resolve();}});child.once('exit',()=>{clearTimeout(deadline);reject(new Error(`early exit ${errors}`));});});
+    child.stderr.on('data',chunk=>{errors+=chunk;});const closed=new Promise(resolve=>child.once('exit',(code,signal)=>resolve({code,signal})));
+    await ready;child.kill('SIGTERM');assert.deepEqual(await closed,{code:0,signal:null});assert.equal(output.includes('/api/oauth/authorize'),false);assert.equal(output.includes(token),false);assert.equal(errors,'');
+    assert.equal((await store.read(origin)).tokenId,'cached');
+  }
+  assert.equal(registrations,2);assert.equal(validations,1);
 });

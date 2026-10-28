@@ -10,7 +10,8 @@ export function canonicalHubOrigin(value) {
   return url.origin;
 }
 export function resolveHubOrigin(env=process.env) {
-  const environment=env.NED_HUB_ENV??'staging';
+  if(env.NED_HUB_ENV!==undefined||env.NED_HUB_SLUG!==undefined)throw new Error("Replace NED_HUB_ENV with NED_ENV and NED_HUB_SLUG with NED_INSTANCE_NAME.");
+  const environment=env.NED_ENV??'staging';
   if(!['staging','production'].includes(environment))throw new Error('Invalid Hub environment.');
   return canonicalHubOrigin(env.NED_HUB_URL??(environment==='production'?'https://hub.datanav.app':'https://staging.hub.datanav.app'));
 }

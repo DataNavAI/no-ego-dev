@@ -7,10 +7,10 @@ import {readHubConfiguration,startHubConnection} from '../../../../src/communica
 import {createCommunicatorServer} from '../../../../src/communicator/server.js';
 import {runCommunicatorCli} from '../../../../src/communicator/cli.js';
 const token='ned_synthetic_test_credential_00000000';
-const config={NED_HUB_URL:'https://hub.example',NED_HUB_TOKEN:token,NED_HUB_SLUG:'fixture'};
+const config={NED_HUB_URL:'https://hub.example',NED_HUB_TOKEN:token,NED_INSTANCE_NAME:'fixture'};
 test('TC-015: explicit configuration and COM readiness precede registration; cleanup preserves local defaults',async()=>{
   assert.equal(readHubConfiguration({}),null);
-  for(const bad of [{NED_HUB_NAME:'x'},{...config,NED_HUB_URL:'http://remote.example'},{...config,NED_HUB_TOKEN:'bad'},{...config,NED_HUB_SLUG:'UPPER'},{...config,NED_HUB_PROXY_URL:'https://proxy.example/path'}])assert.throws(()=>readHubConfiguration(bad));
+  for(const bad of [{NED_HUB_NAME:'x'},{...config,NED_HUB_URL:'http://remote.example'},{...config,NED_HUB_TOKEN:'bad'},{...config,NED_INSTANCE_NAME:'UPPER'},{...config,NED_HUB_PROXY_URL:'https://proxy.example/path'}])assert.throws(()=>readHubConfiguration(bad));
   assert.equal(readHubConfiguration(config).proxy.origin,'https://proxy.hub.example');
   assert.equal(readHubConfiguration({...config,NED_HUB_URL:'http://localhost:3000',NED_HUB_PROXY_URL:'http://localhost:4000',NED_HUB_INSTANCE_ORIGINS:'true'}).instance.origin,'http://fixture.localhost:4000');
   for(const configured of [false,true]){
@@ -89,8 +89,8 @@ test('TC-015: rejected authentication stops retry and stopping aborts an outstan
 });
 
 test('TC-015: permanent slug admission matches Hub and local origin mode is explicit',()=>{
-  for(const slug of ['moon-','abc','a'.repeat(40)]) assert.equal(readHubConfiguration({...config,NED_HUB_SLUG:slug}).slug,slug);
-  for(const slug of ['1ned','ab','a'.repeat(41),'api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout']) assert.throws(()=>readHubConfiguration({...config,NED_HUB_SLUG:slug}));
+  for(const slug of ['moon-','abc','a'.repeat(40)]) assert.equal(readHubConfiguration({...config,NED_INSTANCE_NAME:slug}).slug,slug);
+  for(const slug of ['1ned','ab','a'.repeat(41),'api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout']) assert.throws(()=>readHubConfiguration({...config,NED_INSTANCE_NAME:slug}));
   const local={...config,NED_HUB_URL:'http://localhost:3000',NED_HUB_PROXY_URL:'http://localhost:4000'};
   assert.equal(readHubConfiguration(local).instance.origin,'http://localhost:4000');
   assert.equal(readHubConfiguration({...local,NED_HUB_INSTANCE_ORIGINS:'false'}).instance.origin,'http://localhost:4000');
