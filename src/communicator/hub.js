@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {resolveHubOrigin} from '../hub-credentials.js';
 import {pipeline} from 'node:stream';
 import WebSocket, {createWebSocketStream} from 'ws';
 
@@ -6,9 +7,10 @@ import WebSocket, {createWebSocketStream} from 'ws';
 const reservedSlugs = new Set(['api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout']);
 const loopback = hostname => ['127.0.0.1','localhost','[::1]'].includes(hostname);
 export function readHubConfiguration(env = process.env) {
-  const keys = ['NED_HUB_URL','NED_HUB_TOKEN','NED_HUB_SLUG','NED_HUB_NAME','NED_HUB_PROXY_URL','NED_HUB_INSTANCE_ORIGINS'];
+  const hubUrl=resolveHubOrigin(env);
+  const keys = ['NED_HUB_TOKEN','NED_HUB_SLUG','NED_HUB_NAME','NED_HUB_PROXY_URL','NED_HUB_INSTANCE_ORIGINS'];
   if (!keys.some(key => env[key] !== undefined)) return null;
-  const {NED_HUB_URL: hubUrl,NED_HUB_TOKEN: token,NED_HUB_SLUG: slug} = env;
+  const {NED_HUB_TOKEN: token,NED_HUB_SLUG: slug} = env;
   let hub;
   try { hub = new URL(hubUrl); } catch { throw new Error('Invalid NED Hub configuration.'); }
   if (!['http:','https:'].includes(hub.protocol) || hub.username || hub.password || hub.pathname !== '/' || hub.search || hub.hash || (hub.protocol !== 'https:' && !loopback(hub.hostname)) || !/^ned_[A-Za-z0-9_-]{20,}$/.test(token || '') || (!/^[a-z][a-z0-9-]{2,39}$/.test(slug || '') || reservedSlugs.has(slug))) throw new Error('Invalid NED Hub configuration.');

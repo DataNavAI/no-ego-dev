@@ -9,6 +9,11 @@ export function canonicalHubOrigin(value) {
   if(!['http:','https:'].includes(url.protocol)||url.username||url.password||url.pathname!=='/'||url.search||url.hash||(url.protocol!=='https:'&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname)))throw new Error('Invalid Hub origin.');
   return url.origin;
 }
+export function resolveHubOrigin(env=process.env) {
+  const environment=env.NED_HUB_ENV??'staging';
+  if(!['staging','production'].includes(environment))throw new Error('Invalid Hub environment.');
+  return canonicalHubOrigin(env.NED_HUB_URL??(environment==='production'?'https://hub.datanav.app':'https://staging.hub.datanav.app'));
+}
 export function validHubCredential(value,origin) {
   return value && value.hub===origin && /^ned_[A-Za-z0-9_-]{20,512}$/.test(value.token||'') && typeof value.tokenId==='string' && value.tokenId.length>0 && value.tokenId.length<=256 && value.account && typeof value.account.id==='string' && value.account.id.length>0 && value.account.id.length<=256 && typeof value.account.name==='string' && value.account.name.length<=256 && (value.account.email===undefined || (typeof value.account.email==='string'&&value.account.email.length<=320));
 }

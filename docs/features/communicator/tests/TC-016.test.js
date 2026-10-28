@@ -8,8 +8,9 @@ import {createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {EventEmitter} from 'node:events';
-import {loginToHub,runHubCli} from '../../../../src/hub-cli.js';
+import {loginToHub,runHubAuthentication} from '../../../../src/hub-cli.js';
 import {createHubCredentialStore,canonicalHubOrigin} from '../../../../src/hub-credentials.js';
+import {runCli} from '../../../../src/cli.js';
 import {runCommunicatorCli} from '../../../../src/communicator/cli.js';
 const token='ned_synthetic_oauth_credential_0000000000';
 const account={id:'account-fixture',name:'Fixture operator',email:'fixture@example.test'};
@@ -107,10 +108,10 @@ test('TC-016: logout revokes only the saved origin and offline failure retains i
   const origin=await fixture(t,(req,res)=>{calls++;assert.equal(req.method,'DELETE');assert.equal(req.url,'/api/oauth/token');assert.equal(req.headers.authorization,`Bearer ${token}`);res.writeHead(status);res.end();});
   const other={hub:'https://other.example',token,tokenId:'other',account};await store.write(other);
   const value={hub:origin,token,tokenId:'id',account};await store.write(value);const signals=new EventEmitter();
-  assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),1);assert.deepEqual(await store.read(origin),value);
-  status=204;assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),0);assert.equal(await store.read(origin),null);assert.deepEqual(await store.read(other.hub),other);
-  assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),0);assert.equal(calls,2);
-  await store.write(value);status=401;assert.equal(await runHubCli(['logout','--hub',origin],quiet,{store,signals}),0);
+  assert.equal(await runCommunicatorCli(['--logout'],quiet,{hubCredentialStore:store,signals,env:{NED_HUB_URL:origin}}),1);assert.deepEqual(await store.read(origin),value);
+  status=204;assert.equal(await runCommunicatorCli(['--logout'],quiet,{hubCredentialStore:store,signals,env:{NED_HUB_URL:origin}}),0);assert.equal(await store.read(origin),null);assert.deepEqual(await store.read(other.hub),other);
+  assert.equal(await runCommunicatorCli(['--logout'],quiet,{hubCredentialStore:store,signals,env:{NED_HUB_URL:origin}}),0);assert.equal(calls,2);
+  await store.write(value);status=401;assert.equal(await runCommunicatorCli(['--logout'],quiet,{hubCredentialStore:store,signals,env:{NED_HUB_URL:origin}}),0);
   assert.equal(signals.listenerCount('SIGINT'),0);assert.equal(signals.listenerCount('SIGTERM'),0);
 });
 
@@ -130,7 +131,7 @@ test('TC-016: installed login command forwards interruption and releases its cal
   await fs.writeFile(path.join(bin,'../package.json'),'{"type":"module"}');
   await fs.writeFile(path.join(bin,'ned.js'),`import {runCli} from ${JSON.stringify(new URL('../../../../src/cli.js',import.meta.url).href)}; process.exitCode=await runCli(process.argv.slice(2));`);
   for(const signal of ['SIGINT','SIGTERM']){
-    const child=spawn(process.execPath,[fileURLToPath(new URL('../../../../bin/ned-launcher.js',import.meta.url)),'hub','login','--hub','https://hub.example','--no-browser'],{env:{PATH:process.env.PATH,HOME:home,NED_LAUNCHER_MODULE:fileURLToPath(new URL('../../../../src/launcher.js',import.meta.url))},stdio:['ignore','pipe','pipe']});
+    const child=spawn(process.execPath,[fileURLToPath(new URL('../../../../bin/ned-launcher.js',import.meta.url)),'com','--login','--no-browser'],{env:{PATH:process.env.PATH,HOME:home,NED_HUB_URL:'https://hub.example',NED_LAUNCHER_MODULE:fileURLToPath(new URL('../../../../src/launcher.js',import.meta.url))},stdio:['ignore','pipe','pipe']});
     let output='',errors='';let ready,rejectReady;const started=new Promise((resolve,reject)=>{ready=resolve;rejectReady=reject;});
     child.stdout.on('data',chunk=>{output+=chunk;const url=output.match(/https:\/\/hub\.example\/api\/oauth\/authorize\?[^\s]+/);if(url)ready(new URL(new URL(url[0]).searchParams.get('redirect_uri')));});child.stderr.on('data',chunk=>{errors+=chunk;});
     const ended=new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',(code,received)=>resolve({code,received}));});
@@ -177,22 +178,22 @@ test('TC-016: committed login/logout survives unlock EIO and precommit failure p
   const directory=path.join(home,'.ned','hub-credentials');const lock=path.join(directory,(await fs.readdir(directory))[0]+'.lock');
   const rmdir=fs.rmdir,rename=fs.rename;const fault=()=>Object.assign(new Error('synthetic cleanup failure'),{code:'EIO'});
   const signals=new EventEmitter(),logs=[],errors=[];const io={log:s=>logs.push(s),error:s=>errors.push(s)};
-  const dependencies={store,signals,openBrowser:async url=>{assert.equal((await fetch(callbackUrl(url))).status,200);}};
+  const dependencies={hubCredentialStore:store,env:{NED_HUB_URL:origin},signals,openBrowser:async url=>{assert.equal((await fetch(callbackUrl(url))).status,200);}};
   try {
     fs.rmdir=async target=>{if(target===lock)throw fault();return rmdir(target);};
-    assert.equal(await runHubCli(['login','--hub',origin],io,dependencies),0);
+    assert.equal(await runHubAuthentication('login',io,dependencies),0);
     assert.equal((await store.read(origin)).token,replacement);assert.equal(revocations,0);
     assert.match(logs.at(-1),/^Signed in/);assert.match(errors.at(-1),/lock cleanup failed/);assert.equal(errors.join(' ').includes('Previous credentials were preserved'),false);
     assert.equal((await fs.lstat(lock)).isDirectory(),true);
     fs.rmdir=rmdir;await rmdir(lock); // operator recovery only after the completed operation
     fs.rmdir=async target=>{if(target===lock)throw fault();return rmdir(target);};
-    assert.equal(await runHubCli(['logout','--hub',origin],io,dependencies),0);
+    assert.equal(await runCommunicatorCli(['--logout'],io,dependencies),0);
     assert.equal(await store.read(origin),null);assert.equal(revocations,1);assert.match(logs.at(-1),/^Signed out/);assert.match(errors.at(-1),/lock cleanup failed/);
     fs.rmdir=rmdir;await rmdir(lock);
-    assert.equal(await runHubCli(['logout','--hub',origin],io,dependencies),0);assert.equal(revocations,1);
+    assert.equal(await runCommunicatorCli(['--logout'],io,dependencies),0);assert.equal(revocations,1);
     await store.write(previous);
     fs.rename=async()=>{throw Object.assign(new Error('synthetic precommit failure'),{code:'EACCES'});};
-    assert.equal(await runHubCli(['login','--hub',origin],io,dependencies),1);
+    assert.equal(await runHubAuthentication('login',io,dependencies),1);
     assert.deepEqual(await store.read(origin),previous);assert.equal(revocations,2);assert.equal(exchanges,2);
     assert.match(errors.at(-1),/Previous credentials were preserved/);assert.deepEqual(await fs.readdir(directory),[path.basename(lock).slice(0,-5)]);
   }finally {fs.rmdir=rmdir;fs.rename=rename;}
@@ -211,4 +212,47 @@ test('TC-016: unlock never removes a replacement lock and precommit errors retai
     fs.rename=async()=>{throw failure;};fs.rmdir=async()=>{throw Object.assign(new Error('synthetic cleanup failure'),{code:'EIO'});};
     await assert.rejects(store.write(old),error=>error===failure);assert.equal((await store.read(origin)).tokenId,'new');
   }finally {fs.rename=rename;fs.rmdir=rmdir;}
+});
+
+test('TC-016: default staging, production and explicit custom Hub selection share isolated credentials',async()=>{
+  for(const [env,expected]of [[{},'https://staging.hub.datanav.app'],[{NED_HUB_ENV:'production'},'https://hub.datanav.app'],[{NED_HUB_ENV:'staging'},'https://staging.hub.datanav.app'],[{NED_HUB_ENV:'production',NED_HUB_URL:'http://localhost:4321'},'http://localhost:4321']]){
+    let read,started=0;
+    assert.equal(await runCommunicatorCli(['--logout'],quiet,{env,signals:new EventEmitter(),hubCredentialStore:{async read(origin){read=origin;return null;}},createServer(){started++;}}),0);
+    assert.equal(read,expected);assert.equal(started,0);
+    const signals=new EventEmitter();let connected;
+    assert.equal(await runCommunicatorCli([],quiet,{env:{...env,NED_HUB_SLUG:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(origin){assert.equal(origin,expected);return {hub:origin,token,tokenId:'id',account};}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected=config;return {async close(){}};}}),0);
+    assert.equal(connected.hub.origin,expected);
+  }
+  for(const env of [{NED_HUB_ENV:'prod'},{NED_HUB_URL:'https://hub.example/path'},{NED_HUB_ENV:'unknown',NED_HUB_URL:'https://hub.example'}]){
+    assert.equal(await runCommunicatorCli(['--logout'],quiet,{env,hubCredentialStore:{async read(){assert.fail('invalid issuer accessed credentials');}}}),2);
+  }
+});
+
+
+test('TC-016: retired hub command and address flags reject without browser, credential or server effects',async()=>{
+  const dependencies={env:{},hubCredentialStore:{async read(){assert.fail('credential read');}},openBrowser(){assert.fail('browser opened');},createServer(){assert.fail('COM started');}};
+  for(const argv of [['hub','login'],['hub','logout'],['com','--hub','https://hub.example'],['com','--no-browser'],['com','--logout','--port','0'],['com','--logout','--logout'],['com','--login','--logout'],['com','--login','--login']])assert.equal(await runCli(argv,quiet,dependencies),2);
+});
+
+test('TC-016: COM login waits for Hub authorization, saves the account, then starts local or connected COM',async t=>{
+  for(const publish of [false,true])await t.test(publish?'registered':'local-only',async t=>{
+    const {store,home}=await storage(t);const events=[];let started=0,connections=0;
+    const origin=await fixture(t,(_req,res)=>{events.push('exchange');res.setHeader('content-type','application/json');res.end(JSON.stringify({access_token:token,token_type:'Bearer',token_id:'issued',account}));});
+    const signals=new EventEmitter();
+    const result=await runCli(['com','--login','--port','1234'],quiet,{env:{NED_HUB_URL:origin,...(publish?{NED_HUB_SLUG:'fixture'}:{})},home,signals,hubCredentialStore:store,openBrowser:async url=>{events.push('browser');assert.equal(started,0);await fetch(callbackUrl(url));},createServer(options){started++;events.push('server');assert.equal(options.port,1234);return {async listen(){assert.equal((await store.read(origin)).account.id,account.id);setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connections++;assert.equal(config.token,token);assert.equal(config.hub.origin,origin);return {async close(){}};}});
+    assert.equal(result,0);assert.deepEqual(events,['browser','exchange','server']);assert.equal(started,1);assert.equal(connections,publish?1:0);assert.equal(signals.listenerCount('SIGINT'),0);assert.equal(signals.listenerCount('SIGTERM'),0);
+  });
+});
+
+test('TC-016: denied login and explicit token ambiguity never start COM or publish an instance',async t=>{
+  const {store,home}=await storage(t);const signals=new EventEmitter();let browser=0;
+  const dependencies={env:{},home,signals,hubCredentialStore:store,openBrowser:async url=>{browser++;await fetch(callbackUrl(url,{error:'access_denied'}));},createServer(){assert.fail('COM started');},startHub(){assert.fail('instance registered');}};
+  assert.equal(await runCli(['com','--login'],quiet,dependencies),1);assert.equal(browser,1);assert.equal(await store.read('https://staging.hub.datanav.app'),null);
+  assert.equal(await runCli(['com','--login'],quiet,{...dependencies,env:{NED_HUB_TOKEN:token}}),2);assert.equal(browser,1);assert.equal(signals.listenerCount('SIGINT'),0);assert.equal(signals.listenerCount('SIGTERM'),0);
+});
+
+test('TC-016: interruption during post-login credential lookup cannot start COM',async()=>{
+  const signals=new EventEmitter();let reads=0;
+  const result=await runCli(['com'],quiet,{env:{NED_HUB_SLUG:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(){reads++;signals.emit('SIGTERM');return {token};}},createServer(){assert.fail('COM started after interrupt');}});
+  assert.equal(result,0);assert.equal(reads,1);assert.equal(signals.listenerCount('SIGTERM'),0);
 });

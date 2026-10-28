@@ -1,10 +1,9 @@
 import http from 'node:http';
 import {createHash,randomBytes} from 'node:crypto';
 import {execFile} from 'node:child_process';
-import {canonicalHubOrigin,createHubCredentialStore,validHubCredential} from './hub-credentials.js';
+import {canonicalHubOrigin,resolveHubOrigin,createHubCredentialStore,validHubCredential} from './hub-credentials.js';
 
 const cleanupWarning='NED Hub credential lock cleanup failed. Credentials reflect the completed command; see the Hub setup guide for recovery before another login/logout.';
-const usage='Usage: ned hub <login|logout> [--hub <origin>] [--no-browser (login only)]';
 async function jsonResponse(response) {
   if(!response.ok){await response.body?.cancel();throw new Error('Hub request rejected.');}
   if(!response.headers.get('content-type')?.startsWith('application/json')){await response.body?.cancel();throw new Error('Invalid Hub response.');}
@@ -77,23 +76,15 @@ export async function loginToHub(origin,{store,io=console,openBrowser=openHubBro
     if(credential&&!saved&&validHubCredential(credential,origin))await revoke(origin,credential.token,AbortSignal.timeout(5000)).catch(()=>{});
   }
 }
-export async function runHubCli(flags,io=console,dependencies={}) {
-  const [action,...options]=flags;let hub,noBrowser=false;const seen=new Set();
-  try {
-    if(!['login','logout'].includes(action))throw new Error();
-    for(let i=0;i<options.length;i++){
-      const option=options[i];if(seen.has(option))throw new Error();seen.add(option);
-      if(option==='--no-browser'&&action==='login')noBrowser=true;
-      else if(option==='--hub'){hub=options[++i];if(!hub||hub.startsWith('--'))throw new Error();}
-      else throw new Error();
-    }
-    hub=canonicalHubOrigin(hub??(dependencies.env||process.env).NED_HUB_URL);
-  }catch {io.error(usage);return 2;}
-  const store=dependencies.store||createHubCredentialStore({home:dependencies.home});
+export async function runHubAuthentication(action,io=console,dependencies={}) {
+  let hub;
+  try {hub=resolveHubOrigin(dependencies.env||process.env);}
+  catch {io.error('NEDCOM: configure a valid NED_HUB_ENV or NED_HUB_URL.');return 2;}
+  const store=dependencies.hubCredentialStore||createHubCredentialStore({home:dependencies.home});
   const signals=dependencies.signals||process;const controller=new AbortController();const stop=()=>controller.abort();
   signals.on('SIGINT',stop);signals.on('SIGTERM',stop);
   try {
-    if(action==='login')await loginToHub(hub,{store,io,noBrowser,openBrowser:dependencies.openBrowser,signal:controller.signal,timeoutMs:dependencies.timeoutMs});
+    if(action==='login')await loginToHub(hub,{store,io,noBrowser:dependencies.noBrowser,openBrowser:dependencies.openBrowser,signal:controller.signal,timeoutMs:dependencies.timeoutMs});
     else {
       const saved=await store.read(hub);
       if(saved){await revoke(hub,saved.token,AbortSignal.any([controller.signal,AbortSignal.timeout(15000)]));const removed=await store.remove(hub,saved.token);if(removed?.cleanupWarning)io.error(cleanupWarning);}
