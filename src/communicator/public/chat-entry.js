@@ -1,2 +1,4 @@
 import {mountChat} from './chat-ui.js';
-mountChat();
+import {marked} from '/vendor/marked.js';
+import DOMPurify from '/vendor/dompurify.js';
+mountChat({marked,DOMPurify});

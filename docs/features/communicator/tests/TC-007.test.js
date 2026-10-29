@@ -16,7 +16,7 @@ test('TC-007: authenticated Hermes sessions, pagination and safe mutation perime
     if(req.url.includes('offset=996')){res.end('x'.repeat(4194305));return;}
     if(req.url.includes('offset=995')){res.end(JSON.stringify({data:[{role:'assistant',content:'missing identity'}]}));return;}
     if(req.url.includes('offset=994')){res.end(JSON.stringify({data:[{id:1,content:'a'},{id:1,content:'b'}]}));return;}
-    if(req.method==='POST' && req.url.endsWith('/chat'))res.end(JSON.stringify({status:'completed',session_id:'s1',message:{content:'Hello'}}));
+    if(req.method==='POST' && req.url.endsWith('/chat'))res.end(JSON.stringify({session_id:'s1',message:{content:'Hello'}}));
     else if(req.method==='POST')res.end(JSON.stringify({session:{id:'s1',secret:'private'}}));
     else if(req.url.includes('/messages'))res.end(JSON.stringify({data:[{id:1,role:'user',content:'<script>bad</script>'}]}));
     else res.end(JSON.stringify({data:[{id:'s1',title:'First',private:'hidden'}],has_more:true}));
@@ -31,8 +31,12 @@ test('TC-007: authenticated Hermes sessions, pagination and safe mutation perime
   assert.equal(calls[1].body,'{"source":"nedcom"}');
   assert.deepEqual(await(await request('/s1/messages?offset=50')).json(),{data:[{id:1,role:'user',content:'<script>bad</script>'}]});
   assert.equal(calls[2].path,'/api/sessions/s1/messages?order=latest&limit=50&offset=50');
-  assert.equal((await request('/s1/chat',{input:'Hi'})).status,200);
+  const accepted=await request('/s1/chat',{input:'Hi'});assert.equal(accepted.status,202);
+  const {turn}=await accepted.json();let result;
+  do{result=await(await request(`/s1/turns/${turn.id}`)).json();}while(result.turn.status==='pending');
+  assert.equal(result.message.content,'Hello');
   assert.deepEqual(JSON.parse(calls[3].body),{input:'Hi'});
+  assert.equal(calls[3].path,'/api/sessions/s1/chat');
   assert.ok(calls.every(call=>call.key==='Bearer synthetic-key'));
   const count=calls.length;
   for(const [path,body,headers,status] of [

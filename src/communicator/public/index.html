@@ -1,7 +1,36 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEDCOM</title><link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js"></script><script type="module" src="/chat-entry.js"></script></head><body>
-<a class="skip" href="#chat">Skip to chat</a><header><strong>NEDCOM</strong><small>Local · Hermes</small><label class="mobile-menu" for="mobile-view">View<select id="mobile-view"><option value="chat">Chat</option><option value="project">Project</option></select></label></header>
-<div class="shell" data-view="chat"><aside><label for="project">Project</label><select id="project" disabled><option value="">Loading projects…</option></select><nav aria-label="Project sections"><button data-section="Tasks" disabled>Tasks</button><button data-section="Artifacts" disabled>Artifacts</button><button data-section="WIP app" disabled>WIP app</button></nav><p id="navigation-hint">Choose a project first.</p></aside>
-<section id="chat" class="chat-pane" aria-labelledby="chat-heading" tabindex="-1"><h1 id="chat-heading">Chat</h1><div class="chat-toolbar"><label for="sessions">Session</label><select id="sessions"><option value="">Choose a session</option></select><button id="new-chat">New chat</button><button id="more-sessions" hidden>Load more sessions</button></div><div class="history-controls"><button id="older" hidden>Load older</button><button id="newer" hidden>Load newer</button><button id="latest" hidden>Latest</button></div><div id="transcript" class="transcript" role="region" aria-label="Conversation" tabindex="0"></div><p id="chat-status" role="status" aria-live="polite">Loading chat…</p><button id="chat-retry">Reload</button><form id="chat-form"><label for="chat-message">Message</label><textarea id="chat-message" rows="3" maxlength="8000" required></textarea><button id="chat-send" type="submit">Send</button></form></section>
-<main id="content" tabindex="-1"><div id="identity" class="eyebrow"></div><h2 id="heading" tabindex="-1">Loading projects…</h2><section class="card" id="card"><p id="message"></p><a id="open-app" class="app-link" target="_blank" rel="noopener noreferrer" aria-label="Open app (opens in a new tab)" hidden>Open app</a><small id="new-tab-note" hidden> Opens in a new tab.</small><button id="retry" hidden>Retry</button></section><p id="announcement" role="status" aria-live="polite" class="sr-only"></p></main></div>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NED</title><link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js"></script><script type="module" src="/chat-entry.js"></script></head><body>
+<a id="workspace-skip" class="skip" href="#preview">Skip to Preview</a>
+<div id="app-shell" class="shell" data-view="chat">
+  <header id="sidebar" class="workspace-toolbar" aria-label="NED navigation">
+    <strong>NED</strong><label class="sr-only" for="project">Project</label><select id="project" disabled><option value="">Loading projects…</option></select>
+    <div class="workspace-switch"><button id="left-toggle" type="button" aria-controls="left-pane" aria-pressed="false">Chat</button><button id="preview-toggle" type="button" aria-controls="preview" aria-pressed="true">Preview</button></div>
+    <span id="navigation-hint" class="sr-only">Choose a project first.</span>
+  </header>
+
+  <div id="left-pane" class="left-pane">
+    <div class="left-tabs" role="tablist" aria-label="Workspace"><button id="mobile-sidebar-toggle" role="tab" aria-selected="true" aria-controls="chat" tabindex="0" type="button">Chat</button><button id="goals-tab" role="tab" data-section="Tasks" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Goals</button><button id="artifacts-tab" role="tab" data-section="Artifacts" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Artifacts</button></div>
+  <section id="chat" role="tabpanel" class="chat-pane" aria-labelledby="chat-heading" tabindex="-1">
+    <header class="conversation-bar">
+      <h1 id="chat-heading">NED Chat</h1>
+
+    </header>
+    <div class="history-controls"><button id="older" hidden>Load older</button><button id="newer" hidden>Load newer</button><button id="latest" hidden>Latest</button></div>
+    <div id="transcript" class="transcript" role="region" aria-label="Conversation" tabindex="0"></div>
+    <div class="compose-dock">
+      <p id="chat-status" role="status" aria-live="polite">Loading chat…</p>
+      <button id="chat-retry">Reload</button>
+      <form id="chat-form">
+        <label class="sr-only" for="chat-message">Message</label>
+        <textarea id="chat-message" rows="2" maxlength="8000" placeholder="Ask anything"></textarea>
+        <div class="composer-actions"><span class="backend-label">Hermes</span><button id="chat-send" type="submit" aria-label="Send message"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m4 8 4-4 4 4M8 4v8"/></svg></button></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="content" role="tabpanel" aria-labelledby="goals-tab" tabindex="-1" hidden><div id="identity" class="eyebrow"></div><h2 id="heading" tabindex="-1">Loading projects…</h2><section class="card" id="card"><p id="message"></p><a id="open-app" class="app-link" target="_blank" rel="noopener noreferrer" aria-label="Open app (opens in a new tab)" hidden>Open app</a><small id="new-tab-note" hidden> Opens in a new tab.</small><button id="retry" hidden>Retry</button></section><p id="announcement" role="status" aria-live="polite" class="sr-only"></p></section>
+  </div>
+  <main id="preview" tabindex="-1" class="preview-pane" aria-labelledby="preview-title"><header class="preview-toolbar"><h2 id="preview-title">Preview</h2><span id="preview-identity"></span></header><div class="preview-canvas"><section class="preview-state"><span class="preview-symbol" aria-hidden="true">▧</span><h2 id="preview-heading" tabindex="-1"></h2><p id="preview-message" role="status" aria-live="polite"></p><a id="preview-open" class="app-link" target="_blank" rel="noopener noreferrer" hidden>Open app</a><small id="preview-note" hidden> Opens in a new tab.</small><button id="preview-retry" hidden>Retry</button></section></div></main>
+
+</div>
 </body></html>
