@@ -30,7 +30,7 @@ export function view(state) {
     const preview=state.detail.preview;const [title,body]=previews[preview?.status] ?? previews.unavailable;
     return {title,body,...identity,retry:preview?.status!=='available',url:preview?.status==='available' ? preview.url : undefined};
   }
-  if (state.projectId) return {title:state.section,body:{Tasks:'Task browsing is not available yet.',Artifacts:'Artifact browsing is not available yet.','WIP app':'App previews are not available yet.'}[state.section],...identity,retry:false};
+  if (state.projectId) return {title:state.section==='Tasks'?'Goals':state.section==='WIP app'?'Preview':state.section,body:{Tasks:'Task browsing is not available yet.',Artifacts:'Artifact browsing is not available yet.','WIP app':'App previews are not available yet.'}[state.section],...identity,retry:false};
   if (state.status === 'unavailable') return {title:'Projects',body:'Project browsing is not available yet.',...identity,retry:false};
   return {title:state.projects.length ? 'Projects' : 'No projects yet',body:state.projects.length ? 'Choose a project to browse its tasks, artifacts and app.' : 'Register a project with NED, then retry.',...identity,retry:!state.projects.length};
 }

@@ -16,7 +16,7 @@ export async function startContainerCom({origin = 'http://127.0.0.1:8787', port 
     const forward = http.request({hostname:internal.hostname,port:internal.port,path:req.url,method:req.method,headers}, response => {
       res.writeHead(response.statusCode,response.headers); response.pipe(res);
     });
-    forward.setTimeout(5000, () => forward.destroy());
+    forward.setTimeout(req.url.startsWith('/api/chat/') ? 610000 : 5000, () => forward.destroy());
     forward.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
     res.on('close', () => forward.destroy());
     req.pipe(forward);

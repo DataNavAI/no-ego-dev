@@ -20,7 +20,7 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
   assert.equal(app.url, null); await app.listen();
   assert.equal(app.server.address().address, '127.0.0.1');
   const port = app.server.address().port;
-  for (const [path, type] of [['/','text/html'], ['/styles.css','text/css'], ['/app.js','text/javascript'], ['/state.js','text/javascript'], ['/api/health','application/json'], ['/api/capabilities','application/json']]) {
+  for (const [path, type] of [['/','text/html'], ['/styles.css','text/css'], ['/app.js','text/javascript'], ['/state.js','text/javascript'], ['/chat-entry.js','text/javascript'], ['/chat-ui.js','text/javascript'], ['/history.js','text/javascript'], ['/api/health','application/json'], ['/api/capabilities','application/json']]) {
     const get = await request(app.url,path); const head = await request(app.url,path,{method:'HEAD'});
     assert.equal(get.status,200); assert.ok(get.headers['content-type'].startsWith(type));
     assert.equal(head.status,200); assert.equal(head.body,''); assert.equal(head.headers['content-type'],get.headers['content-type']);
@@ -28,7 +28,7 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
     assert.ok(get.headers['content-security-policy'].includes("frame-ancestors 'none'")); assert.equal(get.headers['access-control-allow-origin'],undefined);
   }
   assert.deepEqual(JSON.parse((await request(app.url,'/api/health')).body),{status:'ok',service:'nedcom'});
-  assert.deepEqual(JSON.parse((await request(app.url,'/api/capabilities')).body),{service:'nedcom',readOnly:true,capabilities:{projects:true,tasks:false,artifacts:false,preview:true}});
+  assert.deepEqual(JSON.parse((await request(app.url,'/api/capabilities')).body),{service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:false,artifacts:false,preview:true,chat:true}});
   for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/health',{headers,method:'POST'})).status,403);
   assert.equal((await request(app.url,'/api/health',{headers:{Origin:app.url}})).status,200);
   for (const method of ['POST','PUT','PATCH','DELETE','OPTIONS']) { const res = await request(app.url,'/absent',{method}); assert.equal(res.status,405); assert.equal(res.headers.allow,'GET, HEAD'); }

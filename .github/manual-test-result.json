@@ -1,20 +1,19 @@
 {
   "result": "pass",
-  "candidate_sha": "ca21aabc9e6467f3c72d00c1affa3ca0e2cbc1de",
-  "tested_at": "2026-10-28T05:51:26.946120+00:00",
-  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3. Exact native source ca21aabc9e6467f3c72d00c1affa3ca0e2cbc1de with Hub b02070b50a892760cd43bb959472fba6617e39f0. Real Hub API/broker, frontend Chromium browser, native CLI child processes, real COM server, temporary SQLite and private temporary credentials. Synthetic development browser sign-in and explicit Hub consent; no live Google grant or remote machine.",
+  "candidate_sha": "0ba5e77761217d8ae5c078be5485940472849c8d",
+  "tested_at": "2026-10-29T07:01:05.872Z",
+  "environment": "Isolated clean Git worktree on macOS ARM64; Node25.6.1, Python3.14; real communicator HTTP server with disposable SQLite/project inventory and synthetic loopback Hermes gateway; Chrome via CUA at1280x800 and320x740. No live model call or production deployment.",
   "commands": [
-    "npm run lint",
-    "npm test",
-    "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-016.test.js docs/features/communicator/tests/TC-015.test.js",
-    "Parent: exact-pair Playwright native CLI browser end-to-end test against the exact Hub/native source pair"
+    "Commit hook: npm run lint; npm run test:all (all Node/automated feature cases and python -m pytest)",
+    "node --test docs/features/communicator/tests/TC-002.test.js docs/features/communicator/tests/TC-006.test.js docs/features/communicator/tests/TC-010.test.js docs/features/communicator/tests/TC-012.test.js docs/features/communicator/tests/TC-013.test.js docs/features/communicator/tests/TC-014.test.js",
+    "Browser: select project; enter draft; Goals then Home to Chat; verify draft; repeat at320px; inspect hostile renderer DOM"
   ],
-  "observations": "PASS: first ned com --login completes Hub-owned PKCE authorization and explicit browser consent, persists a private per-origin token, starts COM, registers the default normalized hostname and reaches real COM UI/API through Hub Connect. Fresh native processes reuse the same token for plain ned com and --login; no repeated authorization or token issuance. Logout revokes and clears the matching local credential and denies the old browser lease. Focused TC01635/35 and TC0158/8 pass, including renamed environment variables, legacy-variable rejection before external effects, hostname defaults/invalid names, cached-token401-only reauthorization, transient/invalid/redirect/oversized/interrupted validation preserving credentials, issuer isolation, explicit-token precedence and retained callback/storage/concurrency/revocation protections. Canonical lint and all Node/automated spec cases pass; Python208 passed9 existing optional/environment skips. Source precommit hook repeats the same checks successfully; this evidence-only commit hook repeats all required gates. Unrelated manual/evaluation cases remain NOT RUN. Hub API independent review and staging deployment are separate pending gates; local fixture acceptance does not certify live Google consent, hosted TLS/PostgreSQL, backup/restore or remote-machine compatibility.",
+  "observations": "PASS for scoped session UI: titleNED; one fixedNEDChat heading/session; Chat/Goals/Artifacts left tabs with no right inspector; Preview remains main; Goals tab and Home keyboard return preserve exact draft. At320px document scrollWidth320 and shellscrollTop0 after input focus; no horizontal overflow. Assistant semantic Markdown and collapsed actualtool details render; hostile assistant script/image/javascript-link DOM count0. User [Review](https://example.test/read) **literal text** retains all punctuation. Focused exact-source48tests pass. Source hook repeated allNode/automatedspec andPython208passed9existingoptional/environment skips. Prior independent staged review approved the identicalsource tree; immutable source review separate. Existing broadmanualTC008 keyboard/screenreader/physicalmobile/200percent/outage matrix remains incomplete; unrelated manual/skill cases NOTRUN. Preview launches validated apps in a new tab; task/artifact data still unavailable. No auth/provider config changes and no AWS rollout.",
   "evidence": {
-    "report": "ned-hub/.artifacts/reviews/issue-18/exact-pair-e2e.json",
-    "report_sha256": "77a53a68e6c20c390185d1778112ec2e3193b0b5b2decf49483a6cdd0d59f3fa",
-    "log": "ned-hub/.artifacts/reviews/issue-18/exact-pair-e2e.log",
-    "log_sha256": "57636cf127480e7c70464ab8fa0b7be838380678a14377804a0b77008344efe6"
+    "source_tree": "39f0f9f10ddd7f384b0a1e54ee1b2edc816f9a72",
+    "desktop_sha256": "4e1b12ed34b49829490859a26d2d5a4ead6899d069dc68d293c40f83bc5cf9a9",
+    "mobile_sha256": "e0bd0c2ea1aa79909869d1697425b37b8c193df28ad28326263b5fe0d8a5889f",
+    "focused_log_sha256": "c01e565ea16b074e5a0805ec1854d3b445ec804758d483855314d327684fcf1f",
+    "source_hook_log_sha256": "204f2fd3318453d1cb48acc58078f910a255368eedf2b084c15c0fddcb83416e"
   }
 }

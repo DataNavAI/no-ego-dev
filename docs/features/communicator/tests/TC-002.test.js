@@ -27,7 +27,7 @@ test('TC-002: Retry settlement restores keyboard focus without overriding naviga
   for (const outcome of ['unconfigured','error','available','other-control','project-switch','section-switch','section-switch-blur']) {
     await t.test(outcome, async () => {
       const { elements, document, requests, respond } = await clientHarness();
-      const retry = elements.get('retry'), project = elements.get('project');
+      const retry = elements.get('preview-retry'), project = elements.get('project');
       retry.focus(); retry.dispatch('click');
       assert.equal(retry.disabled, true);
       assert.equal(document.activeElement, document.body, 'disabled native button releases focus');
@@ -37,7 +37,7 @@ test('TC-002: Retry settlement restores keyboard focus without overriding naviga
       if (outcome.startsWith('section-switch')) { elements.get('Tasks').focus(); elements.get('Tasks').dispatch('click'); if (outcome === 'section-switch-blur') document.activeElement = document.body; }
       await respond(outcome === 'error' ? { error: { code: 'database_unavailable' } } : { preview: { status: outcome === 'available' ? 'available' : 'unconfigured', url: 'http://127.0.0.1:8000/' } }, outcome === 'error' ? 503 : 200);
       if (outcome === 'project-switch') await respond({ preview: { status: 'unconfigured' } });
-      const expected = ['other-control','project-switch'].includes(outcome) ? project : outcome === 'section-switch-blur' ? document.body : outcome === 'section-switch' ? elements.get('Tasks') : outcome === 'available' ? elements.get('heading') : retry;
+      const expected = ['other-control','project-switch'].includes(outcome) ? project : outcome === 'section-switch-blur' ? document.body : outcome === 'section-switch' ? elements.get('Tasks') : outcome === 'available' ? elements.get('preview-heading') : retry;
       assert.equal(document.activeElement, expected, 'settlement preserves the keyboard destination');
       if (['unconfigured','error'].includes(outcome)) { assert.equal(retry.hidden, false); assert.equal(retry.disabled, false); }
       if (outcome === 'available') assert.equal(retry.hidden, true);
