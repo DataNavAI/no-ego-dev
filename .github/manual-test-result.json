@@ -1,7 +1,7 @@
 {
-  "candidate_sha": "c721170076d850d1e8a22c881193539365be521c",
+  "candidate_sha": "8ffa65d390d87e881d3852c356b54a82cc437be0",
   "result": "pass",
-  "tested_at": "2026-10-31T19:06:33.150424Z",
+  "tested_at": "2026-10-31T19:12:20.210286Z",
   "environment": "Clean isolated macOS worktree; fresh tool-enabled Hermes exact-candidate reviewer; disposable HOME/projects/SQLite/profile fixtures",
   "commands": [
     "npm run lint",
@@ -10,5 +10,5 @@
     "node --test docs/features/task-management/tests/TC-002.test.js docs/features/hermes-skills-staging/tests/TC-001.test.js",
     "Fresh reviewer executed synthetic intake, milestone, ownership/resume and completion gate fixture and disposable skills deployment"
   ],
-  "observations": "Exact candidate APPROVED with no material findings. All added task-management expectations and new manual completion-gate cases passed in simulation; real deployment remains a post-merge gate. Full automated feature cases passed; Python 208 passed/9 skipped; production audit0. Review report SHA-256 3ff8d8c831bcd860c6242a87683b954973d20d844fa1e70aaeb61e6e5932dece"
+  "observations": "Exact corrected code candidate APPROVED with no material findings; unchanged implementation fingerprints and focused tests independently reverified. Full current-content hook tests pass; macOS15 replacement preserves all commands. Actual remote runner GREEN is still required before merge. Review SHA-256 9538a652efd944297a6c0523d76065c19aa8c1a2c5167e3d1756eb1e3305e6c9"
 }
