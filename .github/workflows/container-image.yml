@@ -16,6 +16,7 @@ on:
       - 'SOUL.md'
       - 'AGENTS.md'
       - 'skills/**'
+      - 'plugins/ned/**'
       - 'eval_runner/**'
       - 'README*'
       - '.env.EXAMPLE'

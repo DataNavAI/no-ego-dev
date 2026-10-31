@@ -9,6 +9,7 @@ distribution_owned:
   - AGENTS.md
   - config.yaml
   - skills/
+  - plugins/ned/
   - skills/identity-for-agent/
   - eval_runner/
   - README.md

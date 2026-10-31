@@ -17,6 +17,9 @@
 !src/**
 !skills/
 !skills/**
+!plugins/
+!plugins/ned/
+!plugins/ned/**
 !eval_runner/
 !eval_runner/**
 !scripts/

@@ -67,6 +67,7 @@ test('TC-011: package/profile manifests exclude runtime SQLite data and spec tes
   for (const manifest of [files, entries]) {
     for (const required of [
       'distribution.yaml', 'SOUL.md', 'AGENTS.md', 'config.yaml',
+      'plugins/ned/plugin.yaml', 'plugins/ned/__init__.py',
       'skills/identity-for-agent/SKILL.md', 'skills/identity-for-agent/EVAL.yaml',
       'skills/identity-for-agent/evaldata/README.md',
       'skills/identity-for-agent/references/profile-credential-policy.yaml',

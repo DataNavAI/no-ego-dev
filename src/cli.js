@@ -1,3 +1,4 @@
+import {runSecretCli} from './secret-cli.js';
 import { createRequire } from 'node:module';
 import { runCommunicatorCli } from './communicator/cli.js';
 import { runTaskCli } from './task-cli.js';
@@ -13,6 +14,7 @@ function flagValue(flags, name) {
 
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (command === 'secret') return runSecretCli(flags, io, dependencies);
   if (command === 'com') return runCommunicatorCli(flags, io, dependencies);
   if (['goal', 'subgoal', 'task', 'issue', 'ready', 'status', 'tree'].includes(command)) {
     return runTaskCli(argv, io, dependencies);
@@ -28,6 +30,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '',
       'Usage:',
       '  ned --version',
+      '  ned secret <list|set|get|delete|share> (see ned secret --help)',
       '  ned com [--login [--no-browser] | --logout] [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--help]',
       '  ned version',
       '  ned task init [--project <directory>] [--database <SQLite-path-or-file-URL>]',

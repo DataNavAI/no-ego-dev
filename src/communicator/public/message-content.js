@@ -1,3 +1,4 @@
+import {secretShareRow,renderSecretCard} from './secret-share.js';
 const LIMIT=65536;
 const stringify=value=>typeof value==='string'?value:JSON.stringify(value,null,2) ?? '';
 function decoded(value){
@@ -5,6 +6,8 @@ function decoded(value){
   try{return JSON.parse(value);}catch{return value;}
 }
 export function messageParts(row){
+  const share=secretShareRow(row);if(share)return [{kind:'secret-share',share}];
+  if(row.role==='tool'&&(row.tool_name??row.name)==='ned')return [];
   const raw=stringify(row.content);
   const rawCalls=row.tool_calls===undefined?'':stringify(row.tool_calls);
   if(raw.length>LIMIT)return [{kind:'plain',text:raw},...(rawCalls?[{kind:'data',text:rawCalls}]:[])];
@@ -42,7 +45,8 @@ export function renderMessageContent(row,document,libraries){
   root.setAttribute?.('role','group');root.setAttribute?.('aria-label',`${author} message`);
   const parts=messageParts(row);
   for(const part of parts){
-    if(part.kind==='tool'||part.kind==='data'){
+    if(part.kind==='secret-share'){root.append(renderSecretCard(part.share,document));}
+    else if(part.kind==='tool'||part.kind==='data'){
       const details=document.createElement('details');const summary=document.createElement('summary');
       summary.textContent=part.kind==='tool'?`Tool: ${part.name}`:'Structured data';
       details.append(summary);
