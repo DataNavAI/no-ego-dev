@@ -1,0 +1,36 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, dirname, join } from 'node:path';
+
+test('TC-001: stage skills repeatedly, preserve profile and reject unsafe targets', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'ned-deploy-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const run = () => execFileSync(process.execPath, ['scripts/deploy-hermes-skills.mjs', '--home', home], { encoding: 'utf8', timeout: 30000 });
+  mkdirSync(join(home, 'skills', 'unrelated'), { recursive: true });
+  writeFileSync(join(home, 'config.yaml'), 'sentinel');
+  writeFileSync(join(home, 'skills', 'unrelated', 'SKILL.md'), 'retain');
+  assert.match(run(), /Deployed \d+ NED skills/);
+  const canonical = readFileSync('skills/task-management/SKILL.md', 'utf8');
+  assert.equal(readFileSync(join(home, 'skills/task-management/SKILL.md'), 'utf8'), canonical);
+  writeFileSync(join(home, 'skills/task-management/stale.txt'), 'obsolete');
+  assert.match(run(), /Deployed/);
+  assert.equal(readFileSync(join(home, 'config.yaml'), 'utf8'), 'sentinel');
+  assert.equal(readFileSync(join(home, 'skills/unrelated/SKILL.md'), 'utf8'), 'retain');
+  const alias = join(home, 'repo-alias');
+  symlinkSync(dirname(process.cwd()), alias);
+  const overlap = spawnSync(process.execPath, ['scripts/deploy-hermes-skills.mjs', '--home', join(alias, basename(process.cwd()))]);
+  assert.equal(overlap.status, 1);
+  assert.equal(readFileSync('skills/task-management/SKILL.md', 'utf8'), canonical);
+  mkdirSync(join(home, '.ned-skills-deploy.lock'));
+  let out = spawnSync(process.execPath, ['scripts/deploy-hermes-skills.mjs', '--home', home]);
+  assert.equal(out.status, 1);
+  rmSync(join(home, '.ned-skills-deploy.lock'), { recursive: true });
+  rmSync(join(home, 'skills/task-management'), { recursive: true });
+  symlinkSync(join(home, 'skills/unrelated'), join(home, 'skills/task-management'));
+  out = spawnSync(process.execPath, ['scripts/deploy-hermes-skills.mjs', '--home', home]);
+  assert.equal(out.status, 1);
+  assert.equal(readFileSync(join(home, 'skills/unrelated/SKILL.md'), 'utf8'), 'retain');
+});

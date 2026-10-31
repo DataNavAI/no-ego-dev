@@ -11,6 +11,39 @@ metadata:
 
 # Coder
 
+## Mandatory completion: merge and local deployment
+
+For every task in this distribution, completion requires applicable checks and
+manual acceptance, independent review, merge into remote `main`, and verified
+deployment from that merged commit to the default local Hermes instance. The user
+has authorized this normal merge/deployment flow; do not repeatedly request it.
+Do not mark NED tasks/goals done or send a completion report while any gate remains
+pending. A local implementation, draft PR, passing tests, or skills-only copy does
+not establish full deployment.
+
+Use an isolated checkout for the task; preserve unrelated working-tree changes.
+Fetch main, resolve integration, run the repository's required automated/manual
+checks, obtain exact-candidate review and green PR checks, merge, then read back
+the remote merged SHA. Deploy only committed merged contents. For CLI/runtime
+changes run the canonical checkout installer `bash scripts/install.sh` from the
+merged checkout and verify installed commands and generation identity. Run
+`node scripts/deploy-hermes-skills.mjs` for canonical skills. Install/update any
+affected profile-local plugins, preserve existing user configuration/credentials,
+enable only required plugin/toolset entries, and reload affected local Hermes/COM
+processes when needed. Verify the running/local installed behavior at the merged
+revision, then record merge/deployment evidence and complete the owned NED task.
+Never use AWS or named-profile rollout as a substitute for this local target.
+If deployment/review/access fails, keep work open with the actual blocker and
+continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.
+
+
+## Development request intake: NED work graph
+
+For every actionable development request from a user, apply the [task-management skill](../task-management/SKILL.md) before implementation, even when tracking was not mentioned. Initialize and inspect the correct project's NED tree/tasks, reuse matching records, create missing focused tasks, and reuse or create an outcome-based goal milestone when appropriate. Claim execution work and read back the result. Follow-ups and resumed conversations update existing work rather than duplicating it; track scope additions as explicit follow-up tasks because the CLI has no generic edit/reopen/reparent commands. Maintain blockers, dependencies, ownership and verified completion throughout execution and reconcile the goal before the final report. Pure explanations need no task. A direct user choice of another tracker takes precedence.
+
+This intake rule governs default NED work tracking, including this distribution, and takes precedence over GitHub-only tracker language later in this skill. GitHub issues, milestones and PRs may remain delivery/review artifacts where required, but they do not replace the NED record or imply automatic synchronization. Do not block NED task tracking merely because GitHub is unavailable.
+
+
 <!-- Package lineage: previous canonical marker was version: 0.4.0; frontmatter is authoritative. -->
 
 For static-site/SPA production scaffolds, deterministic artifact builders, public/private byte boundaries, deep-link verification, executable schema closure, and timeout recovery, also follow [`references/static-web-build-verification.md`](references/static-web-build-verification.md). When JPEG assets must be proven genuinely decodable with truthful canonical dimensions at both source and emitted-public boundaries, also follow [`references/bounded-decoder-backed-jpeg-validation.md`](references/bounded-decoder-backed-jpeg-validation.md): use one non-emitted bounded decoder helper, RED→GREEN marker-wrapped fake and dimension-mismatch attacks, an isolated copied-verifier fixture for module-loaded canonical data, exact dependency locking, and fresh exact-head canonical evidence.

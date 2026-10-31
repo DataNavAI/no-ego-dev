@@ -32,6 +32,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '  ned version',
       '  ned task init [--project <directory>] [--database <SQLite-path-or-file-URL>]',
       '  ned <goal|subgoal|task|issue> create <title> [--parent <id>] [--json]',
+      '  ned task create <title> [--goal <milestone-id>] [--json]',
       '  ned task <list|get|start|block|unblock|done|history|children> [id] [--json]',
       '  ned <ready|status|tree> [--json]',
       '  ned telemetry status',

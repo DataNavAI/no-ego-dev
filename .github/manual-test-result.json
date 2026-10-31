@@ -1,19 +1,14 @@
 {
+  "candidate_sha": "8ffa65d390d87e881d3852c356b54a82cc437be0",
   "result": "pass",
-  "candidate_sha": "0ba5e77761217d8ae5c078be5485940472849c8d",
-  "tested_at": "2026-10-29T07:01:05.872Z",
-  "environment": "Isolated clean Git worktree on macOS ARM64; Node25.6.1, Python3.14; real communicator HTTP server with disposable SQLite/project inventory and synthetic loopback Hermes gateway; Chrome via CUA at1280x800 and320x740. No live model call or production deployment.",
+  "tested_at": "2026-10-31T19:12:20.210286Z",
+  "environment": "Clean isolated macOS worktree; fresh tool-enabled Hermes exact-candidate reviewer; disposable HOME/projects/SQLite/profile fixtures",
   "commands": [
-    "Commit hook: npm run lint; npm run test:all (all Node/automated feature cases and python -m pytest)",
-    "node --test docs/features/communicator/tests/TC-002.test.js docs/features/communicator/tests/TC-006.test.js docs/features/communicator/tests/TC-010.test.js docs/features/communicator/tests/TC-012.test.js docs/features/communicator/tests/TC-013.test.js docs/features/communicator/tests/TC-014.test.js",
-    "Browser: select project; enter draft; Goals then Home to Chat; verify draft; repeat at320px; inspect hostile renderer DOM"
+    "npm run lint",
+    "npm run test:all",
+    "npm audit --omit=dev",
+    "node --test docs/features/task-management/tests/TC-002.test.js docs/features/hermes-skills-staging/tests/TC-001.test.js",
+    "Fresh reviewer executed synthetic intake, milestone, ownership/resume and completion gate fixture and disposable skills deployment"
   ],
-  "observations": "PASS for scoped session UI: titleNED; one fixedNEDChat heading/session; Chat/Goals/Artifacts left tabs with no right inspector; Preview remains main; Goals tab and Home keyboard return preserve exact draft. At320px document scrollWidth320 and shellscrollTop0 after input focus; no horizontal overflow. Assistant semantic Markdown and collapsed actualtool details render; hostile assistant script/image/javascript-link DOM count0. User [Review](https://example.test/read) **literal text** retains all punctuation. Focused exact-source48tests pass. Source hook repeated allNode/automatedspec andPython208passed9existingoptional/environment skips. Prior independent staged review approved the identicalsource tree; immutable source review separate. Existing broadmanualTC008 keyboard/screenreader/physicalmobile/200percent/outage matrix remains incomplete; unrelated manual/skill cases NOTRUN. Preview launches validated apps in a new tab; task/artifact data still unavailable. No auth/provider config changes and no AWS rollout.",
-  "evidence": {
-    "source_tree": "39f0f9f10ddd7f384b0a1e54ee1b2edc816f9a72",
-    "desktop_sha256": "4e1b12ed34b49829490859a26d2d5a4ead6899d069dc68d293c40f83bc5cf9a9",
-    "mobile_sha256": "e0bd0c2ea1aa79909869d1697425b37b8c193df28ad28326263b5fe0d8a5889f",
-    "focused_log_sha256": "c01e565ea16b074e5a0805ec1854d3b445ec804758d483855314d327684fcf1f",
-    "source_hook_log_sha256": "204f2fd3318453d1cb48acc58078f910a255368eedf2b084c15c0fddcb83416e"
-  }
+  "observations": "Exact corrected code candidate APPROVED with no material findings; unchanged implementation fingerprints and focused tests independently reverified. Full current-content hook tests pass; macOS15 replacement preserves all commands. Actual remote runner GREEN is still required before merge. Review SHA-256 9538a652efd944297a6c0523d76065c19aa8c1a2c5167e3d1756eb1e3305e6c9"
 }
