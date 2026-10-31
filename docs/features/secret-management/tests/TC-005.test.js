@@ -49,11 +49,12 @@ test('TC-005: native tool resolves a PATH symlink to the container-style JavaScr
   const f=setup(t);f.store.set('TOKEN','synthetic-fallback-token');const path=f.store.get('TOKEN',{file:true}).path;
   const bin=join(f.home,'bin');mkdirSync(bin);symlinkSync(resolve('bin/ned.js'),join(bin,'ned'));
   const script="import importlib.util,json,sys\nspec=importlib.util.spec_from_file_location('ned_plugin',sys.argv[1]);p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)\nprint(p.handle({'action':'secure_share_secret','path':sys.argv[2]}))";
+  const python=execFileSync(process.env.NED_TEST_PYTHON||'python3',['-c','import sys;print(sys.executable)'],{encoding:'utf8'}).trim();
   const env={...process.env,HOME:f.home,PATH:bin,NED_NODE_PATH:process.execPath};delete env.NED_CLI_PATH;
-  const output=execFileSync(process.env.NED_TEST_PYTHON||'python3',['-c',script,resolve('plugins/ned/__init__.py'),path],{env,encoding:'utf8',timeout:20000});
+  const output=execFileSync(python,['-c',script,resolve('plugins/ned/__init__.py'),path],{env,encoding:'utf8',timeout:20000});
   const result=JSON.parse(output);assert.equal(result.success,true);assert.equal(f.store.revealShare(result.share_id).value,'synthetic-fallback-token');assert.ok(!output.includes(path));assert.ok(!output.includes('synthetic-fallback-token'));
   env.NED_CLI_PATH=join(f.home,'missing.js');
-  assert.equal(JSON.parse(execFileSync(process.env.NED_TEST_PYTHON||'python3',['-c',script,resolve('plugins/ned/__init__.py'),path],{env,encoding:'utf8',timeout:20000})).success,false);
+  assert.equal(JSON.parse(execFileSync(python,['-c',script,resolve('plugins/ned/__init__.py'),path],{env,encoding:'utf8',timeout:20000})).success,false);
 });
 
 test('TC-005: HTTP history removes native inputs in serialized calls and structured content while preserving generic tools',async t=>{

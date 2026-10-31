@@ -60,3 +60,33 @@ structured data remain. Focused TC-005 and communicator TC-013:13 passed,0 skipp
 Exact corrected-candidate review remains required; no release approval is inferred.
 
 Independent report SHA-256: `9fccce26bd5dda738bc5681e3e756a1d310f589fc8eeaed4e2f30392b80da44b`. Runtime evidence stays outside the repository.
+
+Round2 exact review approved code candidate49875ea after verifying F1 and rerunning
+the actual TC-004/native-loader flow. Provider container acceptance then exposed a
+packaging omission: distribution.yaml owns plugins/ned, but the positive Docker
+context and Dockerfile did not copy it. Fresh initialization correctly failed
+closed for the missing component on both architectures. The container context
+and explicit COPY now include only plugins/ned; the container workflow watches
+that package. Existing native TC-003/004 assert every owned component is seeded
+and exercise startup/recreation, so their real image runs own this regression.
+This packaging correction requires a new exact review and provider GREEN.
+
+The hosted Linux/macOS TC-005 fallback fixture also exposed a harness dependency:
+its isolated PATH hid python3 when NED_TEST_PYTHON was unset. The fixture now
+resolves the interpreter before isolating child PATH. The exact no-override
+command reproduced ENOENT before the correction and passes after it, retaining
+the absent standard installation/CLI override and PATH-only NED resolution.
+Neither this harness issue nor the omitted Docker copy was caught by the earlier
+local-env review. They are retained as review escapes with provider evidence;
+approval of49875ea does not approve these correction bytes.
+
+Corrected Docker packaging was exercised on the existing local Linux ARM daemon
+using only uniquely named disposable test resources: `python
+docs/features/standalone-container/tests/container_acceptance.py --context
+colima-ned-staging --expected-architecture arm64` exited0. Native TC-003/004 passed
+on image sha256:2c459e081f772c73be0355b5bceef7eb7a66037b3f059961b37b0a10b648967c
+at2026-10-31T19:42:23Z. Authenticated services, every owned profile component,
+service replacement,3.36-second stop, persistence, recreation and negative startup
+passed. Test-owned containers/volumes/credentials were removed. This was acceptance
+on disposable resources, not rollout of an existing staging profile or AWS.
+Hosted AMD64/ARM64 correction checks remain required.
