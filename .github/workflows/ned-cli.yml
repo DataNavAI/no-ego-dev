@@ -26,6 +26,7 @@ jobs:
           python-version: '3.11'
       - run: python3 -m pip install -r requirements-dev.txt
       - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: npm run lint
       - run: npm test
       - run: python3 -m pytest -q
@@ -65,6 +66,7 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r requirements-dev.txt
       - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: npm run lint
       - run: npm test
       - name: Verify installable tarball

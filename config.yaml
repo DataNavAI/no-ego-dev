@@ -6,6 +6,7 @@ fallback_providers: []
 credential_pool_strategies: {}
 toolsets:
 - hermes-cli
+- ned
 agent:
   max_turns: 120
   gateway_timeout: 3600
@@ -483,26 +484,37 @@ streaming:
 platform_toolsets:
   cli:
   - hermes-cli
+  - ned
   telegram:
   - hermes-telegram
+  - ned
   discord:
   - hermes-discord
+  - ned
   whatsapp:
   - hermes-whatsapp
+  - ned
   slack:
   - hermes-slack
+  - ned
   signal:
   - hermes-signal
+  - ned
   homeassistant:
   - hermes-homeassistant
+  - ned
   qqbot:
   - hermes-qqbot
+  - ned
   yuanbao:
   - hermes-yuanbao
+  - ned
   teams:
   - hermes-teams
+  - ned
   google_chat:
   - hermes-google_chat
+  - ned
 
 # ── Fallback Model ────────────────────────────────────────────────────
 # Automatic provider failover when primary is unavailable.
@@ -525,3 +537,7 @@ platform_toolsets:
 # fallback_model:
 #   provider: openrouter
 #   model: anthropic/claude-sonnet-4
+
+plugins:
+  enabled:
+  - ned

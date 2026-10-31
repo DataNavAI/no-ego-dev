@@ -1,5 +1,5 @@
 import {resolveGatewaySettings} from './gateway-settings.js';
-import {validateMessagePage} from './public/history.js';
+import {readHistoryPage} from './chat-history.js';
 import {randomUUID,createHash} from 'node:crypto';
 export function createChatGateway(options = {}) {
   const fixedSession={id:'nedcom-main',title:'NED Chat',source:'api_server'};
@@ -84,6 +84,7 @@ export function createChatGateway(options = {}) {
         return send(200,{session:fixedSession});
       }
       const path = match[1] ? `/api/sessions/${match[1]}/${match[2]}` : '/api/sessions';
+      if(!mutation&&match[2]==='messages')return send(200,await readHistoryPage({origin,session:match[1],offset,key,signal:controller.signal}));
       const query = mutation ? '' : match[2] === 'messages' ? `?order=latest&limit=50&offset=${offset}` : `?limit=50&offset=${offset}`;
       const upstream = await fetch(origin + path + query,{method:req.method,headers:{Authorization:`Bearer ${key}`,...(mutation ? {'Content-Type':'application/json'} : {})},body,redirect:'error',signal:controller.signal});
       if (!upstream.ok) { await upstream.body?.cancel(); return finish(upstream.status === 404 ? 404 : 503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}}); }
@@ -99,8 +100,7 @@ export function createChatGateway(options = {}) {
         return finish(200,{session_id:turn.session,message:{role:'assistant',content:data.message.content}});
       }
       if (!Array.isArray(data.data) || data.data.length > (match[1] ? 50 : 250)) throw new Error('Invalid page');
-      if(match[1])validateMessagePage(data.data);
-      return send(200,match[1] ? {data:data.data.map(row => ({id:row.id,role:row.role,content:row.content ?? '',...(row.tool_name!==undefined?{tool_name:row.tool_name}:{}),...(typeof row.name==='string'?{name:row.name}:{}),...(row.tool_calls!==undefined?{tool_calls:row.tool_calls}:{}),...(row.tool_call_id!==undefined?{tool_call_id:row.tool_call_id}:{})}))} : {data:data.data.filter(row => /^[A-Za-z0-9_-]{1,200}$/.test(row.id)).map(row => ({id:row.id,title:typeof row.title === 'string' ? row.title : 'Untitled chat'})),has_more:data.has_more === true});
+      return send(200,{data:data.data.filter(row => /^[A-Za-z0-9_-]{1,200}$/.test(row.id)).map(row => ({id:row.id,title:typeof row.title === 'string' ? row.title : 'Untitled chat'})),has_more:data.has_more === true});
       }catch {controller.abort();return finish(503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}});}
       finally {clearTimeout(timer);res.off('close',abort);}
       };

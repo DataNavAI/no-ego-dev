@@ -53,7 +53,7 @@ export async function runCommunicatorCli(flags, io = console, dependencies = {})
     try { databasePath = resolveDatabasePath({databaseUrl:options.databaseUrl, env:originalEnv, home:dependencies.home}); }
     catch { io.error('NEDCOM: configure a SQLite file path or local file: URL with --database or NED_DATABASE_URL.'); return 2; }
     if(stopping)return 0;
-    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath});
+    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath,home:dependencies.home});
     const url = await app.listen();
     if (!stopping) io.log(`NEDCOM: ${url}`);
     if (hub && !stopping) hubConnection = (dependencies.startHub || startHubConnection)(hub,url,{onStatus:status=>io.log(`NED Hub: ${status}`)});

@@ -76,3 +76,32 @@ For this no-ego-dev distribution, after each completed task run `node scripts/de
 ## Reporting
 
 Report actual persisted state, acceptance evidence and unresolved blockers. A task is not complete merely because an agent returned. Use JSON output and exit status as evidence. Failures exit nonzero; inspect state before retrying. The shared SQLite default is `~/.ned/ned.sqlite`; `--database` overrides `NED_DATABASE_URL`. No remote tracker, model call or Hermes restart is required for task commands.
+
+## Secret handoff during development
+
+When work needs a password/token, ask the user to open COM → Settings → Secrets,
+save it under a key such as ADMIN_PASSWORD, and tell NED only that key. Do not ask
+them to paste credentials into chat or put values in tasks/issues/descriptions.
+Verify that the installed CLI supports `ned secret --help`; from a trusted development checkout use `node bin/ned.js secret` if the installed release is older. Never pretend an unsupported command retrieved a value.
+Retrieve it with `ned secret get ADMIN_PASSWORD --file`; this prints a private
+path, not the value. Pass that file directly to the consuming tool's secret-file
+option or a private process input. Do not cat/read the bytes into a tool transcript,
+echo them, add them to command arguments, or include them in logs/final messages.
+If the consumer needs an environment variable, load from the file inside the
+process without shell tracing or printing its value. Raw `ned secret get KEY`
+intentionally outputs plaintext and is unsuitable for chat-visible tool output.
+If the key is missing, direct the user to Settings; never invent a value or report
+access succeeded. Vault scope is the local NED home, shared across projects;
+`--database` does not choose a different vault. File exports are plaintext0600 and
+persist until replacement/deletion; consumer copies are the caller's cleanup duty.
+
+When the user asks to receive a saved password/token, prefer the native Hermes
+`ned` tool with `action: secure_share_secret` and the private export `path`.
+Obtain that path through CLI `secret get KEY --file` without reading the bytes.
+The tool verifies a current managed export and returns only an expiring reference.
+COM renders the successful tool result as a Secret ready card with explicit
+Reveal secret. Do not paste the path, reference or value into assistant prose,
+construct a card in Markdown, claim sharing succeeded after a failed tool result,
+or share arbitrary files. If the tool/CLI is unavailable, explain the missing
+installation and direct the user to Settings; do not fall back to echoing secrets.
+Only canonical native tool history produces a card, after reply completion.

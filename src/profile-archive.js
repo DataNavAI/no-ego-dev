@@ -9,6 +9,7 @@ const PROFILE_PATHS = [
   'AGENTS.md',
   'config.yaml',
   'skills',
+  'plugins/ned',
   'eval_runner',
   '.env.EXAMPLE',
   'LICENSE',
