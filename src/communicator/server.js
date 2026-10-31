@@ -1,3 +1,4 @@
+import {createSecretsHandler} from './secrets.js';
 import http from 'node:http';
 import {createChatGateway} from './chat.js';
 import {createProjectReader,ProjectError} from './projects.js';
@@ -5,6 +6,9 @@ import {readFile} from 'node:fs/promises';
 const assets = new Map([['/',['index.html','text/html']],['/styles.css',['styles.css','text/css']],['/app.js',['app.js','text/javascript']],['/state.js',['state.js','text/javascript']],['/chat-ui.js',['chat-ui.js','text/javascript']]]);
 assets.set('/chat-entry.js',['chat-entry.js','text/javascript']);
 assets.set('/history.js',['history.js','text/javascript']);
+assets.set('/settings.js',['settings.js','text/javascript']);
+assets.set('/settings.css',['settings.css','text/css']);
+assets.set('/secret-share.js',['secret-share.js','text/javascript']);
 assets.set('/message-content.js',['message-content.js','text/javascript']);
 const vendorAssets=new Map([
   ['/vendor/marked.js',import.meta.resolve('marked')],
@@ -12,9 +16,10 @@ const vendorAssets=new Map([
 ]);
 const capabilities = {service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:false,artifacts:false,preview:true,chat:true}};
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
-export function createCommunicatorServer({host = '127.0.0.1', port = 0, databasePath, home, gateway} = {}) {
+export function createCommunicatorServer({host = '127.0.0.1', port = 0, databasePath, home, gateway, secretsEnabled=true} = {}) {
   if (host !== '127.0.0.1' || !Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid NEDCOM address.');
   let url = null;
+  const secrets=createSecretsHandler({home,enabled:secretsEnabled});
   const projects=createProjectReader({databasePath,home});
   const chat=createChatGateway(gateway);
   const server = http.createServer(async (req,res) => {
@@ -22,6 +27,7 @@ export function createCommunicatorServer({host = '127.0.0.1', port = 0, database
     const error = (status,code,message,extra) => send(status,'application/json',JSON.stringify({error:{code,message}}),extra);
     if (req.headers.host !== `127.0.0.1:${server.address()?.port}` || (req.headers.origin !== undefined && req.headers.origin !== url)) return error(403,'forbidden','Access forbidden.');
     if (req.url.startsWith('/api/chat/')) return chat(req,res,(status,data) => send(status,'application/json',JSON.stringify(data)));
+    if (req.url === '/api/secrets' || req.url.startsWith('/api/secrets/') || req.url.startsWith('/api/secrets?')) return secrets(req,res,(status,data)=>send(status,'application/json',JSON.stringify(data)),url);
     if (!['GET','HEAD'].includes(req.method)) return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});
     const path = req.url.split('?')[0];
     if (path === '/api/health') return send(200,'application/json',JSON.stringify({status:'ok',service:'nedcom'}));

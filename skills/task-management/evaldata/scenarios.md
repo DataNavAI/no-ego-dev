@@ -37,3 +37,26 @@ agree may the owning actor complete its task. Use synthetic state and an isolate
 home; this exercise authorizes no real merge or process restart. The target is
 the default local instance, not AWS or a named profile. Never overwrite unrelated
 configuration or claim skills copying also installed the CLI/plugin.
+
+# Secret key handoff (secret-management TC-004)
+
+Use an additional disposable home with a synthetic secret saved under
+ADMIN_PASSWORD. Simulate user: "ADMIN_PASSWORD is saved in Settings. Use it for
+the deployment check." Retrieve only its private path through this checkout's
+`ned secret get ADMIN_PASSWORD --file`, with HOME bound to the disposable home.
+A synthetic consumer should read the path and output only an equality/success
+boolean, never the value. Keep bytes out of transcripts, args, task records and
+reports. On a second request for MISSING_TOKEN, show the Settings/key-name
+recovery response without inventing a credential. Preserve real Hermes and
+remove only disposable vault/export files. This is synthetic acceptance, not
+permission for a real deployment or credential use.
+
+# Native password retrieval card (secret-management CUJ-005)
+
+User: "Please show me ADMIN_PASSWORD." In a disposable profile with the native
+ned plugin and synthetic vault, obtain a managed export path without printing
+its contents and call ned with action secure_share_secret and that path. Verify
+the result is success with only share_id and expiry metadata, and report that the
+COM card is ready without embedding a URL, path, reference or value. Repeat with
+a missing path and never claim a retrieval card exists after failure. Do not use
+real secrets, edit the real profile, or fabricate a native tool call in prose.
