@@ -73,3 +73,27 @@ test('TC-002: hierarchy, reads and creation boundaries', async (t) => {
     (e) => e.code === 'invalid_parent',
   );
 });
+
+test('TC-002: attach tasks directly to milestone goals through CLI', async (t) => {
+  const f = await fixture(t), s = await f.service();
+  const goal = await s.createItem('goal', { title: 'Ship sign-in' });
+  const out = await f.cli(['task', 'create', 'OAuth', '--goal', goal.id, '--json']);
+  assert.equal(out.code, 0);
+  const task = JSON.parse(out.stdout[0]);
+  assert.equal(task.parentId, goal.id);
+  assert.equal(task.goalId, goal.id);
+  const before = (await s.getItems()).length;
+  for (const args of [
+    ['task', 'create', 'X', '--goal', ''],
+    ['task', 'create', 'X', '--goal', task.id],
+    ['task', 'create', 'X', '--goal', 'missing'],
+    ['task', 'create', 'X', '--goal', goal.id, '--parent', goal.id],
+    ['goal', 'create', 'X', '--goal', goal.id],
+    ['task', 'list', '--goal', goal.id],
+  ]) assert.equal((await f.cli([...args, '--json'])).code, 2);
+  assert.equal((await s.getItems()).length, before);
+  await s.startTask(task.id);
+  await s.completeTask(task.id);
+  await s.completeTask(goal.id);
+  assert.equal((await f.cli(['task', 'create', 'Late', '--goal', goal.id, '--json'])).code, 2);
+});
