@@ -33,3 +33,11 @@ Independent consolidated verdict: APPROVED, no material findings. Report SHA-256
 Runtime transcripts and synthetic state are kept outside source control. This
 pre-commit report does not approve a future commit or prove release/deployment;
 exact-candidate review and merge/deployed-revision receipts are separate gates.
+
+
+CI recovery: the initial PR147 macos-smoke job124629477125 was cancelled before
+steps by GitHub's scheduled macOS14 image brownout. Official migration notice:
+https://github.com/actions/runner-images/issues/13518 (retirement November2,2026).
+The workflow now pins macos-15 instead; the macOS test commands remain unchanged.
+This is an authorized one-line CI compatibility repair, not a skipped/weakened
+check. Provider GREEN must be read back on the corrected candidate before merge.
