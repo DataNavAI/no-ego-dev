@@ -136,3 +136,40 @@ When reviewing a feature change, verify that every critical journey has detailed
 Before every commit, run all automated feature spec test cases (`TC-*`) across the repository, not only cases for the changed feature. Every automated case and its required variants must pass on the exact candidate contents being committed. Fix failures before committing; do not skip, disable, or weaken cases merely to make the gate pass. If a required dependency or environment is unavailable, report the blocker and do not commit until the affected automated cases can run and pass.
 
 Report manual and unimplemented cases explicitly; neither a skip nor a missing test counts as a pass. Complete required manual acceptance cases before committing, recording redacted evidence separately from runtime state. An unimplemented case is a coverage gap that must be resolved before claiming its feature fully verified. Preserve the separate `python -m pytest` requirement above.
+
+## Default Hermes staging and task completion
+
+The default local Hermes instance (`~/.hermes`) is the skills staging target.
+After every completed task in this distribution, run
+`node scripts/deploy-hermes-skills.mjs` and verify its result before reporting
+staging updated. This synchronizes canonical skills only; it does not restart
+Hermes, deploy the CLI, or replace configuration, credentials, sessions or named
+profiles. See [skills staging](docs/features/hermes-skills-staging/SPEC.md).
+Use [task-management](skills/task-management/SKILL.md) for durable NED goals
+(milestones) and tasks. Tasks may belong to a goal; direct user tracker choices
+remain authoritative.
+
+## Mandatory completion: merge and local deployment
+
+For every task in this distribution, completion requires applicable checks and
+manual acceptance, independent review, merge into remote `main`, and verified
+deployment from that merged commit to the default local Hermes instance. The user
+has authorized this normal merge/deployment flow; do not repeatedly request it.
+Do not mark NED tasks/goals done or send a completion report while any gate remains
+pending. A local implementation, draft PR, passing tests, or skills-only copy does
+not establish full deployment.
+
+Use an isolated checkout for the task; preserve unrelated working-tree changes.
+Fetch main, resolve integration, run the repository's required automated/manual
+checks, obtain exact-candidate review and green PR checks, merge, then read back
+the remote merged SHA. Deploy only committed merged contents. For CLI/runtime
+changes run the canonical checkout installer `bash scripts/install.sh` from the
+merged checkout and verify installed commands and generation identity. Run
+`node scripts/deploy-hermes-skills.mjs` for canonical skills. Install/update any
+affected profile-local plugins, preserve existing user configuration/credentials,
+enable only required plugin/toolset entries, and reload affected local Hermes/COM
+processes when needed. Verify the running/local installed behavior at the merged
+revision, then record merge/deployment evidence and complete the owned NED task.
+Never use AWS or named-profile rollout as a substitute for this local target.
+If deployment/review/access fails, keep work open with the actual blocker and
+continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.

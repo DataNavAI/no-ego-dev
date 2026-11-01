@@ -1,0 +1,21 @@
+prompt: |
+  Read the task-management skill and execute the requests in the fixture using
+  this checkout's CLI in a disposable project and database. Preserve the source
+  checkout and real Hermes profile. Save commands, outputs and final state.
+expectations:
+  - Uses native ned secure_share_secret with a managed export path when the user requests a password, and relies on the COM card without echoing values or fabricating success.
+  - Uses the CLI private-file secret handoff without printing synthetic secret bytes or putting them in chat, task descriptions, logs or command arguments.
+  - "Keeps a task open until independent review, required checks, remote main merge and verified deployment of that merged revision to default local Hermes; green tests or a draft PR alone never count as done."
+  - Automatically tracks a plain development request before implementation without being asked to manage tasks.
+  - Reuses records for follow-ups and resumes; creates scoped follow-up work without inventing unsupported edit or reopen commands.
+  - Uses an existing appropriate milestone or creates one for a multi-task outcome; allows standalone focused tasks.
+  - Creates one outcome-based goal milestone and two tasks linked by returned IDs.
+  - Records the dependency and claims only ready work with a stable explicit actor.
+  - Rejects a competing actor without changing ownership or completing blocked work.
+  - Resumes existing work after interruption without duplicate creation.
+  - Completes verified tasks before explicitly completing the milestone.
+  - Reports deployment as unverified in the synthetic evaluation without mutating the real profile.
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/scenarios.md

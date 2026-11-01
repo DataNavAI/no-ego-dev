@@ -57,7 +57,7 @@ async function runCommunicator(flags, io = console, dependencies = {}) {
     try { databasePath = resolveDatabasePath({databaseUrl:options.databaseUrl, env:originalEnv, home:dependencies.home}); }
     catch { io.error('NEDCOM: configure a SQLite file path or local file: URL with --database or NED_DATABASE_URL.'); return 2; }
     if(stopping)return 0;
-    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath,home:dependencies.home,logger:dependencies.logger});
+    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath,home:dependencies.home,logger:dependencies.logger,secretsEnabled:!seen.has('--public')});
     const url = await app.listen();
     if(seen.has('--public')&&!stopping){
       io.error('WARNING: Public NED COM has no authentication. Anyone with the URL can read projects and Hermes sessions and send messages. Stop with Ctrl+C.');

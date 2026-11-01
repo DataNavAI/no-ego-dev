@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NED</title><link rel="stylesheet" href="/vendor/webawesome-theme.css"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/conversation.css"><script type="module" src="/vendor/webawesome.js"></script><script type="module" src="/app.js"></script><script type="module" src="/chat-entry.js"></script></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NED</title><link rel="stylesheet" href="/vendor/webawesome-theme.css"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/conversation.css"><link rel="stylesheet" href="/settings.css"><script type="module" src="/settings.js"></script><script type="module" src="/vendor/webawesome.js"></script><script type="module" src="/app.js"></script><script type="module" src="/chat-entry.js"></script></head><body>
 <a id="workspace-skip" class="skip" href="#preview">Skip to Preview</a>
 <div id="app-shell" class="shell" data-view="chat">
   <header id="sidebar" class="workspace-toolbar" aria-label="NED navigation">
@@ -10,7 +10,7 @@
   </header>
 
   <div id="left-pane" class="left-pane">
-    <div class="left-tabs" role="tablist" aria-label="Workspace"><button id="mobile-sidebar-toggle" role="tab" aria-selected="true" aria-controls="chat" tabindex="0" type="button">Chat</button><button id="goals-tab" role="tab" data-section="Tasks" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Goals</button><button id="artifacts-tab" role="tab" data-section="Artifacts" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Artifacts</button></div>
+    <div class="left-tabs" role="tablist" aria-label="Workspace"><button id="mobile-sidebar-toggle" role="tab" aria-selected="true" aria-controls="chat" tabindex="0" type="button">Chat</button><button id="goals-tab" role="tab" data-section="Tasks" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Goals</button><button id="artifacts-tab" role="tab" data-section="Artifacts" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Artifacts</button><button id="settings-tab" role="tab" aria-selected="false" aria-controls="settings" tabindex="-1" type="button">Settings</button></div>
   <section id="chat" role="tabpanel" class="chat-pane" aria-labelledby="chat-heading" tabindex="-1">
     <header class="conversation-bar">
       <h1 id="chat-heading" tabindex="-1">NED Chat</h1>
@@ -38,6 +38,12 @@
     </div>
   </section>
 
+  <section id="settings" role="tabpanel" aria-labelledby="settings-tab" tabindex="-1" hidden>
+    <h2 id="settings-heading" tabindex="-1">Settings</h2><h3>Secrets</h3>
+    <p>Save secrets here and share only the key with NED.</p><p>Available to NED on this instance.</p>
+    <form id="secret-form" autocomplete="off"><label for="secret-key">Key</label><input id="secret-key" name="secret-key" placeholder="ADMIN_PASSWORD" pattern="[A-Z][A-Z0-9_]{0,127}" maxlength="128" autocapitalize="characters" spellcheck="false" required><label for="secret-value">Value</label><input id="secret-value" name="secret-value" type="password" autocomplete="new-password" maxlength="65536" required><button type="submit">Save secret</button></form>
+    <p id="secret-status" role="status" aria-live="polite"></p><button id="secret-retry" type="button" hidden>Retry</button><ul id="secret-list" aria-label="Saved secrets"></ul>
+  </section>
   <section id="content" role="tabpanel" aria-labelledby="goals-tab" tabindex="-1" hidden><div id="identity" class="eyebrow"></div><h2 id="heading" tabindex="-1">Loading projects…</h2><section class="card" id="card"><p id="message"></p><div id="project-work" hidden></div><a id="open-app" class="app-link" target="_blank" rel="noopener noreferrer" aria-label="Open app (opens in a new tab)" hidden>Open app</a><small id="new-tab-note" hidden> Opens in a new tab.</small><button id="retry" hidden>Retry</button></section><p id="announcement" role="status" aria-live="polite" class="sr-only"></p></section>
   </div>
   <div id="pane-divider" class="pane-divider" role="separator" aria-label="Resize chat pane" aria-orientation="vertical" aria-controls="left-pane" tabindex="0" hidden></div>

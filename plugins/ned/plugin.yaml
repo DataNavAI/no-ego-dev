@@ -1,0 +1,5 @@
+name: ned
+version: 1.0.0
+description: Share a saved NED secret through a private COM retrieval card without revealing its value to Hermes.
+provides_tools:
+  - ned

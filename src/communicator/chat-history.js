@@ -1,6 +1,24 @@
+import {secretShareRow} from './public/secret-share.js';
 import {validateMessagePage} from './public/history.js';
+// Match the renderer's supported call/block forms before any raw/data fallback.
+function withoutNativeInputs(value,calls=false){
+  let parsed=value;
+  if(typeof value==='string'){try{parsed=JSON.parse(value);}catch{return value;}}
+  const native=block=>block&&typeof block==='object'&&(block.name==='ned'||block.function?.name==='ned')&&(calls||['tool_use','tool_call','function','tool_result'].includes(block.type));
+  if(native(parsed))return '';
+  if(!Array.isArray(parsed))return value;
+  const result=[],pending=[{source:parsed,target:result}];let changed=false;
+  // Iterative traversal preserves even deeply nested generic arrays without stack growth.
+  while(pending.length){const {source,target}=pending.pop();for(const block of source){
+    if(native(block)){changed=true;continue;}
+    if(Array.isArray(block)){const children=[];target.push(children);pending.push({source:block,target:children});}
+    else target.push(block);
+  }}
+  return changed?(typeof value==='string'?JSON.stringify(result):result):value;
+}
 export function projectHistoryMessage(row){
-  let content=row.content ?? '';
+  if(row.role==='tool'&&(row.tool_name??row.name)==='ned'){const share=secretShareRow(row);return {id:row.id,role:'tool',tool_name:'ned',content:share?JSON.stringify(share):''};}
+  let content=withoutNativeInputs(row.content ?? '');
   if(row.role==='user'){
     let parts=content;
     if(typeof content==='string'&&content.startsWith('[')){try{parts=JSON.parse(content);}catch{parts=content;}}
@@ -10,7 +28,7 @@ export function projectHistoryMessage(row){
       content=simple?parts.map(part=>image(part)?'Image attachment':part.text).join('\n\n'):JSON.stringify(parts.map(part=>image(part)?{...part,image_url:typeof part.image_url==='string'?'Image attachment':{...part.image_url,url:'Image attachment'}}:part));
     }
   }
-  return {id:row.id,role:row.role,content,...(row.tool_name!==undefined?{tool_name:row.tool_name}:{}),...(typeof row.name==='string'?{name:row.name}:{}),...(row.tool_calls!==undefined?{tool_calls:row.tool_calls}:{}),...(row.tool_call_id!==undefined?{tool_call_id:row.tool_call_id}:{})};
+  return {id:row.id,role:row.role,content,...(row.tool_name!==undefined?{tool_name:row.tool_name}:{}),...(typeof row.name==='string'?{name:row.name}:{}),...(row.tool_calls!==undefined?{tool_calls:withoutNativeInputs(row.tool_calls,true)}:{}),...(row.tool_call_id!==undefined?{tool_call_id:row.tool_call_id}:{})};
 }
 export async function readHistoryPage({origin,session,offset,key,signal}){
   let limit=50,calls=0,rows=[];

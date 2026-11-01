@@ -69,7 +69,9 @@ const chatToggle=document.getElementById('mobile-sidebar-toggle');
 const leftToggle=document.getElementById('left-toggle');
 const previewToggle=document.getElementById('preview-toggle');
 const sectionTabs=[...document.querySelectorAll('[data-section]')];
-const tabs=[chatToggle,...sectionTabs];
+const settingsTab=document.getElementById('settings-tab');
+const settings=document.getElementById('settings');
+const tabs=[chatToggle,...sectionTabs,...(settingsTab?[settingsTab]:[])];
 const mobileViewport=typeof matchMedia==='function'?matchMedia('(max-width: 767px)'):null;
 let workspace=mobileViewport?.matches?'left':'preview';
 let selectedTab=chatToggle;
@@ -77,7 +79,8 @@ function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   leftPane.hidden=mobile&&workspace!=='left';leftPane.inert=leftPane.hidden;
   chat.hidden=selectedTab!==chatToggle;chat.inert=chat.hidden||leftPane.hidden;
-  detail.hidden=selectedTab===chatToggle;detail.inert=detail.hidden||leftPane.hidden;
+  detail.hidden=selectedTab===chatToggle||Boolean(settingsTab&&selectedTab===settingsTab);detail.inert=detail.hidden||leftPane.hidden;
+  if(settings){settings.hidden=selectedTab!==settingsTab||leftPane.hidden;settings.inert=settings.hidden;}
   preview.hidden=mobile&&workspace!=='preview';preview.inert=preview.hidden;
   shell.dataset.workspace=workspace;
   leftToggle.textContent=selectedTab.textContent||'Chat';

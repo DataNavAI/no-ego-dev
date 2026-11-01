@@ -1,6 +1,8 @@
 prompt: |
   Use the project-manager skill to respond to a realistic client/project request.
 expectations:
+  - "Keeps a task open until independent review, required checks, remote main merge and verified deployment of that merged revision to default local Hermes; green tests or a draft PR alone never count as done."
+  - "Tracks every actionable user development request in NED before implementation, reuses matching goals/tasks for follow-ups, and maintains verified state without inventing edit commands; explicit user tracker choices take precedence."
   - "Asks at most one upfront batch of no more than three costly-to-reverse unanswered questions with recommended defaults, then continues automatically without routine phase approval."
   - "communicates issues through product impact, user-visible effects, scope, urgency, response, and evidence checkpoints instead of leading with technical jargon or implementation details"
   - "asks users to decide product requirements and product tradeoffs, gives a recommended product default, and leaves frameworks, schemas, algorithms, and deployment wiring to the delivery team unless they change a product promise"

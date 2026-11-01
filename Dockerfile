@@ -11,6 +11,7 @@ RUN npm ci --omit=dev --no-audit && \
 COPY bin/ bin/
 COPY src/ src/
 COPY skills/ skills/
+COPY plugins/ned/ plugins/ned/
 COPY eval_runner/ eval_runner/
 COPY distribution.yaml SOUL.md AGENTS.md config.yaml README.md README.ko.md LICENSE .env.EXAMPLE ./
 COPY scripts/container/ scripts/container/

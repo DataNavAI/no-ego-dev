@@ -9,6 +9,7 @@ export async function startPublicTunnel(target,{env=process.env,spawn:launch=spa
   const bridge=http.createServer((req,res)=>{
     if(!publicUrl){res.writeHead(503);res.end();return;}
     if(req.headers.host!==new URL(publicUrl).host||(req.headers.origin!==undefined&&req.headers.origin!==publicUrl)){res.writeHead(403);res.end();return;}
+    if(/^\/api\/secrets(?:\/|\?|$)/.test(req.url)){res.writeHead(403);res.end();return;}
     const headers={...req.headers,host:local.host};
     if(headers.origin)headers.origin=local.origin;
     delete headers['x-forwarded-host'];delete headers['x-forwarded-proto'];delete headers.forwarded;

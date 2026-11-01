@@ -25,6 +25,7 @@ The project defaults to cwd, resolved through realpath. Explicitly pass the same
 ```bash
 ned task init --project /absolute/project
 ned goal create "Build authentication" --json
+ned task create "Implement callback" --goal <goal-id> --json
 ned subgoal create "Sign-in" --parent <goal-id> --json
 ned task create "Implement OAuth" --parent <subgoal-id> --description "Synthetic acceptance" --priority 1 --json
 ned issue create "Refresh regression" --parent <subgoal-id> --discovered-from <task-id> --json
@@ -38,6 +39,8 @@ ned ready --json
 ned status --json
 ned tree --json
 ```
+
+A goal is a milestone. A task can be standalone or belong to a goal via `--goal`; do not combine it with `--parent`.
 
 Creation returns stable IDs; use them literally. Titles are nonempty and at most 500 characters, descriptions at most 20,000, and priority is 0–4 with 0 highest. A subgoal needs a parent; supplied parents must be unfinished goals/subgoals in the same project. Discovery provenance does not imply a parent or blocker. The generic `task` noun can inspect any work item; other nouns require matching types.
 
@@ -62,7 +65,7 @@ Mutation and history commit in the same transaction; a failed or interrupted tra
 
 JSON success writes one result to stdout with exit 0. Errors write `{error,message}` to stderr, exit 2 for invalid input/configuration/setup/ownership and exit 1 for database failures. Raw SQL, database paths, and private inputs are omitted from DB error messages. Normal output is readable. CLI-owned connections close after each operation; programmatic callers close their service or shared database explicitly.
 
-No generic editing, reparenting, deletion, cloud execution, public HTTP task API, or dashboard is included. GitHub Issues manages development of NED itself; the task CLI records the work NED performs for user projects. No synchronization between those trackers is implemented.
+No generic editing, reparenting, deletion, cloud execution, public HTTP task API, or dashboard is included. NED tasks track user development requests, including this distribution; GitHub Issues/PRs may supply delivery evidence. No synchronization between those trackers is implemented.
 
 ## Verify all or selected spec cases
 

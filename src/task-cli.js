@@ -5,6 +5,7 @@ const values = new Set([
   '--database',
   '--actor',
   '--parent',
+  '--goal',
   '--description',
   '--priority',
   '--discovered-from',
@@ -71,7 +72,7 @@ export async function runTaskCli(argv, io, dependencies = {}) {
     const top = ['ready', 'status', 'tree'].includes(command);
     const allowed = [...globalFlags];
     if (action === 'create' && !top)
-      allowed.push('--parent', '--description', '--priority', '--discovered-from');
+      allowed.push('--parent', '--goal', '--description', '--priority', '--discovered-from');
     if (action === 'block' && !top) allowed.push('--on', '--reason', '--service');
     if (action === 'done' && !top) allowed.push('--reason');
     for (const key of Object.keys(options))
@@ -90,6 +91,8 @@ export async function runTaskCli(argv, io, dependencies = {}) {
     if (action === 'init' && command !== 'task') throw new Error('Use ned task init.');
     if (action === 'block' && (options.on ? options.reason || options.service : !options.reason))
       throw new Error('Use block --on <id> or block --reason <text> [--service <name>].');
+    if (options.goal !== undefined && (!options.goal || command !== 'task' || options.parent !== undefined))
+      throw new Error('Use task create --goal <goal-id> without --parent.');
     if (options['discovered-from'] && command !== 'issue')
       throw new Error('--discovered-from is supported for issues only.');
     const actions = [
@@ -122,15 +125,17 @@ export async function runTaskCli(argv, io, dependencies = {}) {
         tree: () => service.getTree(),
       }[command]();
     else if (action === 'init') result = await service.initialize();
-    else if (action === 'create')
+    else if (action === 'create') {
+      if (options.goal && (await service.getItem(options.goal)).type !== 'goal')
+        throw new Error('--goal must reference a goal milestone.');
       result = await service.createItem(command, {
         title: rest[0],
-        parentId: options.parent,
+        parentId: options.goal || options.parent,
         description: options.description,
         priority: options.priority === undefined ? 2 : Number(options.priority),
         discoveredFrom: options['discovered-from'],
       });
-    else if (action === 'list')
+    } else if (action === 'list')
       result = (await service.getItems()).filter((item) => item.type === command);
     else {
       const item = await service.getItem(rest[0]);

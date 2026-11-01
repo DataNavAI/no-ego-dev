@@ -1,20 +1,14 @@
 {
+  "candidate_sha": "c1c67dd8d09041f9adc77525670c82c4ad595b17",
   "result": "pass",
-  "candidate_sha": "ca21aabc9e6467f3c72d00c1affa3ca0e2cbc1de",
-  "tested_at": "2026-10-28T05:51:26.946120+00:00",
-  "environment": "Local macOS ARM64, Node25.6.1, Python3.14.3. Exact native source ca21aabc9e6467f3c72d00c1affa3ca0e2cbc1de with Hub b02070b50a892760cd43bb959472fba6617e39f0. Real Hub API/broker, frontend Chromium browser, native CLI child processes, real COM server, temporary SQLite and private temporary credentials. Synthetic development browser sign-in and explicit Hub consent; no live Google grant or remote machine.",
+  "tested_at": "2026-10-31T19:47:31.946598Z",
+  "environment": "Clean isolated macOS exact-candidate worktree; fresh independent Hermes reviewer; disposable vault/projects/native profile; real native ARM Docker acceptance on owned resources",
   "commands": [
     "npm run lint",
-    "npm test",
-    "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-016.test.js docs/features/communicator/tests/TC-015.test.js",
-    "Parent: exact-pair Playwright native CLI browser end-to-end test against the exact Hub/native source pair"
+    "npm run test:all",
+    "env -u NED_TEST_PYTHON node --test docs/features/secret-management/tests/TC-005.test.js",
+    "Actual agent TC-004 private-file handoff and real Hermes plugin registry/session/API/COM synthetic acceptance (unchanged runtime evidence verified across exact candidates)",
+    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-ned-staging --expected-architecture arm64"
   ],
-  "observations": "PASS: first ned com --login completes Hub-owned PKCE authorization and explicit browser consent, persists a private per-origin token, starts COM, registers the default normalized hostname and reaches real COM UI/API through Hub Connect. Fresh native processes reuse the same token for plain ned com and --login; no repeated authorization or token issuance. Logout revokes and clears the matching local credential and denies the old browser lease. Focused TC01635/35 and TC0158/8 pass, including renamed environment variables, legacy-variable rejection before external effects, hostname defaults/invalid names, cached-token401-only reauthorization, transient/invalid/redirect/oversized/interrupted validation preserving credentials, issuer isolation, explicit-token precedence and retained callback/storage/concurrency/revocation protections. Canonical lint and all Node/automated spec cases pass; Python208 passed9 existing optional/environment skips. Source precommit hook repeats the same checks successfully; this evidence-only commit hook repeats all required gates. Unrelated manual/evaluation cases remain NOT RUN. Hub API independent review and staging deployment are separate pending gates; local fixture acceptance does not certify live Google consent, hosted TLS/PostgreSQL, backup/restore or remote-machine compatibility.",
-  "evidence": {
-    "report": "ned-hub/.artifacts/reviews/issue-18/exact-pair-e2e.json",
-    "report_sha256": "77a53a68e6c20c390185d1778112ec2e3193b0b5b2decf49483a6cdd0d59f3fa",
-    "log": "ned-hub/.artifacts/reviews/issue-18/exact-pair-e2e.log",
-    "log_sha256": "57636cf127480e7c70464ab8fa0b7be838380678a14377804a0b77008344efe6"
-  }
+  "observations": "Round3 exact candidate APPROVED. F1 history projection resolved; F2 container packaging and F3 test interpreter review escapes explicitly retained and corrected. All local automated cases and Python208 passed9skipped; new TC004 agent behavior passed separately, historical manual cases remain NOT RUN. Real ARM container lifecycle passed; hosted corrected AMD64/ARM64 and Linux/macOS checks still required before merge. No actual live profile deployment claimed. Review SHA256 46013ee1552a8673582a1d8c55399d5b4209b684923657ab44249d386c2aa8ba"
 }
