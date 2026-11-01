@@ -1,2 +1,10 @@
 import {mountChat} from './chat-ui.js';
-mountChat();
+import {mountActivity} from './activity-ui.js';
+import {mountPaneResize} from './pane-resize.js';
+import {mountDebugPane} from './debug-pane.js';
+import {marked} from '/vendor/marked.js';
+import DOMPurify from '/vendor/dompurify.js';
+mountDebugPane({document});
+mountChat({marked,DOMPurify});
+mountActivity({document,EventSource:globalThis.EventSource});
+mountPaneResize({shell:document.getElementById('app-shell'),divider:document.getElementById('pane-divider')});

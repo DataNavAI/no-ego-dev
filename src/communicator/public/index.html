@@ -1,7 +1,50 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEDCOM</title><link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js"></script><script type="module" src="/chat-entry.js"></script></head><body>
-<a class="skip" href="#chat">Skip to chat</a><header><strong>NEDCOM</strong><small>Local · Hermes</small><label class="mobile-menu" for="mobile-view">View<select id="mobile-view"><option value="chat">Chat</option><option value="project">Project</option></select></label></header>
-<div class="shell" data-view="chat"><aside><label for="project">Project</label><select id="project" disabled><option value="">Loading projects…</option></select><nav aria-label="Project sections"><button data-section="Tasks" disabled>Tasks</button><button data-section="Artifacts" disabled>Artifacts</button><button data-section="WIP app" disabled>WIP app</button></nav><p id="navigation-hint">Choose a project first.</p></aside>
-<section id="chat" class="chat-pane" aria-labelledby="chat-heading" tabindex="-1"><h1 id="chat-heading">Chat</h1><div class="chat-toolbar"><label for="sessions">Session</label><select id="sessions"><option value="">Choose a session</option></select><button id="new-chat">New chat</button><button id="more-sessions" hidden>Load more sessions</button></div><div class="history-controls"><button id="older" hidden>Load older</button><button id="newer" hidden>Load newer</button><button id="latest" hidden>Latest</button></div><div id="transcript" class="transcript" role="region" aria-label="Conversation" tabindex="0"></div><p id="chat-status" role="status" aria-live="polite">Loading chat…</p><button id="chat-retry">Reload</button><form id="chat-form"><label for="chat-message">Message</label><textarea id="chat-message" rows="3" maxlength="8000" required></textarea><button id="chat-send" type="submit">Send</button></form></section>
-<main id="content" tabindex="-1"><div id="identity" class="eyebrow"></div><h2 id="heading" tabindex="-1">Loading projects…</h2><section class="card" id="card"><p id="message"></p><a id="open-app" class="app-link" target="_blank" rel="noopener noreferrer" aria-label="Open app (opens in a new tab)" hidden>Open app</a><small id="new-tab-note" hidden> Opens in a new tab.</small><button id="retry" hidden>Retry</button></section><p id="announcement" role="status" aria-live="polite" class="sr-only"></p></main></div>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NED</title><link rel="stylesheet" href="/vendor/webawesome-theme.css"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/conversation.css"><script type="module" src="/vendor/webawesome.js"></script><script type="module" src="/app.js"></script><script type="module" src="/chat-entry.js"></script></head><body>
+<a id="workspace-skip" class="skip" href="#preview">Skip to Preview</a>
+<div id="app-shell" class="shell" data-view="chat">
+  <header id="sidebar" class="workspace-toolbar" aria-label="NED navigation">
+    <button id="navigation-open" class="mobile-menu" type="button" aria-label="Open navigation" aria-controls="navigation-drawer" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><strong class="desktop-brand">NED</strong><strong id="mobile-view-title" class="mobile-view-title">Chat</strong><div id="project-control"><label class="sr-only" for="project">Project</label><select id="project" disabled><option value="">Loading projects…</option></select></div>
+    <div class="workspace-switch"><button id="left-toggle" type="button" aria-controls="left-pane" aria-pressed="false">Chat</button><button id="preview-toggle" type="button" aria-controls="preview" aria-pressed="true">Preview</button></div>
+    <span id="navigation-hint" class="sr-only">Choose a project first.</span>
+    <button id="debug-toggle" type="button" aria-controls="debug-pane" aria-expanded="false">Debug</button>
+  </header>
+
+  <div id="left-pane" class="left-pane">
+    <div class="left-tabs" role="tablist" aria-label="Workspace"><button id="mobile-sidebar-toggle" role="tab" aria-selected="true" aria-controls="chat" tabindex="0" type="button">Chat</button><button id="goals-tab" role="tab" data-section="Tasks" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Goals</button><button id="artifacts-tab" role="tab" data-section="Artifacts" aria-selected="false" aria-controls="content" tabindex="-1" type="button">Artifacts</button></div>
+  <section id="chat" role="tabpanel" class="chat-pane" aria-labelledby="chat-heading" tabindex="-1">
+    <header class="conversation-bar">
+      <h1 id="chat-heading" tabindex="-1">NED Chat</h1>
+
+    </header>
+    <div class="history-controls"><button id="older" hidden aria-hidden="true" tabindex="-1"></button><button id="newer" hidden aria-hidden="true" tabindex="-1"></button><button id="latest" hidden>Jump to latest</button></div>
+    <section id="chat-activity" class="chat-activity" aria-label="Latest goal & task updates" hidden><div class="activity-heading"><button id="chat-activity-dismiss" type="button" aria-label="Dismiss updates">×</button></div><div id="chat-activity-content" role="status" aria-live="polite" aria-atomic="true"></div></section>
+    <div id="transcript" class="transcript" role="region" aria-label="Conversation" tabindex="0"></div>
+    <div class="compose-dock">
+      <p id="chat-status" role="status" aria-live="polite">Loading chat…</p>
+      <button id="chat-retry">Reload</button>
+      <form id="chat-form">
+        <ul id="chat-task-references" class="task-reference-list" aria-label="Referenced tasks"></ul><p id="chat-reference-status" class="sr-only" role="status"></p>
+        <label class="sr-only" for="chat-message">Message</label>
+        <textarea id="chat-message" rows="2" maxlength="8000" placeholder="Ask anything"></textarea>
+        <div class="composer-context">
+        <ul id="chat-attachments" class="attachment-list" aria-label="Attached files"></ul>
+        <p id="chat-attachment-status" role="status" aria-live="polite"></p>
+        <input id="chat-files" type="file" accept=".png,.jpg,.jpeg,.webp,.txt,.md,.csv,.json,.pdf,.docx" multiple hidden>
+        <details class="supported-files"><summary>Supported files</summary><small class="attachment-help">PNG, JPEG, WebP, TXT, MD, CSV, JSON, PDF or DOCX · 4 MB each · up to 4 files · images total 2 MB</small></details>
+        <div id="chat-link-editor" class="link-editor" hidden><label for="chat-link-url">URL</label><input id="chat-link-url" type="url" maxlength="8000"><label for="chat-link-label">Label (optional)</label><input id="chat-link-label" maxlength="1000"><p id="chat-link-error" role="status"></p><div><button id="chat-link-insert" type="button">Insert link</button><button id="chat-link-cancel" type="button">Cancel</button></div></div>
+        </div>
+        <div class="composer-actions"><div class="attachment-toolbar"><button id="chat-attach" type="button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m7 11 5-5a2 2 0 0 1 3 3l-6 6a3.5 3.5 0 0 1-5-5l7-7"/></svg><span>Attach file</span></button><button id="chat-add-link" type="button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m8 7 2-2a3.5 3.5 0 0 1 5 5l-2 2M12 13l-2 2a3.5 3.5 0 0 1-5-5l2-2m0 5 6-6"/></svg><span>Add link</span></button></div><span class="backend-label">Hermes</span><button id="chat-send" type="submit" aria-label="Send message"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m4 8 4-4 4 4M8 4v8"/></svg></button></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="content" role="tabpanel" aria-labelledby="goals-tab" tabindex="-1" hidden><div id="identity" class="eyebrow"></div><h2 id="heading" tabindex="-1">Loading projects…</h2><section class="card" id="card"><p id="message"></p><div id="project-work" hidden></div><a id="open-app" class="app-link" target="_blank" rel="noopener noreferrer" aria-label="Open app (opens in a new tab)" hidden>Open app</a><small id="new-tab-note" hidden> Opens in a new tab.</small><button id="retry" hidden>Retry</button></section><p id="announcement" role="status" aria-live="polite" class="sr-only"></p></section>
+  </div>
+  <div id="pane-divider" class="pane-divider" role="separator" aria-label="Resize chat pane" aria-orientation="vertical" aria-controls="left-pane" tabindex="0" hidden></div>
+  <main id="preview" tabindex="-1" class="preview-pane" aria-labelledby="preview-title"><header class="preview-toolbar"><h2 id="preview-title">Preview</h2><span id="preview-identity"></span></header><div class="preview-canvas"><section class="preview-state"><span class="preview-symbol" aria-hidden="true">▧</span><h2 id="preview-heading" tabindex="-1"></h2><p id="preview-message" role="status" aria-live="polite"></p><a id="preview-open" class="app-link" target="_blank" rel="noopener noreferrer" hidden>Open app</a><small id="preview-note" hidden> Opens in a new tab.</small><button id="preview-retry" hidden>Retry</button></section></div></main>
+
+  <dialog id="debug-pane" class="debug-pane" aria-labelledby="debug-title" hidden inert><header><h2 id="debug-title">Debug</h2><button id="debug-close" type="button">Close debug</button></header><div class="debug-body"><dl><div><dt>COM</dt><dd id="debug-health">Not checked</dd></div><div><dt>Chat</dt><dd id="debug-chat">Not connected</dd></div></dl><div class="debug-events-heading"><h3>Recent events</h3><button id="debug-clear" type="button">Clear</button></div><p id="debug-empty">No events yet.</p><ol id="debug-events"></ol></div></dialog>
+  <dialog id="navigation-drawer" class="navigation-drawer" aria-labelledby="navigation-title"><header><h2 id="navigation-title">NED</h2><button id="navigation-close" type="button" aria-label="Close navigation">×</button></header><div id="navigation-items"></div></dialog>
+</div>
+<script type="module" src="/work-entry.js"></script>
 </body></html>

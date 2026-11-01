@@ -44,12 +44,13 @@ test('TC-004: public command lifecycle, invalid input and unchanged filesystem',
   for(const args of [['com','--help'],['--help']]){const p=start(args);const result=await p.ended;assert.equal(result.code,0);assert.match(result.stdout,/ned com/);assert.ok(!result.stdout.includes('http://'));}
   const blocker=createServer();await new Promise(resolve=>blocker.listen(0,'127.0.0.1',resolve));
   try {const p=start(['com','--port',String(blocker.address().port)]);const result=await p.ended;assert.equal(result.code,1);assert.match(result.stderr,/port/);assert.ok(!result.stdout.includes('http://'));} finally {await new Promise(resolve=>blocker.close(resolve));}
-  assert.equal(await readFile(db,'utf8'),'unchanged');assert.deepEqual(await readdir(home),['sentinel.sqlite']);
+  assert.equal(await readFile(db,'utf8'),'unchanged');assert.deepEqual((await readdir(home)).sort(),['.ned','sentinel.sqlite']);
 });
-test('TC-004: database precedence reaches shared server options without provider setup',async()=>{
+test('TC-004: database precedence reaches shared server options without provider setup',async t=>{
+  const logHome=await mkdtemp(join(tmpdir(),'com-log-precedence-'));t.after(()=>rm(logHome,{recursive:true,force:true}));
   for(const [flags,env,expected] of [[['--database','/explicit.sqlite'],{NED_DATABASE_URL:'https://invalid'},'/explicit.sqlite'],[[],{NED_DATABASE_URL:'file:///environment.sqlite'},'/environment.sqlite'],[[],{},'/synthetic/.ned/ned.sqlite']]) {
     const signals=new EventEmitter();let received;
-    const code=await runCli(['com',...flags],{log(){},error(){assert.fail('unexpected error');}},{env,home:'/synthetic',signals,createServer(options){received=options;return {async listen(){queueMicrotask(()=>signals.emit('SIGINT'));return 'http://127.0.0.1:1234';},async close(){}};},appFactory(){assert.fail('provider constructed');},telemetry:{capture(){assert.fail('telemetry');}}});
+    const code=await runCli(['com',...flags],{log(){},error(){assert.fail('unexpected error');}},{env,home:'/synthetic',logHome,signals,createServer(options){received=options;return {async listen(){queueMicrotask(()=>signals.emit('SIGINT'));return 'http://127.0.0.1:1234';},async close(){}};},appFactory(){assert.fail('provider constructed');},telemetry:{capture(){assert.fail('telemetry');}}});
     assert.equal(code,0);assert.equal(received.databasePath,expected);assert.equal(received.port,0);assert.equal(signals.listenerCount('SIGINT'),0);assert.equal(signals.listenerCount('SIGTERM'),0);
   }
 });

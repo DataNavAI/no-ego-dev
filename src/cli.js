@@ -28,7 +28,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '',
       'Usage:',
       '  ned --version',
-      '  ned com [--login [--no-browser] | --logout] [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--help]',
+      '  ned com [--login [--no-browser] | --logout] [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--public] [--help]',
       '  ned version',
       '  ned task init [--project <directory>] [--database <SQLite-path-or-file-URL>]',
       '  ned <goal|subgoal|task|issue> create <title> [--parent <id>] [--json]',

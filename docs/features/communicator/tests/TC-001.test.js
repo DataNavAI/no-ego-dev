@@ -28,7 +28,7 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
     assert.ok(get.headers['content-security-policy'].includes("frame-ancestors 'none'")); assert.equal(get.headers['access-control-allow-origin'],undefined);
   }
   assert.deepEqual(JSON.parse((await request(app.url,'/api/health')).body),{status:'ok',service:'nedcom'});
-  assert.deepEqual(JSON.parse((await request(app.url,'/api/capabilities')).body),{service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:false,artifacts:false,preview:true,chat:true}});
+  assert.deepEqual(JSON.parse((await request(app.url,'/api/capabilities')).body),{service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}});
   for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/health',{headers,method:'POST'})).status,403);
   assert.equal((await request(app.url,'/api/health',{headers:{Origin:app.url}})).status,200);
   for (const method of ['POST','PUT','PATCH','DELETE','OPTIONS']) { const res = await request(app.url,'/absent',{method}); assert.equal(res.status,405); assert.equal(res.headers.allow,'GET, HEAD'); }

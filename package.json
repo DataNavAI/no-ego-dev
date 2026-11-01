@@ -35,7 +35,7 @@
     "!docs/features/**/tests/**"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "test": "node --test tests/cli/*.test.js && npm run test:spec -- --all",
@@ -44,16 +44,25 @@
     "web:dev": "NED_WEB_DEV_MODE=1 node bin/ned-web.js",
     "pack:check": "npm pack --dry-run",
     "test:spec": "node scripts/run-spec-tests.mjs",
+    "test:chat:e2e": "node --test docs/features/communicator/tests/TC-037.test.js docs/features/communicator/tests/TC-038.test.js",
     "lint": "eslint src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check scripts/container scripts/aws-staging scripts/deploy-aws-staging.py docs/features/aws-staging-deployment/tests/cases.py docs/features/standalone-container/tests/container_acceptance.py && npm run check",
     "hooks:install": "node scripts/install-git-hooks.mjs",
-    "test:container": "python docs/features/standalone-container/tests/container_acceptance.py"
+    "test:container": "python docs/features/standalone-container/tests/container_acceptance.py",
+    "build:ui": "node scripts/build-communicator-ui.mjs",
+    "build:ui:check": "node scripts/build-communicator-ui.mjs --check"
   },
   "dependencies": {
     "better-sqlite3": "12.11.1",
+    "dompurify": "3.4.17",
     "dotenv": "18.0.9",
+    "mammoth": "1.13.0",
+    "marked": "18.1.2",
+    "pdfjs-dist": "5.5.207",
+    "sharp": "0.35.5",
     "tar": "7.5.21",
     "ws": "8.22.0",
-    "yaml": "2.9.1"
+    "yaml": "2.9.1",
+    "yauzl": "3.4.0"
   },
   "license": "MIT",
   "repository": {
@@ -65,8 +74,11 @@
   },
   "homepage": "https://ned.datanav.app",
   "devDependencies": {
+    "@awesome.me/webawesome": "3.14.0",
     "@eslint/js": "10.0.1",
+    "esbuild": "0.28.2",
     "eslint": "10.12.0",
-    "globals": "17.13.0"
+    "globals": "17.13.0",
+    "playwright": "1.64.1"
   }
 }

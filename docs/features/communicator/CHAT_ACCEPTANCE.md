@@ -4,6 +4,8 @@ Date: 2026-10-22, America/Los_Angeles. Candidate: uncommitted working tree; defa
 
 This document records implementation-stage observations. Exact final code-candidate verification for merging is recorded separately in `.github/manual-test-result.json` and its retained QA/review evidence; earlier limited source reviews below are not merge approval. Later regression coverage includes TC-010 controller recovery and the stable-ID/history-head and private-YAML corrections.
 
+Expanded browser acceptance also exposed a pre-existing shared-shell defect: a detail success captured the controller state before awaiting its response and could restore an older project/section. TC-006 now executes the shipped client with out-of-order successes and section navigation; the handler awaits data before reading the current state. This is part of the selected-project isolation gate, not a claim that all earlier screenshots approved the final candidate.
+
 ## Verified
 
 - Synthetic HTTP integration: session listing, creation, chronological history request, send response, server-only bearer header, exact Origin/JSON enforcement, invalid input and byte bounds, unavailable configuration, sanitized upstream errors, rejected redirects, malformed JSON and 4 MiB response limit. Executable evidence: SPEC TC-007.
@@ -22,7 +24,7 @@ This document records implementation-stage observations. Exact final code-candid
 
 Default host API at `127.0.0.1:8642` now passes live send/persistence verification. Other installations require an already configured local Hermes API as described in [CHAT.md](CHAT.md#connection--operations); NED COM itself does not create keys or restart gateway services. Execution permissions and tool-running approval behavior were not exercised by the deliberately tool-free live prompt.
 
-TC-008 is partially verified, not a complete manual pass: full keyboard/screen-reader, physical mobile keyboard, 200% text/reduced-motion, session-list pagination with 55 records, externally deleted session recovery and all outage/interruption variants remain outstanding. The current implementation uses completed synchronous turns, not token streaming or gateway run cancellation.
+TC-008 is partially verified, not a complete manual pass: full keyboard/screen-reader, physical mobile keyboard, 200% text/reduced-motion, session-list pagination with 55 records, externally deleted session recovery and all outage/interruption variants remain outstanding. This historical run used completed synchronous turns, not token streaming or gateway run cancellation. The 2026-10-26 public-tunnel remediation changes browser transport to short acceptance/status requests (FR-018/019); its independent acceptance evidence is separate from this historical run.
 
 Independent reviewer inspected supplied controller/server semantics and corrections, finding no remaining material issue in that scope. Reviewer tools could not access files; full-source independent review and dedicated visual/copy acceptance remain outstanding. No merge or deployment approval implied.
 
