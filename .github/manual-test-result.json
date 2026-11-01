@@ -1,8 +1,8 @@
 {
   "result": "pass",
-  "candidate_sha": "cd4bcecdb2851661742bbd3ba4bfba9576da7c31",
+  "candidate_sha": "39454fa7356bbdb926cd629297f5bb2c5c53ec07",
   "tested_at": "2026-11-01T16:35:15Z",
-  "environment": "macOS ARM64, Node25.6.1, Python3.14.3, Chromium156.0.8078.4. Real NED COM HTTP server with owned synthetic Hermes HTTP/SSE gateway, temporary SQLite and disposable private homes. Desktop1280x900, mobile390x844; canonical secret case additionally320x740. Frozen 88-path integration manifest matches exact committed source candidate; independent exact-SHA review approves source. No real credentials, private conversations, model calls or managed service used for browser QA.",
+  "environment": "macOS ARM64, Node25.6.1, Python3.14.3, Chromium156.0.8078.4; Node22.14.0 additionally exercises the corrected lifecycle fixtures. Real NED COM HTTP server with owned synthetic Hermes HTTP/SSE gateway, temporary SQLite and disposable private homes. Desktop1280x900, mobile390x844; canonical secret case additionally320x740. Browser evidence binds the original 88-path integration manifest and source cd4bcec; independent review proves unchanged production bytes in the corrected candidate, whose two test changes have a separate manifest. No real credentials, private conversations, model calls or managed service used for browser QA.",
   "commands": [
     "npm ci",
     "npm run hooks:install",
@@ -12,16 +12,22 @@
     "npm run pack:check",
     "npm run test:chat:e2e",
     "node --test docs/features/secret-management/tests/TC-003.test.js docs/features/secret-management/tests/TC-006.test.js",
-    "Owned focused Chromium chat, notice, typed-secret-card and project/Settings/Preview retention drivers; report/evidence independently audited"
+    "Owned focused Chromium chat, notice, typed-secret-card and project/Settings/Preview retention drivers; report/evidence independently audited",
+    "Node22: node --test docs/features/communicator/tests/TC-011.test.js docs/features/communicator/tests/TC-015.test.js"
   ],
-  "observations": "PASS for selected regression scope: 13 browser run units, zero failures. New/existing fixed-session chat: transient read recovery, one accepted turn, visible partial response before completion, HTTP SSE without status polling, persisted reload and uncertain-delivery lock without replay. Compact growing composer, optimistic user echo, refocus, Stop/failure recovery with next draft preserved; hidden generic tools and safe activity; Markdown, auto older paging with pinned composer, mobile Menu/Debug, desktop resize, image/TXT/link context, compact notice and dismissal. Main integration retains protected secret Settings, narrow typed retrieval cards, native input redaction and project/tab/Preview identity. Synthetic reveal clears on app navigation and transcript article removal. Six canonical browser tests pass in addition to seven focused units. Full canonical lint/all automated feature cases and Python pass; Python208 passed9 existing skips. Enabled source commit hook repeats full gates. Exact source composite review APPROVED, no material findings. Existing broader manual cases remain NOT RUN: not full cross-engine/accessibility, live Hermes/model, public Hub, hosted auth, every attachment or successful upstream Stop acceptance. Unsupported arbitrary nested-card DOM removal probe is disclosed in QA report, not an application lifecycle pass. No generic raw tool disclosure restored; narrowly typed secret cards are the documented exception.",
+  "observations": "PASS for selected regression scope: 13 browser run units, zero failures. New/existing fixed-session chat: transient read recovery, one accepted turn, visible partial response before completion, HTTP SSE without status polling, persisted reload and uncertain-delivery lock without replay. Compact growing composer, optimistic user echo, refocus, Stop/failure recovery with next draft preserved; hidden generic tools and safe activity; Markdown, auto older paging with pinned composer, mobile Menu/Debug, desktop resize, image/TXT/link context, compact notice and dismissal. Main integration retains protected secret Settings, narrow typed retrieval cards, native input redaction and project/tab/Preview identity. Synthetic reveal clears on app navigation and transcript article removal. Six canonical browser tests pass in addition to seven focused units. Full canonical lint/all automated feature cases and Python pass; Python208 passed9 existing skips. Enabled source commit hook repeats full gates. Exact source composite review APPROVED, no material findings. Existing broader manual cases remain NOT RUN: not full cross-engine/accessibility, live Hermes/model, public Hub, hosted auth, every attachment or successful upstream Stop acceptance. Unsupported arbitrary nested-card DOM removal probe is disclosed in QA report, not an application lifecycle pass. No generic raw tool disclosure restored; narrowly typed secret cards are the documented exception. CI follow-up: two test-harness assumptions reproduced RED on Node22 and corrected without any production/runtime edits. Missing-executable coverage now uses real failed spawn and verifies bridge cleanup; readiness test stops only after actual COM-ready output. Focused Node22 suite12 passed0failed0cancelled0skipped. Fresh full host lint/testall/Python and enabled fix-commit hook pass. Prior browser execution is reused, not rerun: independent review verifies production/runtime bytes identical to its approved target. Exact corrected-source review APPROVED, both CI findings resolved. GitHub CI must pass before merge.",
   "evidence": {
-    "source_manifest_sha256": "434f76dab2b801912e1497322c8ac6a1731a8f892b75df228529faaf7eb0131d",
+    "source_manifest_sha256": "967619073c50299477016b959993344dc440900cc7c0f3be123ba1b2482edb27",
     "report": "external:chat-merge-20261101/qa-r1/REPORT.md",
     "report_sha256": "ff00c0b1ce018fa3e36d00d5463a5a20e021d0c43dee69cd46c30992f3fa68bd",
     "manifest_sha256": "2bd1e9d3855f25b5eb305cd0d68c804c307f30be97b362dcf8cc87074de182da",
     "qa_audit": "external:chat-merge-20261101/qa-audit-r1/AUDIT.md",
-    "source_review_sha256": "e14908b8e23c16551892489864716dc1b084098dde054b24c0085752ff226877",
-    "retention": "Controller-retained evidence outside distribution: /Volumes/Agent/Codex/nedcom-chat-evidence/chat-merge-20261101"
+    "source_review_sha256": "ca3d1a81322ed63aa43e8d4869d7a0317b39279bcbcfe2804a5cea14b95a3fef",
+    "retention": "Controller-retained evidence outside distribution: /Volumes/Agent/Codex/nedcom-chat-evidence/chat-merge-20261101",
+    "browser_runtime_equivalent_to": "cd4bcecdb2851661742bbd3ba4bfba9576da7c31",
+    "ci_correction_paths": [
+      "docs/features/communicator/tests/TC-011.test.js",
+      "docs/features/communicator/tests/TC-015.test.js"
+    ]
   }
 }
