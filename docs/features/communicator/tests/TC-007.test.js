@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import {createCommunicatorServer} from '../../../../src/communicator/server.js';
 import {mergePage} from '../../../../src/communicator/public/chat-ui.js';
+import {endStream} from './stream-fixtures.js';
 
 test('TC-007: authenticated Hermes sessions, pagination and safe mutation perimeter',async t=>{
   const calls=[];
@@ -16,7 +17,7 @@ test('TC-007: authenticated Hermes sessions, pagination and safe mutation perime
     if(req.url.includes('offset=996')){res.end('x'.repeat(4194305));return;}
     if(req.url.includes('offset=995')){res.end(JSON.stringify({data:[{role:'assistant',content:'missing identity'}]}));return;}
     if(req.url.includes('offset=994')){res.end(JSON.stringify({data:[{id:1,content:'a'},{id:1,content:'b'}]}));return;}
-    if(req.method==='POST' && req.url.endsWith('/chat'))res.end(JSON.stringify({session_id:'s1',message:{content:'Hello'}}));
+    if(req.method==='POST' && req.url.endsWith('/chat/stream'))endStream(res,'s1','Hello');
     else if(req.method==='POST')res.end(JSON.stringify({session:{id:'s1',secret:'private'}}));
     else if(req.url.includes('/messages'))res.end(JSON.stringify({data:[{id:1,role:'user',content:'<script>bad</script>'}]}));
     else res.end(JSON.stringify({data:[{id:'s1',title:'First',private:'hidden'}],has_more:true}));
@@ -36,7 +37,7 @@ test('TC-007: authenticated Hermes sessions, pagination and safe mutation perime
   do{result=await(await request(`/s1/turns/${turn.id}`)).json();}while(result.turn.status==='pending');
   assert.equal(result.message.content,'Hello');
   assert.deepEqual(JSON.parse(calls[3].body),{input:'Hi'});
-  assert.equal(calls[3].path,'/api/sessions/s1/chat');
+  assert.equal(calls[3].path,'/api/sessions/s1/chat/stream');
   assert.ok(calls.every(call=>call.key==='Bearer synthetic-key'));
   const count=calls.length;
   for(const [path,body,headers,status] of [

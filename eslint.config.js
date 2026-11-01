@@ -2,6 +2,8 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
+  // Pinned third-party output is verified against its analyzed source by build:ui:check.
+  { ignores: ['src/communicator/public/vendor/webawesome.js'] },
   {
     files: ['src/**/*.js', 'bin/**/*.js', 'scripts/**/*.mjs', 'tests/**/*.js', 'docs/features/**/tests/**/*.js', 'eslint.config.js'],
     ...js.configs.recommended,

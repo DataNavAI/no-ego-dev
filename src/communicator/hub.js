@@ -3,6 +3,7 @@ import {hostname} from 'node:os';
 import {resolveHubOrigin} from '../hub-credentials.js';
 import {pipeline} from 'node:stream';
 import WebSocket, {createWebSocketStream} from 'ws';
+import {requestDiagnostic,requestPhase} from './public/request-diagnostic.js';
 
 // Keep admission identical to Hub store.validSlug: public slugs are permanent identities.
 const reservedSlugs = new Set(['api','auth','tunnel','healthz','assets','connect','favicon','robots','login','logout']);
@@ -44,7 +45,7 @@ export function readHubConfiguration(env = process.env) {
 }
 
 // This bridge has no listening socket: only authenticated Hub data channels enter it.
-function createBridge(config, target) {
+function createBridge(config, target,logger) {
   return http.createServer((req,res) => {
     if (req.headers.host !== 'ned-com' || req.headers['x-ned-instance'] !== config.slug || req.headers['x-forwarded-host'] !== config.instance.host || req.headers['x-forwarded-proto'] !== config.instance.protocol.slice(0,-1) || (req.headers.origin !== undefined && req.headers.origin !== config.instance.origin)) {
       res.writeHead(403);res.end();return;
@@ -58,16 +59,16 @@ function createBridge(config, target) {
       pipeline(response,res,()=>{});
     });
     upstream.setTimeout(120000,()=>upstream.destroy());
-    upstream.on('error',()=>{if(!res.headersSent)res.writeHead(502);res.end();});
+    upstream.on('error',error=>{const phase=requestPhase(req.url);if(phase)logger?.event('hub_request_failure',requestDiagnostic(phase,{status:res.headersSent?res.statusCode:502,error,reusedSocket:upstream.reusedSocket}));if(!res.headersSent)res.writeHead(502);res.end();});
     res.on('close',()=>upstream.destroy());
     pipeline(req,upstream,()=>{});
   });
 }
 
-export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, retryDelay} = {}) {
+export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, retryDelay,logger} = {}) {
   const target = new URL(targetUrl);
   if (target.protocol !== 'http:' || !loopback(target.hostname) || target.pathname !== '/' || target.username || target.password || target.search || target.hash) throw new Error('Invalid COM target.');
-  const bridge = createBridge(config,target);
+  const bridge = createBridge(config,target,logger);
   const streams = new Set();
   let stopped = false,control,retry,heartbeat,attempt = 0,abort;
   let lastStatus;

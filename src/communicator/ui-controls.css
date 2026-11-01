@@ -1,0 +1,2 @@
+/* Theme foundations only: do not import Web Awesome's native HTML reset. */
+@import '@awesome.me/webawesome/dist/styles/themes/default.css';

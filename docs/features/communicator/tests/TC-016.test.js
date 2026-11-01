@@ -120,7 +120,7 @@ test('TC-016: COM uses saved credentials only for its configured origin and expl
   for(const mode of ['saved','override','local']){
     const signals=new EventEmitter();let reads=0,connected=0;
     const env=mode==='local'?{}:{NED_HUB_URL:origin,NED_INSTANCE_NAME:'fixture',...(mode==='override'?{NED_HUB_TOKEN:'ned_explicit_override_0000000000'}:{})};
-    const result=await runCommunicatorCli([],quiet,{env,home:'/synthetic',signals,hubCredentialStore:{async read(hub){reads++;if(mode==='local')return null;assert.equal(hub,origin);return saved;}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected++;assert.equal(config.token,mode==='override'?env.NED_HUB_TOKEN:token);return {async close(){}};}});
+    const result=await runCommunicatorCli([],quiet,{env,home:'/synthetic',createLogger:()=>({path:'/synthetic/log',event(){},close(){}}),signals,hubCredentialStore:{async read(hub){reads++;if(mode==='local')return null;assert.equal(hub,origin);return saved;}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected++;assert.equal(config.token,mode==='override'?env.NED_HUB_TOKEN:token);return {async close(){}};}});
     assert.equal(result,0);assert.equal(reads,mode==='override'?0:1);assert.equal(connected,mode==='local'?0:1);
   }
 });
@@ -221,7 +221,7 @@ test('TC-016: default staging, production and explicit custom Hub selection shar
     assert.equal(await runCommunicatorCli(['--logout'],quiet,{env,signals:new EventEmitter(),hubCredentialStore:{async read(origin){read=origin;return null;}},createServer(){started++;}}),0);
     assert.equal(read,expected);assert.equal(started,0);
     const signals=new EventEmitter();let connected;
-    assert.equal(await runCommunicatorCli([],quiet,{env:{...env,NED_INSTANCE_NAME:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(origin){assert.equal(origin,expected);return {hub:origin,token,tokenId:'id',account};}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected=config;return {async close(){}};}}),0);
+    assert.equal(await runCommunicatorCli([],quiet,{env:{...env,NED_INSTANCE_NAME:'fixture'},home:'/synthetic',createLogger:()=>({path:'/synthetic/log',event(){},close(){}}),signals,hubCredentialStore:{async read(origin){assert.equal(origin,expected);return {hub:origin,token,tokenId:'id',account};}},createServer(){return {async listen(){setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},startHub(config){connected=config;return {async close(){}};}}),0);
     assert.equal(connected.hub.origin,expected);
   }
   for(const env of [{NED_ENV:'prod'},{NED_HUB_URL:'https://hub.example/path'},{NED_ENV:'unknown',NED_HUB_URL:'https://hub.example'}]){
@@ -254,7 +254,7 @@ test('TC-016: denied login and explicit token ambiguity never start COM or publi
 
 test('TC-016: interruption during post-login credential lookup cannot start COM',async()=>{
   const signals=new EventEmitter();let reads=0;
-  const result=await runCli(['com'],quiet,{env:{NED_INSTANCE_NAME:'fixture'},home:'/synthetic',signals,hubCredentialStore:{async read(){reads++;signals.emit('SIGTERM');return {token};}},createServer(){assert.fail('COM started after interrupt');}});
+  const result=await runCli(['com'],quiet,{env:{NED_INSTANCE_NAME:'fixture'},home:'/synthetic',createLogger:()=>({path:'/synthetic/log',event(){},close(){}}),signals,hubCredentialStore:{async read(){reads++;signals.emit('SIGTERM');return {token};}},createServer(){assert.fail('COM started after interrupt');}});
   assert.equal(result,0);assert.equal(reads,1);assert.equal(signals.listenerCount('SIGTERM'),0);
 });
 

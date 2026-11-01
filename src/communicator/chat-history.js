@@ -18,7 +18,16 @@ function withoutNativeInputs(value,calls=false){
 }
 export function projectHistoryMessage(row){
   if(row.role==='tool'&&(row.tool_name??row.name)==='ned'){const share=secretShareRow(row);return {id:row.id,role:'tool',tool_name:'ned',content:share?JSON.stringify(share):''};}
-  const content=withoutNativeInputs(row.content ?? '');
+  let content=withoutNativeInputs(row.content ?? '');
+  if(row.role==='user'){
+    let parts=content;
+    if(typeof content==='string'&&content.startsWith('[')){try{parts=JSON.parse(content);}catch{parts=content;}}
+    const image=part=>part&&typeof part==='object'&&['image_url','input_image'].includes(part.type)&&(typeof part.image_url==='string'||typeof part.image_url?.url==='string');
+    if(Array.isArray(parts)&&parts.some(image)){
+      const simple=parts.every(part=>image(part)?Object.keys(part).every(key=>['type','image_url'].includes(key))&&(typeof part.image_url==='string'||Object.keys(part.image_url).every(key=>key==='url')):part?.type==='text'&&typeof part.text==='string'&&Object.keys(part).every(key=>['type','text'].includes(key)));
+      content=simple?parts.map(part=>image(part)?'Image attachment':part.text).join('\n\n'):JSON.stringify(parts.map(part=>image(part)?{...part,image_url:typeof part.image_url==='string'?'Image attachment':{...part.image_url,url:'Image attachment'}}:part));
+    }
+  }
   return {id:row.id,role:row.role,content,...(row.tool_name!==undefined?{tool_name:row.tool_name}:{}),...(typeof row.name==='string'?{name:row.name}:{}),...(row.tool_calls!==undefined?{tool_calls:withoutNativeInputs(row.tool_calls,true)}:{}),...(row.tool_call_id!==undefined?{tool_call_id:row.tool_call_id}:{})};
 }
 export async function readHistoryPage({origin,session,offset,key,signal}){

@@ -4,6 +4,40 @@ import {chatHarness} from './chat-harness.js';
 
 const page=(start,count=50)=>Array.from({length:count},(_,index)=>({id:start+index,role:'assistant',content:`Message ${start+index}`}));
 const turnId='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+async function exhaustUnavailable(chat){await chat.respond({},503);await chat.tick();await chat.respond({},503);await chat.tick();await chat.respond({},503);}
+test('TC-010: transient history failures retry the same read twice while input stays disabled',async()=>{
+  const chat=await chatHarness();await chat.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});
+  await chat.respond({},502);assert.deepEqual(chat.delays(),[250]);assert.equal(chat.elements.get('chat-message').disabled,true);assert.equal(chat.elements.get('chat-retry').hidden,true);
+  await chat.tick();assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');
+  await chat.respond({},504);assert.deepEqual(chat.delays(),[750]);await chat.tick();
+  assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');await chat.respond({data:page(1,1)});
+  assert.equal(chat.elements.get('chat-message').disabled,false);assert.equal(chat.elements.get('transcript').children.length,1);assert.deepEqual(chat.delays(),[]);
+});
+test('TC-010: fixed-session transient network errors are bounded but authorization, timeout and malformed data are not retried',async()=>{
+  const chat=await chatHarness();await chat.fail(new TypeError('Failed to fetch'));
+  assert.deepEqual(chat.delays(),[250]);await chat.tick();assert.equal(chat.requests[0].url,'/api/chat/sessions/fixed');await chat.respond({},503);await chat.tick();await chat.respond({},502);
+  assert.equal(chat.elements.get('chat-retry').hidden,false);assert.equal(chat.elements.get('chat-message').disabled,true);assert.deepEqual(chat.delays(),[]);assert.equal(chat.requests.length,0);
+  for(const status of [400,401,403]){const denied=await chatHarness();await denied.respond({},status);assert.deepEqual(denied.delays(),[]);assert.equal(denied.elements.get('chat-retry').hidden,false);}
+  for(const name of ['TimeoutError','AbortError']){const timeout=await chatHarness();await timeout.fail(Object.assign(new Error('PRIVATE'),{name}));assert.deepEqual(timeout.delays(),[]);assert.equal(timeout.elements.get('chat-retry').hidden,false);}
+  const malformed=await chatHarness();await malformed.respond({session:{id:'wrong'}});assert.deepEqual(malformed.delays(),[]);assert.equal(malformed.requests.length,0);assert.equal(malformed.elements.get('chat-retry').hidden,false);
+});
+test('TC-010: composer resizes multiline input and shrinks after a confirmed send',async()=>{
+  const {elements,respond}=await selected();const draft=elements.get('chat-message');
+  draft.value='First\nSecond\nThird';draft.measuredScrollHeight=90;draft.dispatch('input');
+  assert.equal(draft.style.height,'90px');
+  draft.clientWidth=0;draft.measuredScrollHeight=0;draft.dispatch('input');
+  assert.equal(draft.style.height,'90px');
+  draft.clientWidth=390;
+  draft.value='Short';draft.measuredScrollHeight=34;draft.dispatch('input');
+  assert.equal(draft.style.height,'34px');
+  draft.value='First\nSecond';draft.measuredScrollHeight=62;draft.dispatch('input');
+  elements.get('chat-form').dispatch('submit');
+  await respond({turn:{id:turnId,status:'pending'}},202);
+  await respond({turn:{id:turnId,status:'completed'},message:{content:'Done'},session_id:'nedcom-main'});
+  draft.measuredScrollHeight=34;
+  await respond({data:page(952)});
+  assert.equal(draft.value,'');assert.equal(draft.style.height,'34px');
+});
 test('TC-010: send restores composer focus after settlement without stealing intentionally moved focus',async()=>{
   for(const moved of [false,true]){
     const {elements,document,respond}=await selected();const draft=elements.get('chat-message');
@@ -26,14 +60,14 @@ test('TC-010: startup ensures the canonical session before history and Reload re
   assert.equal(existing.elements.get('chat-message').disabled,true);
   await existing.respond({data:page(1,1)});
   assert.equal(existing.elements.get('chat-message').disabled,false);
-  const failed=await chatHarness();await failed.respond({},503);
+  const failed=await chatHarness();await exhaustUnavailable(failed);
   assert.equal(failed.elements.get('chat-message').disabled,true);
   failed.elements.get('chat-retry').dispatch('click');
   await failed.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});
   await failed.respond({data:[]});assert.equal(failed.elements.get('chat-message').disabled,false);
   const historyFailure=await chatHarness();
   await historyFailure.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});
-  await historyFailure.respond({},503);
+  await exhaustUnavailable(historyFailure);
   assert.equal(historyFailure.elements.get('chat-message').disabled,true);
   assert.equal(historyFailure.elements.get('chat-send').disabled,true);
   historyFailure.elements.get('chat-message').value='Do not send without history';
@@ -65,11 +99,11 @@ test('TC-010: controller sends once, preserves failed draft and reconciles befor
   elements.get('chat-message').value='Retain this message';
   elements.get('chat-form').dispatch('submit');elements.get('chat-form').dispatch('submit');
   assert.equal(requests.length,1);assert.equal(JSON.parse(requests[0].options.body).input,'Retain this message');
-  assert.equal(elements.get('chat-send').disabled,true);
+  assert.equal(elements.get('chat-send').disabled,false);assert.equal(elements.get('chat-send').attributes['aria-label'],'Stop response');
   await respond({turn:{id:turnId,status:'pending'}},202);
   await respond({turn:{id:turnId,status:'completed'},message:{content:'Delivered'},session_id:'nedcom-main'});
   assert.equal(requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');
-  await respond({},503);
+  await exhaustUnavailable(harness);
   assert.equal(elements.get('chat-message').value,'Retain this message');assert.equal(elements.get('chat-send').disabled,true);
   elements.get('chat-form').dispatch('submit');assert.equal(requests.length,0);
   elements.get('chat-retry').dispatch('click');
@@ -84,10 +118,10 @@ test('TC-010: controller preserves a reader during a reply until Latest reconcil
   transcript.scrollTop=0;
   await respond({turn:{id:turnId,status:'pending'}},202);
   await respond({turn:{id:turnId,status:'completed'},message:{content:'Reply'},session_id:'nedcom-main'});
-  assert.equal(transcript.textContent,previous);assert.equal(transcript.scrollTop,0);assert.equal(requests.length,0);
+  assert.equal(transcript.textContent,previous+'YouReply later');assert.equal(transcript.scrollTop,0);assert.equal(requests.length,0);
   assert.equal(elements.get('older').hidden,true);assert.match(elements.get('chat-status').textContent,/New reply/);
   elements.get('latest').dispatch('click');await respond({data:page(952)});
-  assert.equal(transcript.scrollCalls.at(-1).behavior,'smooth');assert.equal(elements.get('older').hidden,false);
+  assert.equal(transcript.scrollCalls.at(-1).behavior,'smooth');assert.equal(elements.get('older').hidden,true);
 });
 
 test('TC-010: controller pages partial history without duplicates and honors reduced motion',async()=>{
@@ -118,7 +152,7 @@ test('TC-010: shifted history is rejected without changing the reader and Latest
   assert.equal(transcript.children.length,50);assert.equal(transcript.textContent,previous);assert.equal(transcript.scrollTop,120);
   assert.match(elements.get('chat-status').textContent,/History changed/);assert.equal(elements.get('older').hidden,true);assert.equal(elements.get('newer').hidden,true);assert.equal(requests.length,0);
   elements.get('latest').dispatch('click');await respond({data:page(975)});
-  assert.equal(elements.get('older').hidden,false);assert.equal(transcript.children.length,50);
+  assert.equal(elements.get('older').hidden,true);assert.equal(transcript.children.length,50);
   elements.get('older').dispatch('click');await respond({data:page(925)});await respond({data:page(975)});
   assert.equal(transcript.children.length,100);assert.equal(new Set(transcript.children.map(article=>article.children[1].textContent)).size,100);
 });
@@ -140,16 +174,15 @@ test('TC-010: repeated or missing message IDs never replace a valid transcript',
   }
 });
 
-test('TC-010: pending HTTP turn never replays and unknown terminal status preserves draft until Reload',async()=>{
-  const {elements,requests,respond,tick}=await selected();
+test('TC-010: pending HTTP stream never replays and unknown terminal status preserves draft until Reload',async()=>{
+  const {elements,requests,respond}=await selected();
   elements.get('chat-message').value='Long-running request';elements.get('chat-form').dispatch('submit');
   const accepted=await respond({turn:{id:turnId,status:'pending'}},202);
   assert.equal(accepted.options.method,'POST');
-  assert.equal(requests[0].url,`/api/chat/sessions/nedcom-main/turns/${turnId}`);
+  assert.equal(requests[0].url,`/api/chat/sessions/nedcom-main/turns/${turnId}/events`);
   await respond({turn:{id:turnId,status:'pending'}});
-  assert.equal(requests.length,0);assert.equal(elements.get('chat-send').disabled,true);
+  assert.equal(requests.length,0);assert.equal(elements.get('chat-send').disabled,false);assert.equal(elements.get('chat-send').attributes['aria-label'],'Stop response');
   elements.get('chat-form').dispatch('submit');assert.equal(requests.length,0);
-  await tick();
   await respond({error:{code:'not_found'}},404);
   assert.equal(elements.get('chat-message').value,'Long-running request');assert.match(elements.get('chat-status').textContent,/Delivery could not be confirmed/);
   elements.get('chat-form').dispatch('submit');assert.equal(requests.length,0);assert.equal(elements.get('chat-send').disabled,true);

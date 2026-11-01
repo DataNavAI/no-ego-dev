@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {createCommunicatorServer} from '../../../../src/communicator/server.js';
+import {endStream} from './stream-fixtures.js';
 
 test('TC-012: accepted turns survive HTTP completion, serialize sends and bind status to session and credentials',async t=>{
   const pending=[];let clock=0;let key='synthetic-key';
@@ -24,7 +25,7 @@ test('TC-012: accepted turns survive HTTP completion, serialize sends and bind s
   key='rotated-key';assert.equal((await status('session-a',turn.id)).status,404);assert.equal((await post('session-a')).status,409);key='synthetic-key';
   while(!pending.length)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(pending.length,1);assert.equal(pending[0].res.destroyed,false);
-  pending[0].res.end(JSON.stringify({session_id:'session-a',message:{content:'Persisted synthetic reply'}}));
+  endStream(pending[0].res,'session-a','Persisted synthetic reply');
   let result;
   do{result=await(await status('session-a',turn.id)).json();}while(result.turn.status==='pending');
   assert.deepEqual(result,{turn:{id:turn.id,status:'completed'},session_id:'session-a',message:{role:'assistant',content:'Persisted synthetic reply'}});
@@ -47,7 +48,7 @@ test('TC-012: turn capacity rejects without delivery, bad upstream identity fail
   assert.equal((await post('overflow')).status,503);
   while(requests.length<16)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(requests.length,16);
-  requests[0].res.end(JSON.stringify({session_id:'another-session',message:{content:'PRIVATE'}}));
+  endStream(requests[0].res,'another-session','PRIVATE');
   let result;
   do{result=await(await fetch(`${app.url}/api/chat/sessions/session-0/turns/${turns[0].id}`)).json();}while(result.turn.status==='pending');
   assert.equal(result.turn.status,'failed');assert.deepEqual(result.error,{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'});assert.ok(!JSON.stringify(result).includes('PRIVATE'));

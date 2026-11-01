@@ -1,10 +1,15 @@
+import {mountTaskReferences} from '../../../../src/communicator/public/task-references.js';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
 import {validateMessagePage} from '../../../../src/communicator/public/history.js';
-import {renderMessageContent} from '../../../../src/communicator/public/message-content.js';
+import {renderMessageContent,messageParts} from '../../../../src/communicator/public/message-content.js';
+import {mountComposerMedia} from '../../../../src/communicator/public/composer-media.js';
+import {consumeTurnStream} from '../../../../src/communicator/public/turn-stream.js';
+import {recordChatDiagnostic,recordRequestDiagnostic} from '../../../../src/communicator/public/debug-pane.js';
+import {classifyFailureBody,readFailureBody} from '../../../../src/communicator/public/request-diagnostic.js';
 
-export async function chatHarness({reducedMotion=false}={}) {
-  const document={activeElement:null};
+export async function chatHarness({reducedMotion=false,media=false,references=false}={}) {
+  const documentListeners=new Map();const document={activeElement:null,addEventListener(type,handler){documentListeners.set(type,handler);},dispatchEvent(event){documentListeners.get(event.type)?.(event);}};
   const elements=new Map();
   function node(id='') {
     const listeners=new Map();
@@ -31,17 +36,30 @@ export async function chatHarness({reducedMotion=false}={}) {
   }
   const shell=node();
   for(const id of ['transcript','chat-status','chat-message','older','newer','latest','chat-send','chat-retry','chat-form'])node(id);
+  if(references)for(const id of ['chat-task-references','chat-reference-status','mobile-sidebar-toggle'])node(id);
+  if(media)for(const id of ['chat-files','chat-attach','chat-add-link','chat-link-editor','chat-link-url','chat-link-label','chat-link-insert','chat-link-cancel','chat-link-error','chat-attachments','chat-attachment-status'])node(id);
   document.getElementById=id=>elements.get(id);
   document.createElement=()=>node();
   document.querySelector=()=>shell;
   const requests=[];
-  const fetch=(url,options)=>new Promise(resolve=>requests.push({url,options,resolve}));
+  const fetch=(url,options)=>new Promise((resolve,reject)=>requests.push({url,options,resolve,reject}));
   const source=await readFile(new URL('../../../../src/communicator/public/chat-ui.js',import.meta.url),'utf8');
   const timers=[];
-  runInNewContext(source.replace(/^import[^\n]+\n/gm,'').replaceAll('export function ','function ')+'\nmountChat();',{document,fetch,validateMessagePage,renderMessageContent,setTimeout:callback=>timers.push(callback),encodeURIComponent,AbortSignal,matchMedia:()=>({matches:reducedMotion})});
+  runInNewContext(source.replace(/^import[^\n]+\n/gm,'').replaceAll('export function ','function ')+'\nmountChat();',{document,fetch,validateMessagePage,renderMessageContent,messageParts,mountComposerMedia,mountTaskReferences,consumeTurnStream,recordChatDiagnostic,recordRequestDiagnostic,classifyFailureBody,readFailureBody,setTimeout:(callback,delay)=>timers.push({callback,delay}),Option:class{constructor(label,value){this.textContent=label;this.value=value;}},encodeURIComponent,AbortSignal,matchMedia:()=>({matches:reducedMotion})});
   const flush=()=>new Promise(resolve=>setImmediate(resolve));
+  let streaming;
   async function respond(data,status=200){
-    const request=requests.shift();if(!request)throw new Error('Expected pending chat request');request.resolve({ok:status>=200&&status<300,json:async()=>data});await flush();return request;
+    if(streaming||requests[0]?.url.endsWith('/events')){
+      let request;
+      if(!streaming){request=requests.shift();const body=new ReadableStream({start(controller){streaming=controller;}});request.resolve(new Response(body,{status,headers:{'content-type':'text/event-stream'}}));}
+      if(data.activity)streaming.enqueue(new TextEncoder().encode(`event: activity\ndata: ${JSON.stringify(data.activity)}\n\n`));
+      if(data.stream)streaming.enqueue(new TextEncoder().encode(`event: delta\ndata: ${JSON.stringify(data.stream)}\n\n`));
+      if(data.turn?.status!=='pending'){
+        streaming.enqueue(new TextEncoder().encode(`event: terminal\ndata: ${JSON.stringify({...data,message:data.message?{role:'assistant',...data.message}:undefined})}\n\n`));streaming.close();streaming=undefined;
+      }
+      await flush();return request;
+    }
+    const request=requests.shift();if(!request)throw new Error('Expected pending chat request');request.resolve(new Response(JSON.stringify(data),{status}));await flush();return request;
   }
-  return {elements,document,shell,requests,respond,flush,async tick(){timers.shift()?.();await flush();}};
+  return {elements,document,shell,requests,respond,flush,delays:()=>timers.map(timer=>timer.delay),async fail(error){const request=requests.shift();if(!request)throw new Error('Expected pending chat request');request.reject(error);await flush();},async tick(){timers.shift()?.callback();await flush();}};
 }

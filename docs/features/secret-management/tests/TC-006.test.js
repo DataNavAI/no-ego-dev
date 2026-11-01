@@ -21,7 +21,8 @@ test('TC-006: native tool result creates an explicit private retrieval card afte
   await page.getByRole('tab',{name:'Chat',exact:true}).click();await card.getByRole('button',{name:'Reveal secret',exact:true}).click();await expect(card.locator('textarea')).toHaveValue('synthetic-card-password');
   await card.getByRole('button',{name:'Hide',exact:true}).click();await expect(card.locator('textarea')).toHaveValue('');
   await page.reload();await expect(page.locator('.secret-share-card')).toHaveCount(1);await expect(page.locator('.secret-share-value')).toBeHidden();
-  await page.setViewportSize({width:390,height:844});await page.locator('#left-toggle').click();await page.getByRole('tab',{name:'Chat',exact:true}).click();await page.locator('.secret-share-card').scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/ned-secret-card-mobile.png'});
+  await page.setViewportSize({width:390,height:844});await page.locator('#navigation-open').click();await page.getByRole('tab',{name:'Chat',exact:true}).click();await page.locator('.secret-share-card').scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/ned-secret-card-mobile.png'});
+  assert.equal(await page.locator('#transcript details').count(),0);assert.ok(!(await page.locator('#transcript').textContent()).includes('must-not-reach-browser'));
   store.set('ADMIN_PASSWORD','rotated');await page.locator('.secret-share-card').getByRole('button',{name:'Reveal secret',exact:true}).click();await expect(page.locator('.secret-share-card')).toContainText('Secret is unavailable. Ask NED to share it again.');await expect(page.locator('.secret-share-value')).toHaveValue('');
   assert.deepEqual(f.errors,[]);
 });

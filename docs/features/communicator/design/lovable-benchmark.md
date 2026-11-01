@@ -12,8 +12,8 @@ This benchmark uses the current official documentation, inspected in a browser. 
 
 - Keep one persistent chat on the left, preserving draft, transcript and message rendering across workspace navigation.
 - Give Preview the central, flexible workspace. Keep project selection in the top-level workspace controls.
-- Put Chat, Goals and Artifacts in tabs within the left pane. Goals replaces the visible Goal & Tasks name; selecting a tab preserves the chat draft and transcript DOM. Remove the right inspector.
-- On small screens, show one useful view at a time with explicit navigation and retained chat state. Avoid shrinking both columns to fit.
+- Put Goal & Tasks and Artifacts in a single optional right inspector. Selecting either reveals its project context; closing the inspector gives the space back to Preview.
+- On small screens, show one useful view at a time with explicit navigation and retained chat state. Avoid shrinking all three columns to fit.
 - Keep unavailable data honest: task and artifact browsing are not implemented yet. Preview availability continues to come from the registered project's validated local app configuration.
 
 ## Boundary of this iteration

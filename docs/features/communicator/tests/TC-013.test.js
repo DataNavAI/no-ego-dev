@@ -23,25 +23,22 @@ function find(root,predicate){
   for(const child of root.children ?? []){const match=find(child,predicate);if(match)return match;}
 }
 
-test('TC-013: mixed Hermes text, tools and unknown JSON remain readable without losing content',()=>{
+test('TC-013: mixed Hermes text survives while tools and unknown structured data stay hidden',()=>{
   const row={role:'assistant',content:JSON.stringify([{type:'text',text:'**Done**'},{type:'tool_use',name:'shell',input:{command:'pwd'}},{type:'tool_result',content:[{type:'text',text:'/synthetic'}]},{unknown:7}]),tool_calls:JSON.stringify([{type:'function',function:{name:'read',arguments:'{"path":"example"}'}}])};
   const parts=messageParts(row);
   assert.deepEqual(parts[0],{kind:'text',text:'**Done**'});
-  assert.deepEqual(parts[1],{kind:'tool',name:'shell',label:'Arguments',text:'{\n  "command": "pwd"\n}'});
-  assert.match(parts[2].text,/synthetic/);assert.equal(parts[2].label,'Output');
-  assert.deepEqual(parts[3],{kind:'data',text:'{\n  "unknown": 7\n}'});
-  assert.equal(parts[4].name,'read');assert.match(parts[4].text,/"path": "example"/);
+  assert.equal(parts.length,1);
   const code='```json\n{"type":"tool_use"}\n```';
   assert.deepEqual(messageParts({role:'assistant',content:code}),[{kind:'text',text:code}]);
   assert.deepEqual(messageParts({role:'user',content:'**formatted**'}),[{kind:'text',text:'**formatted**'}]);
   assert.deepEqual(messageParts({role:'assistant',content:'not {json'}),[{kind:'text',text:'not {json'}]);
-  const huge='x'.repeat(65537);assert.deepEqual(messageParts({role:'assistant',content:huge}),[{kind:'plain',text:huge}]);
+  const huge='x'.repeat(65537);assert.deepEqual(messageParts({role:'assistant',content:huge}),[{kind:'text',text:huge}]);
   const calls=[{type:'function',function:{name:'retained_tool',arguments:'{"key":"value"}'}}];
-  assert.deepEqual(messageParts({role:'assistant',content:huge,tool_calls:calls}),[{kind:'plain',text:huge},{kind:'data',text:JSON.stringify(calls,null,2)}]);
-  assert.deepEqual(messageParts({role:'tool',name:'calculator',content:'{"answer":4}'}),[{kind:'tool',name:'calculator',label:'Output',text:'{\n  "answer": 4\n}'}]);
-  assert.equal(messageParts({role:'assistant',content:Array(101).fill('small')}).length,1);
-  assert.deepEqual(messageParts({role:'assistant',content:'text',tool_calls:huge}).at(-1),{kind:'data',text:huge});
-  assert.equal(messageParts({role:'tool',tool_name:'search',content:'{"found":true}'})[0].text,'{\n  "found": true\n}');
+  assert.deepEqual(messageParts({role:'assistant',content:huge,tool_calls:calls}),[{kind:'text',text:huge}]);
+  assert.deepEqual(messageParts({role:'tool',name:'calculator',content:'{"answer":4}'}),[]);
+  assert.equal(messageParts({role:'assistant',content:Array(101).fill('small')}).length,101);
+  assert.deepEqual(messageParts({role:'assistant',content:'text',tool_calls:huge}),[{kind:'text',text:'text'}]);
+  assert.deepEqual(messageParts({role:'tool',tool_name:'search',content:'{"found":true}'}),[]);
   assert.equal(marked.parse('\t\v\n'),'<pre><code>\v\n</code></pre>\n');
   assert.equal(messageParts({role:'user',content:[{type:'text',text:'**formatted**'},{type:'tool_result',content:'result'}]})[0].kind,'text');
 });
@@ -56,24 +53,20 @@ test('TC-013: user text stays literal while assistant Markdown uses the strict s
   }}};
   const user=renderMessageContent({role:'user',content:'# literal **text**'},document,libraries);
   assert.equal(parses,0);assert.equal(find(user,node=>node.tagName==='P').textContent,'# literal **text**');assert.equal(user.getAttribute('aria-label'),'User message');
-  const literal='[Review](https://example.test/read) and https://example.test/plain';
-  const userLink=renderMessageContent({role:'user',content:literal},document,libraries);
-  assert.equal(find(userLink,node=>node.tagName==='P').textContent,literal);
-  assert.equal(userLink.querySelectorAll('a').length,0,'user punctuation and URLs remain literal');
   const assistant=renderMessageContent({role:'assistant',content:'# formatted'},document,libraries);
   assert.equal(parses,1);assert.equal(find(assistant,node=>node.tagName==='H2').textContent,'Semantic heading');assert.equal(assistant.getAttribute('aria-label'),'Assistant message');
   assert.ok(sanitizeOptions.ALLOWED_TAGS.includes('table'));assert.deepEqual(sanitizeOptions.ALLOWED_ATTR,['href','title','start']);assert.equal(sanitizeOptions.ALLOW_DATA_ATTR,false);assert.equal(sanitizeOptions.ALLOW_ARIA_ATTR,false);
   const links=assistant.querySelectorAll('a');assert.equal(links[0].getAttribute('href'),'https://example.test/read');assert.equal(links[0].getAttribute('rel'),'noopener noreferrer');assert.equal(links[1].getAttribute('href'),null);
 });
 
-test('TC-013: tool activity is collapsed and copy activates explicitly with truthful failure',async()=>{
+test('TC-013: hidden tool activity is excluded from copy with truthful clipboard failure',async()=>{
   const document=dom();const writes=[];const previous=Object.getOwnPropertyDescriptor(globalThis,'navigator');
   Object.defineProperty(globalThis,'navigator',{configurable:true,value:{clipboard:{writeText:async text=>writes.push(text)}}});
   try{
     const row={role:'assistant',content:[{type:'text',text:'Stored prose'},{type:'tool_use',name:'reader',input:{private:'not copied'}}]};
     const root=renderMessageContent(row,document);
     const details=find(root,node=>node.tagName==='DETAILS');const copy=find(root,node=>node.className==='message-copy');
-    assert.equal(details.open,undefined);assert.equal(find(details,node=>node.tagName==='SUMMARY').textContent,'Tool: reader');assert.match(details.textContent,/not copied/);
+    assert.equal(details,undefined);assert.doesNotMatch(root.textContent,/not copied/);
     assert.deepEqual(writes,[]);await copy.dispatch('click');assert.deepEqual(writes,['Stored prose']);assert.equal(copy.getAttribute('aria-label'),'Message copied');assert.equal(find(root,node=>node.className==='message-copy-status').textContent,'Copied');
     Object.defineProperty(globalThis,'navigator',{configurable:true,value:{clipboard:{writeText:async()=>{throw new Error('denied');}}}});
     await copy.dispatch('click');assert.equal(copy.dataset.state,'failed');assert.equal(copy.getAttribute('aria-label'),'Copy failed. Try again');assert.equal(copy.tagName,'BUTTON');assert.equal(find(root,node=>node.className==='message-copy-status').textContent,'Copy failed. Try again.');
@@ -96,7 +89,7 @@ test('TC-013: structured history metadata and pinned browser modules cross the r
 });
 
 
-test('TC-013: bounded structured fallbacks remain lossless without copying tool payloads',async t=>{
+test('TC-013: bounded structured projections never fall back to raw tool payloads',async t=>{
   const tool={type:'tool_use',name:'reader',input:{private:'not-copyable'}};
   const cases=[
     ['part cap',[{type:'text',text:'Visible prose'},...Array.from({length:100},()=>tool),{unknown:'retained'}]],
@@ -104,8 +97,8 @@ test('TC-013: bounded structured fallbacks remain lossless without copying tool 
   ];
   for(const [name,content] of cases)await t.test(name,()=>{
     const root=renderMessageContent({role:'assistant',content},dom());
-    assert.match(root.textContent,/not-copyable/);
-    assert.match(root.textContent,/retained/);
-    assert.equal(find(root,node=>node.className==='message-copy'),undefined,'unsafe-to-separate fallback has no prose-copy action');
+    assert.doesNotMatch(root.textContent,/not-copyable|retained/);
+    assert.match(root.textContent,/Visible prose/);
+    assert.ok(find(root,node=>node.className==='message-copy'));
   });
 });

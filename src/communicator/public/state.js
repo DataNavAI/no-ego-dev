@@ -6,7 +6,7 @@ export function settleLoad(state,generation,data,error = null) {
   const available = data?.capabilities?.projects === true;
   const projects = available && Array.isArray(data.projects) ? data.projects.filter(row => typeof row.id === 'string' && typeof row.name === 'string') : [];
   const projectId = projects.some(row => row.id === state.projectId) ? state.projectId : null;
-  return {...state,status:available ? 'ready' : 'unavailable',projects,projectId,error:null,retrying:false};
+  return {...state,status:available ? 'ready' : 'unavailable',projects,projectId,workAvailable:data?.capabilities?.tasks===true,error:null,retrying:false};
 }
 export const selectProject = (state,id) => ({...state,status:'ready',projectId:state.projects.some(row => row.id === id) ? id : null,section:'Tasks',error:state.projects.some(row => row.id === id) ? null : 'project_unavailable',detail:null,detailLoading:state.projects.some(row=>row.id===id),requestGeneration:state.requestGeneration+1});
 export const selectSection = (state,section) => state.projectId && ['Tasks','Artifacts','WIP app'].includes(section) ? {...state,section} : state;
@@ -30,7 +30,14 @@ export function view(state) {
     const preview=state.detail.preview;const [title,body]=previews[preview?.status] ?? previews.unavailable;
     return {title,body,...identity,retry:preview?.status!=='available',url:preview?.status==='available' ? preview.url : undefined};
   }
-  if (state.projectId) return {title:state.section==='Tasks'?'Goals':state.section==='WIP app'?'Preview':state.section,body:{Tasks:'Task browsing is not available yet.',Artifacts:'Artifact browsing is not available yet.','WIP app':'App previews are not available yet.'}[state.section],...identity,retry:false};
+  if (state.projectId) return {title:state.section==='Tasks'?'Goals':state.section==='WIP app'?'Preview':state.section,body:{Tasks:state.workAvailable?'':'Task browsing is not available yet.',Artifacts:'Artifact browsing is not available yet.','WIP app':'App previews are not available yet.'}[state.section],...identity,retry:false};
   if (state.status === 'unavailable') return {title:'Projects',body:'Project browsing is not available yet.',...identity,retry:false};
   return {title:state.projects.length ? 'Projects' : 'No projects yet',body:state.projects.length ? 'Choose a project to browse its tasks, artifacts and app.' : 'Register a project with NED, then retry.',...identity,retry:!state.projects.length};
+}
+export function followTaskProject(currentId,lastSequence,snapshot){
+  const rows=Array.isArray(snapshot?.projects)?snapshot.projects:[];
+  const exists=id=>rows.some(row=>row.id===id);
+  const latest=snapshot?.latestTask;
+  const next=latest&&Number.isSafeInteger(latest.sequence)&&latest.sequence>lastSequence&&exists(latest.projectId);
+  return {projectId:next?latest.projectId:exists(currentId)?currentId:null,sequence:next?latest.sequence:lastSequence};
 }

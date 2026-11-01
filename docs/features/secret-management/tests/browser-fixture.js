@@ -6,6 +6,7 @@ import http from 'node:http';
 import {setTimeout as pause} from 'node:timers/promises';
 import {chromium} from 'playwright';
 import {createCommunicatorServer} from '../../../../src/communicator/server.js';
+import {endStream} from '../../communicator/tests/stream-fixtures.js';
 
 // Bounded observable-state polling, not retries of user actions or whole tests.
 async function until(check){
@@ -41,12 +42,12 @@ export async function browserChat(t){
       const offset=Number(resource.searchParams.get('offset')||0),limit=Number(resource.searchParams.get('limit')||50);
       return send(200,{data:messages.slice(Math.max(0,messages.length-offset-limit),Math.max(0,messages.length-offset))});
     }
-    if(req.method==='POST'&&resource.pathname==='/api/sessions/nedcom-main/chat'){
+    if(req.method==='POST'&&resource.pathname==='/api/sessions/nedcom-main/chat/stream'){
       const input=JSON.parse(body).input;let finished=false;
       turns.push({finish(content='Synthetic reply complete.'){
         if(finished)return;finished=true;
         messages.push({id:`user-${turns.length}`,role:'user',content:input},{id:`assistant-${turns.length}`,role:'assistant',content});
-        send(200,{session_id:'nedcom-main',message:{role:'assistant',content},status:'completed'});
+        endStream(res,'nedcom-main',content);
       }});
       return;
     }

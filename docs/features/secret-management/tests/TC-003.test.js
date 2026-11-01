@@ -27,7 +27,7 @@ test('TC-003: Settings stores and reveals secrets without chat or browser persis
   assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage})+JSON.stringify({...sessionStorage})), '{}{}');
   assert.equal((await page.locator('#transcript').textContent()).includes('synthetic-'),false);
   await page.setViewportSize({width:390,height:844});
-  await page.locator('#left-toggle').click();await page.getByRole('tab',{name:'Settings',exact:true}).click();
+  await page.locator('#navigation-open').click();await page.getByRole('tab',{name:'Settings',exact:true}).click();
   await expect(page.locator('#settings')).toBeVisible();
   await page.screenshot({path:'/tmp/ned-secrets-mobile.png'});
   await page.setViewportSize({width:320,height:740});assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);

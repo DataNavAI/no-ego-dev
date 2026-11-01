@@ -1,58 +1,51 @@
 import {secretShareRow,renderSecretCard} from './secret-share.js';
-const LIMIT=65536;
-const stringify=value=>typeof value==='string'?value:JSON.stringify(value,null,2) ?? '';
-function decoded(value){
-  if(typeof value!=='string'||value.length>LIMIT)return value;
-  try{return JSON.parse(value);}catch{return value;}
+const LIMIT=4*1024*1024;
+const toolEnvelope=value=>/^\s*[[{]\s*\{?\s*"(?:tool_calls?|tool_use|tool_result|function_call)"\s*:/.test(value)||/^\s*[[{]\s*\{?\s*"type"\s*:\s*"(?:tool_|function)/.test(value);
+function literalLinks(text,document){
+  const paragraph=document.createElement('p');
+  const pattern=/\[((?:\\.|[^\]\\\n]){1,1000})\]\((https?:\/\/[^\s)]+)\)|https?:\/\/[^\s<>]+/g;
+  let offset=0;
+  for(const match of text.matchAll(pattern)){
+    const plain=document.createElement('span');plain.textContent=text.slice(offset,match.index);paragraph.append(plain);
+    let url;try{url=new URL(match[2] ?? match[0]);}catch{url=null;}
+    const link=document.createElement(url&&!url.username&&!url.password?'a':'span');link.textContent=match[1]?.replace(/\\([\\[\]])/g,'$1') ?? match[0];
+    if(url&&!url.username&&!url.password){link.setAttribute('href',url.href);link.setAttribute('rel','noopener noreferrer');}
+    paragraph.append(link);offset=match.index+match[0].length;
+  }
+  const tail=document.createElement('span');tail.textContent=text.slice(offset);paragraph.append(tail);return paragraph;
 }
+const stringify=value=>typeof value==='string'?value:JSON.stringify(value,null,2) ?? '';
 export function messageParts(row){
   const share=secretShareRow(row);if(share)return [{kind:'secret-share',share}];
-  if(row.role==='tool'&&(row.tool_name??row.name)==='ned')return [];
-  const raw=stringify(row.content);
-  const rawCalls=row.tool_calls===undefined?'':stringify(row.tool_calls);
-  if(raw.length>LIMIT)return [{kind:'plain',text:raw},...(rawCalls?[{kind:'data',text:rawCalls}]:[])];
+  if(!['user','assistant'].includes(row.role))return [];
+  let value=row.content;
+  if(typeof value==='string'&&/^\s*[[{]/.test(value)){
+    if(value.length>LIMIT)return row.role==='user'||!toolEnvelope(value)?[{kind:'text',text:value}]:[];
+    try{value=JSON.parse(value);}catch{return row.role==='assistant'&&toolEnvelope(value)?[]:[{kind:'text',text:value}];}
+  }
+  if(row.role==='user'&&!Array.isArray(value))return [{kind:'text',text:stringify(row.content)}];
   const parts=[];
-  const textKind='text';
+  let visited=0;
   function visit(value,depth=0){
-    if(depth>32){parts.push({kind:'data',text:stringify(value)});return;}
-    if(typeof value==='string'){parts.push({kind:textKind,text:value});return;}
+    if(depth>32||++visited>1000)return;
+    if(typeof value==='string'){if(value.trim())parts.push({kind:'text',text:value});return;}
     if(Array.isArray(value)){for(const block of value)visit(block,depth+1);return;}
     if(value && typeof value==='object'){
-      if(['text','input_text','output_text'].includes(value.type)&&typeof value.text==='string'){parts.push({kind:textKind,text:value.text});return;}
-      if(['tool_use','tool_call','function'].includes(value.type)){
-        parts.push({kind:'tool',name:String(value.name ?? value.function?.name ?? 'Tool'),label:'Arguments',text:stringify(decoded(value.input ?? value.arguments ?? value.function?.arguments ?? value))});return;
-      }
-      if(value.type==='tool_result'){
-        parts.push({kind:'tool',name:String(value.name ?? row.tool_name ?? row.name ?? 'Tool'),label:'Output',text:stringify(decoded(value.content ?? value.output ?? value))});return;
-      }
+      if(['text','input_text','output_text'].includes(value.type)&&typeof value.text==='string'&&value.text.trim())parts.push({kind:'text',text:value.text});
     }
-    parts.push({kind:'data',text:stringify(value)});
   }
-  const parsed=decoded(row.content);
-  if(row.role==='user'&&!(Array.isArray(parsed)&&parsed.some(block=>block&&typeof block==='object'&&['text','tool_use','tool_result'].includes(block.type))))return [{kind:'text',text:raw}];
-  if(row.role==='tool')parts.push({kind:'tool',name:String(row.tool_name ?? row.name ?? 'Tool'),label:'Output',text:stringify(decoded(row.content))});
-  else {
-    if(typeof parsed==='object'&&parsed!==null)visit(parsed);else visit(row.content);
-  }
-  const calls=rawCalls.length>LIMIT?rawCalls:decoded(row.tool_calls);
-  if(Array.isArray(calls))for(const call of calls)visit(call&&typeof call==='object'?{...call,type:call.type ?? 'tool_call'}:call);
-  else if(calls!==undefined&&calls!==null&&calls!=='')parts.push({kind:'data',text:stringify(calls)});
-  return parts.length>100?[{kind:'plain',text:raw},...(rawCalls?[{kind:'data',text:rawCalls}]:[])]:parts;
+  if(row.role==='user'&&Array.isArray(value)&&!value.some(block=>block&&typeof block==='object'&&['text','input_text','output_text','tool_use','tool_result','tool_call'].includes(block.type)))return [{kind:'text',text:stringify(row.content)}];
+  visit(value);
+  return parts;
 }
 export function renderMessageContent(row,document,libraries){
   const root=document.createElement('div');root.className='message-content';
-  const author=row.role==='user'?'User':row.role==='tool'?'Tool':'Assistant';
+  const author=row.role==='user'?'User':'Assistant';
   root.setAttribute?.('role','group');root.setAttribute?.('aria-label',`${author} message`);
   const parts=messageParts(row);
   for(const part of parts){
-    if(part.kind==='secret-share'){root.append(renderSecretCard(part.share,document));}
-    else if(part.kind==='tool'||part.kind==='data'){
-      const details=document.createElement('details');const summary=document.createElement('summary');
-      summary.textContent=part.kind==='tool'?`Tool: ${part.name}`:'Structured data';
-      details.append(summary);
-      if(part.label){const label=document.createElement('p');label.textContent=part.label;details.append(label);}
-      const pre=document.createElement('pre');pre.textContent=part.text;details.append(pre);root.append(details);
-    }else if(part.kind==='text'&&row.role!=='user'&&libraries){
+    if(part.kind==='secret-share'){root.append(renderSecretCard(part.share,document));continue;}
+    if(part.kind==='text'&&row.role!=='user'&&libraries){
       const section=document.createElement('div');section.className='markdown-content';
       try{
       const html=libraries.marked.parse(part.text,{async:false,gfm:true});
@@ -67,7 +60,8 @@ export function renderMessageContent(row,document,libraries){
       }
       section.append(fragment);root.append(section);
       }catch{const text=document.createElement('p');text.textContent=part.text;root.append(text);}
-    }else {const text=document.createElement('p');text.textContent=part.text;root.append(text);}
+    }else if(part.kind==='text'&&row.role==='user'&&document.createElement('span').setAttribute)root.append(literalLinks(part.text,document));
+    else {const text=document.createElement('p');text.textContent=part.text;root.append(text);}
   }
   const prose=parts.filter(part=>part.kind==='text').map(part=>part.text).join('\n\n');
   if(prose){
