@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
 import {PassThrough} from 'node:stream';
+import {spawn} from 'node:child_process';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import http from 'node:http';
 import {startPublicTunnel} from '../../../../src/communicator/tunnel.js';
 import {runCommunicatorCli} from '../../../../src/communicator/cli.js';
@@ -22,8 +26,11 @@ test('TC-011: public tunnel gates startup, rewrites only its exact origin and cl
   assert.equal(await request('evil.example'),403);assert.equal(await request('fixture.trycloudflare.com','https://evil.example'),403);assert.equal(received.length,1);
   await tunnel.close();await assert.rejects(fetch(proxy));
 });
-test('TC-011: missing tunnel dependency fails closed',async()=>{
-  await assert.rejects(startPublicTunnel('http://127.0.0.1:1234',{spawn(){const child=new EventEmitter();child.stderr=new PassThrough();child.stdout=new PassThrough();child.kill=()=>true;queueMicrotask(()=>child.emit('error',new Error('ENOENT')));return child;}}),/tunnel/);
+test('TC-011: missing tunnel dependency rejects and releases its bridge after real spawn failure',async t=>{
+  const directory=mkdtempSync(join(tmpdir(),'ned-missing-tunnel-'));t.after(()=>rmSync(directory,{recursive:true,force:true}));
+  let proxy;
+  await assert.rejects(startPublicTunnel('http://127.0.0.1:1234',{env:{NED_CLOUDFLARED_BIN:join(directory,'missing-cloudflared')},spawn(binary,args,options){proxy=args[args.indexOf('--url')+1];return spawn(binary,args,options);}}),/tunnel/);
+  assert.ok(proxy);await assert.rejects(fetch(proxy));
 });
 test('TC-011: CLI public exposure is explicit, warned and cleaned up',async()=>{
   for(const enabled of [false,true]){

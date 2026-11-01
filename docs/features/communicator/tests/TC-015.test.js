@@ -15,7 +15,7 @@ test('TC-015: explicit configuration and COM readiness precede registration; cle
   assert.equal(readHubConfiguration({...config,NED_HUB_URL:'http://localhost:3000',NED_HUB_PROXY_URL:'http://localhost:4000',NED_HUB_INSTANCE_ORIGINS:'true'}).instance.origin,'http://fixture.localhost:4000');
   for(const configured of [false,true]){
     const signals=new EventEmitter();const order=[];
-    const result=await runCommunicatorCli([],{log(){setImmediate(()=>signals.emit('SIGTERM'));},error(){assert.fail();}},{env:configured?config:{},home:'/synthetic',createLogger:()=>({path:'/synthetic/log',event(){},close(){}}),signals,createServer(){return {async listen(){order.push('ready');return 'http://127.0.0.1:1234';},async close(){order.push('closed');}};},startHub(_config,url){assert.equal(url,'http://127.0.0.1:1234');order.push('registered');return {async close(){order.push('tunnel closed');}};}});
+    const result=await runCommunicatorCli([],{log(message){if(message==='NEDCOM: http://127.0.0.1:1234')setImmediate(()=>signals.emit('SIGTERM'));},error(){assert.fail();}},{env:configured?config:{},home:'/synthetic',createLogger:()=>({path:'/synthetic/log',event(){},close(){}}),signals,createServer(){return {async listen(){order.push('ready');return 'http://127.0.0.1:1234';},async close(){order.push('closed');}};},startHub(_config,url){assert.equal(url,'http://127.0.0.1:1234');order.push('registered');return {async close(){order.push('tunnel closed');}};}});
     assert.equal(result,0);
     assert.deepEqual(order,configured?['ready','registered','closed','tunnel closed','closed']:['ready','closed','closed']);
   }
