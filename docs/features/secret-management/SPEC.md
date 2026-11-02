@@ -150,3 +150,42 @@ Packaging is verified once by task-management/TC-011 for npm and profile archive
 including plugins/ned/plugin.yaml and plugins/ned/__init__.py. No skill prose tests
 or duplicate archive pack runs are added. See ACCEPTANCE.md for actual execution,
 environment, unverified manual gates and pending merge/deployment.
+
+## Chat secret entry extension (#152)
+
+- FR-011: Native `ned` accepts exactly `{action:"request_secret",key:<valid vault key>}` and invokes `ned secret request KEY --json`. Returns only `{success:true,action:"request_secret",request_id,key,expires_at}`. Requests use256-bit random IDs and persist in the selected profile vault for15minutes; no secret value or filesystem path is accepted by the action. Invalid inputs create no request. Existing sharing remains compatible.
+- FR-012: Only canonical successful native ned tool rows render the [entry card](design/UI.md). Assistant/user/non-ned/unknown-field results cannot create entry UI. Values exist only in a masked transient input and a protected JSON request body, never chat/history/model results, URLs, browser storage, logs or copy actions. Clear after save/cancel/error, navigation/background/redraw and30seconds. Delayed completion cannot restore hidden values. Browser/server schema validation is closed.
+- FR-013: `POST /api/secrets/requests/<id>/submit` accepts only `{value:<valid secret>}` through existing exact-Origin/custom-header/no-query/disabled-mode guards and bounded JSON parsing. Atomically encrypt into the requested key and complete the request. Response contains only `{key,saved:true}`. A completed submission retries idempotently without replacing the saved value; unknown/expired/revoked IDs fail404 and invalid bodies do not consume a request. `POST .../status` accepts no body and returns `{key,saved}` only while unexpired. Replacement/deletion through another request/Settings/CLI revokes pending/completed requests for that key, preventing stale cards overwriting newer state. No automatic model continuation, value acknowledgement in chat or cross-profile lookup.
+
+### CUJ-006: Supply a requested secret in chat
+Actor: authorized COM user; critical because credentials must not enter the model conversation. Starting state: Hermes needs a named password/token or user asks to set one. Hermes calls `ned(request_secret,key)`; persisted history renders Enter secret. User opens, enters masked Value, saves; vault contains exact bytes and card says Secret saved. Agent can subsequently use existing CLI private-file retrieval. Missing/expired/revoked requests require a fresh tool call; failed saves clear input and permit retry. Reload recovers completion metadata through status; interrupted acknowledgement can retry without overwriting. Setting an existing key is an explicit user replacement. Cleanup uses Settings/CLI deletion.
+
+### TC-007: Protected request lifecycle and native adapter
+- Journey / requirements: CUJ-006 / FR-011–FR-013.
+- Level / automation: integration; [TC-007.test.js](tests/TC-007.test.js).
+- Preconditions / fixtures: Disposable homes, synthetic keys/values, controllable vault clock and real COM HTTP; native Python plugin subprocess with trusted checkout CLI. No real credentials or providers.
+- Given: Empty isolated vaults and a native request result.
+- When: Create request, reopen, query status, submit, retry with different bytes, retrieve through CLI/store, replace/delete, expire; send missing/wrong origin/header, invalid key/body and disabled server requests.
+- Then: Exact bytes encrypted only in owning vault; metadata-only outputs; single completed write survives reopen; invalid/expired/revoked/cross-profile attempts do not change vault. Failed validation leaves request usable. Closed result schema cannot be spoofed by prose or extra fields. Concurrent submissions serialize to one authoritative value.
+- Steps and assertions: Run `node --test docs/features/secret-management/tests/TC-007.test.js`; named assertions prove native argv validation, public HTTP response/status, stored bytes and unchanged state on rejection.
+- Variants / negative cases: Expiry boundary, replacement invalidation, malformed/oversize/extra-field bodies, invalid action arguments, public mode disabled, existing sharing regression inTC-005. Live model selection separate manual check.
+- Cleanup: Stop servers/processes and remove test-owned homes only.
+- Pass evidence: Test assertions; no real value printed or retained in repository.
+
+### TC-008: Chat secret entry browser journey
+- Journey / requirements: CUJ-006 / FR-012, FR-013.
+- Level / automation: end-to-end; [TC-008.test.js](tests/TC-008.test.js).
+- Preconditions / fixtures: Disposable real COM with synthetic gateway history, matching vault request, Chromium desktop/mobile. Design authority [UI.md](design/UI.md).
+- Given: Canonical request tool result following a completed reply.
+- When: Open entry, cancel/reopen, submit, reload, navigate during delayed submission, resize mobile.
+- Then: Masked/focused input, exact vault value, completion metadata only, draft preserved, no value in gateway/chat/storage; clear on cancel/navigation; late completion never restores hidden input. Retry after lost acknowledgement is safe. No page errors or horizontal overflow; screenshot geometry matches UI contract.
+- Steps and assertions: Run named test; inspect synthetic desktop/mobile screenshots outside repository. This browser case uniquely owns actual DOM→protected write wiring and lifecycle clearing; server validation belongs toTC-007.
+- Variants / negative cases: Double submit disabled, failed save clears field, expired request unavailable;30second clearing uses browser clock. Spoof schema owned byTC-007.
+- Cleanup: Close browser/server and remove fixture home.
+- Pass evidence: Browser assertions and inspected screenshots; live native tool request manual smoke separately.
+
+| Requirement | Journey | Test cases | Automated test / manual procedure |
+| --- | --- | --- | --- |
+| FR-011 | CUJ-006 | TC-007 | Native plugin, CLI, vault integration |
+| FR-012 | CUJ-006 | TC-007, TC-008 | History schema and browser |
+| FR-013 | CUJ-006 | TC-007, TC-008 | Vault/HTTP and DOM wiring |

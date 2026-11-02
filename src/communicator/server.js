@@ -14,6 +14,7 @@ assets.set('/history.js',['history.js','text/javascript']);
 assets.set('/message-content.js',['message-content.js','text/javascript']);
 assets.set('/settings.js',['settings.js','text/javascript']);
 assets.set('/settings.css',['settings.css','text/css']);
+assets.set('/secret-request.js',['secret-request.js','text/javascript']);
 assets.set('/secret-share.js',['secret-share.js','text/javascript']);
 assets.set('/composer-media.js',['composer-media.js','text/javascript']);
 assets.set('/pane-resize.js',['pane-resize.js','text/javascript']);

@@ -58,3 +58,22 @@ use. Copy `plugins/ned` into the chosen Hermes profile's plugins folder and enab
 plugin `ned` and toolset `ned`; do not assume archive presence enables the tool.
 Existing running sessions/gateways require a fresh load; skills-only deployment
 does not install or enable plugins or upgrade the CLI.
+
+
+## Enter a secret from chat
+
+When you want to set a password/token, or Hermes needs one, it calls native `ned`:
+
+```json
+{"action":"request_secret","key":"ADMIN_PASSWORD"}
+```
+
+COM displays **Enter secret** after the reply completes. Click it, enter the masked
+value, and click **Save secret**. The form writes to this agent's vault without
+sending a chat message. The tool result contains request metadata only. After the
+card says **Secret saved**, continue the conversation; Hermes can retrieve a private
+file with the existing CLI. Saving does not automatically resume the agent.
+Requests expire after15minutes; ask Hermes to request again if unavailable.
+Replacement/deletion revokes stale cards. Retrying a completed save never overwrites
+the stored value. Settings remains available when native tools are unavailable.
+CLI adapter: `ned secret request ADMIN_PASSWORD --json` (metadata only).

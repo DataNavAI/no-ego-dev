@@ -1,3 +1,4 @@
+import {secretRequestRow,renderSecretRequest} from './secret-request.js';
 import {secretShareRow,renderSecretCard} from './secret-share.js';
 const LIMIT=4*1024*1024;
 const toolEnvelope=value=>/^\s*[[{]\s*\{?\s*"(?:tool_calls?|tool_use|tool_result|function_call)"\s*:/.test(value)||/^\s*[[{]\s*\{?\s*"type"\s*:\s*"(?:tool_|function)/.test(value);
@@ -16,6 +17,7 @@ function literalLinks(text,document){
 }
 const stringify=value=>typeof value==='string'?value:JSON.stringify(value,null,2) ?? '';
 export function messageParts(row){
+  const request=secretRequestRow(row);if(request)return [{kind:'secret-request',request}];
   const share=secretShareRow(row);if(share)return [{kind:'secret-share',share}];
   if(!['user','assistant'].includes(row.role))return [];
   let value=row.content;
@@ -44,6 +46,7 @@ export function renderMessageContent(row,document,libraries){
   root.setAttribute?.('role','group');root.setAttribute?.('aria-label',`${author} message`);
   const parts=messageParts(row);
   for(const part of parts){
+    if(part.kind==='secret-request'){root.append(renderSecretRequest(part.request,document));continue;}
     if(part.kind==='secret-share'){root.append(renderSecretCard(part.share,document));continue;}
     if(part.kind==='text'&&row.role!=='user'&&libraries){
       const section=document.createElement('div');section.className='markdown-content';

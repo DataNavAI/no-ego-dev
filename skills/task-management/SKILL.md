@@ -108,9 +108,18 @@ Report actual persisted state, acceptance evidence and unresolved blockers. A ta
 
 ## Secret handoff during development
 
-When work needs a password/token, ask the user to open COM → Settings → Secrets,
-save it under a key such as ADMIN_PASSWORD, and tell NED only that key. Do not ask
-them to paste credentials into chat or put values in tasks/issues/descriptions.
+When work needs a password/token or the user wants to set one, choose a meaningful
+key such as ADMIN_PASSWORD and call native `ned` with
+`{action:"request_secret",key:"ADMIN_PASSWORD"}`. COM renders Enter secret from the
+successful persisted tool result; the user supplies its value through that private
+form. Never ask for a value in chat, accept a value/path parameter for this action,
+construct a card in Markdown or claim the secret is saved just because the request
+succeeded. A request only invites entry. Wait for the user to save and continue;
+then check availability with CLI private-file retrieval. Do not automatically send
+a chat message on submission. Requests expire in15minutes; request again when
+unavailable. If native tooling/COM cards are unavailable, direct the user to
+COM → Settings → Secrets and ask only for its key. Never put values in tasks,
+issues, descriptions, logs or replies.
 Verify that the installed CLI supports `ned secret --help`; from a trusted development checkout use `node bin/ned.js secret` if the installed release is older. Never pretend an unsupported command retrieved a value.
 Retrieve it with `ned secret get ADMIN_PASSWORD --file`; this prints a private
 path, not the value. Pass that file directly to the consuming tool's secret-file
@@ -119,8 +128,8 @@ echo them, add them to command arguments, or include them in logs/final messages
 If the consumer needs an environment variable, load from the file inside the
 process without shell tracing or printing its value. Raw `ned secret get KEY`
 intentionally outputs plaintext and is unsuitable for chat-visible tool output.
-If the key is missing, direct the user to Settings; never invent a value or report
-access succeeded. Vault scope is the selected agent/profile's NED home, shared across its projects;
+If the key is missing, request it through the native card (Settings fallback);
+never invent a value or report access succeeded. Vault scope is the selected agent/profile's NED home, shared across its projects;
 `--database` does not choose a different vault. File exports are plaintext0600 and
 persist until replacement/deletion; consumer copies are the caller's cleanup duty.
 

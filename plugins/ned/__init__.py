@@ -8,17 +8,19 @@ import subprocess
 SCHEMA = {
     "name": "ned",
     "description": (
-        "Share a saved secret with the user through a NED COM retrieval card. "
+        "Request a secret from the user with request_secret and its key; COM opens a private entry form. "
+        "Never ask for values in chat. Share a saved secret through a retrieval card. "
         "First obtain its private export path using NED CLI get --file. "
         "Never read or echo the file contents. Only managed NED vault exports are accepted."
     ),
     "parameters": {
         "type": "object",
         "properties": {
-            "action": {"type": "string", "enum": ["secure_share_secret"]},
+            "action": {"type": "string", "enum": ["secure_share_secret", "request_secret"]},
+            "key": {"type": "string", "description": "Vault key, e.g. ADMIN_PASSWORD; never a value."},
             "path": {"type": "string", "description": "Absolute NED private export path."},
         },
-        "required": ["action", "path"],
+        "required": ["action"],
         "additionalProperties": False,
     },
 }
@@ -26,11 +28,21 @@ SCHEMA = {
 
 def handle(args, **_kwargs):
     failure = json.dumps({"success": False, "error": "secret_share_unavailable"})
-    if (not isinstance(args, dict) or set(args) != {"action", "path"}
-            or args["action"] != "secure_share_secret"
-            or not isinstance(args["path"], str) or len(args["path"]) > 4096
-            or not Path(args["path"]).is_absolute()):
+    if not isinstance(args, dict):
         return failure
+    requesting = args.get("action") == "request_secret"
+    if requesting:
+        import re
+        if (set(args) != {"action", "key"} or not isinstance(args["key"], str)
+                or re.fullmatch(r"[A-Z][A-Z0-9_]{0,127}", args["key"]) is None):
+            return failure
+        command = ["request", args["key"], "--json"]
+    else:
+        if (set(args) != {"action", "path"} or args.get("action") != "secure_share_secret"
+                or not isinstance(args["path"], str) or len(args["path"]) > 4096
+                or not Path(args["path"]).is_absolute()):
+            return failure
+        command = ["share", "--path", args["path"], "--json"]
     home = Path.home()
     install = home / ".local/share/ned/current"
     cli = Path(os.environ.get("NED_CLI_PATH", str(install / "app/bin/ned.js")))
@@ -61,17 +73,22 @@ def handle(args, **_kwargs):
                 agent_home = str(get_hermes_home())
             child_env["NED_AGENT_HOME"] = agent_home
         completed = subprocess.run(  # noqa: S603 -- argv-only trusted CLI; path is a single validated argument, never a shell command.
-            [node, str(cli), "secret", "share", "--path", args["path"], "--json"],
+            [node, str(cli), "secret", *command],
             capture_output=True, timeout=15, check=False, env=child_env,
         )
         if completed.returncode != 0 or len(completed.stdout) > 2048:
             return failure
         result = json.loads(completed.stdout)
+        id_field = "request_id" if requesting else "share_id"
+        expected = {"success", "action", id_field, "expires_at"}
+        if requesting:
+            expected.add("key")
         if (not isinstance(result, dict)
-                or set(result) != {"success", "action", "share_id", "expires_at"}
-                or result["success"] is not True or result["action"] != "secure_share_secret"
-                or not isinstance(result["share_id"], str) or len(result["share_id"]) != 64
-                or any(char not in "0123456789abcdef" for char in result["share_id"])
+                or set(result) != expected
+                or result["success"] is not True or result["action"] != args["action"]
+                or requesting and result.get("key") != args["key"]
+                or not isinstance(result[id_field], str) or len(result[id_field]) != 64
+                or any(char not in "0123456789abcdef" for char in result[id_field])
                 or not isinstance(result["expires_at"], str) or len(result["expires_at"]) > 40):
             return failure
         return json.dumps(result)

@@ -1,3 +1,4 @@
+import {secretRequestRow} from './public/secret-request.js';
 import {secretShareRow} from './public/secret-share.js';
 import {validateMessagePage} from './public/history.js';
 // Match the renderer's supported call/block forms before any raw/data fallback.
@@ -17,7 +18,7 @@ function withoutNativeInputs(value,calls=false){
   return changed?(typeof value==='string'?JSON.stringify(result):result):value;
 }
 export function projectHistoryMessage(row){
-  if(row.role==='tool'&&(row.tool_name??row.name)==='ned'){const share=secretShareRow(row);return {id:row.id,role:'tool',tool_name:'ned',content:share?JSON.stringify(share):''};}
+  if(row.role==='tool'&&(row.tool_name??row.name)==='ned'){const share=secretShareRow(row)||secretRequestRow(row);return {id:row.id,role:'tool',tool_name:'ned',content:share?JSON.stringify(share):''};}
   let content=withoutNativeInputs(row.content ?? '');
   if(row.role==='user'){
     let parts=content;
