@@ -1,14 +1,15 @@
 {
-  "candidate_sha": "4bc602d433cc0c96b9160e3e0d90030d215b1d2e",
+  "candidate_sha": "5b94964c96850d14549608e7d7c80d20d2f4b6ce",
   "result": "pass",
-  "tested_at": "2026-11-02T08:11:51.026266Z",
-  "environment": "Clean isolated macOS exact-candidate worktree; independent fresh Hermes reviewer; disposable Codex/Hermes homes/project/vault; real native ARM Docker acceptance",
+  "tested_at": "2026-11-02T09:02:05.364223+00:00",
+  "environment": "Clean isolated macOS exact-candidate worktree; fresh independent Hermes composite reviewer; real fresh Hermes native model with disposable project plugin and NED_AGENT_HOME; Chromium desktop/mobile against disposable COM/vault",
   "commands": [
     "npm run lint",
-    "npm run test:all",
-    "node --test docs/features/agent-runtime-home/tests/TC-001.test.js docs/features/agent-runtime-home/tests/TC-002.test.js docs/features/agent-runtime-home/tests/TC-003.test.js docs/features/communicator/tests/TC-004.test.js docs/features/communicator/tests/TC-005.test.js",
-    "python3 /tmp/ned-agent-home-behavior.py",
-    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-ned-staging --expected-architecture arm64"
+    "npm test",
+    "python -m pytest",
+    "node --test docs/features/secret-management/tests/TC-007.test.js docs/features/secret-management/tests/TC-008.test.js",
+    "node --test docs/features/secret-management/tests/TC-005.test.js docs/features/secret-management/tests/TC-006.test.js",
+    "Hermes fresh native-tool skill evaluation for private ADMIN_PASSWORD entry using exact checkout plugin/CLI"
   ],
-  "observations": "Exact code candidate APPROVED; AH-001 COM first-use contract mismatch resolved without runtime changes. Fresh agent/manual isolation and actual Hermes registry/context-local profile binding passed83 checks. Full local gate Python208 passed9skipped; historical manual cases remain separately NOT RUN. Native ARM lifecycle passed. Hosted Windows home-selection check and other preliminary platform checks pass; final evidence-head CI still required. Project1 access was restored via direct GraphQL despite gh project client scope preflight: issue150 membership and In review status verified. Source ACCEPTANCE tracking gap records earlier precommit observation. No live rollout claimed. Review SHA256 8fc775174bcd0bbe5cfbacb3ac5663d0c2041c4af35eb844b8a5217a6d5e9a1f"
+  "observations": "Exact code candidate independently APPROVED with no material findings. Reviewer freshly passed7 new tests and8 sharing regressions; additional320px long-key, page-hidden, redraw and wrong-key status probes passed. Real model selected request_secret with key only and correctly distinguished requested from saved; exact-candidate rerun passed. Parent inspected masked desktop/mobile screenshots. Completed-request overwrite mutation failed exact-value assertion before restoration. Full hook passed lint, all automated spec cases and Python208passed9platform skips; unchanged manual cases remain separately NOT RUN. No automatic model continuation promised. No live rollout claimed yet. Composite review SHA256 36f8ca601d81e4f33dd37875f9084b986d96a64324807cb857a7141946d99089"
 }
