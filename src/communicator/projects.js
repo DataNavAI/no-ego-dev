@@ -14,7 +14,9 @@ export function validatePreviewUrl(value) {
   if(!match || Number(match[1])<1 || Number(match[1])>65535) return null;
   try {new URL(value);return value;} catch {return null;}
 }
-export function createProjectReader({databasePath=resolveDatabasePath(),home=os.homedir()} = {}) {
+export function createProjectReader({databasePath,home,env=process.env} = {}) {
+  databasePath??=resolveDatabasePath({home,env});
+  home??=os.homedir();
   const probes=new Set();let closed=false;
   function registry(id) {
     let db;

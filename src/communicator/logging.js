@@ -1,6 +1,6 @@
 import {mkdirSync,lstatSync,fstatSync,openSync,closeSync,fchmodSync,writeSync,renameSync,unlinkSync,constants} from 'node:fs';
 import {join} from 'node:path';
-import {homedir} from 'node:os';
+import {resolveRuntimeHome,ensureRuntimeHome} from '../runtime-home.js';
 export {requestDiagnostic} from './public/request-diagnostic.js';
 
 // Deliberately exclude exception messages, arguments, URLs and application payloads.
@@ -9,7 +9,8 @@ export function errorDiagnostic(error) {
   return {type:safe(error?.name)||'Error',code:safe(error?.code),
     frames:typeof error?.stack==='string'?error.stack.split('\n').filter(line=>/^\s+at /.test(line)&&(!line.includes('://')||line.includes('file://'))&&!/[?@]/.test(line)).slice(0,12).map(line=>line.slice(0,300)):[]};
 }
-export function createComLogger({home=homedir(),pid=process.pid,maxBytes=1024*1024,warn=()=>{}}={}) {
+export function createComLogger({home,env=process.env,pid=process.pid,maxBytes=1024*1024,warn=()=>{}}={}) {
+  home=resolveRuntimeHome({home,env});ensureRuntimeHome(home);
   for(const dir of [join(home,'.ned'),join(home,'.ned','logs')]) {
     mkdirSync(dir,{recursive:true,mode:0o700});
     const stat=lstatSync(dir);

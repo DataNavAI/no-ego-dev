@@ -1,5 +1,7 @@
 # Connect NED COM to NED Hub
 
+Runtime storage (#150): credentials below use the selected `<agent-home>/.ned/hub-credentials/`, not the OS user's shared store by default. See [runtime selection](../../cli/RUNTIME_HOME.md). Mentions of `~/.ned` below refer only to standalone/no-agent compatibility. Changing agent homes requires a fresh login; no credentials are copied or migrated. DB overrides do not change credential identity.
+
 Sign in to NED Hub through your browser and start COM:
 
 ```sh

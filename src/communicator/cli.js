@@ -47,7 +47,7 @@ async function runCommunicator(flags, io = console, dependencies = {}) {
     try {
       let env=originalEnv;
       if(env.NED_HUB_TOKEN===undefined&&(process.platform!=='win32'||dependencies.hubCredentialStore)){
-        const saved=await (dependencies.hubCredentialStore||createHubCredentialStore({home:dependencies.home})).read(resolveHubOrigin(env));
+        const saved=await (dependencies.hubCredentialStore||createHubCredentialStore({home:dependencies.home,env:originalEnv})).read(resolveHubOrigin(env));
         if(saved)env={...env,NED_HUB_TOKEN:saved.token};
       }
       hub = readHubConfiguration(env);
@@ -57,7 +57,7 @@ async function runCommunicator(flags, io = console, dependencies = {}) {
     try { databasePath = resolveDatabasePath({databaseUrl:options.databaseUrl, env:originalEnv, home:dependencies.home}); }
     catch { io.error('NEDCOM: configure a SQLite file path or local file: URL with --database or NED_DATABASE_URL.'); return 2; }
     if(stopping)return 0;
-    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath,home:dependencies.home,logger:dependencies.logger,secretsEnabled:!seen.has('--public')});
+    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath,home:dependencies.home,env:originalEnv,initializeDatabase:true,logger:dependencies.logger,secretsEnabled:!seen.has('--public')});
     const url = await app.listen();
     if(seen.has('--public')&&!stopping){
       io.error('WARNING: Public NED COM has no authentication. Anyone with the URL can read projects and Hermes sessions and send messages. Stop with Ctrl+C.');
@@ -85,8 +85,8 @@ async function runCommunicator(flags, io = console, dependencies = {}) {
 export async function runCommunicatorCli(flags,io=console,dependencies={}) {
   if(flags.includes('--help')||flags.includes('--logout'))return runCommunicator(flags,io,dependencies);
   let logger;
-  try {logger=(dependencies.createLogger||createComLogger)({home:dependencies.logHome||dependencies.home,warn:message=>io.error(message)});}
-  catch {io.error('NEDCOM: cannot open private diagnostic logs in ~/.ned/logs. Check ownership and permissions.');return 1;}
+  try {logger=(dependencies.createLogger||createComLogger)({home:dependencies.logHome||dependencies.home,env:dependencies.env,warn:message=>io.error(message)});}
+  catch {io.error('NEDCOM: cannot open private diagnostic logs. Check NED_AGENT_HOME and runtime selection, ownership and permissions.');return 1;}
   const signals=dependencies.signals||process;
   const fatal=(error,origin)=>logger.event('fatal',{origin:origin==='unhandledRejection'?'unhandledRejection':'uncaughtException',...errorDiagnostic(error)});
   const exit=code=>{logger.event('exit',{code});logger.close();};

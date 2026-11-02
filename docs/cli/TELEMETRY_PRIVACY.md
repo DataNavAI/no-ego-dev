@@ -12,7 +12,7 @@ Telemetry is disabled until a user explicitly runs `ned telemetry enable --yes` 
 
 Use `ned telemetry status`, `disable`, or `delete` at any time. Disable stops future events while
 retaining the local installation identity in case telemetry is re-enabled. Delete removes
-`~/.ned/telemetry.json`, including that random identity and all collector configuration. It cannot
+the selected runtime's `<agent-home>/.ned/telemetry.json` (standalone without agent context: `~/.ned/telemetry.json`), including that random identity and all collector configuration. See [runtime selection](RUNTIME_HOME.md); consent and deletion apply only to the selected store. It cannot
 erase events already accepted by a remote collector; the user-owned collector's privacy policy and
 deletion process govern those records.
 

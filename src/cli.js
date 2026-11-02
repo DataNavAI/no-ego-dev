@@ -48,8 +48,8 @@ export async function runCli(argv, io = console, dependencies = {}) {
 
   if (command === 'telemetry') {
     const [action] = flags;
-    const telemetryStore = dependencies.telemetry || createFileTelemetry();
     try {
+      const telemetryStore = dependencies.telemetry || createFileTelemetry({home:dependencies.home,env:dependencies.env});
       if (action === 'status') {
         const status = await telemetryStore.status();
         io.log(status.enabled

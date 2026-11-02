@@ -12,7 +12,7 @@ function setup(t){const home=mkdtempSync(join(tmpdir(),'ned-native-share-'));t.a
 test('TC-005: native registration dispatch checks managed exports without printing bytes or paths',t=>{
   const f=setup(t);f.store.set('ADMIN_PASSWORD','synthetic-native-password');const path=f.store.get('ADMIN_PASSWORD',{file:true}).path;
   const script=`import importlib.util,json,sys\nspec=importlib.util.spec_from_file_location('ned_plugin',sys.argv[1]);p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)\nclass Context:\n def register_tool(self,**kwargs):\n  assert kwargs['name']=='ned' and kwargs['toolset']=='ned'\n  assert kwargs['schema']['parameters']['additionalProperties'] is False\n  self.handler=kwargs['handler']\nc=Context();p.register(c);print(c.handler(json.loads(sys.argv[2])))`;
-  const call=args=>execFileSync(process.env.NED_TEST_PYTHON||'python3',['-c',script,resolve('plugins/ned/__init__.py'),JSON.stringify(args)],{env:{...process.env,HOME:f.home,NED_CLI_PATH:resolve('bin/ned.js'),NED_NODE_PATH:process.execPath},encoding:'utf8',timeout:20000});
+  const call=args=>execFileSync(process.env.NED_TEST_PYTHON||'python3',['-c',script,resolve('plugins/ned/__init__.py'),JSON.stringify(args)],{env:{PATH:process.env.PATH,HOME:f.home,PYTHONDONTWRITEBYTECODE:'1',NED_CLI_PATH:resolve('bin/ned.js'),NED_NODE_PATH:process.execPath},encoding:'utf8',timeout:20000});
   const raw=call({action:'secure_share_secret',path}),result=JSON.parse(raw);
   assert.equal(result.success,true);assert.match(result.share_id,/^[a-f0-9]{64}$/);assert.ok(!raw.includes(path));assert.ok(!raw.includes('synthetic-native-password'));
   assert.equal(f.store.revealShare(result.share_id).value,'synthetic-native-password');
@@ -50,7 +50,7 @@ test('TC-005: native tool resolves a PATH symlink to the container-style JavaScr
   const bin=join(f.home,'bin');mkdirSync(bin);symlinkSync(resolve('bin/ned.js'),join(bin,'ned'));
   const script="import importlib.util,json,sys\nspec=importlib.util.spec_from_file_location('ned_plugin',sys.argv[1]);p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)\nprint(p.handle({'action':'secure_share_secret','path':sys.argv[2]}))";
   const python=execFileSync(process.env.NED_TEST_PYTHON||'python3',['-c','import sys;print(sys.executable)'],{encoding:'utf8'}).trim();
-  const env={...process.env,HOME:f.home,PATH:bin,NED_NODE_PATH:process.execPath};delete env.NED_CLI_PATH;
+  const env={HOME:f.home,PATH:bin,PYTHONDONTWRITEBYTECODE:'1',NED_NODE_PATH:process.execPath};
   const output=execFileSync(python,['-c',script,resolve('plugins/ned/__init__.py'),path],{env,encoding:'utf8',timeout:20000});
   const result=JSON.parse(output);assert.equal(result.success,true);assert.equal(f.store.revealShare(result.share_id).value,'synthetic-fallback-token');assert.ok(!output.includes(path));assert.ok(!output.includes('synthetic-fallback-token'));
   env.NED_CLI_PATH=join(f.home,'missing.js');

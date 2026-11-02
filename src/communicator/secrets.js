@@ -1,5 +1,5 @@
 import {createSecretStore,SecretError,validateSecretKey} from '../secrets.js';
-export function createSecretsHandler({home,enabled=true}={}){
+export function createSecretsHandler({home,env=process.env,enabled=true}={}){
   return async(req,res,send,origin)=>{
     const fail=(status,code,message)=>send(status,{error:{code,message}});
     if(!enabled)return fail(403,'secrets_disabled','Secrets are disabled in public mode.');
@@ -20,7 +20,7 @@ export function createSecretsHandler({home,enabled=true}={}){
         try{body=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks)));}catch{return fail(400,'invalid_body','Provide a JSON secret value.');}
         if(!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).length!==1||!Object.hasOwn(body,'value'))return fail(400,'invalid_body','Provide only the secret value.');
       }
-      const store=createSecretStore({home});
+      const store=createSecretStore({home,env});
       if(share)return send(200,store.revealShare(share[1]));
       if(list)return send(200,{secrets:store.list()});
       if(req.method==='PUT')return send(200,store.set(match[1],body.value));

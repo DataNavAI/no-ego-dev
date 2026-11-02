@@ -50,6 +50,13 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r requirements-dev.txt
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify agent home selection on Windows
+        run: node --test docs/features/agent-runtime-home/tests/TC-001.test.js
       - name: Verify eval-runner lifecycle on Windows
         run: python -m pytest tests/test_eval_runner.py -q
 

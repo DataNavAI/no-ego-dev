@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import {constants,lstatSync,mkdirSync,openSync,closeSync,fstatSync,readFileSync,writeFileSync,fsyncSync,renameSync,unlinkSync,existsSync} from 'node:fs';
-import {homedir} from 'node:os';
+import {resolveRuntimeHome,ensureRuntimeHome} from './runtime-home.js';
 import {join,basename,isAbsolute} from 'node:path';
 import {createCipheriv,createDecipheriv,randomBytes} from 'node:crypto';
 
@@ -28,7 +28,8 @@ function atomicFile(path,value){
   try{fd=openSync(temp,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);writeFileSync(fd,value);fsyncSync(fd);closeSync(fd);fd=undefined;renameSync(temp,path);}
   finally{if(fd!==undefined)closeSync(fd);try{unlinkSync(temp);}catch{/* A private temporary file may require owner cleanup after a filesystem failure. */}}
 }
-export function createSecretStore({home=homedir(),clock=Date.now}={}){
+export function createSecretStore({home,env=process.env,clock=Date.now}={}){
+  home=resolveRuntimeHome({home,env});
   if(process.platform==='win32')throw new SecretError('unsupported_platform','Private secret storage requires macOS or Linux.');
   const root=join(home,'.ned'),directory=join(root,'secrets'),files=join(directory,'files'),filename=join(directory,'vault.sqlite'),keyfile=join(directory,'master.key');
   function directoryCheck(path,privateMode){
@@ -36,6 +37,7 @@ export function createSecretStore({home=homedir(),clock=Date.now}={}){
     if(!info.isDirectory()||info.isSymbolicLink()||!owned(info)||(info.mode&(privateMode?0o077:0o022)))throw new SecretError();
   }
   function directories(){
+    ensureRuntimeHome(home);
     directoryCheck(home,false);
     for(const path of [root,directory,files]){try{mkdirSync(path,{mode:0o700});}catch(error){if(error.code!=='EEXIST')throw error;}directoryCheck(path,path!==root);}
   }

@@ -6,7 +6,7 @@ NED stores project work in its shared database. No Beads installation, external 
 
 ## Shared database configuration
 
-The default is a local SQLite database at `~/.ned/ned.sqlite`. All projects share the file and are isolated by canonical project ID. Other NED features can use `openNedDatabase` from `src/database.js` and its namespaced feature records or versioned feature tables. Task initialization never replaces unrelated feature data. Existing workspace and telemetry JSON files remain unchanged.
+The default is `<agent-home>/.ned/ned.sqlite`, selected by [runtime storage rules](cli/RUNTIME_HOME.md): explicit `NED_AGENT_HOME`, active Hermes/Codex context, then configured agent home. Standalone with no context retains `~/.ned/ned.sqlite`. Projects within one runtime share the file and are isolated by canonical project ID; different agent homes do not share tasks. Other NED features can use `openNedDatabase` from `src/database.js` and its namespaced feature records or versioned feature tables. Task initialization never replaces unrelated feature data. Existing stores remain untouched; there is no automatic migration.
 
 Choose a different SQLite file with `NED_DATABASE_URL` or `--database`. The explicit flag wins over the environment. Local file URLs and paths are supported:
 
