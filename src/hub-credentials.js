@@ -1,7 +1,7 @@
 import {constants} from 'node:fs';
 import fs from 'node:fs/promises';
 import {createHash,randomBytes} from 'node:crypto';
-import {homedir} from 'node:os';
+import {resolveRuntimeHome,ensureRuntimeHome} from './runtime-home.js';
 import path from 'node:path';
 
 export function canonicalHubOrigin(value) {
@@ -18,7 +18,8 @@ export function resolveHubOrigin(env=process.env) {
 export function validHubCredential(value,origin) {
   return value && value.hub===origin && /^ned_[A-Za-z0-9_-]{20,512}$/.test(value.token||'') && typeof value.tokenId==='string' && value.tokenId.length>0 && value.tokenId.length<=256 && value.account && typeof value.account.id==='string' && value.account.id.length>0 && value.account.id.length<=256 && typeof value.account.name==='string' && value.account.name.length<=256 && (value.account.email===undefined || (typeof value.account.email==='string'&&value.account.email.length<=320));
 }
-export function createHubCredentialStore({home=homedir()}={}) {
+export function createHubCredentialStore({home,env=process.env}={}) {
+  home=resolveRuntimeHome({home,env});
   if(process.platform==='win32')throw new Error('Hub private credential storage requires macOS or Linux.');
   const root=path.join(home,'.ned'),directory=path.join(root,'hub-credentials');
   const filename=origin=>path.join(directory,`${createHash('sha256').update(origin).digest('hex')}.json`);
@@ -27,6 +28,7 @@ export function createHubCredentialStore({home=homedir()}={}) {
     if(!stat.isDirectory()||stat.isSymbolicLink()||(stat.mode&0o022)||(privateMode&&(stat.mode&0o077))||(process.getuid&&stat.uid!==process.getuid()))throw new Error('Unsafe Hub credential directory.');
   }
   async function directories(create=false) {
+    if(create)ensureRuntimeHome(home);
     await checkDirectory(home);
     for(const [target,privateMode] of [[root,false],[directory,true]]) {
       if(create)await fs.mkdir(target,{mode:0o700}).catch(error=>{if(error.code!=='EEXIST')throw error;});

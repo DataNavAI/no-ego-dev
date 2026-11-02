@@ -49,9 +49,20 @@ def handle(args, **_kwargs):
     if not cli.is_absolute() or not cli.is_file() or not node:
         return failure
     try:
+        child_env = os.environ.copy()
+        if "NED_AGENT_HOME" not in child_env:
+            try:
+                from hermes_constants import get_hermes_home
+            except ImportError:
+                # Fake registration/standalone integrations have no Hermes package.
+                # Bind explicitly so inherited Codex markers cannot hijack the vault.
+                agent_home = child_env.get("HERMES_HOME", str(home))
+            else:
+                agent_home = str(get_hermes_home())
+            child_env["NED_AGENT_HOME"] = agent_home
         completed = subprocess.run(  # noqa: S603 -- argv-only trusted CLI; path is a single validated argument, never a shell command.
             [node, str(cli), "secret", "share", "--path", args["path"], "--json"],
-            capture_output=True, timeout=15, check=False,
+            capture_output=True, timeout=15, check=False, env=child_env,
         )
         if completed.returncode != 0 or len(completed.stdout) > 2048:
             return failure

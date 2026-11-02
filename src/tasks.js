@@ -20,7 +20,7 @@ function validateId(id) {
 
 export async function createTaskService({
   project = process.cwd(),
-  home = os.homedir(),
+  home,
   databaseUrl,
   database,
   actor = `human:${os.userInfo().username}`,

@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import {spawnSync,spawn} from 'node:child_process';
 import Database from 'better-sqlite3';
 import {createSecretStore} from '../../../../src/secrets.js';
-function fixture(t){const home=mkdtempSync(join(tmpdir(),'ned-secret-'));t.after(()=>rmSync(home,{recursive:true,force:true}));return {home,store:createSecretStore({home}),cli:(args,input)=>spawnSync(process.execPath,['bin/ned.js','secret',...args],{env:{...process.env,HOME:home},input,encoding:'utf8',timeout:10000})};}
+function fixture(t){const home=mkdtempSync(join(tmpdir(),'ned-secret-'));t.after(()=>rmSync(home,{recursive:true,force:true}));return {home,store:createSecretStore({home}),cli:(args,input)=>spawnSync(process.execPath,['bin/ned.js','secret',...args],{env:{PATH:process.env.PATH,HOME:home,NED_AGENT_HOME:home},input,encoding:'utf8',timeout:10000})};}
 test('TC-001: CLI persists exact secrets, lists metadata and invalidates private value files',t=>{
   const {home,store,cli}=fixture(t),value='  synthetic-only-SECRET\nsecond line\n';
   const set=cli(['set','ADMIN_PASSWORD','--stdin','--json'],value);assert.equal(set.status,0,set.stderr);assert.ok(!set.stdout.includes(value));
@@ -40,7 +40,7 @@ test('TC-001: unsafe paths, permissions, tampering and lost key fail closed',asy
 });
 test('TC-001: concurrent processes preserve separate writes and initialized key',async t=>{
   const {home,store}=fixture(t);store.list();
-  const run=key=>new Promise((resolve,reject)=>{const child=spawn(process.execPath,['bin/ned.js','secret','set',key,'--stdin'],{env:{...process.env,HOME:home},stdio:['pipe','ignore','pipe']});let error='';child.stderr.on('data',data=>error+=data);child.on('error',reject);child.on('close',code=>resolve({code,error}));child.stdin.end(`synthetic-${key}`);});
+  const run=key=>new Promise((resolve,reject)=>{const child=spawn(process.execPath,['bin/ned.js','secret','set',key,'--stdin'],{env:{PATH:process.env.PATH,HOME:home,NED_AGENT_HOME:home},stdio:['pipe','ignore','pipe']});let error='';child.stderr.on('data',data=>error+=data);child.on('error',reject);child.on('close',code=>resolve({code,error}));child.stdin.end(`synthetic-${key}`);});
   const results=await Promise.all([run('ONE'),run('TWO')]);assert.deepEqual(results.map(row=>row.code),[0,0],JSON.stringify(results));
   assert.equal(store.get('ONE'),'synthetic-ONE');assert.equal(store.get('TWO'),'synthetic-TWO');
   const unsafe=join(home,'unsafe');mkdirSync(unsafe);chmodSync(unsafe,0o777);assert.throws(()=>createSecretStore({home:unsafe}).list());

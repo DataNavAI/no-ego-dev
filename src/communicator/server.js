@@ -1,4 +1,6 @@
 import {readProjectWork} from './work.js';
+import {resolveDatabasePath,openNedDatabase} from '../database.js';
+import {existsSync} from 'node:fs';
 import {createSecretsHandler} from './secrets.js';
 import http from 'node:http';
 import {createActivityStreams} from './activity.js';
@@ -32,12 +34,13 @@ const vendorAssets=new Map([
 ]);
 const capabilities = {service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
-export function createCommunicatorServer({host = '127.0.0.1', port = 0, databasePath, home, gateway,logger,secretsEnabled=true} = {}) {
+export function createCommunicatorServer({host = '127.0.0.1', port = 0, databasePath, home, env=process.env, gateway,logger,secretsEnabled=true,initializeDatabase=false} = {}) {
   if (host !== '127.0.0.1' || !Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid NEDCOM address.');
+  databasePath??=resolveDatabasePath({home,env});
   let url = null;
-  const secrets=createSecretsHandler({home,enabled:secretsEnabled});
-  const projects=createProjectReader({databasePath,home});
-  const chat=createChatGateway({...gateway,databasePath,logger});
+  const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
+  const projects=createProjectReader({databasePath,home,env});
+  const chat=createChatGateway({env,...gateway,databasePath,logger});
   const activity=createActivityStreams(databasePath);
   const server = http.createServer(async (req,res) => {
     const phase=requestPhase(req.url),started=Date.now();
@@ -78,7 +81,8 @@ export function createCommunicatorServer({host = '127.0.0.1', port = 0, database
     try { send(200,asset[1],await readFile(new URL(`./public/${asset[0]}`,import.meta.url))); }
     catch { error(500,'internal_error','Unable to read NEDCOM resources.'); }
   });
-  return {server, get url() { return url; }, listen() {
+  return {server, get url() { return url; }, async listen() {
+    if(initializeDatabase&&!existsSync(databasePath)){const database=openNedDatabase({databaseUrl:databasePath});database.close();}
     return new Promise((resolve,reject) => {
       const failed = () => {server.off('listening',ready); reject(new Error('Unable to start NEDCOM.'));};
       const ready = () => {server.off('error',failed); url = `http://127.0.0.1:${server.address().port}`; resolve(url);};

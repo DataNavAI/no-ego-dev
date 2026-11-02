@@ -12,3 +12,5 @@ Use `ned task init` to initialize local project work, `ned ready` to find availa
 The installer runs the locked production dependency installation, including the SQLite native module's install script. If a prebuilt binary is unavailable, its source build requires the platform's compiler/Python toolchain; a failed dependency installation stops activation and preserves the prior generation.
 
 See [quickstart](QUICKSTART.md) and [task commands](../tasks.md).
+
+Runtime storage is selected separately through [NED_AGENT_HOME and active agent context](RUNTIME_HOME.md). It does not relocate the installed CLI/private Node/cache or the default skills deployment target. Keep production HOME unchanged. Existing shared DB/auth/secrets are not migrated automatically; initialize/re-authenticate in the selected agent store, or deliberately select `NED_AGENT_HOME="$HOME"` to reuse legacy `~/.ned`.

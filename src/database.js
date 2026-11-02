@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { mkdirSync, chmodSync, statSync, accessSync, constants } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import os from 'node:os';
+import {resolveRuntimeHome,ensureRuntimeHome} from './runtime-home.js';
 import path from 'node:path';
 
 export class DatabaseError extends Error {
@@ -14,8 +14,8 @@ export class DatabaseError extends Error {
   }
 }
 
-export function resolveDatabasePath({ databaseUrl, env = process.env, home = os.homedir() } = {}) {
-  const location = databaseUrl ?? env.NED_DATABASE_URL ?? path.join(home, '.ned', 'ned.sqlite');
+export function resolveDatabasePath({ databaseUrl, env = process.env, home } = {}) {
+  const location = databaseUrl ?? env.NED_DATABASE_URL ?? path.join(resolveRuntimeHome({home,env}), '.ned', 'ned.sqlite');
   if (typeof location !== 'string' || !location.trim())
     throw new DatabaseError('invalid_database', 'Configure a SQLite file path or local file: URL.');
   if (location === ':memory:') return location;
@@ -67,6 +67,7 @@ CREATE INDEX IF NOT EXISTS ned_events_item ON ned_task_events(project_id,item_id
 
 export function openNedDatabase(options = {}) {
   const filename = resolveDatabasePath(options);
+  if(options.databaseUrl===undefined&&(options.env||process.env).NED_DATABASE_URL===undefined)ensureRuntimeHome(resolveRuntimeHome(options));
   let connection;
   try {
     if (filename !== ':memory:')

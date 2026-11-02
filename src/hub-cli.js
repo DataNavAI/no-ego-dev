@@ -2,6 +2,7 @@ import http from 'node:http';
 import {createHash,randomBytes} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {canonicalHubOrigin,resolveHubOrigin,createHubCredentialStore,validHubCredential} from './hub-credentials.js';
+import {RuntimeHomeError} from './runtime-home.js';
 
 const cleanupWarning='NED Hub credential lock cleanup failed. Credentials reflect the completed command; see the Hub setup guide for recovery before another login/logout.';
 async function jsonResponse(response) {
@@ -80,10 +81,11 @@ export async function runHubAuthentication(action,io=console,dependencies={}) {
   let hub;
   try {hub=resolveHubOrigin(dependencies.env||process.env);}
   catch(error) {io.error(`NEDCOM: ${error.message} Configure a valid NED_ENV or NED_HUB_URL.`);return 2;}
-  const store=dependencies.hubCredentialStore||createHubCredentialStore({home:dependencies.home});
+
   const signals=dependencies.signals||process;const controller=new AbortController();const stop=()=>controller.abort();
   signals.on('SIGINT',stop);signals.on('SIGTERM',stop);
   try {
+    const store=dependencies.hubCredentialStore||createHubCredentialStore({home:dependencies.home,env:dependencies.env});
     if(action==='login'){
       const saved=await store.read(hub);
       let reuse=false;
@@ -105,6 +107,6 @@ export async function runHubAuthentication(action,io=console,dependencies={}) {
       io.log(`Signed out of NED Hub at ${hub}.`);
     }
     return 0;
-  }catch {io.error(action==='login'?'NED Hub login failed, was denied, interrupted or timed out. Previous credentials were preserved.':'NED Hub logout failed. Saved credentials were retained; retry when the Hub is available.');return 1;}
+  }catch(error) {if(error instanceof RuntimeHomeError){io.error(`NEDCOM: ${error.message}`);return 2;}io.error(action==='login'?'NED Hub login failed, was denied, interrupted or timed out. Previous credentials were preserved.':'NED Hub logout failed. Saved credentials were retained; retry when the Hub is available.');return 1;}
   finally {signals.off('SIGINT',stop);signals.off('SIGTERM',stop);}
 }

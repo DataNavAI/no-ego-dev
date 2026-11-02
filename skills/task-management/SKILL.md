@@ -45,6 +45,35 @@ For every actionable user development request—including a feature, bug fix, re
 
 ## Context and planning
 
+### Runtime isolation
+
+Keep the same runtime selection on CLI, COM and native secret-tool calls. Runtime
+files live in `<agent-home>/.ned`, not a universal OS-user store. Selection is:
+explicit absolute `NED_AGENT_HOME`; then active Hermes markers
+`HERMES_SESSION_ID`/`HERMES_SESSION_KEY`/`HERMES_SESSION_PLATFORM` choose
+`HERMES_HOME` or OS `~/.hermes`; then `CODEX_THREAD_ID`/`CODEX_SESSION_ID`
+choose `CODEX_HOME` or OS `~/.codex`. Hermes outranks inherited Codex markers.
+Without an active marker, one configured `HERMES_HOME`/`CODEX_HOME` selects it;
+both configured requires explicit `NED_AGENT_HOME`. No agent context keeps
+standalone `~/.ned`. Never infer selection from directory existence or CWD.
+Empty, relative, URL, NUL-containing or symlink selected roots fail rather than
+silently falling back. Missing selected directories are initialized privately.
+
+Two agents on the same canonical project normally have different work graphs,
+Hub logins, logs, telemetry consent and secret vaults. A missing record after a
+runtime switch is not proof of deletion or synchronization. Inspect the intended
+store before creating duplicates. Never copy/migrate old DB/auth/secrets
+automatically; initialize the new store, reauthenticate and save needed secrets
+explicitly. Only when deliberately requested, `NED_AGENT_HOME="$HOME"` reuses
+legacy shared `~/.ned`. `--database` overrides `NED_DATABASE_URL` for the DB only;
+it never switches vault, credentials, telemetry or logs. The native Hermes plugin
+binds its CLI child to the actual Hermes profile unless the operator explicitly
+sets `NED_AGENT_HOME`. Gateway settings still use the selected Hermes profile,
+independent of Codex storage. CLI/Node installation, caches, project files and
+default skills rollout keep their existing ownership; do not relocate them or
+change production HOME to select storage. For synthetic evaluation, explicitly
+bind `NED_AGENT_HOME` to a disposable absolute home on every subprocess.
+
 Use the same canonical project root, database and stable actor on every call. Agents pass `--actor agent:<stable-id>`; labels record ownership, not authentication. Runtime data belongs outside the repository. Initialize idempotently:
 
 ```bash
@@ -75,7 +104,7 @@ For this no-ego-dev distribution, after each completed task run `node scripts/de
 
 ## Reporting
 
-Report actual persisted state, acceptance evidence and unresolved blockers. A task is not complete merely because an agent returned. Use JSON output and exit status as evidence. Failures exit nonzero; inspect state before retrying. The shared SQLite default is `~/.ned/ned.sqlite`; `--database` overrides `NED_DATABASE_URL`. No remote tracker, model call or Hermes restart is required for task commands.
+Report actual persisted state, acceptance evidence and unresolved blockers. A task is not complete merely because an agent returned. Use JSON output and exit status as evidence. Failures exit nonzero; inspect state before retrying. The SQLite default is the selected runtime's `.ned/ned.sqlite` (standalone no-context: `~/.ned/ned.sqlite`); `--database` overrides `NED_DATABASE_URL` for the DB only. No remote tracker, model call or Hermes restart is required for task commands.
 
 ## Secret handoff during development
 
@@ -91,7 +120,7 @@ If the consumer needs an environment variable, load from the file inside the
 process without shell tracing or printing its value. Raw `ned secret get KEY`
 intentionally outputs plaintext and is unsuitable for chat-visible tool output.
 If the key is missing, direct the user to Settings; never invent a value or report
-access succeeded. Vault scope is the local NED home, shared across projects;
+access succeeded. Vault scope is the selected agent/profile's NED home, shared across its projects;
 `--database` does not choose a different vault. File exports are plaintext0600 and
 persist until replacement/deletion; consumer copies are the caller's cleanup duty.
 

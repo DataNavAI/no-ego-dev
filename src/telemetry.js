@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
-import os from 'node:os';
+import {resolveRuntimeHome,ensureRuntimeHome} from './runtime-home.js';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
@@ -61,12 +61,14 @@ function validateEnableOptions({ host, projectKey, privacyPolicy, consent }) {
 }
 
 export function createFileTelemetry({
-  home = os.homedir(),
+  home,
+  env = process.env,
   fetch: fetchImplementation = globalThis.fetch,
   cliVersion = packageVersion,
   platform = process.platform,
   timeoutMs = 250,
 } = {}) {
+  home=resolveRuntimeHome({home,env});
   const directory = path.join(home, '.ned');
   const configPath = path.join(directory, 'telemetry.json');
 
@@ -80,6 +82,7 @@ export function createFileTelemetry({
   }
 
   async function save(config) {
+    ensureRuntimeHome(home);
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const temporaryPath = `${configPath}.${process.pid}.tmp`;
     await writeFile(temporaryPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });

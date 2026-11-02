@@ -21,7 +21,7 @@ function launch(args, home, extra = {}, executable = entry) {
   const ended = new Promise((resolve,reject) => {child.once('error',reject);child.once('close',(code,signal) => {clearTimeout(timer);clearTimeout(lifetime);readyResolve(null);resolve({code,signal,stdout,stderr});});});
   return {child,ready,ended};
 }
-test('TC-004: public command lifecycle, invalid input and unchanged filesystem',async t => {
+test('TC-004: public command lifecycle, invalid input and preserved existing files',async t => {
   const home=await mkdtemp(join(tmpdir(),'nedcom-cli-'));t.after(()=>rm(home,{recursive:true,force:true}));
   const db=join(home,'sentinel.sqlite');await writeFile(db,'unchanged');
   const children=[];t.after(async()=>{for(const p of children){if(p.child.exitCode===null)p.child.kill('SIGKILL');await p.ended;}});
@@ -36,7 +36,7 @@ test('TC-004: public command lifecycle, invalid input and unchanged filesystem',
       p.child.kill(signal);assert.equal((await p.ended).code,0);
     });
   }
-  await t.test('default ephemeral and missing database do not create files',async()=>{const p=start(['com']);assert.ok(await p.ready);p.child.kill('SIGTERM');assert.equal((await p.ended).code,0);});
+  await t.test('default ephemeral command starts and stops; first-use DB creation is covered by agent-runtime-home TC-002',async()=>{const p=start(['com']);assert.ok(await p.ready);p.child.kill('SIGTERM');assert.equal((await p.ended).code,0);});
   for(const args of [['--port','-1'],['--port','1.5'],['--port','65536'],['--port'],['--unknown'],['--port','0','--port','0'],['--database','https://remote/db'],['--database','']]) {
     await t.test(`reject ${JSON.stringify(args)}`,async()=>{const p=start(['com',...args]);const result=await p.ended;assert.equal(result.code,2);assert.ok(result.stderr);assert.ok(!result.stdout.includes('http://'));});
   }
