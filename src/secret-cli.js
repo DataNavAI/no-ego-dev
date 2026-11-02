@@ -1,9 +1,14 @@
 import {createSecretStore,SecretError,validateSecretKey} from './secrets.js';
 import {RuntimeHomeError} from './runtime-home.js';
-export const secretUsage='Usage: ned secret <list [--json]|set KEY --stdin [--json]|get KEY [--file [--json]]|delete KEY [--json]>';
+export const secretUsage='Usage: ned secret <request KEY [--json]|list [--json]|set KEY --stdin [--json]|get KEY [--file [--json]]|delete KEY [--json]>';
 export async function runSecretCli(argv,io=console,dependencies={}){
   try{
     const [action,...args]=argv;
+    if(action==='request'){
+      if(args.length<1||args.length>2||args.length===2&&args[1]!=='--json')throw new SecretError('invalid_command',secretUsage);
+      validateSecretKey(args[0]);
+      const result=(dependencies.secretStoreFactory||createSecretStore)({home:dependencies.home,env:dependencies.env}).request(args[0]);io.log(JSON.stringify(result));return 0;
+    }
     if(action==='share'){
       if(args[0]!=='--path'||!args[1]||args.length>3||args.length===3&&args[2]!=='--json')throw new SecretError('invalid_command','Usage: ned secret share --path <private-export-path> [--json]');
       const result=(dependencies.secretStoreFactory||createSecretStore)({home:dependencies.home,env:dependencies.env}).share(args[1]);io.log(JSON.stringify(result));return 0;

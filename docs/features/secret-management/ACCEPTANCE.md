@@ -90,3 +90,37 @@ service replacement,3.36-second stop, persistence, recreation and negative start
 passed. Test-owned containers/volumes/credentials were removed. This was acceptance
 on disposable resources, not rollout of an existing staging profile or AWS.
 Hosted AMD64/ARM64 correction checks remain required.
+
+## Chat secret entry candidate — #152 (2026-11-02)
+
+This extension reuses the encrypted vault and guarded API; it introduces no new
+provider or crypto dependency. Design authority: `design/UI.md` entry card and
+communicator `design/design-system.md`. Inspected synthetic desktop1280×900 and
+mobile390×844 screenshots show a masked labeled field,44px controls and no
+horizontal overflow; existing preview failure in the disposable empty-DB fixture
+is outside this journey. Current candidate verification is distinct from the
+historical bounded-port report above.
+
+- Focused TC-007: native Python handler→CLI→vault request, closed history schema,
+  isolation/expiry/revocation/idempotency and real protected HTTP write lifecycle.
+- Focused TC-008: Chromium DOM→HTTP→vault, masked/focused entry, cancel, reload,
+  preserved draft, navigation/30second clear, lost acknowledgement, stale cards,
+  desktop/mobile geometry and no secret in gateway/history/browser storage.
+- RED mutation: removing the completed-request write guard failed the exact saved
+  value assertion (retry overwrote with different bytes); restored source passes.
+- ESLint10.12.0, ruff0.17.3, canonical lint and npm test executed successfully;
+  Python3.14.3 `python -m pytest`:208passed,9platform-specific skipped.
+  Repository manual spec cases remain NOT RUN in the automated runner; this does
+  not claim all unchanged skill evaluations passed. Full gates rerun by the hook.
+- Real native model skill probe uses a disposable project plugin and isolated
+  NED_AGENT_HOME with current CLI override; the initial probe started outside its
+  project and saw the older installed sharing-only tool. It correctly used the
+  Settings fallback without claiming storage. Starting the
+  positive probe inside the disposable project selected native request_secret for
+  ADMIN_PASSWORD and returned exactly request metadata; no value was supplied.
+  Exact-candidate review and merged local rollout are recorded in issue #152.
+
+The form saves only; it does not automatically resume the model. All authorized
+COM users and same-OS-user processes remain trusted, as before. Required release
+steps are independent exact-candidate review, passing CI, main merge and default
+local CLI/plugin/skills/COM rollout; no AWS/named-profile rollout is implied.

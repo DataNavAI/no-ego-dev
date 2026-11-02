@@ -5,3 +5,5 @@ description: Use for every user development request, including features, bugs, r
 
 Read and follow the [canonical skill instructions](../../../skills/task-management/SKILL.md). All workflow instructions and supporting resources remain in the canonical folder.
 Runtime-isolation scenarios are included in that skill's self-contained evaluation fixtures.
+
+Secret entry and retrieval scenarios are included in the canonical evaluation.

@@ -56,7 +56,7 @@ export function createSecretStore({home,env=process.env,clock=Date.now}={}){
       checkFile(filename);
       for(const suffix of ['-wal','-shm','-journal'])checkFile(filename+suffix);
       db=new Database(filename,{timeout:5000});db.pragma('journal_mode = DELETE');db.pragma('synchronous = FULL');db.pragma('secure_delete = ON');
-      db.exec('CREATE TABLE IF NOT EXISTS secrets (key TEXT PRIMARY KEY, payload TEXT NOT NULL, updatedAt TEXT NOT NULL); CREATE TABLE IF NOT EXISTS secret_shares (id TEXT PRIMARY KEY, secret_key TEXT NOT NULL, expires INTEGER NOT NULL)');
+      db.exec('CREATE TABLE IF NOT EXISTS secrets (key TEXT PRIMARY KEY, payload TEXT NOT NULL, updatedAt TEXT NOT NULL); CREATE TABLE IF NOT EXISTS secret_shares (id TEXT PRIMARY KEY, secret_key TEXT NOT NULL, expires INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS secret_requests (id TEXT PRIMARY KEY, secret_key TEXT NOT NULL, expires INTEGER NOT NULL, saved INTEGER NOT NULL DEFAULT 0)');
       const decrypt=row=>{
         if(!row)throw new SecretError('not_found','Secret not found. Save it in COM Settings.');
         const data=JSON.parse(row.payload);
@@ -75,15 +75,34 @@ export function createSecretStore({home,env=process.env,clock=Date.now}={}){
     finally{db?.close();}
   }
   function removeExport(name){const path=join(files,name);checkFile(path);try{unlinkSync(path);}catch(error){if(error.code!=='ENOENT')throw error;}}
-  return {
-    list(){return operation(({db})=>db.prepare('SELECT key,updatedAt FROM secrets ORDER BY key').all());},
-    set(name,value){validateSecretKey(name);validateSecretValue(value);return operation(({db,key})=>{
+  function save({db,key},name,value,requestId=null){
       const nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,nonce,{authTagLength:16});cipher.setAAD(Buffer.from(name));
       const ciphertext=Buffer.concat([cipher.update(value,'utf8'),cipher.final()]);
       const payload=JSON.stringify({version:1,nonce:nonce.toString('base64'),tag:cipher.getAuthTag().toString('base64'),value:ciphertext.toString('base64')});
-      removeExport(name);db.prepare('DELETE FROM secret_shares WHERE secret_key=?').run(name);
+      removeExport(name);db.prepare('DELETE FROM secret_requests WHERE secret_key=? AND id!=?').run(name,requestId||'');db.prepare('DELETE FROM secret_shares WHERE secret_key=?').run(name);
       const updatedAt=new Date().toISOString();db.prepare('INSERT INTO secrets VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload,updatedAt=excluded.updatedAt').run(name,payload,updatedAt);
       return {key:name,updatedAt};
+  }
+  function requestRow(db,id){
+    if(typeof id!=='string'||!/^[a-f0-9]{64}$/.test(id))throw new SecretError('not_found','Secret request is unavailable.');
+    const row=db.prepare('SELECT * FROM secret_requests WHERE id=?').get(id);
+    if(!row||row.expires<=clock())throw new SecretError('not_found','Secret request is unavailable.');
+    return row;
+  }
+  return {
+    list(){return operation(({db})=>db.prepare('SELECT key,updatedAt FROM secrets ORDER BY key').all());},
+    set(name,value){validateSecretKey(name);validateSecretValue(value);return operation(context=>save(context,name,value));},
+    request(name){validateSecretKey(name);return operation(({db})=>{
+      const id=randomBytes(32).toString('hex'),expires=clock()+900000;
+      db.prepare('DELETE FROM secret_requests WHERE expires<=?').run(clock());
+      db.prepare('INSERT INTO secret_requests(id,secret_key,expires) VALUES(?,?,?)').run(id,name,expires);
+      return {success:true,action:'request_secret',request_id:id,key:name,expires_at:new Date(expires).toISOString()};
+    });},
+    requestStatus(id){return operation(({db})=>{const row=requestRow(db,id);return {key:row.secret_key,saved:row.saved===1};});},
+    submitRequest(id,value){validateSecretValue(value);return operation(context=>{
+      const row=requestRow(context.db,id);
+      if(!row.saved){save(context,row.secret_key,value,id);context.db.prepare('UPDATE secret_requests SET saved=1 WHERE id=?').run(id);}
+      return {key:row.secret_key,saved:true};
     });},
     get(name,{file=false}={}){validateSecretKey(name);return operation(({decrypt,get})=>{const value=decrypt(get(name));if(!file)return value;const path=join(files,name);atomicFile(path,value);return {key:name,path};});},
     share(path){
@@ -107,6 +126,6 @@ export function createSecretStore({home,env=process.env,clock=Date.now}={}){
         return {value:decrypt(get(grant.secret_key))};
       });
     },
-    delete(name){validateSecretKey(name);return operation(({db,get})=>{if(!get(name))throw new SecretError('not_found','Secret not found.');removeExport(name);db.prepare('DELETE FROM secret_shares WHERE secret_key=?').run(name);db.prepare('DELETE FROM secrets WHERE key=?').run(name);return {key:name,deleted:true};});},
+    delete(name){validateSecretKey(name);return operation(({db,get})=>{if(!get(name))throw new SecretError('not_found','Secret not found.');removeExport(name);db.prepare('DELETE FROM secret_requests WHERE secret_key=?').run(name);db.prepare('DELETE FROM secret_shares WHERE secret_key=?').run(name);db.prepare('DELETE FROM secrets WHERE key=?').run(name);return {key:name,deleted:true};});},
   };
 }
