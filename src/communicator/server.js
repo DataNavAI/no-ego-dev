@@ -21,6 +21,7 @@ assets.set('/pane-resize.js',['pane-resize.js','text/javascript']);
 assets.set('/debug-pane.js',['debug-pane.js','text/javascript']);
 assets.set('/request-diagnostic.js',['request-diagnostic.js','text/javascript']);
 assets.set('/turn-stream.js',['turn-stream.js','text/javascript']);
+assets.set('/dashboard-model.js',['dashboard-model.js','text/javascript']);
 assets.set('/work-plan.js',['work-plan.js','text/javascript']);
 assets.set('/task-references.js',['task-references.js','text/javascript']);
 assets.set('/project-work.js',['project-work.js','text/javascript']);
