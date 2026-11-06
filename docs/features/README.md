@@ -10,6 +10,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 
 | Feature | Status | Canonical spec | Current evidence / supporting material |
 | --- | --- | --- | --- |
+| Registered web app previews | draft (design only) | [SPEC.md](web-app-previews/SPEC.md) | #155; CLI/native port registry, isolated local/Hub preview relay and multi-app selector proposal; [visual decision](web-app-previews/design/DESIGN_REVIEW.md); no runtime implementation or acceptance |
 | Agent-isolated runtime home | implemented (uncommitted source candidate) | [SPEC.md](agent-runtime-home/SPEC.md) | #150; resolver, runtime stores and native subprocess isolation; lint/test:all passed; parent owns evaluation/review/delivery |
 | Secret management | implemented (source candidate) | [SPEC.md](secret-management/SPEC.md) | Encrypted local vault, CLI/Settings and native retrieval/entry cards (#152); [acceptance](secret-management/ACCEPTANCE.md); entry candidate verification and rollout tracked in #152 |
 | Standalone NED container | implemented | [SPEC.md](standalone-container/SPEC.md) | Complete profile + CLI, real Hermes dashboard and COM; [acceptance](standalone-container/ACCEPTANCE.md); native AMD64/ARM64 image tests; default/custom-port health and first-login landing regressions (#132/#133); live-model checks separate |
