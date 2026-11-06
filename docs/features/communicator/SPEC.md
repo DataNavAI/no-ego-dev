@@ -656,3 +656,26 @@ Actor: chat user. Critical because tool work may delay the first visible reply. 
 - Pass evidence: executed assertions and separate desktop/mobile rendered evidence. Written cases alone are not passes.
 
 Coverage: FR-061–062 → CUJ-022 → TC-040.
+
+## Project progress dashboard (#158)
+- FR-063: The main/right workspace offers Preview and Dashboard tabs sharing one area, retaining the left Chat/Goals/Artifacts tabs. Switching views preserves Preview DOM/state, chat draft, attachments and reference pills. Tabs support arrows, Home/End and selected/focus semantics; mobile navigation opens the last selected workspace view.
+- FR-064: Dashboard reads the selected project's existing `/api/projects/:id/work` snapshot without creating a second tracker or writing work state. Display open goals with nested open tasks in existing execution-plan order, readable statuses, and project/per-goal completed/total leaf-task counts. Progress measures completed executable leaves (tasks/issues), not effort or elapsed time. Completed items are hidden by default and may be revealed; retained ancestors provide context. No-task goals have no fabricated percentage.
+- FR-065: Dashboard and Goals share one snapshot refresh and request generation. Selection clears previous data immediately; late responses cannot expose another project. Workspace events refresh counts. Loading, no selection, no work, all completed and failure states are distinct. Failure has explicit Retry. Dashboard task/goal selection stages the existing project-bound reference pill; it never sends automatically.
+
+### CUJ-023: Review selected-project progress beside chat
+Actor: project user. Critical because an overview should expose remaining work without interrupting a conversation or preview. Start with a selected project, a draft and task data. Choose Dashboard; inspect completed/total progress, open goals and ordered work; reference a task; return to Preview and Chat with state retained. Refresh updates progress. Switching projects clears prior work; failed reads offer Retry; empty and all-completed projects remain distinguishable. Supported layouts: 1280×900, 390×844, 320×844 and enlarged text.
+
+### TC-041: Project dashboard progress, isolation and workspace continuity
+- Journey / requirements: CUJ-023 / FR-063–065.
+- Level / automation: unit and end-to-end; [tests/TC-041.test.js](tests/TC-041.test.js).
+- Purpose: prove honest leaf progress, assembled workspace navigation and no stale project leakage while preserving chat/reference/preview state.
+- Preconditions / fixtures: synthetic hierarchical goal with done/working/blocked/ready leaves, empty and completed variants; existing isolated browser-chat fixture with intercepted project/work responses, no real credentials. Fresh temporary DB/home and browser.
+- Given: two registered synthetic projects, loaded chat and a draft.
+- When: choose Dashboard, reveal completed work, reference a task, switch Preview/Dashboard by keyboard, refresh work, switch projects during a deferred read, fail/retry a read and use mobile layout.
+- Then: exact completed/total counts and statuses match the snapshot; completed tasks hide by default; references retain authoritative project/item IDs; no automatic send; draft and Preview DOM survive; only selected-project data appears; loading/error/empty/all-complete copy is truthful; retry recovers.
+- Steps and assertions: `node --test docs/features/communicator/tests/TC-041.test.js`. Unit fixtures cover nested leaves, zero-task goals, dependencies and malicious titles. Browser assertions cover tabs, reference pills, draft, in-place Preview node, updates, stale deferred response, failure/recovery, keyboard selection, no page errors and no horizontal overflow at desktop/390/320px. Capture rendered desktop/mobile evidence outside the repository; inspect against UI-AC-26.
+- Variants / negative cases: wrong project response and malformed work fail closed; empty and all-complete are distinct; repeat tab switches never remount Preview or send messages. No new provider/authentication behavior; existing HTTP project isolation coverage remains authoritative. Read-only actions have no writes; existing adapter tests own DB side effects.
+- Cleanup: close browser/server and remove fixture-owned temporary state; no host sessions changed.
+- Pass evidence: actual unit/browser assertions and inspected captures; written cases are not passes.
+
+Coverage: FR-063–065 → CUJ-023 → TC-041. Existing TC-030/034 own task read isolation, execution ordering and reference resolution. GitHub board tracking remains separate from runtime project-work browsing; this dashboard does not add GitHub synchronization.

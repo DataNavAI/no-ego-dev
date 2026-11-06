@@ -27,7 +27,7 @@ export async function clientHarness({EventSource}={}) {
     };
     elements.set(id, node); return node;
   }
-  for (const id of ['project','retry','heading','announcement','message','identity','open-app','new-tab-note','navigation-hint','card','app-shell','sidebar-toggle','mobile-sidebar-toggle','sidebar','content','chat','drawer-scrim','project-detail-toggle','aux-toggle','detail-close','preview','preview-heading','preview-message','preview-identity','preview-open','preview-note','preview-retry','preview-toggle','left-pane','left-toggle']) element(id);
+  for (const id of ['project','retry','heading','announcement','message','identity','open-app','new-tab-note','navigation-hint','card','app-shell','sidebar-toggle','mobile-sidebar-toggle','sidebar','content','chat','drawer-scrim','project-detail-toggle','aux-toggle','detail-close','preview','preview-tab','dashboard-tab','preview-panel','dashboard','preview-heading','preview-message','preview-identity','preview-open','preview-note','preview-retry','preview-toggle','left-pane','left-toggle']) element(id);
   elements.get('content').hidden=true;elements.get('drawer-scrim').hidden=true;
   for(const id of ['sidebar-toggle','project-detail-toggle'])elements.get(id).parentElement=elements.get('sidebar');
   elements.get('chat').parentElement=elements.get('left-pane');elements.get('content').parentElement=elements.get('left-pane');
