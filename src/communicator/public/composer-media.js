@@ -13,6 +13,14 @@ export function mountComposerMedia({document,draft,getSession,changed,request=fe
   const picker=element('chat-files');
   if(!picker)return {pending:()=>false,ready:()=>false,ids:()=>[],clear(){},render(){}};
   let files=[];let locked=true;let selection=[0,0];
+  const fileHelp=element('chat-file-help'),supportedFiles=element('chat-supported-files');
+  const showFileHelp=show=>{supportedFiles.hidden=!show;fileHelp.setAttribute('aria-expanded',String(show));};
+  fileHelp?.addEventListener('click',()=>showFileHelp(supportedFiles.hidden));
+  const dismissFileHelp=event=>{
+    if(event.key==='Escape'&&supportedFiles&&!supportedFiles.hidden){event.preventDefault();showFileHelp(false);fileHelp.focus({preventScroll:true});}
+  };
+  fileHelp?.addEventListener('keydown',dismissFileHelp);
+  supportedFiles?.parentElement.addEventListener('keydown',dismissFileHelp);
   function render(disabled=locked){
     locked=disabled;
     for(const id of ['chat-attach','chat-add-link','chat-link-insert','chat-link-cancel','chat-link-url','chat-link-label'])element(id).disabled=disabled;

@@ -80,7 +80,7 @@ textarea{width:100%;height:34px;min-height:34px;max-height:min(160px,25dvh);over
 #chat-message{padding:4px;line-height:1.5;font-size:14px}
 .compose-dock .composer-actions{gap:6px;min-width:0;height:auto;min-height:44px;flex-wrap:wrap}
 .composer-actions .attachment-toolbar{gap:0;flex:1 1 160px;flex-wrap:wrap;min-width:0}
-.attachment-toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:4px;max-width:100%;min-width:0;padding:6px;border:0;border-radius:8px;background:transparent;color:#4a5058;font-size:12px;white-space:normal}
+.attachment-toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:4px;max-width:100%;min-width:44px;padding:6px;border:0;border-radius:8px;background:transparent;color:#4a5058;font-size:12px;white-space:normal}
 .attachment-toolbar button span{min-width:0;overflow-wrap:anywhere}
 .attachment-toolbar button:hover:not(:disabled){background:#f1f3f5}
 .attachment-toolbar button:disabled{color:#9299a0}
@@ -90,10 +90,7 @@ textarea{width:100%;height:34px;min-height:34px;max-height:min(160px,25dvh);over
 .compose-dock #chat-send:not(:disabled){background:#303943;color:#fff}
 .compose-dock #chat-send:hover:not(:disabled){background:#17212b}
 #chat-send svg{width:19px;height:19px;stroke-width:1.6}
-.supported-files{font-size:12px;color:#60656d}
-.supported-files summary{min-height:44px;display:list-item;list-style:disclosure-closed inside;align-content:center;cursor:pointer;padding:8px 4px}
-.supported-files[open]>summary{list-style-type:disclosure-open}
-.supported-files .attachment-help{padding:0 4px 8px;font-size:12px;color:#60656d}
+#chat-supported-files{padding:4px;font-size:12px;color:#60656d}
 .attachment-list{gap:6px}
 .attachment-list:empty{display:none}
 .attachment-list li{width:100%;gap:6px;padding:2px 4px 2px 10px;border-color:#e2e6eb;background:#f6f8fa;border-radius:10px;font-size:12px}

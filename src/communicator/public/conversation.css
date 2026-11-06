@@ -1,7 +1,9 @@
 .mobile-menu,.mobile-view-title{display:none}
 .compose-dock #chat-message{min-height:max(34px,calc(1lh + 8px))}
 .compose-dock{min-height:min-content}
-.composer-context{contain:size;flex-basis:44px}
+.composer-context{contain:size;flex-basis:44px;display:none}
+.composer-context:has(.attachment-list:not(:empty),#chat-attachment-status:not(:empty),#chat-supported-files:not([hidden]),.link-editor:not([hidden])){display:block}
+.task-reference-list:empty{display:none}
 #project-control{min-width:0}#project-control>select{width:240px;max-width:28vw;border:0;background:transparent;text-overflow:ellipsis;font-size:12px}
 .navigation-drawer{position:fixed;inset:0 auto 0 0;margin:0;width:min(320px,calc(100vw - 32px));max-width:none;height:100dvh;max-height:none;border:0;border-right:1px solid var(--border);padding:16px;background:var(--surface);color:var(--text);overflow:auto;overscroll-behavior:contain}
 .navigation-drawer::backdrop{background:#0005}

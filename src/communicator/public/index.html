@@ -25,15 +25,15 @@
       <form id="chat-form">
         <ul id="chat-task-references" class="task-reference-list" aria-label="Referenced tasks"></ul><p id="chat-reference-status" class="sr-only" role="status"></p>
         <label class="sr-only" for="chat-message">Message</label>
-        <textarea id="chat-message" rows="2" maxlength="8000" placeholder="Ask anything"></textarea>
+        <textarea id="chat-message" rows="1" maxlength="8000" placeholder="Ask anything"></textarea>
         <div class="composer-context">
         <ul id="chat-attachments" class="attachment-list" aria-label="Attached files"></ul>
         <p id="chat-attachment-status" role="status" aria-live="polite"></p>
         <input id="chat-files" type="file" accept=".png,.jpg,.jpeg,.webp,.txt,.md,.csv,.json,.pdf,.docx" multiple hidden>
-        <details class="supported-files"><summary>Supported files</summary><small class="attachment-help">PNG, JPEG, WebP, TXT, MD, CSV, JSON, PDF or DOCX · 4 MB each · up to 4 files · images total 2 MB</small></details>
+        <small id="chat-supported-files" class="attachment-help" hidden>PNG, JPEG, WebP, TXT, MD, CSV, JSON, PDF or DOCX · 4 MB each · up to 4 files · images total 2 MB</small>
         <div id="chat-link-editor" class="link-editor" hidden><label for="chat-link-url">URL</label><input id="chat-link-url" type="url" maxlength="8000"><label for="chat-link-label">Label (optional)</label><input id="chat-link-label" maxlength="1000"><p id="chat-link-error" role="status"></p><div><button id="chat-link-insert" type="button">Insert link</button><button id="chat-link-cancel" type="button">Cancel</button></div></div>
         </div>
-        <div class="composer-actions"><div class="attachment-toolbar"><button id="chat-attach" type="button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m7 11 5-5a2 2 0 0 1 3 3l-6 6a3.5 3.5 0 0 1-5-5l7-7"/></svg><span>Attach file</span></button><button id="chat-add-link" type="button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m8 7 2-2a3.5 3.5 0 0 1 5 5l-2 2M12 13l-2 2a3.5 3.5 0 0 1-5-5l2-2m0 5 6-6"/></svg><span>Add link</span></button></div><span class="backend-label">Hermes</span><button id="chat-send" type="submit" aria-label="Send message"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m4 8 4-4 4 4M8 4v8"/></svg></button></div>
+        <div class="composer-actions"><div class="attachment-toolbar"><button id="chat-attach" type="button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m7 11 5-5a2 2 0 0 1 3 3l-6 6a3.5 3.5 0 0 1-5-5l7-7"/></svg><span>Attach file</span></button><button id="chat-add-link" type="button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m8 7 2-2a3.5 3.5 0 0 1 5 5l-2 2M12 13l-2 2a3.5 3.5 0 0 1-5-5l2-2m0 5 6-6"/></svg><span>Add link</span></button><button id="chat-file-help" type="button" aria-label="Supported files" title="Supported files" aria-controls="chat-supported-files" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6v.5"/></svg></button></div><button id="chat-send" type="submit" aria-label="Send message"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m4 8 4-4 4 4M8 4v8"/></svg></button></div>
       </form>
     </div>
   </section>
