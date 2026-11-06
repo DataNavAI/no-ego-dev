@@ -1,15 +1,27 @@
 {
-  "candidate_sha": "5b94964c96850d14549608e7d7c80d20d2f4b6ce",
   "result": "pass",
-  "tested_at": "2026-11-02T09:02:05.364223+00:00",
-  "environment": "Clean isolated macOS exact-candidate worktree; fresh independent Hermes composite reviewer; real fresh Hermes native model with disposable project plugin and NED_AGENT_HOME; Chromium desktop/mobile against disposable COM/vault",
+  "candidate_sha": "bbaea85e9a62ad6330e870c8eedd34f42430308d",
+  "tested_at": "2026-11-06T20:44:08Z",
+  "environment": "macOS ARM64, actual Chromium156.0.8078.4, synthetic Hermes HTTP/SSE and temporary isolated SQLite/home fixtures. CSS viewports1280x900,390x844,320x740. Nine-file frozen manifest verified against exact committed source; source composite independently APPROVED. No private conversation, credentials, managed COM, model call or public Hub used for browser execution.",
   "commands": [
+    "npm ci",
+    "npm run hooks:install",
     "npm run lint",
-    "npm test",
+    "npm run build:ui:check",
+    "npm run test:all",
     "python -m pytest",
-    "node --test docs/features/secret-management/tests/TC-007.test.js docs/features/secret-management/tests/TC-008.test.js",
-    "node --test docs/features/secret-management/tests/TC-005.test.js docs/features/secret-management/tests/TC-006.test.js",
-    "Hermes fresh native-tool skill evaluation for private ADMIN_PASSWORD entry using exact checkout plugin/CLI"
+    "npm run test:chat:e2e",
+    "node --test docs/features/communicator/tests/TC-010.test.js docs/features/communicator/tests/TC-017.test.js",
+    "Owned independent Chromium composer probe recorded in retained qa-r1/probe.mjs"
   ],
-  "observations": "Exact code candidate independently APPROVED with no material findings. Reviewer freshly passed7 new tests and8 sharing regressions; additional320px long-key, page-hidden, redraw and wrong-key status probes passed. Real model selected request_secret with key only and correctly distinguished requested from saved; exact-candidate rerun passed. Parent inspected masked desktop/mobile screenshots. Completed-request overwrite mutation failed exact-value assertion before restoration. Full hook passed lint, all automated spec cases and Python208passed9platform skips; unchanged manual cases remain separately NOT RUN. No automatic model continuation promised. No live rollout claimed yet. Composite review SHA256 36f8ca601d81e4f33dd37875f9084b986d96a64324807cb857a7141946d99089"
+  "observations": "PASS for six selected focused composer checkpoints, with viewport variants executed: default and one-line form108CSSpx across all three viewports, versus author-recorded168px baseline;44px actions retained. Maximum8000-character multiline draft grows bounded and clearing restores108px. Supported-files info control exposes exact limits, does not submit, Escape closes and restores focus. Four long-name synthetic TXT files plus open link/help use bounded internal context scrolling; form286px and footer available without page overflow. Transcript scroll preserves composer rectangle. Enter retains optimistic echo/immediate clear/Stop, partial HTTP SSE before completion, final Markdown and reload persistence; one events connection and no status polling. No observed page or error-level console errors. Source RED168>120 and GREEN geometry retained; full lint, all automated feature cases, full enabled source-commit hook and Python208passed/9pre-existing skips pass. Independent QA accuracy audit verifies23artifacts including18screenshots; exact-source composite review APPROVED with no material findings. Other historical/manual cases remain NOT RUN; this is not full-product, cross-engine, live-model, public-Hub or physical-mobile/IME certification.",
+  "evidence": {
+    "source_manifest_sha256": "0e704fc57e3b78698b282522b26882e25c76b43fa135083f8685b4275fabfaf7",
+    "report": "external:compact-composer-20261107/qa-r1/REPORT.md",
+    "report_sha256": "6355255c3bf13485feaea121449d849fc6d12ce8045f4f07cf173f9862ed3896",
+    "manifest_sha256": "8333c51b5c688656ad1132aff69b6f6a680a5a2aaaac4ac9060a99709c7f10b9",
+    "qa_audit": "external:compact-composer-20261107/qa-audit-r1/AUDIT.md",
+    "source_review_sha256": "e398fae249cb05627fd18ed9af82619013cb306d12e5cc299570ec46eeda280a",
+    "retention": "Controller-retained evidence outside distribution: /Volumes/Agent/Codex/nedcom-chat-evidence/compact-composer-20261107"
+  }
 }
