@@ -1,27 +1,14 @@
 {
+  "candidate_sha": "2aecdf1cc38615beaa9033b64ffe4fcf43cec814",
+  "tested_at": "2026-11-06T21:23:36.489Z",
+  "environment": "macOS; Node v25.6.1; real headless Chromium; isolated temporary NED DB/home and synthetic gateway; 1280x900, 390x844 and 320px layouts; 200% text checks at 1280/390/320px",
   "result": "pass",
-  "candidate_sha": "bbaea85e9a62ad6330e870c8eedd34f42430308d",
-  "tested_at": "2026-11-06T20:44:08Z",
-  "environment": "macOS ARM64, actual Chromium156.0.8078.4, synthetic Hermes HTTP/SSE and temporary isolated SQLite/home fixtures. CSS viewports1280x900,390x844,320x740. Nine-file frozen manifest verified against exact committed source; source composite independently APPROVED. No private conversation, credentials, managed COM, model call or public Hub used for browser execution.",
   "commands": [
-    "npm ci",
-    "npm run hooks:install",
     "npm run lint",
-    "npm run build:ui:check",
-    "npm run test:all",
+    "npm test",
     "python -m pytest",
-    "npm run test:chat:e2e",
-    "node --test docs/features/communicator/tests/TC-010.test.js docs/features/communicator/tests/TC-017.test.js",
-    "Owned independent Chromium composer probe recorded in retained qa-r1/probe.mjs"
+    "node --test docs/features/communicator/tests/TC-041.test.js",
+    "node /tmp/ned-dashboard-manual.mjs"
   ],
-  "observations": "PASS for six selected focused composer checkpoints, with viewport variants executed: default and one-line form108CSSpx across all three viewports, versus author-recorded168px baseline;44px actions retained. Maximum8000-character multiline draft grows bounded and clearing restores108px. Supported-files info control exposes exact limits, does not submit, Escape closes and restores focus. Four long-name synthetic TXT files plus open link/help use bounded internal context scrolling; form286px and footer available without page overflow. Transcript scroll preserves composer rectangle. Enter retains optimistic echo/immediate clear/Stop, partial HTTP SSE before completion, final Markdown and reload persistence; one events connection and no status polling. No observed page or error-level console errors. Source RED168>120 and GREEN geometry retained; full lint, all automated feature cases, full enabled source-commit hook and Python208passed/9pre-existing skips pass. Independent QA accuracy audit verifies23artifacts including18screenshots; exact-source composite review APPROVED with no material findings. Other historical/manual cases remain NOT RUN; this is not full-product, cross-engine, live-model, public-Hub or physical-mobile/IME certification.",
-  "evidence": {
-    "source_manifest_sha256": "0e704fc57e3b78698b282522b26882e25c76b43fa135083f8685b4275fabfaf7",
-    "report": "external:compact-composer-20261107/qa-r1/REPORT.md",
-    "report_sha256": "6355255c3bf13485feaea121449d849fc6d12ce8045f4f07cf173f9862ed3896",
-    "manifest_sha256": "8333c51b5c688656ad1132aff69b6f6a680a5a2aaaac4ac9060a99709c7f10b9",
-    "qa_audit": "external:compact-composer-20261107/qa-audit-r1/AUDIT.md",
-    "source_review_sha256": "e398fae249cb05627fd18ed9af82619013cb306d12e5cc299570ec46eeda280a",
-    "retention": "Controller-retained evidence outside distribution: /Volumes/Agent/Codex/nedcom-chat-evidence/compact-composer-20261107"
-  }
+  "observations": "TC-041: 3 passed. Preview/Dashboard switching preserves Preview DOM, chat draft and task-reference pill; open hierarchy and completed/total counts update; delayed foreign-project reads are rejected; error Retry recovers; repeated refreshes share pending reads. Inspected desktop/mobile and 200% text captures: no page overflow. Hostile title renders as text; browser errors empty. Canonical Node/spec and lint checks passed; Python 208 passed, 9 existing skips. Independent composite/UI review approved code tree c6463301532aa57bd020c2260bfb3d9d4737c95f. Runtime project-work browsing only; unrelated manual/live-provider acceptance not claimed."
 }
