@@ -75,6 +75,21 @@ const tabs=[chatToggle,...sectionTabs,...(settingsTab?[settingsTab]:[])];
 const mobileViewport=typeof matchMedia==='function'?matchMedia('(max-width: 767px)'):null;
 let workspace=mobileViewport?.matches?'left':'preview';
 let selectedTab=chatToggle;
+let canvasView='Preview';
+const canvasTabs=[document.getElementById('preview-tab'),document.getElementById('dashboard-tab')];
+function selectCanvas(tab,focus=false){
+  canvasView=tab.textContent;
+  for(const item of canvasTabs){const active=item===tab;item.setAttribute('aria-selected',String(active));item.tabIndex=active?0:-1;document.getElementById(item.getAttribute('aria-controls')).hidden=!active;}
+  syncNavigation();if(focus)tab.focus();
+}
+for(const tab of canvasTabs){
+  tab.addEventListener('click',()=>selectCanvas(tab));
+  tab.addEventListener('keydown',event=>{
+    let next;if(['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(event.key))next=canvasTabs[1-canvasTabs.indexOf(tab)];else if(event.key==='Home')next=canvasTabs[0];else if(event.key==='End')next=canvasTabs[1];else return;
+    event.preventDefault();selectCanvas(next,true);
+  });
+}
+const canvasHeading=()=>canvasView==='Preview'?document.getElementById('preview-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
 function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   leftPane.hidden=mobile&&workspace!=='left';leftPane.inert=leftPane.hidden;
@@ -86,6 +101,7 @@ function syncNavigation(){
   leftToggle.textContent=selectedTab.textContent||'Chat';
   leftToggle.setAttribute('aria-pressed',String(workspace==='left'));
   previewToggle.setAttribute('aria-pressed',String(workspace==='preview'));
+  previewToggle.textContent=canvasView;
   for(const tab of tabs){
     const current=tab===selectedTab&&(!mobile||workspace==='left');
     tab.setAttribute('aria-selected',String(current));tab.setAttribute('tabindex',tab===selectedTab?'0':'-1');
@@ -94,7 +110,7 @@ function syncNavigation(){
   if(mobile&&workspace==='preview')previewToggle.setAttribute('aria-current','page');else previewToggle.removeAttribute('aria-current');
   detail.setAttribute('aria-labelledby',selectedTab.id);
   const title=document.getElementById('mobile-view-title');
-  if(title)title.textContent=workspace==='preview'?'Preview':selectedTab.textContent||'Chat';
+  if(title)title.textContent=workspace==='preview'?canvasView:selectedTab.textContent||'Chat';
 }
 function selectTab(tab,focus=false){
   retryFocusIntent=false;previewRetryFocus=false;selectedTab=tab;
@@ -115,7 +131,7 @@ for(const tab of tabs){
 }
 leftToggle.addEventListener('click',()=>{workspace='left';syncNavigation();selectedTab.focus();});
 document.getElementById('workspace-skip')?.addEventListener('click',()=>{workspace='preview';syncNavigation();preview.focus();});
-previewToggle.addEventListener('click',()=>{workspace='preview';syncNavigation();document.getElementById('preview-heading').focus();});
+previewToggle.addEventListener('click',()=>{workspace='preview';syncNavigation();canvasHeading().focus();});
 document.getElementById('preview-retry').addEventListener('click',()=>{
   const next=state.projectId?beginDetail(state):beginLoad(state);if(next===state)return;
   previewRetryFocus=document.activeElement===document.getElementById('preview-retry');state=next;render();void(state.projectId?loadDetail():load());
@@ -126,7 +142,7 @@ mobileViewport?.addEventListener?.('change',()=>{
   if(leftPane.hidden&&focusInLeft)leftToggle.focus();else if(preview.hidden&&focusInPreview)previewToggle.focus();
 });
 if(mobileViewport)mountMobileNavigation({document,viewport:mobileViewport,onSelect:()=>{
-  const target=workspace==='preview'?document.getElementById('preview-heading'):selectedTab===chatToggle?document.getElementById('chat-heading'):heading;
+  const target=workspace==='preview'?canvasHeading():selectedTab===chatToggle?document.getElementById('chat-heading'):heading;
   target?.focus();
 }});
 syncNavigation();render();void load();
