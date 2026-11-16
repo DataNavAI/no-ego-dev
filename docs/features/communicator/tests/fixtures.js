@@ -2,7 +2,7 @@ import {mkdtempSync,mkdirSync,realpathSync,writeFileSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {openNedDatabase} from '../../../../src/database.js';
-import {createCommunicatorServer} from '../../../../src/communicator/server.js';
+import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
 export async function fixture(t,{gateway}={}) {
   const home = realpathSync(mkdtempSync(path.join(os.tmpdir(),'nedcom-projects-')));
   t.after(()=>rmSync(home,{recursive:true,force:true}));

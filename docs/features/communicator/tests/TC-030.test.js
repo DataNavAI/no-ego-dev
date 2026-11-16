@@ -4,12 +4,12 @@ import {mkdtemp,readFile,stat,rm,mkdir,symlink,readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {EventEmitter} from 'node:events';
-import {createComLogger,errorDiagnostic} from '../../../../src/communicator/logging.js';
-import {runCommunicatorCli} from '../../../../src/communicator/cli.js';
-import * as diagnostics from '../../../../src/communicator/logging.js';
+import {createComLogger,errorDiagnostic} from '../../../../apps/ned-com/src/logging.js';
+import {runCommunicatorCli} from '../../../../apps/ned-com/src/cli.js';
+import * as diagnostics from '../../../../apps/ned-com/src/logging.js';
 import http from 'node:http';
-import {createCommunicatorServer} from '../../../../src/communicator/server.js';
-import {classifyFailureBody,readFailureBody} from '../../../../src/communicator/public/request-diagnostic.js';
+import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {classifyFailureBody,readFailureBody} from '../../../../apps/ned-com/src/public/request-diagnostic.js';
 const records=async path=>(await readFile(path,'utf8')).trim().split('\n').map(JSON.parse);
 test('TC-030: failed response classification is bounded and never retains private response content',async()=>{
   assert.equal(classifyFailureBody('COM server unavailable'),'hub_com_unavailable');
@@ -78,7 +78,7 @@ test('TC-030: fatal process exit preserves diagnostic records and nonzero exit',
   const {writeFile}=await import('node:fs/promises');
   const home=await mkdtemp(join(tmpdir(),'com-fatal-'));t.after(()=>rm(home,{recursive:true,force:true}));
   const fixture=join(home,'fatal.mjs');
-  const cli=new URL('../../../../src/communicator/cli.js',import.meta.url).href;
+  const cli=new URL('../../../../apps/ned-com/src/cli.js',import.meta.url).href;
   await writeFile(fixture,`import {runCommunicatorCli} from ${JSON.stringify(cli)};
     await runCommunicatorCli([],console,{home:${JSON.stringify(home)},env:{},createServer:()=>({listen:async()=>{setImmediate(()=>{throw Object.assign(new Error('synthetic-secret'),{code:'ECRASH'});});return 'http://127.0.0.1:1234';},close:async()=>{}})});`);
   const child=spawn(process.execPath,[fixture],{stdio:'ignore'});

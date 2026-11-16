@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {createCommunicatorServer} from '../../../../src/communicator/server.js';
-import {mergePage} from '../../../../src/communicator/public/chat-ui.js';
+import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {mergePage} from '../../../../apps/ned-com/src/public/chat-ui.js';
 import {endStream} from './stream-fixtures.js';
 
 test('TC-007: authenticated Hermes sessions, pagination and safe mutation perimeter',async t=>{
