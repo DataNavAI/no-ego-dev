@@ -17,8 +17,13 @@ export async function createCoreRuntime(options={}) {
   let closing=false,closePromise,maintenancePromise,generation=0,observationCursor=0,lastError=null;
   function update(attempt,patch,event){owner.assert();return store.updateAttempt(attempt.projectId,attempt.id,patch,event);}
   function current(attempt){return store.getAttempt(attempt.projectId,attempt.id);}
-  function incomplete(attempt){const value=current(attempt);if(value.resultComplete||value.mappingComplete)update(value,{resultComplete:false,mappingComplete:false},'observation.gap');}
-  function unknown(attempt,code){return update(attempt,{state:'unknown',errorCode:code,resultComplete:false,mappingComplete:false},'attempt.unknown');}
+  function fence(attempt,states,operation=row=>row){return store.transaction(()=>{
+    if(closing)return null;owner.assert();const row=current(attempt);
+    if(!states.includes(row.state)||row.gatewayIdentity!==attempt.gatewayIdentity||row.sessionId!==attempt.sessionId||row.runId!==attempt.runId)return null;
+    return operation(row);
+  });}
+  function incomplete(attempt){return fence(attempt,observedStates,value=>{if(value.resultComplete||value.mappingComplete)return update(value,{resultComplete:false,mappingComplete:false},'observation.gap');return value;});}
+  function unknown(attempt,code){return fence(attempt,['queued','preparing','dispatching',...observedStates],row=>update(row,{state:'unknown',errorCode:code,resultComplete:false,mappingComplete:false},'attempt.unknown'));}
   function acquire(){
     if(owner.held)return true;
     if(!owner.acquire())return false;
@@ -34,8 +39,7 @@ export async function createCoreRuntime(options={}) {
     store.sql.prepare("UPDATE ned_core_tick_requests SET state='pending' WHERE state='running'").run();
     return true;
   }
-  async function settle(attempt,status){
-    const row=current(attempt);if(!observedStates.includes(row.state))return;
+  function settle(attempt,status){return fence(attempt,observedStates,row=>{
     if(status.run_id!==row.runId||status.session_id&&status.session_id!==row.sessionId){unknown(row,'run_identity_conflict');return;}
     if(status.status==='completed'){
       if(typeof status.output==='string'){
@@ -47,8 +51,8 @@ export async function createCoreRuntime(options={}) {
     else if(status.status==='interrupted')unknown(row,'run_interrupted');
     else if(status.status==='waiting_for_approval')update(row,{errorCode:'waiting_for_approval'},'attempt.waiting_for_approval');
     else if(['queued','running','stopping'].includes(status.status)&&row.errorCode==='waiting_for_approval')update(row,{errorCode:null},'attempt.running');
-  }
-  async function child(attempt,event){
+  });}
+  function child(attempt,event){return fence(attempt,observedStates,row=>{
     if(!safeId(event.child_session_id)||!safeId(event.subagent_id)||!safeId(event.delegation_id)){incomplete(attempt);return;}
     const key=`${attempt.id}:${event.subagent_id}`;
     if(subagentParents.has(key)&&subagentParents.get(key)!==event.child_session_id){incomplete(attempt);return;}
@@ -56,7 +60,7 @@ export async function createCoreRuntime(options={}) {
     if(event.depth===0&&!event.parent_id)parentSession=attempt.sessionId;
     else if(safeId(event.parent_id))parentSession=subagentParents.get(`${attempt.id}:${event.parent_id}`);
     if(!parentSession){incomplete(attempt);return;}
-    const row=current(attempt),existing=row.bindings.find(binding=>binding.sessionId===event.child_session_id);
+    const existing=row.bindings.find(binding=>binding.sessionId===event.child_session_id);
     if(existing){if(existing.parentSessionId!==parentSession||existing.delegationId!==event.delegation_id){incomplete(row);return;}subagentParents.set(key,event.child_session_id);return;}
     if(row.bindings.length>=256){incomplete(row);return;}
     const index=row.bindings.filter(binding=>binding.role==='child').length;
@@ -64,7 +68,7 @@ export async function createCoreRuntime(options={}) {
       store.bind(row.projectId,row.id,{gatewayIdentity:row.gatewayIdentity,profileIdentity:row.gatewayIdentity,sessionId:event.child_session_id,role:'child',workerIndex:index,delegationId:event.delegation_id,parentSessionId:parentSession,expectedTitle:title(row,'child',index),namingState:'pending'});
       subagentParents.set(key,event.child_session_id);
     }catch{incomplete(row);}
-  }
+  });}
   function subscribe(attempt){
     if(streams.has(attempt.runId)||closing)return;
     const controller=new AbortController();
@@ -73,32 +77,36 @@ export async function createCoreRuntime(options={}) {
       try{
         for await(const event of gateway.events(attempt.runId,attempt.gatewayIdentity,{signal:controller.signal})){
           if(closing||controller.signal.aborted)break;
-          owner.assert();const row=current(attempt);if(!observedStates.includes(row.state))break;
+          const row=fence(attempt,observedStates);if(!row)break;
           if(event.run_id!==row.runId)throw new Error('Invalid run event.');
           if(event.event==='message.delta'&&typeof event.delta==='string')store.appendResult(row.projectId,row.id,event.delta);
           else if(['subagent.start','subagent.complete'].includes(event.event))await child(row,event);
           else if(event.event.startsWith('run.'))await settle(row,{...event,status:event.event.slice(4)});
+          if(!fence(row,observedStates))break;
         }
-        if(!closing&&observedStates.includes(current(attempt).state))incomplete(attempt);
-      }catch{if(!closing&&observedStates.includes(current(attempt).state))incomplete(attempt);}
+        if(!closing)incomplete(attempt);
+      }catch{if(!closing)incomplete(attempt);}
       finally{streams.delete(attempt.runId);}
     })();
   }
   async function observe(attempt){
-    let row=current(attempt);
+    let row=fence(attempt,observedStates);if(!row)return;
     try{
-      const identity=await gateway.identity();if(identity!==row.gatewayIdentity){unknown(row,'gateway_identity_changed');return;}
-      const status=await gateway.getRun(row.runId,row.gatewayIdentity);failures.delete(row.id);await settle(row,status);row=current(row);
-      if(!observedStates.includes(row.state)){streams.get(row.runId)?.controller.abort();return;}
+      const identity=await gateway.identity();row=fence(row,observedStates);if(!row)return;
+      if(identity!==row.gatewayIdentity){unknown(row,'gateway_identity_changed');return;}
+      const status=await gateway.getRun(row.runId,row.gatewayIdentity);settle(row,status);row=fence(row,observedStates);
+      if(!row){streams.get(attempt.runId)?.controller.abort();return;}failures.delete(row.id);
       if(row.stopRequested&&status.status!=='stopping'){
-        if(row.state!=='stopping')row=update(row,{state:'stopping'},'attempt.stopping');
+        if(row.state!=='stopping')row=fence(row,observedStates,value=>update(value,{state:'stopping'},'attempt.stopping'));
+        if(!row)return;
         await gateway.stop(row.runId,row.gatewayIdentity);
       }
-      subscribe(row);
+      row=fence(row,observedStates);if(row)subscribe(row);
     }catch(error){
-      if(closing)return;
-      const count=(failures.get(row.id)??0)+1;failures.set(row.id,count);incomplete(row);
-      if(error.code==='gateway_identity_changed'||error.status===404||error.status===401||error.status===403||count>=3){unknown(row,error.code==='gateway_identity_changed'?'gateway_identity_changed':'run_unavailable');streams.get(row.runId)?.controller.abort();}
+      fence(attempt,observedStates,value=>{
+        const count=(failures.get(value.id)??0)+1;failures.set(value.id,count);incomplete(value);
+        if(error.code==='gateway_identity_changed'||error.status===404||error.status===401||error.status===403||count>=3){unknown(value,error.code==='gateway_identity_changed'?'gateway_identity_changed':'run_unavailable');streams.get(value.runId)?.controller.abort();}
+      });
     }
   }
   async function nameBindings(attempt,budget){
@@ -106,7 +114,11 @@ export async function createCoreRuntime(options={}) {
     for(const binding of current(attempt).bindings){
       if(binding.namingState!=='pending')continue;
       if(operations>=budget)break;operations++;
-      try{await gateway.setTitle(binding.sessionId,binding.expectedTitle,attempt.gatewayIdentity);store.updateBinding(binding.id,{namingState:'confirmed'});}catch{break;}
+      try{
+        const states=[...observedStates,'awaiting_verification'];if(!fence(attempt,states))break;
+        await gateway.setTitle(binding.sessionId,binding.expectedTitle,attempt.gatewayIdentity);
+        fence(attempt,states,row=>{const bound=row.bindings.find(value=>value.id===binding.id);if(bound&&bound.sessionId===binding.sessionId&&bound.gatewayIdentity===binding.gatewayIdentity&&bound.profileIdentity===binding.profileIdentity&&bound.expectedTitle===binding.expectedTitle)store.updateBinding(binding.id,{namingState:'confirmed'});});
+      }catch{break;}
     }
     return operations;
   }
@@ -124,23 +136,31 @@ export async function createCoreRuntime(options={}) {
     let identity;
     try{
       identity=await gateway.identity();
+      row=fence(row,['preparing']);if(!row)return false;
       if(row.gatewayIdentity&&row.gatewayIdentity!==identity){unknown(row,'gateway_identity_changed');return false;}
       const capability=await gateway.capabilities(identity,{deadline});
-      if(!capability.supported){update(row,{state:'failed',errorCode:'unsupported_gateway'},'attempt.failed');return false;}
+      row=fence(row,['preparing']);if(!row)return false;
+      if(!capability.supported){fence(row,['preparing'],value=>update(value,{state:'failed',errorCode:'unsupported_gateway'},'attempt.failed'));return false;}
       const intent={id:row.sessionId??`ned_${row.id}`,title:title(row,'worker',0)};
-      row=current(row);if(row.stopRequested||row.state==='cancelled')return false;
-      row=update(row,{sessionId:intent.id,gatewayIdentity:identity},'session.intent');
+      if(row.stopRequested)return false;
+      row=fence(row,['preparing'],value=>update(value,{sessionId:intent.id,gatewayIdentity:identity},'session.intent'));if(!row)return false;
       if(Date.now()>=deadline)return false;
       if(!store.capacity({reserveResult:true,effect:true}).available||!eligible(current(row)))return false;
       let session;
       try{session=await gateway.createKnownSession(intent,identity,{deadline});}catch(error){
-        if([400,401,403].includes(error.status)){update(row,{state:'failed',errorCode:error.code==='auth_failed'?'auth_failed':'session_rejected'},'attempt.failed');return false;}
-        for(let index=0;index<3&&Date.now()<deadline;index++){try{session=await gateway.getSession(intent.id,identity,{deadline});break;}catch{session=null;}}
+        row=fence(row,['preparing']);if(!row)return false;
+        if([400,401,403].includes(error.status)){fence(row,['preparing'],value=>update(value,{state:'failed',errorCode:error.code==='auth_failed'?'auth_failed':'session_rejected'},'attempt.failed'));return false;}
+        for(let index=0;index<3&&Date.now()<deadline;index++){
+          if(!fence(row,['preparing']))return false;
+          try{session=await gateway.getSession(intent.id,identity,{deadline});break;}catch{session=null;}
+        }
+        row=fence(row,['preparing']);if(!row)return false;
         if(!session){unknown(row,'session_uncertain');return false;}
       }
+      row=fence(row,['preparing']);if(!row)return false;
       if(session.id!==intent.id||session.title!==intent.title||session.source!=='api_server'){unknown(row,'session_identity_conflict');return false;}
-      store.bind(row.projectId,row.id,{gatewayIdentity:identity,profileIdentity:identity,sessionId:session.id,role:'worker',workerIndex:0,expectedTitle:intent.title,namingState:'confirmed'});
-      row=current(row);
+      fence(row,['preparing'],value=>store.bind(value.projectId,value.id,{gatewayIdentity:identity,profileIdentity:identity,sessionId:session.id,role:'worker',workerIndex:0,expectedTitle:title(value,'worker',0),namingState:'confirmed'}));
+      row=fence(row,['preparing']);if(!row)return false;
       if(row.stopRequested){update(row,{state:'cancelled',errorCode:'stopped_before_admission'},'attempt.cancelled');return false;}
       if(!eligible(row)||!store.capacity({reserveResult:true,effect:true}).available)return false;
       if(Date.now()>=deadline){unknown(row,'admission_uncertain');return false;}
@@ -148,14 +168,15 @@ export async function createCoreRuntime(options={}) {
       owner.assert();
       if(!store.markAdmission(row.projectId,row.id,{request,admissionDeadline:new Date(deadline).toISOString(),gatewayIdentity:identity}))return false;
       const accepted=await gateway.submitRun(request,row.dispatchKey,identity,{deadline});
+      row=fence(row,['dispatching','stopping']);if(!row)return true;
       if(!safeId(accepted.run_id)){unknown(row,'admission_uncertain');return true;}
-      row=update(row,{runId:accepted.run_id,state:current(row).stopRequested?'stopping':'running'},'attempt.admitted');
-      subscribe(row);return true;
+      row=fence(row,['dispatching','stopping'],value=>update(value,{runId:accepted.run_id,state:value.stopRequested?'stopping':'running'},'attempt.admitted'));
+      if(row)subscribe(row);return true;
     }catch(error){
       if(closing)return false;
-      row=current(row);
-      if(row.admissionSentAt){if([400,401,403,409,422,429].includes(error.status))update(row,{state:'failed',errorCode:error.code==='auth_failed'?'auth_failed':'admission_rejected'},'attempt.failed');else unknown(row,'admission_uncertain');}
-      else update(row,{state:'failed',errorCode:error.code==='auth_failed'?'auth_failed':'unsupported_gateway'},'attempt.failed');
+      row=fence(row,['preparing','dispatching','stopping']);if(!row)return false;
+      if(row.admissionSentAt){if([400,401,403,409,422,429].includes(error.status))fence(row,['dispatching','stopping'],value=>update(value,{state:'failed',errorCode:error.code==='auth_failed'?'auth_failed':'admission_rejected'},'attempt.failed'));else unknown(row,'admission_uncertain');}
+      else fence(row,['preparing'],value=>update(value,{state:'failed',errorCode:error.code==='auth_failed'?'auth_failed':'unsupported_gateway'},'attempt.failed'));
       return !!row.admissionSentAt;
     }
   }

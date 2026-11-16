@@ -160,6 +160,10 @@ Manual template example:
 ```
 
 Definitions start disabled. Enable explicitly with the current `revision`;
+Partial PATCH requests may update only the target or interval without resending
+`enabled`; responses consistently expose `enabled` as a boolean. Each accepted
+occurrence retains its definition revision, target and exact input snapshot;
+editing the definition changes future occurrences, not pending accepted work.
 intervals are at least 60 seconds. Enabling schedules the next due instant, not
 an immediate run. No cron/timer dispatch is activated by installation/startup.
 Only explicit reconciliation materializes due work. Pausing prevents future

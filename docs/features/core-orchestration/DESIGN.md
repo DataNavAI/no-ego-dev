@@ -30,7 +30,7 @@ Separate versioned `ned_core_schema` leaves `ned_schema.version=1`. All writes B
 - attempts(id,project_id,task_id,number,role,state,dispatch_key,request_json,request_hash,gateway_identity,session_id,run_id,admission_sent_at,admission_deadline,timestamps,error_code,result_text,result_truncated,result_complete,evidence_json)
 - bindings(id,attempt_id,project_id,gateway_identity,profile_identity,session_id,role,worker_index,delegation_id,parent_session_id,expected_title,naming_state)
 - automations(id,project_id,kind,enabled,interval_seconds,next_due_at,target_json,overlap_policy,revision,timestamps)
-- occurrences(id,automation_id,scheduled_at,state,attempt_id,task_id,reason)
+- occurrences(id,automation_id,scheduled_at,state,attempt_id,task_id,reason,target_json,input_text,definition_revision,snapshot_error); immutable snapshot captured at occurrence creation, never reconstructed from an edited definition. Legacy pending records without a proven snapshot settle skipped with snapshot_unavailable during transactional additive column migration.
 - owner(name,instance_id,generation,started_at), singleton diagnostic identity, not timeout authority
 - tick_requests(id,idempotency_scope,state,counts_json,created_at,finished_at), explicit reconciliation requests only
 - outbox(id,attempt_id,kind,state,owner_generation,attempt_count,next_at,payload_hash)

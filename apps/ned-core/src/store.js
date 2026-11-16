@@ -30,7 +30,15 @@ CREATE TABLE IF NOT EXISTS ned_core_events(sequence INTEGER PRIMARY KEY AUTOINCR
 `;
 export function createCoreStore({database,databasePath,home,env,clock=()=>new Date(),limits={},storageProbe}={}) {
   const db=database||openNedDatabase({databaseUrl:databasePath,home,env}),sql=db.connection;
-  try{db.write(()=>{sql.exec(schema);if(sql.prepare('SELECT version FROM ned_core_schema WHERE version<>1 LIMIT 1').get())fail('unsupported_schema',503);});}
+  try{db.write(()=>{
+    sql.exec(schema);if(sql.prepare('SELECT version FROM ned_core_schema WHERE version<>1 LIMIT 1').get())fail('unsupported_schema',503);
+    const columns=new Set(sql.prepare('PRAGMA table_info(ned_core_occurrences)').all().map(row=>row.name));
+    for(const [name,type] of [['target_json','TEXT'],['input_text','TEXT'],['definition_revision','INTEGER'],['snapshot_error','TEXT']])if(!columns.has(name))sql.exec(`ALTER TABLE ned_core_occurrences ADD COLUMN ${name} ${type}`);
+    for(const row of sql.prepare("SELECT o.id,o.automation_id,a.project_id FROM ned_core_occurrences o JOIN ned_core_automations a ON a.id=o.automation_id WHERE o.state='pending' AND (o.target_json IS NULL OR o.definition_revision IS NULL)").all()){
+      sql.prepare("UPDATE ned_core_occurrences SET state='skipped',reason='snapshot_unavailable' WHERE id=?").run(row.id);
+      sql.prepare("INSERT INTO ned_core_events(project_id,entity_type,entity_id,event_type,payload_json,created_at) VALUES(?,'automation',?,'occurrence.skipped',?,?)").run(row.project_id,row.automation_id,JSON.stringify({reason:'snapshot_unavailable'}),new Date(clock()).toISOString());
+    }
+  });}
   catch(error){if(!database)db.close();throw error;}
   const now=()=>new Date(clock()).toISOString();
   const bounds={definitions:100,pending:32,attempts:1000,events:50000,resultBytes:256*1024*1024,fileBytes:1024**3,freeBytes:512*1024*1024,...limits};

@@ -2,8 +2,34 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fork} from 'node:child_process';
 import {once} from 'node:events';
+import {mkdir,rm,access} from 'node:fs/promises';
+import path from 'node:path';
+import {createTaskService} from '../../../../src/tasks.js';
 import {createCoreService} from '../../../../apps/ned-core/src/service.js';
 import {domainFixture} from './domain-fixture.js';
+
+test('TC-002: removed project directories fail closed locally without disabling historical reads or healthy projects',async t=>{
+  const {core,projectId,databasePath,root}=await domainFixture(t);
+  const stalePath=path.join(root,'archived');await mkdir(stalePath);
+  const staleTasks=await createTaskService({project:stalePath,databaseUrl:databasePath,actor:'agent:ned-core'});await staleTasks.initialize();
+  const staleId=staleTasks.project.id;staleTasks.close();
+  const before=await createCoreService({databasePath});
+  const stale=await before.createTask(staleId,{title:'Archived work'},'archived-task');await before.enroll(staleId,stale.id,{enabled:true},'archived-enroll');
+  const attempt=await before.createAttempt(staleId,stale.id,{instructions:'Must not dispatch'},'archived-attempt');
+  const automation=await before.createAutomation(staleId,{kind:'manual',target:{template:{title:'Archived automation'}},overlapPolicy:'skip'},'archived-auto');await before.updateAutomation(staleId,automation.id,{revision:1,enabled:true},'archived-enable');before.trigger(staleId,automation.id,{},'archived-trigger');
+  await rm(stalePath,{recursive:true});assert.deepEqual(before.store.runtimeEligibility(attempt),{eligible:false,reason:'project_unavailable'});await before.close();
+  const reopened=await createCoreService({databasePath});t.after(()=>reopened.close());
+  assert.equal(reopened.getAttempt(staleId,attempt.id).id,attempt.id);
+  assert.ok(reopened.events(staleId).data.length>0);
+  assert.equal(reopened.store.runtimeEligibility(attempt).eligible,false);
+  const result=reopened.store.materializeDue();assert.equal(result[0].reason,'project_unavailable');
+  assert.equal(reopened.listAttempts(staleId).data.length,1);
+  reopened.stop(staleId,attempt.id,{},'archived-stop');assert.equal(reopened.getAttempt(staleId,attempt.id).state,'cancelled');
+  const healthy=await reopened.createTask(projectId,{title:'Healthy work'},'healthy');assert.equal(healthy.title,'Healthy work');
+  await assert.rejects(reopened.createTask(staleId,{title:'Do not recreate'},'invalid-project'),{code:'project_unavailable'});
+  await assert.rejects(access(stalePath),{code:'ENOENT'});
+  assert.equal(core.listProjects().data.length,2);
+});
 
 test('TC-002: explicit enrollment, concurrent reservation, idempotency and verification preserve canonical ownership',async t=>{
   const {core,task,projectId,databasePath}=await domainFixture(t);

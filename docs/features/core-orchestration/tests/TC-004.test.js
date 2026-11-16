@@ -7,6 +7,8 @@ import {once} from 'node:events';
 
 async function until(predicate){const deadline=Date.now()+3000;while(!predicate()){if(Date.now()>deadline)throw new Error('Synthetic observable state did not arrive.');await new Promise(resolve=>setImmediate(resolve));}}
 
+function barrier(){let enter,resolve,reject;const entered=new Promise(ready=>{enter=ready;}),promise=new Promise((accept,fail)=>{resolve=accept;reject=fail;});return {entered,resolve,reject,wait(){enter();return promise;}};}
+
 async function worker(fixture){const env={...process.env};delete env.NODE_TEST_CONTEXT;const processChild=fork(new URL('./runtime-service-child.js',import.meta.url),[fixture.root,fixture.databasePath,fixture.gatewayUrl],{execArgv:[],env,stdio:['ignore','ignore','inherit','ipc']});const first=(await once(processChild,'message'))[0];return {process:processChild,first,async send(message){const result=once(processChild,'message');processChild.send(message);return (await result)[0];},async kill(){if(processChild.exitCode===null&&!processChild.signalCode){const exit=once(processChild,'exit');processChild.kill('SIGKILL');await exit;}}};}
 
 async function* chunks(text,size=3){const buffer=Buffer.from(text);for(let index=0;index<buffer.length;index+=size)yield buffer.subarray(index,index+size);}
@@ -97,4 +99,71 @@ test('TC-004: oversized or unterminated Hermes event cannot silently become comp
   for(const text of [`data: ${JSON.stringify({event:'message.delta',run_id:'run_1',delta:'x'.repeat(65536)})}\n\n`,'data: {"event":"run.completed","run_id":"run_1"}']){
     await assert.rejects(async()=>{for await(const event of readRunEvents(chunks(text,4096)))assert.notEqual(event.event,'run.completed');},error=>error.code==='invalid_gateway_stream');
   }
+});
+
+test('TC-004: delayed observer decisions cannot downgrade SSE terminal, verified or resolved authority',{timeout:15000},async t=>{
+  const variants=[
+    {name:'GET404 after completion',method:'getRun',error:{status:404},outcome:'awaiting_verification'},
+    {name:'GET403 after verification',method:'getRun',error:{status:403},outcome:'succeeded'},
+    {name:'identity mismatch after rejected verification',method:'identity',value:'different-gateway',outcome:'failed'},
+    {name:'identity rejection after explicit resolution',method:'identity',error:{code:'gateway_identity_changed'},outcome:'cancelled'},
+    {name:'stop404 after verification',method:'stop',error:{status:404},outcome:'succeeded'},
+    {name:'late foreign status after verification',method:'getRun',value:{run_id:'foreign',status:'running'},outcome:'succeeded'},
+    {name:'late running status cannot send stale stop',method:'getRun',value:'owned-running',stopBefore:true,outcome:'succeeded'},
+  ];
+  for(const variant of variants)await t.test(variant.name,async t=>{
+    let hold=false;const gate=barrier();
+    const fixture=await runtimeFixture(t,{wrapGateway:gateway=>({...gateway,[variant.method]:(...args)=>hold?gate.wait():gateway[variant.method](...args)})});
+    const attempt=await fixture.attempt();await fixture.tick();const row=fixture.core.getAttempt(fixture.projectId,attempt.id);await fixture.waitSubscriber(row.runId);
+    if(variant.method==='stop'||variant.stopBefore)fixture.core.stop(fixture.projectId,row.id,{},'request-stop');
+    hold=true;const observing=fixture.runtime.maintenance();await gate.entered;
+    if(variant.outcome==='cancelled'){
+      fixture.emit(row.runId,{event:'run.interrupted'});await until(()=>fixture.core.getAttempt(fixture.projectId,row.id).state==='unknown');
+      fixture.core.resolve(fixture.projectId,row.id,{outcome:'cancelled',acknowledgeUncertainSideEffects:true,evidence:[{kind:'manual',reference:'Synthetic explicit side-effect resolution.'}]},'resolve-observer-race');
+    }else{
+      fixture.emit(row.runId,{event:'run.completed',output:'Authoritative SSE completion.'});await until(()=>fixture.core.getAttempt(fixture.projectId,row.id).state==='awaiting_verification');
+      if(variant.outcome!=='awaiting_verification')fixture.core.verify(fixture.projectId,row.id,{accepted:variant.outcome==='succeeded',evidence:[{kind:'test',reference:'Synthetic accepted SSE completion.'}]},'verify-observer-race');
+    }
+    const before=fixture.core.getAttempt(fixture.projectId,row.id),eventCount=fixture.core.events(fixture.projectId).data.length;
+    hold=false;if(variant.error)gate.reject(variant.error);else gate.resolve(variant.value==='owned-running'?{run_id:row.runId,status:'running'}:variant.value);await observing;
+    assert.deepEqual(fixture.core.getAttempt(fixture.projectId,row.id),before);
+    assert.equal(fixture.core.events(fixture.projectId).data.length,eventCount);
+    assert.equal(fixture.requests.filter(request=>request.url==='/v1/runs').length,1);
+    assert.equal(fixture.requests.filter(request=>request.url.endsWith('/stop')).length,0);
+    await until(()=>(fixture.streams.get(row.runId)?.size??0)===0);
+  });
+});
+
+test('TC-004: obsolete observer and stream cannot mutate a replacement binding',{timeout:10000},async t=>{
+  let hold=false;const gate=barrier();const fixture=await runtimeFixture(t,{wrapGateway:gateway=>({...gateway,getRun:(...args)=>hold?gate.wait():gateway.getRun(...args)})});
+  const attempt=await fixture.attempt();await fixture.tick();const row=fixture.core.getAttempt(fixture.projectId,attempt.id);await fixture.waitSubscriber(row.runId);
+  hold=true;const observing=fixture.runtime.maintenance();await gate.entered;
+  fixture.core.store.updateAttempt(fixture.projectId,row.id,{runId:'run_replacement',gatewayIdentity:'replacement_gateway',sessionId:'replacement_session'});
+  const before=fixture.core.getAttempt(fixture.projectId,row.id);
+  fixture.emit(row.runId,{event:'subagent.start',subagent_id:'obsolete_child',child_session_id:'obsolete_session',delegation_id:'obsolete_delegation',depth:0});
+  await until(()=>(fixture.streams.get(row.runId)?.size??0)===0);
+  hold=false;gate.reject({status:404});await observing;
+  assert.deepEqual(fixture.core.getAttempt(fixture.projectId,row.id),before);assert.equal(fixture.requests.filter(request=>request.url.endsWith('/stop')).length,0);
+});
+
+test('TC-004: delayed title acknowledgement cannot update verified binding state',{timeout:10000},async t=>{
+  const gate=barrier();let release;
+  const fixture=await runtimeFixture(t,{wrapGateway:gateway=>({...gateway,setTitle:async(...args)=>{const value=await gateway.setTitle(...args);release=()=>gate.resolve(value);return gate.wait();}})});
+  const attempt=await fixture.attempt();await fixture.tick();const row=fixture.core.getAttempt(fixture.projectId,attempt.id);await fixture.waitSubscriber(row.runId);
+  fixture.sessions.set('child_ack',{id:'child_ack',title:'Original child title',source:'subagent'});
+  fixture.emit(row.runId,{event:'subagent.start',subagent_id:'agent_ack',child_session_id:'child_ack',delegation_id:'delegation_ack',depth:0});await until(()=>fixture.core.getAttempt(fixture.projectId,row.id).bindings.length===2);
+  const naming=fixture.runtime.maintenance();await gate.entered;
+  fixture.emit(row.runId,{event:'run.completed',output:'Verified before delayed title acknowledgement.'});await until(()=>fixture.core.getAttempt(fixture.projectId,row.id).state==='awaiting_verification');
+  fixture.core.verify(fixture.projectId,row.id,{accepted:true,evidence:[{kind:'review',reference:'Synthetic terminal authority.'}]},'verify-before-title');const before=fixture.core.getAttempt(fixture.projectId,row.id);
+  release();await naming;assert.deepEqual(fixture.core.getAttempt(fixture.projectId,row.id),before);
+});
+
+test('TC-004: delayed session and capability decisions cannot revive a stopped preparation',{timeout:10000},async t=>{
+  for(const method of ['capabilities','createKnownSession'])await t.test(method,async t=>{
+    const gate=barrier();let release;
+    const fixture=await runtimeFixture(t,{wrapGateway:gateway=>({...gateway,[method]:async(...args)=>{const value=await gateway[method](...args);release=()=>gate.resolve(method==='capabilities'?{supported:false}:value);return gate.wait();}})});
+    const attempt=await fixture.attempt();const ticking=fixture.tick();await gate.entered;
+    fixture.core.stop(fixture.projectId,attempt.id,{},'stop-preparation');const before=fixture.core.getAttempt(fixture.projectId,attempt.id);
+    release();await ticking;assert.deepEqual(fixture.core.getAttempt(fixture.projectId,attempt.id),before);assert.equal(fixture.runs.size,0);assert.equal(fixture.core.getAttempt(fixture.projectId,attempt.id).bindings.length,0);
+  });
 });

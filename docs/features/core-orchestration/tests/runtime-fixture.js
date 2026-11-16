@@ -4,7 +4,7 @@ import {domainFixture} from './domain-fixture.js';
 import {createCoreRuntime} from '../../../../apps/ned-core/src/coordinator.js';
 import {createHermesGateway} from '../../../../apps/ned-core/src/hermes.js';
 
-export async function runtimeFixture(test,{gatewayOptions={},...options}={}) {
+export async function runtimeFixture(test,{gatewayOptions={},wrapGateway=gateway=>gateway,...options}={}) {
   const cleanup=[];
   const fixture=await domainFixture({after:callback=>cleanup.push(callback)},options);
   const sessions=new Map(),runs=new Map(),streams=new Map(),requests=[],events=new EventEmitter();
@@ -41,7 +41,7 @@ export async function runtimeFixture(test,{gatewayOptions={},...options}={}) {
     send(404,{});
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const gateway=createHermesGateway({url:`http://127.0.0.1:${server.address().port}`,key:'synthetic-core-key',home:fixture.root,env:{},...gatewayOptions});
+  const gateway=wrapGateway(createHermesGateway({url:`http://127.0.0.1:${server.address().port}`,key:'synthetic-core-key',home:fixture.root,env:{},...gatewayOptions}));
   let runtime=await createCoreRuntime({store:fixture.core.store,home:fixture.root,env:{},gateway,...options});
   test.after(async()=>{await runtime.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));for(const callback of cleanup)await callback();});
   const waitSubscriber=async(id)=>{if(!streams.get(id)?.size)await once(events,'subscriber');};
@@ -52,7 +52,7 @@ export async function runtimeFixture(test,{gatewayOptions={},...options}={}) {
     return fixture.core.createAttempt(fixture.projectId,item.id,{instructions:'Execute synthetic acceptance only.'},`attempt-${key}`);
   }
   async function tick(key=`tick-${requests.length}`){const row=fixture.core.requestReconcile({},key);await runtime.maintenance();return fixture.core.getTick(row.id);}
-  async function reopen(){await runtime.close();const replacement=createHermesGateway({url:`http://127.0.0.1:${server.address().port}`,key:'synthetic-core-key',home:fixture.root,env:{},...gatewayOptions});runtime=await createCoreRuntime({store:fixture.core.store,home:fixture.root,env:{},gateway:replacement,...options});return runtime;}
+  async function reopen(){await runtime.close();const replacement=wrapGateway(createHermesGateway({url:`http://127.0.0.1:${server.address().port}`,key:'synthetic-core-key',home:fixture.root,env:{},...gatewayOptions}));runtime=await createCoreRuntime({store:fixture.core.store,home:fixture.root,env:{},gateway:replacement,...options});return runtime;}
   function emit(id,event,{fragment=false}={}){const frame=`data: ${JSON.stringify({run_id:id,...event})}\n\n`;for(const response of streams.get(id)??[]){if(fragment){const buffer=Buffer.from(frame);for(let index=0;index<buffer.length;index+=3)response.write(buffer.subarray(index,index+3));}else response.write(frame);}}
   return {...fixture,requests,sessions,runs,streams,events,behavior,gateway,gatewayUrl:`http://127.0.0.1:${server.address().port}`,get runtime(){return runtime;},attempt,tick,reopen,emit,waitSubscriber};
 }
