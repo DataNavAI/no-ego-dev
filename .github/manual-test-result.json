@@ -1,14 +1,13 @@
 {
-  "candidate_sha": "2aecdf1cc38615beaa9033b64ffe4fcf43cec814",
-  "tested_at": "2026-11-06T21:23:36.489Z",
-  "environment": "macOS; Node v25.6.1; real headless Chromium; isolated temporary NED DB/home and synthetic gateway; 1280x900, 390x844 and 320px layouts; 200% text checks at 1280/390/320px",
+  "candidate_sha": "10017b36e9760aea7734bb31bfd5633136810668",
   "result": "pass",
+  "tested_at": "2026-11-16T08:49:44.590215+00:00",
+  "environment": "isolated no-ego-dev worktree on macOS; disposable Hermes home, no cloud mutations",
   "commands": [
     "npm run lint",
-    "npm test",
-    "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-041.test.js",
-    "node /tmp/ned-dashboard-manual.mjs"
+    "npm run test:all",
+    "node scripts/deploy-hermes-skills.mjs --home <disposable-Hermes-home>",
+    "source/target byte equality readback; exact-candidate self-review"
   ],
-  "observations": "TC-041: 3 passed. Preview/Dashboard switching preserves Preview DOM, chat draft and task-reference pill; open hierarchy and completed/total counts update; delayed foreign-project reads are rejected; error Retry recovers; repeated refreshes share pending reads. Inspected desktop/mobile and 200% text captures: no page overflow. Hostile title renders as text; browser errors empty. Canonical Node/spec and lint checks passed; Python 208 passed, 9 existing skips. Independent composite/UI review approved code tree c6463301532aa57bd020c2260bfb3d9d4737c95f. Runtime project-work browsing only; unrelated manual/live-provider acceptance not claimed."
+  "observations": "Self-reviewed the complete skill/caller/evaluation changes against issue165. All43 skills parsed and 448 source files matched disposable staging. Ordinary-task execution used self-review with no independent reviewer or approval receipt. Required suite passed; Python208 passed9 platform skips. A malformed new spec case heading was corrected before final checks, so check failure was not waived. Manual TC001 ordinary workflow and TC003 failure correction exercised; TC002 delegated execution and TC004 explicitly requested review were not agent-run. Parsing/runtime tests do not establish statistical instruction-following quality. Default local deployment is performed only from merged main."
 }
