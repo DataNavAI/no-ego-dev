@@ -10,6 +10,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 
 | Feature | Status | Canonical spec | Current evidence / supporting material |
 | --- | --- | --- | --- |
+| App project roots | implemented (source candidate) | [SPEC.md](app-layout/SPEC.md) | #164; real Core/CLI/COM projects under `apps/`, shared lockfile and compatibility entrypoints; executable app/CLI/COM/package case; release gates pending. |
 | Registered web app previews | draft (design only) | [SPEC.md](web-app-previews/SPEC.md) | #155; CLI/native port registry, isolated local/Hub preview relay and multi-app selector proposal; [visual decision](web-app-previews/design/DESIGN_REVIEW.md); no runtime implementation or acceptance |
 | Agent-isolated runtime home | implemented (uncommitted source candidate) | [SPEC.md](agent-runtime-home/SPEC.md) | #150; resolver, runtime stores and native subprocess isolation; lint/test:all passed; parent owns evaluation/review/delivery |
 | Secret management | implemented (source candidate) | [SPEC.md](secret-management/SPEC.md) | Encrypted local vault, CLI/Settings and native retrieval/entry cards (#152); [acceptance](secret-management/ACCEPTANCE.md); entry candidate verification and rollout tracked in #152 |
@@ -30,7 +31,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 | Local browser development preview | implemented | Missing — coverage gap | `src/web/dev-server.js`, `bin/ned-web.js`; local development adapter |
 | Skill evaluation runner and reports | implemented | Missing — coverage gap | `eval_runner/`; `tests/test_eval_runner.py` |
 | Manual release acceptance gate | implemented | Missing — coverage gap | [manual test gate](../MANUAL_TEST_GATE.md); `scripts/verify-manual-test-result.mjs`; [QA runbook](../../QA.md) |
-| Task dashboard and authenticated task HTTP API | planned (deferred) | Missing — coverage gap | [task guide](../tasks.md); future integration boundary, no current task HTTP routes |
+| NED Core orchestration and authenticated task HTTP APIs | implemented (source candidate) | [SPEC.md](core-orchestration/SPEC.md) | [API reference](core-orchestration/API.md), [design](core-orchestration/DESIGN.md); shared backend, durable attempts/session bindings, opt-in coordination and six executable cases. Review, release and installed acceptance remain separate; new dashboard controls deferred. |
 | Hosted compute onboarding and production release | planned (parked) | Missing — coverage gap | [browser scope](../browser/README.md); not current release authority |
 | Authenticated external-command access broker | draft (discussion only) | Missing — coverage gap | [task decision source](https://chatgpt.com/share/6ac730b2-f424-83e8-a551-df48686e1b40); task metadata exists, credential broker does not |
 | CLI workspace provisioning | retired | Retired — removal tracked in #112 | Removal commit `a808317`; issue [#112](https://github.com/DataNavAI/no-ego-dev/issues/112) |

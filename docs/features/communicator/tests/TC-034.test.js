@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import {fixture} from './fixtures.js';
 import {endStream} from './stream-fixtures.js';
-import {executionPlan} from '../../../../src/communicator/public/work-plan.js';
-import {resolveWorkReferences} from '../../../../src/communicator/work-references.js';
+import {executionPlan} from '../../../../apps/ned-com/src/public/work-plan.js';
+import {resolveWorkReferences} from '../../../../apps/ned-com/src/work-references.js';
 import {chatHarness} from './chat-harness.js';
 const item=(id,status='ready',extra={})=>({id,title:id,type:'task',status,parentId:null,priority:2,createdAt:'2026-10-29',dependsOn:[],...extra});
 test('TC-034: default plan hides completion, retains ancestors and orders prerequisites before dependents',()=>{
@@ -52,7 +52,7 @@ test('TC-034: reference pills deduplicate, preserve identity/draft on failure an
  await h.respond({error:{code:'invalid_reference',message:'Stale'}},400);
 });
 test('TC-034: rendered nested task order survives dependencies across goal branches',async()=>{
- const {renderProjectWork}=await import('../../../../src/communicator/public/project-work.js');
+ const {renderProjectWork}=await import('../../../../apps/ned-com/src/public/project-work.js');
  const create=tag=>({tag,dataset:{},children:[],textContent:'',setAttribute(){},addEventListener(){},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;}});
  const document={createElement:create},container=create('div');
  const items=[item('goal-a','planned',{type:'goal'}),item('a1','ready',{parentId:'goal-a',priority:0}),item('a2','ready',{parentId:'goal-a',priority:0,dependsOn:['b1']}),item('goal-b','planned',{type:'goal'}),item('b1','ready',{parentId:'goal-b'})];

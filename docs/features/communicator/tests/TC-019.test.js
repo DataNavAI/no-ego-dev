@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {readChatStream} from '../../../../src/communicator/chat-stream.js';
-import {createCommunicatorServer} from '../../../../src/communicator/server.js';
+import {readChatStream} from '../../../../apps/ned-com/src/chat-stream.js';
+import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 import {chatHarness} from './chat-harness.js';
-import {consumeTurnStream} from '../../../../src/communicator/public/turn-stream.js';
-import {writeTurnEvents} from '../../../../src/communicator/turn-events.js';
+import {consumeTurnStream} from '../../../../apps/ned-com/src/public/turn-stream.js';
+import {writeTurnEvents} from '../../../../apps/ned-com/src/turn-events.js';
 import {EventEmitter} from 'node:events';
 
 const raw=events=>events.map(streamFrame).join('');

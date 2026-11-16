@@ -190,7 +190,7 @@ export async function createTaskService({
     return items.filter((entry) => !entry.parentId).map((entry) => clean(node(entry)));
   }
 
-  return {
+  const service = {
     project: { id: projectId, path: projectPath },
     close() {
       if (!database) db.close();
@@ -203,7 +203,7 @@ export async function createTaskService({
         return { projectId, initialized: true };
       });
     },
-    async createItem(
+    createItem(
       type,
       { title, description = '', parentId, discoveredFrom, priority = 2 } = {},
     ) {
@@ -252,10 +252,10 @@ export async function createTaskService({
         return result;
       });
     },
-    async getItems() {
+    getItems() {
       return inProject(false, snapshot);
     },
-    async getItem(id) {
+    getItem(id) {
       return inProject(false, () => item(id));
     },
     async getChildren(id) {
@@ -309,7 +309,7 @@ export async function createTaskService({
         return item(id);
       });
     },
-    async startTask(id) {
+    startTask(id) {
       return inProject(true, () => {
         const entry = raw(id),
           before = item(id);
@@ -330,7 +330,7 @@ export async function createTaskService({
         return after;
       });
     },
-    async completeTask(id, reason = '') {
+    completeTask(id, reason = '') {
       if (typeof reason !== 'string' || reason.length > 20_000)
         fail('invalid_reason', 'Completion reason must be at most 20,000 characters.');
       return inProject(true, () => {
@@ -338,6 +338,11 @@ export async function createTaskService({
           before = item(id);
         own(entry);
         if (entry.state === 'done') return before;
+        if (sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ned_core_attempts'").get()) {
+          const latest = sql.prepare('SELECT state FROM ned_core_attempts WHERE project_id=? AND task_id=? ORDER BY number DESC LIMIT 1').get(projectId,id);
+          const unresolved = sql.prepare("SELECT 1 FROM ned_core_attempts WHERE project_id=? AND task_id=? AND state NOT IN ('succeeded','failed','cancelled') LIMIT 1").get(projectId,id);
+          if (latest && (latest.state !== 'succeeded' || unresolved)) fail('verification_required','Verify the latest managed attempt before completing work.');
+        }
         if (before.status === 'blocked')
           fail('invalid_transition', 'Resolve blockers before completing work.');
         if (
@@ -460,4 +465,8 @@ export async function createTaskService({
       });
     },
   };
+  const sync = Object.fromEntries(['createItem','getItems','getItem','startTask','completeTask'].map(name => [name,service[name].bind(service)]));
+  for (const name of Object.keys(sync)) service[name] = async (...args) => sync[name](...args);
+  service.sync = sync;
+  return service;
 }

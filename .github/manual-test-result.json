@@ -1,14 +1,17 @@
 {
-  "candidate_sha": "2aecdf1cc38615beaa9033b64ffe4fcf43cec814",
-  "tested_at": "2026-11-06T21:23:36.489Z",
-  "environment": "macOS; Node v25.6.1; real headless Chromium; isolated temporary NED DB/home and synthetic gateway; 1280x900, 390x844 and 320px layouts; 200% text checks at 1280/390/320px",
+  "candidate_sha": "3c8fdac47e312ef9b2ff3c15046824aca3e71913",
+  "tested_at": "2026-11-16T08:44:00.000Z",
+  "environment": "macOS arm64; Node 25.6.1, npm 11.9.0; real headless Chromium 156.0.8078.4; isolated external-volume synthetic runtime, actual npm tarball dependency installation and HTTP/SSE gateway; 1280x900, 390x844, 320x740 composer checkpoints",
   "result": "pass",
   "commands": [
     "npm run lint",
     "npm test",
     "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-041.test.js",
-    "node /tmp/ned-dashboard-manual.mjs"
+    "npm run build:ui:check",
+    "node --test docs/features/core-orchestration/tests/TC-*.test.js docs/features/app-layout/tests/TC-001.test.js",
+    "node --test docs/features/communicator/tests/TC-037.test.js docs/features/communicator/tests/TC-038.test.js",
+    "npm pack --pack-destination <qa-r3>/tmp && npm install --prefix <qa-r3>/tmp/install --omit=dev --no-audit --no-fund <tarball>",
+    "node <qa-r3>/operator.mjs"
   ],
-  "observations": "TC-041: 3 passed. Preview/Dashboard switching preserves Preview DOM, chat draft and task-reference pill; open hierarchy and completed/total counts update; delayed foreign-project reads are rejected; error Retry recovers; repeated refreshes share pending reads. Inspected desktop/mobile and 200% text captures: no page overflow. Hostile title renders as text; browser errors empty. Canonical Node/spec and lint checks passed; Python 208 passed, 9 existing skips. Independent composite/UI review approved code tree c6463301532aa57bd020c2260bfb3d9d4737c95f. Runtime project-work browsing only; unrelated manual/live-provider acceptance not claimed."
+  "observations": "Focused QA: five cases passed, none failed/blocked/unrun; Core/app-layout 78 assertions and Chromium 3 tests passed without skips. Normal packaged installation succeeded; all 151 tracked app/src/bin files match the candidate. Independent packaged CLI-to-Core-to-synthetic-Hermes flow admitted one run only on explicit tick, retained session/run identity, streamed a result, required verification before canonical completion and exposed the same completed task in COM; four COM assets returned 200. SRC-001 through SRC-005 regressions pass: stale asynchronous callbacks cannot downgrade settled attempts, automation occurrences retain intent snapshots, partial PATCH preserves boolean state, unavailable projects do not block healthy projects, and apps-only changes select both native container architectures (workflow configuration verified; actual container execution remains a remote CI gate). Six composer screenshots inspected. Full canonical commit hook passed lint, Node/spec cases and Python (208 passed, 9 existing optional skips). An initial external-TMPDIR installer fixture failed a cross-device hardlink; rerunning unchanged tests with normal system TMPDIR passed, without weakening locks. Source composite review approved this exact candidate: report SHA256 372502048104a77e88d05fb74121c70b9e0201cda715ebf132a243bad7194e29. Retained evidence root: /Volumes/Agent/Codex/nedcom-chat-evidence/core-orchestration-20261115. QA report SHA256 52368d77302de5869b39ee172cbf3d71b195e4c7aaa67577e0c75b785e041789; manifest 05369435bda28019c16f8c909fbcfa6a7774cd10e8e3a75c7962a0b09d28d1c9; fresh audit APPROVED, audit SHA256 ae52469a51eafb4cee0b833d7a85d0f6aa37e2092c720a8e9f67d045a58919a7. Focused synthetic macOS/Chromium evidence only: live model calls, Hub authentication, other engines/platforms and default installed deployment are not claimed; CI and merged local deployment remain separate gates. No user backlog enrolled or default automation activated."
 }

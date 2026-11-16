@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixture} from './fixtures.js';
-import {readActivity} from '../../../../src/communicator/activity.js';
-import {messageParts} from '../../../../src/communicator/public/message-content.js';
-import {mountActivity} from '../../../../src/communicator/public/activity-ui.js';
+import {readActivity} from '../../../../apps/ned-com/src/activity.js';
+import {messageParts} from '../../../../apps/ned-com/src/public/message-content.js';
+import {mountActivity} from '../../../../apps/ned-com/src/public/activity-ui.js';
 import {chatHarness} from './chat-harness.js';
 
 function event(f,projectId,id,type,status,title,sequence){

@@ -4,11 +4,11 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const destination=path.join(root,'src/communicator/public/vendor');
+const destination=path.join(root,'apps/ned-com/src/public/vendor');
 const check=process.argv.includes('--check');
 const output=await build({
   absWorkingDir:root,
-  entryPoints:{'webawesome':'src/communicator/public/controls-entry.js','webawesome-theme':'src/communicator/ui-controls.css'},
+  entryPoints:{'webawesome':'apps/ned-com/src/public/controls-entry.js','webawesome-theme':'apps/ned-com/src/ui-controls.css'},
   outdir:destination,bundle:true,minify:true,format:'esm',target:'es2022',write:false,
   legalComments:'eof',charset:'utf8',logLevel:'warning',
 });

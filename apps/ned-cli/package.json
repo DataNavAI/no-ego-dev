@@ -1,0 +1,8 @@
+{
+  "name": "@ned/cli",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/cli.js",
+  "description": "NED command-line application."
+}

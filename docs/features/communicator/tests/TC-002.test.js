@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 test('TC-002: unavailable inventory, identity, stale responses and recovery', async () => {
-  const {initialState, beginLoad, settleLoad, selectProject, selectSection, settleDetail, view} = await import('../../../../src/communicator/public/state.js');
+  const {initialState, beginLoad, settleLoad, selectProject, selectSection, settleDetail, view} = await import('../../../../apps/ned-com/src/public/state.js');
   let state = initialState(); assert.equal(view(state).title,'Loading projects…');
   state = settleLoad(state,state.requestGeneration,{capabilities:{projects:false},projects:[{id:'fake',name:'Fake'}]});
   assert.equal(view(state).title,'Projects'); assert.equal(state.projects.length,0); assert.equal(view(state).body,'Project browsing is not available yet.');
