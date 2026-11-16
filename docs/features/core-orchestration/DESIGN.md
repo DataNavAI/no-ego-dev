@@ -92,7 +92,7 @@ All local transitions persist one metadata event transactionally and retain task
 | unknown | Explicit evidenced resolution+uncertain-side-effects acknowledgement | failed/cancelled/awaiting_verification; no upstream admission |
 | failed/cancelled | Explicit retry, current readiness/enrollment valid | new queued attempt/new identity; prior unchanged |
 
-Enrollment pause after admission never silently stops run; use explicit stop. Tick deadline leaves queued intents intact; owner maintenance continues admitted observation/control but only future explicit tick can start new admission. Capability failure is failed with error code, not an undeclared unsupported state. Existing core claim remains working in every unsuccessful state so explicit recovery/completion cannot silently transfer ownership.
+Enrollment/automation pause after admission never silently stops a run; use explicit stop. Pending automation occurrences remain pending while disabled, without creating tasks. An already queued but unsent automation attempt fails the admission eligibility recheck with automation_disabled and is cancelled; explicit re-enable does not resurrect that cancelled attempt. Tick deadline leaves other queued intents intact; owner maintenance continues admitted observation/control but only future explicit tick can start new admission. Capability failure is failed with error code, not an undeclared unsupported state. Existing core claim remains working in every unsuccessful state so explicit recovery/completion cannot silently transfer ownership.
 
 ### Bounded automation and storage admission
 

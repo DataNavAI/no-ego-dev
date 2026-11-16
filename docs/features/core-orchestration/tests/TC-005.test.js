@@ -50,3 +50,21 @@ test('TC-005: pending watermark permits draining and low storage preserves reada
   freeBytes=1024*1024*1024;
   assert.equal(core.store.capacity().available,true);
 });
+
+test('TC-005: pausing an automation blocks pending materialization and queued admission until explicitly resumed',async t=>{
+  const {core,projectId}=await domainFixture(t);
+  const definition=await core.createAutomation(projectId,{kind:'manual',target:{template:{title:'Pause boundary'}},overlapPolicy:'skip'},'create');
+  await core.updateAutomation(projectId,definition.id,{revision:1,enabled:true},'enable');
+  core.trigger(projectId,definition.id,{},'trigger');
+  await core.updateAutomation(projectId,definition.id,{revision:2,enabled:false},'pause-pending');
+  assert.deepEqual(core.store.materializeDue(),[]);
+  assert.equal(core.listAttempts(projectId).data.length,0);
+  assert.equal(core.listOccurrences(projectId,definition.id).data[0].state,'pending');
+  await core.updateAutomation(projectId,definition.id,{revision:3,enabled:true},'resume');
+  const [materialized]=core.store.materializeDue();
+  const attempt=core.getAttempt(projectId,materialized.attemptId);
+  assert.equal(core.store.runtimeEligibility(attempt).eligible,true);
+  await core.updateAutomation(projectId,definition.id,{revision:4,enabled:false},'pause-queued');
+  assert.deepEqual(core.store.runtimeEligibility(attempt),{eligible:false,reason:'automation_disabled'});
+  assert.equal(core.getAttempt(projectId,attempt.id).state,'queued');
+});

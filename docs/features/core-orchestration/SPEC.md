@@ -101,7 +101,7 @@ The following cases have executable Node tests under this feature's `tests/` dir
 - When: tick disabled; enable; race due tick; repeat; advance10 intervals; roll backward; restart; pause.
 - Then: disabled zero effects, one occurrence per due instant, <=1 missed occurrence, no backward duplicates; active overlap skipped; pause prevents future start only.
 - Steps and assertions: inspect occurrence/nextDue/counts; manual trigger replay same occurrence. Long-running template blocks another task across ticks/restart, including unknown/awaiting_verification. Interval59/parallel400. Enable waits tick. Snapshot16384 UTF-8 bytes valid,16385 skipped/input_too_large; multibyte boundary, no truncation/partial task. Inject small definition/pending/attempt/event/result/file/free-space limits: reject materialization/admission before effects, preserve history; restore capacity/read pending state before explicit tick.
-- Variants / negative cases: readiness/ownership invalidation skipped; no automatic failed retry or cron artifacts; read/stop/resolve work at high watermark; actual SQLite ENOSPC truthful503, never success.
+- Variants / negative cases: readiness/ownership invalidation skipped; pause before materialization leaves occurrence pending without creating a task, and pause after queueing invalidates unsent admission without stopping an admitted run; no automatic failed retry or cron artifacts; read/stop/resolve work at high watermark; actual SQLite ENOSPC truthful503, never success.
 - Cleanup: disable fixture, common teardown.
 - Pass evidence: DB uniqueness/counts and upstream/scheduler captures.
 
