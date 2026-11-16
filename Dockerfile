@@ -10,6 +10,7 @@ RUN npm ci --omit=dev --no-audit && \
     npm cache clean --force
 COPY bin/ bin/
 COPY src/ src/
+COPY apps/ apps/
 COPY skills/ skills/
 COPY plugins/ned/ plugins/ned/
 COPY eval_runner/ eval_runner/

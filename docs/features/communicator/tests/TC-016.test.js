@@ -11,7 +11,7 @@ import {EventEmitter} from 'node:events';
 import {loginToHub,runHubAuthentication} from '../../../../src/hub-cli.js';
 import {createHubCredentialStore,canonicalHubOrigin} from '../../../../src/hub-credentials.js';
 import {runCli} from '../../../../src/cli.js';
-import {runCommunicatorCli} from '../../../../src/communicator/cli.js';
+import {runCommunicatorCli} from '../../../../apps/ned-com/src/cli.js';
 const token='ned_synthetic_oauth_credential_0000000000';
 const account={id:'account-fixture',name:'Fixture operator',email:'fixture@example.test'};
 const code='synthetic_authorization_code_00000000';
@@ -259,7 +259,7 @@ test('TC-016: interruption during post-login credential lookup cannot start COM'
 });
 
 test('TC-016: hostname identities are deterministic and explicit invalid or obsolete configuration has no effects',async()=>{
-  const {resolveInstanceName}=await import('../../../../src/communicator/hub.js');
+  const {resolveInstanceName}=await import('../../../../apps/ned-com/src/hub.js');
   for(const [host,expected]of [['MoonK.local','moonk-local'],['123','ned-123'],['','ned-'],['A','a--'],['API','ned-api'],['x'.repeat(60),'x'.repeat(40)]])assert.equal(resolveInstanceName({},host),expected);
   for(const env of [{NED_INSTANCE_NAME:'Bad_Name'},{NED_INSTANCE_NAME:'api'},{NED_INSTANCE_NAME:''},{NED_HUB_ENV:'production'},{NED_HUB_SLUG:'fixture'}]){
     const errors=[];

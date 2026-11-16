@@ -1,0 +1,8 @@
+{
+  "name": "@ned/core",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "description": "NED coordination, execution and operator API backend."
+}

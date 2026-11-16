@@ -1,0 +1,8 @@
+{
+  "name": "@ned/com",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/server.js",
+  "description": "NED Communicator web application and transport."
+}

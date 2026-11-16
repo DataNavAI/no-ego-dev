@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mountActivity} from '../../../../src/communicator/public/activity-ui.js';
-import {mountMobileNavigation} from '../../../../src/communicator/public/mobile-navigation.js';
+import {mountActivity} from '../../../../apps/ned-com/src/public/activity-ui.js';
+import {mountMobileNavigation} from '../../../../apps/ned-com/src/public/mobile-navigation.js';
 import {clientHarness} from './client-harness.js';
 
 test('TC-036: mobile current location is exclusive while desktop remembers the selected left tab',async()=>{

@@ -1,12 +1,12 @@
-import {mountTaskReferences} from '../../../../src/communicator/public/task-references.js';
+import {mountTaskReferences} from '../../../../apps/ned-com/src/public/task-references.js';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
-import {validateMessagePage} from '../../../../src/communicator/public/history.js';
-import {renderMessageContent,messageParts} from '../../../../src/communicator/public/message-content.js';
-import {mountComposerMedia} from '../../../../src/communicator/public/composer-media.js';
-import {consumeTurnStream} from '../../../../src/communicator/public/turn-stream.js';
-import {recordChatDiagnostic,recordRequestDiagnostic} from '../../../../src/communicator/public/debug-pane.js';
-import {classifyFailureBody,readFailureBody} from '../../../../src/communicator/public/request-diagnostic.js';
+import {validateMessagePage} from '../../../../apps/ned-com/src/public/history.js';
+import {renderMessageContent,messageParts} from '../../../../apps/ned-com/src/public/message-content.js';
+import {mountComposerMedia} from '../../../../apps/ned-com/src/public/composer-media.js';
+import {consumeTurnStream} from '../../../../apps/ned-com/src/public/turn-stream.js';
+import {recordChatDiagnostic,recordRequestDiagnostic} from '../../../../apps/ned-com/src/public/debug-pane.js';
+import {classifyFailureBody,readFailureBody} from '../../../../apps/ned-com/src/public/request-diagnostic.js';
 
 export async function chatHarness({reducedMotion=false,media=false,references=false}={}) {
   const documentListeners=new Map();const document={activeElement:null,addEventListener(type,handler){documentListeners.set(type,handler);},dispatchEvent(event){documentListeners.get(event.type)?.(event);}};
@@ -43,7 +43,7 @@ export async function chatHarness({reducedMotion=false,media=false,references=fa
   document.querySelector=()=>shell;
   const requests=[];
   const fetch=(url,options)=>new Promise((resolve,reject)=>requests.push({url,options,resolve,reject}));
-  const source=await readFile(new URL('../../../../src/communicator/public/chat-ui.js',import.meta.url),'utf8');
+  const source=await readFile(new URL('../../../../apps/ned-com/src/public/chat-ui.js',import.meta.url),'utf8');
   const timers=[];
   runInNewContext(source.replace(/^import[^\n]+\n/gm,'').replaceAll('export function ','function ')+'\nmountChat();',{document,fetch,validateMessagePage,renderMessageContent,messageParts,mountComposerMedia,mountTaskReferences,consumeTurnStream,recordChatDiagnostic,recordRequestDiagnostic,classifyFailureBody,readFailureBody,setTimeout:(callback,delay)=>timers.push({callback,delay}),Option:class{constructor(label,value){this.textContent=label;this.value=value;}},encodeURIComponent,AbortSignal,matchMedia:()=>({matches:reducedMotion})});
   const flush=()=>new Promise(resolve=>setImmediate(resolve));

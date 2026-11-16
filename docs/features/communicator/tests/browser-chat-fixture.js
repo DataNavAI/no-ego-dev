@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {chromium,expect} from 'playwright/test';
 import {openNedDatabase} from '../../../../src/database.js';
-import {createCommunicatorServer} from '../../../../src/communicator/server.js';
+import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 export {expect};

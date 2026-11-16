@@ -4,10 +4,10 @@ import {spawnSync} from 'node:child_process';
 import {fixture,assert,join,resolve} from './helpers.js';
 import {createHubCredentialStore} from '../../../../src/hub-credentials.js';
 import {createSecretStore} from '../../../../src/secrets.js';
-import {createComLogger} from '../../../../src/communicator/logging.js';
+import {createComLogger} from '../../../../apps/ned-com/src/logging.js';
 import {createFileTelemetry} from '../../../../src/telemetry.js';
-import {createCommunicatorServer} from '../../../../src/communicator/server.js';
-import {resolveGatewaySettings} from '../../../../src/communicator/gateway-settings.js';
+import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {resolveGatewaySettings} from '../../../../apps/ned-com/src/gateway-settings.js';
 
 test('TC-003: private stores align with selected root and explicit legacy home remains hermetic',async t=>{
   const f=fixture(t),profile=join(f.base,'new/profile'),other=join(f.base,'other');

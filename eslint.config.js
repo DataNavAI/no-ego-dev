@@ -3,12 +3,12 @@ import globals from 'globals';
 
 export default [
   // Pinned third-party output is verified against its analyzed source by build:ui:check.
-  { ignores: ['src/communicator/public/vendor/webawesome.js'] },
+  { ignores: ['apps/ned-com/src/public/vendor/webawesome.js'] },
   {
-    files: ['src/**/*.js', 'bin/**/*.js', 'scripts/**/*.mjs', 'tests/**/*.js', 'docs/features/**/tests/**/*.js', 'eslint.config.js'],
+    files: ['apps/**/*.js', 'src/**/*.js', 'bin/**/*.js', 'scripts/**/*.mjs', 'tests/**/*.js', 'docs/features/**/tests/**/*.js', 'eslint.config.js'],
     ...js.configs.recommended,
     rules: { ...js.configs.recommended.rules, 'no-eval': 'error', 'no-implied-eval': 'error', 'no-new-func': 'error' },
     languageOptions: { globals: globals.node },
   },
-  { files: ['src/web/public/**/*.js', 'src/communicator/public/**/*.js'], languageOptions: { globals: globals.browser } },
+  { files: ['src/web/public/**/*.js', 'src/communicator/public/**/*.js', 'apps/ned-com/src/public/**/*.js'], languageOptions: { globals: globals.browser } },
 ];

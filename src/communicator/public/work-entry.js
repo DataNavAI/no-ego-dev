@@ -1,2 +1,1 @@
-import {mountProjectWork} from './project-work.js';
-mountProjectWork({document,fetch});
+export * from '../../../apps/ned-com/src/public/work-entry.js';

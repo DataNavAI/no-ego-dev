@@ -5,9 +5,9 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createSecretStore} from '../../../../src/secrets.js';
-import {createCommunicatorServer} from '../../../../src/communicator/server.js';
-import {secretRequestRow} from '../../../../src/communicator/public/secret-request.js';
-import {projectHistoryMessage} from '../../../../src/communicator/chat-history.js';
+import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {secretRequestRow} from '../../../../apps/ned-com/src/public/secret-request.js';
+import {projectHistoryMessage} from '../../../../apps/ned-com/src/chat-history.js';
 function setup(t){const home=mkdtempSync(join(tmpdir(),'ned-request-'));t.after(()=>rmSync(home,{recursive:true,force:true}));return home;}
 test('TC-007: native adapter creates only a named request and history accepts only closed native results',t=>{
   const home=setup(t);
