@@ -20,6 +20,10 @@ From a repository checkout, use the version-controlled `python3 scripts/deploy-a
 - Use `--recover` with the same target/SSH arguments (omit `--commit`/`--apply`) after an interrupted transaction. Failed health rolls back data and the old container; unresolved recovery must block another update. Never prune volumes, discard snapshots or bypass ownership checks to make deployment pass.
 - The command updates an already provisioned Ubuntu Docker/Buildx host. It does not create AWS resources, change DNS/firewall/passwords, provision Kubernetes, make model calls, or authorize production deployment. Do not rerun historical private one-time provisioning scripts as an updater.
 
+## Default verification
+
+Use self-review and appropriate automated checks. Independent reviewer delegation, review rounds and approval receipts are optional and run only when the user explicitly requests an independent review. Keep authorization, secrets, actual provider checks and truthful completion requirements.
+
 ## Default NED skill usage
 
 For work in this project, use relevant NED skills from `skills/` by default. Read the selected `SKILL.md` before applying it; load only supporting references needed for the task. Prefer the repository's version when a similarly named installed skill exists. Do not load every skill or turn a skill's workflow into permission for unrelated work.
@@ -152,7 +156,7 @@ remain authoritative.
 ## Mandatory completion: merge and local deployment
 
 For every task in this distribution, completion requires applicable checks and
-manual acceptance, independent review, merge into remote `main`, and verified
+manual acceptance, self-review, merge into remote `main`, and verified
 deployment from that merged commit to the default local Hermes instance. The user
 has authorized this normal merge/deployment flow; do not repeatedly request it.
 Do not mark NED tasks/goals done or send a completion report while any gate remains
@@ -161,7 +165,7 @@ not establish full deployment.
 
 Use an isolated checkout for the task; preserve unrelated working-tree changes.
 Fetch main, resolve integration, run the repository's required automated/manual
-checks, obtain exact-candidate review and green PR checks, merge, then read back
+checks, self-review the exact candidate and require green PR checks, merge, then read back
 the remote merged SHA. Deploy only committed merged contents. For CLI/runtime
 changes run the canonical checkout installer `bash scripts/install.sh` from the
 merged checkout and verify installed commands and generation identity. Run
@@ -171,5 +175,5 @@ enable only required plugin/toolset entries, and reload affected local Hermes/CO
 processes when needed. Verify the running/local installed behavior at the merged
 revision, then record merge/deployment evidence and complete the owned NED task.
 Never use AWS or named-profile rollout as a substitute for this local target.
-If deployment/review/access fails, keep work open with the actual blocker and
+If deployment/checks/access fails, keep work open with the actual blocker and
 continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.

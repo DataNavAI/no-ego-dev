@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Fail-Closed Deterministic Local State Machines
 
 Use this pattern for browser-local journeys, quizzes, onboarding, wizards, carts, or resumable workflows whose state is persisted in untrusted client storage.

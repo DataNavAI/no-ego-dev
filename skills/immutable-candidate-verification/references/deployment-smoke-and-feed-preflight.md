@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Deployment smoke and mutable-feed preflight
 
 Use this before triggering any workflow that is intended to build an immutable candidate exactly once.

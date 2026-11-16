@@ -1,6 +1,9 @@
 prompt: |
   Use the product-manager skill to respond to a realistic client/project request for a user-facing product that needs a PRD and a way to learn from user feedback after launch.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "mentions durable artifact"
   - "explicitly classifies the work as prototype MVP beta or production iteration with rationale"
   - "for an MVP plans a fully working serviceable core product rather than a stakeholder demo"
@@ -35,7 +38,6 @@ expectations:
   - "Defines stable analytics definitions canonical terminology a feedback-to-work ledger scope-reset reconciliation and ranked source coverage."
   - "Treats Google Trends as relative sampled evidence with geo language time category surface and caveats rather than absolute demand."
   - "Requires explicit consent budget thresholds qualified conversion metric and stop-loss before paid smoke publication or spend."
-  - "Uses no fixed round limit and Round 4 or later approval-convergence rather than the stale three-round review cap."
   - "Rejects paid smoke execution without approval unsupported interface release stale scope authority and approval by exhaustion."
 setupCommands: []
 teardownCommands: []

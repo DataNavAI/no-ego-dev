@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Audit-discovered secret-scan exception children
 
 Use when a milestone/parent closure audit finds a clean current tree but a red full-history secret scan caused by suspected synthetic fixtures or detector false positives. This is a security-gate child, not an audit waiver.

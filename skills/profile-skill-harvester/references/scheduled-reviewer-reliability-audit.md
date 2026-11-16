@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Scheduled reviewer reliability audit
 
 Use this reference when sibling Hermes profiles appear to have slow, timing-out, or repeatedly dispatched reviewers. Diagnose the lifecycle before raising timeouts or weakening independent review.

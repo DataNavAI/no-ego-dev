@@ -1,7 +1,7 @@
 ---
 name: identity-for-agent
 description: Use the guarded ifa CLI to check, request, and securely deliver third-party authorization with profile-bound credential isolation.
-version: 1.1.1
+version: 1.1.2
 author: DataNavAI
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # Identity for Agent
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 Use IFA as an authorization broker. Ask a human to approve access through IFA rather than asking them to paste credentials into chat.
 

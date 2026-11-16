@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Review-policy contradiction scan
 
 Use this when a policy change spans reviewers, orchestrators, immutable gates, evals, fixtures, templates, or nested references.

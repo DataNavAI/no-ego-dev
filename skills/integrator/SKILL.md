@@ -1,7 +1,7 @@
 ---
 name: integrator
 description: "Use when researching, selecting, setting up, or integrating third-party tools, SaaS products, APIs, SDKs, webhooks, CLIs, auth providers, analytics, payments, communication tools, AI services, or other external services. Also use when documenting provider-specific integration knowledge as reusable skills or support files."
-version: 0.2.1
+version: 0.2.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -10,6 +10,10 @@ metadata:
 ---
 
 # Integrator
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

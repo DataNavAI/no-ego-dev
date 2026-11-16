@@ -1,7 +1,7 @@
 ---
 name: technical-design-reviewer
 description: "Use only inside a fresh delegated leaf subagent to independently review an exact technical design or tech-spec revision for integrity, minimal complexity, automatic testability, operability, and sustainable self-monitoring."
-version: 0.3.9
+version: 0.3.10
 author: NoEgoDev
 license: MIT
 metadata:
@@ -12,70 +12,20 @@ metadata:
 
 # Technical Design Reviewer
 
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
+
 ## Purpose
 
 Independently decide whether a technical design is internally sound and is the simplest solution that can be automatically tested, operated, monitored, repaired, and sustained inside the existing system.
 
 This is a **review-only leaf-subagent skill**. It does not author or edit the canonical technical specification.
 
-## Risk-weighted review priority
+## Requested review scope
 
-Prioritize architecture findings by consequence and reversibility. Spend the deepest effort on decisions that are **hard to reverse**: public interfaces and schemas, destructive migrations, data ownership, authentication/authorization, privacy/security boundaries, persistence and consistency models, provider or infrastructure lock-in, irreversible rollout choices, broad blast radius, and designs without credible rollback or recovery. A severe correctness or safety defect remains blocking even when its code fix could be small.
+Use this skill only for a user-requested review. Inspect the artifact directly and report material findings. Do not require a fresh subagent, repeated rounds or an approval receipt. State whether you authored the artifact; never claim independence without it.
 
-Ignore reversible nits that can safely be fixed later, such as naming taste, formatting, minor organization, optional abstractions, speculative optimization, and implementation polish that does not change the architecture contract. **Omit them entirely** from findings and follow-up; never spend another technical-design round on them.
-
-## First-round completeness
-
-### Proportional low-risk MVP path
-
-Use a **proportional low-risk MVP** review for exact, isolated, recoverable, owner-authorized, non-user-data cleanup. Require an exact allowlist, protected-resource denylist, readable preflight, stop-on-mismatch, no blind retry, and independent final readback. Thresholds such as user count or revenue are examples and must remain a **configurable threshold** owned by the product/risk policy, never universal architecture law. This path does not cover identity/auth, credentials, billing, regulated/user data, shared resources, publication/deployment, irreversible mutation, or weak recovery.
-
-Round 1 must enumerate each bounded **sibling allowlist** member and ancestor-path swallowing, with a realistic **positive control** beside hostile cases so rejecting everything cannot pass.
-
-**Round 1 is the comprehensive architecture review.** Present all independently discoverable findings in round one as much as possible. Walk the complete integrity, failure, security, testability, operability, migration, and rollback matrices; inspect every bounded sibling instance of a discovered defect class; and give one deduplicated correction packet with evidence, consequence, constraints, and a safe design direction. Do not stop at the first unsound boundary or reserve obvious comments for later.
-
-Round 2 and later are disposition checks. Later-round feedback is limited to unresolved round-1 architecture defects, regressions introduced by the revision, genuinely new system evidence, or a material defect that could not reasonably have been identified from the first frozen packet. Any new later-round blocker must state `Why it was not discoverable in round 1: <cause>`. Do not introduce fresh preferences, reversible nits, or downstream implementation/tooling concerns as new architecture feedback.
-
-## Prior-round context continuity
-
-Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. The authority-bearing gate must first parse the embedded closed-schema `pre_review_summary_artifact`, verify its lineage and canonical serialization, recompute the digest, and persist the verified bytes. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing, malformed, mismatched, or changed artifact blocks review for the stable lineage.
-
-For **Round 2 or later**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
-
-- every prior candidate/base identity and **all prior exact review reports** with verified digests, ordered by candidate generation from Round 1 onward;
-- a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
-- a **remediation change map** from each finding ID to the changed artifact paths/sections and focused verification, plus any explicitly authorized scope change;
-- the original governing request/specification and the complete current candidate; and
-- a controller-computed **prior-context digest** binding the exact reports, ledger, and change map supplied to this fresh reviewer.
-
-Do not rely on a controller summary instead of the exact prior reports. Missing, unverifiable, mismatched, or internally inconsistent prior context is `BLOCKED_MISSING_PRIOR_CONTEXT`; do not perform a substantive later-round review.
-
-A fresh reviewer remains independent, but must begin with reconciliation rather than a new unconstrained review:
-
-1. Revalidate candidate and packet identities.
-2. Disposition every prior finding by stable ID against the current bytes and evidence.
-3. Perform a **contradiction check** against prior feedback and accepted dispositions. Do not reopen a resolved finding, reverse a prior required direction, or demand the opposite implementation unless current candidate evidence or newly available authoritative evidence proves the prior feedback invalid. Label such a correction `PRIOR_FEEDBACK_CORRECTION`, cite both statements and the decisive evidence, and explain why following the earlier direction is now unsafe or incorrect.
-4. Report **New material findings** only when they are caused by remediation, by an explicitly authorized scope change, by genuinely unavailable evidence, or by a material defect that could not reasonably have been discovered in Round 1. Each must state `Why it was not discoverable in round 1: <cause>` and identify the allowed category. Omit unrelated new findings and reversible preferences rather than extending the lineage.
-
-The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency. If it fits an allowed late-finding category, use that evidence-backed path. If it was reasonably discoverable earlier but was missed, record it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, preserve the evidence, keep the gate blocked, and escalate the review-process failure; do not silently omit it or launder it into ordinary drip-fed feedback.
-
-## Unbounded approval convergence
-
-- **Round 1:** complete risk-weighted architecture review and detailed steering packet.
-- **Round 2:** verify dispositions on the corrected exact design.
-- **Round 3:** continue review of unresolved architectural decisions and revision-introduced regressions.
-
-## Mandatory Context Firewall
-
-All technical-design and tech-spec review judgment must happen inside a **fresh delegated leaf subagent** that did not author the design or participate in prior review rounds.
-
-If this skill is loaded in the architect's, implementer's, or orchestrator's context, do not review. Return `REVIEW_DELEGATION_REQUIRED` and require a fresh leaf subagent. If delegation is unavailable, the review gate is `BLOCKED`; self-review is not an acceptable fallback.
-
-The orchestrator may assemble a neutral packet, dispatch, validate the report shape/revision, save findings, disposition them, revise, and dispatch a different fresh reviewer. It must not draft findings, bias the verdict, fill missing sections, or convert an incomplete review into approval.
-
-### Neutral review packet
-
-Provide:
 
 - exact latest tech-spec/design path, full content, and immutable revision/hash/timestamp;
 - approved PRD, selected CUJs, acceptance criteria, and explicit constraints;
@@ -298,11 +248,3 @@ Every approval dimension must cite artifact or repository evidence. A list of te
 - [ ] Existing system conventions are reused and duplicate sources/paths are minimized.
 - [ ] Sustainability acceptance covers deploy, operate, diagnose, repair, and verify recovery.
 - [ ] Reviewer did not edit or externally change canonical artifacts or systems.
-
-## Post-Round-3 approval convergence
-
-There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
-
-Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
-
-Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

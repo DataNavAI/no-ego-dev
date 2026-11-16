@@ -1,6 +1,6 @@
 ---
 name: issue-monitor
-description: Use when a repository's GitHub issues are executed through a durable Hermes Kanban board from reproduction through independently reviewed exact-SHA merge.
+description: "Drive authorized repository issues through implementation, self-review, CI and verified merge using durable scheduling state."
 ---
 
 # NED skill discovery: issue-monitor

@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Contract-alignment gates for delegated implementation
 
 Use this when a feature has layered artifacts such as a PRD, UI brief, technical specification, implementation plan, schema examples, and task excerpts.

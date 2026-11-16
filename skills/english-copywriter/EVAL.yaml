@@ -6,6 +6,9 @@ prompt: |
 
   For the implemented landing-page headline scenario, provide the exact rollout checklist from promise selection through production readback. Preserve the existing display typography unless design is explicitly in scope, and do not stop after proposing an isolated H1 string.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "distinguishes Authoring mode from Specialist review mode and does not self-approve authored copy"
   - "uses only PASS NEEDS ITERATION or BLOCKED for a specialist verdict"
   - "omits reversible nits entirely rather than reporting minor optional deferred or polish feedback"

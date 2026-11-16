@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Immutable Photo-Rich Static UI Review Remediation
 
 Use this after an independent review finds that a static/generated UI looks correct in its currently reachable empty or unavailable state but may regress when validated content becomes ready, at desktop breakpoints, or when approved media fails at runtime.

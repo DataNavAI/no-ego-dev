@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Canonical issue tracker with a thin Hermes Kanban execution queue
 
 Use when GitHub, Linear, or another external tracker already owns product/task truth and Hermes Kanban is added for durable automatic dispatch.

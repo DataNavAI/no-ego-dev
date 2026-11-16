@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Epic decomposition and truthful progress counting
 
 Use this when architecture creates milestone-sized GitHub issues or when a user asks how many development tasks remain.

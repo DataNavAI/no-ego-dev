@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Recovering a durable RED-only checkpoint
 
 Use this when an implementation delegation stops or times out after pushing tests but before a complete implementation or PR.

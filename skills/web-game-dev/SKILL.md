@@ -1,7 +1,7 @@
 ---
 name: web-game-dev
 description: "Use when planning, architecting, implementing, or reviewing browser/web games. Research and choose a performant web game engine during architecture, document game architecture patterns, and find or create engine-specific skills for the chosen engine."
-version: 0.2.0
+version: 0.2.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -10,6 +10,10 @@ metadata:
 ---
 
 # Web Game Dev
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

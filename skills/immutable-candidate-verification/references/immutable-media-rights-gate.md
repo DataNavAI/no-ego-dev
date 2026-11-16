@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Immutable media-rights and asset-operations gate
 
 Use when an exact candidate contains review-only photography, a rights manifest, local runtime evidence, and possibly a separately restricted evidence package.

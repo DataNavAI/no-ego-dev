@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Component-Commentable HTML Review Apps
 
 Use this reference when a user wants to comment directly on components in a runnable HTML/CSS/JavaScript mock and GitHub/Figma is unavailable, disproportionate, or not the desired primary surface.

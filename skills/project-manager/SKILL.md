@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: "Use when converting PRDs/specs into GitHub milestones, GitHub Issues, and subagent execution."
-version: 0.32.0
+version: 0.32.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -12,10 +12,14 @@ metadata:
 
 # Project Manager
 
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
+
 ## Mandatory completion: merge and local deployment
 
 For every task in this distribution, completion requires applicable checks and
-manual acceptance, independent review, merge into remote `main`, and verified
+manual acceptance, self-review, merge into remote `main`, and verified
 deployment from that merged commit to the default local Hermes instance. The user
 has authorized this normal merge/deployment flow; do not repeatedly request it.
 Do not mark NED tasks/goals done or send a completion report while any gate remains
@@ -24,7 +28,7 @@ not establish full deployment.
 
 Use an isolated checkout for the task; preserve unrelated working-tree changes.
 Fetch main, resolve integration, run the repository's required automated/manual
-checks, obtain exact-candidate review and green PR checks, merge, then read back
+checks, self-review the exact candidate and require green PR checks, merge, then read back
 the remote merged SHA. Deploy only committed merged contents. For CLI/runtime
 changes run the canonical checkout installer `bash scripts/install.sh` from the
 merged checkout and verify installed commands and generation identity. Run
@@ -34,7 +38,7 @@ enable only required plugin/toolset entries, and reload affected local Hermes/CO
 processes when needed. Verify the running/local installed behavior at the merged
 revision, then record merge/deployment evidence and complete the owned NED task.
 Never use AWS or named-profile rollout as a substitute for this local target.
-If deployment/review/access fails, keep work open with the actual blocker and
+If deployment/checks/access fails, keep work open with the actual blocker and
 continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.
 
 
@@ -114,37 +118,6 @@ Keep this envelope concise. The executive summary carries the product meaning; l
 
 Use [`references/product-oriented-communication.md`](references/product-oriented-communication.md) for issue rewrites, decision boundaries, examples, and the compact status format.
 
-## Risk-weighted review convergence
-
-Every review workflow uses **Risk-weighted review**: prioritize hard-to-reverse or high-consequence decisions and defects, including public contracts, destructive migrations, security/privacy/authorization, money, critical journeys, infrastructure commitments, and weak rollback. Reversible nits, stylistic preferences, cosmetic polish, and optional refactors that can safely be fixed later are non-blocking and must not consume a review round.
-
-Require **first-round completeness**. **Round 1** is the comprehensive pass and returns all independently discoverable Critical/Important or otherwise material findings in one deduplicated, evidence-backed steering packet; reviewers inspect the complete authorized scope and bounded sibling instances instead of stopping at the first defect. **Round 2** verifies dispositions and correction-introduced regressions. **Round 3** completes the initial correction budget. New later-round feedback is permitted only for unresolved prior findings, changes introduced by remediation, evidence genuinely unavailable in Round 1, or a material issue that could not reasonably have been discovered earlier; it must include `Why it was not discoverable in round 1: <cause>`.
-
-
-### Prior-round context handoff
-
-Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
-
-For every Round 2 or later dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
-
-- all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
-- a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
-- a **remediation change map** mapping every prior finding to changed paths/sections and focused verification, with any authorized scope delta called out separately;
-- the original governing contract and complete current candidate; and
-- a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
-
-The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to any terminal prior generation, or cumulatively incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency. When it was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently omitting it or treating it as ordinary later-round feedback.
-
-### Canonical round accounting
-
-**One review round is one immutable candidate generation.** The composite reviewer and every predeclared specialist **share one candidate generation and round number**; timeout replacements remain in that round. Persist one receipt keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with per-bundle outcomes. **A corrected candidate advances exactly one round** and invalidates all earlier commit-bound verdicts. Do not schedule that correction until every authorized bundle in the prior generation has reached a terminal verdict.
-
-### Composite review and readiness budget
-
-The default implementation gate is one **composite review** by a fresh independent reviewer covering specification, correctness, security, test honesty, repository conventions, and operational risk. Do not dispatch separate spec and quality reviewers for ordinary changes. Add a **specialized reviewer** only when a named hard-to-reverse domain requires expertise the composite reviewer cannot credibly provide; all required kinds inspect the same frozen candidate and produce one consolidated author packet.
-
-Before review, require a machine-readable **review-readiness receipt** bound to repository, PR/artifact, lineage, round, exact candidate, base, and the complete authorized review-bundle manifest. It proves clean scope plus green static analysis, focused tests, canonical full tests, build, secret scan, provider checks, and controller self-audit. Incomplete or foreign candidates return to implementation without consuming a review round. An atomic candidate/review index suppresses active or finalized same-SHA duplicates—including attempts to reuse unchanged bytes under a new round—allows one missing-evidence-only recovery from `INCOMPLETE`, and records review runtime, fresh-token use when available, attempt counts, suppressions, candidate generations, and Round-3 frequency.
-
 ## Milestone Rules
 
 - Never represent a broad product outcome, feature area, architecture package, release, or multi-surface request as one implementation task. Create a milestone/epic parent instead; the parent coordinates scope and progress but is not itself the unit assigned for implementation.
@@ -161,7 +134,7 @@ Before review, require a machine-readable **review-readiness receipt** bound to 
 - Completion requires evidence, not just a worker saying “done”.
 - A pending asynchronous review or CI retains the current issue's focus. Do not start another issue merely to fill the wait unless the user has explicitly authorized parallel issue delivery; independent read-only review of the same frozen issue is allowed.
 - When the user expects autonomous continuation after worker-state changes, keep GitHub Issues canonical and use process-local completion. Without explicit current authorization for parallel issue delivery, dispatch only work for the one active canonical issue; a top-level `tasks=[...]` fan-out is allowed only for independent stages or read-only reviewers of that same issue whose ownership and dependencies permit concurrency. With explicit current authorization, fan-out may span the authorized issue set. Top-level fan-out creates independent children with separate handles and completion deliveries, while separate calls remain useful for explicit ownership or retry boundaries. After each delivery, verify evidence, update the GitHub Issue, and kick off at most one dependency-safe successor. `subagent_stop` is observer-only; child status cannot complete work or release dependencies. State the process-local trade-off honestly: gateway/parent interruption can lose active children or callbacks, so recover remote branches, PRs, commits, issue comments, and other durable artifacts before resuming. Load `delegation-reliability` and follow `references/harness-completion-hooks.md`.
-- Scope hook-only continuation to an interactive parent that remains available to receive completion. A cron run or fresh scheduled session must instead require a durable attempt-scoped report or marked tracker comment, dispatch at most one reviewer per run, and reconcile that evidence on the next tick. Never create same-run reviewer retry fan-out because a result was not reinjected.
+- Scope hook-only continuation to an interactive parent that remains available to receive completion. A cron run or fresh scheduled session must instead require a durable attempt-scoped report or marked tracker comment, reconcile implementation and check evidence on the next tick before retrying. Do not dispatch a reviewer unless explicitly requested.
 - Deduplicate review work by exact candidate SHA and review kind. A valid negative verdict is complete and blocks that SHA; assign one remediation owner and review only the resulting new SHA. Budget every review, reserve time to close the report, reuse trustworthy exact-SHA CI, and preserve an explicit `INCOMPLETE` artifact when required evidence does not fit.
 - Keep dependency edges, worker ownership, retries, blockers, and evidence handoffs on the GitHub milestone/issues and linked PRs. Do not mirror them into Kanban or another task system. Workers re-read the live GitHub Issue before editing and update the issue/PR as one reconciled handoff.
 
@@ -215,7 +188,7 @@ A direct user report that the product is broken, regressed, incorrect, unsafe, o
 1. Search open and closed GitHub Issues for matching reports using the product, affected journey, symptom, error/evidence, and likely synonyms. Reuse a matching issue; do not create a duplicate.
 2. Create or update **exactly one canonical issue** before any specialist execution. It must identify the project/repository and environment; capture sanitized reproduction/evidence, user impact and severity, scope and exclusions, acceptance criteria, verification requirements, and source-report context; and name the focused worker role. When evidence is incomplete, record what is known and assign bounded reproduction to the worker instead of diagnosing inline.
 3. **Spawn a focused worker linked to that canonical issue** before diagnosis, code inspection, reproduction work, or implementation. The worker re-reads the live issue and owns the bounded investigation/fix in an isolated branch or worktree. Use the domain specialist that matches the bug (`coder`, `ui-designer`, `devops`, `qa`, or another focused role), and include the issue ID/URL in its assignment and eventual branch/commit/PR evidence.
-4. The project manager coordinates and verifies; it does not diagnose or fix the bug inline. It verifies worker evidence, tracker/PR linkage, focused and full tests, independent review, CI, rollout or containment removal, exact revisions, and issue closure against the acceptance criteria.
+4. The project manager coordinates and verifies; it does not diagnose or fix the bug inline. It verifies worker evidence, tracker/PR linkage, focused and full tests, self-review, CI, rollout or containment removal, exact revisions, and issue closure against the acceptance criteria.
 5. If worker dispatch is unavailable or fails before creating a durable execution artifact, keep the canonical issue open and add an explicit **dispatch blocker** with attempted route, failure evidence, user impact, owner, and next retry/escalation. Do not silently fix inline, mark the issue complete, or imply execution has started.
 
 **Emergency reversible containment** is allowed only to stop ongoing material harm such as data loss, security exposure, runaway spend, or a critical outage. Prefer a feature disable, rollback, traffic stop, or similarly bounded and reversible safety action; record the action and rollback condition on the issue. Containment never replaces the canonical issue and focused-worker flow: search/create/reuse the issue and dispatch the worker for diagnosis and a durable fix as soon as the immediate safety action permits.
@@ -444,22 +417,22 @@ The project manager orchestrates; it does not personally perform every specialis
 
 Always spawn focused subagents for directly asked actionable tasks and for tasks that require any major NoEgoDev skill/domain. Create/update the linked issue first, then include that issue path/ID in the subagent prompt:
 
-- Product management / PRD / user story / scope decisions → spawn an authoring subagent instructed to use `product-manager`; once the PRD is frozen, dispatch a separate `prd-reviewer` fresh review-only leaf that did not author or edit the candidate.
+- Product management / PRD / user story / scope decisions → spawn an authoring subagent instructed to use `product-manager`. Self-review the resulting artifact and verify its acceptance checks. Use `prd-reviewer` only when the user explicitly requests a separate review.
 - Marketing / launch planning / channel strategy / sincere outreach / app-store listing copy, ASO, localization, or ads → spawn a subagent instructed to use `marketer`.
 - Website SEO strategy, technical SEO, organic keyword research, keyword-to-page mapping, on-page implementation, rank monitoring, or iterative organic-search growth → spawn a subagent instructed to use `seo-growth`; coordinate code and deployment work with `coder`, `qa`, and `devops` rather than reducing SEO to generic launch copy.
 - Agent/project identity, Gmail/Google account setup, OAuth/delegated access, signed-in browser SSO, or email identity for communications → spawn a subagent instructed to use `agent-identity-and-access`.
 - Google Play Console UI publishing / AAB upload / internal testing / tester lists / rollout status → spawn a subagent instructed to use `play-store-publisher` when that skill is available; coordinate with `marketer` only for listing/ad/user-acquisition work.
 - Google Play CLI/API automation / fastlane supply / EAS Submit / Gradle Play Publisher / Play service account setup → spawn a subagent instructed to use `play-store-cli` when that skill is available; coordinate with `devops` for CI secret storage and pipelines.
-- UI guidelines / design systems / screen/state planning / UI bug triage → spawn an authoring subagent instructed to use `ui-designer`; once the guideline and frozen evidence are ready, dispatch a separate `ui-reviewer` fresh review-only leaf that did not author or edit the candidate.
+- UI guidelines / design systems / screen/state planning / UI bug triage → spawn an authoring subagent instructed to use `ui-designer`. Self-review the resulting artifact and verify its acceptance checks. Use `ui-reviewer` only when the user explicitly requests a separate review.
 - React Native app setup / Expo or React Native CLI implementation / Metro / Android Studio + SDK setup / emulator testing → spawn a subagent instructed to use `react-native-app-dev` when that skill is available, otherwise use `coder` with explicit React Native mobile context.
 - Native Android app implementation / Gradle / Jetpack Compose / emulator testing / Play Store packaging/build artifacts → spawn a subagent instructed to use `android-app-dev` when that skill is available, otherwise use `coder` with explicit Android context.
-- Architecture / technical spec / system design / repo bootstrap decisions → spawn an authoring subagent instructed to use `architect`; once frozen, dispatch a separate `technical-design-reviewer` fresh review-only leaf that did not author or edit the candidate. Verify the durable lineage, complete cumulative context, and approval-convergence mode for Round 4 and later before every re-review.
+- Architecture / technical spec / system design / repo bootstrap decisions → spawn an authoring subagent instructed to use `architect`. Self-review the resulting artifact and verify its acceptance checks. Use `technical-design-reviewer` only when the user explicitly requests a separate review.
 - Browser/web game architecture, performant game engine selection, gameplay systems, engine-specific skill discovery/creation, or game performance planning → spawn a subagent instructed to use `web-game-dev`, usually paired with or before `architect` finalizes the tech spec.
 - Coding / tests / refactors / implementation / bug fixing → spawn one or more subagents instructed to use `coder`.
 - DevOps / CI/CD / deployment / observability / infrastructure / runbooks → spawn a subagent instructed to use `devops`.
 - QA / smoke tests / feature test plans / UI regression checks / release verification → spawn a subagent instructed to use `qa`.
 
-Every domain-review dispatch must include the exact artifact identity, lineage and shared round number, complete required-review-kind set, authoritative contract and evidence, and a unique durable report location. The reviewer is read-only and fail-closed: it must not modify the candidate, and missing identity/lineage/evidence yields a blocking receipt rather than an inferred approval.
+When the user requests a separate domain review, provide the artifact, relevant contract and available evidence. The reviewer reports material findings and evidence limitations. Add formal rounds, lineage or approval receipts only if the user requests that process.
 
 Every completed implementation task must get a follow-up QA task unless it was documentation-only or explicitly non-user-facing. The QA task should reference the implementation issue/PR, the affected feature test plan, target environment, and required report destination.
 
@@ -480,7 +453,7 @@ For implementation review/fix loops, use [`references/implementation-review-conv
 - Pin every review to exact base/head SHAs and verify the remote head before acting.
 - Require early pushed checkpoints from long fix workers. If a worker times out, classify it as `interrupted`, inspect remote branches/PRs/commits/worktrees, and compare the branch SHA to its immutable base before claiming recovery. Continue an existing checkpoint; when no artifact exists, record that on the issue and split independently testable outcomes into dependency-ordered children instead of retrying the same oversized assignment.
 - Split oversized corrections into non-overlapping branches, integrate them into the original PR, and expect contract-boundary integration REDs even when each branch was independently green.
-- Every correction creates a new SHA and requires fresh independent exact-SHA review before merge. Advance the same lineage by one monotonic round; Round 4 and later use approval-convergence mode with no fixed round limit; tests or scanners never substitute for independent review of changed bytes, and unresolved material defects remain blocking.
+- After corrections, self-review the final candidate and rerun affected checks before merging. Unresolved material defects remain blocking; independent sign-off and round accounting are not default requirements.
 - Never merge while an exploit still reproduces, exact-commit evidence is missing, or residual risk remains material.
 - For public artifact boundaries, require more than path/hash closure: semantically validate structured outputs, detect provider/generic credentials in text assets, reproduce reviewer attacks, and run an external secret scanner when available.
 - For generated images/exports or other security-sensitive outputs, reject caller-owned object graphs at the boundary when feasible: accept bounded primitive JSON text, parse once, validate/freeze one snapshot, derive bytes/filenames only from it, and regression-test alternating Proxies with zero trap invocation.
@@ -821,11 +794,3 @@ If instrumentation is missing, say `missing instrumentation` in the relevant met
 - [ ] Milestone completion required all assigned `P0` and `P1` issues to pass normal completion/evidence gates; remaining open `P2` issues were moved, not closed to zero the count.
 - [ ] The user confirmed the next milestone goal, rollover history/rationale was preserved, and receiving-milestone priorities were re-evaluated without retroactively changing the completed milestone.
 - [ ] Follow-up tasks exist for discovered gaps.
-
-## Post-Round-3 approval convergence
-
-There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
-
-Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
-
-Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Exact Gitleaks Fingerprint Suppressions
 
 Use this when the current repository is clean but full-history Gitleaks remains red on independently verified synthetic test fixtures or deterministic non-secret identifiers.

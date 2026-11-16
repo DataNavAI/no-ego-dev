@@ -3,6 +3,9 @@ prompt: |
 
   Use the spec-compliance-review skill to define and execute the immutable review procedure without modifying the candidate.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "Identifies the exact review mode and binds the verdict to an immutable commit SHA, parent/base, and authoritative requirements."
   - "Uses an isolated clean worktree or exact-SHA disposable archive instead of resetting or cleaning a dirty shared checkout."
   - "Builds an explicit requirement and failure matrix rather than treating tests or implementation vocabulary as the contract."
@@ -14,15 +17,8 @@ expectations:
   - "Returns a concrete PASS or FAIL bound to the reviewed candidate with reproducible evidence."
   - "Prioritizes hard-to-reverse and high-consequence risks while ignoring reversible nits that can safely be fixed later."
   - "the report omits reversible nits entirely rather than attaching minor notes or deferred polish."
-  - "Presents all independently discoverable findings in round one with evidence and enough corrective direction instead of stopping at the first blocker."
-  - "later-round feedback is limited to prior findings correction-introduced regressions genuinely unavailable evidence or material issues that could not reasonably be found in round one."
-  - "Requires every allowed new later-round blocker to explain why it was not discoverable in round one."
-  - "For round two and later requires all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review."
-  - "Requires one neutral immutable pre-review summary in every review round and blocks unless the authority-bearing gate parses the exact closed-schema canonical artifact verifies lineage recomputes its digest and persists verified bytes."
   - "Reconciles every prior finding and performs a contradiction check so it does not contradict prior feedback without an explicit evidence-backed PRIOR_FEEDBACK_CORRECTION."
-  - "Rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
   - "Positive scenario: binds a dirty or misbound exact-SHA review to the correct repository or authenticated archive and closes catalog allowlist required-argument empty-state own-property and publication-consumer contracts."
   - "Boundary/negative scenario: rejects static-only parity tests lock/source race false success stale async completion and a local auth bypass that does not exercise the registered production contract."
   - "Performs post-report recovery and scopes provider or domain recipes to the boundary actually present."

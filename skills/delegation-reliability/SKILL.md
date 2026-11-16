@@ -1,12 +1,16 @@
 ---
 name: delegation-reliability
-version: 1.14.10
+version: 1.14.11
 description: Supervise background subagents, detect interrupted or stale delegation batches, and recover without inventing results.
 author: NoEgoDev
 created_by: agent
 ---
 
 # Delegation Reliability
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 Use when work depends on one or more `delegate_task` subagents, especially on gateway or messaging surfaces where the parent process may restart.
 
@@ -39,31 +43,11 @@ Choose continuation mode explicitly instead of assuming every dependency graph n
 
 **Durable queue mode (explicit trade-off):** use Hermes Kanban only when unattended dependency execution and restart survival materially outweigh queue duplication. Keep external issues canonical and cards thin. A hook may request one idempotent dispatch pass, while verified Kanban state and atomic claims remain authoritative.
 
-A top-level multi-child `delegate_task(tasks=[...])` call creates independent background children with **one handle and one completion delivery per child**. Reconcile the first finisher immediately without waiting for siblings. This is still process-local, and nested orchestrator delegation may be synchronous. Never infer PASS from `child_status=completed`; verify the exact SHA/PR/report, required checks, and review verdict before downstream kickoff.
+A top-level multi-child `delegate_task(tasks=[...])` call creates independent background children with **one handle and one completion delivery per child**. Reconcile the first finisher immediately without waiting for siblings. This is still process-local, and nested orchestrator delegation may be synchronous. Never infer PASS from `child_status=completed`; verify the exact SHA/PR/report, required checks, before downstream kickoff.
 
-**Cron/scheduled mode is different from an interactive parent session.** Do not assume an async delegation completion will be reinjected into the cron run that launched it—or into the next fresh cron session. Before dispatch, require an attempt-scoped durable sink that a later run can read: a structured external report or a stable marked tracker comment bound to repository, PR, exact SHA, review kind, and attempt ID. Also validate a candidate-bound **review-readiness receipt** containing the same repository/PR/lineage/round identity and complete authorized review-bundle manifest before spending reviewer capacity. A scheduled run dispatches at most one reviewer, ends as `REVIEW_PENDING` when no result is yet durable, and reconciles that sink before any retry on the next run.
-
-Deduplicate reviews by `(repository, PR, lineage, round, exact SHA, base SHA, review bundle)` inside one candidate generation. A structurally valid negative verdict is completed evidence, not a failed attempt: route its blockers to one fixer and suppress review of that same generation until the candidate or base changes under the monotonic round policy. On timeout, recover the attempt artifact first; re-dispatch only the missing evidence scope, preserve trustworthy exact-SHA CI and prior check evidence, and never repeat broad suites or stress loops merely because the summary delivery was lost.
-
-Enforce this through an **atomic review index**, not prompt memory. The index claims one candidate generation `(repository, PR, lineage, round, exact SHA, base SHA)` and nests the complete predeclared bundle set beneath it. Each bundle records `IN_PROGRESS` and closes on `APPROVED`, `REQUEST_CHANGES`, or `INCOMPLETE`; merge authority requires aggregate approval across every authorized bundle. Active or finalized same-bundle attempts suppress duplicate dispatch. `INCOMPLETE` may open only one narrower replacement whose scope is a subset of the prior missing evidence. The next candidate generation is inadmissible until every authorized bundle in the prior generation has reached a terminal verdict. Count candidates once, then count bundles, attempts, suppressions, narrow recoveries, verdicts, and rounds separately so review efficiency is measurable.
-
-Use one composite review bundle for ordinary candidates. Separate review kinds are justified only by named specialized high-risk boundaries; they remain one shared candidate round and their findings are aggregated before remediation. Do not split specification, quality, and routine security checks merely to manufacture independent sessions.
+**Cron/scheduled mode differs from an interactive parent.** Persist attempt-scoped implementation/check evidence so a later run can reconcile completion before retrying. Do not infer success from process completion or dispatch reviewers automatically. Review receipts and round bookkeeping are optional, only for a user-requested formal review process.
 
 If work is already running under another mechanism, do not duplicate it. Secure and verify its durable artifact first, then resume using the selected mode.
-
-### Prior-round context handoff
-
-Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
-
-For every Round 2 or later dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
-
-- all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
-- a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
-- a **remediation change map** mapping every prior finding to changed paths/sections and focused verification, with any authorized scope delta called out separately;
-- the original governing contract and complete current candidate; and
-- a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
-
-The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to any terminal prior generation, or cumulatively incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency. When it was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently omitting it or treating it as ordinary later-round feedback.
 
 ### Attempt-scoped artifacts and late-result reconciliation
 
@@ -110,7 +94,7 @@ Exact identity remains mandatory at final promotion, but base movement must be h
 
 **A documentation-only or tracker-only base advance does not by itself require a full rerun** when it is non-overlapping and a deterministic comparison proves the candidate patch and affected product tree are equivalent. Preserve trustworthy focused/full CI and prior findings; perform only the smallest delta/mergeability check needed. Batch or defer unrelated tracker merges so they do not repeatedly move the promotion base.
 
-If the base materially affects the candidate, rebase once at promotion, rerun only identity-invalidated checks, and obtain **one final exact current-base/current-head approval** before merge. Research/checkpoint branches may continue in parallel, but only the selected promotion candidate enters this final serialized gate. Never review every intermediate checkpoint as though it were the release candidate.
+If the base materially affects the candidate, rebase once at promotion, rerun only identity-invalidated checks, and self-review the final current-base/current-head candidate before merge. Research/checkpoint branches may continue in parallel, but only the selected promotion candidate enters this final serialized gate. Never review every intermediate checkpoint as though it were the release candidate.
 
 ## Workflow
 
@@ -200,11 +184,3 @@ Create the scheduler as a recurring `no_agent=True` job, omit a finite repeat co
 - [ ] One simulated stale/interrupted state emits exactly one alert.
 - [ ] Repeated identical unhealthy runs are silent.
 - [ ] Recovery clears the deduplication state.
-
-## Post-Round-3 approval convergence
-
-There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
-
-Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
-
-Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

@@ -1,7 +1,7 @@
 ---
 name: skill-creator
 description: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
-version: 1.0.0
+version: 1.0.1
 author: Anthropic (bundled for NoEgoDev)
 license: See upstream repository
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # Skill Creator
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 A skill for creating new skills and iteratively improving them.
 

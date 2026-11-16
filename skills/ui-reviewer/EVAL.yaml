@@ -1,8 +1,10 @@
 prompt: |
   Emit a deterministic non-mutating simulation of the ui-reviewer workflow for every scenario in the fixture. The fixture supplies synthetic immutable identities and evidence descriptions but no disposable browser, repository, or publication target, so do not claim that real commands, screenshots, browser journeys, research, or mutations occurred. In the positive cases, state the exact ordered procedure and receipts required for approval; in each negative case, return the specified fail-closed result. A pre-authored canonical project UI guideline is frozen with the simulated candidate; review without creating or editing the guideline or candidate, and explain the fail-closed result if that guideline were missing.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "requires a pre-authored frozen canonical project UI guideline and blocks when it is missing"
-  - "runs in a fresh review-only leaf and never creates edits or updates candidate or guideline artifacts"
   - "researches or requests at least three top-of-market comparable services and captures relevant UI patterns"
   - "uses foundational UI principles such as hierarchy spacing typography color contrast consistency affordance states accessibility and responsive or mobile fit"
   - "reviews design images screenshots or real UI evidence rather than only text when available"
@@ -12,15 +14,8 @@ expectations:
   - "provides a concrete revision checklist and implementation guardrails when approved"
   - "prioritizes hard-to-reverse and high-consequence journey design-system accessibility and trust decisions while ignoring reversible nits that can safely be fixed later"
   - "the report omits reversible nits entirely rather than attaching minor-polish notes or optional follow-up"
-  - "presents all independently discoverable findings in round one with evidence user impact and enough corrective direction"
-  - "later-round feedback is limited to unresolved findings revision-introduced regressions genuinely new evidence or material issues not reasonably discoverable in round one"
-  - "requires every allowed new later-round blocker to explain why it was not discoverable in round one"
-  - "for round two and later requires all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest before substantive review"
-  - "requires one neutral immutable pre-review summary in every review round and blocks unless the authority-bearing gate parses the exact closed-schema canonical artifact verifies lineage recomputes its digest and persists verified bytes"
   - "reconciles every prior finding and performs a contradiction check so it does not contradict prior feedback without an explicit evidence-backed PRIOR_FEEDBACK_CORRECTION"
-  - "rejects unrelated new findings and permits new material findings only for allowed causes with why they were not discoverable in round one"
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
   - "Positive scenario: uses an immutable local prototype fallback with disposable Chromium byte binding cleanup and exact multi-state copy visual carousel geometry and interaction receipts."
   - "Boundary/negative scenario: rejects a mutable or byte-mismatched server screenshot-only carousel evidence stale later-round commit and parent-native suite that lacks the candidate regression assertion."
   - "Uses a parent-transplant negative control and distinguishes expected assertion failure from dependency or harness failure."

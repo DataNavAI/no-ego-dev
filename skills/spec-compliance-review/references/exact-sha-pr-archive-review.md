@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Exact-SHA pull-request review from an authenticated source archive
 
 Use when the requested PR head is absent from local Git or the available checkout is dirty/shared and must not be fetched/reset.

@@ -1,6 +1,6 @@
 ---
 name: subagent-driven-development
-description: Execute plans through fresh Hermes leaf subagents with immutable consolidated review.
+description: "Execute implementation plans through authorized subagents with self-review and appropriate verification."
 ---
 
 # NED skill discovery: subagent-driven-development

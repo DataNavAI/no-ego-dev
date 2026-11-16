@@ -1,7 +1,7 @@
 ---
 name: serialized-catalog-publication
 description: "Use when expanding a factual/content catalog under provenance, media, release, and deployment gates. Supports owner-authorized serial publication or parallel evidence preparation with one promotion lane, exact final-candidate verification, and production readback before counting publication."
-version: 1.4.0
+version: 1.4.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # Serialized Catalog Publication
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Trigger
 

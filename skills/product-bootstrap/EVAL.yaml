@@ -2,6 +2,9 @@ name: product-bootstrap
 prompt: |
   Bootstrap the smallest useful dog-walker intake prototype from the supplied benchmark and starter. Work only in the configured isolated workspace. Before editing, define the product stage, learning decision, primary journey, feedback path, mocked/manual inventory, and prototype limitations. Implement one interaction, then run the deterministic post-agent verifier and report exact evidence. Do not present the result as a real MVP or production system.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "works in the configured isolated workspace copied from the vendored starter and does not mutate the canonical fixture"
   - "states Product stage as prototype and routes a real MVP to product-manager and mvp-planning"
   - "states one Learning decision and the evidence that would change it before implementation"

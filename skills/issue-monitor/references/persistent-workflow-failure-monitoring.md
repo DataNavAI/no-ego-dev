@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Persistent Repository Workflow Failure Monitoring
 
 Use this companion pattern when the issue monitor should also receive repair tasks generated from CI/CD, security, scheduled, release, or deployment workflow failures.

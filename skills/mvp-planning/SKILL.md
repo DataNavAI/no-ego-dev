@@ -1,7 +1,7 @@
 ---
 name: mvp-planning
 description: "Use when planning a new MVP or cutting an existing product idea down to its minimum viable scope. Selects one key user problem, limits the MVP to one primary and at most two supporting critical user journeys, removes nonessential features, designs the shortest intuitive UX, and defines automated and manual QA gates that prove the core journeys work end to end."
-version: 1.2.1
+version: 1.2.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # MVP Planning
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 
@@ -182,7 +186,7 @@ A screen with no CUJ/step mapping is out of MVP scope. A screen that exists only
 
 ### Design review gate
 
-Before engineering handoff, `ui-designer` and a fresh `ui-reviewer` must verify:
+Before engineering handoff, self-review and verify:
 
 - the primary CUJ is visually dominant;
 - the path has no avoidable steps or screens;

@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Trustworthy current-content ingestion and publication gates
 
 Use this reference for news/event/schedule feeds where stale, unsourced, synthetic, or moderation-only records must never reach public surfaces.

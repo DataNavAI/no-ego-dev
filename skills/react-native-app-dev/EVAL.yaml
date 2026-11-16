@@ -1,6 +1,9 @@
 prompt: |
   Use the react-native-app-dev skill to plan or execute a realistic React Native mobile app feature or setup task.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "requires PRD tech spec and UI guideline or feature UI brief before coding user-facing React Native UI"
   - "identifies Expo versus React Native CLI or bare workflow and preserves the existing package manager lockfile"
   - "includes Android Studio and Android SDK setup or verification for Android testing"

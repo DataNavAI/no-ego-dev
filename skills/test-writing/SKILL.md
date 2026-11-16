@@ -5,6 +5,10 @@ description: Write and improve automated test code for software changes. Use whe
 
 # Test Writing
 
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
+
 Write executable tests that catch plausible user-affecting defects and survive behavior-preserving refactors. Optimize for useful feedback, not test counts or coverage percentages.
 
 ## Choose the behavior to prove

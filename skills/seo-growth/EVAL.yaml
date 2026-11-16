@@ -3,6 +3,9 @@ prompt: |
 
   "Improve organic search traffic for CloudLedger, a US/UK B2B SaaS website for finance teams. We can edit the Next.js repository and deploy through its normal PR workflow. We have Google Search Console and GA4 exports, a small fixed rank tracker, and read-only Bing Webmaster Tools access. The site has a homepage, pricing, product pages, integration pages, comparison pages, templates, blog posts, and documentation. Several URLs receive impressions for 'automated month end close', 'financial close checklist', and competitor-alternative queries, but rankings and conversions are uneven. Research high-potential keywords, decide which existing pages should target them, make a prioritized implementation plan, describe the code/content changes and production verification, and establish a monitoring/iteration loop. Do not invent data or use spam tactics."
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "creates or names durable strategy keyword page map technical audit experiment log and weekly report artifacts"
   - "establishes business audience conversion geography language and authorization scope before optimizing"
   - "audits actual website pages from crawl sitemap Search Console analytics and rendered mobile evidence"

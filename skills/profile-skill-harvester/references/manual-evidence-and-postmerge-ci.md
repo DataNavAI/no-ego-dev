@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Manual-evidence publication and post-merge CI proof
 
 Use this companion to `transactional-profile-rollout.md` when a canonical skill change adds code/tests, the repository requires fresh manual evidence tied to the latest code commit, and the merged package will roll out to divergent live profiles.

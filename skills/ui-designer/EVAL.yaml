@@ -1,6 +1,9 @@
 prompt: |
   Use the ui-designer skill for every scenario in the fixture. Explain the durable artifacts, visual and implementation handoff, MVP and mobile rules, responsive verification, and independent review gates. Distinguish material user-visible work from a trivial non-visual edit. Explicitly record the canonical token/component version or date and the focused regression assertions that enforce accepted mock-to-product parity.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "stores a feature-local UI brief and clean plus annotated design images beside or cross-linked to the PRD and expected tech spec"
   - "uses stable interaction annotation IDs and maps each ID to action destination transition states validation and accessibility behavior"
   - "for material design directions creates runnable or concrete visuals and a visual-first DESIGN_REVIEW deck with a contact sheet dominant screenshots compact comparison and explicit decision prompts"
@@ -12,9 +15,7 @@ expectations:
   - "applies mobile-specific touch target thumb reach safe-area keyboard navigation input burden and interrupted-session rules"
   - "maps every implementation acceptance item to a design source stable screen or annotation ID target code or component owner and deterministic plus rendered verification evidence"
   - "verifies responsive desktop and mobile geometry no horizontal overflow semantic document order keyboard and screen-reader reading order and rendered screenshots"
-  - "requires fresh independent read-only copy and UI reviewers only for material user-visible work and keeps authoring remediation guideline ownership and candidate edits with the designer"
   - "uses binding UI verdicts APPROVED or REQUEST_CHANGES and treats missing frozen evidence as BLOCKED without accepting a reviewer-created governing guideline"
-  - "does not require independent copy or UI review for a trivial non-visual edit that cannot materially affect visible copy layout interaction accessibility trust or the primary journey"
   - "does not introduce alternate minor-polish approval vocabulary reviewer-authored governing guidelines or a temporary PR lifecycle solely for design review"
   - "reviews real implemented UI against the canonical guideline captures viewport-bound evidence separates guideline violations from taste searches for duplicate issues and files actionable material UI bugs"
   - "scopes exact reproduction work to a geometry ledger chart coordinate and non-overlapping accessible-target checks with rendered pixel comparison"

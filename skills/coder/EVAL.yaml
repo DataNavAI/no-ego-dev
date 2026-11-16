@@ -1,7 +1,9 @@
 prompt: |
   Use the coder skill to respond to a realistic client/project request.
 expectations:
-  - "Keeps a task open until independent review, required checks, remote main merge and verified deployment of that merged revision to default local Hermes; green tests or a draft PR alone never count as done."
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "Tracks every actionable user development request in NED before implementation, reuses matching goals/tasks for follow-ups, and maintains verified state without inventing edit commands; explicit user tracker choices take precedence."
   - "mentions durable artifact"
   - "includes verification"
@@ -13,14 +15,10 @@ expectations:
   - "runs static analysis after every code change"
   - "fails closed on static analysis findings or unavailable required setup"
   - "does not weaken rules or add blanket suppressions"
-  - "requires a green review-readiness receipt and one composite independent review for an ordinary immutable candidate"
   - "predeclares a separate specialist only for a named non-overlapping high-risk expertise gap"
-  - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
-  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
   - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
   - "chooses the lowest reliable test layer by preferring deterministic unit tests then focused integration tests and keeping E2E coverage to the smallest irreducible critical journeys"
   - "does not make a broad browser device or cross-environment E2E matrix an unconditional PR merge gate"
   - "requires every E2E test to own a unique full-stack risk that lower layers cannot prove and removes redundant permutations to unit or integration coverage"

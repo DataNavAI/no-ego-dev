@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Review-round continuity packet
 
 Use this contract when `review_gate.py` claims Round 2 or later for a changed immutable candidate. The readiness receipt remains schema version 1, but every round after Round 1 fails closed without `prior_round_context`.

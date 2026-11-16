@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Reconstructing a technical-review lineage
 
 Use this before dispatching an independent technical-design reviewer when revisions, copied candidate directories, renamed files, or scope resets make the monotonic lineage count uncertain.

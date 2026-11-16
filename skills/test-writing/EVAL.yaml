@@ -5,6 +5,9 @@ prompt: |
   For C, propose a behavioral skill evaluation without writing skill tests.
   Preserve the source checkout and do not call external services.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - Produces runnable tests with explicit fixtures, awaited operations, precise results and isolated cleanup.
   - Preserves credential, persistence, ownership and failure-side-effect regression coverage.
   - Consolidates duplicate packaging checks while retaining every unique exclusion.

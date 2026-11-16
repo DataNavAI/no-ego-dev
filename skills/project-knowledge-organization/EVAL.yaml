@@ -1,6 +1,9 @@
 prompt: |
   Use the project-knowledge-organization skill to respond to a realistic client/project request.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "mentions durable artifact"
   - "includes verification"
   - "avoids vague next steps"

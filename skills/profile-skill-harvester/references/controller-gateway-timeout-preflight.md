@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Controller Gateway Timeout Preflight and Restart Boundary
 
 Use this reference whenever a harvest may dispatch background reviewers, implementers, or comparison workers.

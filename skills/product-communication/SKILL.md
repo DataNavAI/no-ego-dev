@@ -1,7 +1,7 @@
 ---
 name: product-communication
 description: Use for any user-facing project issue, blocker, risk, status, decision request, completion report, or handoff. Translates technical conditions into product impact, separates human-owned tasks from autonomous next steps, requires an explicit Human action needed field (including None), and asks users for product-requirement decisions rather than implementation choices.
-version: 1.4.1
+version: 1.4.2
 author: NoEgoDev
 license: MIT
 created_by: NoEgoDev
@@ -13,6 +13,10 @@ metadata:
 ---
 
 # Product Communication
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Purpose
 

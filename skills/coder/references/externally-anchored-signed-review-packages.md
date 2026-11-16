@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Externally anchored signed review packages
 
 Use this pattern when an immutable product/content candidate contains reviewed records, reviewer signatures, and a verifier, and future candidates must not be able to mint their own review authority.

@@ -1,7 +1,7 @@
 ---
 name: profile-skill-harvester
 description: Use when harvesting skill updates from one or more live Hermes profiles into a canonical profile-distribution repository. Compares complete skill packages, consolidates compatible updates, scopes contradictory guidance by use case and product lifecycle stage, validates the result, and publishes through an isolated Git workflow without sweeping unrelated runtime or repository state.
-version: 1.5.62
+version: 1.5.63
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # Profile Skill Harvester
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 
@@ -337,10 +341,8 @@ Before publication:
 6. Inspect only the intended skill-package and documentation/test changes.
 7. Scan staged content for private keys, OAuth/client secrets, refresh/access tokens, passwords, cookies, `.env` content, and high-entropy credentials.
 8. Commit with a focused conventional commit.
-9. Freeze the exact candidate SHA and obtain independent review against that SHA. If any review finding changes package bytes, the previous approval is stale: rerun affected validation, push the new SHA, and obtain a fresh independent review before merge.
-   - A spawned reviewer may honor its profile-configured terminal cwd instead of the subprocess workdir. Require absolute-path reads and `git -C <isolated-worktree>` commands, and invalidate the verdict unless the reviewer confirms the requested HEAD, clean status, and exact worktree path.
-   - Background-process completion output may be a truncated preview that omits the opening verdict or identity proof. Before accepting approval, read the full process log from offset zero and require the explicit verdict, worktree path, clean status, and exact SHA to be present together.
-10. Reconcile cross-skill gate semantics before approval. In particular, post-Round-3 approval convergence must never permit tests/scanners to substitute for independent review of changed bytes, approve by exhaustion, or suppress a genuine material finding; same-SHA review deduplication must still provide a non-duplicating approval-to-merge continuation.
+9. Self-review the exact candidate and rerun affected checks after corrections. Use a separate reviewer only when the user requests one.
+10. Check cross-skill consistency without adding approval rounds or lineage requirements. Fix material contradictions before merge.
 
 Publication policy:
 

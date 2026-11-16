@@ -1,29 +1,16 @@
-prompt: |
-  A sequential implementation task has a clean candidate commit, focused RED-GREEN evidence, and passing tests. One composite independent reviewer must approve the exact candidate and current base before the next task starts; a predeclared specialist is required only for a named non-overlapping high-risk scope. One reviewer returns late against an older SHA, another times out after writing a report, and a post-review evidence correction changes the commit.
-
-  Use the immutable-candidate-verification skill to execute the gate and decide whether work may advance.
+prompt: A sequential implementation task has a clean candidate commit and focused RED-GREEN evidence. Verify the
+  candidate and decide whether it may advance under the existing delivery authority. A required check first fails
+  and is corrected. No separate review was requested. Explain actual checks, self-review, correction and final source
+  readback without dispatching a reviewer.
 expectations:
-  - "Requires one composite independent approval, every predeclared specialist bundle, and any separate domain authority to name the same clean immutable candidate and current base before task completion."
-  - "Does not treat tests, staged-diff review, lifecycle completion, or an older-SHA approval as authorization to advance."
-  - "Preserves focused RED-GREEN evidence and runs focused, integration, canonical, syntax, and diff checks appropriate to the task."
-  - "Stages exact authorized paths, completes readiness, commits, and then runs one composite immutable post-commit review plus only predeclared non-overlapping specialists."
-  - "Invalidates earlier verdicts after any code, test, fixture, documentation, or evidence correction changes the SHA."
-  - "Recovers and verifies a timed-out review report, sidecar, explicit verdict, and candidate identity before using it."
-  - "Triages reproducible findings from a stale older-SHA review against the current candidate without transferring its verdict."
-  - "Keeps the next sequential task blocked until every required gate passes at the final exact SHA."
-  - "Preserves repository cleanliness and candidate identity after verification."
-  - "Prioritizes hard-to-reverse high-consequence findings and excludes safely reversible nits from blocking review."
-  - "Requires comprehensive Round 1 findings with enough correction direction and limits later feedback to prior findings remediation regressions unavailable evidence or otherwise undiscoverable material issues."
-  - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
-  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
-  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
-  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
-  - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
-  - "Selects only applicable domain-scoped recipes for exact-SHA recovery, archive execution hygiene, exact-base child PR conflict recovery, candidate ledgers and approval registration, tamper-evident receipts, checksum-pinned installers, opaque persistent-ID migration, or security-boundary canonicalization."
-  - "Rejects a retroactive lineage that tries to turn advisory reports without the original immutable summary receipt identities and report digests into authoritative later rounds."
-  - "Never weakens aggregate approval-convergence: a correction requires fresh exact-SHA review and unresolved material blockers cannot be approved by exhaustion."
+- Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent
+  approval.
+- Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt
+  ceremony to ordinary work.
+- Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence.
+- Self-reviews the contract, complete diff and affected consumers.
+- Corrects the failed check and reruns applicable checks against the final candidate.
+- Does not treat an old result as evidence for changed bytes.
+- Advances only after real checks and authorization are satisfied; no independent approval is required.
 setupCommands: []
 teardownCommands: []
-parameters:
-  fixture: evaldata/README.md

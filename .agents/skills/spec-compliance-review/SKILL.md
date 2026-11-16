@@ -1,6 +1,6 @@
 ---
 name: spec-compliance-review
-description: Review a fixed implementation or commit against immutable plans, technical specifications, failure matrices, and acceptance criteria without modifying the target.
+description: "Review a software change against its contract when the user requests a review; report concrete material findings."
 ---
 
 # NED skill discovery: spec-compliance-review

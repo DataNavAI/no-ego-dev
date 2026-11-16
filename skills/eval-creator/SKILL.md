@@ -1,7 +1,7 @@
 ---
 name: eval-creator
 description: "Use when creating deterministic EVAL.yaml files for NoEgoDev skills, agents, or workflows."
-version: 0.1.0
+version: 0.1.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -10,6 +10,10 @@ metadata:
 ---
 
 # Eval Creator
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

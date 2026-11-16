@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.4.2
+version: 0.4.3
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,10 +11,14 @@ metadata:
 
 # Coder
 
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
+
 ## Mandatory completion: merge and local deployment
 
 For every task in this distribution, completion requires applicable checks and
-manual acceptance, independent review, merge into remote `main`, and verified
+manual acceptance, self-review, merge into remote `main`, and verified
 deployment from that merged commit to the default local Hermes instance. The user
 has authorized this normal merge/deployment flow; do not repeatedly request it.
 Do not mark NED tasks/goals done or send a completion report while any gate remains
@@ -23,7 +27,7 @@ not establish full deployment.
 
 Use an isolated checkout for the task; preserve unrelated working-tree changes.
 Fetch main, resolve integration, run the repository's required automated/manual
-checks, obtain exact-candidate review and green PR checks, merge, then read back
+checks, self-review the exact candidate and require green PR checks, merge, then read back
 the remote merged SHA. Deploy only committed merged contents. For CLI/runtime
 changes run the canonical checkout installer `bash scripts/install.sh` from the
 merged checkout and verify installed commands and generation identity. Run
@@ -33,7 +37,7 @@ enable only required plugin/toolset entries, and reload affected local Hermes/CO
 processes when needed. Verify the running/local installed behavior at the merged
 revision, then record merge/deployment evidence and complete the owned NED task.
 Never use AWS or named-profile rollout as a substitute for this local target.
-If deployment/review/access fails, keep work open with the actual blocker and
+If deployment/checks/access fails, keep work open with the actual blocker and
 continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.
 
 
@@ -56,31 +60,7 @@ When the remediation already exists as dirty tracked/untracked bytes in the corr
 
 ## Overview
 
-Implement one focused task per branch. Write tests for the key path, keep the diff small, establish and run project-owned static analysis, request bounded review, merge only after exact-SHA approval, and clean up.
-
-## Risk-weighted review convergence
-
-Use **Risk-weighted review**: prioritize hard-to-reverse or high-consequence changes and omit safely reversible nits. Enforce **first-round completeness**: **Round 1** receives all independently discoverable Critical/Important or otherwise material findings in one complete evidence-backed correction set. Round 2 and later verify dispositions and correction regressions; Round 3 completes the initial correction budget, and Round 4 and later enter approval-convergence mode. New feedback is allowed only for remediation changes, genuinely unavailable evidence, or a material issue that could not reasonably have been discovered earlier.
-
-### Prior-round context handoff
-
-Before Round 1, create one neutral, immutable **pre-review summary** covering governing scope, acceptance criteria, intended approach, hard-to-reverse risks, known tradeoffs, open questions, and the planned evidence matrix. Embed its exact closed-schema canonical JSON as `pre_review_summary_artifact`; the authority-bearing gate must parse it, verify lineage and serialization, recompute `pre_review_summary_digest`, and persist the verified bytes before dispatch. Provide that exact artifact to every reviewer in every round. The artifact and digest must remain unchanged throughout the stable lineage; changing either requires an explicitly new lineage. It supplements exact source evidence and never argues for approval or narrows independent review.
-
-For every Round 2 or later dispatch, pass the fresh reviewer the complete continuity packet, not a persuasive summary:
-
-- all prior candidate/base identities and **all prior exact review reports** plus verified report digests for every authorized bundle in every preceding generation;
-- a stable-ID **finding disposition ledger** with `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, correction evidence, and ownership;
-- a **remediation change map** mapping every prior finding to changed paths/sections and focused verification, with any authorized scope delta called out separately;
-- the original governing contract and complete current candidate; and
-- a canonical **prior-context digest** binding the exact reports, ledger, and remediation change map supplied to the reviewer.
-
-The controller must reject or block a later-round dispatch when this packet is missing, unverifiable, mismatched to any terminal prior generation, or cumulatively incomplete. It must validate that the returned report reconciles every prior finding ID, contains a **contradiction check**, and separates **New material findings**. Later reviewers must not reopen resolved feedback or demand the opposite correction unless current/new authoritative evidence proves the prior direction wrong; that exception must be labeled `PRIOR_FEEDBACK_CORRECTION` with both statements and decisive evidence. New findings are allowed only for remediation regressions, authorized scope additions, genuinely unavailable evidence, or a material Round-1-undiscoverable defect, and must state `Why it was not discoverable in round 1: <cause>`. Unrelated new findings and reversible preferences are omitted. Never suppress a real material safety/correctness defect merely for consistency. When it was reasonably discoverable earlier but missed, preserve it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, keep the gate blocked, and escalate the process failure rather than silently omitting it or treating it as ordinary later-round feedback.
-
-### Canonical round accounting
-
-**One review round is one immutable candidate generation.** One composite independent review covers specification, correctness, security, test honesty, conventions, integration, and operational risk for ordinary candidates. A named non-overlapping specialist may be predeclared only for a hard-to-reverse expertise gap; all authorized bundles **share one candidate generation and round number**. Persist one **review-readiness receipt** keyed by repository/artifact, lineage, round, **candidate SHA, current base SHA, and complete authorized review-bundle manifest**, with each per-bundle outcome. **A corrected candidate advances exactly one round** and invalidates every earlier commit-bound verdict. Before freezing that correction, collect the complete material finding set: a new candidate is inadmissible until every authorized bundle in the prior generation has reached a terminal verdict.
-
-For asynchronous UI/state-machine work that renders Replay, Reset, Navigate, Close, Share, or Retry before acknowledgement/finalization settles, follow [`references/render-before-ack-interleavings.md`](references/render-before-ack-interleavings.md): write a deferred-promise RED test at the render-before-await boundary, assert accepted event order and original-key observation, preserve retry/generation semantics, and serialize competing actions rather than relying on sequential tests.
+Implement one focused task per branch. Write tests for the key path, keep the diff small, establish and run project-owned static analysis, self-review the complete diff, merge only after required current-candidate checks pass, and clean up.
 
 ## Rules
 
@@ -89,8 +69,7 @@ For asynchronous UI/state-machine work that renders Replay, Reset, Navigate, Clo
 3. For UI implementation, read and reference the linked design artifacts before editing: project UI guideline, feature UI brief, design images/mockups, screenshots, or Figma/design-tool files. Do not implement visible UI from the tech spec alone when design artifacts exist.
 4. Put each automated check at the lowest reliable layer that proves the behavior: prefer fast deterministic unit tests, then focused integration tests for real boundaries, and use E2E only for the smallest irreducible full-stack journeys.
 5. Keep required E2E coverage minimal. Do not duplicate assertions already proven by unit or integration tests, and do not make the broad E2E matrix an unconditional PR gate.
-6. Use one fresh subagent for the **composite independent review** of each exact ordinary PR/commit. Every corrected SHA advances to the next monotonic review round; Round 4 and later use approval-convergence mode. Do not merge or deploy while a verdict is pending, and never treat review exhaustion as approval.
-   - **Specialist exception:** do not dispatch a standalone product-security/security-specialist reviewer for a normal low-risk slice. The composite reviewer, configured scanners, safe defaults, and targeted trust-boundary tests are the default. Predeclare a distinct specialist in the readiness manifest only for authentication/authorization, payments, private/regulated data, cryptography/credential issuance, untrusted upload/deserialization/execution, public write/admin APIs, cloud IAM/secrets, package/artifact publication, destructive account/data operations, or another named hard-to-reverse boundary the composite reviewer cannot credibly cover.
+6. Self-review the complete candidate against its contract and tests. Fix material defects and rerun affected checks. Use a separate reviewer only when the user explicitly requests one.
 7. A task is complete only after changes are merged to main.
 8. After completion, clean up the branch and local checkout.
 
@@ -116,7 +95,7 @@ Static analysis is required for every task that changes production code, test co
 2. **Provision when absent.** **If no project-owned static analysis command exists**, select an ecosystem-appropriate maintained analyzer, add it as a pinned **development dependency** or toolchain dependency, update the **committed lockfile**, add minimal **project-owned configuration** with explicit correctness/security rules, and expose one **canonical repository command** such as `lint`, `typecheck`, `staticcheck`, or `analyze`. Wire it into CI or the repository's canonical verification entrypoint when CI/config is in task scope. **Do not rely on a global-only installation** or an undocumented machine-local config.
 3. **Apply continuously.** Run the fastest trustworthy **changed-file analysis** **after every code change**. After the final code or test edit, run both the changed-file check and the canonical **full-project static analysis** as bare evidence-bearing commands. If the analyzer cannot safely target changed files, run the canonical full command each time.
 4. **Fail closed.** Any analyzer error, rule/config parse failure, missing dependency, unavailable required setup, or unreviewed suppression **blocks completion**. Fix the code or narrow a suppression to one evidence-backed false positive with an explanation and regression where possible; **never weaken rules**, add blanket ignores, lower severity merely to pass, or exclude changed code from analysis.
-5. **Preserve gate separation.** Static analysis **does not replace tests or independent review**. Record analyzer name/version, configuration path, exact commands, changed-file/full-project results, and any narrowly justified suppression in the PR evidence.
+5. **Preserve gate separation.** Static analysis **does not replace behavioral tests or self-review**. Record analyzer name/version, configuration path, exact commands, changed-file/full-project results, and any narrowly justified suppression in the PR evidence.
 
 ## UI Implementation from Design Artifacts
 
@@ -124,7 +103,7 @@ When implementing UI, the design artifacts are part of the implementation contra
 
 When the accepted visual authority is a private/review-only mock but production media or content has a separate approval boundary, also follow [`references/rights-bound-ui-from-private-mocks.md`](references/rights-bound-ui-from-private-mocks.md): inspect the named pixels and tokens, recreate only their geometry/interaction intent, map every visible slot to an eligible production asset or deterministic local fallback, preserve truthful unavailable states, and prove the public tree contains no mock bytes, review markers, fixture-only facts, receipts, or private paths.
 
-When remediating immutable review findings in a photo-rich static/generated UI, also follow [`references/immutable-photo-rich-ui-remediation.md`](references/immutable-photo-rich-ui-remediation.md): test ready and unavailable states independently, prove desktop route reachability rather than merely hiding mobile navigation, use canonical-path-only CSP-safe runtime image fallbacks, correct EventTarget browser fakes, rerun real-browser evidence after the final build, and re-review the new exact SHA.
+When remediating immutable review findings in a photo-rich static/generated UI, also follow [`references/immutable-photo-rich-ui-remediation.md`](references/immutable-photo-rich-ui-remediation.md): test ready and unavailable states independently, prove desktop route reachability rather than merely hiding mobile navigation, use canonical-path-only CSP-safe runtime image fallbacks, correct EventTarget browser fakes, rerun real-browser evidence after the final build, and verify the corrected candidate.
 
 Before editing visible UI code:
 
@@ -190,7 +169,7 @@ For privacy-bounded optional analytics/feedback APIs, portable source-evidence c
 
 ## General implementation closure boundaries
 
-- **Current-base merge:** fetch the live target base immediately before final integration, classify overlap, merge/rebase once in an isolated checkout, rerun identity-invalidated checks, and bind the final review to current base and head. Never treat an older green candidate as merge-ready after material base movement.
+- **Current-base merge:** fetch the live target base immediately before final integration, classify overlap, merge/rebase once in an isolated checkout, rerun identity-invalidated checks, and bind final verification to current base and head. Never treat an older green candidate as merge-ready after material base movement.
 - **Untrusted-model process isolation:** parse model output as untrusted data in a constrained child process or sandbox with bounded inputs, timeout, output size, filesystem/network permissions, and explicit schema validation. Never import, `eval`, source, or execute model-produced code in the authority process.
 - **TTY installer and credential checks:** detect whether installers or auth flows require a controlling TTY before launching them; keep hidden input off captured stderr/stdout, restore terminal echo on every exit, and verify the resulting non-secret account identity. Noninteractive automation must stop with a safe user action rather than hanging or exposing credentials.
 - **Exact-base/head recovery:** authenticate the remote base/head, commits, worktree residue, and pushed artifacts independently. Recover only declared paths, preserve partial RED or draft-PR checkpoints, and never infer missing bytes from a worker summary.
@@ -228,7 +207,7 @@ Provider/domain recipes are scoped examples, not universal architecture. Apply t
 9. **Testing only friendly ASCII fixture IDs.** Exercise an ID produced by the real generator. If canonical IDs can contain Unicode, convert them to deterministic opaque analytics IDs in the central sender and every direct POST path without relaxing server schemas.
 10. **Recomputing an exact-N session snapshot from only the new top N.** Availability and ranking are different. Keep saved IDs while they remain anywhere in the authoritative feed, and reset only when genuinely unavailable.
 11. **Calling a machine-specific dependency symlink a reproducible full-suite pass.** Release evidence must work from a clean-checkout-compatible tree. Make test configuration self-contained, then separately typecheck/build the package against its installed dependencies.
-12. **Saturating the session with plans and review loops before a reversible product slice exists.** Run required independent reviews in parallel, but continue tests-first implementation, certificate/cost prerequisites, and staging-only work that is safe to revise. Keep one concise canonical plan instead of repeatedly freezing near-identical candidates. Reserve execution/tool headroom for the actual build, staging deployment, browser review, production promotion, monitoring, and rollback. Pending reviews still block merge/production, but they should not turn “ship an MVP” into a documentation-only session.
+12. **Spending the session on review loops before a reversible product slice exists.** Continue tests-first implementation and authorized staging work. Self-review, run applicable checks, and fix material defects before merging. Use separate review only on user request.
 13. **Letting an immutable package choose its own reviewer authority.** Candidate checksums and valid signatures prove only internal consistency when the same package supplies the complete verifier key registry. Pin the canonical registry digest outside candidate/verifier control, bind registry identity/version into signed receipts, require unique active keys, and test a fully attacker-resigned disposable candidate against the unchanged external anchor. See `references/externally-anchored-signed-review-packages.md`.
 14. **Using broad or flaky E2E as a default merge gate.** A slow browser/device matrix can repeat lower-layer assertions and turn infrastructure noise into PR latency. Move deterministic permutations to unit/integration tests, keep only unique critical full-stack smoke paths, scope required E2E to affected changes, and never hide instability with retries or sleeps. A temporary quarantine requires replacement coverage where possible, an owner, issue, expiry, and an explicit residual-risk statement.
 
@@ -269,11 +248,3 @@ Do not let generic “fresh passing verification” pressure expand a RED-only t
 - [ ] The bare full-suite command is reproducible from a clean-checkout-compatible tree; package-specific typechecks/builds also pass without depending on undocumented machine-local symlinks.
 - [ ] Asynchronous pre-commit review matched the final staged `git write-tree`; review also approved the current merge-head SHA, and any post-review changes received a focused re-review.
 - [ ] Merged to main and branch cleaned.
-
-## Post-Round-3 approval convergence
-
-There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
-
-Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
-
-Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.
