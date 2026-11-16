@@ -1,7 +1,7 @@
 ---
 name: communication-evaluator
 description: Use when independently evaluating a NED message before or after it is sent to a user. Scores product framing, human-action clarity, evidence, brevity, and especially whether a person without a software-engineering background can understand the message after one read; returns an approval verdict, material findings, and a plain-language rewrite without inventing facts.
-version: 1.0.4
+version: 1.0.5
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # Communication Evaluator
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

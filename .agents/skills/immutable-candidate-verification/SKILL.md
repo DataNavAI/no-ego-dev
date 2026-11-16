@@ -1,6 +1,6 @@
 ---
 name: immutable-candidate-verification
-description: Verify and gate sequential software tasks at one immutable commit SHA using strict TDD, exact-scope staging, composite independent review, and reproducible evidence.
+description: "Verify the exact software candidate with self-review, relevant checks and reproducible source and deployment evidence."
 ---
 
 # NED skill discovery: immutable-candidate-verification

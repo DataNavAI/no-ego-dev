@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Bounded Self-Unblocking Publication
 
 Use this when a scheduled harvest encounters an existing automation PR, failed required check, local-ahead worktree, stale review/evidence receipt, or orphaned lock keeper.

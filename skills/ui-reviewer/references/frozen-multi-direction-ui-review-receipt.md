@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Frozen Multi-Direction UI Review Receipt
 
 Use this when independently judging several responsive design directions from an immutable screenshot/prototype bundle.

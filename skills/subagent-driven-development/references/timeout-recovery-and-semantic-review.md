@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Recovering Timed-Out Implementation Slices
 
 Use this when an implementation worker times out or loses its completion summary after it may have committed, pushed, opened a PR, or modified a surviving worktree. The semantic-renderer notes below remain useful for HTML/copy/generated-page slices, while the recovery sequence applies to any repository task.

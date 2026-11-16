@@ -1,6 +1,9 @@
 prompt: |
   Use the android-app-dev skill to plan or execute a realistic Android app feature.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "requires PRD issue tech spec and UI guideline or feature UI brief before coding user-facing UI"
   - "blocks or creates a UI design follow-up when a UI-bearing feature lacks design artifacts"
   - "maps PRD acceptance criteria and UI states to Android implementation tasks"

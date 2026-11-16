@@ -1,46 +1,16 @@
-prompt: |
-  Execute a six-task implementation plan with Hermes subagents. The tasks share a governing schema and UI brief, some are independent, and every completed implementation must pass one composite independent review for ordinary risk. The gateway may restart, reviewers may time out, and no two writers may race on the same worktree.
-
-  Use the subagent-driven-development skill to describe and execute the workflow from contract preflight through final integration review, including recovery and continuation behavior. Cover every applicable scenario and invariant in the supplied fixture, including the atomic candidate-review index, ordinary attached-delegation status from Hermes's process-local active-child registry and completion events, the sequential-mode override that keeps exactly one workstream active through parent/frontier reconciliation, the conservative gateway-process-start versus config-mtime fallback when timeout-specific adoption evidence is unavailable, and cumulative generation ordering for every prior exact review report in later-round packets. Use only the current `delegate_task(tasks=[...])` or single-task shapes: never pass removed `background` or `toolsets` arguments. Quote the exact queued status request from the skill, including its unknown-liveness rule. Explicitly retain configured-state proof, retention deletion, and rollback contraction behind the parent gates, in addition to deployment and publication.
+prompt: Execute a six-task implementation plan using authorized implementation delegation. Tasks share a schema
+  and UI brief; no two writers may race. The user requires one active implementation PR at a time and has not requested
+  separate review. A worker times out after pushing a tested checkpoint. Explain ownership, real artifact inspection,
+  self-review, tests, recovery, authorized merge and continuation.
 expectations:
-  - "Uses current delegate_task arguments with fresh role=leaf workers, treats dispatch as asynchronous, and never relies on removed toolsets/background parameters."
-  - "Asks at most one upfront batch of no more than three costly-to-reverse unanswered questions with recommended defaults, then continues without routine phase approval."
-  - "Uses a concise controller contract and sizes work as independently testable vertical slices rather than arbitrary minute estimates."
-  - "Verifies and persists a child timeout of at least 1800 seconds and a gateway timeout strictly greater than the child timeout before the first subagent dispatch, preferring timeout-specific process-owned generation evidence and conservatively falling back to process-start versus config-mtime proof."
-  - "Extracts the complete plan once, creates a tracked task list, and passes each child full task and governing-contract context rather than making it rediscover the plan."
-  - "Freezes exact schema, route, enum, timestamp, error-code, UI, and terminology contracts before the first RED test."
-  - "Uses a fresh implementer per task with focused RED-GREEN-refactor evidence and non-overlapping writer scopes."
-  - "Uses one composite independent reviewer for ordinary candidates, keeps partial or missing verdicts fail-closed, and prohibits a fragmented specification-then-quality chain."
-  - "Binds reviewers to one clean immutable SHA or explicit frozen snapshot and re-runs invalidated reviews after corrections."
-  - "Requires a green machine-readable review-readiness receipt before dispatch and uses one composite reviewer per ordinary immutable candidate; specialized review is reserved for named high-risk expertise gaps."
-  - "Uses an atomic candidate review index to suppress active or finalized duplicate same-SHA review and permits only one missing-evidence-only recovery after INCOMPLETE."
-  - "Finishes parent self-audit before reviewer dispatch, records a staged identity receipt, invalidates pending review on mutation, and uses a verified git archive with explicit cwd when a shared checkout moves."
-  - "Uses modern top-level batch semantics: each fan-out child has its own handle and completion delivery; separate calls are reserved for explicit ownership timing capacity or retry boundaries."
-  - "Uses completion hooks or parent completion delivery to trigger scheduling reconciliation after every worker stop, while the hook remains content-free and never dispatches or promotes a child directly."
-  - "Relies on Hermes's process-local active-child registry and completion events for ordinary attached delegation, gives users a queued runtime-status prompt, marks unverifiable liveness unknown, and does not require a duplicate lifecycle ledger."
-  - "Keeps runnable dependency-safe work active while preserving writer isolation, immutable review targets, and dependency order."
-  - "Recovers remote branches, commits, PRs, reports, and isolated residue before replacing a timed-out implementer or reviewer."
-  - "Does not mutate a shared worktree while a writer or snapshot reviewer is using it."
-  - "Runs a final integration review and canonical verification before declaring the plan complete."
-  - "Uses risk-weighted review so hard-to-reverse and high-consequence changes receive depth while reversible nits do not block."
-  - "Makes Round 1 comprehensive and returns all independently discoverable Critical/Important or otherwise material findings with enough direction in one correction matrix."
-  - "Limits later-round new feedback to correction regressions unavailable evidence or material issues not reasonably discoverable in Round 1 and records why."
-  - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
-  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
-  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
-  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
-  - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
-  - "when a parent mixes a repository-safe seam with an external authority gate audits the live tracker and source before creating one focused canonical dependency-safe child"
-  - "updates parent dependencies epic graph and task counts atomically then rereads the child and live counts before dispatch"
-  - "keeps provider configured-state deletion rollback deployment and publication behind their original gates and blocks when tracker mutation is not authorized"
-  - "closes a merged parent only after every literal acceptance row has immutable or authenticated evidence distinct required review kinds remain distinct and reviewed blobs are present in the merge tree"
-  - "verifies explicit tracker comment and closure authority before closeout mutations and otherwise returns a read-only closeout assessment blocked on owner action"
-  - "Positive scenario: honors sequential-mode override or counts distinct workstreams while reconciling durable owner leases artifact durability stacked-parent integration review-pending holds and the next frontier."
-  - "Boundary/negative scenario: refuses summary-only artifacts wrong-workdir verification child-approval transfer duplicate lease replacement and cleanup without exact ownership terminal state no-unpushed-work and evidence-preservation gates."
-  - "Positive reuse preflight: for major capabilities inspects the repository lockfiles internal APIs approved dependencies services frameworks integrations infrastructure and ecosystem, then records adopt configure extend wrap or build_new with evidence."
-  - "Boundary reuse preflight: build_new requires a material unmet constraint; a localized fix or refactor may use not_applicable with a reason, and the evidence enters the implementer/review packet without replacing independent composite review."
+- Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent
+  approval.
+- Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt
+  ceremony to ordinary work.
+- Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence.
+- Preserves one active implementation PR and non-overlapping writer ownership.
+- Inspects actual remote artifacts and check results rather than trusting child completion.
+- Recovers the existing checkpoint before retrying work.
+- Performs self-review and integration checks without automatic reviewer dispatch.
 setupCommands: []
 teardownCommands: []
-parameters:
-  fixture: evaldata/README.md

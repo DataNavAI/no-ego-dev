@@ -1,7 +1,7 @@
 ---
 name: react-native-app-dev
 description: "Use when setting up, implementing, testing, debugging, packaging, or reviewing React Native mobile apps, including Android Studio/SDK environment setup for Android emulator/device testing."
-version: 0.1.1
+version: 0.1.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # React Native App Dev
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

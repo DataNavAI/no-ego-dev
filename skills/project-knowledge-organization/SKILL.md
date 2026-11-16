@@ -1,7 +1,7 @@
 ---
 name: project-knowledge-organization
 description: "Use when starting or maintaining durable project knowledge for a client software project."
-version: 0.2.0
+version: 0.2.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -10,6 +10,10 @@ metadata:
 ---
 
 # Project Knowledge Organization
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

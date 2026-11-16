@@ -1,34 +1,16 @@
-prompt: |
-  A parent Hermes session dispatched two implementation subagents. One reports completed but only an early commit is on the remote branch; the other timed out after being asked to write a checksum-closed review report. The active-agent view is now empty, the project still has runnable dependency-safe work, and the user does not want a duplicate persistent queue.
-
-  Use the delegation-reliability skill to explain and execute the safe recovery and continuation approach. Distinguish runtime state, durable artifacts, review verdicts, and downstream authorization.
+prompt: An authorized implementation worker times out after pushing a checkpoint. The interactive parent may restart
+  and scheduled runs have only persisted state. Explain ownership, artifact recovery, direct verification and safe
+  continuation without duplicating writers or assuming child completion proves success. The user has not requested
+  independent review.
 expectations:
-  - "Does not treat a delegation handle, completed status, empty active-agent view, or self-report as proof that the requested deliverable exists."
-  - "Inspects the remote branch/commit/PR, shared checkout, isolated worker residue, and exact requested report/checksum paths before re-dispatching."
-  - "Classifies completed-with-partial-deliverable and timed-out-with-recovered-artifact states separately from task verdicts."
-  - "Verifies immutable identities, report bytes, checksums, and explicit verdicts before releasing dependencies."
-  - "Validates a candidate-and-base-bound review-readiness receipt, defaults ordinary work to one composite review bundle, nests predeclared specialists under one candidate generation, and uses an atomic review index to suppress duplicate same-bundle dispatch."
-  - "When a delivery is truncated or omits its middle, reads the complete saved summary before counting findings, planning remediation, or advancing a gate."
-  - "Verifies repository bytes and collaboration metadata separately after interruption and completes only missing idempotent metadata instead of launching another writer for already-complete code."
-  - "Uses unique attempt-scoped artifact paths and reconciles late results without overwriting evidence."
-  - "Uses hook-only continuation with the canonical external tracker because the user rejected a duplicate queue, while stating that this mode is process-local."
-  - "Uses each worker completion as a scheduling-reconciliation wake, keeps hook payloads out of dispatch authority, debounces duplicate wakes, and lets only the authoritative parent/controller schedule the next eligible worker."
-  - "Relies on Hermes's process-local active-child registry and completion events for ordinary attached delegation, offers an optional hook ledger only for cross-surface or restart history, and does not require a duplicate lifecycle ledger."
-  - "Keeps at least one real worker active when runnable dependency-safe work remains, without racing overlapping writers or mutating a frozen review target."
-  - "Treats each top-level batch child as independently handled and delivered, reconciles the first finisher without waiting for siblings, and reserves separate calls for explicit ownership timing capacity or retry boundaries."
-  - "Does not recursively schedule agents from a cron watchdog and keeps healthy watchdog output silent."
-  - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
-  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
-  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
-  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
-  - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
-  - "does not invalidate all candidate evidence for an unrelated documentation-only base advance and instead proves patch or affected-tree equivalence with a bounded delta check"
-  - "requires one final exact current-base current-head approval for the selected promotion candidate while reusing trustworthy unaffected evidence"
-  - "does not refill capacity merely because a periodic controller tick occurred and never manufactures tracker-only work to occupy a slot"
-  - "positive: restart-durable delegated delivery on one pinned board uses an early draft PR, exact board/run identity, persisted prompt reconciliation, GUI readiness, and current-base multi-PR convergence"
-  - "boundary/negative: must not create a competing controller or force sequential focus when parallel work is independent and no owner or dependency constraint declares serialization"
+- Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent
+  approval.
+- Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt
+  ceremony to ordinary work.
+- Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence.
+- Reconciles exact remote checkpoint and actual tests before continuation.
+- Treats process-local liveness and persisted evidence separately.
+- Maintains non-overlapping ownership and does not retry an uncertain mutation blindly.
+- Does not add review-readiness receipts, reviewer dispatch or approval rounds.
 setupCommands: []
 teardownCommands: []
-parameters:
-  fixture: evaldata/README.md

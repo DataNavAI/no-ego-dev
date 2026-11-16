@@ -1,6 +1,6 @@
 ---
 name: qa-audit
-description: "Independently audit a QA report against its test cases and supplied logs, screenshots and artifacts. Always run in a fresh subagent before a QA report is presented; verify evidence and return approval, required corrections or a blocker."
+description: "Audit a QA report when the user explicitly requests it. Check supplied logs, screenshots and artifacts against the report; identify material corrections and evidence limitations."
 ---
 
 # NED skill discovery: qa-audit

@@ -1,7 +1,7 @@
 ---
 name: english-copywriter
 description: "Use when authoring or performing a specialist review of English product copy for websites and mobile apps, including headlines, labels, CTAs, onboarding, empty states, errors, confirmations, and microcopy."
-version: 1.1.0
+version: 1.1.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # English Copywriter
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 
@@ -36,7 +40,7 @@ A specialist verdict is `PASS | NEEDS ITERATION | BLOCKED`:
 
 Omit reversible nits entirely. Do not report them as minor, optional, deferred, or polish. A tiny edit can still be material when it changes safety, privacy, accessibility, destructive-action consequences, factual truth, or the action a control performs.
 
-This verdict is not a binding review, release approval, or immutable-candidate certification. Defer candidate identity, review lineage, round handling, independence, and final approval to the applicable canonical reviewer or orchestration skill, such as `ui-reviewer`, `spec-compliance-review`, or `immutable-candidate-verification`. If asked to author and review the same candidate, author the copy and request a fresh independent canonical reviewer for binding approval.
+Use self-review for authored copy and report material findings. A separate reviewer runs only on explicit user request; do not claim independence for author review.
 
 ## Principles
 
@@ -148,6 +152,6 @@ For ongoing work, add a concise copy guideline to the project's established desi
 - [ ] Dynamic state, payload, documentation, and accessible copy agree.
 - [ ] Recommendations contain exact strings or exact design behavior.
 - [ ] Reversible nits are absent.
-- [ ] Any binding approval is left to a fresh canonical reviewer.
+- [ ] Copy is self-reviewed against its contract and visible context.
 - [ ] Exact-candidate reviews prove full SHA and manifest integrity before and after review and never repair concurrent candidate drift.
 - [ ] Implemented headline changes were tested in the real desktop/mobile layout, synchronized across all copy surfaces, and read back from production after release.

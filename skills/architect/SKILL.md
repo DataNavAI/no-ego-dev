@@ -1,7 +1,7 @@
 ---
 name: architect
 description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.12
+version: 0.2.13
 author: NoEgoDev
 license: MIT
 metadata:
@@ -10,6 +10,10 @@ metadata:
 ---
 
 # Architect
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## API-to-consumer journey contracts
 
@@ -185,7 +189,3 @@ Implementation/QA tasks: <engine setup, gameplay systems, analytics, tests, smok
 - [ ] Affected components and interfaces are explicit.
 - [ ] Schema/data migrations are described when relevant.
 - [ ] Tests and rollout are included.
-
-## Post-Round-3 approval convergence
-
-There is **no fixed round limit** for one stable review lineage. **Round 4 and later** use approval-convergence mode: approve the exact candidate as soon as all material blockers are resolved and no correction-introduced material defect remains. Reversible nits and optional hardening are omitted, but genuine security, privacy, correctness, data-loss, destructive-migration, or compliance defects remain blocking. Every changed candidate requires fresh exact-identity review; approval is never inferred from exhaustion.

@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Authoritative Comment Compliance Audit
 
 Use when reviewing a frozen UI candidate against a finite set of authoritative review comments and the requester wants only blocking/high findings.

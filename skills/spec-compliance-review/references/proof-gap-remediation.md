@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Remediating proof-only spec-review failures
 
 Use when an immutable spec review finds no implementation or contract defect, but fails because committed tests do not prove required behavior across production seams.

@@ -1,6 +1,9 @@
 prompt: |
   Use the web-game-dev skill to write the architecture approach for a browser-based game PRD.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "classifies the game by 2D or 3D multiplayer mode session length target devices browser classes core loop progression and persistence needs"
   - "researches and compares at least two to four viable web game engines or libraries before recommending one"
   - "recommends a performant engine default appropriate to the game type and explains rendering mobile tooling TypeScript bundle runtime community licensing and tradeoffs"

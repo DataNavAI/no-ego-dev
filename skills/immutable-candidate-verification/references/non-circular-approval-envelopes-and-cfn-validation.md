@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Non-circular approval envelopes and CloudFormation candidate validation
 
 Use this pattern when implementation review must happen before publication or deployment authority is finalized, but the approved source still needs to land with attestations in the same commit.

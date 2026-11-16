@@ -1,7 +1,9 @@
 prompt: |
   Use the project-manager skill to respond to a realistic client/project request.
 expectations:
-  - "Keeps a task open until independent review, required checks, remote main merge and verified deployment of that merged revision to default local Hermes; green tests or a draft PR alone never count as done."
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "Tracks every actionable user development request in NED before implementation, reuses matching goals/tasks for follow-ups, and maintains verified state without inventing edit commands; explicit user tracker choices take precedence."
   - "Asks at most one upfront batch of no more than three costly-to-reverse unanswered questions with recommended defaults, then continues automatically without routine phase approval."
   - "communicates issues through product impact, user-visible effects, scope, urgency, response, and evidence checkpoints instead of leading with technical jargon or implementation details"
@@ -70,16 +72,9 @@ expectations:
   - "tracks unresolved inline review threads accepted changes verified replies resolutions and explicit artifact approval separately from merge"
   - "preserves accepted work then closes review only PRs without merge and verifies remote local branch worktree preview copy access and scratch cleanup without deleting durable review evidence"
   - "enforces risk weighted review that prioritizes hard to reverse high consequence decisions and does not block on safely reversible nits"
-  - "requires the first review round to return all independently discoverable Critical Important or otherwise material findings with evidence and enough author steering in one deduplicated packet"
-  - "limits later round new feedback to remediation regressions unavailable evidence or material issues not reasonably discoverable in round one and records why"
-  - "requires a green review-readiness receipt before independent review, defaults ordinary candidates to one composite review, and adds a specialized reviewer only for a named high-risk expertise gap"
-  - "binds candidate and current base SHA, enforces monotonic candidate generations through Round 3, nests authorized specialist bundles under one generation, and tracks candidates bundles attempts recoveries runtime and token efficiency"
-  - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
-  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
   - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
   - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
   - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
   - "does not commit tracker or STATUS changes for routine worker review CI or no-change transitions"
   - "uses periodic reconciliation only as a lost-event watchdog and launches only a verified worker deficit with runnable product work"
   - "measures released product capability rather than worker occupancy or commit volume"
@@ -95,7 +90,7 @@ expectations:
   - "stores ownership dependencies retries blockers branches PRs tests and terminal evidence in GitHub Issues and linked PRs while scheduler receipts remain non-task execution evidence"
   - "preserves explicit user pause verifies scheduler state by fresh readback and never creates a Kanban board card or parallel queue"
   - "sequences verified backend API authorization validation persistence and runtime prerequisites before dependent frontend or mobile coding without inventing backend work for unrelated or pure-client changes"
-  - "when decomposing accumulated draft work freezes the latest draft SHA and evidence preserves it as the integration target gives shared files one owner and requires fresh aggregate review"
+  - "when decomposing accumulated draft work freezes the latest draft SHA and evidence preserves it as the integration target gives shared files one owner and self-reviews the integrated result and runs applicable checks"
   - "defaults to completing one canonical issue through review merge authorized release acceptance reconciliation and cleanup; partial PR pending review or CI does not free the slot, and parallel issues need explicit current user authorization"
 setupCommands: []
 teardownCommands: []

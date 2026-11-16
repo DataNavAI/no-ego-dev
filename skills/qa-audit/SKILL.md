@@ -1,7 +1,7 @@
 ---
 name: qa-audit
-description: "Independently audit a QA report against its test cases and supplied logs, screenshots and artifacts. Always run in a fresh subagent before a QA report is presented; verify evidence and return approval, required corrections or a blocker."
-version: 0.1.0
+description: "Audit a QA report when the user explicitly requests it. Check supplied logs, screenshots and artifacts against the report; identify material corrections and evidence limitations."
+version: 0.1.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,11 +11,15 @@ metadata:
 
 # QA Audit
 
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
+
 Check whether a QA report says what the supplied evidence supports. Audit approval is about the report's accuracy; a truthful report of product failures can be approved. It is not a release authorization or a claim that untested behavior works.
 
 ## Independent subagent boundary
 
-Run only as a fresh audit subagent. If invoked in the main/coordinator session, dispatch this task to a subagent and wait for its actual result. If already assigned as that independent worker, perform the audit here; do not delegate recursively. The auditor must not be the implementer, QA executor, report author, or an agent reusing that worker's conversation. Receive only governing requirements and the frozen review packet, not pressure to approve. If delegation or independent identity is unavailable, return BLOCKED; never self-audit inline or invent an auditor result.
+Run only for a user-requested audit. Inspect the evidence directly without dispatching another reviewer. State whether you authored the report and do not claim independent identity unless it is real. A formal independent audit requires the user to request that scope; it is not a prerequisite for ordinary QA delivery.
 
 Use read-only access to supplied artifacts. Do not fix the report, product, screenshots or logs; do not rerun the product and silently replace the historical evidence. Request a new QA run when execution evidence is insufficient. No login, model call, publication, issue changes or external access is authorized by this skill. Existing user authorization governs any separate follow-up.
 

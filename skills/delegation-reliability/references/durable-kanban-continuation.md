@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Durable completion-triggered engineering with Hermes Kanban
 
 Use this reference when a user expects work to continue automatically after each agent finishes, especially across gateway restarts or multi-day engineering milestones.

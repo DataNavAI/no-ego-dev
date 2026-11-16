@@ -1,7 +1,7 @@
 ---
 name: reviewable-artifacts
 description: "Use when durable Markdown, plans, specifications, screenshots, prototypes, or design directions need a rendered human-review surface with anchored feedback, explicit PR mode, cumulative review lineage, and safe cleanup."
-version: 1.5.0
+version: 1.5.1
 author: Hermes Agent
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # Reviewable Artifacts
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Purpose
 
@@ -87,12 +91,6 @@ python skills/reviewable-artifacts/scripts/github_review_threads.py \
 The helper exposes no reply or resolve subcommand and contains no GraphQL mutation. GitHub provides no compare-and-swap operation that atomically binds a review-thread mutation to an expected PR head, so there is **no atomic exact-head guarantee** between inspection and a later reply or resolution. When an authorized mutation is needed, use the normal GitHub/UI workflow only after **immediate revalidation** of repository, PR, live full head SHA, exact thread ID, unresolved state, and reviewer authority. Re-read the live target afterward, but a **post-check cannot undo a side effect** if the head or thread changed during the race window; report that uncertainty and reconcile it rather than claiming the operation was race-safe.
 
 ## Multi-Round Review Protocol
-
-### first-round completeness
-
-Round 1 is a broad review, not a sampling pass. Cover all material dimensions applicable to the artifact: correctness, user/CUJ fit, requirements, security/privacy, release/operations, accessibility, failure states, evidence quality, and artifact rendering. Report every material finding visible in the frozen candidate so later rounds do not become serial discovery.
-
-**Omit reversible nits entirely from findings and follow-up in every round.** This applies to Round 1, every disposition check, and every later follow-up—not only to newly introduced observations in convergence mode. Naming taste, cosmetic formatting, optional refactors, and minor polish that can safely wait do not become finding IDs, disposition entries, replies, or reasons for another review round.
 
 ### Cumulative lineage
 

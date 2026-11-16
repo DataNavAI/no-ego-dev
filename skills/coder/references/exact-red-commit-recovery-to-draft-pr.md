@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Recovering an exact RED commit into a reviewable GREEN draft PR
 
 Use when a task begins from a named RED commit that already exists locally or remotely and the user requires the GREEN continuation to remain independently reviewable.

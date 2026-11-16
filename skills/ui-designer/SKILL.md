@@ -1,7 +1,7 @@
 ---
 name: ui-designer
 description: "Use when creating project UI guidelines and feature designs, preparing visual implementation handoffs, or reviewing implemented UI for material visual, interaction, responsive, accessibility, and copy defects."
-version: 0.5.0
+version: 0.5.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # UI Designer
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 
@@ -166,7 +170,7 @@ For responsive changes, use [responsive layout verification](references/responsi
 
 ## Specialized use-case controls
 
-Apply these only when the named product/design context exists; they extend rather than replace the canonical safety and independent-review gates:
+Apply these only when the named product/design context exists; they extend rather than replace the authorization and verification requirements:
 
 - **Exact screenshot/Figma reproduction:** build a per-screen geometry ledger, separate visible from accessible hit geometry, verify chart coordinate systems and adjacent target non-overlap, and inspect pixel overlays across supported widths. Follow [exact reproduction geometry](references/exact-reproduction-geometry.md).
 - **Browser evidence diagnostics:** force and read back the exact CDP layout viewport, check decoded screenshot dimensions, localize overflow, account for lazy images, disable stale cache, and collect accessibility evidence from the same target. Follow [CDP viewport capture and image diagnostics](references/cdp-viewport-capture-and-image-diagnostics.md).
@@ -189,19 +193,9 @@ A handoff is not ready until each material requirement maps design to implementa
 
 Cover primary CUJ steps, action count, responsive breakpoints, interaction states, visible and accessible copy, focus/reading order, and required resilience states. Architecture cites these rows; implementation preserves them; QA verifies both deterministic behavior and pixels at named viewports. An image path without expected behavior is not acceptance criteria.
 
-## Independent review boundary
+## Self-review and requested review
 
-Apply independent copy and UI review to **material user-visible work**, not automatically to trivial non-visual edits.
-
-1. The designer finishes the canonical guideline, brief, visuals, acceptance map, and evidence, then freezes one candidate identity.
-2. Dispatch fresh reviewers that did not author or edit that candidate. Give them the exact PRD/CUJ, frozen canonical guideline, design-system contract, brief, visuals/runtime URL, target viewports, acceptance rows, and candidate/evidence identity.
-3. Reviewers are read-only. They must not create, edit, or update the governing guideline, candidate files, screenshots, code, or acceptance criteria. Missing canonical guidance or frozen evidence yields `BLOCKED`, not reviewer-authored replacement policy.
-4. The copy specialist reviews only material visible and accessible text: clarity, action naming, state truth, accessibility, trust, recovery, and destructive consequences. It supplies exact findings or replacements but does not grant binding UI approval.
-5. The independent UI reviewer checks all material visual, interaction, responsive, accessibility, trust, copy-in-context, CUJ-scope, and implementation-contract concerns in one complete pass. Omit safely reversible taste and cosmetic nits.
-6. Binding outcomes use `APPROVED` when no material blocker remains or `REQUEST_CHANGES` with one complete evidence-backed material correction set. `BLOCKED` is reserved for missing or contradictory inputs/evidence.
-7. The designer, never the reviewer, remediates findings in a new candidate generation, regenerates evidence, and requests fresh review of the changed candidate.
-
-Reviewer independence, read-only authority, and immutable candidate identity are not replaced by designer self-approval, thread resolution, tests, or stakeholder preference.
+Self-review the design against the PRD, selected CUJs, accessibility, responsive states, copy and implementation contract. Correct material defects and verify evidence. Use separate copy or UI reviewers only on explicit user request; design completion has no automatic review or approval round.
 
 ## Reviewing implemented UI
 

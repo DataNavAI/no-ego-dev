@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Dependency-free shared review plugin integration
 
 Use this pattern when many static mocks need one authenticated, centrally hosted component-comment system without adopting a frontend framework.

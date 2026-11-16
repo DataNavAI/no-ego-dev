@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Photo-First MVP Design Systems
 
 Use this reference when an entertainment, fandom, fashion, travel, food, sports, or collecting product depends on visual recognition and the user asks for a design system—not merely a mock.

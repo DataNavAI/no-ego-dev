@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Bounded feed-refresh expansion
 
 Use this pattern when a freshness-gated deployment fails because a source-backed refresh produces fewer than its minimum publishable rows.

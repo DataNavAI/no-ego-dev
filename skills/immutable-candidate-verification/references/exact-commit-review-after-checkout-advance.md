@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Exact-commit review after the shared checkout advances
 
 Use this when an immutable review targets commit `C`, but the checkout moves to a later commit during the review. The checkout movement is not automatically a finding against `C`; it invalidates any observation not proven to come from `C`.

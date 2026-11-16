@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Publication-to-deployment authority chain
 
 Use when reviewed editorial/source data must become a deployable artifact through distinct eligibility, signing, publication, implementation, and environment gates.

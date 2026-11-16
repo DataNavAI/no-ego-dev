@@ -1,83 +1,16 @@
-prompt: |
-  A scheduled issue monitor sees PR #17 at immutable SHA
-  0123456789abcdef0123456789abcdef01234567. Green exact-SHA CI already
-  covers the full suite and race checks. A previous reviewer wrote a valid
-  REQUEST_CHANGES durable marker for this same SHA. Another earlier attempt
-  timed out after writing an INCOMPLETE attempt report with one focused check.
-  Explain the next action and the rules for later review after a fixer pushes a
-  new SHA. Also explain how an exact-SHA APPROVED result can merge safely when
-  CI finishes after the reviewer's cron run has ended, without relying on
-  GitHub auto-merge.
-  Cover every applicable scenario and invariant in the supplied fixture. Also
-  explain the GitHub issue/PR, official Kanban, cron, and exact-SHA review
-  authority boundaries; how to resume an existing linked draft PR without
-  duplicating its issue or Kanban lineage; when pending review/CI retains
-  focus; and when exact task-owned cleanup is safe. Include compact checklists
-  for runtime budgets (including increasing both child and gateway when a
-  legitimate stage exceeds the child cap while preserving gateway > child),
-  closure reserve, readiness (explicitly requiring a successful private-data scan),
-  ordinary composite versus named high-risk specialist bundles and
-  aggregate approval, separate model-usage accounting that distinguishes a newly assigned
-  independent reviewer from a timeout continuation, Round-1 completeness that
-  prioritizes hard-to-reverse high-consequence risks, lifecycle-backed claim
-  reconciliation using official heartbeat JSON and a lifecycle-backed active-worker
-  lease, and exact cron-list schema plus durable watchdog binding.
-  Explicitly include durable board identity, installed script hash, and cron-job
-  binding in the project status record; parse/recompute-digest/persist/pass-
-  through of the unchanged closed-schema pre-review summary; atomic locked
-  persistence of controller-derived review mode; Kanban ownership of worker
-  isolation and runtime limits; and official cron operations for create/update/
-  pause/resume/remove and duplicate convergence.
-
-  Your response must satisfy these explicit output rules:
-  - Open with the affected product or release outcome, not PR, SHA, reviewer,
-    worker, or controller mechanics.
-  - Use the exact redaction-safe labels `private-data scan` and `model usage
-    accounting`; do not substitute alternative labels. Require the controller to
-    durably persist separate per-generation, per-bundle, and per-attempt model usage accounting
-    together with suppression, recovery, verdict, and runtime measurements.
-  - For Round 1, omit reversible nits and return every independently discoverable material finding with sufficient correction direction.
-  - For each later-round new blocker, state why it was not reasonably discoverable in Round 1.
-  - If Round-3 cumulative history lacks the Round-1 exact report or generation
-    identity, fail closed before substantive Round-3 review.
-  Use the canonical product-communication envelope, not a `Purpose:` metadata prefix.
+prompt: A scheduled issue monitor finds one owned issue with a linked draft PR and green exact-source CI. No separate
+  review was requested. A previous agent reported a reproducible material defect. Explain how to reproduce and fix
+  it, rerun affected checks, self-review, deliver under existing authority and read back the merged state. Do not
+  create a duplicate issue, PR or review attempt.
 expectations:
-  - "The unchanged SHA is not reviewed again after a structurally valid REQUEST_CHANGES result."
-  - "One fixer receives the complete blocking set, and review resumes only for the resulting new SHA."
-  - "Timeout recovery inspects the attempt-scoped artifact before any replacement is dispatched."
-  - "A scheduled run dispatches at most one reviewer and never relies on async completion reinjection."
-  - "A green review-readiness receipt is validated before reviewer launch; ordinary candidates use one composite review bundle and specialized review requires a named high-risk expertise gap."
-  - "Stores all predeclared review bundles under one candidate generation, requires aggregate bundle approval before merge, and durably persists separate model usage accounting plus candidate bundle attempt suppression recovery verdict and runtime measurements."
-  - "Checks the effective runtime budget before dispatch, increases both child and gateway budgets when a legitimate stage can exceed the child cap, and keeps gateway greater than child."
-  - "Reconciles agent:in-progress claims with a lifecycle-backed active-worker lease and durable repository evidence instead of treating a label or OS process list as proof of a live worker."
-  - "A replacement reuses trustworthy exact-SHA CI and recovered checks, running only missing focused or adversarial evidence."
-  - "APPROVED is impossible while any required gate is missing; INCOMPLETE remains fail-closed."
-  - "The reviewer reserves report-closure time and writes a durable candidate-bound outcome."
-  - "A durable approval is consumed by one merge-only executor after exact-SHA approval, checks, and policy are revalidated; no duplicate reviewer is dispatched."
-  - "GitHub auto-merge is not used because its later final merge is not atomically constrained to the originally approved head after authorized pushes."
-  - "The merge-only executor uses an atomic expected-head operation such as gh pr merge --match-head-commit APPROVED_SHA, and refuses to merge when no atomic head guard is available."
-  - "Round 1 prioritizes hard-to-reverse high-consequence risks, omits reversible nits, and returns all independently discoverable Critical/Important or otherwise material findings with enough correction direction."
-  - "Round 2 and later are disposition checks and any allowed new blocker states why it was not discoverable in round 1."
-  - "Uses official Kanban running-task status run and heartbeat JSON as the durable activity evidence and leaves worker continuation to the gateway dispatcher."
-  - "A cron tick performs one bounded board reconciliation and at most one official dispatch while Kanban owns every task lifecycle stage."
-  - "Each fresh scheduled run starts from official cron and Kanban durable state rather than relying on the original conversation or completion reinjection."
-  - "Every non-silent user delivery uses a natural project-specific opening followed by Executive summary Human action needed and Detailed information while leading with product or release impact and never using a Purpose metadata prefix."
-  - "For round two and later passes all prior exact review reports in cumulative generation order a stable finding disposition ledger a remediation change map and a bound prior-context digest to the fresh reviewer."
-  - "Creates one neutral immutable pre-review summary before Round 1 embeds its exact closed-schema canonical artifact and requires the authority-bearing gate to parse it recompute its digest persist verified bytes and give the unchanged artifact to every reviewer."
-  - "Requires reconciliation and a contradiction check so later reviewers do not contradict prior feedback without an explicit evidence-backed correction."
-  - "Rejects unrelated new findings while preserving allowed material safety findings with an explicit late-discovery cause."
-  - "Preserves a genuine late material defect that was reasonably discoverable earlier as a material process escape keeps the gate blocked and escalates instead of suppressing or drip-feeding it."
-  - "Uses no fixed round limit and puts Round 4 and later in approval-convergence mode: approve once all prior material blockers are resolved and no new material defect remains, but never approve by exhaustion or suppress a genuine material process escape."
-  - "Uses one project-scoped no-agent Hermes cron script and Kanban board: verifies active-profile max_in_progress=1, installs/read-backs the generated safe script outside the repo, executes that exact script with --dry-run before activation, and persists board script hash and job binding in project status/notepad."
-  - "Parses real cron list job_id prompt_preview script no_agent workdir enabled state and schedule fields, rejects duplicate IDs partial collisions and invalid booleans/states, preserves pause, converges official calls, and requires a fresh exact-one readback; new paused projects stage create canonical ID immediate pause and paused readback."
-  - "The standalone script uses fixed subprocess argv, validates complete official list stats running and dispatch schemas, emits empty stdout for verified no-op, and invokes exactly one dispatch --max 1 --json only for ready work plus mutually verified zero running."
-  - "Any malformed conflicting unknown or hostile evidence and any running claim prevent dispatch until official gateway stale reclaim returns ready; dry-run never dispatches; pause/remove requires exact current binding plus fresh post-operation readback."
-  - "Runtime cron uses script=<relative safe filename> and no_agent=True with exact HERMES_HOME, optional matching profile-name env, and no prompt agent recursive cron chat or delegate_task, while Kanban owns claims heartbeats stale reclaim worker isolation runtime runs dependencies and lifecycle stages."
-  - "Authority-conflict scenario: keeps GitHub issue requirements/priority/closure, GitHub PR candidate/review/check/merge state, official Kanban scheduling/claims/heartbeat/stale reclaim, cron schedule/receipts, and exact-SHA review validity in separate authority domains and rejects competing authority."
-  - "Draft-resume scenario: preserves one issue to one Kanban lineage, resumes its linked draft PR, uses Refs while draft or pending, switches from Refs to Closes when exact-head approval and required CI make the PR merge-ready, then performs guarded merge and closure verification."
-  - "Focus scenario: pending review or CI retains focus except explicit issue-authority reprioritization, a P0 interruption, or a verified blocker."
-  - "Safe-cleanup scenario: removes only exact task-owned disposable worktrees/logs with no live owner or unpushed commits while preserving evidence shared paths and private runtime material."
+- Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent
+  approval.
+- Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt
+  ceremony to ordinary work.
+- Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence.
+- Reuses the canonical issue and existing PR under the concurrency limit.
+- Material reproducible defects remain blockers until fixed and verified.
+- Reconciles durable source and CI state before uncertain mutation retries.
+- Does not wait for a reviewer verdict or merge-only reviewer executor.
 setupCommands: []
 teardownCommands: []
-parameters:
-  fixture: evaldata/README.md

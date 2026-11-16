@@ -1,7 +1,7 @@
 ---
 name: marketer
 description: "Use when planning, publishing, launching, promoting, or monitoring a product or mobile app, including privacy-safe feedback, SEO/searchability, parity, launch, app-store, and paid-channel operations."
-version: 0.3.1
+version: 0.3.2
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # Marketer
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

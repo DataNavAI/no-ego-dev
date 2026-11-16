@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Recovering timed-out delegated TDD work
 
 A coding delegation can time out after completing edits or while running the broad suite. Treat timeout as an unknown repository state—not as implementation failure and not as permission to restart blindly.

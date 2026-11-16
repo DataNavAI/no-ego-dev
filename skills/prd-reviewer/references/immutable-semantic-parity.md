@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Immutable-candidate semantic parity probes
 
 Use these checks when a candidate claims that prose schemas, executable validators, and sample/pilot data form one closed contract.

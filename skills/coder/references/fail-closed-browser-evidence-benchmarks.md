@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Fail-closed browser evidence and generated benchmark gates
 
 Use this reference when a release task must publish browser artifacts and/or score a generated release candidate against frozen benchmark inputs before deployment.

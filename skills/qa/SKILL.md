@@ -1,7 +1,7 @@
 ---
 name: qa
 description: "Run defined QA cases in a subagent, collect logs/screenshots and produce an evidence-backed report audited by a separate qa-audit subagent before delivery. Use for QA execution, reports and bug triage; route website case design and browser coverage to website-qa."
-version: 0.4.0
+version: 0.4.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,18 +11,13 @@ metadata:
 
 # QA
 
-## Subagent execution and independent audit
+## Default verification policy
 
-Use two distinct workers: a QA executor and a fresh evidence auditor. The coordinator manages dispatch and delivery; it does not perform QA inline. This separation lets another agent check what the evidence actually proves before a user relies on the report.
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
-1. **Coordinator:** dispatch a QA subagent with the exact target/build, environment, requested scope, defined test cases and expected results, allowed actions, and a unique output destination. If cases are missing, have that worker define them from the governing spec before execution; never silently shrink scope. Website cases use `website-qa` within this workflow.
-2. **QA worker:** when already assigned this role as a subagent, execute the cases here instead of recursively delegating QA to another executor. Capture actual artifacts and freeze the report bundle described below. Do not fix the product mid-run; a fix changes the target and requires a new run.
-3. **Independent auditor:** load [`qa-audit`](../qa-audit/SKILL.md) in a fresh subagent that did not author the implementation, execute the cases, or write the report. Pass the frozen report, manifest, case inventory, target identity and artifact root. The QA worker can dispatch the auditor if supported; otherwise return an internal handoff asking the coordinator to dispatch it. That handoff is not the user report.
-4. **Coordinator delivery gate:** read the audit, recompute the report and manifest SHA-256 and every referenced artifact checksum, and require `APPROVED` for those exact bytes, target, run and revision. Then present links to the report, audit and retained artifacts. A product FAIL or BLOCKED report also needs this audit; audit approval confirms report accuracy, not product readiness.
+## Execution and self-review
 
-Missing delegation, no available worker slot, a failed/timed-out executor or auditor, self-audit, and an unreadable approval are blockers, never permission to run inline or claim approval. Preserve partial artifacts and communicate a short status/blocker while arranging recovery. Do not present or publish an unaudited generated report as the QA result. Standalone plan authoring does not need an execution audit, but any generated run report does.
-
-When audit returns `CHANGES_REQUIRED` or `BLOCKED`, return findings to the QA author. Correct claims or gather missing observations in a new revision; preserve the old bundle and finding dispositions, then request a fresh audit. Re-check the exact approval binding after any report, evidence, target, redaction or link change. Stop after two unsuccessful correction attempts with an actionable blocker and retained evidence rather than looping or weakening findings. Audit outputs are final review records; they do not recursively require another QA audit.
+Execute the requested cases, capture actual evidence and self-review the report against the target and observations. Report PASS, FAIL and BLOCKED truthfully. A separate `qa-audit` is optional and runs only on explicit user request; report delivery does not require an auditor or approval receipt.
 
 ## Evidence bundle and result contract
 
@@ -156,7 +151,7 @@ If a major flow is intentionally out of scope for the current run, list it under
 5. **Generate, audit, then publish/report**
    - Produce and freeze the QA report and evidence manifest under the result contract above.
    - Include per-test-case results, failure details, screenshots, linked bug issues, and unplanned issues found.
-   - Obtain independent `qa-audit` approval for the exact report/manifest before presenting, uploading or attaching it to the appropriate place: issue comment, PR comment, release/milestone comment, project docs, or artifact host used by the project.
+   - Self-review the report against retained evidence before presenting or publishing it.
    - Include stable links to screenshots or attach them with the report before cleanup.
 
 6. **Clean up run artifacts**
@@ -276,6 +271,6 @@ Notes:
 - [ ] Obvious out-of-scope user-facing issues were noted and triaged.
 - [ ] Issue system was searched before filing each bug.
 - [ ] Bugs were created or duplicate bugs updated with evidence.
-- [ ] Fresh independent auditor approved the exact report/manifest bytes; product and audit statuses are separate.
-- [ ] Coordinator verified approval binding before delivery/publication.
+- [ ] Report claims match observed evidence; unavailable checks are disclosed.
+- [ ] Report and retained artifact identities were verified before delivery/publication.
 - [ ] Report, audit and evidence were retained; only verified temporary duplicates were removed.

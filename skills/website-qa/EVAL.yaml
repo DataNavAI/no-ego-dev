@@ -1,6 +1,9 @@
 prompt: |
   Use the website-qa skill to recommend or update a core QA inventory and choose and report a risk-appropriate release QA scope for the website described in the fixture.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "recommends one canonical core QA document at .projects project qa core-qa.md unless a stronger existing convention exists while treating the template as adaptable guidance"
   - "inventories critical user journeys with stable descriptive CUJ identifiers and hierarchical test case identifiers without renumbering historical IDs to close gaps"
   - "preserves retired or superseded coverage history and deduplicates overlapping cases"

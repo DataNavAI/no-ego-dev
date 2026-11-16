@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Concurrent Review Snapshot Discipline
 
 Use this pattern when an independent reviewer will inspect generated UI, build output, screenshots, traces, or a repository while the parent may continue working.

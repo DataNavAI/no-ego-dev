@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Contract-drift review for subagent-driven development
 
 Use this check when a task is implemented from a condensed delegation prompt while the project also has a PRD, technical specification, schema, API contract, or rollout plan.

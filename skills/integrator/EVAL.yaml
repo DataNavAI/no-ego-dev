@@ -1,6 +1,9 @@
 prompt: |
   Use the integrator skill to respond to a realistic client/project request: research and integrate a third-party email delivery provider for a web app. The user wants the agent to compare options, handle account/workspace setup guidance, integrate API or SDK configuration, verify sandbox delivery, and document reusable provider-specific knowledge without exposing secrets.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "mentions durable artifact"
   - "includes verification"
   - "avoids vague next steps"

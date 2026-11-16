@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Signed semantic review receipts for immutable content candidates
 
 Use when a content candidate relies on reviewer signatures rather than hashes alone. A candidate checksum only proves bundle integrity; it does not prove that a reviewer authenticated the decision encoded inside each record.

@@ -1,7 +1,7 @@
 ---
 name: seo-growth
 description: Use when a website needs evidence-based organic search growth. Researches high-potential queries, maps them to the best existing or justified new pages, implements technical and on-page improvements, verifies indexability and rendered output, and iterates from rankings, Search Console, analytics, and conversion evidence without search spam or fabricated metrics.
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 # SEO Growth
+
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
 ## Overview
 

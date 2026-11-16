@@ -3,6 +3,9 @@ prompt: |
 
   Use the serialized-catalog-publication skill to choose the safe next action and report the true publication state without creating coordination churn. Include a compact control table that explicitly covers serial-versus-parallel promotion, every retained release gate, remote PR identity readback after creation and every head change, and separate source-page/original-media/derivative receipts.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "preserves the owner's explicit serial-publication instruction and does not silently start the next artist"
   - "enters BLOCKED_EXTERNAL_AWAITING_OWNER_DEFERRAL and asks once for explicit owner deferral instead of retrying or manufacturing checkpoint work"
   - "does not count merged or staging verified work as production publication"

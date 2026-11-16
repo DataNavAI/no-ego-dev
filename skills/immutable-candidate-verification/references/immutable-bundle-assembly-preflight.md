@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Immutable bundle assembly preflight
 
 Use when freezing a file-based candidate outside Git, especially a visual-review bundle that mixes generated screenshots, rights evidence, manifests, and human-readable inventory claims.

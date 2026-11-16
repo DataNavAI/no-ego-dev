@@ -1,7 +1,7 @@
 ---
 name: ui-reviewer
 description: "Use as a fresh read-only reviewer for frozen UI evidence, benchmarking comparable market leaders and giving prioritized design feedback against the canonical project UI guideline."
-version: 0.3.0
+version: 0.3.1
 author: NoEgoDev
 license: MIT
 metadata:
@@ -12,60 +12,19 @@ metadata:
 
 # UI Reviewer
 
+## Default verification policy
+
+Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
+
 ## Overview
 
 Act as an experienced product UI designer reviewing either proposed design images/mockups or real implemented product UIs. The review should raise the design quality bar, not merely catch broken controls. Judge the work against foundational UI principles, product intent, user comprehension, accessibility basics, and the top-of-market patterns users already understand from comparable services.
 
 The reviewer is intentionally separate from the designer. When reviewing newly generated designs, be candid and specific enough that the `ui-designer` can revise the artifact in another pass. When reviewing shipped or staged UI, produce evidence-backed findings that can become design revisions or issue-managed UI bugs.
 
-## Risk-weighted review priority
+## Requested review boundary
 
-Prioritize UI findings by user consequence and reversibility. Spend the deepest attention on decisions that are **hard to reverse** after implementation or launch: information architecture, core journey structure, navigation model, irreversible or high-consequence actions, accessibility foundations, trust/privacy representations, platform-wide design-system contracts, and patterns whose rollout would force broad migration. Also block severe user harm or inability to complete the primary journey even when the visual fix itself is small.
-
-Ignore reversible nits that can safely be fixed later: one-off spacing, cosmetic alignment, minor copy polish, subjective stylistic preference, or local decoration that does not affect comprehension, accessibility, trust, implementation contract, or the primary journey. **Omit them entirely** from findings and follow-up; do not create another design round for such polish.
-
-## First-round completeness
-
-**Round 1 is the comprehensive UI review.** Present all independently discoverable findings in round one as much as possible. Inspect the full agreed screen/state/device set, trace the primary journey, examine bounded sibling instances of each issue class, and provide one prioritized revision checklist with evidence, user impact, principle, and concrete direction. Do not stop at the first weak screen or reserve obvious feedback for later.
-
-Round 2 and later are disposition checks. Later-round feedback is limited to unresolved round-1 findings, regressions introduced by the revision, genuinely new UI evidence, or a material issue that could not reasonably have been identified from the first frozen evidence set. Any new later-round blocker must state `Why it was not discoverable in round 1: <cause>`. Do not introduce fresh taste, reversible nits, or an unrelated visual direction after the designer followed the first checklist.
-
-## Prior-round context continuity
-
-Every round must receive the exact immutable **pre-review summary** created before Round 1, plus its verified `pre_review_summary_digest`. The authority-bearing gate must first parse the embedded closed-schema `pre_review_summary_artifact`, verify its lineage and canonical serialization, recompute the digest, and persist the verified bytes. Use it as a neutral baseline for governing scope, acceptance criteria, intended approach, risk assumptions, tradeoffs, open questions, and planned evidence—not as a persuasive substitute for the exact contract or candidate. A missing, malformed, mismatched, or changed artifact blocks review for the stable lineage.
-
-For **Round 2 or later**, fail closed unless the neutral packet contains the complete cumulative context for every preceding round:
-
-- every prior candidate/base identity and **all prior exact review reports** with verified digests, ordered by candidate generation from Round 1 onward;
-- a stable-ID **finding disposition ledger** recording each prior finding as `UNRESOLVED`, `RESOLVED`, `SUPERSEDED`, or `OWNER_DECISION`, with evidence and the responsible correction;
-- a **remediation change map** from each finding ID to the changed artifact paths/sections and focused verification, plus any explicitly authorized scope change;
-- the original governing request/specification and the complete current candidate; and
-- a controller-computed **prior-context digest** binding the exact reports, ledger, and change map supplied to this fresh reviewer.
-
-Do not rely on a controller summary instead of the exact prior reports. Missing, unverifiable, mismatched, or internally inconsistent prior context is `BLOCKED_MISSING_PRIOR_CONTEXT`; do not perform a substantive later-round review.
-
-A fresh reviewer remains independent, but must begin with reconciliation rather than a new unconstrained review:
-
-1. Revalidate candidate and packet identities.
-2. Disposition every prior finding by stable ID against the current bytes and evidence.
-3. Perform a **contradiction check** against prior feedback and accepted dispositions. Do not reopen a resolved finding, reverse a prior required direction, or demand the opposite implementation unless current candidate evidence or newly available authoritative evidence proves the prior feedback invalid. Label such a correction `PRIOR_FEEDBACK_CORRECTION`, cite both statements and the decisive evidence, and explain why following the earlier direction is now unsafe or incorrect.
-4. Report **New material findings** only when they are caused by remediation, by an explicitly authorized scope change, by genuinely unavailable evidence, or by a material defect that could not reasonably have been discovered in Round 1. Each must state `Why it was not discoverable in round 1: <cause>` and identify the allowed category. Omit unrelated new findings and reversible preferences rather than extending the lineage.
-
-The later-round report must include `Prior-round reconciliation`, `Contradiction check`, and `New material findings` sections. A material safety/correctness defect is never suppressed merely to preserve consistency. If it fits an allowed late-finding category, use that evidence-backed path. If it was reasonably discoverable earlier but was missed, record it as a **material process escape** with `MATERIAL_PROCESS_ESCAPE`, preserve the evidence, keep the gate blocked, and escalate the review-process failure; do not silently omit it or launder it into ordinary drip-fed feedback.
-
-## Unbounded approval convergence
-
-- **Round 1:** complete risk-weighted review with one actionable revision checklist.
-- **Round 2:** verify the revised frozen UI against round-1 dispositions.
-- **Round 3:** continue review of unresolved journey/design-system risks and revision-introduced regressions.
-
-## Mandatory review lineage gate
-
-**Before substantive review**, require an authenticated controller receipt containing `lineage`, a positive integer requested round, `candidate_identity`, `review_kind`, and `required_review_kinds`. If any field is **missing or ambiguous**, return `BLOCKED_INVALID_LINEAGE` without reviewing. For Round 4 and later, require controller-derived `approval_convergence` mode and the complete cumulative prior-report history. Every durable result must bind the receipt fields, evidence-generation identity, and verdict.
-
-## Independent read-only boundary
-
-Run this skill in a **fresh review-only leaf** that did not author the guideline, design, implementation, or evidence. The reviewer **must not create, edit, or update** candidate artifacts, project guidance, screenshots, or code. Use only the frozen canonical guideline and exact evidence identity supplied by the orchestrator; authoring and remediation belong to `ui-designer` or `coder` in a later candidate generation.
+Review only when requested by the user. Inspect the supplied artifacts without editing them during review; report material findings and whether you authored the candidate. A fresh reviewer or formal approval protocol is optional and requires explicit user request.
 
 ## Durable Artifact Locations
 
@@ -330,11 +289,3 @@ For a full photo-heavy design-system specimen and rights-safe fixture review, fo
 - [ ] Report assigns `PASS`, `NEEDS ITERATION`, or `BLOCKED` and omits reversible nits.
 - [ ] Revision checklist is concrete enough for `ui-designer` or a coder to act on.
 - [ ] Approval, if given, includes rationale and implementation guardrails.
-
-## Post-Round-3 approval convergence
-
-There is **no fixed round limit** for one stable review lineage. **Round 4 and later** run in **approval-convergence mode**: begin by trying to prove the exact candidate is approvable, verify every prior blocking finding disposition and correction-introduced regression, and return `APPROVED` as soon as no unresolved material blocker remains. Do not request another round for reversible nits, stylistic preferences, optional hardening, or evidence outside the governing acceptance criteria.
-
-Approval-convergence mode is not automatic approval and never permits approval by exhaustion. A genuine material security, correctness, privacy, data-loss, compliance, destructive-migration, or ineffective-test defect remains blocking. A late material process escape must retain `MATERIAL_PROCESS_ESCAPE`, evidence, and escalation. If approval is still impossible, return one smallest complete blocking correction set rather than drip-feeding feedback; the corrected immutable candidate advances to the next monotonic round with no fixed round limit.
-
-Every corrected candidate still requires a fresh exact-identity review. Round 2 and later receive the exact immutable pre-review summary, complete cumulative prior-report history, stable finding dispositions, remediation map, and contradiction check. Only an exact-candidate `APPROVED` verdict authorizes merge or publication.

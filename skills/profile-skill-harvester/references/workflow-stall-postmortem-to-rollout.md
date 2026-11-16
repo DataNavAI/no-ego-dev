@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Workflow-Stall Postmortem to Canonical Skill Rollout
 
 Use this when repeated agent activity produces little product progress and the user asks to correct the governing skill library, then deploy it across sibling profiles.

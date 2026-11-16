@@ -1,17 +1,18 @@
 prompt: |
   First execute the synthetic defined test cases in evaldata/execution/plan.md against
   evaldata/execution/app.mjs in a disposable output folder outside the repository.
-  Apply the qa skill's coordinator/worker boundary: execution belongs in a subagent,
-  and its completed report must receive a fresh qa-audit subagent review before delivery.
-  Capture real command logs and retain a report, manifest and audit. Do not fix the target,
-  contact providers, use real credentials or file external issues. Supply the output path
-  and actual executor/auditor identities. Preserve the failing and blocked cases honestly.
-  Separately run the real-browser case in evaldata/visual/plan.md against its local
-  index.html, retaining an actual screenshot and an independent image-inspecting audit.
+  Execute the cases directly and self-review the resulting report against the logs.
+  Capture real command logs and retain a report and manifest. Do not fix the target,
+  contact providers, use real credentials or file external issues. Supply the output path.
+  Preserve failing and blocked cases honestly. Separately run the real-browser case in
+  evaldata/visual/plan.md, retaining an actual screenshot and observed-action log.
   Do not overwrite the original CLI bundle or its intentionally blocked case.
   Then read evaldata/README.md and explain the website-routing decision and required
   matrix without claiming those FieldPulse journeys were executed.
 expectations:
+  - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
+  - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
+  - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "routes website core-QA authoring or maintenance and website smoke focused regression or full QA runs to website-qa"
   - "uses the website-qa canonical core-qa document instead of creating a competing generic website smoke plan"
   - "creates or updates the appropriate general plan or for a website the canonical core-QA document"
@@ -33,12 +34,7 @@ expectations:
   - "Rejects screenshots not bound to the candidate nested UX skill packages emission-only analytics proof and calling one smoke or journey run complete QA."
   - "Positive API-assisted journey matrix covers pagination boundaries malformed and stale continuation cache hit miss expiry stale selection transient control recovery raw ID versus display label and production-data minimization."
   - "Boundary/negative mutation cases cover duplicate submit timeout malformed-success and 5xx with authoritative readback and idempotency, and prohibit sensitive fields in production evidence."
-  - "executes the defined calculator cases in an actual subagent without recursive QA dispatch or an inline substitute"
   - "retains real command logs with exit codes; reports CALC-01 and03 PASS CALC-02 FAIL CALC-04 BLOCKED; overall FAIL with2 passed1 failed1 blocked0 not run"
-  - "freezes report and manifest hashes and obtains a fresh independent qa-audit subagent verdict for those exact bytes before delivery, rechecking every referenced artifact checksum"
-  - "distinguishes audit APPROVED from a product FAIL and does not invent a visual artifact for the unavailable UI"
-  - "blocks unaudited presentation on unavailable delegation interruption audit timeout or changed evidence and preserves partial artifacts"
-  - "executes the separate visual fixture in a real browser and retains a screenshot of Count:1 plus observed-action log; the fresh auditor actually inspects image contents or records a blocker"
 setupCommands: []
 teardownCommands: []
 parameters:

@@ -1,3 +1,5 @@
+> Separate-review scope: a separate reviewer is used only when the user explicitly requests one. Review rounds, lineage packets and approval-receipt procedures require an additional explicit request for that formal process. Ordinary work uses self-review and relevant checks; authorization and actual verification requirements still apply.
+
 # Expo versioned release through EAS and Android Publisher API
 
 Use this only for a repeat release where Expo/EAS builds the AAB and an authorized CI, EAS, or external broker holds Play credentials.
