@@ -6,9 +6,26 @@ import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {parse} from 'yaml';
 
 const execute=promisify(execFile);
 const root=fileURLToPath(new URL('../../../../',import.meta.url));
+
+test('TC-001: app-only runtime changes select both native container acceptance architectures',async()=>{
+  const workflow=parse(await readFile(path.join(root,'.github/workflows/container-image.yml'),'utf8'));
+  const paths=workflow.on.pull_request.paths;
+  for(const changedFile of ['apps/ned-core/src/service.js','apps/ned-cli/src/cli.js','apps/ned-com/src/server.js']){
+    assert.ok(paths.includes('apps/**'),`${changedFile} must select native container acceptance`);
+  }
+  assert.equal(paths.some(pattern=>pattern.startsWith('!')),false,'app inclusion must not be negated');
+  assert.equal(Object.hasOwn(workflow.on.pull_request,'paths-ignore'),false);
+  const job=workflow.jobs.image;
+  assert.deepEqual(job.strategy.matrix.include.map(entry=>entry.architecture).sort(),['amd64','arm64']);
+  assert.equal(job['runs-on'],'${{ matrix.runner }}');
+  const acceptance=job.steps.find(step=>step.run?.includes('docs/features/standalone-container/tests/container_acceptance.py'));
+  assert.ok(acceptance,'selected job must execute native container acceptance');
+  assert.equal(acceptance.env.EXPECTED_ARCHITECTURE,'${{ matrix.architecture }}');
+});
 
 test('TC-001: app-owned entrypoints and packaged assets work outside the checkout CWD',async t=>{
   const home=await mkdtemp(path.join(tmpdir(),'ned-app-layout-'));

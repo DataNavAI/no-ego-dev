@@ -7,6 +7,7 @@ on:
       - '.dockerignore'
       - 'package*.json'
       - 'src/**'
+      - 'apps/**'
       - 'bin/**'
       - 'scripts/container/**'
       - 'docs/features/standalone-container/**'

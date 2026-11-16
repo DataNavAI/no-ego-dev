@@ -20,7 +20,9 @@ separate repositories or a rewrite of shared runtime/domain services.
   remain shared; app copies cannot introduce parallel authoritative task stores.
 - FR-003: Existing `ned` commands and compatibility server/CLI imports retain
   behavior. Root install/lockfile, lint, tests, UI generation, distributable package
-  and container include and exercise the relocated apps.
+  and container include and exercise the relocated apps. Future pull requests
+  changing only app-owned runtime source must trigger native container acceptance
+  for both amd64 and arm64, as equivalent changes under `src/` did before relocation.
 - FR-004: Relative static assets, attachment workers and installed app startup
   resolve from their new locations without relying on the checkout's CWD or files
   omitted from the distributable. No runtime data moves with source.
@@ -47,13 +49,20 @@ gate rather than falling back to old duplicate implementation.
 - Given: app-owned source is relocated and legacy entrypoints are compatibility
   wrappers only.
 - When: import each app entry, invoke `ned --help` and `ned core serve --help`,
-  start COM and retrieve its HTML/module/CSS assets, and inspect npm pack output.
+  start COM and retrieve its HTML/module/CSS assets, inspect npm pack output, and
+  parse the actual native container workflow's pull-request paths and job matrix.
 - Then: CLI exits 0; Core help is available; COM assets return 200 with correct
   types; metadata identifies the three app packages; packed runtime includes apps
-  but excludes test/runtime databases; old and new server imports agree.
+  but excludes test/runtime databases; old and new server imports agree. A PR
+  containing only a representative Core, CLI or COM runtime edit is selected for
+  the native container workflow, whose acceptance job includes amd64 and arm64.
 - Steps and assertions: execute actual Node entrypoints with a disposable
   `NED_AGENT_HOME`; create a loopback server; fetch its asset map; compare legacy
   and app exports; use npm's JSON dry-run file list for distribution assertions.
+  Parse `.github/workflows/container-image.yml` as YAML; require the unconditional
+  `apps/**` inclusion without negative exclusions, and the native acceptance job's
+  two architecture entries for `apps/ned-core/src/service.js`,
+  `apps/ned-cli/src/cli.js` and `apps/ned-com/src/server.js` changes.
   Run existing CLI/COM/Core regression cases and `npm run build:ui:check` as
   broader compatibility evidence.
 - Variants / negative cases: unrelated CWD must not change app import/static paths;
