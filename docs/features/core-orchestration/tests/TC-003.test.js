@@ -25,6 +25,15 @@ test('TC-003: live process lock never expires, inode remains stable, actual deat
   assert.equal((await lstat(filename)).ino,before.ino);
 });
 
+test('TC-003: actual Hermes started admission acknowledgement retains run identity without replay',async t=>{
+  const fixture=await runtimeFixture(t);fixture.behavior.admissionState='started';
+  const attempt=await fixture.attempt();await fixture.tick();
+  const admitted=fixture.core.getAttempt(fixture.projectId,attempt.id);
+  assert.equal(admitted.state,'running');assert.equal(admitted.runId,'run_1');
+  await fixture.tick();
+  assert.equal(fixture.requests.filter(request=>request.method==='POST'&&request.url==='/v1/runs').length,1);
+});
+
 test('TC-003: enrollment and queued attempts do not dispatch without an explicit tick',async t=>{
   const fixture=await runtimeFixture(t);const attempt=await fixture.attempt();
   await fixture.runtime.maintenance();assert.equal(fixture.requests.length,0);assert.equal(fixture.core.getAttempt(fixture.projectId,attempt.id).state,'queued');

@@ -8,7 +8,7 @@ export async function runtimeFixture(test,{gatewayOptions={},wrapGateway=gateway
   const cleanup=[];
   const fixture=await domainFixture({after:callback=>cleanup.push(callback)},options);
   const sessions=new Map(),runs=new Map(),streams=new Map(),requests=[],events=new EventEmitter();
-  const behavior={capability:{supported:true,durable:true,retention_seconds:3600},admissionStatus:202,loseAdmission:false,conflictSession:false,loseSession:false,namingStatus:200,statusCode:200};
+  const behavior={capability:{supported:true,durable:true,retention_seconds:3600},admissionStatus:202,admissionState:'queued',loseAdmission:false,conflictSession:false,loseSession:false,namingStatus:200,statusCode:200};
   const server=http.createServer(async(req,res)=>{
     const chunks=[];for await(const chunk of req)chunks.push(chunk);
     const body=chunks.length?JSON.parse(Buffer.concat(chunks)):null;
@@ -26,7 +26,7 @@ export async function runtimeFixture(test,{gatewayOptions={},wrapGateway=gateway
     if(req.url==='/v1/runs'&&req.method==='POST'){
       if(behavior.admissionStatus!==202)return send(behavior.admissionStatus,{});
       const id=`run_${runs.size+1}`,run={run_id:id,session_id:body.session_id,status:'running'};runs.set(id,run);
-      if(behavior.loseAdmission){res.destroy();return;}return send(202,{run_id:id,status:'queued',replayed:false});
+      if(behavior.loseAdmission){res.destroy();return;}return send(202,{run_id:id,status:behavior.admissionState,replayed:false});
     }
     const match=req.url.match(/^\/v1\/runs\/([^/]+)(\/(?:events|stop))?$/);
     if(match){const run=runs.get(match[1]);if(!run||behavior.statusCode!==200)return send(behavior.statusCode===200?404:behavior.statusCode,{});

@@ -66,7 +66,10 @@ export function createHermesGateway(options={}) {
     createKnownSession:(intent,identity,options={})=>tracked(async()=>session(await request('/api/sessions',{method:'POST',body:{id:intent.id,title:intent.title,source:'api_server'},identity,...options}),intent.id)),
     getSession:(id,identity,options={})=>tracked(async()=>session(await request(`/api/sessions/${encodeURIComponent(id)}`,{identity,...options}),id)),
     setTitle:(id,title,identity)=>tracked(async()=>session(await request(`/api/sessions/${encodeURIComponent(id)}`,{method:'PATCH',body:{title},identity}),id)),
-    submitRun:(body,key,identity,options={})=>tracked(async()=>run(await request('/v1/runs',{method:'POST',body,key,identity,...options}))),
+    submitRun:(body,key,identity,options={})=>tracked(async()=>{
+      const value=await request('/v1/runs',{method:'POST',body,key,identity,...options});
+      return run(value?.status==='started'?{...value,status:'running'}:value);
+    }),
     getRun:(id,identity)=>tracked(async()=>run(await request(`/v1/runs/${encodeURIComponent(id)}`,{identity}),id)),
     stop:(id,identity)=>tracked(async()=>run(await request(`/v1/runs/${encodeURIComponent(id)}/stop`,{method:'POST',body:{},identity}),id)),
     events(id,identity,{signal}={}){
