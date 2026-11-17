@@ -60,6 +60,7 @@ export async function hermesFixture({badSource=false}={}){
             const frame=pending.slice(0,end+2);pending=pending.slice(end+2);res.write(frame);
             const data=frame.split('\n').find(line=>line.startsWith('data: '))?.slice(6);
             if(data&&data!=='[DONE]')text+=JSON.parse(data).choices?.[0]?.delta?.content||'';
+            if(barrier)barrier.forwardedTextChars=text.length;
             if(barrier?.mode==='delta'&&!barrier.delivered&&text.length>=8){
               barrier.delivered=true;barrier.reached.resolve();await barrier.release.promise;
             }
@@ -93,8 +94,8 @@ export async function hermesFixture({badSource=false}={}){
     task=await createTaskService({project,databaseUrl:databasePath,actor:'agent:ned-core'});await task.initialize();
     core=await createCoreServer({home:coreHome,env:envCore,databasePath});await core.listen();
     const token=loadOperatorCredential({home:coreHome,env:envCore});let sequence=0;
-    const request=async(route,{method='GET',body,status=200}={})=>{
-      const response=await fetch(core.url+'/api/core/v1'+route,{method,headers:{authorization:'Bearer '+token,...(body===undefined?{}:{'content-type':'application/json','idempotency-key':`test-${++sequence}`})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(15000)});
+    const request=async(route,{method='GET',body,status=200,timeout=15000}={})=>{
+      const response=await fetch(core.url+'/api/core/v1'+route,{method,headers:{authorization:'Bearer '+token,...(body===undefined?{}:{'content-type':'application/json','idempotency-key':`test-${++sequence}`})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(timeout)});
       const value=await response.json();if(response.status!==status)throw new Error(`Core ${route}: ${response.status} ${JSON.stringify(value)}`);return value.data;
     };
     const scope='/projects/'+task.project.id;
@@ -106,8 +107,15 @@ export async function hermesFixture({badSource=false}={}){
       await request('/coordinator/reconcile',{method:'POST',body:{},status:202});
       return {item,path:scope+'/attempts/'+attempt.id,taskPath};
     };
-    const gatewayRequest=async resource=>{const response=await fetch(url+resource,{headers:{authorization:'Bearer '+env.API_SERVER_KEY},signal:AbortSignal.timeout(5000)});if(!response.ok)throw new Error('Hermes readback failed: '+response.status);return response.json();};
+    const gatewayRequest=async(resource,{timeout=5000}={})=>{const response=await fetch(url+resource,{headers:{authorization:'Bearer '+env.API_SERVER_KEY},signal:AbortSignal.timeout(timeout)});if(!response.ok)throw new Error('Hermes readback failed: '+response.status);return response.json();};
     return {root,home,project,mock,requests,request,gatewayRequest,scope,attempt,url,core,close,pid:child.pid,diagnostics:()=>output,
+      async observationSnapshot(run){
+        const [observed,result]=await Promise.all([request(run.path,{timeout:1000}).catch(()=>null),request(run.path+'/result',{timeout:1000}).catch(()=>null)]);
+        const upstream=observed?.runId?await gatewayRequest('/v1/runs/'+observed.runId,{timeout:1000}).catch(()=>null):null;
+        return {state:observed?.state??null,errorCode:observed?.errorCode??null,hasRunId:!!observed?.runId,
+          resultChars:result?.text?.length??null,gatewayStatus:upstream?.status??null,gatewayOutputChars:typeof upstream?.output==='string'?upstream.output.length:null,
+          modelRequests:requests.length,forwardedTextChars:[...barriers.values()].reduce((sum,barrier)=>sum+(barrier.forwardedTextChars??0),0)};
+      },
       barrier(marker,mode){const barrier={mode,reached:deferred(),release:deferred()};barriers.set(marker,barrier);return barrier;},
       async assertClosed(){if(child.exitCode===null&&child.signalCode===null)throw new Error('Hermes still running');await access(root).then(()=>{throw new Error('Profile remains');},error=>{if(error.code!=='ENOENT')throw error;});await fetch(url+'/health',{signal:AbortSignal.timeout(1000)}).then(()=>{throw new Error('Gateway remains reachable');},()=>{});},
     };

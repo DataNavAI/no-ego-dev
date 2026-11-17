@@ -174,6 +174,15 @@ remain rejected. TC-003 and TC-007 cover this provider compatibility boundary.
   bootstrap failure; assert actual model request journal and Hermes/Core readback;
   use explicit stream barriers rather than timing-only assertions. Assert gateway
   process exit, refused connections and removed profile after teardown.
+  If the pre-completion text assertion times out, emit a failure-only observation
+  snapshot: Core state/error code, run-ID presence, result character count,
+  gateway status/output count and model request/forwarded character counts. Never
+  include instructions, output text, keys, or raw provider diagnostics. Verify
+  snapshot shape/redaction during the cancellation case. Preserve the same
+  assertion, deadline and nonzero failure; no automatic retry. Independent Core
+  diagnostic reads run concurrently with one-second deadlines, followed by at
+  most one one-second gateway read, so unavailable services cannot consume the
+  enclosing case's cleanup budget. Unavailable metadata is reported as null.
 - Variants / negative cases: model failure/stop, startup failure, external-network
   denial and repeated runs. Unsupported platform/setup is BLOCKED, never skipped.
   Existing synthetic cases retain exhaustive crash/race/retention coverage.

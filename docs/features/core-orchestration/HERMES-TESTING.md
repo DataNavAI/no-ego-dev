@@ -48,6 +48,12 @@ round trips, child-session bindings, stopping a held model call, deliberate test
 failure and startup failure cleanup. Failures are nonzero; no missing dependency
 or unsupported platform is represented as a passing or skipped live test.
 
+A timed-out streaming assertion includes a failure-only metadata snapshot (Core
+state/error, run-ID presence, result count, gateway status/output count and mock
+request/forwarded-character counts). No instructions, response text or credentials
+are logged. This distinguishes an ambiguous admission/control-plane failure from
+a model-stream delivery failure without relaxing the assertion or retrying it.
+
 The normal `npm run test:spec -- --all` intentionally reports TC-007 as external
 manual/scripted acceptance NOT RUN, matching container acceptance conventions.
 The standard Linux/macOS CI npm-test jobs invoke this suite through medium;
