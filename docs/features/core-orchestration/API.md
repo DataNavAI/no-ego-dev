@@ -109,6 +109,8 @@ managed-attempt verification guard.
 
 States: `queued`, `preparing`, `dispatching`, `running`, `stopping`,
 `awaiting_verification`, `succeeded`, `failed`, `cancelled`, `unknown`.
+The Hermes admission acknowledgement `started` is normalized to `running`; it
+only confirms admission, not successful execution or verification.
 At most one unresolved attempt exists per task. `unknown` and
 `awaiting_verification` also prevent overlapping automation executions.
 

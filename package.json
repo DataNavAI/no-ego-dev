@@ -40,6 +40,7 @@
     "node": ">=20.19.0"
   },
   "scripts": {
+    "test:core:hermes": "node scripts/test-core-hermes.mjs",
     "test": "node --test tests/cli/*.test.js && npm run test:spec -- --all",
     "test:all": "npm test && python -m pytest",
     "check": "sh -n .githooks/pre-commit && bash -n scripts/install.sh && node --check scripts/verify-manual-test-result.mjs && node --check bin/ned.js && node --check bin/ned-launcher.js && node --check src/launcher.js && node --check bin/ned-web.js && node --check apps/ned-cli/src/cli.js && node --check src/model-providers.js && node --check src/profile-archive.js && node --check src/telemetry.js && node --check src/web/app.js && node --check src/web/dev-server.js && node --check src/web/public/app.js && node --check src/tasks.js && node --check apps/ned-cli/src/task-cli.js && node --check src/database.js && node --check apps/ned-core/src/index.js && node --check apps/ned-core/src/coordinator.js && node --check apps/ned-core/src/http.js && node --check apps/ned-com/src/cli.js && node --check apps/ned-com/src/server.js && node --check apps/ned-com/src/projects.js && node --check apps/ned-com/src/public/app.js && node --check apps/ned-com/src/public/state.js && node --check scripts/run-spec-tests.mjs && node --check bin/ned-staging.js && node --check src/staging/controller.js && node --check src/staging/process-worker.js && python3 -m py_compile src/staging/native_bridge.py",
@@ -47,7 +48,7 @@
     "pack:check": "npm pack --dry-run",
     "test:spec": "node scripts/run-spec-tests.mjs",
     "test:chat:e2e": "node --test docs/features/communicator/tests/TC-037.test.js docs/features/communicator/tests/TC-038.test.js",
-    "lint": "eslint apps src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check plugins/ned scripts/container scripts/aws-staging scripts/deploy-aws-staging.py docs/features/aws-staging-deployment/tests/cases.py docs/features/standalone-container/tests/container_acceptance.py && npm run check",
+    "lint": "eslint apps src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check plugins/ned scripts/container scripts/aws-staging scripts/deploy-aws-staging.py docs/features/aws-staging-deployment/tests/cases.py docs/features/standalone-container/tests/container_acceptance.py docs/features/core-orchestration/tests/hermes/gateway.py && npm run check",
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "test:container": "python docs/features/standalone-container/tests/container_acceptance.py",
     "build:ui": "node scripts/build-communicator-ui.mjs",
@@ -76,6 +77,7 @@
   },
   "homepage": "https://ned.datanav.app",
   "devDependencies": {
+    "@copilotkit/aimock": "1.48.0",
     "@awesome.me/webawesome": "3.14.0",
     "@eslint/js": "10.0.1",
     "esbuild": "0.28.2",

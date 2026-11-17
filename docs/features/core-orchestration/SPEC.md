@@ -127,8 +127,62 @@ The following cases have executable Node tests under this feature's `tests/` dir
 | FR-010–FR-011 | CUJ-001, CUJ-002 | TC-004 | [TC-004](tests/TC-004.test.js) |
 | FR-012 | CUJ-003 | TC-005 | [TC-005](tests/TC-005.test.js) |
 | FR-013–FR-015 | CUJ-004 | TC-001, TC-006 | [TC-001](tests/TC-001.test.js), [TC-006](tests/TC-006.test.js) |
+| FR-019, FR-020 | CUJ-005 | TC-007 | Dedicated real-Hermes suite; [procedure](HERMES-TESTING.md), separate external acceptance |
 
 Before implementation is accepted: execute all cases and repository-wide spec/lint/Node/Python checks, independent exact-candidate review and assembled synthetic manual walkthrough; merge green reviewed candidate to remote main. Install merged commit via canonical installer, stage canonical skills and verify installed generation/core health/auth/catalog and existing COM reads. Deployment does **not** execute real task/model calls, activate cron or enroll existing backlog. Retain redacted evidence outside repo. Operator reviews unknown/failure metrics daily during rollout; feedback uses existing NED/GitHub channels. Revenue metrics inapplicable to local infrastructure.
+
+## Real-Hermes acceptance requirements
+
+### CUJ-005: Verify the real Hermes integration without paid inference
+Actor: contributor or CI operator. Starting state: root npm dependencies and the
+documented Python/uv bootstrap prerequisites. Run the dedicated Hermes acceptance
+command. It provisions a pinned source/dependency cache, starts a disposable real
+Hermes API gateway and model stub, exercises Core, then stops and awaits owned
+processes and removes the disposable profile on success or failure. The existing
+host gateway, credentials, sessions and scheduled work must remain untouched.
+
+- FR-019: The separately invoked Hermes acceptance suite replaces only model HTTP
+  responses; Hermes API routes, agent loop, sessions, run events and persistence
+  remain real. Source revision and stub version are pinned and reported.
+- FR-020: Each run owns its ephemeral gateway, loopback ports, profile, Core
+  database and mock model. It uses a credential-free allowlisted environment and
+  denies non-loopback Python networking. Shutdown, failure and interruption clean
+  up owned processes/storage without touching the user's runtime. Missing setup
+  or unsupported platforms fail nonzero instead of silently passing/skipping.
+
+Hermes's HTTP202 admission status `started` is a valid acknowledgement, normalized
+internally to running; it is not terminal success. Unknown/malformed run states
+remain rejected. TC-003 and TC-007 cover this provider compatibility boundary.
+
+### TC-007: Disposable real-Hermes acceptance
+- Journey / requirements: CUJ-005 / FR-019, FR-020.
+- Level / automation: manual; scripted end-to-end `npm run test:core:hermes`;
+  [setup and procedure](HERMES-TESTING.md). Separate from the credential-free fast
+  spec gate because provisioning Hermes requires Python dependencies and network
+  access on first use. The dedicated suite is automated after invocation; the
+  ordinary spec runner reports this external acceptance case NOT RUN, not PASS.
+- Preconditions / fixtures: isolated disposable directories; pinned Hermes and
+  aimock; no production credentials; scripted model text/tool responses.
+- Given: no test-owned gateway is running and no user profile is selected.
+- When: invoke the dedicated command from a fresh checkout, then repeat it.
+- Then: a new real gateway is started for each run; Core session/run bindings,
+  pre-completion text delivery, verified completion and a tool round trip are
+  observed through actual HTTP/SSE. Stop is tested while a model response is held.
+  No real inference occurs; all owned listeners/processes and temporary profiles
+  are removed after each run, including a deliberately failed case.
+- Steps and assertions: execute the documented command; require nonzero exit for
+  bootstrap failure; assert actual model request journal and Hermes/Core readback;
+  use explicit stream barriers rather than timing-only assertions. Assert gateway
+  process exit, refused connections and removed profile after teardown.
+- Variants / negative cases: model failure/stop, startup failure, external-network
+  denial and repeated runs. Unsupported platform/setup is BLOCKED, never skipped.
+  Existing synthetic cases retain exhaustive crash/race/retention coverage.
+- Cleanup: stop only owned process groups, await exit, close model/Core servers,
+  delete test-owned temporary roots. Immutable source/dependency cache may remain
+  outside the repository; it contains no profile state or production credentials.
+- Pass evidence: dedicated runner exit zero plus named assertions and reported
+  pinned source identity. Live-provider intelligence and every model wire protocol
+  are not claimed.
 
 ## Open questions and coverage gaps
 
