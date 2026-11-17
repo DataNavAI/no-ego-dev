@@ -1,9 +1,8 @@
-import {mkdtemp, mkdir, readFile, rm, writeFile} from 'node:fs/promises';
+import {mkdtemp,mkdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {createHash} from 'node:crypto';
-import {spawn} from 'node:child_process';
+import {cachedArchive,runCommand} from './core-hermes-support.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const revision='6e07eb48387044dbcaf12490931c2b8ca7ec8653';
@@ -14,32 +13,28 @@ if(process.platform==='win32')throw new Error('Hermes acceptance currently requi
 await mkdir(cache,{recursive:true});
 const temporary=await mkdtemp(path.join(tmpdir(),'ned-hermes-suite-'));
 const source=path.join(temporary,'source');
-let active,interrupted=false;
-function signal(child,name){try{process.kill(-child.pid,name);}catch(error){if(error.code!=='ESRCH')throw error;}}
-const stop=()=>{interrupted=true;if(active)signal(active,'SIGTERM');};
+const controller=new AbortController();
+const stop=()=>controller.abort(new Error('Hermes acceptance interrupted.'));
 process.on('SIGINT',stop);process.on('SIGTERM',stop);
 async function command(binary,args,env=process.env,timeout=600000){
-  if(interrupted)throw new Error('Hermes acceptance interrupted.');
-  const child=spawn(binary,args,{cwd:root,env,stdio:'inherit',detached:true});active=child;
-  let forced;
-  const kill=setTimeout(()=>{signal(child,'SIGTERM');forced=setTimeout(()=>signal(child,'SIGKILL'),10000);},timeout);
-  try{await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',(code,signal)=>code===0?resolve():reject(new Error(`${binary} failed (${code??signal}).`)));});}
-  finally{clearTimeout(kill);clearTimeout(forced);active=undefined;}
+  await runCommand(binary,args,{cwd:root,env,timeout,signal:controller.signal});
 }
 try{
   const archive=path.join(cache,`hermes-${revision}.tar.gz`);
-  let bytes;try{bytes=await readFile(archive);}catch(error){if(error.code!=='ENOENT')throw error;}
-  if(!bytes){const response=await fetch(`https://codeload.github.com/NousResearch/hermes-agent/tar.gz/${revision}`,{signal:AbortSignal.timeout(120000)});if(!response.ok)throw new Error('Hermes source download failed.');bytes=Buffer.from(await response.arrayBuffer());}
-  if(createHash('sha256').update(bytes).digest('hex')!==checksum)throw new Error('Hermes source checksum mismatch.');
-  await writeFile(archive,bytes,{mode:0o600});
+  await cachedArchive(archive,checksum,async()=>{
+    const response=await fetch(`https://codeload.github.com/NousResearch/hermes-agent/tar.gz/${revision}`,{signal:AbortSignal.any([controller.signal,AbortSignal.timeout(120000)])});
+    if(!response.ok)throw new Error('Hermes source download failed.');
+    return Buffer.from(await response.arrayBuffer());
+  });
   await mkdir(source);await command('tar',['-xzf',archive,'-C',source,'--strip-components=1']);
   const environment=path.join(temporary,'venv');
+  const cases=path.join(temporary,'cases');await mkdir(cases);
   await command('uv',['sync','--project',source,'--locked','--no-dev','--extra','messaging','--python','3.11'],{
     ...process.env,UV_CACHE_DIR:path.join(cache,'uv'),UV_PYTHON_INSTALL_DIR:path.join(cache,'python'),UV_PROJECT_ENVIRONMENT:environment,
   });
   console.log(`Hermes integration source: ${revision}; aimock: 1.48.0`);
   await command(process.execPath,['--test',path.join(root,'docs/features/core-orchestration/tests/hermes/live.test.js')],{
-    ...process.env,NED_HERMES_TEST_SOURCE:source,NED_HERMES_TEST_PYTHON:path.join(environment,'bin/python'),NED_HERMES_TEST_REVISION:revision,
+    ...process.env,TMPDIR:cases,NED_HERMES_TEST_SOURCE:source,NED_HERMES_TEST_PYTHON:path.join(environment,'bin/python'),NED_HERMES_TEST_REVISION:revision,
   },180000);
 }finally{
   process.off('SIGINT',stop);process.off('SIGTERM',stop);

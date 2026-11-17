@@ -29,7 +29,7 @@ export async function hermesFixture({badSource=false}={}){
     for(const barrier of barriers.values())barrier.release.resolve();
     await safely(()=>core?.close());await safely(()=>task?.close());
     if(child&&child.exitCode===null&&child.signalCode===null){
-      const signal=name=>{try{process.kill(-child.pid,name);}catch(error){if(error.code!=='ESRCH')throw error;}};
+      const signal=name=>{try{child.kill(name);}catch(error){if(error.code!=='ESRCH')throw error;}};
       await safely(()=>signal('SIGTERM'));
       const timer=setTimeout(()=>signal('SIGKILL'),7000);
       try{await childClosed;}finally{clearTimeout(timer);}
@@ -79,7 +79,7 @@ export async function hermesFixture({badSource=false}={}){
       PYTHONNOUSERSITE:'1',API_SERVER_KEY:'ned-test-gateway-key-0123456789',NO_PROXY:'127.0.0.1,localhost',HERMES_SKIP_CONFIG_MIGRATION:'1',HERMES_INTERACTIVE:'0'};
     const python=process.env.NED_HERMES_TEST_PYTHON,source=process.env.NED_HERMES_TEST_SOURCE;
     if(!python||!source)throw new Error('Use npm run test:core:hermes to provision Hermes first.');
-    child=spawn(python,['-I',fileURLToPath(new URL('./gateway.py',import.meta.url)),badSource?path.join(root,'missing-source'):source,String(proxy.address().port)],{env,cwd:project,detached:true,stdio:['ignore','pipe','pipe']});
+    child=spawn(python,['-I',fileURLToPath(new URL('./gateway.py',import.meta.url)),badSource?path.join(root,'missing-source'):source,String(proxy.address().port)],{env,cwd:project,stdio:['ignore','pipe','pipe']});
     childClosed=new Promise(resolve=>child.once('close',resolve));
     child.stderr.on('data',chunk=>{output=(output+chunk).slice(-16000);});
     url=await new Promise((resolve,reject)=>{

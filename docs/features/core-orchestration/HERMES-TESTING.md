@@ -23,8 +23,11 @@ Use an appropriate external cache/temp path on other POSIX machines, for example
 the CI runner's temporary directory. Do not point these variables at a real Hermes
 home. The command verifies the source archive checksum, extracts fresh source,
 creates a fresh locked dependency environment, runs the suite, and removes its
-source/environment on exit. Cache contents are only the verified archive and uv
-package artifacts. Dependencies may need network access during provisioning;
+source/environment on exit. Cache contents are the verified archive, uv package
+artifacts and any uv-managed Python interpreter. Existing verified archives are
+never rewritten; concurrent cold downloads publish atomically without overwriting
+another caller's archive. Corrupt cached bytes fail closed instead of being
+silently replaced. Dependencies may need network access during provisioning;
 offline execution requires the archive/packages/Python already cached.
 
 Every test creates a fresh profile/Core database, starts an aimock HTTP server and
@@ -60,6 +63,8 @@ intelligence, messaging/cron runners, every wire protocol and SIGKILL/power-loss
 cleanup are not certified. Normal TERM/INT and bounded timeout cleanup are owned
 by the runner; killed processes cannot run finally blocks. Existing deterministic
 Core cases retain exhaustive ambiguity/crash/ownership tests.
+The fast TC-008 case separately verifies concurrent/warm/corrupt caches and that
+timeout or interruption fails even if child TERM cleanup returns exit0.
 
 Pinned Hermes: `6e07eb48387044dbcaf12490931c2b8ca7ec8653`, the public parent of
 the host's local launch-path-only patch at implementation time. Archive SHA256:

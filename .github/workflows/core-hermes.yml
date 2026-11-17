@@ -8,6 +8,7 @@ on:
       - 'src/**'
       - 'docs/features/core-orchestration/**'
       - 'scripts/test-core-hermes.mjs'
+      - 'scripts/core-hermes-support.mjs'
       - 'package*.json'
       - '.github/workflows/core-hermes.yml'
 

@@ -127,7 +127,7 @@ The following cases have executable Node tests under this feature's `tests/` dir
 | FR-010–FR-011 | CUJ-001, CUJ-002 | TC-004 | [TC-004](tests/TC-004.test.js) |
 | FR-012 | CUJ-003 | TC-005 | [TC-005](tests/TC-005.test.js) |
 | FR-013–FR-015 | CUJ-004 | TC-001, TC-006 | [TC-001](tests/TC-001.test.js), [TC-006](tests/TC-006.test.js) |
-| FR-019, FR-020 | CUJ-005 | TC-007 | Dedicated real-Hermes suite; [procedure](HERMES-TESTING.md), separate external acceptance |
+| FR-019, FR-020 | CUJ-005 | TC-007, TC-008 | Dedicated real-Hermes suite; [procedure](HERMES-TESTING.md), separate external acceptance; [runner/cache regressions](tests/TC-008.test.js) |
 
 Before implementation is accepted: execute all cases and repository-wide spec/lint/Node/Python checks, independent exact-candidate review and assembled synthetic manual walkthrough; merge green reviewed candidate to remote main. Install merged commit via canonical installer, stage canonical skills and verify installed generation/core health/auth/catalog and existing COM reads. Deployment does **not** execute real task/model calls, activate cron or enroll existing backlog. Retain redacted evidence outside repo. Operator reviews unknown/failure metrics daily during rollout; feedback uses existing NED/GitHub channels. Revenue metrics inapplicable to local infrastructure.
 
@@ -183,6 +183,25 @@ remain rejected. TC-003 and TC-007 cover this provider compatibility boundary.
 - Pass evidence: dedicated runner exit zero plus named assertions and reported
   pinned source identity. Live-provider intelligence and every model wire protocol
   are not claimed.
+
+### TC-008: Fail-closed runner and shared dependency cache
+- Journey / requirements: CUJ-005 / FR-020.
+- Level / automation: integration; [TC-008.test.js](tests/TC-008.test.js).
+- Preconditions / fixtures: Node on a supported POSIX host, temporary synthetic
+  cache and child commands. No Hermes, credentials or network dependency.
+- Given: a cold or previously verified cache, or a child handling TERM with exit0.
+- When: two callers publish the same verified archive concurrently, a caller
+  reads a warm/corrupt cache, or a command times out/is interrupted.
+- Then: publication is atomic; warm cache inode/modified time remain unchanged;
+  corrupt bytes are preserved and rejected; no staging files remain. Timeout and
+  interruption reject even after exit0 cleanup. Normal exit0 succeeds; exit7 fails.
+- Steps and assertions: run the named case. Use an explicit two-download barrier,
+  an intentionally old timestamp and a READY handshake proving the TERM handler
+  was installed; assert child exit identity plus operation rejection.
+- Variants / negative cases: warm cache must not download; corrupt cache must not
+  overwrite itself. Missing dependencies remain TC-007 setup failures, not skips.
+- Cleanup: await every child and remove only the temporary synthetic cache.
+- Pass evidence: named assertions, zero failures/cancellations/skips/TODOs.
 
 ## Open questions and coverage gaps
 
