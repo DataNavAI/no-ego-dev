@@ -56,7 +56,7 @@ export async function browserChat(t,{existing=false,rows=[],historyFailure=false
   const databasePath=join(home,'ned.sqlite');database=openNedDatabase({databaseUrl:databasePath});
   app=createCommunicatorServer({databasePath,home,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}});
   await app.listen();
-  try{browser=await chromium.launch({headless:true});}
+  try{browser=await chromium.launch({headless:true,channel:'chromium'});}
   catch(error){throw new Error('Chromium is required. Run npm ci && npx playwright install --with-deps chromium before chat E2E tests.',{cause:error});}
   const page=await browser.newPage({viewport});page.setDefaultTimeout(10000);
   const errors=[],network=[];

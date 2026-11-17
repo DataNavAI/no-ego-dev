@@ -2,12 +2,19 @@ import { readdir, readFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { testBucket } from './test-suites.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export async function selectSpecTests(args = [], featuresRoot = path.join(root, 'docs/features')) {
   const filters = { feature: [], case: [], journey: [] };
   let all = false;
+  let bucket;
   for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--bucket') {
+      bucket = args[++i];
+      if (!['small', 'medium'].includes(bucket)) throw new Error('Spec bucket must be small or medium.');
+      continue;
+    }
     if (args[i] === '--all') {
       all = true;
       continue;
@@ -108,7 +115,7 @@ export async function selectSpecTests(args = [], featuresRoot = path.join(root, 
       (!filters.case.length || filters.case.includes(entry.id)) &&
       (!filters.journey.length || entry.journeys.some((id) => filters.journey.includes(id))),
   );
-  const selected = matching.filter((entry) => !entry.manual);
+  const selected = matching.filter((entry) => !entry.manual && (!bucket || testBucket(path.relative(root, entry.file)) === bucket));
   selected.retiredFeatures = retiredFeatures;
   selected.manualCases = matching.filter((entry) => entry.manual);
   if (!selected.length) throw new Error('No matching automated spec cases; manual cases require separate evaluation.');

@@ -1,5 +1,12 @@
 # No Ego Dev
 
+## Development tests
+
+Run `npm test` for small + medium verification, including real Hermes with stubbed
+model responses. Staging/system acceptance and skill/workflow evals are explicit
+`test:large` and `test:eval` commands. See [TESTING.md](TESTING.md) for setup,
+the four buckets, focused commands and coverage limits.
+
 ## App projects
 
 NED Core, CLI and COM live in separate private project roots under [`apps/`](apps/README.md):

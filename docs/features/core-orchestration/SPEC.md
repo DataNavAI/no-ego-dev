@@ -141,7 +141,7 @@ Hermes API gateway and model stub, exercises Core, then stops and awaits owned
 processes and removes the disposable profile on success or failure. The existing
 host gateway, credentials, sessions and scheduled work must remain untouched.
 
-- FR-019: The separately invoked Hermes acceptance suite replaces only model HTTP
+- FR-019: The Hermes acceptance suite, included in the default medium bucket and also directly invocable, replaces only model HTTP
   responses; Hermes API routes, agent loop, sessions, run events and persistence
   remain real. Source revision and stub version are pinned and reported.
 - FR-020: Each run owns its ephemeral gateway, loopback ports, profile, Core

@@ -2,7 +2,7 @@
 
 ## Code tests and skill evaluation
 
-Run `npm run lint`, `npm test`, and `python -m pytest` for NED runtime, packaging and evaluation-engine changes. Code tests do not evaluate NED skills, their wording, historical versions, or bundled helpers. Evaluate skills with their EVAL.yaml and synthetic evaldata scenarios, recording actual agent outcomes and material failures separately. The spec runner lists declared manual skill cases as NOT RUN; a green code suite does not imply they passed.
+Run `npm run lint` and `npm test` for NED runtime, packaging and evaluation-engine changes. The default small + medium gate now includes `python -m pytest` and disposable real Hermes/aimock integration. See [TESTING.md](TESTING.md) for setup and the four buckets. Use explicit `test:large` for staging/system acceptance and `test:eval` for model-backed skill/workflow evaluation. Code tests do not evaluate NED skills, their wording, historical versions, or bundled helpers. Evaluate skills with their EVAL.yaml and synthetic evaldata scenarios, recording actual agent outcomes and material failures separately. The spec runner lists declared manual skill cases as NOT RUN; a green code suite does not imply they passed.
 
 Read [test-writing](skills/test-writing/SKILL.md) before adding or pruning tests. Prefer one strong contract check per distinct risk, retaining unique assertions when consolidating. The distribution packaging contract is covered by task-management TC-011; launcher behavior is covered by process tests rather than source phrase checks.
 
