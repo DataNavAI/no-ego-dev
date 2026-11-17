@@ -12,7 +12,9 @@ test('real Hermes agent streams model-only stub output before verified Core comp
   fixture.mock.onMessage('NED_STREAM_CASE',{content:'Hermes streamed answer.'});
   const run=await fixture.attempt('NED_STREAM_CASE');
   await barrier.reached.promise;
-  const partial=await until(()=>fixture.request(run.path+'/result'),value=>value.text.length>0,'Core partial text');
+  let partial;
+  try{partial=await until(()=>fixture.request(run.path+'/result'),value=>value.text.length>0,'Core partial text');}
+  catch(error){throw new Error(`${error.message}; observation=${JSON.stringify(await fixture.observationSnapshot(run))}`,{cause:error});}
   assert.ok(partial.text.length<'Hermes streamed answer.'.length);
   assert.equal((await fixture.request(run.path)).state,'running');
   barrier.release.resolve();
@@ -47,8 +49,14 @@ test('real Hermes stop settles a held model call and test failure teardown remov
   await fixture.request(run.path+'/stop',{method:'POST',body:{},status:202});
   const settled=await until(()=>fixture.request(run.path),value=>value.state==='cancelled','Hermes cancellation');
   assert.equal(settled.state,'cancelled');
+  const snapshot=await fixture.observationSnapshot(run);
+  assert.equal(snapshot.state,'cancelled');assert.equal(snapshot.hasRunId,true);
+  assert.deepEqual(Object.keys(snapshot).sort(),['errorCode','forwardedTextChars','gatewayOutputChars','gatewayStatus','hasRunId','modelRequests','resultChars','state'].sort());
+  assert.equal(JSON.stringify(snapshot).includes('NED_STOP_CASE'),false);
   await assert.rejects(async()=>{try{throw new Error('intentional assertion failure');}finally{await fixture.close();}},/intentional assertion failure/);
   await fixture.assertClosed();
+  const unavailable=await fixture.observationSnapshot(run);
+  assert.equal(unavailable.state,null);assert.equal(unavailable.resultChars,null);assert.equal(unavailable.gatewayStatus,null);
 });
 
 test('Hermes startup failure rejects rather than skipping or attaching to the host gateway',{timeout:40000},async()=>{

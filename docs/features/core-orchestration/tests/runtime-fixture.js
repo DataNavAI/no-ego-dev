@@ -26,6 +26,7 @@ export async function runtimeFixture(test,{gatewayOptions={},wrapGateway=gateway
     if(req.url==='/v1/runs'&&req.method==='POST'){
       if(behavior.admissionStatus!==202)return send(behavior.admissionStatus,{});
       const id=`run_${runs.size+1}`,run={run_id:id,session_id:body.session_id,status:'running'};runs.set(id,run);
+      if(behavior.admissionDelay)await new Promise(resolve=>setTimeout(resolve,behavior.admissionDelay));
       if(behavior.loseAdmission){res.destroy();return;}return send(202,{run_id:id,status:behavior.admissionState,replayed:false});
     }
     const match=req.url.match(/^\/v1\/runs\/([^/]+)(\/(?:events|stop))?$/);
