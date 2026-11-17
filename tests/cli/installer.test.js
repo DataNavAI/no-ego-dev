@@ -96,6 +96,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
     // Keep cross-TMPDIR serialization inside this fixture without colliding
     // with other suites or a real installation under the current user's UID.
     .replace('LOCK_FILE="/tmp/ned-install-${UID:-$(id -u)}.lock"', `LOCK_FILE=${JSON.stringify(lockFile)}`)
+    .replace('lock_candidate=$(mktemp "/tmp/ned-install-lock.${UID:-$(id -u)}.XXXXXX")', `lock_candidate=$(mktemp ${JSON.stringify(path.join(root, 'installer-lock.XXXXXX'))})`)
     .replace(/node_url="[^"]+"/, 'node_url="https://fixtures/node"')
     .replace(/source_url="[^"]+"/, 'source_url="https://fixtures/ned"')
     .replace(new RegExp(`${platform.replace('-', '\\-')}\\) node_sha=[a-f0-9]{64}`), `${platform}) node_sha=${await sha256(nodeArchive)}`)

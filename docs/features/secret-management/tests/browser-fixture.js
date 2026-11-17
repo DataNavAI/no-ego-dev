@@ -61,7 +61,7 @@ export async function browserChat(t){
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
   app=createCommunicatorServer({home,databasePath:join(home,'ned.sqlite'),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-gateway-key'}});
   await app.listen();
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true,channel:'chromium'});
   const page=await browser.newPage({viewport:{width:1280,height:900}});
   page.on('pageerror',error=>errors.push(error.message));
   const draft=page.locator('#chat-message');

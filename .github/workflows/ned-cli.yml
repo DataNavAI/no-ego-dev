@@ -29,7 +29,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run lint
       - run: npm test
-      - run: python3 -m pytest -q
+        env:
+          NED_HERMES_TEST_CACHE: ${{ runner.temp }}/ned-hermes-cache
+          TMPDIR: ${{ runner.temp }}
+          UV_PYTHON_DOWNLOADS: never
       - run: npm audit --omit=dev
       - name: Verify installable tarball
         shell: bash
@@ -76,6 +79,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run lint
       - run: npm test
+        env:
+          NED_HERMES_TEST_CACHE: ${{ runner.temp }}/ned-hermes-cache
+          TMPDIR: ${{ runner.temp }}
+          UV_PYTHON_DOWNLOADS: never
       - name: Verify installable tarball
         shell: bash
         run: |

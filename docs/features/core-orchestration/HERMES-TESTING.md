@@ -1,12 +1,18 @@
 # Real Hermes, stubbed inference
 
-This is a separate automated integration suite, not a replacement for the fast
+This automated integration suite is included in `npm test`, `test:medium` and
+`test:core` ([four test buckets](../../../TESTING.md)). It is not a replacement for the fast
 synthetic-gateway Core cases. It starts the real Hermes API adapter with its
 standard connect/disconnect lifecycle and actual agent loop, sessions, run ledger,
 tools and SSE. It does not start messaging channels or a cron daemon. No existing
 host gateway is reused, stopped, reconfigured or upgraded.
 
 ## Run
+
+For the full local gate use `npm test`; for just Core use `npm run test:core`.
+These commands select a temporary-directory download cache automatically unless
+`NED_HERMES_TEST_CACHE` is set. The direct Hermes-only command below retains its
+explicit-cache requirement.
 
 Prerequisites: POSIX host, root `npm ci`, `uv` (tested 0.12.5), Python 3.11
 discoverable by uv, and an absolute writable dependency-cache directory outside
@@ -44,8 +50,9 @@ or unsupported platform is represented as a passing or skipped live test.
 
 The normal `npm run test:spec -- --all` intentionally reports TC-007 as external
 manual/scripted acceptance NOT RUN, matching container acceptance conventions.
-`Core Hermes integration` CI invokes this dedicated suite on relevant PRs or
-manual dispatch. Its result is separate from the ordinary spec result.
+The standard Linux/macOS CI npm-test jobs invoke this suite through medium;
+there is no duplicate dedicated Hermes workflow. Its six-case result remains
+separate from the ordinary spec report (which still lists TC-007 NOT RUN).
 
 ## Isolation and limitations
 

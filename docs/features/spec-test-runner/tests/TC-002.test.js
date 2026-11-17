@@ -80,6 +80,6 @@ test('TC-002: only fully executed passing cases satisfy the commit gate', async 
   ])
     assert.equal(specExecutionPassed(code, out), false);
   const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
-  assert.ok(pkg.scripts.test.includes('npm run test:spec -- --all'));
+  assert.equal(pkg.scripts.test, 'npm run test:small && npm run test:medium');
   assert.ok(pkg.scripts['test:spec'].includes('run-spec-tests'));
 });
