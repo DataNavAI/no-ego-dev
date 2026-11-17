@@ -34,6 +34,23 @@ test('TC-003: actual Hermes started admission acknowledgement retains run identi
   assert.equal(fixture.requests.filter(request=>request.method==='POST'&&request.url==='/v1/runs').length,1);
 });
 
+test('TC-003: slow admitted acknowledgement within the tick deadline retains run identity and never replays',async t=>{
+  const fixture=await runtimeFixture(t);fixture.behavior.admissionState='started';fixture.behavior.admissionDelay=1500;
+  const attempt=await fixture.attempt();await fixture.tick();
+  const admitted=fixture.core.getAttempt(fixture.projectId,attempt.id);
+  assert.equal(admitted.state,'running');assert.equal(admitted.runId,'run_1');assert.equal(admitted.errorCode,null);
+  await fixture.tick();await fixture.reopen();await fixture.tick();
+  assert.equal(fixture.requests.filter(request=>request.method==='POST'&&request.url==='/v1/runs').length,1);
+});
+
+test('TC-003: admission still obeys a shorter explicit deadline and expired requests are not sent',async t=>{
+  const fixture=await runtimeFixture(t);fixture.behavior.admissionDelay=250;
+  const identity=await fixture.gateway.identity(),body={input:'Synthetic deadline case',session_id:'ned_deadline_case'};
+  await assert.rejects(fixture.gateway.submitRun(body,'short-deadline',identity,{deadline:Date.now()+50}),{code:'gateway_unavailable'});
+  await assert.rejects(fixture.gateway.submitRun(body,'expired-deadline',identity,{deadline:Date.now()-1}),{code:'gateway_deadline'});
+  assert.equal(fixture.requests.filter(request=>request.method==='POST'&&request.url==='/v1/runs').length,1);
+});
+
 test('TC-003: enrollment and queued attempts do not dispatch without an explicit tick',async t=>{
   const fixture=await runtimeFixture(t);const attempt=await fixture.attempt();
   await fixture.runtime.maintenance();assert.equal(fixture.requests.length,0);assert.equal(fixture.core.getAttempt(fixture.projectId,attempt.id).state,'queued');

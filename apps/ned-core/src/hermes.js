@@ -45,7 +45,8 @@ export function createHermesGateway(options={}) {
   function tracked(operation){if(closing)return Promise.reject(new HermesError('closing'));const promise=operation();pending.add(promise);promise.finally(()=>pending.delete(promise)).catch(()=>{});return promise;}
   async function request(resource,{method='GET',body,key,identity,signal,stream=false,deadline}={}){
     const settings=await configuration();if(identity&&identity!==settings.identity)throw new HermesError('gateway_identity_changed');
-    const remaining=deadline===undefined?1000:Math.min(1000,deadline-Date.now());
+    const maximum=method==='POST'&&resource==='/v1/runs'?10000:1000;
+    const remaining=deadline===undefined?maximum:Math.min(maximum,deadline-Date.now());
     if(!stream&&remaining<=0)throw new HermesError('gateway_deadline');
     const controller=new AbortController();controllers.add(controller);let streaming=false;
     const timeout=stream?null:setTimeout(()=>controller.abort(),remaining);
