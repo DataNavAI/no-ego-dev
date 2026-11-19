@@ -1,4 +1,6 @@
-import { createTaskService } from '../../../src/tasks.js';
+import { createTaskApiClient } from './task-api.js';
+import {open} from 'node:fs/promises';
+import {constants} from 'node:fs';
 
 const values = new Set([
   '--project',
@@ -12,8 +14,27 @@ const values = new Set([
   '--on',
   '--reason',
   '--service',
+  '--api',
+  '--request-id',
+  '--file',
+  '--cursor',
 ]);
-const globalFlags = ['--project', '--database', '--actor', '--json'];
+const globalFlags = ['--project', '--database', '--actor', '--json', '--api', '--request-id'];
+
+async function deliveryFile(filename){
+  let file;
+  try{
+    file=await open(filename,constants.O_RDONLY|constants.O_NONBLOCK);
+    const info=await file.stat();
+    if(!info.isFile()||info.size>65536)throw new Error('Delivery must be a JSON file of at most 64 KiB.');
+    const bytes=Buffer.alloc(65537);
+    let length=0;
+    while(length<bytes.length){const {bytesRead}=await file.read(bytes,length,bytes.length-length,length);if(!bytesRead)break;length+=bytesRead;}
+    if(length>65536)throw new Error('Delivery exceeds 64 KiB.');
+    return JSON.parse(bytes.subarray(0,length).toString('utf8'));
+  }catch{throw Object.assign(new Error('Use a readable JSON delivery file of at most 64 KiB.'),{code:'invalid_delivery_file'});}
+  finally{await file?.close();}
+}
 
 function parse(argv) {
   const positional = [],
@@ -75,6 +96,8 @@ export async function runTaskCli(argv, io, dependencies = {}) {
       allowed.push('--parent', '--goal', '--description', '--priority', '--discovered-from');
     if (action === 'block' && !top) allowed.push('--on', '--reason', '--service');
     if (action === 'done' && !top) allowed.push('--reason');
+    if (action === 'delivery' && !top && ['task','goal'].includes(command)) allowed.push('--file');
+    if (action === 'attempts' && !top && command==='task') allowed.push('--cursor');
     for (const key of Object.keys(options))
       if (!allowed.includes(`--${key}`))
         throw new Error(`Option --${key} is not supported for this command.`);
@@ -106,16 +129,21 @@ export async function runTaskCli(argv, io, dependencies = {}) {
       'unblock',
       'history',
       'children',
+      'delivery',
+      'attempts',
     ];
     if (!top && !actions.includes(action)) throw new Error(`Unknown task action: ${action}`);
+    if(action==='delivery'&&!['task','goal'].includes(command)||action==='attempts'&&command!=='task')throw new Error('Use task/goal delivery or task attempts.');
     if (options.priority !== undefined && !/^[0-4]$/.test(options.priority))
       throw new Error('Priority must be an integer from 0 to 4.');
-    service = await (dependencies.taskServiceFactory || createTaskService)({
+    service = await (dependencies.taskServiceFactory || createTaskApiClient)({
       project: options.project,
       actor: options.actor,
       home: dependencies.taskHome,
       databaseUrl: options.database,
       env: dependencies.env || process.env,
+      api: options.api,
+      requestId: options['request-id'],
     });
     let result;
     if (top)
@@ -149,6 +177,8 @@ export async function runTaskCli(argv, io, dependencies = {}) {
         unblock: () => service.unblockTask(item.id),
         history: () => service.getActivity(item.id),
         children: () => service.getChildren(item.id),
+        delivery: async () => options.file ? service.setDelivery(item.id,await deliveryFile(options.file)) : service.getDelivery(item.id),
+        attempts: () => service.getTaskAttempts(item.id,...(options.cursor?[options.cursor]:[])),
       };
       if (!handlers[action]) throw new Error(`Unknown task action: ${action}`);
       result = await handlers[action]();
@@ -160,6 +190,6 @@ export async function runTaskCli(argv, io, dependencies = {}) {
     io.error(json ? JSON.stringify(result) : `NED tasks: ${result.message}`);
     return error.code === 'database_failed' ? 1 : 2;
   } finally {
-    service?.close?.();
+    await service?.close?.();
   }
 }

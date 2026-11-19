@@ -17,10 +17,11 @@ export async function createCoreService(options={}){
   }catch(error){await service.close();throw error;}
 }
 
-export async function createCoreServer({port=0,home,env=process.env,databasePath,...options}={}){
+export async function createCoreServer({port=0,home,env=process.env,databasePath,backendOnly=false,operatorCredential,...options}={}){
   if(!Number.isInteger(port)||port<0||port>65535)throw new Error('Invalid Core port.');
-  const credential=loadOperatorCredential({home,env});
-  const service=await createCoreService({...options,home,env,databasePath});
+  if(operatorCredential!==undefined&&(!backendOnly||typeof operatorCredential!=='string'||!/^[a-f0-9]{64}$/.test(operatorCredential)))throw new Error('Private transient credentials require backend-only mode.');
+  const credential=operatorCredential??loadOperatorCredential({home,env});
+  const service=await (backendOnly?createDomainService:createCoreService)({...options,home,env,databasePath});
   let url;
   const handler=createCoreHandler({service,credential,boundOrigin:()=>url});
   const server=http.createServer(async(req,res)=>{if(!await handler(req,res)){res.writeHead(404);res.end();}});

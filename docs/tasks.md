@@ -4,6 +4,15 @@ Behavioral contract and required test coverage: [feature spec](features/task-man
 
 NED stores project work in its shared database. No Beads installation, external task service, model authorization, cloud account, or Hermes restart is required.
 
+All CLI task operations use Core's authenticated HTTP API. Without configuration,
+the CLI starts and closes a temporary local backend (no coordinator/model dispatch).
+For an existing same-profile Core/COM use `--api http://127.0.0.1:18791` or
+`NED_CORE_URL`; never use the public Hub/tunnel URL. Runtime/database identities
+must match. Explicit connection failures do not fall back to another store.
+Operator credentials remain private files, never CLI arguments. See the
+[API contract](features/core-orchestration/API.md) and
+[agent skill](../skills/task-management/SKILL.md).
+
 ## Shared database configuration
 
 The default is `<agent-home>/.ned/ned.sqlite`, selected by [runtime storage rules](cli/RUNTIME_HOME.md): explicit `NED_AGENT_HOME`, active Hermes/Codex context, then configured agent home. Standalone with no context retains `~/.ned/ned.sqlite`. Projects within one runtime share the file and are isolated by canonical project ID; different agent homes do not share tasks. Other NED features can use `openNedDatabase` from `src/database.js` and its namespaced feature records or versioned feature tables. Task initialization never replaces unrelated feature data. Existing stores remain untouched; there is no automatic migration.
@@ -61,11 +70,30 @@ Reason blockers store only explanatory metadata. Clear them after the external c
 
 ## Durability, errors and limits
 
-Mutation and history commit in the same transaction; a failed or interrupted transaction rolls back. SQLite writes serialize, with a 5-second busy timeout. Reopen and inspect state/history after a response is lost; committed creation has no exactly-once request token, so blind retries can duplicate items. No automatic import of earlier Beads prototype databases exists, and they are left untouched.
+Mutation, history and API receipt commit in one transaction; failed transactions roll back. SQLite writes serialize with a 5-second busy timeout. Use `--request-id <stable-key>` for recoverable mutations. Reuse only the same key with identical operation/arguments in the same project/actor; changed input returns `idempotency_conflict`. After an ambiguous response, read state before retrying. CLI never retries mutations automatically. No automatic import of earlier Beads prototype databases exists, and they are left untouched.
 
 JSON success writes one result to stdout with exit 0. Errors write `{error,message}` to stderr, exit 2 for invalid input/configuration/setup/ownership and exit 1 for database failures. Raw SQL, database paths, and private inputs are omitted from DB error messages. Normal output is readable. CLI-owned connections close after each operation; programmatic callers close their service or shared database explicitly.
 
-No generic editing, reparenting, deletion, cloud execution, public HTTP task API, or dashboard is included. NED tasks track user development requests, including this distribution; GitHub Issues/PRs may supply delivery evidence. No synchronization between those trackers is implemented.
+No generic graph editing, reparenting, deletion, cloud execution or public task-write API is included. COM provides a Goals & Tasks view of the same runtime/project. GitHub Issues/PRs may supply delivery evidence; no synchronization between those trackers is implemented.
+
+## Publish progress and inspect attempts
+
+```bash
+ned task delivery <id> --json
+ned task delivery <id> --file /private/work/delivery.json --request-id publish-1 --json
+ned goal delivery <goal-id> --file /private/work/goal.json --json
+ned task attempts <id> --json
+ned task attempts <id> --cursor <returned-nextCursor> --json
+```
+
+Delivery files completely replace impact, remainingSeconds, estimatedFinish and
+outputs; omitted fields clear. Read first and intentionally preserve wanted
+outputs, omitting read-only updatedAt. Unknown estimates are null. Use actual
+short documents or PNG/JPEG data URIs, not local paths or remote URLs. Bounds and
+examples are in the [Core delivery contract](features/core-orchestration/API.md#delivery-metadata-for-goals--tasks).
+Commands never dispatch work. Attempts return20 newest summaries per task plus
+an opaque continuation; keep it unchanged and scoped to the same task/project.
+Managed attempts still require verification before task completion.
 
 ## Verify all or selected spec cases
 
@@ -79,4 +107,4 @@ npm run check
 python -m pytest
 ```
 
-Tests are colocated in `docs/features/task-management/tests/TC-NNN.test.js`. The runner validates spec mappings and rejects missing/unknown cases, skips, cancellations, and TODOs. All task-management cases run locally against disposable SQLite files, including process races and crash recovery; no manual or live-provider case is required. The commit gate runs every automated feature case, not only the selected developer subset.
+Tests are colocated in `docs/features/task-management/tests/TC-NNN.test.js`. The runner validates spec mappings and rejects missing/unknown cases, skips, cancellations, and TODOs. Automated cases use disposable SQLite files and real loopback HTTP, including process races and crash recovery. TC-012 separately evaluates realistic skill behavior in a disposable environment; it is not a code-test pass. The commit gate runs every automated feature case, not only the selected developer subset.
