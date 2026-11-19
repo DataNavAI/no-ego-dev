@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820">
+  <rect width="1280" height="820" fill="#f3f3f3"/>
+  <style>text{font-family:Arial,Helvetica,sans-serif;fill:#000} .muted{fill:#545454;font-size:13px} .body{font-size:14px} .title{font-size:19px;font-weight:700} .label{font-size:12px;font-weight:700} .link{font-size:12px;text-decoration:underline} .rule{stroke:#e2e2e2} .small{font-size:12px;fill:#545454}</style>
+  <text x="32" y="40" font-size="24" font-weight="700">NED / Goals &amp; Tasks</text>
+  <text x="32" y="65" class="muted">Base-aligned visual options · Synthetic example data, not live progress · Design preview only</text>
+  <text x="32" y="108" class="title">A / Focused task cards — recommended</text>
+  <text x="660" y="108" class="title">B / Compact task ledger</text>
+  <rect x="32" y="128" width="588" height="650" rx="8" fill="white"/>
+  <rect x="660" y="128" width="588" height="650" rx="8" fill="white"/>
+  <path d="M32 180H620 M660 180H1248 M206 180V778 M834 180V778" class="rule" fill="none"/>
+  <text x="52" y="160" font-size="18" font-weight="700">NED</text><text x="226" y="160" class="body" font-weight="700">Goals &amp; Tasks</text><text x="464" y="160" class="muted">Preview · Debug</text>
+  <text x="680" y="160" font-size="18" font-weight="700">NED</text><text x="854" y="160" class="body" font-weight="700">Goals &amp; Tasks</text><text x="1092" y="160" class="muted">Preview · Debug</text>
+  <text x="52" y="213" class="label">CHAT</text><text x="52" y="247" class="body">Hermes</text><text x="52" y="278" class="muted">I’m improving the</text><text x="52" y="299" class="muted">checkout experience.</text>
+  <rect x="48" y="695" width="142" height="62" rx="12" fill="#f3f3f3"/><text x="60" y="721" class="small">Ask anything</text><circle cx="168" cy="737" r="12" fill="#000"/><text x="164" y="742" font-size="15" fill="white" style="fill:white">↑</text>
+  <text x="680" y="213" class="label">CHAT</text><text x="680" y="247" class="body">Hermes</text><text x="680" y="278" class="muted">I’m improving the</text><text x="680" y="299" class="muted">checkout experience.</text>
+  <rect x="676" y="695" width="142" height="62" rx="12" fill="#f3f3f3"/><text x="688" y="721" class="small">Ask anything</text><circle cx="796" cy="737" r="12" fill="#000"/><text x="792" y="742" font-size="15" style="fill:white">↑</text>
+  <text x="226" y="211" class="label">CURRENT GOAL</text><text x="226" y="241" class="title">Make checkout easier</text>
+  <text x="226" y="267" class="muted">Estimated finish today, 4:30 PM</text><text x="226" y="289" class="small">Updated 2 min ago · 1 of 3 tasks complete</text>
+  <rect x="226" y="305" width="374" height="4" fill="#e2e2e2"/><rect x="226" y="305" width="125" height="4" fill="#000"/>
+  <text x="226" y="343" class="label">WORKING NOW</text>
+  <rect x="226" y="359" width="374" height="220" rx="8" fill="#f3f3f3"/>
+  <text x="242" y="387" class="body" font-weight="700">Simplify the payment form</text>
+  <text x="242" y="412" class="muted">Help customers finish purchases with less typing.</text>
+  <text x="242" y="443" class="small">24 min spent · ~20 min left</text>
+  <rect x="242" y="459" width="72" height="68" rx="4" fill="white" stroke="#e2e2e2"/>
+  <rect x="250" y="467" width="56" height="7" fill="#e2e2e2"/><rect x="250" y="481" width="56" height="10" fill="#f3f3f3"/><rect x="250" y="497" width="56" height="10" fill="#f3f3f3"/><rect x="250" y="513" width="30" height="6" fill="#000"/>
+  <text x="326" y="482" class="body">Payment form preview</text><text x="326" y="504" class="link">View screenshot</text>
+  <text x="242" y="554" class="link">Debug execution · 2 attempts →</text>
+  <text x="226" y="617" class="body" font-weight="700">Check keyboard accessibility</text><text x="226" y="640" class="muted">Make checkout usable without a mouse.</text>
+  <text x="226" y="666" class="small">Ready · 0 min spent · Not estimated</text>
+  <text x="226" y="694" class="link">View checklist</text><text x="430" y="694" class="link">Debug execution</text>
+  <text x="226" y="750" class="muted">⌄ 1 completed task</text>
+  <text x="854" y="211" class="label">CURRENT GOAL</text><text x="854" y="241" class="title">Make checkout easier</text>
+  <text x="854" y="267" class="muted">Est. today, 4:30 PM · 1 of 3 complete</text>
+  <path d="M854 291H1228 M854 418H1228 M854 545H1228" class="rule"/>
+  <text x="854" y="319" class="label">WORKING</text><text x="854" y="345" class="body" font-weight="700">Simplify the payment form</text>
+  <text x="854" y="368" class="small">Less typing for customers at checkout.</text><text x="854" y="390" class="small">Spent 24m · Left ~20m</text><text x="1100" y="390" class="link">Output · Logs</text>
+  <text x="854" y="446" class="label">READY</text><text x="854" y="472" class="body" font-weight="700">Check keyboard accessibility</text>
+  <text x="854" y="495" class="small">Make checkout usable without a mouse.</text><text x="854" y="517" class="small">Spent 0m · Not estimated</text><text x="1100" y="517" class="link">Output · Logs</text>
+  <text x="854" y="576" class="muted">⌄ 1 completed task</text>
+  <rect x="854" y="607" width="374" height="146" rx="8" fill="#f3f3f3"/>
+  <text x="870" y="634" class="label">SELECTED TASK / EXECUTION</text><text x="870" y="662" class="body">Attempt 2 · Working</text>
+  <text x="870" y="689" class="link">Open session log →</text><text x="870" y="716" class="small">Attempt 1 · Stopped · 8 min</text><text x="870" y="738" class="small">Details replace the output preview in this area.</text>
+  <text x="32" y="807" class="small">Both: task → output preview; Debug → attempts → session log. Missing estimates and outputs are explicit. Mobile uses a dedicated pane.</text>
+</svg>

@@ -75,8 +75,8 @@ const tabs=[chatToggle,...sectionTabs,...(settingsTab?[settingsTab]:[])];
 const mobileViewport=typeof matchMedia==='function'?matchMedia('(max-width: 767px)'):null;
 let workspace=mobileViewport?.matches?'left':'preview';
 let selectedTab=chatToggle;
-let canvasView='Preview';
-const canvasTabs=[document.getElementById('preview-tab'),document.getElementById('dashboard-tab')];
+let canvasView='Goals & Tasks';
+const canvasTabs=[document.getElementById('goals-pane-tab'),document.getElementById('preview-tab'),document.getElementById('dashboard-tab')].filter(Boolean);
 function selectCanvas(tab,focus=false){
   canvasView=tab.textContent;
   for(const item of canvasTabs){const active=item===tab;item.setAttribute('aria-selected',String(active));item.tabIndex=active?0:-1;document.getElementById(item.getAttribute('aria-controls')).hidden=!active;}
@@ -85,11 +85,11 @@ function selectCanvas(tab,focus=false){
 for(const tab of canvasTabs){
   tab.addEventListener('click',()=>selectCanvas(tab));
   tab.addEventListener('keydown',event=>{
-    let next;if(['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(event.key))next=canvasTabs[1-canvasTabs.indexOf(tab)];else if(event.key==='Home')next=canvasTabs[0];else if(event.key==='End')next=canvasTabs[1];else return;
+    let next;if(['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(event.key)){const direction=['ArrowRight','ArrowDown'].includes(event.key)?1:-1;next=canvasTabs[(canvasTabs.indexOf(tab)+direction+canvasTabs.length)%canvasTabs.length];}else if(event.key==='Home')next=canvasTabs[0];else if(event.key==='End')next=canvasTabs.at(-1);else return;
     event.preventDefault();selectCanvas(next,true);
   });
 }
-const canvasHeading=()=>canvasView==='Preview'?document.getElementById('preview-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
+const canvasHeading=()=>canvasView==='Goals & Tasks'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
 function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   leftPane.hidden=mobile&&workspace!=='left';leftPane.inert=leftPane.hidden;

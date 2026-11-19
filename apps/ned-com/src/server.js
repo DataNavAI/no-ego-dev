@@ -1,4 +1,5 @@
 import {readProjectWork} from './work.js';
+import {readTaskDelivery} from './task-delivery.js';
 import {createCoreService} from '../../ned-core/src/index.js';
 import {createCoreHandler} from '../../ned-core/src/http.js';
 import {authorized,coreNamespace,loadOperatorCredential} from '../../ned-core/src/auth.js';
@@ -28,6 +29,8 @@ assets.set('/dashboard-model.js',['dashboard-model.js','text/javascript']);
 assets.set('/work-plan.js',['work-plan.js','text/javascript']);
 assets.set('/task-references.js',['task-references.js','text/javascript']);
 assets.set('/project-work.js',['project-work.js','text/javascript']);
+assets.set('/goals-tasks.js',['goals-tasks.js','text/javascript']);
+assets.set('/base.css',['base.css','text/css']);
 assets.set('/work-entry.js',['work-entry.js','text/javascript']);
 assets.set('/activity-ui.js',['activity-ui.js','text/javascript']);
 assets.set('/mobile-navigation.js',['mobile-navigation.js','text/javascript']);
@@ -83,6 +86,20 @@ export function createCommunicatorServer({host = '127.0.0.1', port = 0, database
     if(path === '/api/projects' || path.startsWith('/api/projects/')) {
       const controller=new AbortController();const abort=()=>controller.abort();res.once('close',abort);
       try {
+        const outputRoute=/^\/api\/projects\/([A-Za-z0-9_-]{1,256})\/tasks\/([A-Za-z0-9_-]{1,256})\/outputs\/([A-Za-z0-9_-]{1,64})$/.exec(path);
+        if(outputRoute){
+          const data=await readTaskDelivery({databasePath,home,env,gateway,projectId:outputRoute[1],taskId:outputRoute[2],signal:controller.signal});
+          const output=data.outputs.find(row=>row.id===outputRoute[3]);if(!output)return error(404,'output_unavailable','Output unavailable.');
+          return output.kind==='image'?send(200,'image/png',Buffer.from(output.image,'base64')):send(200,'text/plain',output.text);
+        }
+        const taskRoute=/^\/api\/projects\/([A-Za-z0-9_-]{1,256})\/tasks\/([A-Za-z0-9_-]{1,256})(?:\/attempts\/([A-Za-z0-9_-]{1,256})(?:\/sessions\/([A-Za-z0-9_-]{1,200})\/messages)?)?$/.exec(path);
+        if(taskRoute){
+          const query=new URL(req.url,url).searchParams;
+          if([...query.keys()].some(key=>key!=='offset')||query.getAll('offset').length>1||query.has('offset')&&!/^(0|[1-9]\d{0,5})$/.test(query.get('offset')))return error(400,'invalid_page','Invalid page.');
+          const result=await readTaskDelivery({databasePath,home,env,gateway,projectId:taskRoute[1],taskId:taskRoute[2],attemptId:taskRoute[3],sessionId:taskRoute[4],offset:Number(query.get('offset')||0),signal:controller.signal});
+          if(result.outputs)result.outputs=result.outputs.map(output=>({id:output.id,kind:output.kind,title:output.title,...(output.kind==='document'?{text:output.text}:{})}));
+          return send(200,'application/json',JSON.stringify(result));
+        }
         const match=/^\/api\/projects\/([^/]+)\/work$/.exec(path);
         const result=match?readProjectWork(databasePath,decodeURIComponent(match[1])):path === '/api/projects' ? projects.list() : await projects.detail(decodeURIComponent(path.slice('/api/projects/'.length)),controller.signal);
         return send(200,'application/json',JSON.stringify(result));

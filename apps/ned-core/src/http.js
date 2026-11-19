@@ -2,7 +2,7 @@ import {authorized,coreNamespace} from './auth.js';
 
 const prefix='/api/core/v1';
 const fail=(status,code,message)=>Object.assign(new Error(message),{status,code});
-const schemas={createGoal:['title','description','priority','parentId'],createTask:['title','description','priority','parentId'],enroll:['enabled'],createAttempt:['instructions','role'],complete:['evidence'],stop:[],verify:['accepted','evidence'],resolve:['outcome','acknowledgeUncertainSideEffects','evidence'],retry:['instructions'],createAutomation:['kind','intervalSeconds','target','overlapPolicy'],updateAutomation:['revision','enabled','intervalSeconds','target','overlapPolicy'],trigger:[],requestReconcile:[]};
+const schemas={setDelivery:['impact','remainingSeconds','estimatedFinish','outputs'],createGoal:['title','description','priority','parentId'],createTask:['title','description','priority','parentId'],enroll:['enabled'],createAttempt:['instructions','role'],complete:['evidence'],stop:[],verify:['accepted','evidence'],resolve:['outcome','acknowledgeUncertainSideEffects','evidence'],retry:['instructions'],createAutomation:['kind','intervalSeconds','target','overlapPolicy'],updateAutomation:['revision','enabled','intervalSeconds','target','overlapPolicy'],trigger:[],requestReconcile:[]};
 async function body(req,operation){
   if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(req.headers['content-type']||''))throw fail(400,'invalid_request','JSON content type required.');
   let bytes=0;const chunks=[];
@@ -54,6 +54,7 @@ export function createCoreHandler({service,credential,boundOrigin,timers={setInt
           if(method==='POST'&&['goals','tasks','automations'].includes(entity))operation={goals:'createGoal',tasks:'createTask',automations:'createAutomation'}[entity],args=[project];
         }
         if(project&&id&&entity==='tasks'&&segments.length===5){
+          if(method==='PUT'&&action==='delivery')operation='setDelivery';
           if(method==='PUT'&&action==='enrollment')operation='enroll';
           if(method==='POST'&&['attempts','complete'].includes(action))operation=action==='attempts'?'createAttempt':'complete';
           if(operation)args=[project,id];

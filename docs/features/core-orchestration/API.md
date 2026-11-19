@@ -57,6 +57,19 @@ credential or profile in a request.
 
 ## Endpoint inventory
 
+### Delivery metadata for Goals & Tasks
+`PUT /projects/:projectId/tasks/:taskId/delivery` replaces one item's presentation record without starting work or changing status. Normal operator bearer/origin/idempotency rules apply. Goal IDs are accepted for explicit finish estimates.
+
+```json
+{"impact":"Reduce checkout abandonment.","remainingSeconds":1200,"estimatedFinish":"2026-11-20T12:00:00.000Z","outputs":[{"id":"brief","kind":"document","title":"Implementation brief","text":"Customers can check out with fewer fields."}]}
+```
+
+Omitted fields reset on replacement: impact becomes empty, estimates null, outputs empty. Impact: single line≤240characters; remainingSeconds: null or integer0–31,536,000; estimatedFinish: null or canonical UTC ISO timestamp. Outputs:≤3 unique ASCII IDs1–64characters and titles1–120characters. Documents use `text`≤16,384characters. Images use `kind:"image"`, `image:"data:image/png;base64,..."` (or JPEG),≤32,768characters. The existing64KiB body cap applies. Images are decoded≤4million pixels, resized≤1024px, re-encoded as PNG; URLs, paths, SVG and arbitrary HTML are not accepted. Same key/body returns the original timestamp; different body under that key returns409. A new key atomically replaces the record and removes omitted outputs. Data stays in the runtime DB, with no filesystem copies or public uploads.
+
+Work snapshots return compact `delivery`: impact, remainingSeconds, estimatedFinish, updatedAt, nullable trackedSeconds and output IDs/kinds/titles. Descriptions and output bodies stay out of bulk reads. Tracked time means claimed working intervals excluding recorded blockers, not CPU time or verified labor. Legacy work without history/metadata retains null estimates/time.
+
+COM browser read facade: `/api/projects/:project/tasks/:task` returns description/impact/outputs and20 newest attempts with `nextOffset`; `?offset=N` continues. `/attempts/:attempt` returns captured result flags and bound sessions. `/attempts/:attempt/sessions/:session/messages?offset=N` returns≤50 sanitized rows only for a persisted binding matching current gateway identity. `/outputs/:output` serves PNG or plain text without client-selected paths. These inherit existing COM access boundaries, not an operator credential in the browser. Public bridges still block privileged Core routes. Behavioral authority and tests: [communicator FR-066–070 / TC-042](../communicator/SPEC.md).
+
 All paths below are relative to `/api/core/v1`. `projectId`, `taskId`,
 `attemptId`, `automationId` and `tickId` are returned identifiers, not labels.
 
@@ -70,6 +83,7 @@ All paths below are relative to `/api/core/v1`. `projectId`, `taskId`,
 | POST | `/projects/:projectId/tasks` | Canonical task creation fields |
 | POST | `/projects/:projectId/tasks/:taskId/complete` | Evidence-backed canonical owner completion; unverified execution conflicts |
 | PUT | `/projects/:projectId/tasks/:taskId/enrollment` | `{"enabled":true}`; eligibility only, no execution |
+| PUT | `/projects/:projectId/tasks/:taskId/delivery` | Replace explicit impact, estimates and visible outputs; also accepts goal IDs |
 | POST | `/projects/:projectId/tasks/:taskId/attempts` | `{"instructions":"...","role":"worker"}`; reserves queued attempt |
 | GET | `/projects/:projectId/attempts` | Paged attempts; retain canonical task and attempt IDs |
 | GET | `/projects/:projectId/attempts/:attemptId` | State, bindings and result flags |
