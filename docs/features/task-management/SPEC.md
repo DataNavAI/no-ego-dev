@@ -9,9 +9,34 @@ Humans and Hermes agents maintain durable goals, subgoals, tasks, discovered iss
 
 One NED database per selected agent runtime defaults to `<agent-home>/.ned/ned.sqlite`; standalone without agent context retains `~/.ned/ned.sqlite`. [Agent runtime home](../agent-runtime-home/SPEC.md) governs detection, explicit `NED_AGENT_HOME`, ambiguity, invalid paths and isolation (#150, TC-001/002/003). Configure only the DB location with `NED_DATABASE_URL` or a task command's `--database`; the explicit flag takes precedence. `file:` URLs and filesystem paths are supported. Other database engines, remote SQL servers, dashboards, credential brokering, external tracker synchronization, deletion/reparenting, and automatic import of previous stores are outside this revision. Existing data is left untouched; migration requires a separately reviewed import procedure. Shared storage within one runtime does not mean actor authentication, tenant authorization or cross-agent synchronization.
 
-Supporting usage: [tasks.md](../../tasks.md). Implementation: [tasks.js](../../../src/tasks.js), [database.js](../../../src/database.js), [task-cli.js](../../../src/task-cli.js). Colocated automated cases live in [tests/](tests/). All cases are credential-free; no manual acceptance or live-provider test is required for this feature.
+Supporting usage: [tasks.md](../../tasks.md). Implementation: [tasks.js](../../../src/tasks.js), [database.js](../../../src/database.js), [task-cli.js](../../../src/task-cli.js). Colocated automated cases live in [tests/](tests/). Automated cases are credential-free; TC-012 separately evaluates agent behavior using synthetic state, without live-provider calls or real profile changes.
 
 ## Requirements
+
+### Core API transport extension
+CLI commands retain their existing syntax, actor ownership, project identity, profile isolation, JSON output and graph semantics, but use authenticated Core HTTP rather than a CLI-owned task service. With no `--api`/`NED_CORE_URL`, the CLI starts a command-scoped loopback Core backend without a coordinator, uses the same HTTP handler, then closes it. This is an explicit default mode, not a network-failure fallback. Configured servers are loopback-only and must match the selected runtime and expected DB fingerprints before any command. No daemon, model calls, reconciliation or automatic enrollment is required for normal tracking.
+
+- FR-015: All ordinary goal/task/subgoal/issue/status/tree/ready CLI reads and writes route through Core's task-management API. Preserve initialization, typed reads, dependencies, blockers, atomic ownership, completion fences and existing records. Core is the only command persistence owner; do not copy/migrate stores or edit project instructions. Explicit actor labels are retained, not replaced with the coordinator actor.
+- FR-016: Configured API failure, profile/DB mismatch, invalid URL/auth or uncertain mutation must fail without direct-DB fallback, redispatch or secret disclosure. `--request-id` supports explicit same-command replay. Mutation and stored response commit atomically; changed payload/operation under the same project/actor/key conflicts. Default generated request IDs appear in uncertain-response errors for recovery; users inspect authoritative reads before retrying. GET context and all task commands remain operator-only; public bridges continue blocking Core.
+- FR-017: `task delivery <id> [--file <JSON>]` (also goal IDs via `goal delivery`) reads or replaces explicit impact, estimates and safe outputs using the existing delivery contract. `task attempts <id> [--cursor <opaque>]` reads paginated task-scoped attempt summaries. Neither starts work. Preserve legacy unknown estimates/output states and verified managed-attempt completion fences. File inputs are bounded and never interpreted as shell code; actor metadata is not authentication.
+- FR-018: Extend the canonical task-management skill, not a competing tracker. Agents inspect/reuse durable work before implementation, use stable actors/profile context, publish one-line business impact and honest estimates/outputs when known, read back mutations, and distinguish queued attempts from active execution. Unknown delivery is explicit; no fabricated outputs, stale estimates, replay after uncertain admission or premature completion. Behavioral acceptance is separate from code tests.
+
+### CUJ-008: Track a project through Core from CLI and agent workflow
+Actor: human or agent maintaining a project visible in COM. Critical because separate CLI/UI state or bypassing Core ownership would make work visibility untrustworthy. Starting with a selected isolated runtime and project, initialize, create goal/tasks, claim ready work, publish impact/output/estimate, inspect via Core/COM, block/resume and complete verified work. Repeat against a configured same-runtime server; recover explicit idempotent requests without duplicate tasks. Wrong actor, project/profile/server and unavailable/ambiguous responses remain failures with no fallback. Cleanup removes only synthetic fixture state.
+
+### TC-013: API-backed CLI parity, identity, replay and delivery
+- Journey / requirements: CUJ-008 / FR-015–017 and existing ownership/isolation requirements.
+- Level / automation: integration; [tests/TC-013.test.js](tests/TC-013.test.js).
+- Preconditions / fixtures: disposable project/home/DB, real loopback Core/COM listeners, synthetic credential and image/document metadata; fresh stores with no host gateway use.
+- Given: a local CLI context and a Core API exposing the same selected runtime/database.
+- When: initialize and execute graph operations, publish delivery, inspect attempts, retry a create with the same request ID, then vary actor/body/context and simulate unavailable responses.
+- Then: HTTP calls reach Core; CLI/Core/COM observe identical persisted IDs/statuses/output; same-key replay creates once, changed command conflicts, competing actor does not mutate work, wrong context and network failure never fall back or dispatch workers.
+- Steps and assertions: `node --test docs/features/task-management/tests/TC-013.test.js`; existing TC-001–011 continue proving graph, persistence, resource cleanup and packaging semantics through the new default client.
+- Variants / negative cases: default temporary backend and configured persistent server, same project in separate profiles, DB mismatch, bad URL/token, invalid/oversized file, incomplete managed attempt, opaque task-bound cursor, lost response with explicit-key recovery, concurrent claims, repeated cleanup and no model/network access beyond loopback.
+- Cleanup: await closure of owned servers/connections and remove test-owned data; no real profile or project mutation.
+- Pass evidence: executed assertions and independently inspected source; written cases are not passes.
+
+Coverage extension: FR-015–017 → CUJ-008 → TC-013; FR-018 → CUJ-008 and existing TC-012 behavioral evaluation. The [API design](API_DESIGN.md) governs request/retained-state examples; [Core API reference](../core-orchestration/API.md) is updated alongside implementation.
 
 - **FR-001 — Context:** Explicit, idempotent `task init`. Realpath resolves project identity; SHA-256 identifies the path within the shared database. Cwd is the default project. Actor defaults to `human:<OS username>` or accepts `agent:<id>`/`human:<id>` with 1–100 alphanumeric, dot, underscore, @, or hyphen characters. No project hooks/instructions are modified.
 - **FR-002 — Shared persistence:** Tasks use the common NED SQLite module and database, not a feature-specific database. Projects, work items, dependencies, and history share the file with other NED feature records. Configure through `--database` > `NED_DATABASE_URL` > local default. Versioned schema creation is transactional/idempotent; reject unsupported engines and newer schemas without destruction. Foreign keys and project-scoped lookups enforce isolation; runtime DB/WAL/journal files stay out of packages and source control.
@@ -182,6 +207,10 @@ All tests use disposable homes/projects/SQLite files and clean them in `t.after`
 | FR-012 | TC-004, TC-010 |
 | FR-013 | TC-001, TC-009, TC-011 |
 | FR-014 | TC-001, TC-008, TC-011 |
+| FR-015 | CUJ-008 / TC-013; existing CUJ-001–006 / TC-001–011 |
+| FR-016 | CUJ-008 / TC-013 |
+| FR-017 | CUJ-008 / TC-013 |
+| FR-018 | CUJ-008 / TC-012 (manual behavioral acceptance) |
 
 Run `npm run test:spec -- --all`, or select with `--feature task-management`, `--case TC-004`, or `--journey CUJ-003`. Every selected case must have an executable file. The runner rejects missing/unknown mappings and any skip/cancel. `npm test` includes broader regression coverage plus the spec gate. Run `npm run check` and `python -m pytest` before committing. Every mandatory case must pass before a commit; no external Beads or manual gate may conceal a coverage gap.
 
@@ -197,13 +226,13 @@ The [task-management skill](../../../skills/task-management/SKILL.md) guides mil
 
 ### TC-012: Agent plans and resumes a milestone through NED
 
-- Journey / requirements: CUJ-002, CUJ-003, CUJ-007 / FR-003, FR-006, FR-007, FR-010.
+- Journey / requirements: CUJ-002, CUJ-003, CUJ-007, CUJ-008 / FR-003, FR-006, FR-007, FR-010, FR-018.
 - Level / automation: manual; [EVAL.yaml](../../../skills/task-management/EVAL.yaml).
 - Preconditions / fixtures: Disposable project/database; [synthetic scenario](../../../skills/task-management/evaldata/scenarios.md); built CLI and no live providers.
 - Given: Agent has the skill and an empty synthetic project.
 - When: Execute the evaluation prompt, interrupt/resume work, attempt competing ownership, then finish verified children and goal.
 - Then: One milestone and two linked tasks persist; dependency and ownership prevent invalid execution; no duplicate creation on resume; final explicit goal closure follows children.
 - Steps and assertions: Run the EVAL prompt in a fresh delegated agent; retain command results, final tree/history and expectation dispositions outside runtime/source state. Verify no real profile mutation during synthetic acceptance.
-- Variants / negative cases: Unprompted development intake, scope-changing follow-up, repeated/resumed request deduplication, standalone small fix and explanation-only no-op, competing actor, blocked completion, lost-response retry awareness. Live authentication is inapplicable.
+- Variants / negative cases: Unprompted development intake, scope-changing follow-up, repeated/resumed request deduplication, standalone small fix and explanation-only no-op, competing actor, blocked completion, identical-key retry/readback, truthful impact/document publication and preservation, unknown estimates, configured-server failure without fallback, attempt/continuation interpretation. Live authentication is inapplicable.
 - Cleanup: Agent removes only its disposable project/database.
 - Pass evidence: Independently inspected agent transcript and persisted CLI outputs; loading EVAL YAML alone is not a pass.

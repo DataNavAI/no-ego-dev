@@ -1,6 +1,6 @@
 ---
 name: task-management
-description: Use for every user development request, including features, bugs, refactors, tests, deployment, and skill changes, to create or update durable NED goals and tasks before execution and maintain their state through completion.
+description: Use for every user development request to track durable NED goals, tasks, blockers, estimates and visible outputs through the Core-backed CLI, preserving ownership and verified completion.
 ---
 
 # Task management
@@ -100,11 +100,73 @@ A task can instead use `--parent <goal-or-subgoal-id>` for existing nested plans
 
 1. Read `ned ready`, then claim one task with `ned task start <id>`. Pass the same project/actor and `--json` as above. Check success before doing work; a competing claim can fail.
 2. Record prerequisites with `ned task block <id> --on <prerequisite-id>`. Record an external condition using `--reason <text>` and optionally `--service <name>` instead. Store no credentials. Report the actual owner/action needed; do not invent access or bypass another actor's claim.
-3. After an external condition resolves, use `ned task unblock <id>`; remaining dependencies still apply. Inspect `get`, `history`, `tree` and `ready` to resume after interruption. After an uncertain create response, inspect before retrying because create has no idempotency key.
+3. After an external condition resolves, use `ned task unblock <id>`; remaining dependencies still apply. Inspect `get`, `history`, `tree` and `ready` to resume after interruption. Give mutations a stable `--request-id <unique-operation-key>` when retry recovery matters. After an uncertain response, read back before retrying; replay only the identical command and input with the original key. A changed command under that key conflicts. Never blindly create a replacement or invent a new key to recover an uncertain mutation.
 4. Verify the task's acceptance checks before `ned task done <id> --reason <evidence summary>`. The claiming actor completes it. Keep blocked or unverified work open.
 5. Inspect milestone children and progress. Complete the goal explicitly with `ned goal done <id>` only after all children and its outcome are verified. Derived 100% progress does not close the stored goal.
 
 For this no-ego-dev distribution, after each completed task run `node scripts/deploy-hermes-skills.mjs` from its checkout. The default local Hermes instance is staging. Check the deployment result before reporting staging updated; failures require remediation and truthful status. Do not deploy to named profiles or AWS through this command. Fresh Hermes sessions load the new skill files; existing sessions may retain earlier instructions.
+
+## Core connection and recovery
+
+Task commands use the authenticated NED Core HTTP API. By default the CLI starts
+a temporary loopback backend for the selected runtime/database and closes it
+after the command; no daemon, coordinator dispatch, model or gateway is required.
+To share a running local COM/Core listener, set `NED_CORE_URL` or pass
+`--api http://127.0.0.1:18791` on every command. Use the listener's actual loopback
+URL, not a public tunnel/Hub URL. For a configured server the CLI reads its private
+operator credential; standalone commands use a transient process-private bearer.
+Never read, print or put either credential in arguments or task records.
+
+The CLI verifies the server's runtime and database identity before sending task
+arguments. `--database` selects the expected database, not a different server
+database. A configured server failure, unauthorized response or context mismatch
+must be repaired or truthfully reported; never silently unset the URL, switch
+profiles, copy databases, or fall back to direct SQLite writes. Actor is an
+ownership label, not authentication. Keep runtime, project, actor and database
+consistent with the COM whose Goals & Tasks pane the user is viewing.
+
+## Keep Goals & Tasks useful
+
+Record a short product/business effect, a defensible remaining-time estimate
+when known, and a visible output as work progresses. Unknown time stays null;
+never fabricate a finish time, screenshot, effort or completed output. Tracked
+time comes from working intervals in task history, not measured CPU time or
+proof of labor. Update metadata without claiming a task done.
+
+```bash
+ned task delivery <task-id> --project /absolute/project --actor agent:planner --json
+ned task delivery <task-id> --file /private/work/delivery.json --request-id <publish-key> --project /absolute/project --actor agent:planner --json
+ned goal delivery <goal-id> --file /private/work/goal-delivery.json --project /absolute/project --actor agent:planner --json
+ned task attempts <task-id> --project /absolute/project --actor agent:planner --json
+```
+
+The JSON file is a **complete replacement**, not a patch. Read the saved delivery
+first, preserve every desired output, and write only the supported fields (omit
+read-only `updatedAt`). Omitted impact, estimates and outputs reset. Example:
+
+```json
+{"impact":"Shoppers can complete checkout","remainingSeconds":null,"estimatedFinish":null,"outputs":[{"id":"verification","kind":"document","title":"Verification note","text":"Synthetic example only; replace with actual results."}]}
+```
+
+Impact is one line≤240characters; `remainingSeconds` is null or0–31,536,000;
+`estimatedFinish` is null or canonical UTC ISO with milliseconds. Include≤3
+outputs, unique ASCII IDs1–64characters, titles1–120characters. Documents use
+`kind:"document"` and `text`≤16,384characters. Images use `kind:"image"` and an
+actual PNG/JPEG base64 `image` data URI≤32,768characters; no paths, remote URLs,
+SVG or HTML. Core validates/normalizes images; the complete HTTP body must fit
+64KiB, so keep files smaller. Store temporary delivery files outside the repo;
+exclude secrets, private logs and unapproved conversation content. Read back the
+saved record after publication. Updating with a new request key intentionally
+replaces the old record; do not reuse an old key for changed metadata.
+
+`task attempts` returns at most20 newest attempt summaries and `nextCursor`.
+Pass a non-null token unchanged with `--cursor <token>` on the same task/project
+to continue. Retain task/attempt/session IDs literally; a session title is not a
+mapping key. Queued is not running; awaiting_verification is not success. The
+CLI command is inspection only: it never enrolls, launches, retries or stops a
+worker. Use COM's task Details to inspect captured results and bound session
+logs. Follow the existing orchestrator's verification/ownership flow for managed
+work; never bypass `verification_required` or complete another actor's task.
 
 ## Reporting
 

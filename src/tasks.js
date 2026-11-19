@@ -195,7 +195,7 @@ export async function createTaskService({
     close() {
       if (!database) db.close();
     },
-    async initialize() {
+    initialize() {
       return db.write(() => {
         sql
           .prepare('INSERT OR IGNORE INTO ned_projects(id,path,initialized_at) VALUES(?,?,?)')
@@ -258,23 +258,23 @@ export async function createTaskService({
     getItem(id) {
       return inProject(false, () => item(id));
     },
-    async getChildren(id) {
+    getChildren(id) {
       return inProject(false, () => {
         raw(id);
         return snapshot().filter((child) => child.parentId === id);
       });
     },
-    async getDependencies(id) {
+    getDependencies(id) {
       return inProject(false, () => item(id).dependencies);
     },
-    async getReadyTasks() {
+    getReadyTasks() {
       return inProject(false, () =>
         snapshot().filter(
           (entry) => ['task', 'issue'].includes(entry.type) && entry.status === 'ready',
         ),
       );
     },
-    async addDependency(id, dependency) {
+    addDependency(id, dependency) {
       return inProject(true, () => {
         const entry = raw(id);
         own(entry);
@@ -368,10 +368,10 @@ export async function createTaskService({
         return after;
       });
     },
-    async blockTask(id, { on, reason, service } = {}) {
+    blockTask(id, { on, reason, service } = {}) {
       if (on && (reason !== undefined || service !== undefined))
         fail('invalid_blocker', 'Choose a dependency or a reason blocker.');
-      if (on) return this.addDependency(id, on);
+      if (on) return this.sync.addDependency(id, on);
       if (
         typeof reason !== 'string' ||
         !reason.trim() ||
@@ -399,7 +399,7 @@ export async function createTaskService({
         return after;
       });
     },
-    async unblockTask(id) {
+    unblockTask(id) {
       return inProject(true, () => {
         const entry = raw(id);
         own(entry);
@@ -416,10 +416,10 @@ export async function createTaskService({
         return after;
       });
     },
-    async getTree() {
+    getTree() {
       return inProject(false, () => treeFrom(snapshot()));
     },
-    async getGoalProgress(id) {
+    getGoalProgress(id) {
       return inProject(false, () => {
         const entry = raw(id);
         if (!['goal', 'subgoal'].includes(entry.type))
@@ -428,7 +428,7 @@ export async function createTaskService({
         return flatten(treeFrom(snapshot())).find((node) => node.id === id).progress;
       });
     },
-    async getStatus() {
+    getStatus() {
       return inProject(false, () => {
         const items = snapshot();
         return {
@@ -445,7 +445,7 @@ export async function createTaskService({
         };
       });
     },
-    async getActivity(id) {
+    getActivity(id) {
       return inProject(false, () => {
         raw(id);
         return sql
@@ -465,7 +465,7 @@ export async function createTaskService({
       });
     },
   };
-  const sync = Object.fromEntries(['createItem','getItems','getItem','startTask','completeTask'].map(name => [name,service[name].bind(service)]));
+  const sync = Object.fromEntries(Object.keys(service).filter(name => typeof service[name] === 'function' && name !== 'close').map(name => [name,service[name].bind(service)]));
   for (const name of Object.keys(sync)) service[name] = async (...args) => sync[name](...args);
   service.sync = sync;
   return service;

@@ -1,6 +1,7 @@
 import {authorized,coreNamespace} from './auth.js';
 
 const prefix='/api/core/v1';
+const taskFields=['project','actor','operation','args'];
 const fail=(status,code,message)=>Object.assign(new Error(message),{status,code});
 const schemas={setDelivery:['impact','remainingSeconds','estimatedFinish','outputs'],createGoal:['title','description','priority','parentId'],createTask:['title','description','priority','parentId'],enroll:['enabled'],createAttempt:['instructions','role'],complete:['evidence'],stop:[],verify:['accepted','evidence'],resolve:['outcome','acknowledgeUncertainSideEffects','evidence'],retry:['instructions'],createAutomation:['kind','intervalSeconds','target','overlapPolicy'],updateAutomation:['revision','enabled','intervalSeconds','target','overlapPolicy'],trigger:[],requestReconcile:[]};
 async function body(req,operation){
@@ -8,7 +9,7 @@ async function body(req,operation){
   let bytes=0;const chunks=[];
   for await(const chunk of req){bytes+=chunk.length;if(bytes>65536)throw fail(413,'request_too_large','Request exceeds limit.');chunks.push(chunk);}
   let value;try{value=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw fail(400,'invalid_request','Invalid JSON.');}
-  if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).some(key=>!schemas[operation].includes(key)))throw fail(400,'invalid_request','Invalid request fields.');
+  if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).some(key=>!(operation==='taskCommand'?taskFields:schemas[operation]).includes(key)))throw fail(400,'invalid_request','Invalid request fields.');
   const key=req.headers['idempotency-key'];
   if(typeof key!=='string'||!/^[\x21-\x7e]{1,128}$/.test(key))throw fail(400,'invalid_idempotency_key','Idempotency-Key required.');
   return {value,key};
@@ -37,6 +38,8 @@ export function createCoreHandler({service,credential,boundOrigin,timers={setInt
       if(query.limit!==undefined){if(!/^[1-9]\d?$|^100$/.test(query.limit))throw fail(400,'invalid_request','Invalid page limit.');query.limit=Number(query.limit);}
       let operation,args=[],status=200,paged=false;
       const method=req.method;
+      if(method==='GET'&&segments.length===1&&segments[0]==='context'){send(200,{data:await service.context()});return true;}
+      if(method==='POST'&&segments.length===1&&segments[0]==='task-management')operation='taskCommand';
       if(method==='GET'&&segments.length===1&&['health','capabilities'].includes(segments[0])){
         const value=segments[0]==='health'?{status:'ok',service:'ned-core',version:1}:await service.capabilities?.()||{version:1,dispatchEnabled:false};
         send(200,{data:value});return true;

@@ -14,6 +14,26 @@ validation, then claim and finish verification and explicitly close the goal.
 Show the final tree and history. Explain which deployment command would follow a
 real distribution task, but do not deploy this synthetic exercise to real Hermes.
 
+# Core-backed progress and visible output
+
+Use a new disposable home/project and the checkout CLI; keep all synthetic state
+outside the repository. The user requests: "Track a synthetic checkout-verification
+goal with one task. Start it, publish a short note describing the check, and show
+what the COM Goals & Tasks pane will receive. We do not know how much time remains."
+Use a stable explicit actor and a request key for creation. Simulate a lost create
+response by replaying the identical command/key, then resume by reading the saved
+work. Do not create a second task. Publish a truthful one-line product effect and
+a document containing actual synthetic results (not claims about a real product),
+with unknown estimates. Read the saved metadata, then update the impact while
+preserving the document. Inspect attempts without starting an agent/model. Keep
+the task open: this exercise does not establish real checkout acceptance, merge
+or deployment. Save the final tree, delivery and history.
+
+Then repeat a read using `--api http://127.0.0.1:1`. Explain the error and recovery;
+do not unset the endpoint or switch profiles to claim the configured request
+succeeded. Explain how to use an unchanged `nextCursor` if a task has more than20
+attempts. Never read credentials, run a real gateway or mutate the real profile.
+
 # Unprompted development intake and follow-up
 
 In a second disposable project, the user says only: "Add CSV export and a download

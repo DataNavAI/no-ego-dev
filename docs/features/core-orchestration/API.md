@@ -28,8 +28,9 @@ facade; it does not expose this token to its browser UI.
 Only the exact bound loopback Host is accepted. Origin must be absent or exactly
 the listener's origin. There is no cookie authentication or cross-origin access.
 Public-tunnel and Hub bridges reject this entire namespace, even with a valid
-bearer. Clients cannot select a database, project filesystem path, Hermes URL,
-credential or profile in a request.
+bearer. Clients cannot select a database, Hermes URL, credential or profile in a
+request. Only the operator task-management endpoint accepts an absolute existing
+project directory for canonical initialization/selection; other routes use IDs.
 
 ## Common request and response rules
 
@@ -56,6 +57,49 @@ credential or profile in a request.
 | 503 | Storage/provider dependency unavailable; no false success |
 
 ## Endpoint inventory
+
+### Core-backed CLI tracking
+
+`GET /context` returns `{data:{runtime:"<sha256>",database:"<sha256>"}}`, fingerprints
+of the selected runtime root and actual DB filename; no paths or credentials.
+CLI compares these with its selected context before sending task arguments.
+
+`POST /task-management` accepts exactly `{project,actor,operation,args}`. `project`
+is an absolute existing local directory, canonicalized by Core; `actor` is the
+normal human/agent ownership label, not authentication. `args` is a positional
+array. The closed operation enum mirrors the domain service:
+
+| Operations | Arguments |
+| --- | --- |
+| initialize, getItems, getReadyTasks, getTree, getStatus | `[]` |
+| createItem | `[type,{title,description?,priority?,parentId?,discoveredFrom?}]` |
+| getItem, getChildren, getDependencies, getGoalProgress, getActivity | `[id]` |
+| startTask, unblockTask | `[id]` |
+| completeTask | `[id,reason?]` |
+| blockTask | `[id,{on? OR reason,service?}]` |
+| getDelivery | `[id]` |
+| setDelivery | `[id,{impact?,remainingSeconds?,estimatedFinish?,outputs?}]` |
+| getTaskAttempts | `[id,cursor?]` |
+
+All requests, including these POST reads, require the standard operator bearer,
+JSON and Idempotency-Key. Only mutations save receipts: scope canonical
+project+actor, hash operation+args, receipt and state atomically committed. Same
+key/input returns the original result; a changed operation/body conflicts409.
+Reads remain fresh and do not consume a key. Ordinary graph mutations preserve
+ownership/history/completion fences. No operation dispatches a worker.
+`getTaskAttempts` returns `{data:[summaries],nextCursor}` inside the normal outer
+`data` envelope:20 newest task-scoped summaries, no instructions/result text or
+credentials. Keep continuation tokens unchanged, scoped to task+project.
+
+CLI uses `--api` > `NED_CORE_URL`, or a command-scoped temporary Core listener
+without coordinator startup if neither is set. Temporary listeners use a random
+process-private bearer instead of creating a persistent operator token; only
+backend-only programmatic construction accepts that credential override. Full
+Core/COM listeners keep their existing private-token storage requirement.
+Explicit failure never falls
+back. URLs are loopback HTTP roots only; the client never retries mutations
+automatically. Use `--request-id` for identical retry recovery. Behavioral tests:
+[task-management TC-013](../task-management/SPEC.md).
 
 ### Delivery metadata for Goals & Tasks
 `PUT /projects/:projectId/tasks/:taskId/delivery` replaces one item's presentation record without starting work or changing status. Normal operator bearer/origin/idempotency rules apply. Goal IDs are accepted for explicit finish estimates.
