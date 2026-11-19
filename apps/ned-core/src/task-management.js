@@ -16,6 +16,7 @@ export function createTaskCommand({store,mutate,saveDelivery}){
       if(typeof args[0]!=='string'||!object(args[1],['title','parentId','description','priority','discoveredFrom']))fail('invalid_task_command',400);
     }else if(args.length&&typeof args[0]!=='string')fail('invalid_task_command',400);
     if(operation==='blockTask'&&!object(args[1],['on','reason','service']))fail('invalid_task_command',400);
+    if(operation==='setDelivery'&&!object(args[1],['impact','remainingSeconds','estimatedFinish','outputs']))fail('invalid_task_command',400);
     if(operation==='completeTask'&&args.length===2&&typeof args[1]!=='string')fail('invalid_task_command',400);
     if(operation==='getTaskAttempts'&&args.length===2&&typeof args[1]!=='string')fail('invalid_task_command',400);
     const task=await createTaskService({project,actor,database:store.db});

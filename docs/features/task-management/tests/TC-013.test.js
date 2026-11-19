@@ -47,6 +47,12 @@ test('TC-013: CLI HTTP commands preserve ownership, graph readback, delivery and
   const saved=await call(['task','delivery',id]);
   assert.equal(saved.value.impact,record.impact);
   assert.deepEqual(saved.value.outputs,record.outputs);
+  for(const invalid of [5,true,[],{impact:'not saved',unexpected:true}]){
+    await writeFile(filename,JSON.stringify(invalid));
+    const rejected=await call(['task','delivery',id,'--file',filename]);
+    assert.equal(rejected.value.error,'invalid_task_command');
+    assert.deepEqual((await call(['task','delivery',id])).value,saved.value);
+  }
   const work=await server.service.work(projectId);
   assert.equal(work.items.find(item=>item.id===id).delivery.impact,record.impact);
   assert.deepEqual((await call(['task','attempts',id])).value,{data:[],nextCursor:null});
