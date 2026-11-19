@@ -5,6 +5,9 @@ Related issues: [#163](https://github.com/DataNavAI/no-ego-dev/issues/163); NED 
 
 ## User outcome and scope
 
+### Delivery metadata extension
+The operator-authenticated, idempotent delivery write and compact work projection are governed by [Communicator FR-066–070 / CUJ-024 / TC-042](../communicator/SPEC.md#goals-and-task-delivery-pane). [API reference](API.md#delivery-metadata-for-goals--tasks) describes the backend interface; integration tests in [TC-042](../communicator/tests/TC-042.test.js) prove validation, persistence, replacement and project isolation. This extension never starts coordination or completes tasks.
+
 COM and trusted local tools need one headless backend for durable goals, tasks and execution. Explicitly enrolled work progresses independently of a browser, chat session or short coordinator tick. Task identity survives worker replacement. [DESIGN.md](DESIGN.md) specifies interfaces, persistence and current Hermes evidence.
 
 Source implementation lives in `apps/ned-core/`, with compatibility exports under `src/core/`; release acceptance remains separately gated below. Scope: versioned APIs over existing work services, durable attempts/session bindings, disabled-by-default manual/interval automations, bounded reconciliation, capability-gated Hermes run execution, metadata events and recovery. Non-goals: new COM controls, a second task database, arbitrary remote/profile execution, automatic backlog enrollment, installing/activating cron, LLM planning, cloud rollout, automatic review acceptance, or keeping all workers alive. Existing task CLI and COM routes remain compatible. See [API.md](API.md) for the consumer-facing API reference and [app layout](../app-layout/SPEC.md) for the separate Core/CLI/COM project roots.

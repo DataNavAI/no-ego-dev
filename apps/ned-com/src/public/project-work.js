@@ -1,5 +1,6 @@
 import {executionPlan} from './work-plan.js';
 import {dashboardModel} from './dashboard-model.js';
+import {mountGoalTasks} from './goals-tasks.js';
 const labels={planned:'Planned',ready:'Ready',working:'In progress',blocked:'Blocked',done:'Done'};
 export function renderProjectWork(document,container,data,{showCompleted=false,onReference=()=>{},onFilter=()=>{},filterId='goals-show-completed',progressById,counts}={}){
   if(!Array.isArray(data.items)||data.items.length>5000)throw new Error('Invalid work');
@@ -56,6 +57,7 @@ export function renderDashboard(document,container,data,options={}){
   container.replaceChildren(summary,work);
 }
 export function mountProjectWork({document,fetch}){
+  const delivery=mountGoalTasks({document,fetch});
   const project=document.getElementById('project'),container=document.getElementById('project-work'),dashboard=document.getElementById('dashboard');
   let generation=0;let showCompleted=false;let dashboardCompleted=false;let snapshot;let selectedId;let pending;
   const onReference=item=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:item.projectId,itemId:item.id,title:item.title,projectName:project.selectedOptions?.[0]?.textContent||'Project'}}));
@@ -63,8 +65,10 @@ export function mountProjectWork({document,fetch}){
     if(!snapshot)return;
     renderProjectWork(document,container,snapshot,{showCompleted,onFilter:value=>{showCompleted=value;draw();document.getElementById('goals-show-completed')?.focus();},onReference});
     if(dashboard)renderDashboard(document,dashboard,snapshot,{projectName:project.selectedOptions?.[0]?.textContent,showCompleted:dashboardCompleted,onFilter:value=>{dashboardCompleted=value;draw();document.getElementById('dashboard-show-completed')?.focus();},onReference});
+    delivery.update(snapshot);
   };
   const message=(text,retry=false)=>{
+    delivery.message(text,retry?()=>void load():null);
     if(!dashboard)return;
     const status=document.createElement('p');status.setAttribute('role','status');status.textContent=text;dashboard.replaceChildren(status);
     if(retry){const button=document.createElement('button');button.id='dashboard-retry';button.type='button';button.textContent='Retry';button.addEventListener('click',()=>void load());dashboard.append(button);}

@@ -1,4 +1,16 @@
-# Communicator minimal design system
+# NED UI design system — Uber Base
+
+## Current default (2026-11-18)
+Uber Base is the project default, selected by the user. This contract supersedes conflicting historical palettes below. Canonical semantic tokens: `apps/ned-com/src/public/base.css`, loaded after legacy styles. Existing component behavior and accessibility remain intact; Base Web is a React implementation, not a requirement to rewrite native COM or adopt a second widget kit.
+
+Foundations: white background `#fff`, neutral surface `#f3f3f3`, primary content `#000`, secondary content `#545454`, border `#e2e2e2`, focus `#276ef1`; positive `#05944f` (small text `#04703c`), negative `#c8102e`, warning `#8c5b00`. These are NED's Base-aligned semantic roles, not a claim to bundle Uber's full asset set. Status always includes text. Type: local system sans-serif,20px pane heading,18px goal,14px task,12px metadata,1.4–1.5 line-height. Spacing4/8/12/16/24px; task radius8px, output thumbnail4px; existing composer16px with multiline growth. Visible focus/keyboard semantics and44px mobile hit targets remain. No remote fonts/logos/tracking or new animation.
+
+Scope: live COM shell, controls, chat and Goals & Tasks. Legacy onboarding/documentation CSS is a separate pre-existing surface, not visually migrated by this feature. New NED UI must reuse these roles rather than introduce another palette.
+
+Official references: [Base](https://base.uber.com/6d2425e9f/p/294ab4-base-design-system), [design language](https://base.uber.com/6d2425e9f/v/0/p/76be65-design-language), [typography](https://base.uber.com/6d2425e9f/p/976582-typography-10/b/667160), [Base Web](https://baseweb.design/). Base Web software is [MIT licensed](https://github.com/uber/baseweb/blob/main/LICENSE); that does not establish font redistribution rights. No Uber Move fonts or library code are copied.
+
+## Historical component contracts
+The following sections retain acceptance traceability. Their workflow/geometry constraints remain unless explicitly replaced; conflicting foundational colors/type yield to the current default above.
 
 ## Current composer tokens (UI-AC-16)
 Scoped extension of the current left-tab workspace, not a shell redesign. Composer: surface #fff, border #d7dadf, radius16px, shadow 0 2px 8px #2021240a; focus-within border #a5b8ca. Prompt 14px/1.5, minimum34px, maximum min(160px,25dvh). Footer actions use 12px labels, 44px minimum height, 8px radius and #f1f3f5 hover; text #4a5058. Send44×44px, radius12px, ready #303943 with white arrow, hover #17212b; disabled #edf0f2 with #8a929a arrow. Supported files uses an information icon in a44px disclosure button; no static backend label. Empty form at most120 CSSpx with no reserved optional-context row. Visible context retains a44px flex basis and bounded scrolling; chip surfaces #f6f8fa, border #e2e6eb. Link fields white, 1px #c4cbd3 border, radius8px, min-height44px. Preserve global visible focus. Keep all assets local and motion unchanged. Browser evidence is a separate gate.

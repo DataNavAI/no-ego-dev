@@ -39,6 +39,7 @@ export async function clientHarness({EventSource}={}) {
   const setMobile=matches=>{viewport.matches=matches;for(const callback of mediaListeners)callback({matches});};
   const requests = [];
   const fetch = url => new Promise(resolve => requests.push({ url, resolve }));
+  element('goals-pane-tab').textContent='Goals & Tasks';element('goals-panel');element('goals-pane-heading');
   const source = await readFile(new URL('../../../../apps/ned-com/src/public/app.js', import.meta.url), 'utf8');
   runInNewContext(source.replace(/^import[^\n]+\n/gm, ''), { ...state,mountMobileNavigation, document, fetch, Option: class {constructor(label,value){this.textContent=label;this.value=value;}},EventSource,Event:class{constructor(type){this.type=type;}}, encodeURIComponent,matchMedia:()=>viewport,getComputedStyle:()=>({display:'block',visibility:'visible'}) });
   const flush = () => new Promise(resolve => setImmediate(resolve));
