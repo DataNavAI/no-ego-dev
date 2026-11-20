@@ -1,7 +1,7 @@
 ---
 name: architect
-description: "Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase."
-version: 0.2.13
+description: "Use when designing or changing system architecture, turning a PRD into a technical spec, or maintaining architecture and API contracts from a codebase."
+version: 0.2.14
 author: NoEgoDev
 license: MIT
 metadata:
@@ -14,6 +14,18 @@ metadata:
 ## Default verification policy
 
 Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
+
+## Maintained repository documentation
+
+Always keep the project's architecture document and API specifications up to date under the repository's `/docs` directory. Reuse existing canonical files; otherwise create `docs/architecture.md` and an API specification such as `docs/openapi.yaml` or `docs/api.md`. Link these from contributor guidance so subsequent changes maintain them.
+
+Read implementation and existing contracts first. Update the documents in the same change as any affected architecture or API behavior; verify them against routes, consumers and deployment configuration before declaring the work complete. Keep one authoritative contract per interface and link supporting detail instead of maintaining conflicting copies.
+
+The architecture document names components and responsibilities, the system of record, request/data flows, background processing and notification mechanisms, resource ownership, security boundaries, failure/recovery behavior and deployment topology. Distinguish implemented behavior, currently deployed/enabled behavior and planned changes; include source/evidence references for deployment claims.
+
+API specifications cover exposed operations, authentication and authorization, request/response schemas, status/error behavior, idempotency, asynchronous operation/status contracts and relevant streaming/WebSocket interfaces. OpenAPI is preferred for HTTP APIs when useful; complementary prose can describe protocols OpenAPI cannot express. If there is no exposed API, document that explicitly rather than inventing endpoints.
+
+Do not leave the only current architecture or API description in chat, a PR body or a feature proposal outside `/docs`. Record unresolved contract gaps explicitly and link their owning tasks. Documentation requirements do not authorize deployment, external writes, new tooling or additional review gates.
 
 ## API-to-consumer journey contracts
 

@@ -46,7 +46,7 @@ Each self-contained skill is an agent-facing capability that needs corresponding
 | --- | --- | --- | --- |
 | `agent-identity-and-access` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/agent-identity-and-access/SKILL.md); [eval](../../skills/agent-identity-and-access/EVAL.yaml) |
 | `android-app-dev` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/android-app-dev/SKILL.md); [eval](../../skills/android-app-dev/EVAL.yaml) |
-| `architect` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/architect/SKILL.md); [eval](../../skills/architect/EVAL.yaml) |
+| `architect` | implemented (profile instructions) | [spec](architecture-planning/SPEC.md) | [instructions](../../skills/architect/SKILL.md); [eval](../../skills/architect/EVAL.yaml) |
 | `coder` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/coder/SKILL.md); [eval](../../skills/coder/EVAL.yaml) |
 | `communication-evaluator` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/communication-evaluator/SKILL.md); [eval](../../skills/communication-evaluator/EVAL.yaml) |
 | `delegation-reliability` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/delegation-reliability/SKILL.md); [eval](../../skills/delegation-reliability/EVAL.yaml) |
