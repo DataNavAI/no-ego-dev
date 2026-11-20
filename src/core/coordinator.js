@@ -1,1 +1,1 @@
-export * from '../../apps/ned-core/src/coordinator.js';
+export * from '../../apps/core/src/coordinator.js';

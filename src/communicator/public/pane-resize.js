@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/pane-resize.js';
+export * from '../../../apps/com/src/public/pane-resize.js';

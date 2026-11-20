@@ -1,6 +1,6 @@
-import {createCoreService} from '../../../../apps/ned-core/src/service.js';
-import {createCoreRuntime} from '../../../../apps/ned-core/src/coordinator.js';
-import {createHermesGateway} from '../../../../apps/ned-core/src/hermes.js';
+import {createCoreService} from '../../../../apps/core/src/service.js';
+import {createCoreRuntime} from '../../../../apps/core/src/coordinator.js';
+import {createHermesGateway} from '../../../../apps/core/src/hermes.js';
 
 const [home,databasePath,url]=process.argv.slice(2);
 const core=await createCoreService({home,databasePath,env:{}});

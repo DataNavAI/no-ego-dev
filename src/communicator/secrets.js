@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/secrets.js';
+export * from '../../apps/com/src/secrets.js';

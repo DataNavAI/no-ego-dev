@@ -2,9 +2,9 @@ import {clientHarness} from './client-harness.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixture} from './fixtures.js';
-import {readWorkspace,readProjectWork} from '../../../../apps/ned-com/src/work.js';
-import {followTaskProject} from '../../../../apps/ned-com/src/public/state.js';
-import {renderProjectWork} from '../../../../apps/ned-com/src/public/project-work.js';
+import {readWorkspace,readProjectWork} from '../../../../apps/com/src/work.js';
+import {followTaskProject} from '../../../../apps/com/src/public/state.js';
+import {renderProjectWork} from '../../../../apps/com/src/public/project-work.js';
 function add(f,project,id,type,parent=null){
  const db=f.writer.connection;
  db.prepare('INSERT INTO ned_work_items(project_id,id,type,title,description,priority,state,parent_id,created_by,created_at,updated_at) VALUES(?,?,?,?,?,2,?,?,?,?,?)').run(project,id,type,`<script>${id}</script>`,'PRIVATE','open',parent,'fixture','2026-10-29','2026-10-29');

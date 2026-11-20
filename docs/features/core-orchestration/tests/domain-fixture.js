@@ -2,7 +2,7 @@ import {mkdtemp,mkdir,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createTaskService} from '../../../../src/tasks.js';
-import {createCoreService} from '../../../../apps/ned-core/src/service.js';
+import {createCoreService} from '../../../../apps/core/src/service.js';
 export async function domainFixture(test,options={}) {
   const root=await mkdtemp(path.join(os.tmpdir(),'ned-core-domain-'));
   const project=path.join(root,'project');await mkdir(project);

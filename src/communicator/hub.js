@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/hub.js';
+export * from '../../apps/com/src/hub.js';

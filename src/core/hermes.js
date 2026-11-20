@@ -1,1 +1,1 @@
-export * from '../../apps/ned-core/src/hermes.js';
+export * from '../../apps/core/src/hermes.js';

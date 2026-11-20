@@ -56,7 +56,7 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
 });
 
 test('TC-041: progress counts executable leaves once and handles empty, completed and invalid graphs',async()=>{
-  const {dashboardModel}=await import('../../../../apps/ned-com/src/public/dashboard-model.js');
+  const {dashboardModel}=await import('../../../../apps/com/src/public/dashboard-model.js');
   const items=[item('goal','goal','planned'),item('sub','subgoal','planned','goal'),item('container','task','working','sub'),item('leaf','issue','done','container'),item('blocked','task','blocked','goal'),item('active','task','working'),item('empty','goal','planned')];
   const model=dashboardModel(items);
   assert.deepEqual([model.total,model.completed,model.active,model.blocked,model.openGoals],[3,1,1,1,2]);
@@ -70,7 +70,7 @@ test('TC-041: progress counts executable leaves once and handles empty, complete
 
 
 test('TC-041: repeated refreshes share a pending read while project changes supersede it',async()=>{
-  const {mountProjectWork}=await import('../../../../apps/ned-com/src/public/project-work.js');
+  const {mountProjectWork}=await import('../../../../apps/com/src/public/project-work.js');
   const listeners=new Map(),requests=[];
   const node=()=>({replaceChildren(){},contains(){return false;},setAttribute(){},append(){},addEventListener(){},textContent:''});
   const project={value:'alpha',addEventListener(type,callback){listeners.set(type,callback);}};

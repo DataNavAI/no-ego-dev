@@ -5,12 +5,12 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import sharp from 'sharp';
 import {domainFixture} from '../../core-orchestration/tests/domain-fixture.js';
-import {trackedTime} from '../../../../apps/ned-core/src/delivery.js';
-import {goalGroups,duration} from '../../../../apps/ned-com/src/public/goals-tasks.js';
-import {readProjectWork} from '../../../../apps/ned-core/src/work.js';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
-import {createHermesGateway} from '../../../../apps/ned-core/src/hermes.js';
-import {loadOperatorCredential} from '../../../../apps/ned-core/src/auth.js';
+import {trackedTime} from '../../../../apps/core/src/delivery.js';
+import {goalGroups,duration} from '../../../../apps/com/src/public/goals-tasks.js';
+import {readProjectWork} from '../../../../apps/core/src/work.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createHermesGateway} from '../../../../apps/core/src/hermes.js';
+import {loadOperatorCredential} from '../../../../apps/core/src/auth.js';
 import {browserChat,expect} from './browser-chat-fixture.js';
 
 test('TC-042: tracked intervals stop at blockers, resume once and never substitute task age',()=>{

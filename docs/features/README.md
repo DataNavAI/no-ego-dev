@@ -11,7 +11,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 | Feature | Status | Canonical spec | Current evidence / supporting material |
 | --- | --- | --- | --- |
 | Contributor test suites | implemented | [SPEC.md](test-suites/SPEC.md) | Four dependency/effect buckets; default small + medium includes Python and real Hermes/aimock; Docker-first credential-path eval and independent CLI workflow verification; [contributor guide](../../TESTING.md). |
-| App project roots | implemented (source candidate) | [SPEC.md](app-layout/SPEC.md) | #164; real Core/CLI/COM projects under `apps/`, shared lockfile and compatibility entrypoints; executable app/CLI/COM/package case; release gates pending. |
+| App project roots | implemented | [SPEC.md](app-layout/SPEC.md) | #164; `apps/core`, `apps/cli` and `apps/com`, shared lockfile and compatible public entrypoints; executable app/CLI/COM/package case. |
 | Registered web app previews | draft (design only) | [SPEC.md](web-app-previews/SPEC.md) | #155; CLI/native port registry, isolated local/Hub preview relay and multi-app selector proposal; [visual decision](web-app-previews/design/DESIGN_REVIEW.md); no runtime implementation or acceptance |
 | Agent-isolated runtime home | implemented (uncommitted source candidate) | [SPEC.md](agent-runtime-home/SPEC.md) | #150; resolver, runtime stores and native subprocess isolation; lint/test:all passed; parent owns evaluation/review/delivery |
 | Secret management | implemented (source candidate) | [SPEC.md](secret-management/SPEC.md) | Encrypted local vault, CLI/Settings and native retrieval/entry cards (#152); [acceptance](secret-management/ACCEPTANCE.md); entry candidate verification and rollout tracked in #152 |

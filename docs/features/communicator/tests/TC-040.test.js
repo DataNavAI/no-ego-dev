@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
-import {chatActivity} from '../../../../apps/ned-com/src/chat-activity.js';
-import {consumeTurnStream} from '../../../../apps/ned-com/src/public/turn-stream.js';
-import {writeTurnEvents} from '../../../../apps/ned-com/src/turn-events.js';
+import {chatActivity} from '../../../../apps/com/src/chat-activity.js';
+import {consumeTurnStream} from '../../../../apps/com/src/public/turn-stream.js';
+import {writeTurnEvents} from '../../../../apps/com/src/turn-events.js';
 import {browserChat,expect} from './browser-chat-fixture.js';
 import {chatHarness} from './chat-harness.js';
-import {readChatStream} from '../../../../apps/ned-com/src/chat-stream.js';
+import {readChatStream} from '../../../../apps/com/src/chat-stream.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 test('TC-040: upstream activity cannot forward metadata or cross message/run/session boundaries',async()=>{

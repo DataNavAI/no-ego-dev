@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {paneBounds,paneWidth,mountPaneResize} from '../../../../apps/ned-com/src/public/pane-resize.js';
+import {paneBounds,paneWidth,mountPaneResize} from '../../../../apps/com/src/public/pane-resize.js';
 
 function fixture(saved=null,{broken=false,width=1280}={}){
   const divider=new EventTarget();

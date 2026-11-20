@@ -5,8 +5,8 @@ import {writeFileSync,symlinkSync,unlinkSync,chmodSync} from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fixture} from './fixtures.js';
-import {validatePreviewUrl} from '../../../../apps/ned-com/src/projects.js';
-import {initialState,settleLoad,selectProject,selectSection,settleDetail,beginDetail,view} from '../../../../apps/ned-com/src/public/state.js';
+import {validatePreviewUrl} from '../../../../apps/com/src/projects.js';
+import {initialState,settleLoad,selectProject,selectSection,settleDetail,beginDetail,view} from '../../../../apps/com/src/public/state.js';
 import {clientHarness} from './client-harness.js';
 test('TC-006: shipped client retains newer project and section after delayed detail success',async t=>{
   for(const navigation of ['project','section'])await t.test(navigation,async()=>{

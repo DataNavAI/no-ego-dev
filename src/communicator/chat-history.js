@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/chat-history.js';
+export * from '../../apps/com/src/chat-history.js';

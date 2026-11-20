@@ -1,1 +1,1 @@
-export * from '../../apps/ned-core/src/index.js';
+export * from '../../apps/core/src/index.js';

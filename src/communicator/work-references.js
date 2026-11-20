@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/work-references.js';
+export * from '../../apps/com/src/work-references.js';

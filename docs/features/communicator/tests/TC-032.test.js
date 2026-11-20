@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mountDebugPane,recordChatDiagnostic} from '../../../../apps/ned-com/src/public/debug-pane.js';
-import {mountPaneResize} from '../../../../apps/ned-com/src/public/pane-resize.js';
+import {mountDebugPane,recordChatDiagnostic} from '../../../../apps/com/src/public/debug-pane.js';
+import {mountPaneResize} from '../../../../apps/com/src/public/pane-resize.js';
 import {chatHarness} from './chat-harness.js';
-import * as debugDiagnostics from '../../../../apps/ned-com/src/public/debug-pane.js';
+import * as debugDiagnostics from '../../../../apps/com/src/public/debug-pane.js';
 
 function fixture(width=1280,request=async()=>({ok:true,json:async()=>({status:'ok',service:'nedcom'})})){
   const document=new EventTarget(),view=new EventTarget(),nodes=new Map();

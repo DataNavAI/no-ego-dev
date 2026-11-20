@@ -1,1 +1,1 @@
-export * from '../../apps/ned-core/src/http.js';
+export * from '../../apps/core/src/http.js';

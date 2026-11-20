@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {domainFixture} from './domain-fixture.js';
-import {createCoreService} from '../../../../apps/ned-core/src/service.js';
+import {createCoreService} from '../../../../apps/core/src/service.js';
 
 test('TC-005: pending occurrences retain requested template and canonical input across edits and restart',async t=>{
   const {core,projectId,databasePath}=await domainFixture(t);

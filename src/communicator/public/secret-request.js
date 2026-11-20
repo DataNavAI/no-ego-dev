@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/secret-request.js';
+export * from '../../../apps/com/src/public/secret-request.js';

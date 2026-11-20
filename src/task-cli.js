@@ -1,1 +1,1 @@
-export * from '../apps/ned-cli/src/task-cli.js';
+export * from '../apps/cli/src/task-cli.js';

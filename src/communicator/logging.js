@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/logging.js';
+export * from '../../apps/com/src/logging.js';

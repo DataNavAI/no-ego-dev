@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/turn-stream.js';
+export * from '../../../apps/com/src/public/turn-stream.js';

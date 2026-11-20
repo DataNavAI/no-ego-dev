@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/work-plan.js';
+export * from '../../../apps/com/src/public/work-plan.js';

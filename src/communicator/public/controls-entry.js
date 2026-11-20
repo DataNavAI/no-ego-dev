@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/controls-entry.js';
+export * from '../../../apps/com/src/public/controls-entry.js';

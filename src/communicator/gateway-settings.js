@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/gateway-settings.js';
+export * from '../../apps/com/src/gateway-settings.js';

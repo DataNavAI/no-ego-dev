@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/history.js';
+export * from '../../../apps/com/src/public/history.js';

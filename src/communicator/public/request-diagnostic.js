@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/request-diagnostic.js';
+export * from '../../../apps/com/src/public/request-diagnostic.js';

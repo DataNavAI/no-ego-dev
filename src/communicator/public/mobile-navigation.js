@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/mobile-navigation.js';
+export * from '../../../apps/com/src/public/mobile-navigation.js';

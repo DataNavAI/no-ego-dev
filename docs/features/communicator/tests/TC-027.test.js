@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {connectProjectPicker,enhanceProjectPicker} from '../../../../apps/ned-com/src/public/project-picker.js';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {connectProjectPicker,enhanceProjectPicker} from '../../../../apps/com/src/public/project-picker.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 
 function fixture(){
   const document={activeElement:null};

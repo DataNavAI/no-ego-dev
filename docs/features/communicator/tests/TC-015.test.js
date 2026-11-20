@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import {once,EventEmitter} from 'node:events';
 import {WebSocketServer,createWebSocketStream} from 'ws';
-import {readHubConfiguration,startHubConnection} from '../../../../apps/ned-com/src/hub.js';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
-import {runCommunicatorCli} from '../../../../apps/ned-com/src/cli.js';
+import {readHubConfiguration,startHubConnection} from '../../../../apps/com/src/hub.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {runCommunicatorCli} from '../../../../apps/com/src/cli.js';
 const token='ned_synthetic_test_credential_00000000';
 const config={NED_HUB_URL:'https://hub.example',NED_HUB_TOKEN:token,NED_INSTANCE_NAME:'fixture'};
 test('TC-015: explicit configuration and COM readiness precede registration; cleanup preserves local defaults',async()=>{

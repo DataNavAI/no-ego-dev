@@ -4,8 +4,8 @@ Status: implemented source candidate; release verification is tracked separately
 This reference describes the v1 contract, not a claim of live-provider acceptance.
 
 Repository: [DataNavAI/no-ego-dev](https://github.com/DataNavAI/no-ego-dev).
-Backend modules: `apps/ned-core/src/` (`src/core/` compatibility exports).
-Related app roots: `apps/ned-cli/` and `apps/ned-com/`.
+Backend modules: `apps/core/src/` (`src/core/` compatibility exports).
+Related app roots: `apps/cli/` and `apps/com/`.
 Behavioral authority: [SPEC.md](SPEC.md).
 Architecture, lifecycle and rollout: [DESIGN.md](DESIGN.md).
 
