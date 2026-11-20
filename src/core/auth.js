@@ -1,1 +1,1 @@
-export * from '../../apps/ned-core/src/auth.js';
+export * from '../../apps/core/src/auth.js';

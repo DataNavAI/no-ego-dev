@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {mkdtemp,readFile,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,readdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -14,7 +14,7 @@ const root=fileURLToPath(new URL('../../../../',import.meta.url));
 test('TC-001: app-only runtime changes select both native container acceptance architectures',async()=>{
   const workflow=parse(await readFile(path.join(root,'.github/workflows/container-image.yml'),'utf8'));
   const paths=workflow.on.pull_request.paths;
-  for(const changedFile of ['apps/ned-core/src/service.js','apps/ned-cli/src/cli.js','apps/ned-com/src/server.js']){
+  for(const changedFile of ['apps/core/src/service.js','apps/cli/src/cli.js','apps/com/src/server.js']){
     assert.ok(paths.includes('apps/**'),`${changedFile} must select native container acceptance`);
   }
   assert.equal(paths.some(pattern=>pattern.startsWith('!')),false,'app inclusion must not be negated');
@@ -31,9 +31,11 @@ test('TC-001: app-owned entrypoints and packaged assets work outside the checkou
   const home=await mkdtemp(path.join(tmpdir(),'ned-app-layout-'));
   t.after(()=>rm(home,{recursive:true,force:true}));
   const env={...process.env,NED_AGENT_HOME:home,NED_DATABASE_URL:path.join(home,'ned.sqlite')};
-  for(const [name,entry] of [['ned-core','index.js'],['ned-cli','cli.js'],['ned-com','server.js']]){
+  const directories=(await readdir(path.join(root,'apps'),{withFileTypes:true})).filter(entry=>entry.isDirectory()).map(entry=>entry.name).sort();
+  assert.deepEqual(directories,['cli','com','core']);
+  for(const [name,entry] of [['core','index.js'],['cli','cli.js'],['com','server.js']]){
     const metadata=JSON.parse(await readFile(path.join(root,'apps',name,'package.json'),'utf8'));
-    assert.equal(metadata.name,`@ned/${name.slice(4)}`);
+    assert.equal(metadata.name,`@ned/${name}`);
     assert.equal(metadata.private,true);
     assert.equal(metadata.type,'module');
     await import(new URL(`../../../../apps/${name}/src/${entry}`,import.meta.url));
@@ -43,11 +45,11 @@ test('TC-001: app-owned entrypoints and packaged assets work outside the checkou
     assert.match(result.stdout,/Usage:/);
     assert.equal(result.stderr,'');
   }
-  const appModule=await import('../../../../apps/ned-com/src/server.js');
+  const appModule=await import('../../../../apps/com/src/server.js');
   const legacy=await import('../../../../src/communicator/server.js');
   assert.equal(legacy.createCommunicatorServer,appModule.createCommunicatorServer);
   const serverSource=`
-    import {createCommunicatorServer} from ${JSON.stringify(new URL('../../../../apps/ned-com/src/server.js',import.meta.url).href)};
+    import {createCommunicatorServer} from ${JSON.stringify(new URL('../../../../apps/com/src/server.js',import.meta.url).href)};
     const app=createCommunicatorServer({home:process.env.NED_AGENT_HOME,env:process.env,initializeDatabase:true});
     const results=[];
     try {
@@ -72,6 +74,7 @@ test('TC-001: app-owned entrypoints and packaged assets work outside the checkou
   assert.ok(missing.type.startsWith('application/json'));
   const packed=await execute(process.platform==='win32'?'npm.cmd':'npm',['pack','--dry-run','--json','--ignore-scripts'],{cwd:root,env,timeout:30000,maxBuffer:8*1024*1024});
   const files=new Set(JSON.parse(packed.stdout)[0].files.map(file=>file.path));
-  for(const file of ['apps/ned-core/src/index.js','apps/ned-cli/src/cli.js','apps/ned-com/src/server.js','apps/ned-com/src/attachment-worker.js','apps/ned-com/src/public/app.js','apps/ned-com/src/public/vendor/webawesome.js','src/communicator/server.js'])assert.ok(files.has(file),file);
+  assert.equal([...files].some(file=>/^apps\/ned-/.test(file)),false,'packed apps must use the short directory names');
+  for(const file of ['apps/core/src/index.js','apps/cli/src/cli.js','apps/com/src/server.js','apps/com/src/attachment-worker.js','apps/com/src/public/app.js','apps/com/src/public/vendor/webawesome.js','src/communicator/server.js'])assert.ok(files.has(file),file);
   assert.equal([...files].some(file=>/\.(sqlite|db)(-|$)|\/tests\//.test(file)),false);
 });

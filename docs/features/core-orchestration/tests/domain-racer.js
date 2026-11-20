@@ -1,4 +1,4 @@
-import {createCoreService} from '../../../../apps/ned-core/src/service.js';
+import {createCoreService} from '../../../../apps/core/src/service.js';
 const [databasePath,projectId,taskId,key]=process.argv.slice(2);
 const core=await createCoreService({databasePath});
 process.send({ready:true});

@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/attachments.js';
+export * from '../../apps/com/src/attachments.js';

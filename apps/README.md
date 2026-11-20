@@ -4,9 +4,9 @@ NED ships three private app projects in one repository and one compatible releas
 
 | App | Owns | Entry point |
 | --- | --- | --- |
-| [NED Core](ned-core/README.md) | Coordination, execution and operator APIs | `ned-core/src/index.js` |
-| [NED CLI](ned-cli/README.md) | Command dispatch and task command presentation | `ned-cli/src/cli.js` |
-| [NED COM](ned-com/README.md) | Web server, chat UI and browser assets | `ned-com/src/server.js` |
+| [NED Core](core/README.md) | Coordination, execution and operator APIs | `core/src/index.js` |
+| [NED CLI](cli/README.md) | Command dispatch and task command presentation | `cli/src/cli.js` |
+| [NED COM](com/README.md) | Web server, chat UI and browser assets | `com/src/server.js` |
 
 Run `npm ci` once at the repository root. The root `package-lock.json` owns all
 dependencies; app manifests identify private projects, not separately published

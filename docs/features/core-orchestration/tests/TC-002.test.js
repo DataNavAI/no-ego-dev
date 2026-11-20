@@ -5,7 +5,7 @@ import {once} from 'node:events';
 import {mkdir,rm,access} from 'node:fs/promises';
 import path from 'node:path';
 import {createTaskService} from '../../../../src/tasks.js';
-import {createCoreService} from '../../../../apps/ned-core/src/service.js';
+import {createCoreService} from '../../../../apps/core/src/service.js';
 import {domainFixture} from './domain-fixture.js';
 
 test('TC-002: removed project directories fail closed locally without disabling historical reads or healthy projects',async t=>{

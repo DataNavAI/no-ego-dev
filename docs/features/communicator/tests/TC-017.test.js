@@ -5,10 +5,10 @@ import http from 'node:http';
 import sharp from 'sharp';
 import {randomBytes} from 'node:crypto';
 import {Readable} from 'node:stream';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
-import {createAttachmentStore,validateAttachment} from '../../../../apps/ned-com/src/attachments.js';
-import {insertLink} from '../../../../apps/ned-com/src/public/composer-media.js';
-import {projectHistoryMessage} from '../../../../apps/ned-com/src/chat-history.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createAttachmentStore,validateAttachment} from '../../../../apps/com/src/attachments.js';
+import {insertLink} from '../../../../apps/com/src/public/composer-media.js';
+import {projectHistoryMessage} from '../../../../apps/com/src/chat-history.js';
 import {pdfFixture,docxFixture} from './media-fixtures.js';
 import {chatHarness} from './chat-harness.js';
 function uploadRequest(name,mime,data){const request=Readable.from([data]);request.headers={'x-ned-filename':encodeURIComponent(name),'content-type':mime};return request;}

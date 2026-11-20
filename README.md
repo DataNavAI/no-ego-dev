@@ -10,7 +10,7 @@ the four buckets, focused commands and coverage limits.
 ## App projects
 
 NED Core, CLI and COM live in separate private project roots under [`apps/`](apps/README.md):
-`apps/ned-core`, `apps/ned-cli` and `apps/ned-com`. They share one root dependency
+`apps/core`, `apps/cli` and `apps/com`. They share one root dependency
 lockfile, compatible release and installation. Shared domain/runtime primitives
 remain in `src/`; compatibility entrypoints delegate to the app-owned source.
 

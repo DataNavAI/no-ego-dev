@@ -1,8 +1,8 @@
 import http from 'node:http';
 import {EventEmitter,once} from 'node:events';
 import {domainFixture} from './domain-fixture.js';
-import {createCoreRuntime} from '../../../../apps/ned-core/src/coordinator.js';
-import {createHermesGateway} from '../../../../apps/ned-core/src/hermes.js';
+import {createCoreRuntime} from '../../../../apps/core/src/coordinator.js';
+import {createHermesGateway} from '../../../../apps/core/src/hermes.js';
 
 export async function runtimeFixture(test,{gatewayOptions={},wrapGateway=gateway=>gateway,...options}={}) {
   const cleanup=[];

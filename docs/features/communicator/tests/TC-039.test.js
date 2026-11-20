@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {chatHarness} from './chat-harness.js';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 const turnId='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';

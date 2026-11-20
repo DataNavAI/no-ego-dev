@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/activity.js';
+export * from '../../apps/com/src/activity.js';

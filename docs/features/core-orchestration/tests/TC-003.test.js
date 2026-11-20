@@ -5,10 +5,10 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fork} from 'node:child_process';
 import {once} from 'node:events';
-import {createExecutionOwner} from '../../../../apps/ned-core/src/owner.js';
+import {createExecutionOwner} from '../../../../apps/core/src/owner.js';
 import {runtimeFixture} from './runtime-fixture.js';
-import {createCoreRuntime} from '../../../../apps/ned-core/src/coordinator.js';
-import {createHermesGateway} from '../../../../apps/ned-core/src/hermes.js';
+import {createCoreRuntime} from '../../../../apps/core/src/coordinator.js';
+import {createHermesGateway} from '../../../../apps/core/src/hermes.js';
 
 const childFile=new URL('./runtime-owner-child.js',import.meta.url);
 async function child(t,home){const env={...process.env};delete env.NODE_TEST_CONTEXT;const worker=fork(childFile,[home],{execArgv:[],env,stdio:['ignore','ignore','inherit','ipc']});t.after(async()=>{if(worker.exitCode===null&&!worker.signalCode){const exit=once(worker,'exit');worker.kill('SIGKILL');await exit;}});return {process:worker,first:(await once(worker,'message'))[0]};}

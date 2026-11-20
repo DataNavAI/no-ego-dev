@@ -7,8 +7,8 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import http from 'node:http';
-import {startPublicTunnel} from '../../../../apps/ned-com/src/tunnel.js';
-import {runCommunicatorCli} from '../../../../apps/ned-com/src/cli.js';
+import {startPublicTunnel} from '../../../../apps/com/src/tunnel.js';
+import {runCommunicatorCli} from '../../../../apps/com/src/cli.js';
 test('TC-011: public tunnel gates startup, rewrites only its exact origin and closes its child',async t=>{
   const received=[];
   const upstream=http.createServer((req,res)=>{received.push({host:req.headers.host,origin:req.headers.origin});res.end('ok');});

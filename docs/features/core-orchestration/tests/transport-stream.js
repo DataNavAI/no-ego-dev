@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
-import {createCoreHandler} from '../../../../apps/ned-core/src/http.js';
+import {createCoreHandler} from '../../../../apps/core/src/http.js';
 import {domainFixture} from './domain-fixture.js';
 
 class BufferedResponse extends EventEmitter {

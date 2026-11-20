@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/turn-events.js';
+export * from '../../apps/com/src/turn-events.js';

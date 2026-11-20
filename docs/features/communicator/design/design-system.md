@@ -1,7 +1,7 @@
 # NED UI design system — Uber Base
 
 ## Current default (2026-11-18)
-Uber Base is the project default, selected by the user. This contract supersedes conflicting historical palettes below. Canonical semantic tokens: `apps/ned-com/src/public/base.css`, loaded after legacy styles. Existing component behavior and accessibility remain intact; Base Web is a React implementation, not a requirement to rewrite native COM or adopt a second widget kit.
+Uber Base is the project default, selected by the user. This contract supersedes conflicting historical palettes below. Canonical semantic tokens: `apps/com/src/public/base.css`, loaded after legacy styles. Existing component behavior and accessibility remain intact; Base Web is a React implementation, not a requirement to rewrite native COM or adopt a second widget kit.
 
 Foundations: white background `#fff`, neutral surface `#f3f3f3`, primary content `#000`, secondary content `#545454`, border `#e2e2e2`, focus `#276ef1`; positive `#05944f` (small text `#04703c`), negative `#c8102e`, warning `#8c5b00`. These are NED's Base-aligned semantic roles, not a claim to bundle Uber's full asset set. Status always includes text. Type: local system sans-serif,20px pane heading,18px goal,14px task,12px metadata,1.4–1.5 line-height. Spacing4/8/12/16/24px; task radius8px, output thumbnail4px; existing composer16px with multiline growth. Visible focus/keyboard semantics and44px mobile hit targets remain. No remote fonts/logos/tracking or new animation.
 

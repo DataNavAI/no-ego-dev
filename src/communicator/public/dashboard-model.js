@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/dashboard-model.js';
+export * from '../../../apps/com/src/public/dashboard-model.js';

@@ -6,13 +6,13 @@ import path from 'node:path';
 import http from 'node:http';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
-import {createCoreHandler} from '../../../../apps/ned-core/src/http.js';
+import {createCoreHandler} from '../../../../apps/core/src/http.js';
 import {verifyBridges} from './transport-bridges.js';
 import {verifyStream} from './transport-stream.js';
-import {createCoreServer} from '../../../../apps/ned-core/src/index.js';
+import {createCoreServer} from '../../../../apps/core/src/index.js';
 import {createTaskService} from '../../../../src/tasks.js';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
-import {loadOperatorCredential,coreNamespace,authorized} from '../../../../apps/ned-core/src/auth.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {loadOperatorCredential,coreNamespace,authorized} from '../../../../apps/core/src/auth.js';
 
 test('TC-001: operator token is stable, private and runtime-isolated; unsafe storage fails closed',t=>{
   const root=mkdtempSync(path.join(tmpdir(),'ned-core-auth-'));t.after(()=>rmSync(root,{recursive:true,force:true}));

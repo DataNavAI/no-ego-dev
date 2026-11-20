@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import http from 'node:http';
 import {setTimeout as pause} from 'node:timers/promises';
 import {chromium} from 'playwright';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 import {endStream} from '../../communicator/tests/stream-fixtures.js';
 
 // Bounded observable-state polling, not retries of user actions or whole tests.

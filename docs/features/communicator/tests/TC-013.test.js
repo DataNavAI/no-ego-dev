@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {marked} from 'marked';
-import {messageParts,renderMessageContent} from '../../../../apps/ned-com/src/public/message-content.js';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {messageParts,renderMessageContent} from '../../../../apps/com/src/public/message-content.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 
 function dom(){
   const document={createElement(tag){

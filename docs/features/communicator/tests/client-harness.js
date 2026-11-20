@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
-import * as state from '../../../../apps/ned-com/src/public/state.js';
-import {mountMobileNavigation} from '../../../../apps/ned-com/src/public/mobile-navigation.js';
+import * as state from '../../../../apps/com/src/public/state.js';
+import {mountMobileNavigation} from '../../../../apps/com/src/public/mobile-navigation.js';
 
 // Run the shipped client with its real state model; defer only the HTTP boundary.
 export async function clientHarness({EventSource}={}) {
@@ -40,7 +40,7 @@ export async function clientHarness({EventSource}={}) {
   const requests = [];
   const fetch = url => new Promise(resolve => requests.push({ url, resolve }));
   element('goals-pane-tab').textContent='Goals & Tasks';element('goals-panel');element('goals-pane-heading');
-  const source = await readFile(new URL('../../../../apps/ned-com/src/public/app.js', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../../../../apps/com/src/public/app.js', import.meta.url), 'utf8');
   runInNewContext(source.replace(/^import[^\n]+\n/gm, ''), { ...state,mountMobileNavigation, document, fetch, Option: class {constructor(label,value){this.textContent=label;this.value=value;}},EventSource,Event:class{constructor(type){this.type=type;}}, encodeURIComponent,matchMedia:()=>viewport,getComputedStyle:()=>({display:'block',visibility:'visible'}) });
   const flush = () => new Promise(resolve => setImmediate(resolve));
   async function respond(data, status = 200) {

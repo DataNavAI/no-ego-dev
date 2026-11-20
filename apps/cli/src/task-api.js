@@ -3,8 +3,8 @@ import path from 'node:path';
 import os from 'node:os';
 import {resolveRuntimeHome} from '../../../src/runtime-home.js';
 import {resolveDatabasePath} from '../../../src/database.js';
-import {createCoreServer} from '../../ned-core/src/index.js';
-import {loadOperatorCredential} from '../../ned-core/src/auth.js';
+import {createCoreServer} from '../../core/src/index.js';
+import {loadOperatorCredential} from '../../core/src/auth.js';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const failure=(code,message)=>Object.assign(new Error(message),{code});

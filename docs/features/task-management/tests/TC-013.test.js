@@ -3,9 +3,9 @@ import {writeFile,mkdir,readFile,stat} from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
 import {fixture,assert} from './helpers.js';
-import {createCoreServer} from '../../../../apps/ned-core/src/index.js';
-import {createTaskApiClient} from '../../../../apps/ned-cli/src/task-api.js';
-import {loadOperatorCredential} from '../../../../apps/ned-core/src/auth.js';
+import {createCoreServer} from '../../../../apps/core/src/index.js';
+import {createTaskApiClient} from '../../../../apps/cli/src/task-api.js';
+import {loadOperatorCredential} from '../../../../apps/core/src/auth.js';
 
 async function backend(context,fixtureValue,extra={}){
   const server=await createCoreServer({home:fixtureValue.home,env:{},databasePath:fixtureValue.databaseUrl,backendOnly:true,...extra});

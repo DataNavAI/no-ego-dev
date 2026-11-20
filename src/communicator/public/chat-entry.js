@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/chat-entry.js';
+export * from '../../../apps/com/src/public/chat-entry.js';

@@ -1,5 +1,5 @@
 import http from 'node:http';
-import {coreNamespace} from '../../ned-core/src/auth.js';
+import {coreNamespace} from '../../core/src/auth.js';
 import {hostname} from 'node:os';
 import {resolveHubOrigin} from '../../../src/hub-credentials.js';
 import {pipeline} from 'node:stream';

@@ -1,1 +1,1 @@
-export * from '../../apps/ned-com/src/tunnel.js';
+export * from '../../apps/com/src/tunnel.js';

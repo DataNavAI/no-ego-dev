@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/task-references.js';
+export * from '../../../apps/com/src/public/task-references.js';

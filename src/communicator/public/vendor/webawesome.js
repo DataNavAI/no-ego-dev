@@ -1,1 +1,1 @@
-export * from '../../../../apps/ned-com/src/public/vendor/webawesome.js';
+export * from '../../../../apps/com/src/public/vendor/webawesome.js';

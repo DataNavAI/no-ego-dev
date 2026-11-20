@@ -4,7 +4,7 @@ import http from 'node:http';
 import {mkdtemp,writeFile,readdir,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-const load = () => import('../../../../apps/ned-com/src/server.js');
+const load = () => import('../../../../apps/com/src/server.js');
 const request = (url, path, options = {}) => new Promise((resolve, reject) => {
   const req = http.request(new URL(url), {path, ...options}, res => {
     let body = ''; res.setEncoding('utf8'); res.on('data', chunk => body += chunk);

@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/debug-pane.js';
+export * from '../../../apps/com/src/public/debug-pane.js';

@@ -6,8 +6,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {LLMock} from '@copilotkit/aimock';
 import {createTaskService} from '../../../../../src/tasks.js';
-import {createCoreServer} from '../../../../../apps/ned-core/src/index.js';
-import {loadOperatorCredential} from '../../../../../apps/ned-core/src/auth.js';
+import {createCoreServer} from '../../../../../apps/core/src/index.js';
+import {loadOperatorCredential} from '../../../../../apps/core/src/auth.js';
 
 export function deferred(){let resolve;const promise=new Promise(done=>{resolve=done;});return {promise,resolve};}
 export async function until(read,predicate,description){

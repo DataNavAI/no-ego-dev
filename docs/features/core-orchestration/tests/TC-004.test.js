@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readRunEvents} from '../../../../apps/ned-core/src/hermes.js';
+import {readRunEvents} from '../../../../apps/core/src/hermes.js';
 import {runtimeFixture} from './runtime-fixture.js';
 import {fork} from 'node:child_process';
 import {once} from 'node:events';

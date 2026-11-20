@@ -13,8 +13,12 @@ separate repositories or a rewrite of shared runtime/domain services.
 
 ## Requirements
 
-- FR-001: Root `apps/` contains `ned-core/`, `ned-cli/` and `ned-com/`, each with
+- FR-001: Root `apps/` contains `core/`, `cli/` and `com/`, each with
   package metadata, documented ownership/development commands and app-owned source.
+  Do not retain parallel `ned-`-prefixed app roots. Internal imports, scripts,
+  generated-asset paths and documentation use the short directory names; public
+  `ned` commands, `@ned/*` package identities, service/actor names and legacy
+  compatibility entrypoints remain unchanged. No runtime data is migrated.
 - FR-002: Core owns its coordination API/runtime modules, COM owns its server and
   browser assets, CLI owns command dispatch. Existing shared runtime/domain modules
   remain shared; app copies cannot introduce parallel authoritative task stores.
@@ -56,13 +60,15 @@ gate rather than falling back to old duplicate implementation.
   but excludes test/runtime databases; old and new server imports agree. A PR
   containing only a representative Core, CLI or COM runtime edit is selected for
   the native container workflow, whose acceptance job includes amd64 and arm64.
+  App directories are exactly `cli`, `com`, `core`; package identities remain
+  `@ned/cli`, `@ned/com`, `@ned/core`; packed files contain no `apps/ned-` roots.
 - Steps and assertions: execute actual Node entrypoints with a disposable
   `NED_AGENT_HOME`; create a loopback server; fetch its asset map; compare legacy
   and app exports; use npm's JSON dry-run file list for distribution assertions.
   Parse `.github/workflows/container-image.yml` as YAML; require the unconditional
   `apps/**` inclusion without negative exclusions, and the native acceptance job's
-  two architecture entries for `apps/ned-core/src/service.js`,
-  `apps/ned-cli/src/cli.js` and `apps/ned-com/src/server.js` changes.
+  two architecture entries for `apps/core/src/service.js`,
+  `apps/cli/src/cli.js` and `apps/com/src/server.js` changes.
   Run existing CLI/COM/Core regression cases and `npm run build:ui:check` as
   broader compatibility evidence.
 - Variants / negative cases: unrelated CWD must not change app import/static paths;

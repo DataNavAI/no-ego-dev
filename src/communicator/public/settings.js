@@ -1,1 +1,1 @@
-export * from '../../../apps/ned-com/src/public/settings.js';
+export * from '../../../apps/com/src/public/settings.js';

@@ -1,7 +1,7 @@
 import {runSecretCli} from '../../../src/secret-cli.js';
-import {runCoreCli} from '../../ned-core/src/cli.js';
+import {runCoreCli} from '../../core/src/cli.js';
 import { createRequire } from 'node:module';
-import { runCommunicatorCli } from '../../ned-com/src/cli.js';
+import { runCommunicatorCli } from '../../com/src/cli.js';
 import { runTaskCli } from './task-cli.js';
 import { createFileTelemetry } from '../../../src/telemetry.js';
 

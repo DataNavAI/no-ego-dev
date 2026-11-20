@@ -5,9 +5,9 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createSecretStore} from '../../../../src/secrets.js';
-import {secretShareRow} from '../../../../apps/ned-com/src/public/secret-share.js';
-import {projectHistoryMessage} from '../../../../apps/ned-com/src/chat-history.js';
-import {createCommunicatorServer} from '../../../../apps/ned-com/src/server.js';
+import {secretShareRow} from '../../../../apps/com/src/public/secret-share.js';
+import {projectHistoryMessage} from '../../../../apps/com/src/chat-history.js';
+import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 function setup(t){const home=mkdtempSync(join(tmpdir(),'ned-native-share-'));t.after(()=>rmSync(home,{recursive:true,force:true}));let now=Date.now();const store=createSecretStore({home,clock:()=>now});return {home,store,expire:()=>{now+=900001;}};}
 test('TC-005: native registration dispatch checks managed exports without printing bytes or paths',t=>{
   const f=setup(t);f.store.set('ADMIN_PASSWORD','synthetic-native-password');const path=f.store.get('ADMIN_PASSWORD',{file:true}).path;

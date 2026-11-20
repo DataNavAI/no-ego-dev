@@ -1,1 +1,1 @@
-export * from '../../apps/ned-core/src/cli.js';
+export * from '../../apps/core/src/cli.js';

@@ -3,8 +3,8 @@ import http from 'node:http';
 import {EventEmitter,once} from 'node:events';
 import {PassThrough} from 'node:stream';
 import {WebSocketServer,createWebSocketStream} from 'ws';
-import {startPublicTunnel} from '../../../../apps/ned-com/src/tunnel.js';
-import {startHubConnection,readHubConfiguration} from '../../../../apps/ned-com/src/hub.js';
+import {startPublicTunnel} from '../../../../apps/com/src/tunnel.js';
+import {startHubConnection,readHubConfiguration} from '../../../../apps/com/src/hub.js';
 
 export async function verifyBridges(t){
   let forwarded=0;const upstream=http.createServer((_req,res)=>{forwarded++;res.end('ordinary');});

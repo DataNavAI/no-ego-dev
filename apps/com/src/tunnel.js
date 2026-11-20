@@ -1,5 +1,5 @@
 import http from 'node:http';
-import {coreNamespace} from '../../ned-core/src/auth.js';
+import {coreNamespace} from '../../core/src/auth.js';
 import {spawn} from 'node:child_process';
 export async function startPublicTunnel(target,{env=process.env,spawn:launch=spawn,startupTimeout=30000,signal}={}) {
   const local=new URL(target);
