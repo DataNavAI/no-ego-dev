@@ -19,6 +19,8 @@ expectations:
   - "positive: MVP durable system-of-record and lifecycle architecture includes migrations backup restore retention rollback ownership public identity compatibility evidence timestamps refactoring and retirement"
   - "Positive API-to-consumer journey: specifies request response retained caller state next action, opaque continuations and raw canonical identifiers, cache revalidation, and deterministic idempotent writes with uncertain readback."
   - "Boundary/negative: rejects display labels as IDs, blind retry after ambiguous writes, future design presented as current contract, and operational datasets lacking purpose authority minimization linkability retention access and aggregate-output governance."
+  - "Maintains canonical architecture and API specifications under /docs in the same change as affected behavior, grounded in implementation and linked from contributor guidance."
+  - "Separates implemented, deployed/enabled and planned behavior; documents background workers, resource ownership, async APIs and current verification gaps without inventing endpoints."
 setupCommands: []
 teardownCommands: []
 parameters:

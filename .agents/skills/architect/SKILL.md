@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Use when turning a PRD into a technical spec or reconstructing missing architecture docs from a codebase.
+description: Use when designing or changing system architecture, turning a PRD into a technical spec, or maintaining architecture and API contracts from a codebase.
 ---
 
 # NED skill discovery: architect
