@@ -93,6 +93,24 @@ npm run eval -- --credential-home /absolute/private/hermes-home
 npm run eval -- skills/test-writing --env-file /absolute/private/provider.env
 ```
 
+No host Hermes installation, Python package, profile or configuration is required.
+The host needs Node/npm, Python with PyYAML, and a reachable Linux Docker daemon;
+the pinned NED image contains Hermes. Prefer a standalone credential path:
+
+```sh
+npm run eval -- --credential-file /absolute/private/model.env
+NED_EVAL_CREDENTIAL_FILE=/absolute/private/model.env npm run eval
+```
+
+The mode-600 file may contain selected-provider dotenv assignments (for example
+`OPENROUTER_API_KEY=<private-value>`) or provider-auth JSON with a `providers` map
+keyed by provider, preserving that provider's supported API-key/OAuth fields.
+OAuth JSON can be supplied as a standalone file without installing Hermes on the
+host. Only selected-provider entries are copied. For another provider, specify
+`--provider` and a compatible `--model`. Never paste real keys into examples,
+Git or command arguments. Explicit credential-source flags override the path
+environment variable; absent credentials fail rather than inspecting your home.
+
 The first command defaults to the goals/tasks workflow; the second selects a
 skill's EVAL.yaml. Both make real model calls. An env file holds only the selected
 provider's API-key variables; a credential home supplies filtered API-key/OAuth

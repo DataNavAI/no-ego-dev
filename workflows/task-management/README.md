@@ -10,6 +10,21 @@ verifier are loaded from this checkout.
 Docker must provide a Linux daemon. Install this checkout's Python evaluation
 dependencies first. Choose one explicitly authorized credential source:
 
+Hermes is required only inside the NED image, not on the host. A standalone
+mode-600 provider dotenv or provider-auth JSON file can be selected by parameter
+or environment variable:
+
+```sh
+npm run eval -- --credential-file /absolute/private/model.env
+NED_EVAL_CREDENTIAL_FILE=/absolute/private/model.env npm run eval
+```
+
+Provider-auth JSON uses Hermes's `providers` map keyed by provider, but requires
+no host Hermes profile. For a provider other than the repository default, pass
+`--provider` and `--model`. Explicit credential-source flags override the path
+environment variable. Only that provider's entries are copied. The following
+credential-home form remains optional for machines that already have Hermes:
+
 ```sh
 npm run test:eval -- workflows/task-management/EVAL.yaml --container \
   --credential-home /absolute/private/hermes-home \
