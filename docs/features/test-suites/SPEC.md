@@ -33,13 +33,15 @@ suite; existing targeted Windows checks remain supported.
 - FR-004: Eval requires an explicit skill/EVAL path, forwards existing eval-runner arguments, produces reports outside the checkout by default and preserves the runner's failure statuses as a nonzero suite result. It may use real providers only through explicit opt-in execution; a code test of the evaluation engine is never represented as skill acceptance.
 - FR-005: The standard Linux/macOS CI npm-test jobs run the same default gate, with Python, uv and Chromium dependencies installed. Do not retain a duplicate Hermes workflow or a duplicate Python invocation. Documentation identifies setup, aliases, classification, exclusions and actual staging/eval coverage gaps.
 - FR-007: `npm run eval -- [skill-folder-or-EVAL] --env-file <private-file>` or `--credential-home <private-Hermes-home>` uses Docker by default; without a package it selects the task-management workflow. Credential-home runs copy only the explicitly selected provider's API-key/OAuth entries and model selectors, never mount the host profile or import unrelated credentials, sessions or configuration. Reject nonprivate or symlink credential files and invalid provider selectors. Existing `test:eval` native behavior remains compatible. Generic skill evals may use the semantic judge alone; the goals/tasks workflow additionally requires its deterministic CLI verifier.
+- FR-008: Docker builds and staged public evaluation packages remain readable by the unprivileged Hermes user when the host source was installed under umask077 (directories0700/files0600). Normalize public distribution source permissions only inside the image/container; preserve host permissions and keep credential copies private0600.
+- FR-009: `--credential-file <private-path>` accepts selected-provider dotenv credentials or provider-auth JSON without requiring any host Hermes executable, Python package, home or configuration. `NED_EVAL_CREDENTIAL_FILE` supplies that path when no explicit credential-source option is given; explicit options take precedence. Provider/model selection comes from repository defaults or explicit flags, not an implicit host Hermes lookup. Hermes, its gateway/profile and model execution are provisioned inside Docker. Invalid/missing/private-file failures never invoke a host Hermes or claim an eval pass.
 - FR-006: Explicit `test:eval -- <EVAL-path> --container --env-file <private-file>` (or `--credential-home <private-Hermes-home>`) runs a real model-backed Hermes agent and existing evaluator inside a disposable NED Docker container. The goals/tasks workflow then uses an independently captured verifier to query NED CLI state. Require a reachable Docker context, an immutable resolved image identity, private provider-only credentials and bounded execution. Publish no host ports, mount no host profiles/socket, and use only newly owned containers/volumes. Copy redacted reports outside the checkout; remove owned resources on success, error or interruption, report cleanup failures nonzero, and never prune unrelated Docker resources. Scrub selected original and refreshed runtime credential values before report export. Missing Docker/auth is infrastructure failure, never skill success. Model stubs prove harness wiring only.
 
 ### CUJ-003: Evaluate a real workflow in an isolated NED container
 Actor: contributor explicitly opting into provider-backed evaluation. Critical because successful prose or mocked tool scripts do not establish persisted goals/tasks. Starting with a private provider credential file and Docker, select the task-management Docker EVAL, build or select the NED image, boot fresh owned volumes, ask Hermes to execute the fixture, then independently query CLI status/tree/item/history/delivery after the reply. Success requires both deterministic persisted-state verification and the existing semantic evaluator. Failed agent/verifier/provider or interrupted runs fail, preserve safe evidence and clean only owned resources. No real checkout work or deployment is part of the synthetic scenario.
 
 ### TC-004: Container eval execution, prerequisites and cleanup
-- Journey / requirements: CUJ-003 / FR-004, FR-006, FR-007.
+- Journey / requirements: CUJ-003 / FR-004, FR-006, FR-007, FR-008, FR-009.
 - Level / automation: integration; [tests/TC-004.test.js](tests/TC-004.test.js), generic evaluation-engine synthetic fixtures only.
 - Preconditions / fixtures: temporary generic EVAL packages, private synthetic env files and injected Docker command boundary; no real provider/model.
 - Given: an explicit eval package, output directory and Docker/context selection.
@@ -51,7 +53,7 @@ Actor: contributor explicitly opting into provider-backed evaluation. Critical b
 - Pass evidence: named executable assertions, zero skips/cancellations; real skill acceptance requires TC-005 separately.
 
 ### TC-005: Hermes completes synthetic goals/tasks, independently read back via CLI
-- Journey / requirements: CUJ-003 / FR-006; [task-management FR-019 / TC-014](../task-management/SPEC.md).
+- Journey / requirements: CUJ-003 / FR-006, FR-008, FR-009; [task-management FR-019 / TC-014](../task-management/SPEC.md).
 - Level / automation: manual; [workflow EVAL.yaml](../../../workflows/task-management/EVAL.yaml).
 - Preconditions / fixtures: Linux Docker with adequate space, freshly built NED image or explicit resolved image ID, private authorized provider credential, [workflow fixture](../../../skills/task-management/evaldata/docker-workflow/scenario.md). No preseeded task records.
 - Given: a new isolated Hermes profile/project/DB in a normal NED container.
@@ -60,6 +62,8 @@ Actor: contributor explicitly opting into provider-backed evaluation. Critical b
 - Steps and assertions: `npm run test:eval -- workflows/task-management/EVAL.yaml --container --context <context> --env-file /private/provider.env --output-root /outside/repo/results`; inspect real agent transcript, verifier CLI JSON, semantic result, resolved image and cleanup report.
 - Variants / negative cases: invalid/missing credentials fail infrastructure; interrupted run cleans owned resources; a scripted model is explicitly not behavioral evidence. No host-profile state or live project work may change.
 - Cleanup: harness removes its own container and all three volumes; retain only private redacted reports outside git.
+- Private installation variant: repeat `npm run eval -- --credential-home <private-home> --context <context> --output-root <external-results>` from the installed merged app, without `--image`, so its Dockerfile build and staged packages come from directories0700/files0600. Require a real agent/CLI pass, cleanup of the automatically built image and all owned resources, unchanged host-source permissions and private credential permissions. A private staged-index export of the exact candidate can establish pre-merge acceptance; repeat from the merged installation after deployment.
+- No-host-Hermes variant: use a Python environment without `hermes_cli`, PATH without a Hermes executable, a fresh HOME containing no Hermes profile, and explicit Docker configuration/context. Supply only a private standalone provider-auth JSON file via `NED_EVAL_CREDENTIAL_FILE`, with `--provider`/`--model` and external reports. Run the real workflow from private-mode candidate source. Require actual agent/CLI success and complete owned-resource cleanup; confirm the fresh host HOME still contains no Hermes profile. Generic TC-004 separately checks direct parameter selection, dotenv input, provider filtering, unchanged source and explicit-source precedence over the environment variable.
 - Pass evidence: actual model-backed Hermes run plus CLI-backed verifier, semantic result and resource cleanup, recorded separately from default code tests. Not established by YAML loading or engine tests.
 
 ## Critical user journeys
@@ -136,6 +140,8 @@ production target, deployment, messages or all-skills paid evaluation.
 | FR-005 | CUJ-001 | TC-002, full default Linux/macOS CI and documented command matrix |
 | FR-006 | CUJ-003 | TC-004 harness boundaries; TC-005 real agent and CLI verification |
 | FR-007 | CUJ-003 | TC-001 Docker-default routing; TC-004 credential selection, source preservation and report scrubbing; TC-005 real-provider run |
+| FR-008 | CUJ-003 | TC-004 private source staging; TC-005 real Docker run from private-mode installed source |
+| FR-009 | CUJ-003 | TC-001 argument routing; TC-004 standalone-file selection and environment precedence; TC-005 real Docker run with no host Hermes dependency |
 
 ## Open questions and coverage gaps
 

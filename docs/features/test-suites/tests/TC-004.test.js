@@ -7,6 +7,6 @@ test('TC-004: container eval engine enforces owned lifecycle, safe credentials a
   const root=fileURLToPath(new URL('../../../../',import.meta.url));
   const result=spawnSync('python',['-m','pytest','docs/features/test-suites/tests/container_cases.py','-q'],{cwd:root,env:{...process.env,PYTHONPATH:root},encoding:'utf8',timeout:60000});
   assert.equal(result.status,0,result.stdout+result.stderr);
-  assert.match(result.stdout,/19 passed/);
+  assert.match(result.stdout,/23 passed/);
   assert.doesNotMatch(result.stdout,/\b(?:skipped|xfailed|xpassed)\b/);
 });

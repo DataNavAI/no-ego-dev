@@ -6,6 +6,7 @@ import unittest
 import pytest
 
 from eval_runner.container import ROOT, credential_text, run_container
+from eval_runner.container import main as container_main
 from eval_runner.container_entry import redact_selected_credentials
 
 checks = unittest.TestCase()
@@ -133,11 +134,15 @@ def test_credentials_and_output_preflight_fail_before_docker(package):
     credential.chmod(0o644)
     with checks.assertRaises(ValueError):
         credential_text(credential, "openrouter")
+    with checks.assertRaises(ValueError):
+        run_container(evaluation, output, credential_file=credential, execute=boundary)
     credential.chmod(0o600)
     link = credential.with_name("linked.env")
     link.symlink_to(credential)
     with checks.assertRaises(ValueError):
         credential_text(link, "openrouter")
+    with checks.assertRaises(ValueError):
+        run_container(evaluation, output, credential_file=link, execute=boundary)
     with checks.assertRaises(ValueError):
         run_container(evaluation, ROOT / ".forbidden-eval-output", credential, execute=boundary)
     checks.assertEqual(boundary.calls, [])
@@ -248,6 +253,21 @@ def test_generic_skill_without_deterministic_verifier_uses_real_evaluator(packag
     checks.assertTrue(any("eval_runner.cli" in command for command in boundary.calls))
 
 
+def test_private_host_source_staging_exposes_only_public_package_to_hermes(package):
+    evaluation, credential, output = package
+    evaluation.parent.chmod(0o700)
+    evaluation.chmod(0o600)
+    boundary = DockerBoundary()
+    code, _directory = run_container(evaluation, output, credential, execute=boundary)
+    checks.assertEqual(code, 0)
+    normalizations = [command for command in boundary.calls if "chmod" in command]
+    checks.assertTrue(any(command[-3:] == ["-R", "a+rX", "/opt/ned/skills/sample"] for command in normalizations))
+    checks.assertTrue(any(command[-2:] == ["0644", "/opt/ned-eval/entry.py"] for command in normalizations))
+    checks.assertTrue(all("credentials" not in command[-1] for command in normalizations))
+    checks.assertEqual(evaluation.parent.stat().st_mode & 0o777, 0o700)
+    checks.assertEqual(credential.stat().st_mode & 0o777, 0o600)
+
+
 def test_export_removes_selected_opaque_credentials_even_without_key_labels(tmp_path):
     (tmp_path / "auth.json").write_text(json.dumps({"providers": {"sample": {"access_token": "opaque-oauth-credential"}}}))
     (tmp_path / ".env").write_text('SAMPLE_API_KEY="opaque-api-credential"\n')
@@ -255,3 +275,54 @@ def test_export_removes_selected_opaque_credentials_even_without_key_labels(tmp_
     checks.assertEqual(result, {"output": "[REDACTED] [REDACTED]", "nested": ["safe"]})
     (tmp_path / "auth.json").write_text(json.dumps({"providers": {"sample": {"access_token": "refreshed-oauth-credential"}}}))
     checks.assertEqual(redact_selected_credentials({"output": "refreshed-oauth-credential"}, tmp_path), {"output": "[REDACTED]"})
+
+
+@pytest.mark.parametrize("format_name", ["dotenv", "auth-json"])
+def test_standalone_credential_file_needs_no_host_hermes(package, monkeypatch, format_name):
+    evaluation, credential, output = package
+    monkeypatch.setenv("HERMES_HOME", "/missing-host-hermes")
+    monkeypatch.setenv("HERMES_EVAL_CREDENTIAL_HOME", "/missing-host-hermes")
+    requested = []
+
+    def executable(name):
+        requested.append(name)
+        checks.assertEqual(name, "docker")
+        return "/synthetic/docker"
+
+    monkeypatch.setattr("eval_runner.container.shutil.which", executable)
+    if format_name == "auth-json":
+        credential.write_text(json.dumps({"providers": {
+            "openrouter": {"api_key": "synthetic-selected-key"},
+            "openai-codex": {"access_token": "synthetic-unselected-token"}}}))
+    original = credential.read_bytes()
+    boundary = DockerBoundary()
+    code, _directory = run_container(evaluation, output, credential_file=credential, execute=boundary)
+    checks.assertEqual(code, 0)
+    checks.assertEqual(requested, ["docker"])
+    checks.assertEqual(credential.read_bytes(), original)
+    if format_name == "auth-json":
+        copied = json.loads(boundary.copied_credentials["auth.json"])
+        checks.assertEqual(copied["providers"], {"openrouter": {"api_key": "synthetic-selected-key"}})
+        checks.assertNotIn("synthetic-unselected-token", str(boundary.copied_credentials))
+
+
+def test_credential_path_environment_is_fallback_not_override(package, monkeypatch):
+    evaluation, credential, output = package
+    calls = []
+    monkeypatch.setenv("NED_EVAL_CREDENTIAL_FILE", str(credential))
+
+    def selected(**options):
+        calls.append(options)
+        return 0, output
+
+    monkeypatch.setattr("eval_runner.container.run_container", selected)
+    base = [str(evaluation), "--output-root", str(output)]
+    checks.assertEqual(container_main(base), 0)
+    checks.assertEqual(calls[-1]["credential_file"], credential)
+    checks.assertEqual(container_main([*base, "--env-file", str(credential)]), 0)
+    checks.assertIsNone(calls[-1]["credential_file"])
+    checks.assertEqual(calls[-1]["env_file"], credential)
+    monkeypatch.delenv("NED_EVAL_CREDENTIAL_FILE")
+    with checks.assertRaises(SystemExit) as missing:
+        container_main(base)
+    checks.assertEqual(missing.exception.code, 2)

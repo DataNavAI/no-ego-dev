@@ -42,7 +42,7 @@ def credential_text(filename: Path, provider: str) -> str:
     return "\n".join(f"{name}={value}" for name, value in retained.items()) + "\n"
 
 
-def run_container(eval_path: Path, output_root: Path, env_file: Path | None = None, *, credential_home=None, context=None,
+def run_container(eval_path: Path, output_root: Path, env_file: Path | None = None, *, credential_home=None, credential_file=None, context=None,
                   image=None, provider=None, model=None, base_url=None, timeout=3600,
                   execute=subprocess.run, clock=time.monotonic, pause=time.sleep) -> tuple[int, Path]:
     spec = load_eval(eval_path / 'EVAL.yaml' if eval_path.is_dir() else eval_path)
@@ -69,8 +69,21 @@ def run_container(eval_path: Path, output_root: Path, env_file: Path | None = No
     else:
         raise ValueError("Select a canonical skill or repository workflow EVAL")
     packages.append((package, container_package))
-    if (env_file is None) == (credential_home is None):
-        raise ValueError("Select a private env file or credential home, not both")
+    if sum(source is not None for source in (env_file, credential_home, credential_file)) != 1:
+        raise ValueError("Select exactly one private credential source")
+    auth_text = None
+    if credential_file is not None:
+        credential_file = Path(credential_file).expanduser()
+        info = credential_file.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_size > 1048576 or os.name != "nt" and (info.st_uid != os.getuid() or info.st_mode & 0o077):
+            raise ValueError("Credential file must be private, bounded, regular and owned by the current user")
+        text = credential_file.read_text()
+        if text.lstrip().startswith("{"):
+            if not isinstance(json.loads(text), dict):
+                raise ValueError("Provider auth JSON must be an object")
+            auth_text = text
+        else:
+            env_file = credential_file
     if credential_home is not None:
         credential_home = Path(credential_home).expanduser()
         if credential_home.is_symlink() or not credential_home.is_dir():
@@ -162,11 +175,18 @@ def run_container(eval_path: Path, output_root: Path, env_file: Path | None = No
             call("volume", "create", "--label", f"{LABEL}={identity}", name)
         with tempfile.TemporaryDirectory(prefix="ned-eval-env-") as temporary:
             credential_source = None
-            if credential_home is not None:
+            selected_home = credential_home
+            if auth_text is not None:
+                selected_home = Path(temporary) / "input"
+                selected_home.mkdir(mode=0o700)
+                auth_input = selected_home / "auth.json"
+                auth_input.write_text(auth_text)
+                auth_input.chmod(0o600)
+            if selected_home is not None:
                 filtered = Path(temporary) / "credentials"
                 filtered.mkdir(mode=0o700)
                 selected_command = "hermes chat --provider " + provider
-                _copy_runtime_credentials(filtered, (selected_command,), source_home=credential_home)
+                _copy_runtime_credentials(filtered, (selected_command,), source_home=selected_home)
                 auth = json.loads((filtered / "auth.json").read_text()) if (filtered / "auth.json").is_file() else {}
                 dotenv = (filtered / ".env").read_text() if (filtered / ".env").is_file() else ""
                 if not auth.get("providers") and not auth.get("credential_pool") and not dotenv.strip():
@@ -197,13 +217,15 @@ def run_container(eval_path: Path, output_root: Path, env_file: Path | None = No
         for source, target in packages:
             call("exec", identity, "rm", "-rf", target)
             call("cp", str(source), identity + ":" + target)
+            call("exec", identity, "chmod", "-R", "a+rX", target)
         call("cp", str(ROOT / "eval_runner/container_entry.py"), identity + ":/opt/ned-eval/entry.py")
+        call("exec", identity, "chmod", "0644", "/opt/ned-eval/entry.py")
         entry = ["exec", "--user", "hermes", "-e", "PYTHONPATH=/opt/ned", identity,
                  "/opt/ned/python/bin/python", "/opt/ned-eval/entry.py"]
         call(*entry, "prepare", "--provider", provider, "--model", model,
              *(["--base-url", base_url] if base_url else []),
-             *(["--credential-source", "/opt/ned-eval-credentials"] if credential_home else []))
-        if credential_home:
+             *(["--credential-source", "/opt/ned-eval-credentials"] if credential_home or auth_text is not None else []))
+        if credential_home or auth_text is not None:
             call("exec", identity, "rm", "-rf", "/opt/ned-eval-credentials")
         evaluated = call("exec", "--user", "hermes", "-w", "/opt/ned",
                          "-e", "HERMES_EVAL_CREDENTIAL_HOME=/projects/eval-credentials",
@@ -243,9 +265,10 @@ def run_container(eval_path: Path, output_root: Path, env_file: Path | None = No
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Real Hermes workflow evaluation in a disposable NED container")
     parser.add_argument("eval_path", type=Path)
-    credentials = parser.add_mutually_exclusive_group(required=True)
+    credentials = parser.add_mutually_exclusive_group()
     credentials.add_argument("--env-file", type=Path)
     credentials.add_argument("--credential-home", type=Path)
+    credentials.add_argument("--credential-file", type=Path, help="Private provider dotenv or auth JSON file; defaults to NED_EVAL_CREDENTIAL_FILE")
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--context")
     parser.add_argument("--image")
@@ -254,6 +277,11 @@ def main(argv=None) -> int:
     parser.add_argument("--base-url")
     parser.add_argument("--timeout", type=int, default=3600)
     args = parser.parse_args(argv)
+    if not any((args.env_file, args.credential_home, args.credential_file)):
+        if os.environ.get("NED_EVAL_CREDENTIAL_FILE"):
+            args.credential_file = Path(os.environ["NED_EVAL_CREDENTIAL_FILE"])
+        else:
+            parser.error("Provide --credential-file or NED_EVAL_CREDENTIAL_FILE (legacy --env-file/--credential-home also supported)")
     if args.timeout < 1 or args.timeout > 7200:
         parser.error("timeout must be between 1 and 7200 seconds")
     def interrupt(_signum, _frame):

@@ -17,7 +17,8 @@ COPY plugins/ned/ plugins/ned/
 COPY eval_runner/ eval_runner/
 COPY distribution.yaml SOUL.md AGENTS.md config.yaml README.md README.ko.md LICENSE .env.EXAMPLE ./
 COPY scripts/container/ scripts/container/
-RUN /opt/ned/python/bin/python /opt/ned/scripts/container/patch-dashboard.py /opt/hermes/hermes_cli/web_server_dashboard.py && \
+RUN chmod -R a+rX /opt/ned && \
+    /opt/ned/python/bin/python /opt/ned/scripts/container/patch-dashboard.py /opt/hermes/hermes_cli/web_server_dashboard.py && \
     /opt/hermes/.venv/bin/python -m py_compile /opt/hermes/hermes_cli/web_server_dashboard.py && \
     ln -s /opt/ned/bin/ned.js /usr/local/bin/ned && \
     chmod 0755 /opt/ned/scripts/container/setup /opt/ned/scripts/container/run-com && \
