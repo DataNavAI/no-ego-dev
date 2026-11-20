@@ -24,6 +24,13 @@ test('TC-001: staging/container and paid evals are explicit and retain their arg
   const args = ['skills/test-writing', '--hermes-command', 'synthetic-agent'];
   assert.deepEqual(suitePlan('eval', args)[0].args, ['-m', 'eval_runner.cli', ...args]);
   assert.equal(args.length, 3);
+  const containerEval = ['workflows/task-management/EVAL.yaml', '--container', '--context', 'synthetic', '--env-file', '/private/provider.env'];
+  assert.deepEqual(suitePlan('eval', containerEval)[0].args, ['-m', 'eval_runner.container', ...containerEval.filter(argument => argument !== '--container')]);
+  assert.equal(containerEval.length, 6);
+  assert.deepEqual(suitePlan('eval', ['--container', '--credential-home', '/private/hermes'])[0].args,
+    ['-m', 'eval_runner.container', 'workflows/task-management/EVAL.yaml', '--credential-home', '/private/hermes']);
+  assert.deepEqual(suitePlan('eval', ['--container', 'skills/test-writing', '--env-file', '/private/key.env'])[0].args,
+    ['-m', 'eval_runner.container', 'skills/test-writing', '--env-file', '/private/key.env']);
   assert.deepEqual(suitePlan('large', ['--container', '--image', 'synthetic'])[0].args, ['docs/features/standalone-container/tests/container_acceptance.py', '--image', 'synthetic']);
   assert.deepEqual(suitePlan('large', ['--url', 'https://instance.proxy.staging.hub.datanav.app/prefix'])[0].args, ['scripts/test-staging.mjs', 'https://instance.proxy.staging.hub.datanav.app/prefix/']);
   assert.equal(suitePlan('large', ['--url', 'https://staging.ned.datanav.app/']).length, 1);

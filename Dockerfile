@@ -12,6 +12,7 @@ COPY bin/ bin/
 COPY src/ src/
 COPY apps/ apps/
 COPY skills/ skills/
+COPY workflows/ workflows/
 COPY plugins/ned/ plugins/ned/
 COPY eval_runner/ eval_runner/
 COPY distribution.yaml SOUL.md AGENTS.md config.yaml README.md README.ko.md LICENSE .env.EXAMPLE ./

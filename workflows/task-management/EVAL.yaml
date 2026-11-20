@@ -1,0 +1,27 @@
+prompt: |
+  Use the task-management skill to execute the synthetic request in the fixture.
+  Perform real NED CLI operations, not a plan or a transcript of commands that
+  were not run. Your project is $HERMES_HOME/workspace. Use that same absolute
+  project and --actor agent:workflow-eval on every command. This is a disposable
+  synthetic project, not the NED distribution: no GitHub, deployment or real
+  publication is requested. Do not edit SQLite, installed tools or evaluators.
+  Do not spawn subagents or access credentials/network services. After executing
+  the request, report returned IDs and actual status honestly.
+expectations:
+  - The agent loads task-management and performs the requested work through real NED CLI commands in the isolated project.
+  - Exactly one goal and three tasks exist, with no duplicate work or invented IDs.
+  - Draft and verification tasks belong to the goal; verification depends on drafting and is claimed only after the draft is completed.
+  - Both synthetic acceptance checks are actually performed before their tasks and then the goal are explicitly completed.
+  - The standalone publication task remains blocked awaiting operator approval, without claiming publication occurred.
+  - The completed draft has a truthful short visible document and unknown estimates remain null.
+  - The independent post-agent NED CLI verifier passes; prose alone never establishes completion.
+setupCommands:
+  - /opt/ned/python/bin/python /opt/ned/skills/task-management/evaldata/docker-workflow/setup.py
+teardownCommands: []
+parameters:
+  skills: [task-management]
+  fixture: skills/task-management/evaldata/docker-workflow/scenario.md
+  working_directory: $HERMES_HOME/workspace
+  verification_script: skills/task-management/evaldata/docker-workflow/verify.py
+  expected_artifacts:
+    - RELEASE.txt

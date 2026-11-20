@@ -19,6 +19,8 @@
 !apps/**
 !skills/
 !skills/**
+!workflows/
+!workflows/**
 !plugins/
 !plugins/ned/
 !plugins/ned/**
