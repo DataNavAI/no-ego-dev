@@ -20,6 +20,7 @@ CLI commands retain their existing syntax, actor ownership, project identity, pr
 - FR-016: Configured API failure, profile/DB mismatch, invalid URL/auth or uncertain mutation must fail without direct-DB fallback, redispatch or secret disclosure. `--request-id` supports explicit same-command replay. Mutation and stored response commit atomically; changed payload/operation under the same project/actor/key conflicts. Default generated request IDs appear in uncertain-response errors for recovery; users inspect authoritative reads before retrying. GET context and all task commands remain operator-only; public bridges continue blocking Core.
 - FR-017: `task delivery <id> [--file <JSON>]` (also goal IDs via `goal delivery`) reads or replaces explicit impact, estimates and safe outputs using the existing delivery contract. `task attempts <id> [--cursor <opaque>]` reads paginated task-scoped attempt summaries. Neither starts work. Preserve legacy unknown estimates/output states and verified managed-attempt completion fences. File inputs are bounded and never interpreted as shell code; actor metadata is not authentication.
 - FR-018: Extend the canonical task-management skill, not a competing tracker. Agents inspect/reuse durable work before implementation, use stable actors/profile context, publish one-line business impact and honest estimates/outputs when known, read back mutations, and distinguish queued attempts from active execution. Unknown delivery is explicit; no fabricated outputs, stale estimates, replay after uncertain admission or premature completion. Behavioral acceptance is separate from code tests.
+- FR-019: A separately opted-in Docker workflow eval asks a real Hermes agent to perform synthetic goals/tasks before verification. It ends with an independent verifier using installed NED CLI reads against that same isolated project/profile; assistant claims or preseeded task scripts cannot substitute. Cover dependent verified completion, explicit goal closure, a remaining user-action blocker and truthful visible output. Use the contributor eval bucket and its container isolation/cleanup contract, not default paid execution.
 
 ### CUJ-008: Track a project through Core from CLI and agent workflow
 Actor: human or agent maintaining a project visible in COM. Critical because separate CLI/UI state or bypassing Core ownership would make work visibility untrustworthy. Starting with a selected isolated runtime and project, initialize, create goal/tasks, claim ready work, publish impact/output/estimate, inspect via Core/COM, block/resume and complete verified work. Repeat against a configured same-runtime server; recover explicit idempotent requests without duplicate tasks. Wrong actor, project/profile/server and unavailable/ambiguous responses remain failures with no fallback. Cleanup removes only synthetic fixture state.
@@ -211,6 +212,7 @@ All tests use disposable homes/projects/SQLite files and clean them in `t.after`
 | FR-016 | CUJ-008 / TC-013 |
 | FR-017 | CUJ-008 / TC-013 |
 | FR-018 | CUJ-008 / TC-012 (manual behavioral acceptance) |
+| FR-019 | CUJ-008 / TC-014 (real Docker workflow evaluation) |
 
 Run `npm run test:spec -- --all`, or select with `--feature task-management`, `--case TC-004`, or `--journey CUJ-003`. Every selected case must have an executable file. The runner rejects missing/unknown mappings and any skip/cancel. `npm test` includes broader regression coverage plus the spec gate. Run `npm run check` and `python -m pytest` before committing. Every mandatory case must pass before a commit; no external Beads or manual gate may conceal a coverage gap.
 
@@ -219,6 +221,18 @@ Run `npm run test:spec -- --all`, or select with `--feature task-management`, `-
 SQLite file location is configurable; PostgreSQL/MySQL/remote-engine drivers are not implemented. No hidden automatic migration of prototype Beads stores or existing workspace/telemetry JSON state. The shared DB is available to all NED features through one module and namespaced feature data, with feature schema added through versioned migrations. Local actors are trusted labels, not authenticated users. Renaming a project changes its identity; no automatic move/backup/delete command exists. A lost response after a committed create requires readback to avoid duplication. These are scope limits, not skipped test cases. Future additions must update this spec and its cases.
 
 ## Skill behavioral acceptance
+
+### TC-014: Real Hermes workflow in a NED Docker container
+- Journey / requirements: CUJ-008 / FR-018, FR-019.
+- Level / automation: manual; [workflow EVAL.yaml](../../../workflows/task-management/EVAL.yaml), [detailed execution case](../test-suites/SPEC.md#tc-005-hermes-completes-synthetic-goalstasks-independently-read-back-via-cli).
+- Preconditions / fixtures: private authorized provider, normal NED Docker image and fresh owned volumes; [scenario](../../../skills/task-management/evaldata/docker-workflow/scenario.md). Setup creates no task records.
+- Given: an empty synthetic project and the canonical skill available to Hermes.
+- When: ask Hermes to execute the scenario, wait for its reply, then query persisted work with NED CLI through a trusted post-agent verifier.
+- Then: exact goal/task counts, dependency/ownership/history, explicit goal closure, approval blocker, artifact and delivery readback match the fixture; failed or missing CLI verification fails the eval regardless of assistant claims.
+- Steps and assertions: follow test-suites TC-005 command and inspect agent transcript, independent CLI JSON and cleanup receipt; the verifier is part of the behavioral eval, not a code test of skill wording/helpers.
+- Variants / negative cases: missing work, duplicates, early goal closure, unverified child work, false blocked/done claims and wrong profile/project fail; missing Docker/provider is infrastructure failure. No secret or paid model is used by default suites.
+- Cleanup: remove only run-owned container/volumes; preserve redacted reports outside the repo and all real profiles/workspaces.
+- Pass evidence: real Hermes/model execution and independent installed CLI status; default test suite passing does not imply this evaluation ran.
 
 Every actionable development request triggers NED intake before implementation: inspect/reuse work, create missing tasks and appropriate milestone goals, and maintain blockers/ownership/completion. Follow-ups preserve existing identities and track scope additions without unsupported edit/reopen commands. Pure explanations create no work; explicit user tracker choices take precedence. This intake also applies through coder and project-manager.
 

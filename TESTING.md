@@ -80,6 +80,27 @@ Use synthetic evaldata and the package's EVAL.yaml. Evaluation-engine tests with
 fake commands remain medium code coverage, not eval passes.
 `python -m eval_runner.cli --help` is the executable provider/judge option reference.
 
+For a real Hermes goals/tasks workflow in a disposable NED Docker container, see
+[the workflow runbook](workflows/task-management/README.md). Run
+`npm run test:eval -- workflows/task-management/EVAL.yaml --container`
+with an authorized private credential source and external output directory as
+documented there. Independent NED CLI readback and cleanup are required for pass.
+
+The shorter Docker-first entry point is:
+
+```sh
+npm run eval -- --credential-home /absolute/private/hermes-home
+npm run eval -- skills/test-writing --env-file /absolute/private/provider.env
+```
+
+The first command defaults to the goals/tasks workflow; the second selects a
+skill's EVAL.yaml. Both make real model calls. An env file holds only the selected
+provider's API-key variables; a credential home supplies filtered API-key/OAuth
+entries. Pass paths, never token values, on the command line. Neither command
+mounts your profile. Changing provider requires an explicit compatible `--model`
+and does not inherit another provider's endpoint. `test:eval` remains native unless
+`--container` is supplied. Docker eval reports and cleanup receipts stay outside Git.
+
 ## Focus and compatibility
 
 - `npm run test:core`: all Core automated spec cases **and real Hermes**, once.

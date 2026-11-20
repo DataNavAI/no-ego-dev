@@ -940,9 +940,9 @@ def _provider_env_names(provider: str) -> frozenset[str]:
     return frozenset()
 
 
-def _copy_runtime_credentials(run_profile: Path, commands: tuple[str, ...] = ()) -> None:
+def _copy_runtime_credentials(run_profile: Path, commands: tuple[str, ...] = (), *, source_home: Path | None = None) -> None:
     """Copy only credentials for each command's exact effective provider."""
-    source_home = _runtime_credential_home()
+    source_home = source_home or _runtime_credential_home()
     providers = _runtime_provider_names(source_home, commands)
     canonical_providers = {
         _canonical_provider_name(provider)

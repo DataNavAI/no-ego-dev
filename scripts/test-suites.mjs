@@ -28,9 +28,12 @@ export function suitePlan(bucket, args = [], env = process.env) {
     return [{ command: process.execPath, args: ['scripts/test-staging.mjs', target.href] }];
   }
   if (bucket === 'eval') {
-    if (!args.length || args[0].startsWith('-'))
+    const container = args.includes('--container');
+    const forwarded = args.filter(argument => argument !== '--container');
+    if (container && (!forwarded.length || forwarded[0].startsWith('-'))) forwarded.unshift('workflows/task-management/EVAL.yaml');
+    if (!forwarded.length || forwarded[0].startsWith('-'))
       throw new Error('Select an EVAL.yaml or skill folder: npm run test:eval -- skills/<name> [eval_runner options]. This may make paid model calls.');
-    return [{ command: 'python', args: ['-m', 'eval_runner.cli', ...args] }];
+    return [{ command: 'python', args: ['-m', container ? 'eval_runner.container' : 'eval_runner.cli', ...forwarded] }];
   }
   if (args.length && !(bucket === 'medium' && args.length === 2 && args[0] === '--feature' && args[1] === 'core-orchestration'))
     throw new Error('Local buckets accept no options; test:core is the focused Core alias. Use test:spec for case selectors.');
