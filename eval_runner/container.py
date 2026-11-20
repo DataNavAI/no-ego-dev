@@ -197,7 +197,9 @@ def run_container(eval_path: Path, output_root: Path, env_file: Path | None = No
         for source, target in packages:
             call("exec", identity, "rm", "-rf", target)
             call("cp", str(source), identity + ":" + target)
+            call("exec", identity, "chmod", "-R", "a+rX", target)
         call("cp", str(ROOT / "eval_runner/container_entry.py"), identity + ":/opt/ned-eval/entry.py")
+        call("exec", identity, "chmod", "0644", "/opt/ned-eval/entry.py")
         entry = ["exec", "--user", "hermes", "-e", "PYTHONPATH=/opt/ned", identity,
                  "/opt/ned/python/bin/python", "/opt/ned-eval/entry.py"]
         call(*entry, "prepare", "--provider", provider, "--model", model,

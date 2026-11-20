@@ -248,6 +248,21 @@ def test_generic_skill_without_deterministic_verifier_uses_real_evaluator(packag
     checks.assertTrue(any("eval_runner.cli" in command for command in boundary.calls))
 
 
+def test_private_host_source_staging_exposes_only_public_package_to_hermes(package):
+    evaluation, credential, output = package
+    evaluation.parent.chmod(0o700)
+    evaluation.chmod(0o600)
+    boundary = DockerBoundary()
+    code, _directory = run_container(evaluation, output, credential, execute=boundary)
+    checks.assertEqual(code, 0)
+    normalizations = [command for command in boundary.calls if "chmod" in command]
+    checks.assertTrue(any(command[-3:] == ["-R", "a+rX", "/opt/ned/skills/sample"] for command in normalizations))
+    checks.assertTrue(any(command[-2:] == ["0644", "/opt/ned-eval/entry.py"] for command in normalizations))
+    checks.assertTrue(all("credentials" not in command[-1] for command in normalizations))
+    checks.assertEqual(evaluation.parent.stat().st_mode & 0o777, 0o700)
+    checks.assertEqual(credential.stat().st_mode & 0o777, 0o600)
+
+
 def test_export_removes_selected_opaque_credentials_even_without_key_labels(tmp_path):
     (tmp_path / "auth.json").write_text(json.dumps({"providers": {"sample": {"access_token": "opaque-oauth-credential"}}}))
     (tmp_path / ".env").write_text('SAMPLE_API_KEY="opaque-api-credential"\n')
