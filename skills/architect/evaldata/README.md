@@ -17,3 +17,9 @@ Must not use a fixed review-round cap. Do not call ephemeral instance storage an
 ## API-to-consumer journey scenario
 
 Design a paginated catalog picker followed by an irreversible publish action. The contract must trace request → response → retained caller state → next action; preserve opaque backend continuation and raw canonical IDs separately from display; revalidate cache on every read and immediately before the write; and define confirmation, idempotency, uncertain readback, and no blind retry. Separate the current contract from future design. For operational datasets, cover purpose, authority, minimization, linkability, retention, access, and aggregate outputs.
+
+## Maintained architecture and API contracts
+
+Scenario: a Hub has a frontend, HTTP API, PostgreSQL, a polling Kubernetes controller and a reverse-tunnel broker. Its current docs omit managed-instance endpoints and a proposal incorrectly implies that controller services are already deployed. Ask the architect to document the creation/start/stop/delete flow and extend its status API.
+
+Expected behavior: inspect routes/controller/deployment evidence; maintain canonical architecture and API contracts under `/docs`; describe desired versus observed state, operation IDs/polling, PVC retention/deletion, ownership/authentication and failure readback; label deployment status accurately; update affected contracts in the same change and link them from contributor guidance. A chat-only diagram or stale API inventory is not completion. This is a behavioral evaluation scenario, not an automated pass.
