@@ -1,13 +1,14 @@
 {
-  "candidate_sha": "0ef094fb6dd81697015614fe3e747c37f2914cec",
-  "tested_at": "2026-11-21T10:07:06Z",
-  "environment": "macOS arm64, Node25.6.1, Chromium; native arm64 Docker on colima-eval; pinned isolated Hermes6e07eb4 and aimock1.48.0",
+  "candidate_sha": "b0db83ac7170de91d304ee423d44c5b3fe4a6bf6",
+  "tested_at": "2026-11-21T10:36:36Z",
+  "environment": "macOS arm64, Node25.6.1, Chromium; native arm64 Docker colima-eval; real isolated Hermes6e07eb4, aimock1.48.0, actual PostgreSQL and Hub",
   "result": "pass",
   "commands": [
-    "npm run lint; npm run test:all (versioned exact-staged commit hook)",
-    "npm run build:ui:check",
-    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-eval --expected-architecture arm64",
-    "npm run eval -- --credential-file <external-private-auth-file> --provider openai-codex --model gpt-6.1-sol --context colima-eval --output-root <external-owned-evidence> --timeout 1800"
+    "npm run lint; npm run test:all (exact-staged commit hook)",
+    "node --test docs/features/ned-api/tests/TC-006.test.js docs/features/ned-api/tests/TC-007.test.js",
+    "Hub: npm run test:integration:instance against this exact native commit",
+    "Hub: npm run test:integration:models against this exact native commit",
+    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-eval --expected-architecture arm64"
   ],
-  "observations": "Independent review approved source0ef094fb and documentation. Startup restore race reproduced, fixed and browser regression passed. Exact staged hook passed small/medium, all automated feature spec cases,208 Python tests with9 existing platform skips and7 real Hermes tests. Browser first/repeat login, wrong/rotated token, Forget, tab-only storage failure, preserved draft/no replay and authenticated split-Unicode SSE/reconnect passed. Existing new/existing chat flows stream before completion. Injection/conflict/unsafe-source, persistent CLI reuse and identity-after-rotation cases passed. Native arm64 Docker TC003/004 passed image3ed87f17 with injected token, authenticated COM/dashboard, retained state, restart, negative startup and3.26second shutdown; owned resources removed. Model-backed task skill Docker eval passed exit0 with verified cleanup, image77624159. No raw credentials in evidence. Hub source/local integration is separately tracked in Hub142; no hosted KMS/IAM, OAuth/TLS, AMD64/EKS or staging enablement claim."
+  "observations": "Independent review approved immutable sourceb0db83a and independently passed9/9 focused browser/client cases. Delayed controller test reproduced visible shell before handlers (RED), then passed with hidden/inert shell until imports complete. Forget during loading cannot reopen access; stale401 cannot clear newer validated credentials. Exact-staged full hook passed all automated spec cases,208 Python tests with9 existing platform skips and7 real Hermes tests. Actual Hub→native COM integration passed4/4: streamed delta before terminal, persisted reload, unavailable/truncated errors, cancellation and foreign-origin denial. Combined real PostgreSQL/Hub/native connector/Core/browser proxy/Hermes SDK/inference relay passed with nativeRevision=b0db83ac7170de91d304ee423d44c5b3fe4a6bf6; only provider and KMS adapter synthetic, one stub inference. Native arm64 container TC003/004 passed imageacd82682,3.38second shutdown, authenticated API/perimeter, retained state/restart and owned cleanup. Original CLI token injection and model-backed Docker skill eval remain unchanged from PR189. Hosted KMS/IAM/TLS/EKS enablement remains separate in ned-iac29."
 }
