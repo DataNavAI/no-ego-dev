@@ -76,7 +76,7 @@ test('real Hermes delegation emits child session identities bound to the Core at
   assert.ok(child,'authoritative child lifecycle must produce a binding');
   assert.equal(child.parentSessionId,settled.sessionId);assert.ok(child.delegationId);
   assert.notEqual(child.sessionId,settled.sessionId);
-  await until(()=>fixture.gatewayRequest('/api/sessions/'+child.sessionId+'/messages'),value=>JSON.stringify(value).includes('Child completed its synthetic work.'),'persisted child output');
+  await until(()=>fixture.gatewayRequest('/api/sessions/'+child.sessionId+'/messages',{pendingNotFound:true}),value=>JSON.stringify(value).includes('Child completed its synthetic work.'),'persisted child output');
   assert.ok(fixture.requests.some(entry=>entry.body?.messages?.some(message=>message.role==='user'&&message.content==='NED_CHILD_CASE')));
   await fixture.close();await fixture.assertClosed();
 });
