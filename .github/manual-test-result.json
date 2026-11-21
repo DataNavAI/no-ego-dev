@@ -5,7 +5,7 @@
   "result": "pass",
   "commands": [
     "npm run lint; npm run test:all (exact-source commit hook); npm run build:ui:check",
-    "node --test docs/features/ned-api/tests/TC-*.test.js docs/features/task-api-transport/tests/TC-*.test.js",
+    "node --test docs/features/ned-api/tests/TC-*.test.js docs/features/task-management/tests/TC-013.test.js",
     "python docs/features/standalone-container/tests/container_acceptance.py --context colima-eval --expected-architecture arm64",
     "npm run eval -- --credential-file <private-selected-provider-file> --provider openai-codex --model gpt-6.1-sol --context colima-eval --output-root <external-private-evidence> --timeout 1800"
   ],
