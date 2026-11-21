@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import {fetch} from '../../ned-api/tests/auth-client.js';
 import {mkdtempSync,mkdirSync,realpathSync,writeFileSync,rmSync} from 'node:fs';
 import os from 'node:os';
@@ -13,7 +14,7 @@ export async function fixture(t,{gateway}={}) {
   roots.forEach((root,index)=>writer.connection.prepare('INSERT INTO ned_projects VALUES(?,?,?)').run(`project-${index}`,root,'2026-10-12'));
   writer.connection.prepare("INSERT INTO ned_work_items(project_id,id,type,title,description,priority,state,created_by,created_at,updated_at) VALUES('project-0','task-sentinel','task','Private task','Keep private',2,'open','fixture','2026-10-12','2026-10-12')").run();
   writer.setFeatureValue('fixture','sentinel',{keep:true});
-  const app=createCommunicatorServer({databasePath,home,gateway});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),databasePath,home,gateway});await app.listen();t.after(()=>app.close());
   const get=async resource=>{const response=await fetch(app.url+resource);return {status:response.status,body:await response.json()};};
   return {home,roots,databasePath,writer,app,get};
 }

@@ -1,13 +1,15 @@
 {
-  "candidate_sha": "c5f7981eabba58c8afd572e93be1ec4581ef5c93",
-  "tested_at": "2026-11-21T08:08:00.123437+00:00",
-  "environment": "macOS arm64, Node25.6.1, native arm64 Docker on isolated colima-eval context; real Hermes plus model-only aimock and selected-provider credential-backed Docker workflow",
+  "candidate_sha": "9e11c34e5dfed15b2611701478225687720ce234",
+  "tested_at": "2026-11-21T08:52:13.346399+00:00",
+  "environment": "macOS arm64, Node24.22.2, Chromium156; native arm64 Docker BuildKit on task-owned colima-hub9; pinned isolated Hermes6e07eb4 with aimock1.48.0",
   "result": "pass",
   "commands": [
-    "npm run lint; npm run test:all (exact-source commit hook); npm run build:ui:check",
-    "node --test docs/features/ned-api/tests/TC-*.test.js docs/features/core-orchestration/tests/TC-001.test.js docs/features/standalone-container/tests/TC-001.test.js docs/features/standalone-container/tests/TC-006.test.js docs/features/task-management/tests/TC-013.test.js",
-    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-eval --expected-architecture arm64",
-    "npm run eval -- --credential-file <private-selected-provider-file> --provider openai-codex --model gpt-6.1-sol --context colima-eval --output-root <external-private-evidence> --timeout 1800"
+    "npm run lint; npm run test:all (versioned exact-staged-tree commit hook)",
+    "node --test docs/features/model-setup/tests/TC-001.test.js docs/features/model-setup/tests/TC-002.test.js",
+    "npm run test:core:hermes",
+    "npm run build:ui:check",
+    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-hub9 --image sha256:b08858925b1750ebe2b4eb5018ab63b4dcb09c0e82514cfcbe89bc2d87e1f0bc --expected-architecture arm64",
+    "gitleaks git --log-opts=4f7160b..HEAD --redact --no-banner"
   ],
-  "observations": "Exact tree439b31fe6e6fbe28c2cc93c4c5d56966f6015d5f independently approved. Full lint and small/medium gate passed, including every automated spec case, 208 Python tests (9 existing platform skips) and six real-Hermes/aimock cases. Focused API/CLI/transport/container43/43 passed. Every API resource/method class and alias rejects missing/wrong credentials before dispatch; Basic and Bearer share authority and response schemas, removed operator paths404 after authentication, trusted Hub channels delegate only after metadata checks, public tunnels inject no credentials. Actual Chromium new/existing chat, incremental SSE, reload and Hub/runtime cases16/16 passed. Native arm64 Docker TC003/004 passed image sha256:deefd94f0fb3a6006d6b3f58b24bdf7c3e2d99e43288e9995e9f88f23b4162f4, authenticated COM/health, unauthenticated denial, replacement/retained state, negative startup, shutdown3.46s and verified owned cleanup. Real model-backed Hermes Docker goals/tasks workflow3a3b9504f9c037b6eaf0d47a passed semantic and independent CLI verification, no infrastructure failure, cleanup verified. That workflow preceded documentation and test-title corrections only; runtime, skill sources and executable test assertions were unchanged afterward. This is the named workflow, not the whole skill eval inventory. No hosted staging rollout or staging E2E was performed."
+  "observations": "Self-reviewed final code9e11c34 integrated with main4f7160b: every NED API endpoint authenticates before dispatch; the trusted Hub bridge injects the private instance API credential. Setup rechecks live API authority after provider/profile awaits and before atomic commit. Full versioned commit hook lint/small/medium passed, including208 Python tests with9 existing skips and7 actual-Hermes tests. Fresh immutable model integration/browser7/7 and actual-Hermes7/7 passed, including API credential revocation during provider validation preventing a profile write. Running real Hermes SDK picks up inherited scoped Hub configuration and completes a chat turn against a synthetic Hub/model protocol boundary. UI captures1280/320px remain applicable; bundle check and Gitleaks pass. Native arm64 BuildKit container TC003/004 passed imageb0885892 with authenticated HTTP/perimeter, service replacement, retained state, negative startup,3.42second shutdown and verified owned cleanup. No paid inference, actual Hub/KMS integration, hosted OAuth consent, AMD64/EKS or staging model enablement claim. POSIX private writes only; Windows mutation fails closed pending ACL-backed support."
 }

@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -29,7 +30,7 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
     assert.ok(get.headers['content-security-policy'].includes("frame-ancestors 'none'")); assert.equal(get.headers['access-control-allow-origin'],undefined);
   }
   assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/health')).body),{status:'ok',service:'ned-api',version:1});
-  assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/capabilities')).body),{service:'ned-api',version:1,readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}});
+  assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/capabilities')).body),{service:'ned-api',version:1,readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true,modelSetup:true}});
   for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/v1/health',{headers,method:'POST'})).status,403);
   assert.equal((await request(app.url,'/api/v1/health',{headers:{Origin:app.url}})).status,200);
   for (const method of ['POST','PUT','PATCH','DELETE','OPTIONS']) { const res = await request(app.url,'/absent',{method}); assert.equal(res.status,405); assert.equal(res.headers.allow,'GET, HEAD'); }
@@ -37,10 +38,10 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
     const res = await request(app.url,path); assert.equal(res.status,404); assert.deepEqual(JSON.parse(res.body),{error:{code:'not_found',message:'Not found.'}});
   }
   assert.equal((await request(app.url,'/app.js?file=../package.json')).status,200);
-  const occupied = createCommunicatorServer({port}); await assert.rejects(occupied.listen(),/Unable to start NEDCOM/); await occupied.close();
+  const occupied = createCommunicatorServer({modelSetup:configuredModelSetup(),port}); await assert.rejects(occupied.listen(),/Unable to start NEDCOM/); await occupied.close();
   await Promise.all([request(app.url,'/'),request(app.url,'/api/v1/health')]);
   await app.close(); await app.close(); assert.equal(app.url,null);
   await assert.rejects(request(`http://127.0.0.1:${port}`,'/'));
-  const restarted = createCommunicatorServer({port}); t.after(() => restarted.close()); await restarted.listen();
+  const restarted = createCommunicatorServer({modelSetup:configuredModelSetup(),port}); t.after(() => restarted.close()); await restarted.listen();
   assert.deepEqual(await readdir(directory),['sentinel.txt']); assert.equal(await readFile(join(directory,'sentinel.txt'),'utf8'),'unchanged');
 });

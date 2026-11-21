@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,7 +26,7 @@ test('TC-042: tracked intervals stop at blockers, resume once and never substitu
 
 test('TC-042: delivery metadata is validated, idempotent, durable and project scoped over real HTTP',async t=>{
   const f=await domainFixture(t);const task=await f.core.createTask(f.projectId,{title:'Improve checkout',description:'Business impact fallback'},'task');
-  const app=createCommunicatorServer({databasePath:f.databasePath,home:f.root,env:{}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),databasePath:f.databasePath,home:f.root,env:{}});await app.listen();t.after(()=>app.close());
   const path=`/api/core/v1/projects/${f.projectId}/tasks/${task.id}/delivery`;
   const credential=loadOperatorCredential({home:f.root,env:{}});
   const image=await sharp({create:{width:4,height:4,channels:3,background:'#fff'}}).png().toBuffer();
@@ -59,7 +60,7 @@ test('TC-042: attempts paginate and only persisted same-gateway session bindings
   assert.equal(readProjectWork(f.databasePath,f.projectId).items[0].delivery.outputs[0].id,'attempt-result');
   await f.core.stop(f.projectId,attempt.id,{},'stop-original');
   for(let index=0;index<21;index++){const queued=await f.core.createAttempt(f.projectId,task.id,{instructions:'Do not execute'},`extra-${index}`);await f.core.stop(f.projectId,queued.id,{},`stop-${index}`);}
-  const app=createCommunicatorServer({databasePath:f.databasePath,home:f.root,env:{},gateway});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),databasePath:f.databasePath,home:f.root,env:{},gateway});await app.listen();t.after(()=>app.close());
   const root=`/api/v1/projects/${f.projectId}/tasks/${task.id}`;
   const attempts=await(await fetch(app.url+root)).json();assert.equal(attempts.attempts[0].number,22);assert.equal(attempts.attempts.length,20);assert.equal(attempts.nextOffset,20);
   const older=await(await fetch(app.url+root+'?offset=20')).json();assert.deepEqual(older.attempts.map(row=>row.number),[2,1]);assert.equal(older.nextOffset,null);

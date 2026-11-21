@@ -65,7 +65,7 @@ async function runCommunicator(flags, io = console, dependencies = {}) {
       if(!stopping)io.log(`NEDCOM public (authenticated): ${tunnel.url}`);
     }
     if (!stopping) { io.log(`NEDCOM: ${url}`); dependencies.logger?.event('listening',{port:new URL(url).port}); }
-    if (hub && !stopping) hubConnection = (dependencies.startHub || startHubConnection)(hub,url,{apiCredential:()=>app.apiCredential,logger:dependencies.logger,onStatus:status=>{io.log(`NED Hub: ${status}`);dependencies.logger?.event('hub',{status:['online','connecting','offline','reconnecting'].includes(status)?status:'connection-change'});}});
+    if (hub && !stopping) hubConnection = (dependencies.startHub || startHubConnection)(hub,url,{apiCredential:()=>app.apiCredential,onRegistered:registration=>app.setHubRegistration?.(registration),logger:dependencies.logger,onStatus:status=>{io.log(`NED Hub: ${status}`);dependencies.logger?.event('hub',{status:['online','connecting','offline','reconnecting'].includes(status)?status:'connection-change'});}});
     await (tunnel?Promise.race([stopped,tunnel.failure.then(()=>{throw new Error('Public tunnel stopped.');})]):stopped);
     await app.close();
     return 0;

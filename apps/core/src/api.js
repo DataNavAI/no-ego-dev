@@ -9,8 +9,9 @@ import {requestDiagnostic,requestPhase} from './protocol/request-diagnostic.js';
 export function createNedApiHandler({boundOrigin,operatorService,operatorCredential,browserEnabled=true,legacyInvalidStatus=400,...options}={}){
   options.databasePath=operatorService?.database?.filename??options.database?.filename??options.databasePath??resolveDatabasePath(options);
   let operatorPending,operatorHandler,ownedService,closing=false,closePromise;
-  const browser=browserEnabled?createBrowserApi(options):null;
   const credential=()=>operatorCredential??loadApiCredential(options);
+  const apiAuthenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
+  const browser=browserEnabled?createBrowserApi({...options,apiAuthenticated}):null;
   const operator=()=>operatorPending??=(async()=>{
     const service=operatorService??await createCoreService(options);
     if(!operatorService)ownedService=service;
@@ -58,8 +59,9 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
     finally{req.url=original;}
     return true;
   };
+  handler.setHubRegistration=input=>browser?.setHubRegistration(input);
   handler.credential=credential;
   handler.authenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
-  handler.close=()=>closePromise??=(async()=>{closing=true;browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})();
+  handler.close=()=>closePromise??=(async()=>{closing=true;await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})();
   return handler;
 }

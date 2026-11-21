@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,7 +25,7 @@ test('TC-007: authenticated Hermes sessions, pagination and safe mutation perime
     else res.end(JSON.stringify({data:[{id:'s1',title:'First',private:'hidden'}],has_more:true}));
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-key'}});
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-key'}});
   await app.listen();t.after(()=>app.close());
   const request=(path='',body,headers={})=>fetch(app.url+'/api/v1/chat/sessions'+path,{...(body!==undefined?{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json',...headers},body:JSON.stringify(body)}:{})});
   assert.deepEqual(await(await request()).json(),{data:[{id:'s1',title:'First'}],has_more:true});
@@ -50,9 +51,9 @@ test('TC-007: authenticated Hermes sessions, pagination and safe mutation perime
   const failure=await request('?offset=999');assert.equal(failure.status,503);assert.ok(!(await failure.text()).includes('private'));
   for(const offset of [998,997,996]){const failure=await request(`?offset=${offset}`);assert.equal(failure.status,503);assert.deepEqual(await failure.json(),{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}});}
   for(const offset of [995,994])assert.equal((await request(`/s1/messages?offset=${offset}`)).status,503);
-  const absent=createCommunicatorServer({gateway:{key:''}});await absent.listen();t.after(()=>absent.close());
+  const absent=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{key:''}});await absent.listen();t.after(()=>absent.close());
   assert.equal((await fetch(absent.url+'/api/v1/chat/sessions')).status,503);
-  for(const url of ['https://example.com','http://localhost:8642','http://127.0.0.1:8642/path','http://127.0.0.1:8642?key=x'])assert.throws(()=>createCommunicatorServer({gateway:{url}}));
+  for(const url of ['https://example.com','http://localhost:8642','http://127.0.0.1:8642/path','http://127.0.0.1:8642?key=x'])assert.throws(()=>createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url}}));
 });
 
 test('TC-007: long history windows preserve chronological paging and cap DOM data',()=>{

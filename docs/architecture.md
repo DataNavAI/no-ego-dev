@@ -93,3 +93,34 @@ analytics provider or personal-data collection. Stream tests use deterministic h
 chunks; ownership/idempotency tests use real SQLite/HTTP. Native container tests,
 independent review and installed-local readback establish release acceptance, not
 merely the presence of these documents. Live/paid provider acceptance is separate.
+
+## Model configuration and account inheritance
+
+Core's model-setup service owns the NED API v1 status/setup family and the
+pre-chat readiness gate. COM owns the provider prompt and reports authenticated
+Hub registration internally; it does not introduce another backend/API. Existing
+credential-configured Hermes profiles take precedence. Fresh profiles can inherit
+the owning Hub default after exact instance registration. The Hub account service
+stores encrypted provider grants and proxies fixed provider inference; a native
+profile stores only its own scoped Hub capability, private0600 YAML and an opaque
+connection/model version marker. No provider refresh token is cloned into hosted
+containers. Every inherited turn rechecks Hub metadata/authentication; current
+model/capability updates precede Hermes execution. Permanent Hub origin/instance
+identity and generation-scoped credential checks remain Hub-owned.
+
+Private local setup supports API keys against fixed provider credential endpoints,
+then performs atomic profile replacement under a private lock after snapshot and
+one-use intent checks. Unrelated configuration/workspaces are preserved; explicit
+replacement and readback are separate from automatic inheritance. Malformed,
+symlinked or unsafe credential files fail closed. The public quick tunnel never injects authority; setup requires the same NED API
+authentication plus Origin/privacy guards. Backend-only coordination listeners do not mount it. Setup and COM/Hermes
+health are distinct. Existing history can load while a missing provider disables
+sending; drafts survive setup. Provider rejection/revocation offers reconfiguration
+through Hub or the private local control, without replaying the failed message.
+
+Supported Hub OAuth and hosted registration eligibility remain Hub-owned; OpenAI
+API keys do not imply ChatGPT plan access. Current implementation/acceptance lives
+in [model setup](features/model-setup/SPEC.md), no-ego-dev#182 and Hub#135–137. Actual
+Hermes SDK, real container/EKS and live provider consent are separate evidence;
+source merge does not certify staging enablement. No new telemetry receives raw
+keys, grants, chat content or profile data.

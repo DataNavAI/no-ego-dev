@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -34,7 +35,7 @@ test('TC-030: HTTP gateway failure records phase and response status without ups
   const provider=http.createServer((_req,res)=>{res.writeHead(503);res.end('PRIVATE provider failure');});
   await new Promise(resolve=>provider.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>provider.close(resolve)));
   const events=[];
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${provider.address().port}`,key:'SECRET synthetic key'},logger:{event:(event,details)=>events.push({event,...details})}});
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${provider.address().port}`,key:'SECRET synthetic key'},logger:{event:(event,details)=>events.push({event,...details})}});
   await app.listen();t.after(()=>app.close());
   const response=await fetch(app.url+'/api/v1/chat/sessions/fixed',{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:'{}'});
   assert.equal(response.status,503);await response.body.cancel();

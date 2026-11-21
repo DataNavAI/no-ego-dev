@@ -1,5 +1,5 @@
 export const NED_API_BASE='/api/v1';
-const browserFamilies=new Set(['health','capabilities','projects','chat','secrets','workspace','activity']);
+const browserFamilies=new Set(['health','capabilities','projects','chat','secrets','model-setup','workspace','activity']);
 
 export function nedApiPath(raw='',method='GET'){
   let pathname=typeof raw==='string'?raw.split('?')[0]:'',valid=true;

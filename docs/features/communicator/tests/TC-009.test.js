@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,7 +21,7 @@ test('TC-009: default profile discovery connects without NED overrides and rerea
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
   const port=gateway.address().port;
   await writeFile(envfile,`API_SERVER_KEY='synthetic-host-key'\nAPI_SERVER_PORT=${port}\nOTHER_SECRET=unrelated\n`,{mode:0o600});
-  const app=createCommunicatorServer({gateway:{env:{},home}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{env:{},home}});await app.listen();t.after(()=>app.close());
   const first=await fetch(app.url+'/api/v1/chat/sessions');assert.equal(first.status,200);
   assert.deepEqual(await first.json(),{data:[{id:'host-session',title:'Host chat'}],has_more:false});
   assert.deepEqual(observations[0],{path:'/api/sessions?limit=50&offset=0',key:'Bearer synthetic-host-key'});

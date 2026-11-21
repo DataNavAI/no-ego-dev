@@ -32,3 +32,18 @@
 #chat-activity{min-height:44px}
 #chat-send[data-state="stop"] svg path,#chat-send[data-state="stopping"] svg path{d:path('M4 4h8v8H4z');fill:currentColor;stroke:none}
 #chat-send[data-state="stopping"]{opacity:.6}
+
+#model-setup { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 12px; max-height: 55dvh; overflow: auto; }
+#model-setup[hidden], #model-setup [hidden] { display: none; }
+#model-setup h2 { font-size: 16px; margin: 0 0 8px; }
+#model-setup p { font-size: 14px; margin: 8px 0; }
+#model-setup-form { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+.model-field { display: grid; gap: 4px; min-width: 0; font-size: 14px; }
+.model-key-field { grid-column: 1 / -1; }
+#model-setup input, #model-setup select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.model-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+#model-setup button { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--hover); }
+#model-connect { background: var(--text)!important; color: var(--surface)!important; }
+#model-connect:disabled { background: var(--hover)!important; color: var(--muted)!important; }
+#model-hub-link { display: inline-flex; align-items: center; min-height: 44px; }
+#model-setup-toggle { display: block; margin: 0 0 4px auto; min-height: 36px; border: 0; border-radius: 8px; padding: 4px 8px; background: transparent; color: var(--muted); font-size: 12px; }

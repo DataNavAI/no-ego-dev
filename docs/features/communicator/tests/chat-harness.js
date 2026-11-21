@@ -1,3 +1,4 @@
+import {mountModelSetup} from '../../../../apps/com/src/public/model-setup.js';
 import {mountTaskReferences} from '../../../../apps/com/src/public/task-references.js';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
@@ -45,7 +46,7 @@ export async function chatHarness({reducedMotion=false,media=false,references=fa
   const fetch=(url,options)=>new Promise((resolve,reject)=>requests.push({url,options,resolve,reject}));
   const source=await readFile(new URL('../../../../apps/com/src/public/chat-ui.js',import.meta.url),'utf8');
   const timers=[];
-  runInNewContext(source.replace(/^import[^\n]+\n/gm,'').replaceAll('export function ','function ')+'\nmountChat();',{document,fetch,validateMessagePage,renderMessageContent,messageParts,mountComposerMedia,mountTaskReferences,consumeTurnStream,recordChatDiagnostic,recordRequestDiagnostic,classifyFailureBody,readFailureBody,setTimeout:(callback,delay)=>timers.push({callback,delay}),Option:class{constructor(label,value){this.textContent=label;this.value=value;}},encodeURIComponent,AbortSignal,matchMedia:()=>({matches:reducedMotion})});
+  runInNewContext(source.replace(/^import[^\n]+\n/gm,'').replaceAll('export function ','function ')+'\nmountChat();',{document,fetch,mountModelSetup,validateMessagePage,renderMessageContent,messageParts,mountComposerMedia,mountTaskReferences,consumeTurnStream,recordChatDiagnostic,recordRequestDiagnostic,classifyFailureBody,readFailureBody,setTimeout:(callback,delay)=>timers.push({callback,delay}),Option:class{constructor(label,value){this.textContent=label;this.value=value;}},encodeURIComponent,AbortSignal,matchMedia:()=>({matches:reducedMotion})});
   const flush=()=>new Promise(resolve=>setImmediate(resolve));
   let streaming;
   async function respond(data,status=200){

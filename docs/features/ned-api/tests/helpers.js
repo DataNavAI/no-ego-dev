@@ -1,3 +1,4 @@
+import {configuredModelSetup} from '../../communicator/tests/model-fixture.js';
 import {mkdtemp,mkdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -14,7 +15,7 @@ export async function apiFixture(context,{kind='com',chatGateway,backendOnly=fal
   let app,task;
   context.after(async()=>{await app?.close();task?.close();await rm(root,{recursive:true,force:true});});
   task=await createTaskService({project,databaseUrl:databasePath,actor:'agent:api-test'});await task.initialize();
-  app=kind==='core'?await createCoreServer({home,env,databasePath,chatGateway,backendOnly}):createCommunicatorServer({home,env,databasePath,gateway:chatGateway,secretsEnabled});
+  app=kind==='core'?await createCoreServer({modelSetup:configuredModelSetup(),home,env,databasePath,chatGateway,backendOnly}):createCommunicatorServer({modelSetup:configuredModelSetup(),home,env,databasePath,gateway:chatGateway,secretsEnabled});
   await app.listen();
   const credential=()=>loadOperatorCredential({home,env});
   const request=(route,{method='GET',body,headers={},authenticated=true}={})=>fetch(app.url+route,{method,headers:{...(authenticated?{authorization:'Bearer '+credential()}:{}),...(body===undefined?{}:{'content-type':'application/json'}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)}),redirect:'manual',signal:AbortSignal.timeout(10000)});

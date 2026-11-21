@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,7 +24,7 @@ test('TC-015: explicit configuration and COM readiness precede registration; cle
 });
 
 test('TC-015: authenticated retry reaches real COM and rejects foreign origins without credential forwarding',async t=>{
-  const com=createCommunicatorServer({databasePath:'/nonexistent/synthetic.sqlite'});const local=await com.listen();t.after(()=>com.close());
+  const com=createCommunicatorServer({modelSetup:configuredModelSetup(),databasePath:'/nonexistent/synthetic.sqlite'});const local=await com.listen();t.after(()=>com.close());
   let calls=0;const registrations=[];
   const server=http.createServer(async(req,res)=>{
     calls++;assert.equal(req.url,'/api/instances');assert.equal(req.headers.authorization,`Bearer ${token}`);
@@ -103,7 +104,7 @@ test('TC-015: permanent slug admission matches Hub and local origin mode is expl
 
 test('TC-015: normal and isolated localhost Hub modes stream real COM with exact Origin checks',async t=>{
   for(const isolated of [false,true]) await t.test(isolated?'explicit isolated localhost':'default shared localhost',async t=>{
-    const com=createCommunicatorServer({databasePath:'/nonexistent/synthetic.sqlite'});const local=await com.listen();t.after(()=>com.close());
+    const com=createCommunicatorServer({modelSetup:configuredModelSetup(),databasePath:'/nonexistent/synthetic.sqlite'});const local=await com.listen();t.after(()=>com.close());
     const server=http.createServer((_req,res)=>res.end(JSON.stringify({tunnelUrl:`ws://localhost:${server.address().port}/tunnel/control?slug=fixture`})));
     await new Promise(resolve=>server.listen(0,resolve));t.after(()=>new Promise(resolve=>server.close(resolve)));
     const port=server.address().port;const origin=`http://localhost:${port}`;const expectedOrigin=`http://${isolated?'fixture.':''}localhost:${port}`;
