@@ -24,7 +24,10 @@ test('TC-003: Settings stores and reveals secrets without chat or browser persis
   await page.clock.fastForward(30000);await expect(page.locator('.secret-revealed')).toHaveValue('');
   await page.getByRole('button',{name:'Show or hide ADMIN_PASSWORD'}).click();await expect(page.locator('.secret-revealed')).toHaveValue('synthetic-replacement');
   await page.getByRole('button',{name:'Show or hide ADMIN_PASSWORD'}).click();await expect(page.locator('.secret-revealed')).toHaveValue('');
-  assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage})+JSON.stringify({...sessionStorage})), '{}{}');
+  const saved=await page.evaluate(()=>({local:{...localStorage},session:{...sessionStorage}}));
+  assert.deepEqual(Object.keys(saved.local),['ned.instance-access.v1']);
+  assert.deepEqual(saved.session,{});
+  assert.equal(JSON.stringify(saved).includes('synthetic-'),false,'vault values never enter browser storage');
   assert.equal((await page.locator('#transcript').textContent()).includes('synthetic-'),false);
   await page.setViewportSize({width:390,height:844});
   await page.locator('#navigation-open').click();await page.getByRole('tab',{name:'Settings',exact:true}).click();

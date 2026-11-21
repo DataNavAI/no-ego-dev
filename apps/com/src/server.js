@@ -32,9 +32,10 @@ const vendorAssets=new Map([
   ['/vendor/marked.js',import.meta.resolve('marked')],
   ['/vendor/dompurify.js',new URL('./purify.es.mjs',import.meta.resolve('dompurify')).href],
 ]);
-const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
+const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
 
 const protocolAssets=new Map([['/history.js','history.js'],['/request-diagnostic.js','request-diagnostic.js'],['/secret-events.js','secret-events.js']]);
+for(const [name,type] of [['api-client.js','text/javascript'],['auth-entry.js','text/javascript'],['auth.css','text/css']])assets.set('/'+name,[name,type]);
 export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,home,env=process.env,gateway,logger,secretsEnabled=true,initializeDatabase=false,basicCredentials,modelSetup}={}){
   if(host!=='127.0.0.1'||!Number.isInteger(port)||port<0||port>65535)throw new Error('Invalid NEDCOM address.');
   databasePath??=resolveDatabasePath({home,env});
@@ -47,10 +48,6 @@ export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,h
     if(await api(req,res))return;
     if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});
     const pathname=req.url.split('?')[0];
-    if(pathname==='/'){
-      try{if(!api.authenticated(req))return error(401,'unauthorized','NED sign-in required.',{'www-authenticate':'Basic realm="NED", charset="UTF-8"'});}
-      catch{return error(503,'api_unavailable','API authentication unavailable.');}
-    }
     if(protocolAssets.has(pathname)){
       try{return send(200,'text/javascript',await readFile(new URL('../../core/src/protocol/'+protocolAssets.get(pathname),import.meta.url)));}
       catch{return error(500,'internal_error','Unable to read NEDCOM resources.');}

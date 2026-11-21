@@ -9,7 +9,7 @@ for(const kind of ['core','com'])test(`TC-001: ${kind} authenticates every API r
   for(const route of ['/api/v1','/api/v1/health','/api/v1/capabilities','/api/v1/projects','/api/v1/workspace/events','/api/v1/activity/events?project='+fixture.projectId,'/api/v1/chat/sessions','/api/v1/secrets','/api/v1/context','/api/v1/task-management','/api/v1/coordinator/reconcile','/api/v1/project-registrations','/api/health','/api/projects','/api/core/v1/projects','/api/v1/unknown']){
     for(const method of ['GET','HEAD','POST']){
       const response=await fixture.request(route,{authenticated:false,method,headers:{origin:fixture.app.url}});
-      assert.equal(response.status,401,`${method} ${route}`);assert.match(response.headers.get('www-authenticate'),/^Basic realm="NED"/);
+      assert.equal(response.status,401,`${method} ${route}`);assert.match(response.headers.get('www-authenticate'),/^Bearer realm="NED"/);
       const text=await response.text();assert.equal(text.includes(fixture.credential()),false);
     }
   }
@@ -24,7 +24,7 @@ for(const kind of ['core','com'])test(`TC-001: ${kind} authenticates every API r
   const removed=await fixture.request('/api/v1/operator/projects');assert.equal(removed.status,404);await removed.body.cancel();
   assert.deepEqual(await fixture.task.getItems(),[]);
   if(kind==='com'){
-    const document=await fetch(fixture.app.url);assert.equal(document.status,401);await document.body.cancel();
+    const document=await fetch(fixture.app.url);assert.equal(document.status,200);const shell=await document.text();assert.match(shell,/id="access-gate"/);assert.equal(shell.includes(fixture.credential()),false);
     const signedIn=await fetch(fixture.app.url,{headers:{authorization:basic}});assert.equal(signedIn.status,200);await signedIn.body.cancel();
   }
 });

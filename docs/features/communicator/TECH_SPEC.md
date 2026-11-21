@@ -15,8 +15,8 @@ Export createCommunicatorServer({host = '127.0.0.1', port = 0} = {}) returning {
 ## Authenticated legacy HTTP baseline
 
 The routes below retain historical payloads as compatibility aliases. Every API
-requires instance authentication; COM document navigation challenges with HTTP
-Basic. Exact Host/Origin validation precedes authentication, then resource/method
+requires instance authentication; the public COM shell validates an entered token
+before loading data. Exact Host/Origin validation precedes authentication, then resource/method
 dispatch. Missing/wrong credentials401; no read-only exception. The authoritative
 canonical routes, shapes and authentication are [NED API v1](../../api.md); its
 contract supersedes this original read-only baseline and the later extensions.

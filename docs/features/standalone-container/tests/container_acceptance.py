@@ -80,9 +80,11 @@ def main():
         with tempfile.TemporaryDirectory(prefix=identity + "-") as temp:
             envfile = Path(temp) / "runtime.env"
             password = secrets.token_urlsafe(32)
+            api_token = secrets.token_hex(32)
             envfile.touch(mode=0o600)
             envfile.write_text("HERMES_DASHBOARD_BASIC_AUTH_USERNAME=acceptance\n"
-                               "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=" + password + "\n")
+                               "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=" + password + "\n"
+                               "NED_API_TOKEN=" + api_token + "\n")
             com_origin = "http://127.0.0.1:8787"
 
             def launch():
@@ -140,6 +142,8 @@ def main():
                 assert get(dashboard + "/api/config")[0] == 200  # noqa: S101
                 assert get(com + "/api/health", {"Host": urllib.parse.urlsplit(com_origin).netloc})[0] == 401  # noqa: S101
                 assert com_get("/")[0] == 200  # noqa: S101
+                status, body = get(com + "/api/v1/auth/context", {"Host": urllib.parse.urlsplit(com_origin).netloc, "Authorization": "Bearer " + api_token})
+                assert status == 200 and len(json.loads(body)["instanceId"]) == 64  # noqa: S101
                 status, body = com_get("/api/health")
                 assert status == 200 and json.loads(body) == {"status": "ok", "service": "nedcom"}  # noqa: S101
                 for headers in ({"Host": "evil.example"}, {"Origin": "https://evil.example"}):

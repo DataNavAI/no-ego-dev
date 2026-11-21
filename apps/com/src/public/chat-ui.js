@@ -1,3 +1,4 @@
+import {apiFetch as fetch} from './api-client.js';
 import {mountModelSetup} from './model-setup.js';
 import {mountTaskReferences} from './task-references.js';
 import {validateMessagePage} from './history.js';
@@ -224,6 +225,7 @@ export function mountChat(libraries) {
     recordChatDiagnostic('ready');
     bottom(false);
   }
+  document.addEventListener('ned-auth-restored',()=>void action(initialize));
   element('older').addEventListener('click',()=>void loadOlder());
   element('newer').addEventListener('click',()=>void action(()=>history('newer')));
   element('latest').addEventListener('click',()=>void action(async()=>{await history();await fillUnderfilled();bottom(true);}));

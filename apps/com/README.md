@@ -12,8 +12,8 @@ Run `npm run build:ui` after changing UI controls; `npm run build:ui:check` veri
 committed vendor assets match the pinned dependency and source.
 
 Every API requires authentication, including local health/read requests and legacy
-aliases. Browser navigation challenges with standard HTTP Basic: username `ned`,
-password the selected runtime's private `.ned/core/operator-token` value. Keep that
+aliases. The public browser shell requests the selected runtime's private
+`.ned/core/operator-token` value and remembers validated access. Keep that
 key private; never put it in a URL or commit it. CLI uses bearer authentication
 automatically. Authenticated Hub connections delegate instance access; public
 quick tunnels still require credentials. See the

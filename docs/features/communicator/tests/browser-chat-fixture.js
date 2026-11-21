@@ -10,7 +10,7 @@ import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 export {expect};
-export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,viewport={width:1280,height:900}}={}){
+export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,viewport={width:1280,height:900},deferLogin=false}={}){
   const home=await mkdtemp(join(tmpdir(),'ned-chat-browser-'));
   let database,app,browser,gateway;
   t.after(async()=>{
@@ -59,7 +59,7 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
   await app.listen();
   try{browser=await chromium.launch({headless:true,channel:'chromium'});}
   catch(error){throw new Error('Chromium is required. Run npm ci && npx playwright install --with-deps chromium before chat E2E tests.',{cause:error});}
-  const page=await browser.newPage({viewport,httpCredentials:{username:'ned',password:app.apiCredential}});page.setDefaultTimeout(10000);
+  const page=await browser.newPage({viewport});page.setDefaultTimeout(10000);
   const errors=[],network=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',request=>network.push(new URL(request.url()).pathname));
@@ -68,8 +68,9 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
     return route.continue();
   });
   await page.goto(app.url);
+  if(!deferLogin){await page.locator('#access-token').fill(app.apiCredential);await page.locator('#access-submit').click();}
   const draft=page.locator('#chat-message');
-  return {home,page,draft,messages,requests,turns,errors,network,setHistoryFailure(value){failHistory=value;},async ready(){await expect(page.locator('#chat-status')).toHaveText('');await expect(draft).toBeEnabled();assert.deepEqual(errors,[]);},async send(input){
+  return {home,page,draft,messages,requests,turns,errors,network,accessToken:app.apiCredential,setHistoryFailure(value){failHistory=value;},async ready(){await expect(page.locator('#chat-status')).toHaveText('');await expect(draft).toBeEnabled();assert.deepEqual(errors,[]);},async send(input){
     await draft.fill(input);await draft.press('Enter');
     await expect(draft).toHaveValue('');await expect(draft).toBeEnabled();
     await expect(page.locator('#transcript .user-message').last()).toContainText(input);

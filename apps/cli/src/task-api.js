@@ -1,4 +1,4 @@
-import {createHash,randomUUID,randomBytes} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
 import {resolveRuntimeHome} from '../../../src/runtime-home.js';
@@ -25,7 +25,7 @@ export async function createTaskApiClient({project=process.cwd(),actor=`human:${
   let origin=configured===undefined?null:apiOrigin(configured);
   const runtime=resolveRuntimeHome({home,env});
   const database=resolveDatabasePath({home,env,databaseUrl});
-  const credential=origin?loadOperatorCredential({home,env}):randomBytes(32).toString('hex');
+  const credential=loadOperatorCredential({home,env});
   let server;
   async function request(route,input){
     const key=requestId??randomUUID();

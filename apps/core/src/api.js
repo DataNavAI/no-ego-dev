@@ -3,7 +3,7 @@ import {resolveDatabasePath} from '../../../src/database.js';
 import {createBrowserApi} from './browser-api.js';
 import {createCoreService} from './runtime-service.js';
 import {createCoreHandler} from './http.js';
-import {authenticated,loadApiCredential} from './auth.js';
+import {authenticated,loadApiCredential,loadApiInstanceId} from './auth.js';
 import {requestDiagnostic,requestPhase} from './protocol/request-diagnostic.js';
 
 export function createNedApiHandler({boundOrigin,operatorService,operatorCredential,browserEnabled=true,legacyInvalidStatus=400,...options}={}){
@@ -30,10 +30,15 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
     const origin=typeof boundOrigin==='function'?boundOrigin():boundOrigin;
     if(!origin||req.headers.host!==new URL(origin).host||(req.headers.origin!==undefined&&req.headers.origin!==origin))return error(403,'forbidden','Access forbidden.'),true;
     let token;
-    try{token=credential();if(!authenticated(req.headers.authorization,token,options.basicCredentials)){send(401,{error:{code:'unauthorized',message:'NED API authentication required.'}},{'www-authenticate':'Basic realm="NED", charset="UTF-8"'});return true;}}
+    try{token=credential();if(!authenticated(req.headers.authorization,token,options.basicCredentials)){send(401,{error:{code:'unauthorized',message:'NED API authentication required.'}},{'www-authenticate':'Bearer realm="NED"'});return true;}}
     catch{return error(503,'api_unavailable','API authentication unavailable.'),true;}
     if(!route.valid){const status=req.url.startsWith('/api/v1')?400:legacyInvalidStatus;error(status,status===404?'not_found':'invalid_request',status===404?'Not found.':'Invalid request path.');return true;}
     if(route.kind==='unknown')return error(404,'not_found','Not found.'),true;
+    if(route.handler==='authentication'){
+      if(req.url!=='/api/v1/auth/context')return error(404,'not_found','Not found.'),true;
+      if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.'),true;
+      try{send(200,{instanceId:loadApiInstanceId(options)});}catch{error(503,'api_unavailable','Instance identity unavailable.');}return true;
+    }
     if(route.handler==='coordination'){
       try{
         const original=req.url,authorization=req.headers.authorization;req.url=route.target;req.headers.authorization=`Bearer ${token}`;

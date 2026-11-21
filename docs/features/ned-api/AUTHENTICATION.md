@@ -21,12 +21,16 @@ envelopes. Execution capabilities have the distinct resource
 resources only; presentation resources still404 after authentication. Dispatch
 never depends on whether a caller supplied Basic or Bearer authentication.
 
-CLI uses the existing private instance key as a bearer credential. Local browser
-navigation uses standard HTTP Basic authentication, username `ned` and that same
-key; the browser handles credentials for fetch, uploads and EventSource without
-putting a secret into JavaScript, local storage or URLs. The COM document itself
-challenges unauthenticated navigation. Credentials never appear in readiness logs.
-The existing private token location remains compatible. Container COM also accepts
+CLI uses the persistent private instance key as a bearer credential, including
+command-scoped API servers. The public COM shell requests a token on first use,
+validates it against authenticated `/api/v1/auth/context`, and remembers it in
+origin/instance-bound local storage. Forget removes it and aborts active requests;
+401 returns to sign-in without replaying messages. When storage is unavailable,
+access lasts for the current tab and a notice explains this. Fetch-based HTTP
+streams attach Bearer headers and retain incremental delivery. No token is
+embedded in shipped assets, URLs or readiness logs. See [bootstrap contract](INSTANCE-TOKENS.md)
+for environment/file injection and safe failure behavior. Legacy Basic username
+`ned` with the same key remains accepted for integrations. Container COM also accepts
 its explicitly configured COM Basic username/password (or plaintext dashboard
 credentials when no separate COM pair is configured); a configured password hash
 alone does not become a plaintext credential. The private instance key remains
@@ -38,13 +42,13 @@ channel metadata/Origin validation. Client headers cannot establish that trust.
 Public quick tunnels never inject authority: the browser must authenticate, and
 the existing Host/Origin protections still apply. Authenticated owners can use
 the same resources through either transport. Unknown and malformed paths remain
-fail-closed. Authentication failures return401 plus a Basic challenge and a bounded
+fail-closed. Authentication failures return401 plus a Bearer challenge and a bounded
 error, without forwarding to a gateway or starting coordination work.
 
 Verification extends TC-001/TC-002: unauthenticated and wrong-credential GET,
 HEAD, mutations, SSE, discovery, health and aliases fail; valid bearer and Basic
 authenticate equivalent resources; no token leaks in errors/assets/logs; browser
-new/existing chat flows run with actual HTTP credentials; trusted Hub forwarding
+new/existing chat flows run with the actual token-entry screen; trusted Hub forwarding
 and public-tunnel authentication are tested separately. Existing CSRF, ownership,
 streaming, idempotency and runtime isolation cases remain required. Native Docker
 health checks and acceptance authenticate explicitly. Full small/medium, native

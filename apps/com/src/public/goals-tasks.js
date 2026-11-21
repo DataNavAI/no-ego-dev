@@ -1,3 +1,4 @@
+import {hydrateOutput,openOutput} from './api-client.js';
 const states={working:'Working',ready:'Ready',blocked:'Blocked',done:'Done',planned:'Planned'};
 export const duration=seconds=>seconds===null||seconds===undefined?'Not recorded':seconds<60?'<1m':seconds<3600?`${Math.floor(seconds/60)}m`:`${Math.floor(seconds/3600)}h ${Math.floor(seconds%3600/60)}m`;
 export function goalGroups(items){
@@ -34,7 +35,7 @@ export function mountGoalTasks({document,fetch}){
       const outputs=node('div',undefined,'task-outputs');
       for(const output of data.outputs||[]){
         const preview=node('details');preview.append(node('summary',output.title));
-        if(output.kind==='image'){const image=node('img');image.alt=output.title;image.loading='lazy';image.src=`${root}/outputs/${encodeURIComponent(output.id)}`;preview.append(image);}
+        if(output.kind==='image'){const image=node('img');image.alt=output.title;image.loading='lazy';preview.append(image);hydrateOutput(image,`${root}/outputs/${encodeURIComponent(output.id)}`);}
         else if(output.kind==='document')preview.append(node('pre',output.text||''));
         outputs.append(preview);
       }
@@ -105,7 +106,8 @@ export function mountGoalTasks({document,fetch}){
         for(const output of delivery.outputs||[]){
           const preview=node('a',output.title,'delivery-output');preview.href=`${base(item.id)}/outputs/${encodeURIComponent(output.id)}`;preview.target='_blank';preview.rel='noopener noreferrer';
           preview.setAttribute('aria-label',`${output.title} (opens in a new tab)`);
-          if(output.kind==='image'){const image=node('img');image.src=preview.href;image.alt='';image.loading='lazy';preview.prepend(image);}card.append(preview);
+          const resource=`${base(item.id)}/outputs/${encodeURIComponent(output.id)}`;preview.addEventListener('click',event=>void openOutput(event,resource));
+          if(output.kind==='image'){const image=node('img');image.alt='';image.loading='lazy';preview.prepend(image);hydrateOutput(image,resource);}card.append(preview);
         }
         const previous=retained.get(item.id),signature=JSON.stringify([delivery.revision,delivery.updatedAt,delivery.executionRevision]);
         if(previous){if(previous.dataset.signature!==signature){previous.dataset.signature=signature;if(previous.open)void taskDetails(item,previous.lastElementChild,0,focusKey);else previous.lastElementChild.replaceChildren();}card.append(previous);(item.status==='done'?completed:section).append(card);continue;}

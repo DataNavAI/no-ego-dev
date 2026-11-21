@@ -1,3 +1,4 @@
+import {apiFetch} from './api-client.js';
 export function mountSettings({document,fetch:request=globalThis.fetch,setTimeout:later=globalThis.setTimeout,clearTimeout:cancel=globalThis.clearTimeout}={}){
   const panel=document.getElementById('settings');if(!panel)return;
   const form=document.getElementById('secret-form'),key=document.getElementById('secret-key'),value=document.getElementById('secret-value'),status=document.getElementById('secret-status'),list=document.getElementById('secret-list'),retry=document.getElementById('secret-retry');
@@ -51,4 +52,4 @@ export function mountSettings({document,fetch:request=globalThis.fetch,setTimeou
   globalThis.addEventListener?.('pagehide',()=>{generation++;hideValues();value.value='';});
   return {clear:change};
 }
-if(typeof document!=='undefined')mountSettings({document});
+if(typeof document!=='undefined')mountSettings({document,fetch:apiFetch});
