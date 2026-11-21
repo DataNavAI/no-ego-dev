@@ -45,6 +45,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
   let hub,closed=false,queue=Promise.resolve();
   const serial=operation=>{const current=queue.then(()=>{if(closed)throw new ModelSetupError();return operation();});queue=current.catch(()=>{});return current;};
   async function fetchBound(url,options={}){
+    if(closed)throw new ModelSetupError();
     if(requests.size>=8)throw new ModelSetupError(429,'model_setup_busy');
     const abort=new AbortController();requests.add(abort);
     try{return await request(url,{...options,redirect:'error',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(10000)])});}
@@ -132,6 +133,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
     });
   }
   async function status(){
+    if(closed)throw new ModelSetupError();
     const deviceLogin=enabled&&process.platform!=='win32'&&await adapter.available();
     const identity=hub,current=await profile();if(identity!==hub)throw new ModelSetupError(409,'model_setup_changed');
     const settingsUrl=identity?identity.origin+'/?settings=model':null;
@@ -211,6 +213,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
       try{if(enabled)await prepare();}catch{/* Missing provider must not prevent registration/COM health. UI status remains truthful. */}
     },
     async configure(input,authorize=()=>true){
+      if(closed)throw new ModelSetupError();
       if(process.platform==='win32')throw new ModelSetupError(403,'model_setup_platform_unavailable');
       if([...logins.values()].some(j=>!j.finished))throw new ModelSetupError(409,'model_login_active');
       if(!enabled)throw new ModelSetupError(403,'model_setup_forbidden');

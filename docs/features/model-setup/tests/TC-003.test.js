@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,rm,readFile,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import {createHermesModelAdapter} from '../../../../apps/core/src/hermes-model.js';
 import {createModelSetup} from '../../../../apps/core/src/model-setup.js';
 
 const until=async(fn,predicate)=>{for(let i=0;i<1000;i++){const value=await fn();if(predicate(value))return value;await new Promise(r=>setImmediate(r));}throw Error('Expected state not reached');};
@@ -48,4 +49,12 @@ test('TC-003: cancellation retains its process slot until the owned child actual
   const models=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter});t.after(async()=>{for(const exit of exits)exit();await models.close();await rm(root,{recursive:true,force:true});});
   const request=async()=>models.startLogin({action:'login',nonce:(await models.status()).nonce,provider:'openai-codex',model:'fixture'},()=>true);
   const job=await request();await until(()=>models.login(job.id),j=>j.state==='waiting');const cancelling=models.cancelLogin(job.id);await assert.rejects(request(),e=>e.code==='model_login_active');assert.equal(started,1);for(const exit of exits)exit();await cancelling;
+});
+
+test('TC-003: closing the adapter before or during interpreter discovery cannot create a late process',async()=>{
+  for(const race of [false,true]){
+    const adapter=createHermesModelAdapter({env:{NED_HERMES_PYTHON:process.execPath},profile:tmpdir()});
+    if(race){const attempt=adapter.start({action:'inspect'});void attempt.catch(()=>{});await adapter.close();await assert.rejects(attempt,/closed/);}else{await adapter.close();await assert.rejects(adapter.start({action:'inspect'}),/closed/);}
+    assert.equal(await adapter.available(),false);
+  }
 });
