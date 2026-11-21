@@ -1,6 +1,6 @@
 {
-  "candidate_sha": "061507c3ac4ebdc03934f6896ed3df2c90d01926",
-  "tested_at": "2026-11-21T08:30:02.599348+00:00",
+  "candidate_sha": "9e11c34e5dfed15b2611701478225687720ce234",
+  "tested_at": "2026-11-21T08:52:13.346399+00:00",
   "environment": "macOS arm64, Node24.22.2, Chromium156; native arm64 Docker BuildKit on task-owned colima-hub9; pinned isolated Hermes6e07eb4 with aimock1.48.0",
   "result": "pass",
   "commands": [
@@ -8,8 +8,8 @@
     "node --test docs/features/model-setup/tests/TC-001.test.js docs/features/model-setup/tests/TC-002.test.js",
     "npm run test:core:hermes",
     "npm run build:ui:check",
-    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-hub9 --image sha256:3575f924f79d5cdf860384d4caf2cb4361e149b3c8f59a41365b6fd9b087f522 --expected-architecture arm64",
-    "gitleaks git --log-opts=3c89a54..HEAD --redact --no-banner"
+    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-hub9 --image sha256:b08858925b1750ebe2b4eb5018ab63b4dcb09c0e82514cfcbe89bc2d87e1f0bc --expected-architecture arm64",
+    "gitleaks git --log-opts=4f7160b..HEAD --redact --no-banner"
   ],
-  "observations": "Self-reviewed exact code061507c. Full Node/spec/medium gate passed, including208 Python tests with9 existing skips and7 actual-Hermes cases. Immutable post-commit model cases6/6 and actual-Hermes7/7 passed. Local and hosted setup browser journeys preserve drafts, clear keys, require readback and render at1280/320px; inspected captures. Actual running Hermes SDK picks up scoped Hub configuration after startup and completes a real chat turn through a synthetic Hub protocol/model boundary. It caught the new writer api-versus-api_mode defect before the corrected GREEN run; no provider grant enters inherited profiles. Native Docker TC003/004 passed image3575f924: authenticated HTTP/perimeter, complete profile/CLI, supervised replacement, retained state, negative startup,3.39second shutdown and verified owned cleanup. Initial local legacy-builder failures are retained privately: legacy Docker discarded post-VOLUME cleanup; installed BuildKit plugin was configured in the task-owned Docker config and the same immutable source passed without weakening startup checks. No paid inference, actual Hub/KMS integration, hosted OAuth consent, AMD64/EKS or staging deployment claimed by these local fixtures. POSIX private configuration only; Windows mutation fails closed pending ACL-backed support."
+  "observations": "Self-reviewed final code9e11c34 integrated with main4f7160b: every NED API endpoint authenticates before dispatch; the trusted Hub bridge injects the private instance API credential. Setup rechecks live API authority after provider/profile awaits and before atomic commit. Full versioned commit hook lint/small/medium passed, including208 Python tests with9 existing skips and7 actual-Hermes tests. Fresh immutable model integration/browser7/7 and actual-Hermes7/7 passed, including API credential revocation during provider validation preventing a profile write. Running real Hermes SDK picks up inherited scoped Hub configuration and completes a chat turn against a synthetic Hub/model protocol boundary. UI captures1280/320px remain applicable; bundle check and Gitleaks pass. Native arm64 BuildKit container TC003/004 passed imageb0885892 with authenticated HTTP/perimeter, service replacement, retained state, negative startup,3.42second shutdown and verified owned cleanup. No paid inference, actual Hub/KMS integration, hosted OAuth consent, AMD64/EKS or staging model enablement claim. POSIX private writes only; Windows mutation fails closed pending ACL-backed support."
 }
