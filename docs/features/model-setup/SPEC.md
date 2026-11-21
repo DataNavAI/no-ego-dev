@@ -1,6 +1,6 @@
 # Feature: Model setup and Hub inheritance
 
-Status: implemented source; release/cluster acceptance remains separate. Related: no-ego-dev#182, DataNavAI/ned-hub#135–137.
+Status: implemented source; release/cluster acceptance remains separate. Related: no-ego-dev#191, historical #182, DataNavAI/ned-hub#135–137.
 Canonical APIs: [NED API v1](../../api.md); [architecture](../../architecture.md).
 
 ## User outcome and scope
@@ -9,8 +9,8 @@ A user sees a provider setup prompt before sending chat unless the selected
 Hermes profile already has usable credential configuration. Preserve existing
 local configuration. A newly registered instance can inherit its owner's Hub
 account default, using only its own revocable Hub capability. Raw account
-provider keys/refresh grants stay in Hub. Hosted authentication takes place on
-the Hub control origin; local private setup can save an OpenAI/OpenRouter API key.
+provider keys/refresh grants stay in Hub. Both hosted and local instances can explicitly configure their own provider.
+OpenAI/OpenRouter keys retain the existing adapter; Gemini/Claude keys use the installed Hermes provider configuration. OpenAI device login delegates to Hermes, storing its own instance grant. Hub provider OAuth is retired; optional account API-key defaults remain.
 No OpenAI hosted ChatGPT OAuth eligibility or paid inference is implied.
 
 ## Requirements
@@ -31,16 +31,14 @@ No OpenAI hosted ChatGPT OAuth eligibility or paid inference is implied.
   stale-state detection. Repeated/uncertain writes require status readback.
 - FR-005: UI shows selected provider/model and authentication/recovery action when
   missing; configured users continue chat. Composer preserves drafts during setup.
-  Hosted users authenticate in Hub; no provider keys copied to hosted containers.
+  Hosted users can authenticate inside their own instance; inherited account keys stay in Hub.
 - FR-006: Bound file/body/provider operations and cleanup; reject symlinks and
   unsafe secret permissions; no arbitrary URL/subprocess or operator-key discovery.
 
 ## Critical user journeys
 
 ### CUJ-001: Configure before first chat
-A local user opens a fresh profile, selects OpenAI/OpenRouter and model, submits
-an API key, then chats. A hosted user follows Set up in NED Hub and checks the
-account connection afterward. Cancel/rejection leaves profile and draft intact;
+A local or hosted user opens a fresh profile, selects a provider/model and supported authentication, then chats. The optional Hub API-key default remains available through the linked account settings. Cancel/rejection leaves profile and draft intact;
 status readback allows a fresh explicit attempt. Configured users bypass setup.
 
 ### CUJ-002: Create an instance with an account default
@@ -96,7 +94,7 @@ input. A compact card above the composer preserves the existing conversation.
 
 ## Coverage and acceptance
 
-FR-001–004/006 → CUJ-001/002 → TC-001; FR-005 → CUJ-001 → TC-002;
+FR-001–004/006 → CUJ-001/002 → TC-001; FR-007–010 → CUJ-003 → TC-003 and actual-Hermes adapter integration; FR-005 → CUJ-001 → TC-002;
 actual SDK compatibility → CUJ-002 → the maintained actual-Hermes medium suite. Capture the implemented card and
 compare with this reused design direction before final commit. Canonical full
 checks, CI, merged default installation and actual container/test-cluster
@@ -119,3 +117,27 @@ uncertainty; credentials are never automatically replayed. Rendered synthetic
 captures live under `design/` and are produced by TC-002.
 
 Private profile mutation currently requires POSIX file-permission semantics (Linux/macOS). Windows persistence fails closed until an ACL-backed writer is implemented; existing process-provided configuration is not copied into Hub. No Windows persistence acceptance is claimed.
+
+## Instance-owned Hermes authentication revision (#191)
+
+Status: implemented source candidate; verification/deployment for #191 is separate from historical #182 acceptance.
+- FR-007: Explicit instance setup is available to authenticated hosted/local owners. Retain existing profile/account configuration until a fresh nonce, unchanged snapshot and explicit replacement authorize the change. Preserve optional account API-key inheritance; never automatically replace an instance-selected provider with account defaults.
+- FR-008: Gemini/Claude use native Hermes provider semantics and private credential persistence. Fixed non-inference HTTPS validation endpoints; no arbitrary commands, modules, paths, endpoints or raw config editors from browser input. Only supported authentication modes appear.
+- FR-009: OpenAI device login uses Hermes's installed implementation. One active process/job per runtime; opaque UUID,15minute expiry, bounded metadata/output. Start202 → retain id → poll authenticated GET → pending/challenge/complete/failed/cancelled/expired. Cancel and credential revocation/shutdown terminate the owned process; tokens remain private, and provider/device secrets never leave the helper. Current API authority and original profile snapshot must still authorize the commit after provider awaits. No grant cloning across instances.
+- FR-010: Browser preserves the draft, clears keys on attempt, shows verification URL/code without logging/storage, supports cancel/retry, resumes the exact live job after reload, and enables chat only after authoritative model status. Expired/revoked grants prompt recovery. Stop/start preserves private completed Hermes credentials; incomplete jobs are cancelled on process shutdown.
+
+### TC-003: Instance authentication and private persistence
+Given an authenticated instance owner and an isolated Hermes profile, select Gemini or Claude and validate/save a synthetic key; unrelated settings survive and readback/browser contains no key. Start OpenAI device login with the installed Hermes adapter, receive only a public challenge, authorize, then verify the real Hermes auth/config stores and selected provider. Cover rejection, conflict, expiry, cancel, concurrent start, credential revocation during provider wait, malformed adapter output and shutdown. Negative cases must not commit; completed credentials survive reopening the setup service. Use deterministic provider boundaries with the real pinned Hermes code, never a personal grant or paid call.
+- Journey / requirements: CUJ-003 (explicit instance provider authentication); FR-007–010.
+- Level / automation: integration plus the pinned-Hermes medium suite; no live user grant.
+- Inputs: isolated temporary profile, synthetic keys/challenge/grant, fixed fake provider response boundary; no existing profile/credentials or network inference.
+- Actions: use authenticated setup status and opaque nonce to start/save once; retain exact job UUID and poll; approve/cancel/revoke/expire/change the profile; reopen private files and compare unrelated settings.
+- Expected: configured status only after authorized persistence, no secret readback, no mutation after pre-commit cancel/revoke/conflict, job and process cleanup on shutdown. Exact data/mode and UI draft/key behavior asserted.
+- Cleanup: test-owned children stopped/awaited and temporary profile removed by teardown; helper grants are synthetic.
+
+Automated references: tests/TC-003.test.js and tests/hermes/live.test.js (run through npm run test:core:hermes) and the existing TC-002 served browser journey. Existing TC-001/TC-002 remain the API-key/inheritance/authentication regression base, updated for hosted overrides.
+
+Design: extend the existing approved compact card/design captures. Provider/model fields stay; Gemini/Claude add provider choices. Device login replaces the password field with verification instructions, external noopener link, copyable code, waiting/error status and Cancel. Buttons disable double submission; narrow screens wrap within the existing card. No new navigation/layout or approval gate. Capture desktop/320px from the served UI and self-review reflow/focus/secret exclusion.
+Metrics: existing sanitized API status and bounded job-state outcomes only; no codes, tokens, prompts, account identifiers or new analytics service.
+
+Commit boundary: after provider approval, the current NED API authority and unchanged snapshot authorize the private commit. Cancellation/expiry before that point prevents persistence; authorizing is no longer cancellable (409/readback). Shutdown or a filesystem failure during Hermes multi-file persistence is uncertain and requires authoritative readback; per-file atomicity is not a cross-file/provider transaction, and no blind exchange replay or grant rollback is claimed.

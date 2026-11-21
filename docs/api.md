@@ -452,19 +452,18 @@ Both methods require current NED API authentication, `X-NED-Models:1`, exact bou
 POST also requires exact Origin and JSON, with a16KiB body limit.
 
 - `GET /api/v1/model-setup`: `{configured,source:"local"|"profile"|"hub",model?,
-  hosted?,settingsUrl,nonce}`. Model is bounded metadata; never a credential.
+  hosted?,settingsUrl,nonce,deviceLogin,canDisconnect?,provider?,login?}`. Model is bounded metadata; never a credential.
   Opaque nonce is server-held, one-use,5minute lifetime, maximum16 pending.
-- `POST /api/v1/model-setup`: either `{nonce,provider:"openai"|"openrouter",model,
+- `POST /api/v1/model-setup`: either `{nonce,provider:"openai"|"openrouter"|"gemini"|"anthropic",model,
   apiKey,replace?:boolean}` for private local setup or `{action:"inherit"}`.
   Returns current configured metadata, no key. Explicit replacement requires a
   fresh nonce/current profile snapshot and `replace:true`; automatic inheritance
-  never replaces a valid profile override. Hosted instances must authenticate in
-  Hub and cannot upload provider keys through this local endpoint.
+  never replaces a valid profile override. Hosted and local owners may explicitly configure their own instance. Gemini/Claude are persisted through the installed Hermes configuration/credential helpers.
 
 Read → retain exact nonce → submit once → read back status is the caller chain.
 A failed/timed-out request must not replay the key or automatically retry; obtain
 fresh status and explicitly submit again.400 invalid/consumed intent;401 revoked API authentication;403 privacy
-boundary/hosted local-key prohibition;409 profile changed/missing account connection;
+boundary;409 profile changed/missing account connection;
 422 provider rejected credentials;503 configuration/provider unavailable. Unsafe
 or ambiguous profile data is not overwritten. Key input is cleared on submit.
 
@@ -478,3 +477,14 @@ file ownership, actual-vs-synthetic verification and staged deployment gates.
 Private model-profile writes currently require POSIX permissions; Windows mutation fails closed (`model_setup_platform_unavailable`) pending an ACL-backed implementation. No provider credential is written with unverified permissions.
 
 Model setup rechecks the current NED API credential and caller connection after provider/profile awaits and immediately before the atomic profile commit. A credential revoked during authentication cannot save a connection.
+
+### Instance device authentication and disconnect (#191)
+
+All operations retain the model-setup authentication, Host, Origin, privacy header and JSON bounds above. Device authentication is offered only when the installed Hermes adapter is available; it delegates to Hermes's OpenAI Codex device flow, not a Hub OAuth registration. Other provider login methods are not inferred from OpenAI support.
+
+- `POST /api/v1/model-setup` with `{action:"login",nonce,provider:"openai-codex",model,replace?:boolean}` returns202 `{login:{id,state,expiresAt}}`. One active job per runtime;409 rejects a concurrent start. Preserve the opaque UUID exactly. The nonce/snapshot and explicit replacement protect existing configuration.
+- `GET /api/v1/model-setup?login=<id>` returns `{login:{id,state,expiresAt,verificationUri?,userCode?}}`. States: starting, waiting, authorizing, complete, failed, cancelled, expired. Only pending jobs expose the fixed verification URI and public user code. No device authorization ID, authorization code, verifier, access token or refresh token is returned. Unknown job404; revoked initiating NED API credential401 cancels further authority. Normal status includes the current active login so reload can resume polling without browser storage.
+- `POST /api/v1/model-setup` with `{action:"cancel-login",id}` cancels an owned pending job; no automatic restart or exchange replay. The15minute deadline, revocation and server shutdown bound the child process. Cancel409 during authorizing requires readback. Authorizing is the already-authorized private commit phase: completion/readback, not a new provider exchange, determines the result after an uncertain interruption.
+- `POST /api/v1/model-setup` with `{action:"disconnect",nonce,confirm:true}` removes the current NED-owned instance selection/credential using Hermes's helpers (or the inherited local capability), returns configured:false. Only explicit current NED-owned profiles offer this control; it does not revoke the upstream provider account or alter Hub defaults/other instances. Unrelated configuration/credentials are preserved. Read status after a timeout before another attempt.
+
+Gemini/Claude setup uses their native Hermes providers rather than forcing all inference through an OpenAI-compatible endpoint. Non-inference validation is fixed to Google's models endpoint with `x-goog-api-key`, or Anthropic's models endpoint with `x-api-key`/version header. The helper receives secrets only over private stdin; it returns bounded challenge/status only. Hermes owns private auth/env/config files and refresh semantics. Its configured source/interpreter are operator-only settings (`NED_HERMES_SOURCE`, `NED_HERMES_PYTHON`); browsers cannot select commands, modules or paths. Instance workspace persistence preserves completed login across stop/start; pending in-memory jobs end on process shutdown. No grant cloning or provider OAuth token broker is introduced.

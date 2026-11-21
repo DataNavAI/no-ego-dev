@@ -93,7 +93,7 @@ Core lifecycle events/metrics. Never add request payloads, credentials, raw secr
 values or model text to routing telemetry. This internal contract refactor adds no
 analytics provider or personal-data collection. Stream tests use deterministic held
 chunks; ownership/idempotency tests use real SQLite/HTTP. Native container tests,
-independent review and installed-local readback establish release acceptance, not
+self-review and installed-local readback establish release acceptance, not
 merely the presence of these documents. Live/paid provider acceptance is separate.
 
 ## Model configuration and account inheritance
@@ -120,9 +120,7 @@ health are distinct. Existing history can load while a missing provider disables
 sending; drafts survive setup. Provider rejection/revocation offers reconfiguration
 through Hub or the private local control, without replaying the failed message.
 
-Supported Hub OAuth and hosted registration eligibility remain Hub-owned; OpenAI
-API keys do not imply ChatGPT plan access. Current implementation/acceptance lives
-in [model setup](features/model-setup/SPEC.md), no-ego-dev#182 and Hub#135–137. Actual
+Hub-owned provider OAuth is retired (Hub#137); optional account API-key defaults remain. Instance-owned setup/authentication is native#191. The compact UI exposes OpenAI/OpenRouter/Gemini/Claude keys and, when available, Hermes's existing OpenAI device login. A fixed Python adapter imports installed Hermes configuration/auth helpers; no arbitrary CLI or raw file API is exposed. Keys enter private stdin, only bounded public challenge/status leaves stdout, and the initiating NED API authority plus unchanged profile snapshot authorizes the private commit after provider waits. Hermes owns token exchange, private storage and refresh; NED owns bounded login-job lifecycle, cancellation/expiry, explicit replacement and UI status. Each instance stores its own grant in its persistent workspace. No rotating grant is cloned across instances. OpenAI API keys and ChatGPT device login are separate modes. Current implementation/acceptance lives in [model setup](features/model-setup/SPEC.md), historical no-ego-dev#182, native#191 and Hub#135–137. Actual
 Hermes SDK, real container/EKS and live provider consent are separate evidence;
 source merge does not certify staging enablement. No new telemetry receives raw
 keys, grants, chat content or profile data.

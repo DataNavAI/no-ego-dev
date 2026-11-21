@@ -57,7 +57,7 @@
     "pack:check": "npm pack --dry-run",
     "test:spec": "node scripts/run-spec-tests.mjs",
     "test:chat:e2e": "node --test docs/features/communicator/tests/TC-037.test.js docs/features/communicator/tests/TC-038.test.js",
-    "lint": "eslint apps src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check plugins/ned scripts/container scripts/aws-staging scripts/deploy-aws-staging.py docs/features/aws-staging-deployment/tests/cases.py docs/features/standalone-container/tests/container_acceptance.py docs/features/core-orchestration/tests/hermes/gateway.py eval_runner/container.py eval_runner/container_entry.py docs/features/test-suites/tests/container_cases.py skills/task-management/evaldata/docker-workflow/setup.py skills/task-management/evaldata/docker-workflow/verify.py && npm run check",
+    "lint": "eslint apps src bin scripts tests docs/features eslint.config.js --max-warnings=0 && python -m ruff check apps/core/src/hermes-model.py docs/features/model-setup/tests/hermes/provider-boundary.py plugins/ned scripts/container scripts/aws-staging scripts/deploy-aws-staging.py docs/features/aws-staging-deployment/tests/cases.py docs/features/standalone-container/tests/container_acceptance.py docs/features/core-orchestration/tests/hermes/gateway.py eval_runner/container.py eval_runner/container_entry.py docs/features/test-suites/tests/container_cases.py skills/task-management/evaldata/docker-workflow/setup.py skills/task-management/evaldata/docker-workflow/verify.py && npm run check",
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "test:container": "node scripts/run-tests.mjs large --container",
     "build:ui": "node scripts/build-communicator-ui.mjs",
