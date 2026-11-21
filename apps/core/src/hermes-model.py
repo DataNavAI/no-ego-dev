@@ -71,7 +71,6 @@ def main():
         selected = dict(config.get("model") or {}) if isinstance(config.get("model"), dict) else {}
         for name in ("api_key", "base_url", "api_mode", "key_env", "api_key_env"):
             selected.pop(name, None)
-        selected.update(provider=provider, default=model, name=model)
         if action == "disconnect":
             from hermes_cli.auth import clear_provider_auth
             from hermes_cli.credential_lifecycle import remove_provider_env_credential
@@ -94,6 +93,8 @@ def main():
             result = save_env_value_secure(key_name, key)
             if not result.get("success", result.get("ok", False)):
                 raise ValueError("credential persistence failed")
+        if action != "disconnect":
+            selected.update(provider=provider, default=model, name=model)
         config["model"] = selected
         config["ned_model"] = {"kind": "instance", "provider": provider, "model": model if action != "disconnect" else ""}
         save_config(config)

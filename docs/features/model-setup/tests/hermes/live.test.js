@@ -27,4 +27,12 @@ test('TC-003 Hermes: real device exchange/store and Gemini/Claude config use pri
     }
     const disconnect=await adapter.start({action:'disconnect',provider,model:'disconnected'},{beforeCommit:async()=>()=>{}});await disconnect.done;const removed=parse(await readFile(path.join(profile,'config.yaml'),'utf8'));assert.equal(removed.model.provider,'custom:ned-unconfigured');assert.equal(removed.model.default,'');assert(!(await readFile(privateFile,'utf8')).includes(provider==='openai-codex'?'private-refresh-token':key));await adapter.close();
   }
+  for(const [kind,owned] of [['local','ned-model'],['hub','ned-hub']]){
+    const profile=path.join(root,kind);await mkdir(profile,{mode:0o700});
+    const config={model:{provider:'custom:'+owned,default:'synthetic-model'},ned_model:{kind,provider:owned},providers:{[owned]:{api_key:'synthetic-private-owned-key',base_url:'https://api.openai.com/v1'},unrelated:{api_key:'synthetic-unrelated-key'}}};
+    await writeFile(path.join(profile,'config.yaml'),JSON.stringify(config),{mode:0o600});
+    const adapter=createHermesModelAdapter({env:{PATH:'/usr/bin:/bin',NED_HERMES_SOURCE:source,NED_HERMES_PYTHON:launcher},profile});
+    const operation=await adapter.start({action:'disconnect',provider:'hub',model:'disconnected'},{beforeCommit:async()=>()=>{}});await operation.done;
+    const removed=parse(await readFile(path.join(profile,'config.yaml'),'utf8'));assert.equal(removed.model.provider,'custom:ned-unconfigured');assert.equal(removed.providers[owned],undefined);assert.equal(removed.providers.unrelated.api_key,'synthetic-unrelated-key');assert.equal(removed.ned_model.kind,'instance');await adapter.close();
+  }
 });
