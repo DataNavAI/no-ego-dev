@@ -1,14 +1,15 @@
 {
-  "candidate_sha": "b0db83ac7170de91d304ee423d44c5b3fe4a6bf6",
-  "tested_at": "2026-11-21T10:36:36Z",
-  "environment": "macOS arm64, Node25.6.1, Chromium; native arm64 Docker colima-eval; real isolated Hermes6e07eb4, aimock1.48.0, actual PostgreSQL and Hub",
+  "candidate_sha": "a93004bcfd2f2adc3d0468c6d9e7fb224ee74f84",
+  "tested_at": "2026-11-21T17:26:41.180528+00:00",
+  "environment": "macOS arm64, Node24.22.2, Chromium; native ARM64 Docker colima-hub9; checksum-pinned Hermes6e07eb4 with isolated Python3.11; actual PostgreSQL/Hub/native connector/Core/browser/SDK",
   "result": "pass",
   "commands": [
-    "npm run lint; npm run test:all (exact-staged commit hook)",
-    "node --test docs/features/ned-api/tests/TC-006.test.js docs/features/ned-api/tests/TC-007.test.js",
-    "Hub: npm run test:integration:instance against this exact native commit",
-    "Hub: npm run test:integration:models against this exact native commit",
-    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-eval --expected-architecture arm64"
+    "npm run lint; npm run test:all (exact-staged versioned full commit hook)",
+    "npm run test:core:hermes (8 real Hermes cases; deterministic provider/auth HTTP boundary)",
+    "node --test docs/features/model-setup/tests/TC-001.test.js docs/features/model-setup/tests/TC-002.test.js docs/features/model-setup/tests/TC-003.test.js",
+    "Hub npm run test:integration:models against exact native candidate",
+    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-hub9 --expected-architecture arm64",
+    "Rendered desktop1280/mobile320 device setup self-review; installed local Hermes adapter discovery with isolated temporary profile"
   ],
-  "observations": "Independent review approved immutable sourceb0db83a and independently passed9/9 focused browser/client cases. Delayed controller test reproduced visible shell before handlers (RED), then passed with hidden/inert shell until imports complete. Forget during loading cannot reopen access; stale401 cannot clear newer validated credentials. Exact-staged full hook passed all automated spec cases,208 Python tests with9 existing platform skips and7 real Hermes tests. Actual Hub→native COM integration passed4/4: streamed delta before terminal, persisted reload, unavailable/truncated errors, cancellation and foreign-origin denial. Combined real PostgreSQL/Hub/native connector/Core/browser proxy/Hermes SDK/inference relay passed with nativeRevision=b0db83ac7170de91d304ee423d44c5b3fe4a6bf6; only provider and KMS adapter synthetic, one stub inference. Native arm64 container TC003/004 passed imageacd82682,3.38second shutdown, authenticated API/perimeter, retained state/restart and owned cleanup. Original CLI token injection and model-backed Docker skill eval remain unchanged from PR189. Hosted KMS/IAM/TLS/EKS enablement remains separate in ned-iac29."
+  "observations": "Self-reviewed exact source a93004bcfd2f2adc3d0468c6d9e7fb224ee74f84. Full hook passed Node/spec checks,208 Python tests with9 existing skips and8 actual Hermes cases. Served browser covers private key clearing/draft preservation, hosted configuration, device challenge/cancel/retry/complete and configured bypass. Device job checks include redaction, concurrent start, revocation, snapshot conflict, expiry, malformed challenge and shutdown. Actual pinned Hermes performs its device exchange/store against deterministic HTTP responses and Gemini/Claude config, private0600 files, runtime credential selection and disconnect; no personal grant or paid inference. Desktop/mobile captures reviewed with no horizontal overflow. Actual Hub/PostgreSQL/native/Core/browser proxy/Hermes SDK model relay integration passed, nativeRevision=a93004bcfd2f2adc3d0468c6d9e7fb224ee74f84; only provider/KMS adapters synthetic. Native ARM64 container TC003/004 passed image23d2ce47,3.39second stop, auth/perimeter, retained state and owned cleanup. Default locally installed Hermes supports the adapter; NED installation/deployment after merge is a separate gate. Real managed-image EKS/provider consent is not claimed from these tests."
 }
