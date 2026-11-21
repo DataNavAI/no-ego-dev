@@ -177,3 +177,7 @@ revision, then record merge/deployment evidence and complete the owned NED task.
 Never use AWS or named-profile rollout as a substitute for this local target.
 If deployment/checks/access fails, keep work open with the actual blocker and
 continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.
+
+## Architecture and API maintenance
+
+Keep [architecture](docs/architecture.md) and [API contracts](docs/api.md) current in the same change as affected implementation. Link authoritative feature specs; distinguish source behavior, deployed images and planned OAuth/provider capabilities.

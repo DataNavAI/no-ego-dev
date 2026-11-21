@@ -35,7 +35,9 @@
     "!**/*.db",
     "!**/*.db-*",
     "!**/.beads/**",
-    "!docs/features/**/tests/**"
+    "!docs/features/**/tests/**",
+    "docs/architecture.md",
+    "docs/api.md"
   ],
   "engines": {
     "node": ">=20.19.0"

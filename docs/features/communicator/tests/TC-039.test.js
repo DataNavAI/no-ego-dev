@@ -1,3 +1,6 @@
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -143,4 +146,38 @@ test('TC-039: a failed Stop re-enables only Stop while live prose continues and 
   await chat.respond({turn:{id:turnId,status:'pending'},stream:{cursor:0,next:8,text:'Still on'}});assert.match(chat.elements.get('transcript').textContent,/Still on/);
   await chat.respond({turn:{id:turnId,status:'completed'},session_id:'nedcom-main',message:{role:'assistant',content:'Completed'}});await chat.respond({data:page(52)});
   assert.equal(draft.value,'New draft');assert.equal(send.attributes['aria-label'],'Send message');assert.equal(chat.requests.length,0);
+});
+
+
+test('TC-039: owned cancellation before HTTP Stop acknowledgement preserves partial text; unsolicited cancellation fails',{timeout:15000},async t=>{
+  for(const requested of [true,false])await t.test(requested?'Stop acknowledgement held':'unsolicited cancellation',async t=>{
+    let upstream,acknowledge,announce,received;
+    const started=new Promise(resolve=>announce=resolve),stopping=new Promise(resolve=>received=resolve);
+    const events=streamEvents('session-a','Partial response');
+    const gateway=http.createServer(async(req,res)=>{
+      for await(const chunk of req)void chunk;
+      if(req.url==='/api/sessions/session-a/chat/stream'){
+        upstream=res;res.writeHead(200,{'content-type':'text/event-stream'});res.write(events.slice(0,3).map(streamFrame).join(''));announce();return;
+      }
+      if(req.url===`/v1/runs/${events[0].data.run_id}/stop`){
+        assert.equal(req.headers.authorization,'Bearer synthetic');
+        acknowledge=()=>{res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({run_id:events[0].data.run_id,status:'stopping'}));};
+        upstream.end(streamFrame({event:'run.cancelled',data:{...events[0].data,seq:4}}));received();return;
+      }
+      res.writeHead(404);res.end();
+    });
+    await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
+    const home=await mkdtemp(join(tmpdir(),'ned-stop-order-'));let app;t.after(async()=>{await app?.close();await rm(home,{recursive:true,force:true});});app=createCommunicatorServer({home,env:{},databasePath:join(home,'ned.sqlite'),initializeDatabase:true,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();
+    const post=(path,body={})=>fetch(app.url+'/api/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const accepted=await(await post('/session-a/chat',{input:'Synthetic cancellation'})).json();await started;
+    const path=`/session-a/turns/${accepted.turn.id}`;
+    let stop;
+    try{
+      if(requested){stop=post(path+'/stop');await stopping;}
+      else upstream.end(streamFrame({event:'run.cancelled',data:{...events[0].data,seq:4}}));
+      const wire=await(await fetch(app.url+'/api/chat/sessions'+path+'/events')).text();
+      assert.match(wire,requested?/"status":"stopped"/:/"status":"failed"/);
+      if(requested)assert.match(wire,/Partial response/);
+    }finally{acknowledge?.();await stop;}
+  });
 });
