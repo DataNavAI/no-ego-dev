@@ -1,6 +1,6 @@
 import {chatActivity} from './chat-activity.js';
 const LIMIT=4194304;
-export async function readChatStream(upstream,session,onText,{onRun=()=>{},onActivity=()=>{},stopping=()=>false}={}){
+export async function readChatStream(upstream,session,onText,{onRun=()=>{},onActivity=()=>{},stopping=()=>false,onStopped=()=>{}}={}){
   if(!/^text\/event-stream(?:\s*;|$)/i.test(upstream.headers.get('content-type') ?? ''))throw new Error('Streaming unavailable');
   const decoder=new TextDecoder('utf-8',{fatal:true});
   let buffer='',event='',data=[],frameBytes=0,wireBytes=0,run='',message='',text='',textBytes=0,final,completed=false,done=false;
@@ -15,7 +15,7 @@ export async function readChatStream(upstream,session,onText,{onRun=()=>{},onAct
     if(['tool.started','tool.progress','tool.completed','tool.failed'].includes(kind)&&(!message||payload.message_id!==message))throw new Error('Invalid message');
     const activity=chatActivity(kind,payload.tool_name);if(activity)onActivity(activity);
     if(kind==='run.started')onRun(run);
-    if(['run.cancelled','run.interrupted'].includes(kind)&&stopping()){final=text;completed=true;done=true;return;}
+    if(['run.cancelled','run.interrupted'].includes(kind)&&stopping()){onStopped();final=text;completed=true;done=true;return;}
     if(kind==='error'||kind==='run.failed'||kind==='run.cancelled')throw new Error('Incomplete stream');
     if(kind==='message.started'){
       if(message||payload.message?.role!=='assistant'||typeof payload.message.id!=='string'||!/^[A-Za-z0-9_-]{1,200}$/.test(payload.message.id))throw new Error('Invalid message');

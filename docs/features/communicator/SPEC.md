@@ -705,3 +705,7 @@ Actor: project user beside an ongoing chat. Critical because progress without a 
 - Pass evidence: actual assertions and inspected captures; planned scenarios are not passes.
 
 Coverage: FR-066–070 → CUJ-024 → TC-042. No paid analytics, workflow evaluation or AWS deployment is part of this change. Feedback continues through the user thread and repository issues; measure success by users locating active work/output without interrupting chat in the acceptance flow.
+
+### Chat cancellation ordering
+
+For an owned in-flight Stop, a matching authenticated Hermes `run.cancelled`/`run.interrupted` event may precede its HTTP acknowledgement. COM records stopped completion with accumulated text from that event. Unsolicited or foreign-identity cancellation remains failed. Communicator TC-039 holds the acknowledgement until the terminal stream is consumed; no-ego-dev#181 and Hub#134 track this regression. This does not configure model providers or certify hosted inference.

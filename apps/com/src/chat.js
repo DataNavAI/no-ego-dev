@@ -170,7 +170,7 @@ export function createChatGateway(options = {}) {
       const upstream = await fetch(origin + path + query,{method:req.method,headers:{Authorization:`Bearer ${key}`,...(mutation ? {'Content-Type':'application/json'} : {})},body,redirect:'error',signal:controller.signal});
       if (!upstream.ok) { await upstream.body?.cancel(); return finish(upstream.status === 404 ? 404 : 503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}}); }
       if(turn){
-        const content=await readChatStream(upstream,turn.session,text=>{turn.text=text;changed(turn);},{onRun:run=>{turn.run=run;},onActivity:activity=>{if(turn.activity!==activity){turn.activity=activity;turn.activityVersion++;changed(turn);}},stopping:()=>turn.stopAccepted});
+        const content=await readChatStream(upstream,turn.session,text=>{turn.text=text;changed(turn);},{onRun:run=>{turn.run=run;},onActivity:activity=>{if(turn.activity!==activity){turn.activity=activity;turn.activityVersion++;changed(turn);}},stopping:()=>turn.stopAccepted||Boolean(turn.stopPromise),onStopped:()=>{turn.stopAccepted=true;}});
         return finish(200,{session_id:turn.session,message:{role:'assistant',content}});
       }
       const chunks = []; let bytes = 0;
