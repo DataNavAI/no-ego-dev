@@ -71,6 +71,8 @@ release/deployment verification are separate; no staging rollout is implied.
   across reloads when storage permits, offers Forget, and returns to sign-in on401.
   Storage failure permits tab-only use with a notice. Reauthentication never replays
   a message. Fetch streams carry Bearer headers and stop on logout/auth failure.
+  The authenticated shell remains hidden/inert until controllers mount; access
+  revoked during module loading cannot be restored by that pending load.
 
 ## Critical user journeys
 
@@ -226,6 +228,11 @@ require authority. Failures expose no storage/credentials and start no work.
 - Then: wrong access loads no gateway data; successful access persists only after validation, survives reload, and never puts tokens in URLs. Forget removes storage.401 clears stale access and preserves unsent draft without sending a turn. Blocked storage works for this tab and requires sign-in on reload.
 - Steps and assertions: execute the real browser case at390px and1280px; verify form/app visibility, empty gateway captures before access, stored fixture token/instance identity, cleared password input, reload, settings Forget,401 recovery and zero sent messages.
 - Variants / negative cases: wrong token, changed key, browser storage denial; external provider/SSO is inapplicable to this synthetic direct-access flow. Existing Hub bridge cases cover delegated authentication.
+- Delayed-load variants: hold `/chat-entry.js` after valid access. The shell stays
+  hidden/inert. Release it and submit once: one turn and no document navigation.
+  Alternatively Forget during the hold, release, and wait for Connect to become
+  enabled: the shell stays hidden and storage stays empty. Hold initial context
+  restoration separately: manual Connect remains disabled until it settles.
 - Cleanup: close browser/COM/gateway/SQLite and delete test-owned profiles.
 - Pass evidence: actual DOM/network assertions; no skips or screenshots containing keys/private conversations.
 
@@ -238,6 +245,9 @@ require authority. Failures expose no storage/credentials and start no work.
 - Then: incremental Unicode/event identity survives, reconnect uses Last-Event-ID and Bearer,401 clears access/stops reconnect, Forget aborts the request, and no token can be sent to an external URL.
 - Steps and assertions: execute the case; assert exact message/ID/headers, two connections only, closed state, storage deletion, aborted signal and rejected foreign resource. Existing served Chromium flows verify the assembled stream before withheld terminal.
 - Variants / negative cases: invalid auth/URL, disconnect/reconnect, split multibyte characters; no real gateway/model or unbounded polling.
+- Stale-response variant: hold an old authenticated health request, validate a new
+  token, then release the old401. The old request aborts, current storage retains
+  the new token, and no access-lost notification is emitted.
 - Cleanup: close readers/streams and cancel owned retry timers; no filesystem state.
 - Pass evidence: named assertions and actual browser streaming regressions.
 

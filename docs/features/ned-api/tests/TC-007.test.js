@@ -2,6 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createApiClient,createApiEventSource} from '../../../../apps/com/src/public/api-client.js';
 
+test('TC-007: a stale401 cannot clear newer validated access',async()=>{
+  let persisted=null,release,lost=0;
+  const held=new Promise(resolve=>{release=resolve;});
+  const client=createApiClient({origin:'https://instance.example',storage:()=>({getItem:()=>persisted,setItem:(_key,value)=>{persisted=value;},removeItem:()=>{persisted=null;}}),request:async resource=>resource.endsWith('/auth/context')?Response.json({instanceId:'d'.repeat(64)}):held});
+  client.onLost(()=>{lost++;});
+  await client.validate('a'.repeat(64));const pending=client.fetch('/api/v1/health');
+  await client.validate('b'.repeat(64));release(new Response('{}',{status:401}));
+  await assert.rejects(pending,{name:'AbortError'});assert.equal(JSON.parse(persisted).token,'b'.repeat(64));assert.equal(lost,0);
+});
+
 test('TC-007: authenticated SSE preserves split Unicode, event IDs and stops reconnection after401',{timeout:5000},async context=>{
   let persisted=null,calls=0,seen,received;
   const arrived=new Promise(resolve=>received=resolve),ended=new Promise(resolve=>seen=resolve),requests=[];

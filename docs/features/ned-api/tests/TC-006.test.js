@@ -4,6 +4,20 @@ import {writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {browserChat,expect} from '../../communicator/tests/browser-chat-fixture.js';
 
+for(const forgotten of [false,true])test(`TC-006: delayed controllers keep the shell inert and respect access loss (${forgotten?'forgotten':'ready'})`,{timeout:45000},async context=>{
+  const fixture=await browserChat(context,{deferLogin:true}),page=fixture.page;
+  let release,seen;const held=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
+  await page.route('**/chat-entry.js',async route=>{seen();await held;await route.continue();});
+  try{
+    await page.locator('#access-token').fill(fixture.accessToken);await page.locator('#access-submit').click();await requested;
+    await expect(page.locator('#app-shell')).toBeHidden();assert.equal(await page.locator('#app-shell').evaluate(element=>element.inert),true);
+    if(forgotten)await page.evaluate(async()=>{const {apiClient}=await import('/api-client.js');apiClient.forget();});
+    release();await expect(page.locator('#access-submit')).toBeEnabled();
+    if(forgotten){await expect(page.locator('#access-gate')).toBeVisible();await expect(page.locator('#app-shell')).toBeHidden();assert.equal(await page.evaluate(()=>localStorage.getItem('ned.instance-access.v1')),null);}
+    else{await fixture.ready();await fixture.draft.fill('Submit after controllers mount');await page.locator('#chat-send').click();await expect.poll(()=>fixture.turns.length).toBe(1);assert.equal(new URL(page.url()).search,'');}
+  }finally{release();}
+});
+
 test('TC-006: startup restoration settles before manual sign-in can submit',{timeout:45000},async context=>{
   const fixture=await browserChat(context,{deferLogin:true}),page=fixture.page;
   let release,seen;const held=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
