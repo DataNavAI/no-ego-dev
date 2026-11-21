@@ -7,7 +7,7 @@ import {authorized,loadOperatorCredential} from './auth.js';
 import {requestDiagnostic,requestPhase} from './protocol/request-diagnostic.js';
 
 export function createNedApiHandler({boundOrigin,operatorService,operatorCredential,browserEnabled=true,legacyInvalidStatus=400,...options}={}){
-  options.databasePath=operatorService?.database?.filename??options.databasePath??resolveDatabasePath(options);
+  options.databasePath=operatorService?.database?.filename??options.database?.filename??options.databasePath??resolveDatabasePath(options);
   let operatorPending,operatorHandler,ownedService,closing=false,closePromise;
   const browser=browserEnabled?createBrowserApi(options):null;
   const operator=()=>operatorPending??=(async()=>{

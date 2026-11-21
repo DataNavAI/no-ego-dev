@@ -123,7 +123,11 @@ authority. Authentication failures never expose storage, credentials or handlers
   database selection, and a shared handler using databaseUrl. Set the process DB
   to a distinct synthetic nonexistent path; assert selected-project work returns
   200 with an empty items array, activity SSE returns that project with empty
-  updates, and no process-context database is created. Restore the process env.
+  updates, and no process-context database is created. Also inject a real database
+  with a conflicting explicit path; authenticated operator project reads and
+  browser work/activity must use the injected store. Close the handler and assert
+  the caller-owned database remains queryable, then close it in cleanup. Restore
+  the process env.
 - Variants / negative cases: missing auth, mismatched runtime/DB, unknown resource,
   invalid JSON/key, same key across canonical/alias and body mismatch; existing
   task/Core suites own exhaustive ownership, concurrency and verification fences.
