@@ -1,11 +1,12 @@
 import {configuredModelSetup} from './model-fixture.js';
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {once,EventEmitter} from 'node:events';
 import {WebSocketServer,createWebSocketStream} from 'ws';
 import {readHubConfiguration,startHubConnection} from '../../../../apps/com/src/hub.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {runCommunicatorCli} from '../../../../apps/com/src/cli.js';
 const token='ned_synthetic_test_credential_00000000';
 const config={NED_HUB_URL:'https://hub.example',NED_HUB_TOKEN:token,NED_INSTANCE_NAME:'fixture'};
@@ -41,7 +42,7 @@ test('TC-015: authenticated retry reaches real COM and rejects foreign origins w
     else {const id=new URL(req.url,origin).searchParams.get('id');pending.get(id)(createWebSocketStream(ws));}
   });
   const states=[];
-  const connection=startHubConnection(readHubConfiguration({...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin}),local,{retryDelay:1,onStatus:s=>states.push(s)});t.after(()=>connection.close());
+  const connection=startHubConnection(readHubConfiguration({...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin}),local,{apiCredential:()=>com.apiCredential,retryDelay:1,onStatus:s=>states.push(s)});t.after(()=>connection.close());
   await Promise.race([ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('readiness deadline')),5000).unref())]);
   assert.equal(calls,2);assert.deepEqual(registrations,[{slug:'fixture',name:'fixture'},{slug:'fixture',name:'fixture'}]);
   let n=0;
@@ -69,7 +70,7 @@ test('TC-015: untrusted tunnel endpoint never receives a bearer',async t=>{
   const server=http.createServer((_req,res)=>res.end(JSON.stringify({tunnelUrl:`ws://127.0.0.1:${hostile.address().port}/tunnel/control?slug=fixture`})));await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>server.close(resolve)));
   const origin=`http://127.0.0.1:${server.address().port}`;
   let settled;const rejected=new Promise(resolve=>{settled=resolve;});
-  const connection=startHubConnection(readHubConfiguration({...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin}),'http://127.0.0.1:1',{onStatus:s=>{if(s.startsWith('invalid tunnel endpoint'))settled();}});t.after(()=>connection.close());
+  const connection=startHubConnection(readHubConfiguration({...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin}),'http://127.0.0.1:1',{apiCredential:'a'.repeat(64),onStatus:s=>{if(s.startsWith('invalid tunnel endpoint'))settled();}});t.after(()=>connection.close());
   await rejected;assert.equal(contacted,false);
 });
 
@@ -80,7 +81,7 @@ test('TC-015: rejected authentication stops retry and stopping aborts an outstan
     await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>server.close(resolve)));
     const origin=`http://127.0.0.1:${server.address().port}`;const statuses=[];let rejected;
     const settled=new Promise(resolve=>{rejected=resolve;});
-    const connection=startHubConnection(readHubConfiguration({...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin}),'http://127.0.0.1:1',{retryDelay:1,onStatus:s=>{statuses.push(s);if(s.includes('registration rejected'))rejected();}});
+    const connection=startHubConnection(readHubConfiguration({...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin}),'http://127.0.0.1:1',{apiCredential:'a'.repeat(64),retryDelay:1,onStatus:s=>{statuses.push(s);if(s.includes('registration rejected'))rejected();}});
     t.after(()=>connection.close());await requestSeen;
     if(reject)await settled;
     await connection.close();await requestClosed;
@@ -110,7 +111,7 @@ test('TC-015: normal and isolated localhost Hub modes stream real COM with exact
     const wss=new WebSocketServer({server});t.after(()=>wss.close());let control,opened;const ready=new Promise(resolve=>{opened=resolve;});const pending=new Map();
     wss.on('connection',(ws,req)=>{if(req.url.startsWith('/tunnel/control')){control=ws;ws.send(JSON.stringify({type:'ready'}));opened();}else pending.get(new URL(req.url,origin).searchParams.get('id'))(createWebSocketStream(ws));});
     const env={...config,NED_HUB_URL:origin,NED_HUB_PROXY_URL:origin,...(isolated?{NED_HUB_INSTANCE_ORIGINS:'true'}:{})};
-    const connection=startHubConnection(readHubConfiguration(env),local);t.after(()=>connection.close());await ready;
+    const connection=startHubConnection(readHubConfiguration(env),local,{apiCredential:()=>com.apiCredential});t.after(()=>connection.close());await ready;
     let n=0;async function request(requestOrigin){const id=String(++n).padStart(43,'b');const waiting=new Promise(resolve=>pending.set(id,resolve));control.send(JSON.stringify({type:'open',id}));const stream=await waiting;let text='';stream.on('data',chunk=>{text+=chunk;});stream.write(`GET /api/health HTTP/1.1\r\nHost: ned-com\r\nx-ned-instance: fixture\r\nx-forwarded-host: ${new URL(expectedOrigin).host}\r\nx-forwarded-proto: http\r\nOrigin: ${requestOrigin}\r\nConnection: close\r\n\r\n`);await once(stream,'end');stream.destroy();return text;}
     assert.match(await request(expectedOrigin),/200 OK[\s\S]*"status":"ok"/);
     assert.match(await request(`http://${isolated?'':'fixture.'}localhost:${port}`),/403 Forbidden/);

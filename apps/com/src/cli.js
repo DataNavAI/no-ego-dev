@@ -5,7 +5,7 @@ import {readHubConfiguration,resolveInstanceName,startHubConnection} from './hub
 import {resolveDatabasePath} from '../../../src/database.js';
 import {createCommunicatorServer} from './server.js';
 import {startPublicTunnel} from './tunnel.js';
-const usage = 'Usage: ned com [--login [--no-browser] | --logout] [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--public] [--help]';
+const usage = 'Usage: ned com [--login [--no-browser] | --logout] [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--public] [--help]\nBrowser sign-in: username ned; password is the selected runtime\'s private .ned/core/operator-token. Authenticated Hub access uses Hub sign-in.';
 async function runCommunicator(flags, io = console, dependencies = {}) {
   const options = {port:0};
   const seen = new Set();
@@ -57,15 +57,15 @@ async function runCommunicator(flags, io = console, dependencies = {}) {
     try { databasePath = resolveDatabasePath({databaseUrl:options.databaseUrl, env:originalEnv, home:dependencies.home}); }
     catch { io.error('NEDCOM: configure a SQLite file path or local file: URL with --database or NED_DATABASE_URL.'); return 2; }
     if(stopping)return 0;
-    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath,home:dependencies.home,env:originalEnv,initializeDatabase:true,logger:dependencies.logger,secretsEnabled:!seen.has('--public')});
+    app = (dependencies.createServer || createCommunicatorServer)({port:options.port,databasePath,home:dependencies.home,env:originalEnv,initializeDatabase:true,logger:dependencies.logger});
     const url = await app.listen();
     if(seen.has('--public')&&!stopping){
-      io.error('WARNING: Public NED COM has no authentication. Anyone with the URL can read projects and Hermes sessions and send messages. Stop with Ctrl+C.');
+      io.log('Public NED COM requires instance authentication.');
       tunnel=await (dependencies.startTunnel||startPublicTunnel)(url,{env:dependencies.env||process.env,signal:startup.signal});
-      if(!stopping)io.log(`NEDCOM public (unprotected): ${tunnel.url}`);
+      if(!stopping)io.log(`NEDCOM public (authenticated): ${tunnel.url}`);
     }
     if (!stopping) { io.log(`NEDCOM: ${url}`); dependencies.logger?.event('listening',{port:new URL(url).port}); }
-    if (hub && !stopping) hubConnection = (dependencies.startHub || startHubConnection)(hub,url,{logger:dependencies.logger,onRegistered:registration=>app.setHubRegistration?.(registration),onStatus:status=>{io.log(`NED Hub: ${status}`);dependencies.logger?.event('hub',{status:['online','connecting','offline','reconnecting'].includes(status)?status:'connection-change'});}});
+    if (hub && !stopping) hubConnection = (dependencies.startHub || startHubConnection)(hub,url,{apiCredential:()=>app.apiCredential,onRegistered:registration=>app.setHubRegistration?.(registration),logger:dependencies.logger,onStatus:status=>{io.log(`NED Hub: ${status}`);dependencies.logger?.event('hub',{status:['online','connecting','offline','reconnecting'].includes(status)?status:'connection-change'});}});
     await (tunnel?Promise.race([stopped,tunnel.failure.then(()=>{throw new Error('Public tunnel stopped.');})]):stopped);
     await app.close();
     return 0;

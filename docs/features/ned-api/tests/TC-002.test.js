@@ -9,6 +9,7 @@ import {createNedApiHandler} from '../../../../apps/core/src/api.js';
 import {openNedDatabase} from '../../../../src/database.js';
 import path from 'node:path';
 import {apiFixture} from './helpers.js';
+import {loadOperatorCredential} from '../../../../apps/core/src/auth.js';
 import {createTaskApiClient} from '../../../../apps/cli/src/task-api.js';
 
 for(const kind of ['core','com'])test(`TC-002: ${kind} serves one API with compatible aliases and shared mutation receipts`,async context=>{
@@ -18,13 +19,13 @@ for(const kind of ['core','com'])test(`TC-002: ${kind} serves one API with compa
   const oldHealth=await fixture.request('/api/health');assert.deepEqual(await oldHealth.json(),{status:'ok',service:'nedcom'});
   const catalog=await fixture.request('/api/v1/projects');assert.deepEqual((await catalog.json()).projects.map(row=>row.id),[fixture.projectId]);
   const legacy=await fixture.request('/api/projects');assert.equal(legacy.status,200);assert.deepEqual((await legacy.json()).projects.map(row=>row.id),[fixture.projectId]);
-  if(kind==='com')await assert.rejects(stat(path.join(fixture.home,'.ned/core/operator-token')),{code:'ENOENT'});
-  const denied=await fixture.request('/api/v1/operator/projects');assert.equal(denied.status,401);await denied.body.cancel();
-  const registered=await fixture.request('/api/v1/operator/projects',{operator:true});assert.equal((await registered.json()).data[0].id,fixture.projectId);
+  assert.equal((await stat(path.join(fixture.home,'.ned/core/operator-token'))).mode&0o777,0o600);
+  const denied=await fixture.request('/api/v1/project-registrations',{authenticated:false});assert.equal(denied.status,401);await denied.body.cancel();
+  const registered=await fixture.request('/api/v1/project-registrations',{operator:true});assert.equal((await registered.json()).data[0].id,fixture.projectId);
   const route=`/projects/${fixture.projectId}/tasks`,headers={'idempotency-key':'same-command'};
-  const canonical=await fixture.request('/api/v1/operator'+route,{method:'POST',operator:true,body:{title:'One shared task'},headers});assert.equal(canonical.status,200);const created=await canonical.json();
+  const canonical=await fixture.request('/api/v1'+route,{method:'POST',operator:true,body:{title:'One shared task'},headers});assert.equal(canonical.status,200);const created=await canonical.json();
   const replay=await fixture.request('/api/core/v1'+route,{method:'POST',operator:true,body:{title:'One shared task'},headers});assert.equal(replay.status,200);assert.deepEqual(await replay.json(),created);
-  const conflict=await fixture.request('/api/v1/operator'+route,{method:'POST',operator:true,body:{title:'Changed'},headers});assert.equal(conflict.status,409);await conflict.body.cancel();
+  const conflict=await fixture.request('/api/v1'+route,{method:'POST',operator:true,body:{title:'Changed'},headers});assert.equal(conflict.status,409);await conflict.body.cancel();
   assert.equal((await fixture.task.getItems()).length,1);
   assert.equal((await fixture.task.getItem(created.data.id)).title,'One shared task');
   assert.equal((await fixture.task.getActivity(created.data.id)).filter(event=>event.type==='created').length,1);
@@ -34,7 +35,7 @@ for(const kind of ['core','com'])test(`TC-002: ${kind} serves one API with compa
 test('TC-002: command-scoped backend enables only authenticated operator resources',async context=>{
   const fixture=await apiFixture(context,{kind:'core',backendOnly:true});
   for(const route of ['/api/v1','/api/v1/health','/api/v1/projects','/api/chat/sessions']){const response=await fixture.request(route);assert.equal(response.status,404,route);await response.body.cancel();}
-  const response=await fixture.request('/api/v1/operator/context',{operator:true});assert.equal(response.status,200);const value=await response.json();assert.match(value.data.runtime,/^[a-f0-9]{64}$/);
+  const response=await fixture.request('/api/v1/context',{operator:true});assert.equal(response.status,200);const value=await response.json();assert.match(value.data.runtime,/^[a-f0-9]{64}$/);
 });
 
 test('TC-002: CLI NED_API_URL selection is authoritative with explicit and legacy compatibility',async context=>{
@@ -46,7 +47,7 @@ test('TC-002: CLI NED_API_URL selection is authoritative with explicit and legac
   const explicit=await createTaskApiClient({...options,api:fixture.app.url,env:{...fixture.env,NED_API_URL:'https://invalid.example'}});
   context.after(()=>explicit.close());assert.equal((await explicit.initialize()).projectId,fixture.projectId);
   await assert.rejects(createTaskApiClient({...options,env:{...fixture.env,NED_API_URL:'https://invalid.example',NED_CORE_URL:fixture.app.url}}),{code:'invalid_api'});
-  assert.deepEqual(requests,['/api/v1/operator/context','/api/v1/operator/task-management','/api/v1/operator/context','/api/v1/operator/task-management']);
+  assert.deepEqual(requests,['/api/v1/context','/api/v1/task-management','/api/v1/context','/api/v1/task-management']);
 });
 
 for(const selection of ['home','env','databaseUrl','injected'])test(`TC-002: browser work and activity retain the selected ${selection} database independently of process context`,async context=>{
@@ -70,12 +71,12 @@ for(const selection of ['home','env','databaseUrl','injected'])test(`TC-002: bro
     assert.equal(app.service.database.filename,databasePath);
   }
   if(injectedDatabase){
-    const operator=await fetch(`${url}/api/v1/operator/projects`,{headers:{authorization:'Bearer synthetic-selection-token'},signal:AbortSignal.timeout(5000)});
+    const operator=await fetch(`${url}/api/v1/project-registrations`,{headers:{authorization:'Bearer synthetic-selection-token'},signal:AbortSignal.timeout(5000)});
     assert.equal(operator.status,200);assert.deepEqual((await operator.json()).data.map(row=>row.id),[task.project.id]);
   }
-  const response=await fetch(`${url}/api/v1/projects/${task.project.id}/work`,{signal:AbortSignal.timeout(5000)});
+  const response=await fetch(`${url}/api/v1/projects/${task.project.id}/work`,{headers:{authorization:'Bearer '+(injectedDatabase?'synthetic-selection-token':loadOperatorCredential({home,env:{}}))},signal:AbortSignal.timeout(5000)});
   assert.equal(response.status,200);assert.deepEqual(await response.json(),{projectId:task.project.id,items:[]});
-  const stream=await fetch(`${url}/api/v1/activity/events?project=${task.project.id}`,{signal:AbortSignal.timeout(5000)});
+  const stream=await fetch(`${url}/api/v1/activity/events?project=${task.project.id}`,{headers:{authorization:'Bearer '+(injectedDatabase?'synthetic-selection-token':loadOperatorCredential({home,env:{}}))},signal:AbortSignal.timeout(5000)});
   const reader=stream.body.getReader();
   try{const frame=await reader.read();assert.equal(new TextDecoder().decode(frame.value),`data: ${JSON.stringify({projectId:task.project.id,updates:[]})}\n\n`);}
   finally{await reader.cancel();}

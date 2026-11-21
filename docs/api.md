@@ -6,29 +6,30 @@ The API's official name is **NED API v1**, not NED COM API or a separate Core AP
 Base path: `/api/v1`. Both the full Core listener and COM listener use one
 Core-owned handler. COM adds browser assets and authenticated Hub/public transport;
 it does not maintain a separate backend. Backend-only ephemeral CLI listeners
-enable only the operator family. See [architecture](architecture.md) and
+enable only coordination resources. Every API requires authentication. See [architecture](architecture.md) and
 [API behavior/acceptance](features/ned-api/SPEC.md).
 
 ## Resource families and callers
 
 | Family | Purpose | Access |
 | --- | --- | --- |
-| `GET /api/v1` | Identity/version and operator path | Loopback/same-origin browser-safe |
-| `GET /api/v1/health` | `{status:"ok",service:"ned-api",version:1}` | Browser-safe |
-| `GET /api/v1/capabilities` | UI capabilities; service ned-api/version1 | Browser-safe |
-| `/api/v1/projects` | Project UI read models, delivery, attempt/session inspection | Browser-safe, read-only |
-| `/api/v1/chat` | Selected Hermes sessions, messages, attachments and turns | Same-origin, bounded mutations/streams |
-| `/api/v1/workspace/events`, `/api/v1/activity/events` | Read-model SSE updates | Browser-safe |
-| `/api/v1/model-setup` | Provider setup/status and account inheritance | Same-origin privacy header; never public quick tunnel |
-| `/api/v1/secrets` | Explicit private vault operations and secret cards | Privacy headers/Origin; never public quick tunnel |
-| `/api/v1/operator` | Registered projects, task commands, execution and automation | Private operator bearer; never Hub/public tunnel |
+| `GET /api/v1` | Identity/version and authentication requirement | Authenticated |
+| `GET /api/v1/health` | `{status:"ok",service:"ned-api",version:1}` | Authenticated |
+| `GET /api/v1/capabilities` | UI capabilities; service ned-api/version1 | Authenticated |
+| `/api/v1/projects` | Project UI read models, delivery, attempt/session inspection | Authenticated; read-only presentation methods |
+| `/api/v1/chat` | Selected Hermes sessions, messages, attachments and turns | Authenticated; same-origin, bounded mutations/streams |
+| `/api/v1/workspace/events`, `/api/v1/activity/events` | Read-model SSE updates | Authenticated |
+| `/api/v1/secrets` | Explicit private vault operations and secret cards | Authenticated; explicit privacy headers/Origin |
+| `/api/v1/project-registrations` | Paged project registry | Authenticated |
+| `/api/v1/{context,task-management,coordinator,execution-capabilities}` | Context, task commands, reconciliation and execution capabilities | Authenticated |
+| `/api/v1/projects/:id/{tasks,goals,attempts,automations,events,metrics}` | Task management, execution and automation resources | Authenticated |
 
-Browser project presentation and operator project registration are different
+Project presentation and paged project registration are different
 documented read models of the same SQLite registry. `GET /projects` always has
-the browser schema, even when a bearer happens to be supplied. Paged operator
-registration is `GET /operator/projects`; credentials never select a different
+the browser schema, even when a bearer happens to be supplied. Paged registry
+registration is `GET /project-registrations`; credentials never select a different
 schema on the same URL. Resource-specific JSON shapes remain explicit below;
-operator envelopes use `data`, browser endpoints retain their existing typed
+coordination envelopes use `data`, browser endpoints retain their existing typed
 objects. Errors consistently use `{error:{code,message}}`.
 
 ### Client selection and compatibility
@@ -39,7 +40,12 @@ embedded credential, query or fragment. With no configured origin, the CLI start
 a backend-only server with a process-private bearer, verifies runtime/database
 fingerprints, makes the same HTTP request and closes it. No coordinator starts.
 
-Legacy `/api/core/v1/*` maps directly to `/api/v1/operator/*`. Existing
+Legacy `/api/core/v1/*` remains an authenticated coordination alias. Its registry,
+health, work and capabilities retain their old `data` envelopes; canonical health,
+capabilities and work use presentation shapes, registry uses
+`/api/v1/project-registrations`, and execution capabilities use
+`/api/v1/execution-capabilities`. The canonical `/api/v1/operator` namespace is
+removed (404 after authentication). Existing
 `/api/{health,capabilities,projects,chat,secrets,workspace,activity}` maps directly
 to the matching `/api/v1/*` family. These are non-redirecting compatibility
 aliases: bodies, response shapes, request keys, query strings, SSE IDs and
@@ -56,19 +62,18 @@ routes and are unchanged.
 
 ### Shared trust boundary
 
-Listeners require the exact loopback Host and absent or exact same Origin.
-Operator paths and their malformed/encoded aliases are denied before forwarding
-on both Hub and quick-public bridges, even with a bearer. Unknown API families
-are not implicitly exposed. Quick public tunnels also deny secrets; authenticated
-Hub secret operations retain their existing explicit privacy controls. Browser
-routes never expose an operator bearer. Requests cannot select DB, profile,
-gateway origin or provider credentials.
+Every API and legacy alias, including discovery/health and streams, authenticates
+before dispatch. Missing or invalid credentials return401 with a bounded error and
+`WWW-Authenticate: Basic realm="NED", charset="UTF-8"`. Listeners also require the
+exact loopback Host and absent or exact same Origin. Unknown API families and
+malformed paths are denied by transport adapters. Requests cannot select DB,
+profile, gateway origin or provider credentials.
 
-## Browser resource contract
+## Presentation resource contract
 
 Paths below are relative to `/api/v1`. IDs are retained opaque ASCII IDs, not
 display titles or filesystem paths. Browser mutations require the exact Origin;
-read requests may omit Origin. No browser mutation inherits operator authority.
+read requests may omit Origin. All require the same instance authentication.
 
 ### Projects and visible task outputs
 
@@ -91,7 +96,7 @@ read requests may omit Origin. No browser mutation inherits operator authority.
   never a client-selected file path or remote URL. Project and task ownership
   are revalidated; image metadata does not inline private paths.
 
-Retain raw IDs, `nextOffset` and operator cursors separately from labels. An
+Retain raw IDs, `nextOffset` and registry cursors separately from labels. An
 invalid/stale cursor/page or unavailable project returns the domain's bounded
 4xx/503 error; never guess the next ID, silently select another project or
 publish a cached output without revalidation.
@@ -142,7 +147,7 @@ acceptance and hosted image rollout are separate from deterministic transport te
 `GET /workspace/events` emits the existing workspace/project inventory snapshots;
 `GET /activity/events?project=<id>` emits the latest visible goal/task changes.
 Both are SSE with heartbeat, bounded pending writes and disconnect/shutdown cleanup.
-These read models are distinct from authenticated operator lifecycle event
+These read models are distinct from authenticated lifecycle event
 streams below, which use durable event IDs and opaque continuation tokens.
 
 ### Secrets and private entry/reveal cards
@@ -150,7 +155,9 @@ streams below, which use durable event IDs and opaque continuation tokens.
 All operations require `X-NED-Secrets: 1`, reject cross-site requests and query
 strings, and retain the selected runtime's encrypted vault. Non-list operations
 also require exact Origin. Values never appear in list responses, logs, task
-metadata or chat. Public quick-tunnel mode disables this family completely.
+metadata or chat. Authenticated access uses these same explicit privacy checks
+locally and through either transport. Embedders may disable the family with
+`secretsEnabled:false`.
 
 - GET `/secrets` -> `{secrets:[...safe metadata...]}`, never values.
 - PUT `/secrets/:KEY` with JSON `{value}` -> saved metadata.
@@ -168,33 +175,45 @@ successful tool-result IDs exactly; never synthesize secret cards from prose.
 Expired/foreign/invalid references fail without revealing a value. The detailed
 storage/card contract is [Secret management](features/secret-management/SPEC.md).
 
-## Operator contract
+## Coordination resources
 
-Everything below applies to `/api/v1/operator`, not the browser families.
-The implementation remains Core, but this is the operator family of NED API v1,
-not a second product API.
+These resources share `/api/v1` and the same authentication as presentation/chat
+resources. The implementation remains Core. There is no privileged path group.
 
 ## Connection and authentication
 
-Base path: `/api/v1/operator` on the configured loopback Core or COM listener.
-Core is a backend for COM and trusted local integrations, not a public unauthenticated
-automation endpoint. Every route, including health, requires:
+Base path: `/api/v1` on the configured Core or COM listener. Every API route,
+including health, requires authentication. CLI/integrations send:
 
 ```http
-Authorization: Bearer <runtime-private-operator-token>
+Authorization: Bearer <runtime-private-instance-key>
 ```
 
 The token is stored in `<selected-runtime>/.ned/core/operator-token`, with private
 directory/file permissions. Never place it in a URL, browser bundle, browser
-storage or a log. The operator has authority over the selected runtime; an actor
-label is not an authentication credential. COM's backend uses the in-process Core
-facade; it does not expose this token to its browser UI.
+storage or a log. Authenticated callers have authority over the selected runtime;
+an actor label is not an authentication credential. Browser navigation receives
+a standard HTTP Basic challenge: username `ned`, password the private instance
+key. The browser handles Basic credentials for fetch/uploads/EventSource; no
+key is embedded in JavaScript, local storage or URLs. The COM document challenges
+before loading instance data. Browser password managers may retain credentials;
+rotate the private key and restart the instance to revoke credentials and active
+streams. Existing key storage is retained for compatibility.
+
+Container COM also accepts `NED_COM_USERNAME`/`NED_COM_PASSWORD`; absent a separate
+pair it accepts plaintext dashboard credentials. A dashboard password hash is
+not a plaintext API password; the instance key still works. Container health
+checks authenticate with the instance key. Keys/passwords remain outside Git.
+
+The socket-less Hub bridge injects the target instance credential only after
+authenticated, instance-bound Hub channel and Origin validation; incoming client
+headers cannot grant this authority. Public quick tunnels inject no credential:
+clients must sign in. Both transports expose the same authenticated resources.
 
 Only the exact bound loopback Host is accepted. Origin must be absent or exactly
 the listener's origin. There is no cookie authentication or cross-origin access.
-Public-tunnel and Hub bridges reject this entire namespace, even with a valid
-bearer. Clients cannot select a database, Hermes URL, credential or profile in a
-request. Only the operator task-management endpoint accepts an absolute existing
+Clients cannot select a database, Hermes URL, credential or profile in a
+request. Only the task-management endpoint accepts an absolute existing
 project directory for canonical initialization/selection; other routes use IDs.
 
 ## Common request and response rules
@@ -214,7 +233,7 @@ project directory for canonical initialization/selection; other routes use IDs.
 | Status | Meaning |
 | --- | --- |
 | 400 | Invalid JSON, fields, cursor or idempotency key |
-| 401 | Missing or invalid operator bearer |
+| 401 | Missing or invalid instance authentication |
 | 403 | Disallowed transport, Host or Origin |
 | 404 | Missing or foreign project/resource; no membership disclosure |
 | 409 | State, ownership, revision or idempotency conflict |
@@ -246,7 +265,7 @@ array. The closed operation enum mirrors the domain service:
 | setDelivery | `[id,{impact?,remainingSeconds?,estimatedFinish?,outputs?}]` |
 | getTaskAttempts | `[id,cursor?]` |
 
-All requests, including these POST reads, require the standard operator bearer,
+All requests, including these POST reads, require instance authentication,
 JSON and Idempotency-Key. Only mutations save receipts: scope canonical
 project+actor, hash operation+args, receipt and state atomically committed. Same
 key/input returns the original result; a changed operation/body conflicts409.
@@ -267,7 +286,7 @@ automatically. Use `--request-id` for identical retry recovery. Behavioral tests
 [task-management TC-013](features/task-management/SPEC.md).
 
 ### Delivery metadata for Goals & Tasks
-`PUT /projects/:projectId/tasks/:taskId/delivery` replaces one item's presentation record without starting work or changing status. Normal operator bearer/origin/idempotency rules apply. Goal IDs are accepted for explicit finish estimates.
+`PUT /projects/:projectId/tasks/:taskId/delivery` replaces one item's presentation record without starting work or changing status. Normal authentication/origin/idempotency rules apply. Goal IDs are accepted for explicit finish estimates.
 
 ```json
 {"impact":"Reduce checkout abandonment.","remainingSeconds":1200,"estimatedFinish":"2026-11-20T12:00:00.000Z","outputs":[{"id":"brief","kind":"document","title":"Implementation brief","text":"Customers can check out with fewer fields."}]}
@@ -277,16 +296,16 @@ Omitted fields reset on replacement: impact becomes empty, estimates null, outpu
 
 Work snapshots return compact `delivery`: impact, remainingSeconds, estimatedFinish, updatedAt, nullable trackedSeconds and output IDs/kinds/titles. Descriptions and output bodies stay out of bulk reads. Tracked time means claimed working intervals excluding recorded blockers, not CPU time or verified labor. Legacy work without history/metadata retains null estimates/time.
 
-Project read-model resource: `/api/v1/projects/:project/tasks/:task` returns description/impact/outputs and20 newest attempts with `nextOffset`; `?offset=N` continues. `/attempts/:attempt` returns captured result flags and bound sessions. `/attempts/:attempt/sessions/:session/messages?offset=N` returns≤50 sanitized rows only for a persisted binding matching current gateway identity. `/outputs/:output` serves PNG or plain text without client-selected paths. These inherit existing COM access boundaries, not an operator credential in the browser. Public bridges still block privileged Core routes. Behavioral authority and tests: [communicator FR-066–070 / TC-042](features/communicator/SPEC.md).
+Project read-model resource: `/api/v1/projects/:project/tasks/:task` returns description/impact/outputs and20 newest attempts with `nextOffset`; `?offset=N` continues. `/attempts/:attempt` returns captured result flags and bound sessions. `/attempts/:attempt/sessions/:session/messages?offset=N` returns≤50 sanitized rows only for a persisted binding matching current gateway identity. `/outputs/:output` serves PNG or plain text without client-selected paths. These require the same instance authentication as all other resources. Behavioral authority and tests: [communicator FR-066–070 / TC-042](features/communicator/SPEC.md).
 
-All paths below are relative to `/api/v1/operator`. `projectId`, `taskId`,
+All paths below are relative to `/api/v1`. `projectId`, `taskId`,
 `attemptId`, `automationId` and `tickId` are returned identifiers, not labels.
 
 | Method | Path | Input / outcome |
 | --- | --- | --- |
 | GET | `/health` | Safe backend status; no private paths or provider credentials |
-| GET | `/capabilities` | Execution support and capacity diagnostics |
-| GET | `/projects` | Canonical registered project catalog |
+| GET | `/execution-capabilities` | Execution support and capacity diagnostics |
+| GET | `/project-registrations` | Paged registered project records; `{data,nextCursor}` |
 | GET | `/projects/:projectId/work` | Shared authoritative work projection |
 | POST | `/projects/:projectId/goals` | Canonical goal creation fields |
 | POST | `/projects/:projectId/tasks` | Canonical task creation fields |
@@ -413,17 +432,19 @@ resource capped at 1 MiB with explicit truncation/completeness flags.
 
 ## Verification status
 
-The six executable cases in [SPEC.md](features/core-orchestration/SPEC.md#detailed-test-cases) are the
-acceptance matrix; release evidence records their actual results. Live agent work,
-public operator access and new
-COM orchestration controls are not claimed by this backend milestone.
+The [NED API cases](features/ned-api/SPEC.md#detailed-test-cases) and existing
+Core/COM cases are the acceptance matrix; release evidence records actual results.
+Native container acceptance and the named provider-backed goals/tasks workflow are
+verified separately from default small/medium tests. A local source release does
+not certify hosted staging, new OAuth flows or the entire skill evaluation inventory.
 
 ## Model setup
 
-Core owns these routes on full NED API/COM listeners. Backend-only operator
-listeners and public quick tunnels do not expose this family. Capabilities add
+Core owns these routes on full NED API/COM listeners. Backend-only coordination
+listeners do not expose this family. Public transports never inject authority;
+authenticated owners use the same API resources with the existing privacy guards. Capabilities add
 `modelSetup:true` for private setup, false when private operations are disabled.
-Both methods require `X-NED-Models:1`, exact bound Host and no cross-site fetch.
+Both methods require current NED API authentication, `X-NED-Models:1`, exact bound Host and no cross-site fetch.
 POST also requires exact Origin and JSON, with a16KiB body limit.
 
 - `GET /api/v1/model-setup`: `{configured,source:"local"|"profile"|"hub",model?,
@@ -438,7 +459,7 @@ POST also requires exact Origin and JSON, with a16KiB body limit.
 
 Read → retain exact nonce → submit once → read back status is the caller chain.
 A failed/timed-out request must not replay the key or automatically retry; obtain
-fresh status and explicitly submit again.400 invalid/consumed intent;403 privacy
+fresh status and explicitly submit again.400 invalid/consumed intent;401 revoked API authentication;403 privacy
 boundary/hosted local-key prohibition;409 profile changed/missing account connection;
 422 provider rejected credentials;503 configuration/provider unavailable. Unsafe
 or ambiguous profile data is not overwritten. Key input is cleared on submit.
@@ -451,3 +472,5 @@ central. See [model setup specification](features/model-setup/SPEC.md) for local
 file ownership, actual-vs-synthetic verification and staged deployment gates.
 
 Private model-profile writes currently require POSIX permissions; Windows mutation fails closed (`model_setup_platform_unavailable`) pending an ACL-backed implementation. No provider credential is written with unverified permissions.
+
+Model setup rechecks the current NED API credential and caller connection after provider/profile awaits and immediately before the atomic profile commit. A credential revoked during authentication cannot save a connection.

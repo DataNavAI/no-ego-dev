@@ -133,8 +133,8 @@ export function createChatGateway(options = {}) {
         }
         let model={};
         if(!fixed&&match[2]==='chat'&&options.beforeChat){
-          try{model=await options.beforeChat();}
-          catch(error){return send(error instanceof ModelSetupError?error.status:503,{error:{code:error instanceof ModelSetupError?error.code:'model_setup_unavailable',message:'Model provider is required before chatting.'}});}
+          try{model=await options.beforeChat(req,res);}
+          catch(error){return send(error instanceof ModelSetupError?error.status:503,{error:{code:error instanceof ModelSetupError?error.code:'model_setup_unavailable',message:error instanceof ModelSetupError?error.message:'Model settings are unavailable. Check configuration and try again.'}});}
         }
         body = JSON.stringify(fixed ? fixedSession : match[2] === 'chat' ? {input:prepared.input,...model} : {source:'nedcom'});
       }

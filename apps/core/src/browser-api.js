@@ -1,4 +1,4 @@
-import {createModelSetup} from './model-setup.js';
+import {createModelSetup,ModelSetupError} from './model-setup.js';
 import {readProjectWork} from './work.js';
 import {readTaskDelivery} from './task-delivery.js';
 import {createSecretsHandler} from './secrets.js';
@@ -8,15 +8,16 @@ import {createProjectReader,ProjectError} from './projects.js';
 
 const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
 
-export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup}={}){
+export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,apiAuthenticated=()=>true}={}){
   const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
   const projects=createProjectReader({databasePath,home,env});
   const models=modelSetup??createModelSetup({home,env,enabled:secretsEnabled});
-  const chat=createChatGateway({home,env,...chatGateway,databasePath,logger,beforeChat:()=>models.prepare()});
+  const live=(req,res)=>{try{return !res.destroyed&&apiAuthenticated(req);}catch{return false;}};
+  const chat=createChatGateway({home,env,...chatGateway,databasePath,logger,beforeChat:async(req,res)=>{const result=await models.prepare(()=>live(req,res));if(!live(req,res))throw new ModelSetupError(401,'model_setup_unauthorized');return result;}});
   const activity=createActivityStreams(databasePath);
   const handler=async(req,res,send,origin)=>{
     const error=(status,code,message,extra)=>send(status,{error:{code,message}},extra);
-    if(req.url==='/api/model-setup'||req.url.startsWith('/api/model-setup?')||req.url.startsWith('/api/model-setup/'))return models.handle(req,res,send,origin);
+    if(req.url==='/api/model-setup'||req.url.startsWith('/api/model-setup?')||req.url.startsWith('/api/model-setup/'))return models.handle(req,res,send,origin,()=>live(req,res));
     if(req.url.startsWith('/api/chat/'))return chat(req,res,send);
     if(req.url==='/api/secrets'||req.url.startsWith('/api/secrets/')||req.url.startsWith('/api/secrets?'))return secrets(req,res,send,origin);
     if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});

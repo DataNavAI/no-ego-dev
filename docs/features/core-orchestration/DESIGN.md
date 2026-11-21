@@ -4,7 +4,7 @@ Designed against NED `802db16415c5cc12de98a5b9138a50a9590b202a`; behavioral auth
 
 ## Grounding
 
-`src/tasks.js:createTaskService` owns canonical project identity, dependency/hierarchy/claim/completion. `src/database.js` owns runtime-selected SQLite/WAL/FULL and schema1. `communicator/work.js` duplicates some projection SQL; move authoritative readers into core and retain compatibility wrapper. `server.js` loopback origin checks do not authenticate local tools. `hub.js`/`tunnel.js` rewrite trusted headers: deny normalized core namespace before forwarding.
+`src/tasks.js:createTaskService` owns canonical project identity, dependency/hierarchy/claim/completion. `src/database.js` owns runtime-selected SQLite/WAL/FULL and schema1. `communicator/work.js` duplicates some projection SQL; move authoritative readers into core and retain compatibility wrapper. All API requests now authenticate under the shared [NED API contract](../../api.md). Loopback/Origin checks remain additional protections; trusted Hub channels delegate instance credentials, while public tunnels never inject authority.
 
 Installed Hermes source inspected at `962e205e5e206e286658d965ca46e832debff3f4`: `gateway/platforms/api_server.py` accepts known session `id`, `title`, `source`; duplicate creation atomic409, GET and PATCH title available. `api_server_runs.py` exposes `/v1/runs`, run GET/events/stop and durable Idempotency-Key fingerprinting body+session-key. Same-key lookup precedes concurrency admission; duplicate payload converges, changed payload409. `/v1/capabilities` includes `features.runs_idempotency:{supported,durable,retention_seconds}`. Run owner scope is credential/profile-specific. Use exact same key/body recovery; no GET-by-key assumed. These are source observations, not live model execution. No invented metadata/title parameter on delegate_task. No Hermes upgrade authorized.
 
@@ -12,7 +12,7 @@ R2 safety refinement: that upstream same-key convergence is finite-retention beh
 
 ## Components
 
-`apps/core/src/` owns the headless facade/store/coordinator/Hermes adapter/HTTP handler. `apps/com/src/` owns COM and its assets; `apps/cli/src/` owns command dispatch. `ned core serve` runs loopback HTTP; COM lazily mounts the same authenticated handler under `/api/v1/operator` and consumes the shared Core work reader. Existing project/filesystem readers are reused, not forked. Existing task service's shared database connection seam makes task claim+attempt/event/outbox one transaction. Old COM response shapes and source import wrappers remain compatible. Shared task/runtime/security code stays in root `src/`; shared gateway settings and ProjectError no longer require Core to depend on COM.
+`apps/core/src/` owns the headless facade/store/coordinator/Hermes adapter/HTTP handler. `apps/com/src/` owns COM and its assets; `apps/cli/src/` owns command dispatch. `ned core serve` runs loopback HTTP; COM lazily mounts the same authenticated handler under `/api/v1` and consumes the shared Core work reader. Existing project/filesystem readers are reused, not forked. Existing task service's shared database connection seam makes task claim+attempt/event/outbox one transaction. Old COM response shapes and source import wrappers remain compatible. Shared task/runtime/security code stays in root `src/`; shared gateway settings and ProjectError no longer require Core to depend on COM.
 
 Core owns independent accepted-run observers, not reconcile request/browser. Tick deterministic and bounded, no LLM coordinator conversation. No background dispatch scheduling starts by default. Trusted startup configuration selects one Hermes settings/profile through existing `resolveGatewaySettings`; requests cannot override it. Store opaque origin+credential/profile fingerprint; key rotation/identity mismatch blocks continuation for operator review, never cross-profile bind. Never expose raw keys/URLs.
 
@@ -20,7 +20,7 @@ Enrollment authorizes eligibility but does not itself create instructions or que
 
 ## Operator auth and transport
 
-Create32-byte random token once in `<runtime>/.ned/core/operator-token`,0700 parent/0600 file, no symlink/unsafe-owner modes; fail closed. HTTP reads/writes require bearer from private file; no token in URL/HTML/localStorage/logs. Full selected-runtime operator authority, no invented multi-user ACL. Actor only audit identity. In-process COM backend facade uses trusted process authority; existing browser read routes gain no new write privilege. Privileged browser UI/auth is future scope. Exact bound loopback Host; absent/exact Origin; no cookies/CORS. Both tunnel and Hub deny all normalized/encoded core namespace before header rewriting, even a valid bearer. Use one normalization routine that rejects malformed encodings/ambiguous paths.
+Create32-byte random instance key once in `<runtime>/.ned/core/operator-token`,0700 parent/0600 file, with no symlink/unsafe-owner modes. Every API requires this bearer or browser Basic authentication; optional container Basic credentials use a complete configured pair. Actor remains audit data, not authentication. Canonical resources share `/api/v1` with no privilege group. Presentation schemas are independent of credential type; legacy envelopes remain aliases. [Canonical auth and transport contract](../../api.md#connection-and-authentication) governs Hub delegation, public tunnel credential pass-through, exact Host/Origin and no secret URLs/application storage/logs.
 
 ## Additive schema
 
@@ -106,12 +106,12 @@ At high watermark retain all evidence; no automatic deletion/compaction. API cap
 
 ## Versioned HTTP contract
 
-Prefix `/api/v1/operator`; success `{data:...}`, error `{error:{code,message}}`.401 auth,403 transport,400 invalid,404 absent/foreign,409 state/key/lease conflict,413 oversized,503 dependency. Bounded sanitized errors; no raw upstream text. All mutation methods require JSON+Idempotency-Key. Pages `{data:[],nextCursor:null|string}`; opaque version/project/filter-bound cursor validated, limit1–100 default50. Raw IDs retained separately from display labels.
+Prefix `/api/v1`; coordination success `{data:...}`, error `{error:{code,message}}`. Canonical presentation health, capabilities and work retain their typed shapes; credential type never selects an envelope. Legacy Core aliases retain their old envelopes. See the authoritative [API reference](../../api.md).401 auth,403 transport,400 invalid,404 absent/foreign,409 state/key/lease conflict,413 oversized,503 dependency. Bounded sanitized errors; no raw upstream text. Coordination mutation methods require JSON+Idempotency-Key; chat/secrets retain their own documented contracts. Registry/coordination pages use `{data:[],nextCursor:null|string}`, opaque version/project/filter-bound cursors and limit1–100 default50. Raw IDs remain separate from labels.
 
 | Method/path | Request → response → retained state/next action |
 | --- | --- |
-| GET `/health`, `/capabilities` | safe version/capability flags; no gateway keys/URLs |
-| GET `/projects`, `/projects/:projectId/work` | canonical catalog/work; retain returned project/task IDs |
+| GET `/health`, `/capabilities`, `/execution-capabilities` | authenticated health/UI/execution flags; no gateway keys/URLs |
+| GET `/projects`, `/project-registrations`, `/projects/:projectId/work` | presentation catalog, paged registry and work; retain returned project/task IDs |
 | POST `/projects/:projectId/goals`, `/tasks` | existing create fields/rules → canonical work item; retain ID |
 | POST `/projects/:projectId/tasks/:taskId/complete` | evidence → existing owner completion; active/unverified managed attempt409 |
 | PUT `/projects/:projectId/tasks/:taskId/enrollment` | `{enabled:boolean}` → enrollment, no execution |
@@ -138,7 +138,7 @@ Trusted Node example (operatorToken loaded privately, never printed):
 
 ```js
 const headers = {Authorization: `Bearer ${operatorToken}`, 'Content-Type':'application/json', 'Idempotency-Key':'attempt-example-1'};
-const response = await fetch(`${core}/api/v1/operator/projects/${projectId}/tasks/${taskId}/attempts`, {method:'POST',headers,body:JSON.stringify({instructions:'Run approved synthetic acceptance.',role:'worker'})});
+const response = await fetch(`${core}/api/v1/projects/${projectId}/tasks/${taskId}/attempts`, {method:'POST',headers,body:JSON.stringify({instructions:'Run approved synthetic acceptance.',role:'worker'})});
 const attemptId = (await response.json()).data.id;
 ```
 

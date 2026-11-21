@@ -46,7 +46,7 @@ export function readHubConfiguration(env = process.env) {
 }
 
 // This bridge has no listening socket: only authenticated Hub data channels enter it.
-function createBridge(config, target,logger) {
+function createBridge(config, target,logger,apiCredential) {
   return http.createServer((req,res) => {
     if (req.headers.host !== 'ned-com' || req.headers['x-ned-instance'] !== config.slug || req.headers['x-forwarded-host'] !== config.instance.host || req.headers['x-forwarded-proto'] !== config.instance.protocol.slice(0,-1) || (req.headers.origin !== undefined && req.headers.origin !== config.instance.origin)) {
       res.writeHead(403);res.end();return;
@@ -54,6 +54,7 @@ function createBridge(config, target,logger) {
     if (!req.url.startsWith('/') || req.url.startsWith('//')) {res.writeHead(400);res.end();return;}
     if(!exposeNedApiPath(req.url)){res.writeHead(403);res.end();return;}
     const headers = {...req.headers,host:target.host};
+    try{const credential=typeof apiCredential==='function'?apiCredential():apiCredential;if(typeof credential!=='string'||!/^[a-f0-9]{64}$/.test(credential))throw new Error();headers.authorization=`Bearer ${credential}`;}catch{res.writeHead(503);res.end();return;}
     if (headers.origin !== undefined) headers.origin = target.origin;
     for (const key of Object.keys(headers)) if (key.startsWith('x-forwarded-') || key === 'x-ned-instance') delete headers[key];
     const upstream = http.request({hostname:target.hostname,port:target.port,path:req.url,method:req.method,headers},response => {
@@ -67,10 +68,11 @@ function createBridge(config, target,logger) {
   });
 }
 
-export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger} = {}) {
+export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger,apiCredential} = {}) {
+  if(typeof apiCredential!=='function'&&(typeof apiCredential!=='string'||!/^[a-f0-9]{64}$/.test(apiCredential)))throw new Error('NED API credential required for Hub transport.');
   const target = new URL(targetUrl);
   if (target.protocol !== 'http:' || !loopback(target.hostname) || target.pathname !== '/' || target.username || target.password || target.search || target.hash) throw new Error('Invalid COM target.');
-  const bridge = createBridge(config,target,logger);
+  const bridge = createBridge(config,target,logger,apiCredential);
   const streams = new Set();
   let stopped = false,control,retry,heartbeat,attempt = 0,abort;
   let lastStatus;

@@ -1,8 +1,9 @@
 import {configuredModelSetup} from './model-fixture.js';
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 
 const canonical={id:'nedcom-main',title:'NED Chat',source:'api_server'};
 

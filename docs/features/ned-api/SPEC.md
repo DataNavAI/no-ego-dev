@@ -2,7 +2,7 @@
 
 Status: implemented
 Release verification and deployment remain separate gates.
-Related issues: none; durable task ned-b9914f9f-d82c-40a4-9ffd-c50e90399a62.
+Related issues: durable tasks ned-b9914f9f-d82c-40a4-9ffd-c50e90399a62 and ned-c5c39b1c-4be2-4f61-ad49-feccd060a42b.
 
 ## User outcome and scope
 
@@ -10,39 +10,44 @@ CLI, COM and trusted integrations use one backend contract named **NED API v1**,
 owned by Core and rooted at `/api/v1`. COM hosts the web UI and relays this same
 API; it does not maintain a second backend. Existing data, public CLI commands,
 private credential storage, Hermes upstream protocols and runtime isolation stay
-unchanged. This is not permission to expose operator coordination publicly,
-remove authentication, migrate databases or enable automatic agent dispatch.
+unchanged. Every API requires authentication, locally and through transports.
+This does not authorize database migration or automatic agent dispatch.
 
 Canonical interface: [API reference](../../api.md). System responsibilities and
 security boundaries: [architecture](../../architecture.md).
 
 ## Requirements
 
+Authentication design: [AUTHENTICATION.md](AUTHENTICATION.md). Implementation and
+release/deployment verification are separate; no staging rollout is implied.
+
 - FR-001: One Core-owned API handler serves `/api/v1` on both the full Core and
   COM listeners. Core owns chat, project read models, activity and secret API
   services as well as coordination. COM owns static UI and transport adapters.
-  Backend-only ephemeral CLI servers enable only operator operations.
-- FR-002: Browser resources are `/api/v1/{health,capabilities,projects,chat,secrets,
-  workspace,activity}`. Privileged resources are `/api/v1/operator/...`, retaining
-  the previous operator resource hierarchy and response envelopes. Project read
-  models and paged operator project registration are distinct documented views,
-  never different responses selected by the presence of a credential.
+  Backend-only ephemeral CLI servers enable only coordination operations, after authentication.
+- FR-002: All resources share `/api/v1` without a privilege path group.
+  Presentation resources retain their canonical schemas. Coordination resources
+  use direct context/task-management/coordinator and project execution/automation
+  paths. Paged project registrations use `/project-registrations`; execution
+  capabilities use `/execution-capabilities`. Credential type never selects a
+  response schema. Former `/api/v1/operator` paths404 after authentication.
 - FR-003: CLI and shipped browser clients use canonical routes. Existing
   `/api/core/v1/...` and unversioned COM endpoints remain non-redirecting aliases
   with their existing payloads, status codes, query/cursor semantics and streaming
   behavior. Canonical and alias mutations share the same idempotency namespace.
   Hermes upstream `/api/sessions` is not a NED route and is not renamed.
-- FR-004: Exact loopback Host and same-origin policy remain enforced. Operator
-  routes require the existing runtime-private bearer and are blocked on Hub and
-  public tunnels even with a valid bearer. Public quick tunnels also block secret
-  operations. Canonical, legacy, encoded, repeated-encoding, slash/dot and malformed
-  variants cannot bypass these boundaries. Unknown versioned API families are
-  denied by remote adapters rather than implicitly made public.
+- FR-004: Every API route, including health, discovery, reads, streams, mutations
+  and aliases, requires a valid instance bearer or browser Basic credential.
+  Missing/invalid authentication401s before dispatch, without data or gateway/work
+  side effects. Exact Host/Origin policy remains enforced. Hub grants authority
+  only through its authenticated instance-bound channel; public tunnels never
+  inject credentials. Malformed/encoded paths and unknown families cannot bypass
+  authentication or remote validation. The COM document challenges before use.
 - FR-005: Chat submission/attachments/stop retain their existing Origin, type,
   size, session/context and receipt checks. Secrets retain X-NED-Secrets, Origin,
-  public-mode and reveal/entry constraints. No credential reaches browser bundles,
-  logs, URLs or error bodies. Browser-safe APIs do not start an operator service
-  or expose its token merely to read chat/projects/health.
+  reveal/entry constraints. No credential reaches browser bundles, logs, URLs or
+  error bodies. Browser-managed HTTP credentials are not placed in application
+  storage. Presentation reads do not start coordination work.
 - FR-006: Chat and activity/event streams retain progressive delivery, event IDs,
   cursor validation, bounded buffering, disconnect cleanup and stop semantics.
   Aliases are dispatched directly, without redirects or buffering whole responses.
@@ -61,9 +66,9 @@ security boundaries: [architecture](../../architecture.md).
 ### CUJ-001: Use the same API through Core, CLI and COM
 
 Actor: contributor/operator. Starting state: isolated runtime, database and project,
-full Core or COM listener; operator token kept outside the browser. Discover API
-identity, read browser project data, execute a CLI/task command through the operator
-family, and read back authoritative state. Critical because unified naming without
+full Core or COM listener; private instance credential. Authenticate, discover API
+identity, read project data, execute a CLI/task command, and read back authoritative
+state. Critical because unified naming without
 shared backend ownership would retain divergent behavior. Failure preserves data,
 returns the existing bounded error, and requires readback before mutation retry.
 
@@ -78,12 +83,12 @@ On interrupted writes preserve IDs/keys and inspect status instead of resending.
 
 ### CUJ-003: Preserve local and remote trust boundaries
 
-Actor: operator and authenticated Hub/public-tunnel user. Starting state: synthetic
-private token, isolated vault, local API and controlled bridge. Access browser-safe
-resources remotely, attempt privileged paths and malformed variants, and verify
-denial before forwarding. Secrets remain unavailable through public quick tunnels.
-Critical because combining namespaces must not turn local authority into remote
-authority. Authentication failures never expose storage, credentials or handlers.
+Actor: authenticated owner and unauthenticated caller. Starting state: synthetic
+private credential, isolated vault, local API and controlled bridge. Try every
+resource/method class without valid credentials, then authenticate through bearer,
+Basic or trusted Hub channel. Public tunnels must not authenticate callers merely
+because they know the URL. Critical because all instance data and operations
+require authority. Failures expose no storage/credentials and start no work.
 
 ## Detailed test cases
 
@@ -92,16 +97,19 @@ authority. Authentication failures never expose storage, credentials or handlers
 - Level / automation: integration; tests/TC-001.test.js and existing Core/COM bridge cases.
 - Preconditions / fixtures: synthetic HTTP requests, loopback origin, fixed test
   bearer; no provider, user vault or external tunnel connection.
-- Given: canonical and legacy operator/secret/browser paths plus malformed variants.
+- Given: canonical and legacy resource paths plus malformed variants and synthetic private credentials.
 - When: classify paths and exercise local/remote guards with and without a bearer.
-- Then: only canonical browser families are eligible for remote forwarding;
-  operator/unknown/malformed paths cannot bypass policy, and quick tunnels deny
-  secrets. Encoded/double-encoded operators, duplicate slashes, traversal,
+- Then: only known resource families are eligible for remote forwarding;
+  unauthenticated API requests401, authenticated requests reach the same resources,
+  and unknown/malformed paths cannot bypass policy. Encoded/double-encoded removed paths, duplicate slashes, traversal,
   backslashes, query confusion and invalid escapes remain denied.
 - Steps and assertions: execute the case; table-driven positive/negative vectors
   assert classifications, mapped targets and actual HTTP status/forwarding counts.
-- Variants / negative cases: forged Host/Origin, bearer on public operator route,
-  unknown version/family, method-independent denial; no data writes occur.
+- Variants / negative cases: forged Host/Origin, missing/wrong bearer or Basic,
+  GET/HEAD/POST across health, discovery, streams, reads, mutations and aliases;
+  removed operator namespace404 after authentication; no task writes occur. Public
+  bridges forward no authority; trusted Hub bridges overwrite client authorization
+  only after channel validation. Real browser navigation uses HTTP credentials.
 - Cleanup: close only owned test servers/bridges.
 - Pass evidence: named assertions and existing bridge regression results; no skips.
 
@@ -112,11 +120,11 @@ authority. Authentication failures never expose storage, credentials or handlers
   actor and bearer; full Core and COM listeners, no live gateway/model.
 - Given: empty registered project and the same authoritative task service.
 - When: call canonical discovery/project resources, create a task through canonical
-  operator API, replay the same key through the legacy alias, then read back state.
+  coordination API, replay the same key through the legacy alias, then read back state.
 - Then: API identity is NED API v1, both listeners expose browser resources,
-  unauthenticated operators fail, replay creates exactly one task/event, changed
+  unauthenticated callers fail, replay creates exactly one task/event, changed
   body conflicts, old payloads remain compatible and backend-only disables browser
-  resource families. Browser reads never create an operator token on COM startup.
+  resource families. Startup creates a private credential; no secret appears in responses.
 - Steps and assertions: inspect JSON/status and actual persisted task/event counts;
   exercise CLI canonical request URLs through existing task transport cases. With
   no explicit databasePath, start full Core listeners using supplied home and env
@@ -124,7 +132,7 @@ authority. Authentication failures never expose storage, credentials or handlers
   to a distinct synthetic nonexistent path; assert selected-project work returns
   200 with an empty items array, activity SSE returns that project with empty
   updates, and no process-context database is created. Also inject a real database
-  with a conflicting explicit path; authenticated operator project reads and
+  with a conflicting explicit path; authenticated registry reads and
   browser work/activity must use the injected store. Close the handler and assert
   the caller-owned database remains queryable, then close it in cleanup. Restore
   the process env.
@@ -165,7 +173,7 @@ authority. Authentication failures never expose storage, credentials or handlers
 - Steps and assertions: check response shape/status and persisted synthetic value;
   delete it through the other alias and verify missing readback.
 - Variants / negative cases: query strings, oversized/extra-field JSON, malformed
-  path and public-mode restrictions remain covered by the secret regression suite.
+  path and explicit disabled-server restrictions remain covered by the secret regression suite; both authenticated transports retain the same privacy checks.
 - Cleanup: remove only the owned vault/runtime after closing handlers.
 - Pass evidence: exact state/privacy assertions; no real secret in outputs.
 

@@ -20,7 +20,7 @@ test('TC-003: private stores align with selected root and explicit legacy home r
   const store=createSecretStore({env});store.set('TOKEN','synthetic-root-value');const exported=store.get('TOKEN',{file:true});assert.equal(exported.path,join(profile,'.ned/secrets/files/TOKEN'));
   assert.equal(statSync(exported.path).mode&0o777,0o600);
   const app=createCommunicatorServer({env});await app.listen();t.after(()=>app.close());
-  const response=await fetch(app.url+'/api/secrets',{headers:{'X-NED-Secrets':'1'}});assert.equal(response.status,200);assert.deepEqual((await response.json()).secrets.map(item=>item.key),['TOKEN']);
+  const response=await fetch(app.url+'/api/secrets',{headers:{authorization:'Bearer '+app.apiCredential,'X-NED-Secrets':'1'}});assert.equal(response.status,200);assert.deepEqual((await response.json()).secrets.map(item=>item.key),['TOKEN']);
   assert.equal(existsSync(other),false);
   // Gateway profile selection is independent from the explicit NED storage home.
   const gateway=join(f.base,'gateway-profile');mkdirSync(gateway);writeFileSync(join(gateway,'config.yaml'),'gateway:\n  api_server:\n    port: 19876\n');

@@ -1,4 +1,5 @@
 import {configuredModelSetup} from './model-fixture.js';
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,readFile,stat,rm,mkdir,symlink,readdir} from 'node:fs/promises';
@@ -9,7 +10,7 @@ import {createComLogger,errorDiagnostic} from '../../../../apps/com/src/logging.
 import {runCommunicatorCli} from '../../../../apps/com/src/cli.js';
 import * as diagnostics from '../../../../apps/com/src/logging.js';
 import http from 'node:http';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {classifyFailureBody,readFailureBody} from '../../../../apps/com/src/public/request-diagnostic.js';
 const records=async path=>(await readFile(path,'utf8')).trim().split('\n').map(JSON.parse);
 test('TC-030: failed response classification is bounded and never retains private response content',async()=>{

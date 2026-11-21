@@ -1,9 +1,10 @@
 import {configuredModelSetup} from './model-fixture.js';
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import {mkdtempSync,mkdirSync,realpathSync,writeFileSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {openNedDatabase} from '../../../../src/database.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 export async function fixture(t,{gateway}={}) {
   const home = realpathSync(mkdtempSync(path.join(os.tmpdir(),'nedcom-projects-')));
   t.after(()=>rmSync(home,{recursive:true,force:true}));

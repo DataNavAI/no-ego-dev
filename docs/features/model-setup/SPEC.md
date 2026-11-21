@@ -16,7 +16,8 @@ No OpenAI hosted ChatGPT OAuth eligibility or paid inference is implied.
 ## Requirements
 
 - FR-001: Core owns `/api/v1/model-setup` on full NED API/COM listeners; backend-only
-  operator listeners and public quick tunnels do not expose setup. Exact Host,
+  coordination listeners do not expose setup. Every request requires the current
+  NED API credential; public transports do not inject authority. Exact Host,
   Origin, JSON and `X-NED-Models:1` protect writes; no keys in readback/storage/logs.
 - FR-002: Existing authenticated profile configuration takes precedence. Missing
   configuration prompts; unreadable/ambiguous configuration fails closed without
@@ -26,7 +27,7 @@ No OpenAI hosted ChatGPT OAuth eligibility or paid inference is implied.
   revalidates before chat and updates capability/model after generation/default
   change. Missing/revoked connection blocks a turn and offers account setup.
 - FR-004: Local API-key setup (or explicit replacement with a fresh intent) validates fixed HTTPS provider credential endpoints
-  before private atomic YAML replacement, with one-use opaque setup intent and
+  before private atomic YAML replacement, with a current-API-credential/caller recheck after provider awaits, one-use opaque setup intent and
   stale-state detection. Repeated/uncertain writes require status readback.
 - FR-005: UI shows selected provider/model and authentication/recovery action when
   missing; configured users continue chat. Composer preserves drafts during setup.
@@ -58,7 +59,7 @@ valid local overrides are retained. Workspace deletion is not part of setup.
 - When status, key setup, inheritance, stale/replayed writes and revocation occur.
 - Then assert private atomic persistence, unchanged unrelated fields, no raw
   provider grant in inherited profile/readback, exact model/capability and denial
-  before chat. Reject unsafe files, Origin/media/header/path and public exposure.
+  before chat. Reject unsafe files, Origin/media/header/path and unauthenticated exposure.
 - Cleanup: close owned listeners, abort requests and remove temporary profiles.
 - Evidence: named assertions; synthetic endpoints do not certify hosted OAuth.
 

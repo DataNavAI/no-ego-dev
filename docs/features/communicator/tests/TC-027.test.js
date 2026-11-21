@@ -1,9 +1,10 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {connectProjectPicker,enhanceProjectPicker} from '../../../../apps/com/src/public/project-picker.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 
 function fixture(){
   const document={activeElement:null};

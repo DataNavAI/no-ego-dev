@@ -1,3 +1,4 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
@@ -5,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createSecretStore} from '../../../../src/secrets.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {secretRequestRow} from '../../../../apps/com/src/public/secret-request.js';
 import {projectHistoryMessage} from '../../../../apps/com/src/chat-history.js';
 function setup(t){const home=mkdtempSync(join(tmpdir(),'ned-request-'));t.after(()=>rmSync(home,{recursive:true,force:true}));return home;}

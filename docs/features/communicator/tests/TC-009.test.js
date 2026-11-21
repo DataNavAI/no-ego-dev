@@ -1,4 +1,5 @@
 import {configuredModelSetup} from './model-fixture.js';
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,rm,symlink,chmod} from 'node:fs/promises';
@@ -6,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import http from 'node:http';
 import {resolveGatewaySettings} from '../../../../apps/com/src/gateway-settings.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 
 test('TC-009: default profile discovery connects without NED overrides and rereads private credentials',async t=>{
   const home=await mkdtemp(join(tmpdir(),'ned-host-gateway-'));t.after(()=>rm(home,{recursive:true,force:true}));

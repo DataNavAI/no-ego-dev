@@ -1,4 +1,5 @@
 import {configuredModelSetup} from './model-fixture.js';
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -9,7 +10,7 @@ import {domainFixture} from '../../core-orchestration/tests/domain-fixture.js';
 import {trackedTime} from '../../../../apps/core/src/delivery.js';
 import {goalGroups,duration} from '../../../../apps/com/src/public/goals-tasks.js';
 import {readProjectWork} from '../../../../apps/core/src/work.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {createHermesGateway} from '../../../../apps/core/src/hermes.js';
 import {loadOperatorCredential} from '../../../../apps/core/src/auth.js';
 import {browserChat,expect} from './browser-chat-fixture.js';
@@ -30,7 +31,7 @@ test('TC-042: delivery metadata is validated, idempotent, durable and project sc
   const credential=loadOperatorCredential({home:f.root,env:{}});
   const image=await sharp({create:{width:4,height:4,channels:3,background:'#fff'}}).png().toBuffer();
   const input={impact:'Reduce purchase abandonment.',remainingSeconds:1200,estimatedFinish:'2026-11-20T12:00:00.000Z',outputs:[{id:'brief',kind:'document',title:'Plan',text:'<script>never execute</script>\nShort plan'},{id:'screen',kind:'image',title:'Screenshot',image:`data:image/png;base64,${image.toString('base64')}`}]};
-  const put=(body,key='delivery',auth=true)=>fetch(app.url+path,{method:'PUT',headers:{'content-type':'application/json','idempotency-key':key,...(auth?{authorization:`Bearer ${credential}`}:{})},body:JSON.stringify(body)});
+  const put=(body,key='delivery',auth=true)=>(auth?fetch:globalThis.fetch)(app.url+path,{method:'PUT',headers:{'content-type':'application/json','idempotency-key':key,...(auth?{authorization:`Bearer ${credential}`}:{})},body:JSON.stringify(body)});
   assert.equal((await put(input,'unauthorized',false)).status,401);
   const first=await put(input);assert.equal(first.status,200);const value=await first.json();
   assert.deepEqual(await(await put(input)).json(),value);

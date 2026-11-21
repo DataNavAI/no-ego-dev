@@ -43,11 +43,23 @@ test('TC-001: account inheritance stores scoped capability, preserves valid over
   const override=await fixture(t,{config:'model: {provider: openai, default: my-local-model}\n',env:{OPENAI_API_KEY:'existing-profile-key'},fetch:async()=>{throw Error('Existing provider must bypass Hub');}});
   await override.models.register({origin,id,token,kind:'hosted'});assert.equal((await override.models.status()).source,'profile');assert.equal((await override.models.prepare()).model,'my-local-model');assert(!(await readFile(override.file,'utf8')).includes('ned-hub'));
 });
-test('TC-001: Core-owned model setup rejects missing Origin/header, public exposure and chat before configuration',async t=>{
+test('TC-001: Core-owned model setup rejects missing Origin/header, unauthenticated exposure and chat before configuration',async t=>{
   const f=await fixture(t);const app=createCommunicatorServer({home:f.root,env:{HERMES_HOME:f.profile,NED_HERMES_URL:'http://127.0.0.1:9',NED_HERMES_API_KEY:'synthetic-gateway-key'},databasePath:path.join(f.root,'ned.sqlite'),initializeDatabase:true,modelSetup:f.models});await app.listen();t.after(()=>app.close());
-  const call=(method='GET',body,headers={})=>fetch(app.url+'/api/v1/model-setup',{method,headers:{'X-NED-Models':'1','Content-Type':'application/json',...headers},...(body?{body:JSON.stringify(body)}:{})});
+  const call=(method='GET',body,headers={})=>fetch(app.url+'/api/v1/model-setup',{method,headers:{Authorization:'Bearer '+app.apiCredential,'X-NED-Models':'1','Content-Type':'application/json',...headers},...(body?{body:JSON.stringify(body)}:{})});
+  assert.equal((await fetch(app.url+'/api/v1/model-setup',{headers:{'X-NED-Models':'1'}})).status,401);
   assert.equal((await call()).status,200);assert.equal((await call('POST',{})).status,403);assert.equal((await call('GET',null,{'X-NED-Models':''})).status,403);assert.equal((await call('POST',{}, {Origin:app.url})).status,400);
-  const chat=await fetch(app.url+'/api/v1/chat/sessions/fixture/chat',{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'Blocked before provider setup'})});assert.equal(chat.status,409);assert.equal((await chat.json()).error.code,'model_setup_required');
-  for(const route of ['/api/v1/model-setup','/api/model-setup']){assert.equal(exposeNedApiPath(route),true);assert.equal(exposeNedApiPath(route,{publicTunnel:true}),false);}
-  const denied=createCommunicatorServer({home:f.root,env:{HERMES_HOME:f.profile},databasePath:path.join(f.root,'ned.sqlite'),secretsEnabled:false});await denied.listen();t.after(()=>denied.close());assert.equal((await fetch(denied.url+'/api/v1/model-setup',{headers:{'X-NED-Models':'1'}})).status,403);
+  const chat=await fetch(app.url+'/api/v1/chat/sessions/fixture/chat',{method:'POST',headers:{Authorization:'Bearer '+app.apiCredential,Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'Blocked before provider setup'})});assert.equal(chat.status,409);assert.equal((await chat.json()).error.code,'model_setup_required');
+  for(const route of ['/api/v1/model-setup','/api/model-setup']){assert.equal(exposeNedApiPath(route),true);assert.equal(exposeNedApiPath(route,{publicTunnel:true}),true);}
+  const denied=createCommunicatorServer({home:f.root,env:{HERMES_HOME:f.profile},databasePath:path.join(f.root,'ned.sqlite'),secretsEnabled:false});await denied.listen();t.after(()=>denied.close());assert.equal((await fetch(denied.url+'/api/v1/model-setup',{headers:{Authorization:'Bearer '+denied.apiCredential,'X-NED-Models':'1'}})).status,403);
+});
+
+test('TC-001: API credential revocation during provider validation prevents profile mutation',async t=>{
+  let f;
+  f=await fixture(t,{config:'agent: {max_turns: 5}\n',fetch:async()=>{await writeFile(path.join(f.root,'.ned/core/operator-token'),'b'.repeat(64)+'\n',{mode:0o600});return new Response('{}');}});
+  const app=createCommunicatorServer({home:f.root,env:{HERMES_HOME:f.profile},databasePath:path.join(f.root,'ned.sqlite'),initializeDatabase:true,modelSetup:f.models});await app.listen();t.after(()=>app.close());
+  const credential=app.apiCredential,original=await readFile(f.file,'utf8');
+  const status=await fetch(app.url+'/api/v1/model-setup',{headers:{Authorization:'Bearer '+credential,'X-NED-Models':'1'}});assert.equal(status.status,200);const {nonce}=await status.json();
+  const saved=await fetch(app.url+'/api/v1/model-setup',{method:'POST',headers:{Authorization:'Bearer '+credential,Origin:app.url,'X-NED-Models':'1','Content-Type':'application/json'},body:JSON.stringify({nonce,provider:'openai',model:'gpt-4.1',apiKey:'synthetic-provider-key'})});
+  assert.equal(saved.status,401);assert.equal((await saved.json()).error.code,'model_setup_unauthorized');assert.equal(await readFile(f.file,'utf8'),original);
+  assert.equal((await fetch(app.url+'/api/v1/model-setup',{headers:{Authorization:'Bearer '+app.apiCredential,'X-NED-Models':'1'}})).status,200);
 });

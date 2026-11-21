@@ -7,7 +7,7 @@ retained, with API ownership consolidated in Core.
 ## Components and flows
 
 ```text
-CLI / trusted integrations -> /api/v1/operator/* -> Core task/coordination service
+CLI / trusted integrations -> /api/v1/* -> Core task/coordination service
 COM browser -> /api/v1/* -> Core browser services -> Hermes / project data / vault
 COM static host + Hub/public bridge -> the same Core-owned NED API handler
 ```
@@ -17,7 +17,7 @@ COM static host + Hub/public bridge -> the same Core-owned NED API handler
 - `apps/com` owns browser assets, local web hosting and Hub/public transport
   adapters. It consumes the same API contract as other clients, not a separate
   COM-specific backend API. Legacy module entrypoints remain compatibility shims.
-- `apps/cli` owns command parsing/presentation and uses the operator API. Ordinary
+- `apps/cli` owns command parsing/presentation and uses the authenticated API. Ordinary
   task commands start a bounded backend-only loopback server with an in-memory
   bearer; configured servers must match the selected runtime and database.
 - Shared root `src` owns runtime selection, SQLite task graph and encrypted vault
@@ -54,16 +54,20 @@ inference; preserve user workspaces and configured profiles across deployment.
 ## Security and transport
 
 All listeners bind loopback and require the exact bound Host and permitted Origin.
-The operator family requires a runtime-private bearer, never delivered to a browser.
-Hub and public bridges deny that family and its legacy/malformed aliases before
-forwarding; an authenticated Hub user is not implicitly a local operator.
-Quick public tunnels additionally deny secret operations. Browser mutations retain
+Every API, including health/discovery/reads/streams and legacy aliases, requires
+instance authentication. CLI uses a private bearer; browser navigation challenges
+with standard HTTP Basic (username ned, private instance key). Application JS,
+URLs, local storage and logs never contain the key. Container COM may additionally
+accept its configured Basic credentials. The socket-less Hub bridge injects the
+target instance credential only on authenticated instance-bound channels after
+metadata/Origin validation; public quick tunnels never inject credentials.
+There is no privilege path group: all resources share `/api/v1`. Browser mutations retain
 their resource-specific CSRF/media/receipt checks; secret access requires explicit
 privacy headers and reveal/entry intent. Unknown future API families are not
 automatically exposed by transport adapters.
 
 The full Core listener and COM listener share one handler. Backend-only CLI servers
-intentionally enable only operator operations and do not start browser/chat/vault
+intentionally enable only coordination operations and do not start browser/chat/vault
 services or an automatic coordinator. API services close owned streams, probes,
 workers and listeners on disconnect/shutdown; they do not stop a host Hermes.
 
@@ -108,8 +112,8 @@ Private local setup supports API keys against fixed provider credential endpoint
 then performs atomic profile replacement under a private lock after snapshot and
 one-use intent checks. Unrelated configuration/workspaces are preserved; explicit
 replacement and readback are separate from automatic inheritance. Malformed,
-symlinked or unsafe credential files fail closed. The public quick tunnel cannot
-expose setup; backend-only operator listeners do not mount it. Setup and COM/Hermes
+symlinked or unsafe credential files fail closed. The public quick tunnel never injects authority; setup requires the same NED API
+authentication plus Origin/privacy guards. Backend-only coordination listeners do not mount it. Setup and COM/Hermes
 health are distinct. Existing history can load while a missing provider disables
 sending; drafts survive setup. Provider rejection/revocation offers reconfiguration
 through Hub or the private local control, without replaying the failed message.

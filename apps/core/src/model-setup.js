@@ -14,7 +14,7 @@ const providerUrls={openai:'https://api.openai.com/v1',openrouter:'https://openr
 const envKeys={openai:['OPENAI_API_KEY'],openrouter:['OPENROUTER_API_KEY'],anthropic:['ANTHROPIC_API_KEY'],nous:['NOUS_API_KEY'],google:['GOOGLE_API_KEY','GEMINI_API_KEY'],gemini:['GEMINI_API_KEY','GOOGLE_API_KEY'],groq:['GROQ_API_KEY'],xai:['XAI_API_KEY'],deepseek:['DEEPSEEK_API_KEY']};
 const digest=value=>createHash('sha256').update(value).digest('hex');
 export class ModelSetupError extends Error {
-  constructor(status=503,code='model_setup_unavailable'){super(code==='model_setup_required'?'Model provider is required before chatting.':'Model settings are unavailable. Check configuration and try again.');this.status=status;this.code=code;}
+  constructor(status=503,code='model_setup_unavailable'){super(code==='model_setup_unauthorized'?'NED API authentication required.':code==='model_setup_required'?'Model provider is required before chatting.':'Model settings are unavailable. Check configuration and try again.');this.status=status;this.code=code;}
 }
 async function readPrivate(file,secret=false){
   let handle;
@@ -88,7 +88,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
     if(data.configured&&(!c||!Object.hasOwn(providerUrls,c.provider)||!validModel(c.model)||!/^[a-f0-9-]{36}$/.test(c.version)||!/^[a-f0-9-]{36}$/.test(c.id)))throw new ModelSetupError();
     return {connection:data.configured?c:null,baseUrl};
   }
-  async function persist(snapshot,{provider,model,key,baseUrl,kind,connection,identity}){
+  async function persist(snapshot,{provider,model,key,baseUrl,kind,connection,identity,authorize=()=>true}){
     if(process.platform==='win32')throw new ModelSetupError(403,'model_setup_platform_unavailable');
     await mkdir(root,{recursive:true,mode:0o700});
     // Re-read and verify the profile directory before creating a private lock.
@@ -107,21 +107,23 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
       document.set('ned_model',{kind,provider:slug,model,selectedProvider:provider,...(kind==='hub'?{origin:identity.origin,instanceId:identity.id,baseUrl,capabilityHash:digest(key),connectionId:connection.id,connectionVersion:connection.version}:{})});
       temp=path.join(root,'.ned-model-'+randomBytes(16).toString('hex'));
       const file=await open(temp,'wx',0o600);try{await file.writeFile(String(document));await file.sync();}finally{await file.close();}
+      if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');
       if(closed||kind==='hub'&&identity!==hub)throw new ModelSetupError(409,'model_setup_changed');
       await rename(temp,path.join(root,'config.yaml'));temp=null;
       const directory=await open(root,constants.O_RDONLY);try{await directory.sync();}finally{await directory.close();}
     }finally{if(temp)await unlink(temp).catch(()=>{});if(lock){await lock.close();await unlink(lockPath).catch(()=>{});}}
   }
-  async function prepare(){
+  async function prepare(authorize=()=>true){
     return serial(async()=>{
       const identity=hub,current=await profile();
+      if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');
       if(identity!==hub)throw new ModelSetupError(409,'model_setup_changed');
       if(!enabled&&current.kind!=='profile')throw new ModelSetupError(403,'model_setup_forbidden');
       if(current.kind==='profile')return typeof current.model.provider==='string'&&current.model.provider&&validModel(current.model.default??current.model.name)?{provider:current.model.provider,model:current.model.default??current.model.name}:{};
       if(!identity||current.kind==='hub'&&(current.marker.origin!==identity.origin||current.marker.instanceId!==identity.id))throw new ModelSetupError(409,'model_setup_required');
       const metadata=await remote(identity);if(identity!==hub)throw new ModelSetupError(409,'model_setup_changed');if(!metadata.connection)throw new ModelSetupError(409,'model_setup_required');
       const c=metadata.connection;
-      if(current.kind!=='hub'||current.marker.connectionVersion!==c.version||current.entry.api_key!==identity.token)await persist(current,{provider:c.provider,model:c.model,key:identity.token,baseUrl:metadata.baseUrl,kind:'hub',connection:c,identity});
+      if(current.kind!=='hub'||current.marker.connectionVersion!==c.version||current.entry.api_key!==identity.token)await persist(current,{provider:c.provider,model:c.model,key:identity.token,baseUrl:metadata.baseUrl,kind:'hub',connection:c,identity,authorize});
       return {provider:'custom:ned-hub',model:c.model};
     });
   }
@@ -146,29 +148,30 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
       hub={...input};
       try{if(enabled)await prepare();}catch{/* Missing provider must not prevent registration/COM health. UI status remains truthful. */}
     },
-    async configure(input){
+    async configure(input,authorize=()=>true){
       if(!enabled||hub?.kind==='hosted')throw new ModelSetupError(403,'model_setup_forbidden');
       const intent=intents.get(input?.nonce);intents.delete(input?.nonce);
-      if(!intent||intent.expires<Date.now()||!input||Object.keys(input).some(k=>!['nonce','provider','model','apiKey','replace'].includes(k))||input.replace!==undefined&&typeof input.replace!=='boolean'||!Object.hasOwn(providerUrls,input.provider)||!validModel(input.model)||typeof input.apiKey!=='string'||!/^[\x21-\x7e]{16,4096}$/.test(input.apiKey))throw new ModelSetupError(400,'model_setup_invalid');
+      if(!intent||intent.expires<Date.now()||!input||Object.keys(input).some(k=>!['nonce','provider','model','apiKey','replace'].includes(k))||input.replace!==undefined&&typeof input.replace!=='boolean'||typeof input.provider!=='string'||!Object.hasOwn(providerUrls,input.provider)||!validModel(input.model)||typeof input.apiKey!=='string'||!/^[\x21-\x7e]{16,4096}$/.test(input.apiKey))throw new ModelSetupError(400,'model_setup_invalid');
       return serial(async()=>{
         const current=await profile();if(current.fingerprint!==intent.fingerprint||current.kind!=='missing'&&input.replace!==true)throw new ModelSetupError(409,'model_setup_changed');
         const provider=input.provider,response=await fetchBound(providerUrls[provider]+(provider==='openrouter'?'/key':'/models'),{headers:{Authorization:'Bearer '+input.apiKey}});await response.body?.cancel();
         if(!response.ok)throw new ModelSetupError(422,'model_authentication_failed');
-        await persist(current,{provider,model:input.model,key:input.apiKey,baseUrl:providerUrls[provider],kind:'local'});
+        if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');
+        await persist(current,{provider,model:input.model,key:input.apiKey,baseUrl:providerUrls[provider],kind:'local',authorize});
         return {configured:true,source:'profile',model:input.model};
       });
     },
-    async handle(req,res,send,origin){
+    async handle(req,res,send,origin,authorize=()=>true){
       const fail=error=>send(error instanceof ModelSetupError?error.status:503,{error:{code:error instanceof ModelSetupError?error.code:'model_setup_unavailable',message:error instanceof ModelSetupError?error.message:'Model settings are unavailable. Check configuration and try again.'}});
       if(!enabled||req.headers['x-ned-models']!=='1'||req.headers['sec-fetch-site']==='cross-site')return fail(new ModelSetupError(403,'model_setup_forbidden'));
       if(req.url!=='/api/model-setup'||!['GET','POST'].includes(req.method))return fail(new ModelSetupError(400,'model_setup_invalid'));
       try{
-        if(req.method==='GET')return send(200,await status());
+        if(req.method==='GET'){const result=await status();if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');return send(200,result);}
         if(req.headers.origin!==origin||req.headers['content-type']!=='application/json')return fail(new ModelSetupError(403,'model_setup_forbidden'));
         let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>16384)throw new ModelSetupError(413,'model_setup_invalid');chunks.push(chunk);}
         let input;try{input=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new ModelSetupError(400,'model_setup_invalid');}
-        if(input?.action==='inherit'&&Object.keys(input).length===1){await prepare();return send(200,await status());}
-        return send(200,await this.configure(input));
+        if(input?.action==='inherit'&&Object.keys(input).length===1){await prepare(authorize);const result=await status();if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');return send(200,result);}
+        return send(200,await this.configure(input,authorize));
       }catch(error){return fail(error);}
     },
     async close(){closed=true;for(const request of requests)request.abort();intents.clear();await queue;hub=null;},

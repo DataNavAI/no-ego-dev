@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {chromium,expect} from 'playwright/test';
 import {openNedDatabase} from '../../../../src/database.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 export {expect};
@@ -59,7 +59,7 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
   await app.listen();
   try{browser=await chromium.launch({headless:true,channel:'chromium'});}
   catch(error){throw new Error('Chromium is required. Run npm ci && npx playwright install --with-deps chromium before chat E2E tests.',{cause:error});}
-  const page=await browser.newPage({viewport});page.setDefaultTimeout(10000);
+  const page=await browser.newPage({viewport,httpCredentials:{username:'ned',password:app.apiCredential}});page.setDefaultTimeout(10000);
   const errors=[],network=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',request=>network.push(new URL(request.url()).pathname));
