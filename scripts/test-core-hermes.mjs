@@ -33,7 +33,7 @@ try{
     ...process.env,UV_CACHE_DIR:path.join(cache,'uv'),UV_PYTHON_INSTALL_DIR:path.join(cache,'python'),UV_PROJECT_ENVIRONMENT:environment,
   });
   console.log(`Hermes integration source: ${revision}; aimock: 1.48.0`);
-  await command(process.execPath,['--test',path.join(root,'docs/features/core-orchestration/tests/hermes/live.test.js')],{
+  await command(process.execPath,['--test',path.join(root,'docs/features/core-orchestration/tests/hermes/live.test.js'),path.join(root,'docs/features/model-setup/tests/hermes/live.test.js')],{
     ...process.env,TMPDIR:cases,NED_HERMES_TEST_SOURCE:source,NED_HERMES_TEST_PYTHON:path.join(environment,'bin/python'),NED_HERMES_TEST_REVISION:revision,
   },180000);
 }finally{

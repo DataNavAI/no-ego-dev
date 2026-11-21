@@ -110,7 +110,7 @@ export async function hermesFixture({badSource=false,configureProfile,handleMode
       await request('/coordinator/reconcile',{method:'POST',body:{},status:202});
       return {item,path:scope+'/attempts/'+attempt.id,taskPath};
     };
-    const gatewayRequest=async(resource,{timeout=5000}={})=>{const response=await fetch(url+resource,{headers:{authorization:'Bearer '+env.API_SERVER_KEY},signal:AbortSignal.timeout(timeout)});if(!response.ok)throw new Error('Hermes readback failed: '+response.status);return response.json();};
+    const gatewayRequest=async(resource,{timeout=5000,pendingNotFound=false}={})=>{const response=await fetch(url+resource,{headers:{authorization:'Bearer '+env.API_SERVER_KEY},signal:AbortSignal.timeout(timeout)});if(response.status===404&&pendingNotFound){await response.body?.cancel();return null;}if(!response.ok)throw new Error('Hermes readback failed: '+response.status);return response.json();};
     return {root,home,project,modelUrl,mock,requests,request,gatewayRequest,scope,attempt,url,core,close,pid:child.pid,diagnostics:()=>output,
       async observationSnapshot(run){
         const [observed,result]=await Promise.all([request(run.path,{timeout:1000}).catch(()=>null),request(run.path+'/result',{timeout:1000}).catch(()=>null)]);

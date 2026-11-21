@@ -1,14 +1,15 @@
 {
-  "candidate_sha": "b0db83ac7170de91d304ee423d44c5b3fe4a6bf6",
-  "tested_at": "2026-11-21T10:36:36Z",
-  "environment": "macOS arm64, Node25.6.1, Chromium; native arm64 Docker colima-eval; real isolated Hermes6e07eb4, aimock1.48.0, actual PostgreSQL and Hub",
+  "candidate_sha": "58135ba4007b6518395aa9f4a6f8bdb4de640040",
+  "tested_at": "2026-11-21T18:03:16.385976+00:00",
+  "environment": "macOS arm64, Node24.22.2, Chromium; native ARM64 Docker colima-hub9; checksum-pinned Hermes6e07eb4 with isolated Python3.11; actual PostgreSQL/Hub/native connector/Core/browser/SDK",
   "result": "pass",
   "commands": [
-    "npm run lint; npm run test:all (exact-staged commit hook)",
-    "node --test docs/features/ned-api/tests/TC-006.test.js docs/features/ned-api/tests/TC-007.test.js",
-    "Hub: npm run test:integration:instance against this exact native commit",
-    "Hub: npm run test:integration:models against this exact native commit",
-    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-eval --expected-architecture arm64"
+    "npm run lint; npm run test:all (exact-staged versioned full commit hook)",
+    "npm run test:core:hermes (8 real Hermes cases; deterministic provider/auth HTTP boundary)",
+    "node --test docs/features/model-setup/tests/TC-001.test.js docs/features/model-setup/tests/TC-002.test.js docs/features/model-setup/tests/TC-003.test.js",
+    "Hub npm run test:integration:models against exact native candidate",
+    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-hub9 --expected-architecture arm64",
+    "Rendered desktop1280/mobile320 device setup self-review; installed local Hermes adapter discovery with isolated temporary profile"
   ],
-  "observations": "Independent review approved immutable sourceb0db83a and independently passed9/9 focused browser/client cases. Delayed controller test reproduced visible shell before handlers (RED), then passed with hidden/inert shell until imports complete. Forget during loading cannot reopen access; stale401 cannot clear newer validated credentials. Exact-staged full hook passed all automated spec cases,208 Python tests with9 existing platform skips and7 real Hermes tests. Actual Hub→native COM integration passed4/4: streamed delta before terminal, persisted reload, unavailable/truncated errors, cancellation and foreign-origin denial. Combined real PostgreSQL/Hub/native connector/Core/browser proxy/Hermes SDK/inference relay passed with nativeRevision=b0db83ac7170de91d304ee423d44c5b3fe4a6bf6; only provider and KMS adapter synthetic, one stub inference. Native arm64 container TC003/004 passed imageacd82682,3.38second shutdown, authenticated API/perimeter, retained state/restart and owned cleanup. Original CLI token injection and model-backed Docker skill eval remain unchanged from PR189. Hosted KMS/IAM/TLS/EKS enablement remains separate in ned-iac29."
+  "observations": "Self-reviewed exact source 58135ba4007b6518395aa9f4a6f8bdb4de640040. Final full versioned hook passed lint, all Node/spec cases,208 Python tests with9 existing skips and8 actual pinned-Hermes cases. Served browser covers key clearing/draft preservation, hosted setup and device cancel/retry/complete. Device tests cover bounded process reservation through actual cancellation exit, shutdown/interpreter-discovery races, revocation, snapshot conflicts, expiry and redacted malformed output. Actual Hermes device exchange/store uses deterministic HTTP responses; Gemini/Claude native runtime credential selection/private0600 persistence/disconnect passed. Disconnect regression reproduced retained NED-owned custom credentials before fix; final real-Hermes test removes local/hub-owned entries while preserving unrelated keys. Desktop/mobile captures self-reviewed. Actual PostgreSQL/Hub/native connector/Core/browser reverse proxy/Hermes SDK inference relay passed at this SHA; only provider and KMS adapters synthetic. Rebuilt ARM64 container TC003/004 passed imagecc240ff5,3.31second stop, retained state, perimeter and cleanup. No live provider consent or paid inference claimed. Local installation and managed-image EKS/staging rollout remain separate post-merge gates. Standardumask022 full gate; unrelated restrictive-umask fixture follow-up193 remains open. Final candidate changes only delegation-test readback after runtime candidate 42fad8efc22ff52184c77d63d1104999d753e9e5: CI exposed transient child-session404; scoped pending404 polling retains the existing20second persistence deadline and all other error/output checks (#195). Final full hook including actual Hermes delegation passed, and assembled Hub inference integration passed again at 58135ba4007b6518395aa9f4a6f8bdb4de640040. Runtime/container bytes remain identical to accepted runtime42fad8e."
 }

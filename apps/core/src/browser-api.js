@@ -17,7 +17,7 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
   const activity=createActivityStreams(databasePath);
   const handler=async(req,res,send,origin)=>{
     const error=(status,code,message,extra)=>send(status,{error:{code,message}},extra);
-    if(req.url==='/api/model-setup'||req.url.startsWith('/api/model-setup?')||req.url.startsWith('/api/model-setup/'))return models.handle(req,res,send,origin,()=>live(req,res));
+    if(req.url==='/api/model-setup'||req.url.startsWith('/api/model-setup?')||req.url.startsWith('/api/model-setup/'))return models.handle(req,res,send,origin,()=>live(req,res),()=>{try{return apiAuthenticated(req);}catch{return false;}});
     if(req.url.startsWith('/api/chat/'))return chat(req,res,send);
     if(req.url==='/api/secrets'||req.url.startsWith('/api/secrets/')||req.url.startsWith('/api/secrets?'))return secrets(req,res,send,origin);
     if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});

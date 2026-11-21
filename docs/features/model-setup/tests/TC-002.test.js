@@ -25,12 +25,26 @@ test('TC-002: served local provider setup clears secrets, preserves draft and by
   await chat.send('Configured local provider interaction');assert.deepEqual(chat.errors,[]);
 });
 
-test('TC-002: hosted setup stays on Hub and inherits after account authentication without a provider key',{timeout:45000},async t=>{
+test('TC-002: hosted setup offers instance configuration and optional account inheritance without copying an account key',{timeout:45000},async t=>{
   const root=await mkdtemp(path.join(tmpdir(),'ned-hosted-model-ui-'));t.after(()=>rm(root,{recursive:true,force:true}));
   const id=randomUUID(),origin='https://staging.ned.datanav.app',token='ned_'+'h'.repeat(43),connection={id:randomUUID(),version:randomUUID(),provider:'openrouter',model:'openai/gpt-4.1'};let configured=false;
   const models=createModelSetup({home:root,env:{HERMES_HOME:path.join(root,'profile')},fetch:async()=>Response.json({configured,connection:configured?connection:null,baseUrl:origin+'/api/models/instances/'+id+'/v1'})});
   await models.register({origin,id,token,kind:'hosted'});
-  const chat=await browserChat(t,{modelSetup:models});await chat.ready();await expect(chat.page.locator('#model-setup')).toBeVisible();await expect(chat.page.locator('#model-setup-form')).toBeHidden();await expect(chat.page.getByRole('link',{name:'Set up in NED Hub'})).toHaveAttribute('href',origin+'/?settings=model');
+  const chat=await browserChat(t,{modelSetup:models});await chat.ready();await expect(chat.page.locator('#model-setup')).toBeVisible();await expect(chat.page.locator('#model-setup-form')).toBeVisible();await expect(chat.page.getByRole('link',{name:'Set up in NED Hub'})).toHaveAttribute('href',origin+'/?settings=model');
   configured=true;await chat.page.getByRole('button',{name:'Check connection'}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await expect(chat.page.locator('#chat-send')).toBeEnabled();
   const profile=await readFile(path.join(root,'profile/config.yaml'),'utf8');assert(profile.includes(token));assert(!profile.includes('synthetic-local-provider-key'));await chat.send('Hosted inherited connection');assert.deepEqual(chat.errors,[]);
+});
+
+test('TC-002: instance device login shows only challenge, supports cancel/retry and resumes configured chat',{timeout:45000},async t=>{
+  const root=await mkdtemp(path.join(tmpdir(),'ned-device-ui-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});t.after(()=>rm(root,{recursive:true,force:true}));
+  let approve,stops=0;
+  const adapter={available:async()=>true,async start(input,hooks){let reject,resolve;const done=new Promise((yes,no)=>{resolve=yes;reject=no;});approve=async()=>{let release;try{release=await hooks.beforeCommit();await import('node:fs/promises').then(fs=>fs.writeFile(path.join(profile,'config.yaml'),'model: {provider: openai, default: fixture}\n',{mode:0o600}));resolve();}finally{await release?.();}};queueMicrotask(()=>hooks.event({type:'challenge',verificationUri:'https://auth.openai.com/codex/device',userCode:'NED-TEST',deviceSecret:'never-display'}));return {done,stop(){stops++;reject(Error('cancelled'));}};}};
+  const models=createModelSetup({home:root,env:{HERMES_HOME:profile,OPENAI_API_KEY:'synthetic-configured-key'},hermesAdapter:adapter});
+  // A configured user may explicitly open settings and select another authentication method.
+  const chat=await browserChat(t,{modelSetup:models});await chat.ready();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();
+  await chat.page.getByLabel('Provider',{exact:true}).selectOption('openai-codex');await expect(chat.page.locator('#model-key')).toBeHidden();await chat.page.getByRole('button',{name:'Sign in with OpenAI',exact:true}).click();await expect(chat.page.locator('#model-device-code')).toHaveText('NED-TEST');assert(!(await chat.page.content()).includes('never-display'));
+  if(process.env.NED_MODEL_SCREENSHOT_DIR){await mkdir(process.env.NED_MODEL_SCREENSHOT_DIR,{recursive:true});for(const width of [1280,320]){await chat.page.setViewportSize({width,height:900});if(width<768){await chat.page.getByRole('button',{name:'Open navigation'}).click();await chat.page.locator('#mobile-sidebar-toggle').click();}assert.equal(await chat.page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);await chat.page.screenshot({path:path.join(process.env.NED_MODEL_SCREENSHOT_DIR,'device-'+width+'.png')});}}
+
+  await chat.page.getByRole('button',{name:'Cancel sign-in',exact:true}).click();await expect(chat.page.locator('#model-setup-status')).toContainText('cancelled');assert(stops>0);
+  await chat.page.getByRole('button',{name:'Sign in with OpenAI',exact:true}).click();await expect(chat.page.locator('#model-device-code')).toHaveText('NED-TEST');await approve();await expect(chat.page.locator('#chat-send')).toBeEnabled();assert(!(await chat.page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).includes('NED-TEST'));
 });
