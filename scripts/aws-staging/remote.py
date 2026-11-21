@@ -227,7 +227,7 @@ class Driver:
     def replace(self, journal, commit, image):
         self.docker('rename', journal['old']['id'], journal['rollback_name'])
         args = ['run', '-d', '--name', NAME, '--restart', 'unless-stopped', '--stop-timeout',
-                '30', '--env-file', str(self.root / 'runtime.env'), '--shm-size=256m',
+                '30', '--env-file', str(self.root / 'runtime.env'), '--env-file', str(self.root / 'com-password.env'), '--shm-size=256m',
                 '--label', 'com.ned.deployment=' + journal['transaction']]
         for port in (8787, 9119):
             args += ['-p', '127.0.0.1:' + str(port) + ':' + str(port)]
@@ -280,8 +280,8 @@ class Driver:
             if time.monotonic() >= end:
                 raise RuntimeError('Staging readiness deadline expired')
             time.sleep(min(2, max(0, end - time.monotonic())))
-        for url, key, value in (('http://127.0.0.1:8787/api/health', 'service', 'nedcom'),
-                                ('http://127.0.0.1:9119/api/health', 'auth_required', True)):
+        require(self.http('http://127.0.0.1:8787/api/health')[0] == 401)
+        for url, key, value in (('http://127.0.0.1:9119/api/health', 'auth_required', True),):
             code, body = self.http(url)
             require(code == 200 and json.loads(body)[key] == value)
         require(self.http('http://127.0.0.1:9119/api/config')[0] == 401)

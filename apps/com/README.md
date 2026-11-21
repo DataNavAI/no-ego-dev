@@ -11,4 +11,12 @@ From the repository root, run `npm ci`, `node bin/ned.js com --help`, and
 Run `npm run build:ui` after changing UI controls; `npm run build:ui:check` verifies
 committed vendor assets match the pinned dependency and source.
 
+Every API requires authentication, including local health/read requests and legacy
+aliases. Browser navigation challenges with standard HTTP Basic: username `ned`,
+password the selected runtime's private `.ned/core/operator-token` value. Keep that
+key private; never put it in a URL or commit it. CLI uses bearer authentication
+automatically. Authenticated Hub connections delegate instance access; public
+quick tunnels still require credentials. See the
+[authentication contract](../../docs/api.md#connection-and-authentication).
+
 This private app shares the root lockfile, dependencies, verification and release.

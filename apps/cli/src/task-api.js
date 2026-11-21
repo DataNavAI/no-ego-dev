@@ -33,7 +33,7 @@ export async function createTaskApiClient({project=process.cwd(),actor=`human:${
     try{
       const body=input===undefined?undefined:JSON.stringify(input);
       if(body&&Buffer.byteLength(body)>65536)throw failure('request_too_large','Task request exceeds 64 KiB.');
-      response=await fetch(`${origin}/api/v1/operator/${route}`,{method:input===undefined?'GET':'POST',headers:{authorization:`Bearer ${credential}`,...(body?{'content-type':'application/json','idempotency-key':key}:{})},body,redirect:'error',signal:AbortSignal.timeout(15000)});
+      response=await fetch(`${origin}/api/v1/${route}`,{method:input===undefined?'GET':'POST',headers:{authorization:`Bearer ${credential}`,...(body?{'content-type':'application/json','idempotency-key':key}:{})},body,redirect:'error',signal:AbortSignal.timeout(15000)});
       payload=await response.json();
     }catch(error){
       if(error.code==='request_too_large')throw error;

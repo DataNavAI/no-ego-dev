@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import {authenticatedHeaders} from '../../ned-api/tests/auth-client.js';
 import {mkdtemp,writeFile,readdir,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-const load = () => import('../../../../apps/com/src/server.js');
+const load = () => import('../../ned-api/tests/auth-client.js');
 const request = (url, path, options = {}) => new Promise((resolve, reject) => {
-  const req = http.request(new URL(url), {path, ...options}, res => {
+  const req = http.request(new URL(url), {path, ...options,headers:authenticatedHeaders(url,options.headers)}, res => {
     let body = ''; res.setEncoding('utf8'); res.on('data', chunk => body += chunk);
     res.on('end', () => resolve({status:res.statusCode, headers:res.headers, body}));
   }); req.on('error', reject); req.end();

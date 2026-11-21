@@ -3,6 +3,8 @@ import {mkdtempSync,mkdirSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {spawnSync,spawn} from 'node:child_process';
+import {fetch,authenticateInstance} from '../../ned-api/tests/auth-client.js';
+import {resolveRuntimeHome} from '../../../../src/runtime-home.js';
 export {assert,join,resolve};
 export const cli=resolve('bin/ned.js');
 export function fixture(t){
@@ -26,6 +28,7 @@ export async function startCom(t,f,env){
     child.once('error',error=>{clearTimeout(timeout);reject(error);});
     child.once('exit',code=>{clearTimeout(timeout);reject(new Error(`COM exited ${code}: ${errors}`));});
   });
+  authenticateInstance(url,{home:resolveRuntimeHome({env,osHome:f.home})});
   const health=await fetch(url+'/api/health');assert.equal(health.status,200);
   return {url,async stop(){child.kill('SIGTERM');assert.deepEqual(await exited,{code:0,signal:null});}};
 }

@@ -1,3 +1,4 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
@@ -32,12 +33,12 @@ test('TC-011: missing tunnel dependency rejects and releases its bridge after re
   await assert.rejects(startPublicTunnel('http://127.0.0.1:1234',{env:{NED_CLOUDFLARED_BIN:join(directory,'missing-cloudflared')},spawn(binary,args,options){proxy=args[args.indexOf('--url')+1];return spawn(binary,args,options);}}),/tunnel/);
   assert.ok(proxy);await assert.rejects(fetch(proxy));
 });
-test('TC-011: CLI public exposure is explicit, warned and cleaned up',async()=>{
+test('TC-011: CLI public exposure requires authentication and is cleaned up',async()=>{
   for(const enabled of [false,true]){
     const signals=new EventEmitter();const logs=[],errors=[];let tunnelCalls=0,closed=0;
     const result=await runCommunicatorCli(enabled?['--public']:[],{log:message=>logs.push(message),error:message=>errors.push(message)},{env:{},home:'/synthetic',createLogger:()=>({path:'/synthetic/log',event(){},close(){}}),signals,createServer(){return {async listen(){if(!enabled)setImmediate(()=>signals.emit('SIGTERM'));return 'http://127.0.0.1:1234';},async close(){}};},async startTunnel(url){assert.equal(url,'http://127.0.0.1:1234');tunnelCalls++;setImmediate(()=>signals.emit('SIGTERM'));return {url:'https://fixture.trycloudflare.com',failure:new Promise(()=>{}),async close(){closed++;}};}});
     assert.equal(result,0);assert.equal(tunnelCalls,Number(enabled));assert.equal(closed,Number(enabled));
-    assert.equal(errors.length,Number(enabled));if(enabled){assert.match(errors[0],/no authentication/);assert.ok(logs.some(message=>message.includes('https://fixture.trycloudflare.com')));}
+    assert.equal(errors.length,0);if(enabled){assert.ok(logs.some(message=>message.includes('requires instance authentication')));assert.ok(logs.some(message=>message.includes('public (authenticated): https://fixture.trycloudflare.com')));}
     assert.equal(signals.listenerCount('SIGTERM'),0);
   }
 });

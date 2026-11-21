@@ -1,3 +1,4 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import {endStream} from './stream-fixtures.js';
 import assert from 'node:assert/strict';
@@ -5,7 +6,7 @@ import http from 'node:http';
 import sharp from 'sharp';
 import {randomBytes} from 'node:crypto';
 import {Readable} from 'node:stream';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {createAttachmentStore,validateAttachment} from '../../../../apps/com/src/attachments.js';
 import {insertLink} from '../../../../apps/com/src/public/composer-media.js';
 import {projectHistoryMessage} from '../../../../apps/com/src/chat-history.js';

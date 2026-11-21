@@ -58,7 +58,7 @@ test('TC-001: real HTTP rejects unauthenticated, hostile and oversized mutations
   assert.equal((await fetch(url+'/api/core/v1/health',{headers:{authorization:`Bearer ${credential}`}})).status,200);
 });
 
-test('TC-001: actual public and Hub bridges deny Core while preserving ordinary traffic',{timeout:10000},verifyBridges);
+test('TC-001: actual public and Hub bridges enforce authenticated instance authority',{timeout:10000},verifyBridges);
 test('TC-001: ledger SSE heartbeats, bounded slow-subscriber queues and cursor replay',verifyStream);
 
 test('TC-001: assembled Core API and legacy COM share canonical work without executing backlog',async t=>{
@@ -73,7 +73,7 @@ test('TC-001: assembled Core API and legacy COM share canonical work without exe
   assert.equal((await task.getItem(item.id)).title,'Shared synthetic task');
   const repeat=await fetch(`${url}/api/core/v1/projects/${task.project.id}/tasks`,{method:'POST',headers,body:JSON.stringify({title:'Shared synthetic task'})});assert.deepEqual((await repeat.json()).data,item);
   const com=createCommunicatorServer({home,env:{},databasePath});t.after(()=>com.close());const comUrl=await com.listen();
-  const work=await(await fetch(`${comUrl}/api/projects/${task.project.id}/work`)).json();assert.equal(work.items[0].id,item.id);
+  const work=await(await fetch(`${comUrl}/api/projects/${task.project.id}/work`,{headers})).json();assert.equal(work.items[0].id,item.id);
   const privateHealth=await fetch(`${comUrl}/api/core/v1/health`,{headers:{authorization:`Bearer ${credential}`}});assert.equal(privateHealth.status,200);
   assert.equal((await fetch(`${comUrl}/api/core/v1/health`)).status,401);
   const apiWork=await(await fetch(`${url}/api/core/v1/projects/${task.project.id}/work`,{headers})).json();assert.deepEqual(apiWork.data,work);
@@ -85,7 +85,7 @@ test('TC-001: assembled Core API and legacy COM share canonical work without exe
   assert.equal(events.headers.get('content-type'),'text/event-stream');
   const reader=events.body.getReader();
   try{const chunk=new TextDecoder().decode((await reader.read()).value);assert.match(chunk,/id: [A-Za-z0-9_-]+\ndata: /);assert.match(chunk,/enrollment/);}finally{controller.abort();await reader.cancel().catch(()=>{});}
-  const html=await(await fetch(comUrl)).text();assert.equal(html.includes(credential),false);
+  const html=await(await fetch(comUrl,{headers})).text();assert.equal(html.includes(credential),false);
 });
 
 test('TC-001: standalone core CLI serves private HTTP and terminates cleanly',{timeout:10000},async t=>{

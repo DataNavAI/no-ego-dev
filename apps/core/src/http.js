@@ -25,7 +25,7 @@ export function createCoreHandler({service,credential,boundOrigin,timers={setInt
       const origin=typeof boundOrigin==='function'?boundOrigin():boundOrigin;
       if(!origin||req.headers.host!==new URL(origin).host||(req.headers.origin!==undefined&&req.headers.origin!==origin))throw fail(403,'forbidden','Access forbidden.');
       if(!namespace.valid)throw fail(400,'invalid_request','Invalid request path.');
-      if(!authorized(req.headers.authorization,credential))throw fail(401,'unauthorized','Operator authorization required.');
+      if(!authorized(req.headers.authorization,typeof credential==='function'?credential():credential))throw fail(401,'unauthorized','NED API authentication required.');
       const url=new URL(req.url,origin),pathname=url.pathname;
       if(!pathname.startsWith(prefix+'/'))throw fail(404,'not_found','Not found.');
       const segments=pathname.slice(prefix.length+1).split('/');

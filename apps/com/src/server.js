@@ -34,11 +34,11 @@ const vendorAssets=new Map([
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
 
 const protocolAssets=new Map([['/history.js','history.js'],['/request-diagnostic.js','request-diagnostic.js'],['/secret-events.js','secret-events.js']]);
-export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,home,env=process.env,gateway,logger,secretsEnabled=true,initializeDatabase=false}={}){
+export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,home,env=process.env,gateway,logger,secretsEnabled=true,initializeDatabase=false,basicCredentials}={}){
   if(host!=='127.0.0.1'||!Number.isInteger(port)||port<0||port>65535)throw new Error('Invalid NEDCOM address.');
   databasePath??=resolveDatabasePath({home,env});
   let url=null;
-  const api=createNedApiHandler({databasePath,home,env,chatGateway:gateway,logger,secretsEnabled,boundOrigin:()=>url,legacyInvalidStatus:404});
+  const api=createNedApiHandler({databasePath,home,env,chatGateway:gateway,logger,secretsEnabled,basicCredentials,boundOrigin:()=>url,legacyInvalidStatus:404});
   const server=http.createServer(async(req,res)=>{
     const send=(status,type,body,extra={})=>{res.writeHead(status,{'content-type':type+'; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':policy,...extra});res.end(req.method==='HEAD'?undefined:body);};
     const error=(status,code,message,extra)=>send(status,'application/json',JSON.stringify({error:{code,message}}),extra);
@@ -46,6 +46,10 @@ export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,h
     if(await api(req,res))return;
     if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});
     const pathname=req.url.split('?')[0];
+    if(pathname==='/'){
+      try{if(!api.authenticated(req))return error(401,'unauthorized','NED sign-in required.',{'www-authenticate':'Basic realm="NED", charset="UTF-8"'});}
+      catch{return error(503,'api_unavailable','API authentication unavailable.');}
+    }
     if(protocolAssets.has(pathname)){
       try{return send(200,'text/javascript',await readFile(new URL('../../core/src/protocol/'+protocolAssets.get(pathname),import.meta.url)));}
       catch{return error(500,'internal_error','Unable to read NEDCOM resources.');}
@@ -59,7 +63,8 @@ export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,h
     try{send(200,asset[1],await readFile(new URL('./public/'+asset[0],import.meta.url)));}
     catch{error(500,'internal_error','Unable to read NEDCOM resources.');}
   });
-  return {server,get url(){return url;},async listen(){
+  return {server,get url(){return url;},get apiCredential(){return api.credential();},async listen(){
+    api.credential();
     if(initializeDatabase&&!existsSync(databasePath)){const database=openNedDatabase({databaseUrl:databasePath});database.close();}
     return new Promise((resolve,reject)=>{
       const failed=()=>{server.off('listening',ready);reject(new Error('Unable to start NEDCOM.'));};

@@ -1,3 +1,4 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -5,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {chatHarness} from './chat-harness.js';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 const turnId='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';

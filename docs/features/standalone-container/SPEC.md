@@ -11,7 +11,7 @@ Assumptions: Docker supports Linux arm64 or amd64; ports are published on host l
 
 ## Requirements
 - FR-001: Build from a suitable maintained official Hermes image pinned by digest, recording registry and source evidence. Install locked NED CLI dependencies and every distribution-owned component; exclude host secrets/runtime state from the build context.
-- FR-002: Default startup serves the real Hermes dashboard on 9119 and COM on 8787, reachable through loopback-published ports. Preserve COM's loopback-only core and same-origin request policy through a container adapter. Dashboard requires runtime authentication; no insecure dashboard mode.
+- FR-002: Default startup serves the real Hermes dashboard on 9119 and COM on 8787, reachable through loopback-published ports. Preserve COM's loopback-only core and same-origin request policy through a container adapter. Dashboard and every NED API require runtime authentication. COM also challenges document navigation; health probes authenticate explicitly. Separate COM username/password must be supplied as a complete pair; otherwise plaintext dashboard credentials may be reused, while the private instance key always authenticates independently.
 - FR-003: Supervise both services, restart failed processes, forward logs, stop gracefully on SIGTERM, and declare healthy only when both HTTP services respond correctly. Startup/config failures fail visibly.
 - FR-004: Seed a fresh persistent profile with complete distribution contents and container-specific workspace configuration. Repeated startup preserves edited profile/config, credentials, SQLite state and projects. Existing unrecognized nonempty profile volumes fail closed. No automatic overwrites or migrations of operator profile content.
 - FR-005: Use separate persistent volumes for Hermes profile, NED database and projects; services run as the upstream unprivileged user. Credentials are supplied only at runtime by environment/secret file, never baked into images. Explicitly authorized runtime token snapshots are permitted; the host profile must not be mounted or modified.
@@ -51,12 +51,12 @@ Success: expected model reply, unchanged source auth file, no refresh token or u
 ### TC-001: Container COM adapter enforces origin and shutdown
 - Journey / requirements: CUJ-001, CUJ-003 / FR-002, FR-003
 - Level / automation: integration; tests/TC-001.test.js
-- Preconditions / fixtures: temporary synthetic SQLite DB; random local listener port; no external dependencies.
+- Preconditions / fixtures: temporary synthetic SQLite DB/home and private instance credential; random local listener port; no external provider dependencies.
 - Given: adapter wraps the real loopback COM server.
-- When: GET health/capabilities with configured Host/Origin, then hostile Host/Origin, POST and missing route, then SIGTERM/close.
+- When: authenticate and GET health/capabilities with configured Host/Origin, then hostile Host/Origin, POST and missing route, then SIGTERM/close.
 - Then: health 200 and exact service identity; capabilities match authoritative main; hostile access 403; POST 405; unknown route 404; all listeners close.
 - Steps and assertions: create adapter on ephemeral local port with explicit synthetic origin; send each request and assert precise status/body; close and assert listener closed.
-- Variants / negative cases: invalid/non-HTTP origin rejected before listening; upstream failure returns 502; no credentials/auth needed; persistence/concurrent writes inapplicable to read-only adapter.
+- Variants / negative cases: invalid/non-HTTP origin rejected before listening; upstream failure returns 502; synthetic instance authentication is required; partial explicit COM credential pairs reject before listener creation; persistence/concurrent writes are covered by other cases.
 - Cleanup: close servers and delete only temporary DB directory.
 - Pass evidence: named automated assertions.
 ### TC-002: Profile initialization preserves ownership and state
