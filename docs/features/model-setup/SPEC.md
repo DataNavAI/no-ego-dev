@@ -141,3 +141,5 @@ Design: extend the existing approved compact card/design captures. Provider/mode
 Metrics: existing sanitized API status and bounded job-state outcomes only; no codes, tokens, prompts, account identifiers or new analytics service.
 
 Commit boundary: after provider approval, the current NED API authority and unchanged snapshot authorize the private commit. Cancellation/expiry before that point prevents persistence; authorizing is no longer cancellable (409/readback). Shutdown or a filesystem failure during Hermes multi-file persistence is uncertain and requires authoritative readback; per-file atomicity is not a cross-file/provider transaction, and no blind exchange replay or grant rollback is claimed.
+
+Resource reservation includes terminating login processes until actual child exit; cancel response waits for owned cleanup before admitting a replacement. The installed adapter admits at most2 subprocesses including discovery/configuration, and non-inference credential HTTP operations are capped at8. Regression TC-003 holds child exit after cancellation and proves a replacement cannot start early.

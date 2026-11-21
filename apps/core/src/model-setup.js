@@ -45,6 +45,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
   let hub,closed=false,queue=Promise.resolve();
   const serial=operation=>{const current=queue.then(()=>{if(closed)throw new ModelSetupError();return operation();});queue=current.catch(()=>{});return current;};
   async function fetchBound(url,options={}){
+    if(requests.size>=8)throw new ModelSetupError(429,'model_setup_busy');
     const abort=new AbortController();requests.add(abort);
     try{return await request(url,{...options,redirect:'error',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(10000)])});}
     finally{requests.delete(abort);}
@@ -164,7 +165,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
     if(process.platform==='win32')throw new ModelSetupError(403,'model_setup_platform_unavailable');
     const intent=intents.get(input?.nonce);intents.delete(input?.nonce);
     if(!enabled||!intent||intent.expires<clock()||input.confirm!==true||Object.keys(input).some(k=>!['action','nonce','confirm'].includes(k)))throw new ModelSetupError(400,'model_setup_invalid');
-    if([...logins.values()].some(pending))throw new ModelSetupError(409,'model_login_active');
+    if([...logins.values()].some(j=>!j.finished))throw new ModelSetupError(409,'model_login_active');
     const current=await profile(),marker=current.config.ned_model;if(current.fingerprint!==intent.fingerprint||!['local','hub','instance'].includes(marker?.kind))throw new ModelSetupError(409,'model_setup_changed');
     const provider=marker.kind==='instance'&&['openai-codex','gemini','anthropic'].includes(marker.provider)?marker.provider:'hub';
     const operation=await adapter.start({action:'disconnect',provider,model:'disconnected'},{beforeCommit:()=>serial(()=>profileLock(current,authorize))});
@@ -176,14 +177,14 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
     if(!enabled||closed)throw new ModelSetupError(403,'model_setup_forbidden');
     const intent=intents.get(input?.nonce);intents.delete(input?.nonce);
     if(!intent||intent.expires<clock()||Object.keys(input).some(k=>!['action','nonce','provider','model','replace'].includes(k))||input.provider!=='openai-codex'||!validModel(input.model)||input.replace!==undefined&&typeof input.replace!=='boolean')throw new ModelSetupError(400,'model_setup_invalid');
-    if([...logins.values()].some(pending))throw new ModelSetupError(409,'model_login_active');
+    if([...logins.values()].some(j=>!j.finished))throw new ModelSetupError(409,'model_login_active');
     const current=await profile();if(current.fingerprint!==intent.fingerprint||current.kind!=='missing'&&input.replace!==true)throw new ModelSetupError(409,'model_setup_changed');
     if(!await adapter.available())throw new ModelSetupError(503,'model_authentication_unavailable');
     if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');
     // Recheck after interpreter discovery so concurrent starts cannot race.
-    if([...logins.values()].some(pending))throw new ModelSetupError(409,'model_login_active');
+    if([...logins.values()].some(j=>!j.finished))throw new ModelSetupError(409,'model_login_active');
     while(logins.size>=8)logins.delete(logins.keys().next().value);
-    const j={id:randomUUID(),state:'starting',expiresAt:clock()+900000,authorize};logins.set(j.id,j);
+    const j={id:randomUUID(),state:'starting',expiresAt:clock()+900000,authorize,finished:false};logins.set(j.id,j);
     j.task=(async()=>{
       let deadline,watch;
       try{
@@ -195,13 +196,13 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
         deadline=setTimeout(()=>endLogin(j,'expired'),Math.max(1,j.expiresAt-clock()));deadline.unref();
         watch=setInterval(()=>{if(closed||!authorize())endLogin(j,'cancelled');else if(clock()>=j.expiresAt)endLogin(j,'expired');},250);watch.unref();
         await j.operation.done;if(pending(j)){j.state=authorize()?'complete':'cancelled';delete j.userCode;delete j.verificationUri;}
-      }catch{endLogin(j,'failed');}finally{clearTimeout(deadline);clearInterval(watch);}
+      }catch{endLogin(j,'failed');}finally{clearTimeout(deadline);clearInterval(watch);j.finished=true;}
     })();
     return publicLogin(j);
   }
   return {status,prepare,startLogin,
     login(id){const j=logins.get(id);if(j&&clock()>=j.expiresAt)endLogin(j,'expired');if(!j)throw new ModelSetupError(404,'model_login_missing');if(!j.authorize()){endLogin(j,'cancelled');throw new ModelSetupError(401,'model_setup_unauthorized');}return publicLogin(j);},
-    cancelLogin(id){const j=logins.get(id);if(!j)throw new ModelSetupError(404,'model_login_missing');if(j.state==='authorizing')throw new ModelSetupError(409,'model_login_committing');endLogin(j,'cancelled');return publicLogin(j);},
+    async cancelLogin(id){const j=logins.get(id);if(!j)throw new ModelSetupError(404,'model_login_missing');if(j.state==='authorizing')throw new ModelSetupError(409,'model_login_committing');endLogin(j,'cancelled');await j.task;return publicLogin(j);},
     async register(input){
       if(closed)throw new ModelSetupError();
       const url=new URL(input.origin);
@@ -211,7 +212,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
     },
     async configure(input,authorize=()=>true){
       if(process.platform==='win32')throw new ModelSetupError(403,'model_setup_platform_unavailable');
-      if([...logins.values()].some(pending))throw new ModelSetupError(409,'model_login_active');
+      if([...logins.values()].some(j=>!j.finished))throw new ModelSetupError(409,'model_login_active');
       if(!enabled)throw new ModelSetupError(403,'model_setup_forbidden');
       const intent=intents.get(input?.nonce);intents.delete(input?.nonce);
       if(!intent||intent.expires<clock()||!input||Object.keys(input).some(k=>!['nonce','provider','model','apiKey','replace'].includes(k))||input.replace!==undefined&&typeof input.replace!=='boolean'||typeof input.provider!=='string'||!Object.hasOwn(providerUrls,input.provider)||!validModel(input.model)||typeof input.apiKey!=='string'||!/^[\x21-\x7e]{16,4096}$/.test(input.apiKey))throw new ModelSetupError(400,'model_setup_invalid');
@@ -238,7 +239,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
         let input;try{input=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new ModelSetupError(400,'model_setup_invalid');}
         if(input?.action==='disconnect')return send(200,await disconnect(input,authorize));
         if(input?.action==='login')return send(202,{login:await startLogin(input,jobAuthorize)});
-        if(input?.action==='cancel-login'&&Object.keys(input).every(k=>['action','id'].includes(k)))return send(200,{login:this.cancelLogin(input.id)});
+        if(input?.action==='cancel-login'&&Object.keys(input).every(k=>['action','id'].includes(k))){const login=await this.cancelLogin(input.id);if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');return send(200,{login});}
         if(input?.action==='inherit'&&Object.keys(input).length===1){await prepare(authorize);const result=await status();if(!authorize())throw new ModelSetupError(401,'model_setup_unauthorized');return send(200,result);}
         return send(200,await this.configure(input,authorize));
       }catch(error){return fail(error);}

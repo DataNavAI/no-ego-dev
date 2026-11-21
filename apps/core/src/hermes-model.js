@@ -14,6 +14,7 @@ export function createHermesModelAdapter({env=process.env,profile}={}){
   }
   async function start(input,{event=()=>{},beforeCommit=async()=>()=>{}}={}){
     const python=await executable();
+    if(operations.size>=2)throw Error('Hermes operation capacity exhausted');
     const child=spawn(python,['-I',fileURLToPath(new URL('./hermes-model.py',import.meta.url))],{env:{...env,HERMES_HOME:profile,PYTHONNOUSERSITE:'1',HERMES_INTERACTIVE:'0'},stdio:['pipe','pipe','ignore']});
     let buffer='',bytes=0,finished=false,release,committing=false,timer,success=false;
     const stop=()=>{if(finished)return;child.kill('SIGTERM');timer=setTimeout(()=>{if(!finished)child.kill('SIGKILL');},1000);timer.unref();};

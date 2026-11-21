@@ -19,7 +19,7 @@ test('TC-003: device challenge is redacted, one active job survives status readb
 test('TC-003: cancellation, credential revocation and profile replacement cannot commit a pending grant',async t=>{
   for(const mode of ['cancel','revoked','changed'])await t.test(mode,async t=>{
     const f=await fixture(t);let authorized=true;const job=await start(f,()=>authorized);await until(()=>f.models.login(job.id),j=>j.state==='waiting');
-    if(mode==='cancel')f.models.cancelLogin(job.id);else if(mode==='revoked'){authorized=false;assert.throws(()=>f.models.login(job.id),e=>e.status===401);}else await writeFile(path.join(f.profile,'config.yaml'),'agent: {max_turns: 8}\n',{mode:0o600});
+    if(mode==='cancel')await f.models.cancelLogin(job.id);else if(mode==='revoked'){authorized=false;assert.throws(()=>f.models.login(job.id),e=>e.status===401);}else await writeFile(path.join(f.profile,'config.yaml'),'agent: {max_turns: 8}\n',{mode:0o600});
     await f.approve();await until(async()=>{try{return f.models.login(job.id);}catch{return {state:'cancelled'};}},j=>['cancelled','failed'].includes(j.state));assert.equal(f.commits,0);
   });
 });
@@ -40,4 +40,12 @@ test('TC-003: Gemini and Claude keys validate at fixed native provider endpoints
     await models.register({origin:'https://hub.example',id:'11111111-1111-4111-8111-111111111111',token:'ned_'+'a'.repeat(43),kind:'hosted'});
     const result=await models.configure({nonce:(await models.status()).nonce,provider,model:'chosen',apiKey:key});assert.equal(result.configured,true);assert.equal(commits,1);assert.equal((await models.prepare()).provider,provider);assert(!(JSON.stringify(await models.status())).includes(key));
   });
+});
+
+test('TC-003: cancellation retains its process slot until the owned child actually exits',async t=>{
+  const root=await mkdtemp(path.join(tmpdir(),'ned-device-stop-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});const exits=[];let started=0;
+  const adapter={available:async()=>true,async start(input,hooks){started++;const done=new Promise((resolve,reject)=>{exits.push(()=>reject(Error('owned child exited')));});queueMicrotask(()=>hooks.event({type:'challenge',verificationUri:'https://auth.openai.com/codex/device',userCode:'NED-TEST'}));return {done,stop(){/* Termination requested; the controlled child has not exited. */}};}};
+  const models=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter});t.after(async()=>{for(const exit of exits)exit();await models.close();await rm(root,{recursive:true,force:true});});
+  const request=async()=>models.startLogin({action:'login',nonce:(await models.status()).nonce,provider:'openai-codex',model:'fixture'},()=>true);
+  const job=await request();await until(()=>models.login(job.id),j=>j.state==='waiting');const cancelling=models.cancelLogin(job.id);await assert.rejects(request(),e=>e.code==='model_login_active');assert.equal(started,1);for(const exit of exits)exit();await cancelling;
 });
