@@ -1,12 +1,13 @@
 {
-  "candidate_sha": "6d6afd2ffb15df42798bd190c6ae3152f00bacba",
-  "tested_at": "2026-11-21T06:08:50.766515+00:00",
-  "environment": "Primary-agent acceptance: macOS arm64, Node24.22.2, actual Chromium; clean native candidate plus Hub integration fixture, synthetic Hermes API only",
+  "candidate_sha": "5887071683eaa554a9997c05389162522b484e5b",
+  "tested_at": "2026-11-21T06:58:42Z",
+  "environment": "macOS arm64, Node25.6.1, native arm64 Docker on isolated colima-eval context; real Hermes plus model-only aimock and selected-provider credential-backed Docker workflow",
   "result": "pass",
   "commands": [
-    "node --test docs/features/communicator/tests/TC-039.test.js",
-    "NED_CLI_ROOT=<exact-native-candidate> playwright test --config playwright.instance.config.ts (ned-hub integration checkout)",
-    "npm run lint; npm run test:all (commit hook)"
+    "npm run lint; npm run test:all (exact-source commit hook); npm run build:ui:check",
+    "node --test docs/features/ned-api/tests/TC-*.test.js docs/features/task-api-transport/tests/TC-*.test.js",
+    "python docs/features/standalone-container/tests/container_acceptance.py --context colima-eval --expected-architecture arm64",
+    "npm run eval -- --credential-file <private-selected-provider-file> --provider openai-codex --model gpt-6.1-sol --context colima-eval --output-root <external-private-evidence> --timeout 1800"
   ],
-  "observations": "Exact native code candidate consumed authenticated matching cancellation while its HTTP Stop acknowledgement was deliberately held: stopped terminal retained partial text; unsolicited cancellation stayed failed. All14 TC-039 cases passed. Primary-agent assembled acceptance connected actual served COM UI through actual native connector/Hub API/WebSocket data tunnel; sent a synthetic chat input, observed Unicode delta before withheld terminal, completed and reloaded persisted history; unavailable/truncated upstream streams failed; cancellation and foreign Origin/token revocation checks passed (4 integration cases). No user conversations, provider secrets, paid inference or hosted OAuth used. Full native commit hook passed including208 Python tests (9 existing skips) and real-Hermes medium suite. Hosted native image is unchanged; native#162 owns image rollout."
+  "observations": "Exact source tree ef00765cffc3537818927278e3775f17ff6fdcfe independently approved. Full lint and small/medium gate passed, including every automated spec case, 208 Python tests (9 existing platform skips) and six real-Hermes/aimock cases. API plus CLI transport19/19 passed: canonical/legacy HTTP, shared idempotency, held-terminal incremental SSE, operator/public perimeter, secret privacy and four database-context variants including injected-store authority and caller-owned connection survival. Native Docker TC003/004 passed image sha256:ad026f1f5d803a58de4c21c01ad0bb19033037a9faf051f2b4dc4e34040e1ea1, authenticated HTTP/CLI, service replacement, retained state, negative startup, shutdown3.35s and verified owned cleanup. Real Hermes Docker task-management workflow run35e8abca9ebdaf5d3a1126dd passed semantic and independent CLI goal/task checks, no infrastructure failure, cleanup verified; model-backed acceptance used only selected-provider credentials without mounting the host profile. This is the named task-management workflow, not the entire skill eval inventory. No hosted deployment performed."
 }
