@@ -39,7 +39,7 @@ Use fresh volumes. Initialization rejects unrecognized nonempty profiles. It cop
 docker inspect ned --format '{{.State.Health.Status}}'
 docker logs --tail 100 ned
 curl --fail http://127.0.0.1:9119/api/health
-curl --fail http://127.0.0.1:8787/api/health
+docker exec --user hermes ned node /opt/ned/scripts/container/health.mjs
 # All CLI writes must run as the same service user:
 docker exec --user hermes ned ned --version
 docker exec --user hermes ned ned status --json
@@ -90,7 +90,7 @@ npm run test:container -- --context colima-ned-container --image ned-standalone:
 A successful run prints a JSON receipt with test-case IDs, image ID, platform, timestamp, shutdown duration and cleanup status. It checks the authenticated root redirect with query preservation and uses COM origin port8787 on first launch and port8790 on recreation; random published ports and explicit Host headers keep the test isolated. Failure exits nonzero and does not print a pass receipt. Resource names print before setup so a Docker-host crash can be recovered by removing only those named resources. Never use this script to test a shared host profile. Compose wiring still uses the procedure below.
 
 1. Build as above. Launch with **test-owned names** `ned-container-acceptance` and `ned-container-test-{profile,db,projects}` and a generated synthetic runtime password in a private temporary env file. Do not mount host profiles or provider credentials.
-2. Wait boundedly (up to 180 seconds) for Docker healthy. Assert dashboard HTML 200, `/api/health` says `ok:true, auth_required:true`, unauthenticated `/api/config` is 401, and login form submission to `/auth/password-login` yields a cookie and authenticated `/api/config` is 200. Assert COM health/capabilities/projects endpoints are 200 with real service identity and empty projects. Host `evil.example` or Origin `https://evil.example` returns 403. Verify `ned --version`, unprivileged service PIDs and all manifest components under `/opt/data`.
+2. Wait boundedly (up to 180 seconds) for Docker healthy. Assert dashboard HTML 200, `/api/health` says `ok:true, auth_required:true`, unauthenticated `/api/config` is 401, and login form submission to `/auth/password-login` yields a cookie and authenticated `/api/config` is 200. Assert anonymous COM health returns401; authenticate COM health/capabilities/projects requests using the synthetic Basic credentials and require200 with real service identity and empty projects. Host `evil.example` or Origin `https://evil.example` returns 403. Verify `ned --version`, unprivileged service PIDs and all manifest components under `/opt/data`.
 3. Create synthetic project `/projects/acceptance`, profile/project sentinels and a CLI task. Record database readback and sentinel hashes. Kill the s6 dashboard child and COM child one at a time; boundedly wait for new PIDs and correct HTTP responses. No blind retry masks a failed acceptance: report each transition.
 4. Stop within 30 seconds, record exit code (no forced SIGKILL), remove container only. Recreate with the same volumes, verify healthy services, CLI task/database, COM project and sentinel bytes. Confirm profile config edit retained.
 5. Launch another test container without dashboard credentials: require nonzero exit and no services. Launch with a fresh test profile volume holding an unrelated sentinel: require nonzero exit and unchanged sentinel/no seeded profile. Check image config/history and build context allowlist for absence of runtime password/host state.

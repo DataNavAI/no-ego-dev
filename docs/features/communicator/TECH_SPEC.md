@@ -12,7 +12,14 @@ Node ES modules/native HTTP/better-sqlite3. Existing src/web onboarding stays se
 ## Lifecycle
 Export createCommunicatorServer({host = '127.0.0.1', port = 0} = {}) returning {server, listen(), close(), url}. URL null before listen, actual http://127.0.0.1:<port> after success. Accept exact IPv4 loopback only and integer ports 0–65535; zero ephemeral. Startup reject leaks no listener; sanitized lifecycle errors. Close idempotent, stops accepting, closes idle/active connections and releases listener. #115 owns signal/browser-open policy; library installs none.
 
-## Current HTTP contract
+## Authenticated legacy HTTP baseline
+
+The routes below retain historical payloads as compatibility aliases. Every API
+requires instance authentication; COM document navigation challenges with HTTP
+Basic. Exact Host/Origin validation precedes authentication, then resource/method
+dispatch. Missing/wrong credentials401; no read-only exception. The authoritative
+canonical routes, shapes and authentication are [NED API v1](../../api.md); its
+contract supersedes this original read-only baseline and the later extensions.
 GET/HEAD only; HEAD same status/type/headers without body. All responses no-store/nosniff, no CORS grants.
 - / -> HTML; /styles.css and /app.js (+ explicit helper asset if needed) -> correct MIME.
 - /api/health -> 200 {status:'ok', service:'nedcom'}.

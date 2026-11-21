@@ -14,6 +14,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import base64
 
 ROOT = Path(__file__).resolve().parents[4]
 
@@ -119,7 +120,8 @@ def main():
                 def com_get(path, headers=None):
                     # Random Docker host ports avoid collisions; requests must use
                     # the configured external authority, including on recreation.
-                    return get(com + path, {"Host": urllib.parse.urlsplit(com_origin).netloc, **(headers or {})})
+                    authorization = "Basic " + base64.b64encode(("acceptance:" + password).encode()).decode()
+                    return get(com + path, {"Host": urllib.parse.urlsplit(com_origin).netloc, "Authorization": authorization, **(headers or {})})
 
                 assert get(dashboard + "/")[0] == 200  # noqa: S101 - executable test assertions
                 health = json.loads(get(dashboard + "/api/health")[1])
@@ -136,6 +138,7 @@ def main():
                     assert urllib.parse.parse_qs(landing.query) == {"profile": ["default"], "qa": ["landing"]}  # noqa: S101
                 assert get(dashboard + "/sessions?profile=default")[0] == 200  # noqa: S101
                 assert get(dashboard + "/api/config")[0] == 200  # noqa: S101
+                assert get(com + "/api/health", {"Host": urllib.parse.urlsplit(com_origin).netloc})[0] == 401  # noqa: S101
                 assert com_get("/")[0] == 200  # noqa: S101
                 status, body = com_get("/api/health")
                 assert status == 200 and json.loads(body) == {"status": "ok", "service": "nedcom"}  # noqa: S101

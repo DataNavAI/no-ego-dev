@@ -4,7 +4,7 @@ Behavioral contract and required test coverage: [feature spec](features/task-man
 
 NED stores project work in its shared database. No Beads installation, external task service, model authorization, cloud account, or Hermes restart is required.
 
-All CLI task operations use NED API v1's authenticated operator family. Without configuration,
+All CLI task operations use authenticated NED API v1. Without configuration,
 the CLI starts and closes a temporary local backend (no coordinator/model dispatch).
 For an existing same-profile Core/COM use `--api http://127.0.0.1:18791` or
 `NED_API_URL` (legacy `NED_CORE_URL` remains supported); never use the public Hub/tunnel URL. Runtime/database identities

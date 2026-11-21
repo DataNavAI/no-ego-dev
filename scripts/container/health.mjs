@@ -1,5 +1,8 @@
 import http from 'node:http';
 import {pathToFileURL} from 'node:url';
+import {readFileSync} from 'node:fs';
+import path from 'node:path';
+import {resolveRuntimeHome} from '../../src/runtime-home.js';
 
 function readHealth(url,headers,timeout) {
   return new Promise((resolve,reject) => {
@@ -21,10 +24,14 @@ function readHealth(url,headers,timeout) {
   });
 }
 
-export async function checkContainerHealth({dashboardUrl = 'http://127.0.0.1:9119/api/health', comUrl = 'http://127.0.0.1:8787/api/health', origin = process.env.NED_COM_ORIGIN || 'http://127.0.0.1:8787', timeout = 3000} = {}) {
+export async function checkContainerHealth({dashboardUrl = 'http://127.0.0.1:9119/api/health', comUrl = 'http://127.0.0.1:8787/api/health', origin = process.env.NED_COM_ORIGIN || 'http://127.0.0.1:8787', timeout = 3000,credential} = {}) {
+  const target=new URL(comUrl);
+  if(target.protocol!=='http:'||!['127.0.0.1','localhost','[::1]'].includes(target.hostname)||target.username||target.password)throw new Error('Health target must be loopback HTTP');
+  credential??=readFileSync(path.join(resolveRuntimeHome(),'.ned','core','operator-token'),'utf8').trim();
+  if(!/^[a-f0-9]{64}$/.test(credential))throw new Error('Invalid NED API health credential');
   const checks = [
     [dashboardUrl, undefined, data => data.ok === true && data.auth_required === true],
-    [comUrl, {Host:new URL(origin).host}, data => data.status === 'ok' && data.service === 'nedcom'],
+    [comUrl, {Host:new URL(origin).host,Authorization:`Bearer ${credential}`}, data => data.status === 'ok' && data.service === 'nedcom'],
   ];
   for (const [url,headers,valid] of checks) {
     if (!valid(await readHealth(url,headers,timeout))) throw new Error('Invalid health payload');

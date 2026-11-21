@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import {readFileSync,existsSync,statSync,readdirSync} from 'node:fs';
 import {fixture,assert,join,startCom} from './helpers.js';
 

@@ -1,7 +1,8 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {endStream} from './stream-fixtures.js';
 
 test('TC-012: accepted turns survive HTTP completion, serialize sends and bind status to session and credentials',async t=>{

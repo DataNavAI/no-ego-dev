@@ -1,9 +1,10 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {createSecretStore} from '../../../../src/secrets.js';
 async function fixture(t,extra={}){const home=mkdtempSync(join(tmpdir(),'ned-secret-http-'));const events=[];const app=createCommunicatorServer({home,databasePath:join(home,'ned.sqlite'),logger:{event:(...args)=>events.push(args)},...extra});await app.listen();t.after(async()=>{await app.close();rmSync(home,{recursive:true,force:true});});const call=(path='',method='GET',body,headers={})=>fetch(app.url+'/api/v1/secrets'+path,{method,headers:{Origin:app.url,'X-NED-Secrets':'1',...(body!==undefined?{'Content-Type':'application/json'}:{}),...headers},...(body!==undefined?{body:JSON.stringify(body)}:{})});return {app,home,events,call};}
 test('TC-002: Settings API shares encrypted CLI vault and requires explicit reveal',async t=>{

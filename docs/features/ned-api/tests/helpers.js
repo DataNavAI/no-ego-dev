@@ -17,6 +17,6 @@ export async function apiFixture(context,{kind='com',chatGateway,backendOnly=fal
   app=kind==='core'?await createCoreServer({home,env,databasePath,chatGateway,backendOnly}):createCommunicatorServer({home,env,databasePath,gateway:chatGateway,secretsEnabled});
   await app.listen();
   const credential=()=>loadOperatorCredential({home,env});
-  const request=(route,{method='GET',body,headers={},operator=false}={})=>fetch(app.url+route,{method,headers:{...(operator?{authorization:'Bearer '+credential()}:{}),...(body===undefined?{}:{'content-type':'application/json'}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)}),redirect:'manual',signal:AbortSignal.timeout(10000)});
+  const request=(route,{method='GET',body,headers={},authenticated=true}={})=>fetch(app.url+route,{method,headers:{...(authenticated?{authorization:'Bearer '+credential()}:{}),...(body===undefined?{}:{'content-type':'application/json'}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)}),redirect:'manual',signal:AbortSignal.timeout(10000)});
   return {root,project,home,env,databasePath,app,task,projectId:task.project.id,credential,request};
 }

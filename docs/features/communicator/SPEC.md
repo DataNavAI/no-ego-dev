@@ -157,13 +157,13 @@ Actor: configured Hermes gateway owner; critical because communication must rema
 ### TC-001: Lifecycle, read contracts and HTTP perimeter
 - Purpose / journey / requirements: safe boot/restart/access; CUJ-001/003 / FR-001, FR-007, FR-010.
 - Level / automation: integration; [`tests/TC-001.test.js`](tests/TC-001.test.js), named lifecycle/perimeter assertions.
-- Preconditions / fixtures: Node 20+, dependencies; disposable temp dir with sentinel.txt bytes `unchanged`, no DB; `{port:0}` factory and raw HTTP helper for unnormalized paths/headers.
-- Given: no listener or communicator persistence.
-- When: listen, GET/HEAD root/assets/health/capabilities, send negative requests, close twice and restart same port.
-- Then: actual loopback URL; health 200 `{status:"ok",service:"nedcom"}`; capabilities match TECH_SPEC; HTML/CSS/JS MIME correct. HEAD same status/type, no body. Foreign Host/Origin -> 403; unsupported method -> 405 with Allow; unknown/traversal -> 404; sanitized JSON errors/no paths/stacks. Valid reads still work.
+- Preconditions / fixtures: Node 20+, dependencies; disposable temp dir with sentinel.txt bytes `unchanged`, no DB; isolated private authentication home, `{port:0,home}` factory and credential-bearing raw HTTP helper for unnormalized paths/headers.
+- Given: no listener or communicator persistence; startup creates a private instance key in the owned authentication home.
+- When: listen, authenticate GET/HEAD root/assets/health/capabilities, send negative requests, close twice and restart same port.
+- Then: actual loopback URL; canonical health200 `{status:"ok",service:"ned-api",version:1}`; capabilities match the canonical API reference; HTML/CSS/JS MIME correct. HEAD same status/type, no body. Foreign Host/Origin -> 403; unsupported method -> 405 with Allow; unknown/traversal -> 404; sanitized JSON errors/no paths/stacks. Valid reads still work.
 - Steps and assertions: verify listening address; compare sentinel/directory entries before/after; inspect CSP/nosniff/no-store/no CORS grant; close then connection fails, restart succeeds.
-- Variants / negative cases: negative/fractional/>65535 port and nonloopback host reject; occupied port rejects without leaked listener; concurrent reads; POST/PUT/PATCH/DELETE/OPTIONS; /api/projects; raw/encoded traversal; foreign/null Origin; absent/exact Origin accepted. Context validation precedes method/route. Query never expands asset allowlist. No provider/auth dependency applies.
-- Cleanup: close servers in finally, remove temp dir, leave no files/DB/processes.
+- Variants / negative cases: negative/fractional/>65535 port and nonloopback host reject; occupied port rejects without leaked listener; concurrent reads; POST/PUT/PATCH/DELETE/OPTIONS; /api/projects; raw/encoded traversal; foreign/null Origin; absent/exact Origin accepted. Context validation precedes authentication, then method/route. Query never expands the asset allowlist. Missing/wrong authentication401s are covered by NED API TC-001; synthetic instance authentication needs no external provider auth.
+- Cleanup: close servers in finally, remove sentinel and owned authentication temp directories, leaving no files/DB/processes.
 - Pass evidence: named assertions for each variant on exact candidate SHA; written case is not a pass.
 
 ### TC-002: Client states, identity and retry
@@ -430,16 +430,16 @@ Actor: chat user. Critical because long replies must become useful before provid
 - Boundary acceptance: long conversational prose remains visible while separate tool_calls and tool-role payloads remain hidden under FR-041; there is no 64-KiB Markdown bypass. Wide tables retain unbroken readable headers and scroll inside the transcript at 320/390px, never widening the page. TC-013 proves combined-content normalization and hidden tool payloads; browser acceptance owns sanitizer behavior and table geometry.
 
 ### Public tunnel opt-in
-- FR-016: `ned com --public` explicitly exposes NED COM without authentication through a temporary cloudflared quick tunnel. Warn before exposure that anyone with its URL can read project/session data and send messages. Normal `ned com` remains loopback-only; Hermes credentials stay server-side. `NED_CLOUDFLARED_BIN` optionally selects the installed binary. Missing binary, startup failure/deadline or tunnel exit closes owned resources and exits nonzero. Ctrl+C/SIGTERM closes the owned tunnel and listeners. No login protection on unrelated tunnels is modified.
+- FR-016: `ned com --public` exposes authenticated NED COM through a temporary cloudflared quick tunnel. Knowing its URL grants no API authority. Print that instance authentication is required; the browser authenticates with the instance key. Normal `ned com` remains loopback-only; Hermes credentials stay server-side. `NED_CLOUDFLARED_BIN` optionally selects the installed binary. Missing binary, startup failure/deadline or tunnel exit closes owned resources and exits nonzero. Ctrl+C/SIGTERM closes the owned tunnel and listeners. No login protection on unrelated tunnels is modified.
 - FR-017: The tunnel bridge remains unavailable before the provider URL is discovered; afterwards only the exact generated HTTPS `*.trycloudflare.com` Host and absent or exact matching Origin are accepted. Accepted Origin/Host are translated to the local COM origin; arbitrary foreign-origin mutations remain forbidden. Proxy inactivity timeout is 610 seconds, not a guarantee that the external provider permits equally long requests.
 ### CUJ-009: Test COM from another machine
-Actor: operator explicitly accepting public data/message access; prerequisite: installed cloudflared and running local Hermes. Starting state: no public COM listener. Run `ned com --public`, read warning, open printed public HTTPS URL, read/create/send a test session, stop with Ctrl+C. Success: unauthenticated public access works without exposing bearer keys and owned resources close on exit. On provider failure restart explicitly; no automatic message replay. Non-goals: permanent hosting, authentication removal from existing deployments, bypassing provider request limits.
+Actor: authenticated instance owner requesting remote access; prerequisite: installed cloudflared and running local Hermes. Starting state: no public COM listener. Run `ned com --public`, open the printed public HTTPS URL, authenticate, read/create/send a test session, stop with Ctrl+C. Success: unauthenticated API access is denied and authenticated access works without exposing keys in URLs or logs and owned resources close on exit. On provider failure restart explicitly; no automatic message replay. Non-goals: permanent hosting, authentication removal from existing deployments, bypassing provider request limits.
 ### TC-011: Opt-in public bridge and CLI lifecycle
 - Journey / requirements: CUJ-009 / FR-016–017.
 - Level / automation: focused HTTP/process-boundary integration and CLI unit tests; [tests/TC-011.test.js](tests/TC-011.test.js).
 - Preconditions / fixtures: synthetic loopback HTTP target and injected child-process streams, no external network/authentication or persisted state.
 - Given: a newly started public bridge; When provider URL is pending, then traffic returns 503 and never reaches target. When valid URL is emitted and matching Host/Origin submitted, then target receives exact local Host/Origin and returns 200.
-- Steps and assertions: `node --test docs/features/communicator/tests/TC-011.test.js`; assert foreign Host/Origin return 403 with no upstream side effect, child startup errors reject, explicit `--public` warns/prints public URL and invokes tunnel exactly once, ordinary startup never invokes it, and signal cleanup removes listeners/closes tunnel.
+- Steps and assertions: `node --test docs/features/communicator/tests/TC-011.test.js`; assert foreign Host/Origin return 403 with no upstream side effect, child startup errors reject, explicit `--public` announces required authentication and prints the public URL and invokes tunnel exactly once, ordinary startup never invokes it, and signal cleanup removes listeners/closes tunnel.
 - Variants / negative cases: missing dependency fails closed; local no-Origin reads remain supported by existing TC-004. Provider authentication is deliberately absent by operator opt-in. Provider timeout and actual public browser accessibility need live acceptance; synthetic tests do not certify them.
 - Cleanup: close all fixture listeners/owned child streams; no production profile touched.
 - Pass evidence: named automated assertions plus separately retained public-URL QA report; mapping FR-016/017 → CUJ-009 → TC-011.
@@ -651,7 +651,7 @@ Actor: chat user. Critical because tool work may delay the first visible reply. 
 ### TC-040: Private, bounded live activity over the chat SSE
 - Journey / requirements: CUJ-022 / FR-061–062.
 - Level / automation: unit, integration and end-to-end; [tests/TC-040.test.js](tests/TC-040.test.js).
-- Preconditions / fixtures: synthetic loopback gateway, isolated COM, browser fixture; no credentials or existing persisted chat required.
+- Preconditions / fixtures: synthetic loopback gateway, isolated COM and browser fixture with synthetic instance credentials; no external credentials or existing persisted chat required.
 - Given: a loaded chat and an upstream turn held before assistant prose.
 - When: submit, emit known/unknown tool and thinking events, then prose and completion.
 - Then: one activity line changes before prose, raw metadata never reaches the client, prose streams once, and completion clears the line.

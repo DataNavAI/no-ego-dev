@@ -5,7 +5,7 @@ Related issues: [#163](https://github.com/DataNavAI/no-ego-dev/issues/163); NED 
 
 ## User outcome and scope
 
-The HTTP interface is the operator family of [NED API v1](../../api.md),
+The HTTP interface is part of the authenticated [NED API v1](../../api.md),
 implemented by Core. `/api/core/v1` remains a compatibility alias; it is not a
 separate product API. The shared contract and browser families are governed by
 the [NED API feature](../ned-api/SPEC.md).
@@ -20,7 +20,7 @@ Source implementation lives in `apps/core/`, with compatibility exports under `s
 ## Requirements
 
 - FR-001: Core reuses runtime-selected SQLite/task service. COM and core share authoritative project/work readers; no duplicate task-state rules or database.
-- FR-002: All core HTTP reads/writes require a runtime-private operator bearer credential, exact bound loopback Host and absent/exact same-origin Origin. Actor is audit data, not authentication. Public/Hub bridges deny the whole normalized core namespace before rewriting headers, including encoded variants. No request-supplied gateway URL, key, DB path or profile. The trusted operator task-management endpoint accepts an absolute existing project directory for canonical initialization/selection; other routes use registered project IDs. See [task-management FR-015–018 / TC-013](../task-management/SPEC.md) for that additive CLI contract.
+- FR-002: All API reads/writes require a runtime-private instance bearer or browser Basic credential, exact bound loopback Host and absent/exact same-origin Origin. Actor is audit data, not authentication. Authenticated Hub channels delegate instance authority; public tunnels pass through credentials and grant none themselves. Unknown/malformed paths remain denied. No request-supplied gateway URL, key, DB path or profile. The authenticated task-management endpoint accepts an absolute existing project directory for canonical initialization/selection; other routes use registered project IDs. See [task-management FR-015–018 / TC-013](../task-management/SPEC.md) for that additive CLI contract.
 - FR-003: Project membership is revalidated before writes; absent/foreign resources return indistinguishable404. A registered project whose directory is unavailable fails closed for its own mutations/admission without disabling unrelated projects or historical diagnostics; it is not silently recreated or deleted. Bindings carry trusted configured gateway/profile identity; runtime selection follows `runtime-home.js`. No mapping inferred from titles.
 - FR-004: Existing backlog is untouched. Enrollment is explicit. Blocked/completed/other-owned tasks cannot dispatch; dependencies and claims rechecked immediately before admission. Fixed trusted actor `agent:ned-core` owns claims and retains them through failure/cancellation/retry. Worker finish never completes a task/goal. Shared current-version task service, including CLI and HTTP, denies completion of tasks with attempts unless latest attempt succeeded and none is active/unverified. Authorized HTTP completion uses that canonical owner after explicit verification; actor strings alone do not authenticate HTTP.
 - FR-005: Task has immutable numbered attempts and typed worker bindings. At most one active attempt per task, including unknown/awaiting_verification. Binding holds session ID, gateway/profile identity, role/index and optional authoritative delegation/parent IDs; a session cannot belong to unrelated attempts. Deterministic title combines task+attempt+role+index within100 characters but is only a redundant label.
@@ -47,7 +47,7 @@ Actor: system coordinator/operator. Critical: effects outlive responses. Startin
 Actor: operator/system tick. Starting state: disabled definition. Enable; tick due instant; inspect occurrence/run; pause. Success: one occurrence per scheduled instant, overlap skip, bounded missed interval; active run remains independent. Failure/readiness changes recorded without claiming success.
 
 ### CUJ-004: Consume an isolated backend
-Actor: trusted tool/COM backend. Starting state: private runtime credential/catalog ID. Read/mutate through core; compare CLI/COM; reconnect feed. Success: shared authority and no cross-project/runtime/tunnel access. Invalid auth/resource calls cause no state/provider effects.
+Actor: authenticated owner/COM backend. Starting state: private runtime credential/catalog ID. Read/mutate through Core; compare CLI/COM; reconnect feed. Success: shared authority without cross-project/runtime or unauthenticated access. Authenticated public-tunnel and trusted Hub requests follow the shared NED API contract. Invalid auth/resource calls cause no state/provider effects.
 
 ## Detailed test cases
 
@@ -59,7 +59,7 @@ The following cases have executable Node tests under this feature's `tests/` dir
 - Preconditions / fixtures: runtime A/B, projects A/B, task CLI-created ready task, private operator token A.
 - Given: assembled COM/core share A DB.
 - When: read work, API-create goal/task, read through CLI; issue unauthorized/bridged/foreign requests.
-- Then: same IDs/statuses across consumers; missing/bad token401, bad Host/Origin403, every core bridge route403 even valid token, foreign resource404; no failure mutation/provider calls.
+- Then: same IDs/statuses across consumers; missing/bad credentials401, bad Host/Origin403, unauthenticated public-tunnel API401, authenticated public-tunnel and trusted Hub API200, foreign resource404; no failure mutation/provider calls.
 - Steps and assertions: exercise direct HTTP plus actual Hub/public bridge, raw/encoded letters/slashes/dot segments/trailing slash/query. Reject arbitrary paths/profiles/URLs/keys, unknown fields,64KiB+1 bodies. Remove project membership between read/write and require404. Reopen B and assert untouched.
 - Variants / negative cases: symlink/relative runtime selection fails; actor cannot authenticate; credential never embedded in HTML/error/log; no CORS.
 - Cleanup: common teardown; compare task rows and provider capture.
@@ -222,4 +222,4 @@ remain rejected. TC-003 and TC-007 cover this provider compatibility boundary.
 
 ## Open questions and coverage gaps
 
-Deployed Hermes capability is detected, not inferred from installed source. Child events lacking trustworthy identifiers remain unmapped diagnostics; lost upstream child events cannot be reconstructed. External scheduler provisioning and COM privileged browser auth/controls are future scope. Tests inject low-space/size watermarks rather than filling a real volume to ENOSPC. Test-owned SQLite backup/restore is covered; it is not certification of an operator's external backup process. Core's private-file/OS-lock execution path is verified on supported POSIX hosts; Windows ACL-based operator-token deployment is not claimed. Live model execution is intentionally excluded from this milestone. Full gates, independent acceptance, merge and installed readback remain release requirements, not implied by source status.
+Deployed Hermes capability is detected, not inferred from installed source. Child events lacking trustworthy identifiers remain unmapped diagnostics; lost upstream child events cannot be reconstructed. External scheduler provisioning and COM orchestration controls remain future scope. Instance-wide browser/API authentication is governed by the implemented NED API contract. Tests inject low-space/size watermarks rather than filling a real volume to ENOSPC. Test-owned SQLite backup/restore is covered; it is not certification of an operator's external backup process. Core's private-file/OS-lock execution path is verified on supported POSIX hosts; Windows ACL-based operator-token deployment is not claimed. Live model execution is intentionally excluded from this milestone. Full gates, independent acceptance, merge and installed readback remain release requirements, not implied by source status.

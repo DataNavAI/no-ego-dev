@@ -55,7 +55,7 @@ test('TC-001: app-owned entrypoints and packaged assets work outside the checkou
     try {
       await app.listen();
       for(const resource of ['/','/app.js','/styles.css','/vendor/webawesome.js','/missing-module.js']){
-        const response=await fetch(app.url+resource);
+        const response=await fetch(app.url+resource,{headers:{authorization:'Bearer '+app.apiCredential}});
         results.push({resource,status:response.status,type:response.headers.get('content-type'),size:(await response.text()).length});
       }
       console.log(JSON.stringify(results));

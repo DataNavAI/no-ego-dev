@@ -6,7 +6,7 @@ import {resolveRuntimeHome,ensureRuntimeHome} from '../../../src/runtime-home.js
 
 export function coreNamespace(raw='') {
   const route=nedApiPath(raw);
-  return {blocked:route.kind==='operator'||route.kind==='invalid',valid:route.valid,pathname:route.pathname};
+  return {blocked:route.handler==='coordination'||route.kind==='invalid',valid:route.valid,pathname:route.pathname};
 }
 
 export function loadOperatorCredential({home,env=process.env}={}) {
@@ -44,4 +44,18 @@ export function authorized(header,credential) {
   if(typeof header!=='string'||!header.startsWith('Bearer '))return false;
   const supplied=Buffer.from(header.slice(7)),expected=Buffer.from(credential);
   return supplied.length===expected.length&&timingSafeEqual(supplied,expected);
+}
+
+export const loadApiCredential=loadOperatorCredential;
+
+export function authenticated(header,credential,basicCredentials){
+  if(authorized(header,credential))return true;
+  if(typeof header!=='string'||header.length>8192||!/^Basic [A-Za-z0-9+/]+={0,2}$/.test(header))return false;
+  const encoded=header.slice(6),decoded=Buffer.from(encoded,'base64');
+  if(decoded.toString('base64')!==encoded)return false;
+  const value=decoded.toString('utf8'),separator=value.indexOf(':');
+  if(separator<1||value.includes('\0'))return false;
+  const username=value.slice(0,separator),password=value.slice(separator+1);
+  const equal=(supplied,expected)=>{const left=Buffer.from(supplied),right=Buffer.from(expected);return left.length===right.length&&timingSafeEqual(left,right);};
+  return username==='ned'&&equal(password,credential)||Boolean(basicCredentials?.username&&basicCredentials?.password&&equal(username,basicCredentials.username)&&equal(password,basicCredentials.password));
 }

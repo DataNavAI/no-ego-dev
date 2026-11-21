@@ -108,7 +108,7 @@ For this no-ego-dev distribution, after each completed task run `node scripts/de
 
 ## NED API connection and recovery
 
-Task commands use the authenticated operator family of NED API v1. By default the CLI starts
+Task commands use the authenticated NED API v1. By default the CLI starts
 a temporary loopback backend for the selected runtime/database and closes it
 after the command; no daemon, coordinator dispatch, model or gateway is required.
 To share a running local COM/Core listener, set `NED_API_URL` or pass

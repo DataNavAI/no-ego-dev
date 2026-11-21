@@ -1,3 +1,4 @@
+import {fetch} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';

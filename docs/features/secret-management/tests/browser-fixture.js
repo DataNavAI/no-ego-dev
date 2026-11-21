@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import http from 'node:http';
 import {setTimeout as pause} from 'node:timers/promises';
 import {chromium} from 'playwright';
-import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
+import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {endStream} from '../../communicator/tests/stream-fixtures.js';
 
 // Bounded observable-state polling, not retries of user actions or whole tests.
@@ -62,7 +62,7 @@ export async function browserChat(t){
   app=createCommunicatorServer({home,databasePath:join(home,'ned.sqlite'),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-gateway-key'}});
   await app.listen();
   browser=await chromium.launch({headless:true,channel:'chromium'});
-  const page=await browser.newPage({viewport:{width:1280,height:900}});
+  const page=await browser.newPage({viewport:{width:1280,height:900},httpCredentials:{username:'ned',password:app.apiCredential}});
   page.on('pageerror',error=>errors.push(error.message));
   const draft=page.locator('#chat-message');
   await page.goto(app.url);

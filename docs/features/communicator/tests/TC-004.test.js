@@ -1,3 +1,4 @@
+import {fetch,authenticateInstance} from '../../ned-api/tests/auth-client.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
@@ -30,7 +31,7 @@ test('TC-004: public command lifecycle, invalid input and preserved existing fil
   for(const signal of ['SIGINT','SIGTERM']) {
     await t.test(`live health and ${signal} release/restart`,async()=>{
       const p=start(['com','--port',String(port||0),'--database',pathToFileURL(db).href],{NED_DATABASE_URL:'https://invalid.example/db'});
-      const url=await p.ready;assert.ok(url);port=Number(new URL(url).port);
+      const url=await p.ready;assert.ok(url);authenticateInstance(url,{home});port=Number(new URL(url).port);
       assert.equal(p.child.exitCode,null);assert.deepEqual(await (await fetch(`${url}/api/v1/health`)).json(),{status:'ok',service:'ned-api',version:1});
       assert.equal((await fetch(url)).status,200);assert.ok(!(await (await fetch(`${url}/api/v1/capabilities`)).text()).includes(home));
       p.child.kill(signal);assert.equal((await p.ended).code,0);
@@ -65,7 +66,7 @@ test('TC-004: installed launcher forwards both shutdown signals without credenti
   for(const signal of ['SIGINT','SIGTERM']) {
     const p=launch(['com'],home,{NED_LAUNCHER_MODULE:module},executable);
     t.after(async()=>{if(p.child.exitCode===null)p.child.kill('SIGKILL');await p.ended;});
-    const url=await p.ready;assert.ok(url);assert.equal((await fetch(`${url}/api/v1/health`)).status,200);
+    const url=await p.ready;assert.ok(url);authenticateInstance(url,{home});assert.equal((await fetch(`${url}/api/v1/health`)).status,200);
     p.child.kill(signal);assert.equal((await p.ended).code,0);
     await assert.rejects(fetch(`${url}/api/v1/health`));
   }
