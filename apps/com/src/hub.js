@@ -67,7 +67,7 @@ function createBridge(config, target,logger) {
   });
 }
 
-export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, retryDelay,logger} = {}) {
+export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger} = {}) {
   const target = new URL(targetUrl);
   if (target.protocol !== 'http:' || !loopback(target.hostname) || target.pathname !== '/' || target.username || target.password || target.search || target.hash) throw new Error('Invalid COM target.');
   const bridge = createBridge(config,target,logger);
@@ -91,9 +91,12 @@ export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, retryDel
       // Bound the only buffered protocol message, independent of response Content-Length.
       const reader=response.body.getReader();let bytes=0,text='';
       try {for(;;){const {done,value}=await reader.read();if(done)break;bytes+=value.length;if(bytes>16384)throw new Error();text+=Buffer.from(value).toString('utf8');}} finally {await reader.cancel().catch(()=>{});}
-      const endpoint = new URL(JSON.parse(text).tunnelUrl);
+      const registered=JSON.parse(text);
+      const endpoint = new URL(registered.tunnelUrl);
       const expected = new URL('/tunnel/control',config.proxy);expected.protocol = config.proxy.protocol === 'https:' ? 'wss:' : 'ws:';expected.searchParams.set('slug',config.slug);
       if(endpoint.href !== expected.href) {stopped=true;status('invalid tunnel endpoint; local COM remains available');return;}
+      if(stopped)return;
+      if(onRegistered)await onRegistered({origin:config.hub.origin,id:registered.instance?.id,kind:registered.instance?.kind,token:config.token});
       if(stopped)return;
       control = new WebSocket(endpoint,{headers:{Authorization:`Bearer ${config.token}`},handshakeTimeout:10000,maxPayload:65536,perMessageDeflate:false,followRedirects:false});
       const current=control;let alive=true;

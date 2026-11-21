@@ -15,7 +15,7 @@ export async function until(read,predicate,description){
   while(Date.now()<deadline){const value=await read();if(predicate(value))return value;await new Promise(resolve=>setTimeout(resolve,20));}
   throw new Error(`Timed out: ${description}`);
 }
-export async function hermesFixture({badSource=false}={}){
+export async function hermesFixture({badSource=false,configureProfile,handleModelRequest,modelEndpointPort}={}){
   const root=await mkdtemp(path.join(tmpdir(),'ned-hermes-case-'));
   const home=path.join(root,'hermes'),project=path.join(root,'project'),coreHome=path.join(root,'core');
   const mock=new LLMock({host:'127.0.0.1',port:0,strict:true,chunkSize:1});
@@ -48,9 +48,11 @@ export async function hermesFixture({badSource=false}={}){
         const chunks=[];for await(const chunk of req)chunks.push(chunk);
         const body=chunks.length?JSON.parse(Buffer.concat(chunks)):null;
         requests.push({path:req.url,body});
+        let requestPath=req.url;
+        if(handleModelRequest){const handled=await handleModelRequest(req,res,{body,modelUrl});if(handled===true)return;if(typeof handled==='string')requestPath=handled;}
         const barrier=[...barriers.entries()].find(([marker])=>JSON.stringify(body).includes(marker))?.[1];
         if(barrier?.mode==='hold'){barrier.reached.resolve();await barrier.release.promise;}
-        const response=await fetch(mock.url+req.url,{method:req.method,headers:{'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:controller.signal});
+        const response=await fetch(mock.url+requestPath,{method:req.method,headers:{'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:controller.signal});
         res.writeHead(response.status,{'content-type':response.headers.get('content-type')});res.flushHeaders();
         if(!response.headers.get('content-type')?.includes('text/event-stream')){res.end(Buffer.from(await response.arrayBuffer()));return;}
         let pending='',text='';const decoder=new TextDecoder();
@@ -75,19 +77,20 @@ export async function hermesFixture({badSource=false}={}){
       agent:{max_turns:6},toolsets:['file','delegation'],platform_toolsets:{api_server:['file','delegation']},compression:{enabled:false},memory:{memory_enabled:false,user_profile_enabled:false},
       delegation:{model:'ned-test-model',provider:'custom',base_url:modelUrl+'/v1',api_key:'test-only-model',api_mode:'chat_completions',max_iterations:3},
       auxiliary:{title_generation:{enabled:false,model_upgrade_enabled:false}},fallback_providers:[],fallback_model:null,checkpoints:{enabled:false}};
+    if(configureProfile)await configureProfile(config,{home,modelUrl});
     await writeFile(path.join(home,'config.yaml'),JSON.stringify(config),{mode:0o600});
     const env={PATH:'/usr/bin:/bin',HOME:root,HERMES_HOME:home,TMPDIR:path.join(root,'tmp'),XDG_CACHE_HOME:path.join(root,'cache'),
       PYTHONNOUSERSITE:'1',API_SERVER_KEY:'ned-test-gateway-key-0123456789',NO_PROXY:'127.0.0.1,localhost',HERMES_SKIP_CONFIG_MIGRATION:'1',HERMES_INTERACTIVE:'0'};
     const python=process.env.NED_HERMES_TEST_PYTHON,source=process.env.NED_HERMES_TEST_SOURCE;
     if(!python||!source)throw new Error('Use npm run test:core:hermes to provision Hermes first.');
-    child=spawn(python,['-I',fileURLToPath(new URL('./gateway.py',import.meta.url)),badSource?path.join(root,'missing-source'):source,String(proxy.address().port)],{env,cwd:project,stdio:['ignore','pipe','pipe']});
+    child=spawn(python,['-I',fileURLToPath(new URL('./gateway.py',import.meta.url)),badSource?path.join(root,'missing-source'):source,String(modelEndpointPort??proxy.address().port)],{env,cwd:project,stdio:['ignore','pipe','pipe']});
     childClosed=new Promise(resolve=>child.once('close',resolve));
     child.stderr.on('data',chunk=>{output=(output+chunk).slice(-16000);});
     url=await new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>reject(new Error('Hermes startup timed out: '+output)),30000);
       child.once('error',error=>{clearTimeout(timer);reject(error);});
       child.once('close',()=>{clearTimeout(timer);reject(new Error('Hermes exited before readiness: '+output));});
-      let stdout='';child.stdout.on('data',chunk=>{stdout=(stdout+chunk).slice(-16000);const match=stdout.match(/NED_HERMES_READY (\{[^\n]+\})/);if(match){clearTimeout(timer);const ready=JSON.parse(match[1]);if(!ready.egressGuard)return reject(new Error('Egress guard absent.'));resolve(`http://127.0.0.1:${ready.port}`);}});
+      let stdout='';child.stdout.on('data',chunk=>{output=(output+chunk).slice(-16000);stdout=(stdout+chunk).slice(-16000);const match=stdout.match(/NED_HERMES_READY (\{[^\n]+\})/);if(match){clearTimeout(timer);const ready=JSON.parse(match[1]);if(!ready.egressGuard)return reject(new Error('Egress guard absent.'));resolve(`http://127.0.0.1:${ready.port}`);}});
     });
     const databasePath=path.join(coreHome,'ned.sqlite');
     const envCore={NED_AGENT_HOME:coreHome,NED_HERMES_URL:url,NED_HERMES_API_KEY:env.API_SERVER_KEY};
@@ -108,7 +111,7 @@ export async function hermesFixture({badSource=false}={}){
       return {item,path:scope+'/attempts/'+attempt.id,taskPath};
     };
     const gatewayRequest=async(resource,{timeout=5000}={})=>{const response=await fetch(url+resource,{headers:{authorization:'Bearer '+env.API_SERVER_KEY},signal:AbortSignal.timeout(timeout)});if(!response.ok)throw new Error('Hermes readback failed: '+response.status);return response.json();};
-    return {root,home,project,mock,requests,request,gatewayRequest,scope,attempt,url,core,close,pid:child.pid,diagnostics:()=>output,
+    return {root,home,project,modelUrl,mock,requests,request,gatewayRequest,scope,attempt,url,core,close,pid:child.pid,diagnostics:()=>output,
       async observationSnapshot(run){
         const [observed,result]=await Promise.all([request(run.path,{timeout:1000}).catch(()=>null),request(run.path+'/result',{timeout:1000}).catch(()=>null)]);
         const upstream=observed?.runId?await gatewayRequest('/v1/runs/'+observed.runId,{timeout:1000}).catch(()=>null):null;

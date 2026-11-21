@@ -95,3 +95,33 @@ test('TERM during real inference tears down the owned gateway and disposable pro
   assert.throws(()=>process.kill(ready.pid,0),{code:'ESRCH'});
   await assert.rejects(fetch(ready.url+'/health',{signal:AbortSignal.timeout(1000)}));
 });
+
+test('model-setup: running Hermes SDK uses an inherited scoped Hub capability after private configuration',{timeout:60000},async t=>{
+  const {createModelSetup}=await import('../../../../../apps/core/src/model-setup.js');
+  const {createCommunicatorServer}=await import('../../../../../apps/com/src/server.js');
+  const {randomUUID}=await import('node:crypto');
+  const {readFile}=await import('node:fs/promises');
+  const id=randomUUID(),connection={id:randomUUID(),version:randomUUID(),provider:'openai',model:'ned-test-model'},token='ned_'+'c'.repeat(43);
+  let metadataCalls=0,inferenceCalls=0;
+  const fixture=await hermesFixture({configureProfile(config){delete config.model;delete config.delegation;},handleModelRequest(req,res,{modelUrl,body}){
+    if(req.url===`/api/models/instances/${id}?verify=1`){metadataCalls++;assert.equal(req.headers.authorization,'Bearer '+token);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({configured:true,connection,baseUrl:`${modelUrl}/api/models/instances/${id}/v1`}));return true;}
+    if(req.url===`/api/models/instances/${id}/v1/chat/completions`){inferenceCalls++;assert.equal(req.headers.authorization,'Bearer '+token);assert.equal(body.model,'ned-test-model');assert.equal(body.stream,true);return '/v1/chat/completions';}
+    throw Error('Unexpected model route');
+  }});t.after(()=>fixture.close());
+  const env={HERMES_HOME:fixture.home,NED_HERMES_URL:fixture.url,NED_HERMES_API_KEY:'ned-test-gateway-key-0123456789'};
+  const models=createModelSetup({home:fixture.root,env});t.after(()=>models.close());
+  assert.equal((await models.status()).configured,false);
+  // The fixture's fixed proxy is the only model-network destination admitted by
+  // its Python audit guard. This is a synthetic Hub protocol boundary, not AWS.
+  const configText=await readFile(path.join(fixture.home,'config.yaml'),'utf8');assert(!configText.includes(token));
+  const proxyOrigin=fixture.modelUrl;
+  await models.register({origin:proxyOrigin,id,token,kind:'hosted'});
+  assert.equal((await models.status()).configured,true);
+  const app=createCommunicatorServer({home:fixture.root,env,modelSetup:models,databasePath:path.join(fixture.root,'model-chat.sqlite'),initializeDatabase:true});await app.listen();t.after(()=>app.close());
+  fixture.mock.onMessage('NED_ACCOUNT_MODEL_CASE',{content:'Account model connection works.'});
+  const call=async(route,body)=>{const response=await fetch(app.url+'/api/v1/chat/sessions'+route,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});assert(response.ok,`NED API ${response.status}`);return response.json();};
+  await call('/fixed',{});const accepted=await call('/nedcom-main/chat',{input:'NED_ACCOUNT_MODEL_CASE'});
+  let result;try{result=await until(async()=>{const response=await fetch(app.url+'/api/v1/chat/sessions/nedcom-main/turns/'+accepted.turn.id);return response.json();},v=>v.turn.status!=='pending','inherited model completion');}catch(error){throw new Error(error.message+'; inferenceCalls='+inferenceCalls+'; paths='+JSON.stringify(fixture.requests.map(r=>r.path))+'; gateway='+fixture.diagnostics().slice(-6000),{cause:error});}
+  assert.equal(result.turn.status,'completed');assert.equal(result.message.content,'Account model connection works.');assert(metadataCalls>=2);assert(inferenceCalls>=1);
+  const profile=await readFile(path.join(fixture.home,'config.yaml'),'utf8');assert(profile.includes(token));assert(!profile.includes('test-only-model'));assert(!profile.includes('synthetic-provider-key'));
+});

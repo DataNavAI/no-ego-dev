@@ -1,3 +1,4 @@
+import {ModelSetupError} from './model-setup.js';
 import {resolveWorkReferences} from './work-references.js';
 import {resolveGatewaySettings} from './gateway-settings.js';
 import {validateMessagePage} from './protocol/history.js';
@@ -130,7 +131,12 @@ export function createChatGateway(options = {}) {
           try{prepared=attachments.prepare(input.attachments ?? [],match[1],identity,contextualInput);}
           catch(error){return send(400,{error:{code:'invalid_attachment',message:error.message}});}
         }
-        body = JSON.stringify(fixed ? fixedSession : match[2] === 'chat' ? {input:prepared.input} : {source:'nedcom'});
+        let model={};
+        if(!fixed&&match[2]==='chat'&&options.beforeChat){
+          try{model=await options.beforeChat();}
+          catch(error){return send(error instanceof ModelSetupError?error.status:503,{error:{code:error instanceof ModelSetupError?error.code:'model_setup_unavailable',message:'Model provider is required before chatting.'}});}
+        }
+        body = JSON.stringify(fixed ? fixedSession : match[2] === 'chat' ? {input:prepared.input,...model} : {source:'nedcom'});
       }
       let turn;
       if(!fixed&&match[2]==='chat'){

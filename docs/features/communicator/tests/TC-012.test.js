@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -13,7 +14,7 @@ test('TC-012: accepted turns survive HTTP completion, serialize sends and bind s
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
   t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
   const env={NED_HERMES_URL:`http://127.0.0.1:${gateway.address().port}`,get NED_HERMES_API_KEY(){return key;}};
-  const app=createCommunicatorServer({gateway:{env,now:()=>clock}});
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{env,now:()=>clock}});
   await app.listen();t.after(()=>app.close());
   const post=session=>fetch(`${app.url}/api/v1/chat/sessions/${session}/chat`,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'Reply after the HTTP response has finished.'}),signal:AbortSignal.timeout(2000)});
   const status=(session,id)=>fetch(`${app.url}/api/v1/chat/sessions/${session}/turns/${id}`);
@@ -30,7 +31,7 @@ test('TC-012: accepted turns survive HTTP completion, serialize sends and bind s
   do{result=await(await status('session-a',turn.id)).json();}while(result.turn.status==='pending');
   assert.deepEqual(result,{turn:{id:turn.id,status:'completed'},session_id:'session-a',message:{role:'assistant',content:'Persisted synthetic reply'}});
   clock=900000;assert.equal((await status('session-a',turn.id)).status,404);
-  const restarted=createCommunicatorServer({gateway:{env}});await restarted.listen();t.after(()=>restarted.close());
+  const restarted=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{env}});await restarted.listen();t.after(()=>restarted.close());
   assert.equal((await fetch(`${restarted.url}/api/v1/chat/sessions/session-a/turns/${turn.id}`)).status,404);
   assert.equal(pending.length,1);
 });
@@ -40,7 +41,7 @@ test('TC-012: turn capacity rejects without delivery, bad upstream identity fail
   const gateway=http.createServer(async(req,res)=>{for await(const chunk of req)void chunk;requests.push({req,res});});
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
   t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-key'}});
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-key'}});
   await app.listen();t.after(()=>app.close());
   const post=session=>fetch(`${app.url}/api/v1/chat/sessions/${session}/chat`,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'Held reply'})});
   const turns=[];

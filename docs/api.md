@@ -19,6 +19,7 @@ enable only the operator family. See [architecture](architecture.md) and
 | `/api/v1/projects` | Project UI read models, delivery, attempt/session inspection | Browser-safe, read-only |
 | `/api/v1/chat` | Selected Hermes sessions, messages, attachments and turns | Same-origin, bounded mutations/streams |
 | `/api/v1/workspace/events`, `/api/v1/activity/events` | Read-model SSE updates | Browser-safe |
+| `/api/v1/model-setup` | Provider setup/status and account inheritance | Same-origin privacy header; never public quick tunnel |
 | `/api/v1/secrets` | Explicit private vault operations and secret cards | Privacy headers/Origin; never public quick tunnel |
 | `/api/v1/operator` | Registered projects, task commands, execution and automation | Private operator bearer; never Hub/public tunnel |
 
@@ -416,3 +417,37 @@ The six executable cases in [SPEC.md](features/core-orchestration/SPEC.md#detail
 acceptance matrix; release evidence records their actual results. Live agent work,
 public operator access and new
 COM orchestration controls are not claimed by this backend milestone.
+
+## Model setup
+
+Core owns these routes on full NED API/COM listeners. Backend-only operator
+listeners and public quick tunnels do not expose this family. Capabilities add
+`modelSetup:true` for private setup, false when private operations are disabled.
+Both methods require `X-NED-Models:1`, exact bound Host and no cross-site fetch.
+POST also requires exact Origin and JSON, with a16KiB body limit.
+
+- `GET /api/v1/model-setup`: `{configured,source:"local"|"profile"|"hub",model?,
+  hosted?,settingsUrl,nonce}`. Model is bounded metadata; never a credential.
+  Opaque nonce is server-held, one-use,5minute lifetime, maximum16 pending.
+- `POST /api/v1/model-setup`: either `{nonce,provider:"openai"|"openrouter",model,
+  apiKey,replace?:boolean}` for private local setup or `{action:"inherit"}`.
+  Returns current configured metadata, no key. Explicit replacement requires a
+  fresh nonce/current profile snapshot and `replace:true`; automatic inheritance
+  never replaces a valid profile override. Hosted instances must authenticate in
+  Hub and cannot upload provider keys through this local endpoint.
+
+Read → retain exact nonce → submit once → read back status is the caller chain.
+A failed/timed-out request must not replay the key or automatically retry; obtain
+fresh status and explicitly submit again.400 invalid/consumed intent;403 privacy
+boundary/hosted local-key prohibition;409 profile changed/missing account connection;
+422 provider rejected credentials;503 configuration/provider unavailable. Unsafe
+or ambiguous profile data is not overwritten. Key input is cleared on submit.
+
+Chat turns require model readiness before creating a turn/invoking Hermes.
+Inherited profiles revalidate account metadata/credential before each turn, then
+send the selected provider/model internally to Hermes; browser chat input cannot
+supply arbitrary provider/runtime/auth overrides. Raw Hub provider grants remain
+central. See [model setup specification](features/model-setup/SPEC.md) for local
+file ownership, actual-vs-synthetic verification and staged deployment gates.
+
+Private model-profile writes currently require POSIX permissions; Windows mutation fails closed (`model_setup_platform_unavailable`) pending an ACL-backed implementation. No provider credential is written with unverified permissions.

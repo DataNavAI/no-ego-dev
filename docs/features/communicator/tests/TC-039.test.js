@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -68,7 +69,7 @@ test('TC-039: HTTP Stop is owned, retries early registration, waits for stream c
     res.writeHead(404);res.end();
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,env}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,env}});await app.listen();t.after(()=>app.close());
   const post=(path,body={})=>fetch(app.url+'/api/v1/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
   const accepted=await(await post('/session-a/chat',{input:'Stop this response'})).json();await started;
   const path=`/session-a/turns/${accepted.turn.id}`;
@@ -123,7 +124,7 @@ test('TC-039: normal completion wins a racing Stop; rejected Stop preserves live
         stops++;assert.equal(req.url,'/v1/runs/run_synthetic/stop');res.writeHead(response.status,{'content-type':'application/json'});res.end(JSON.stringify(response.body));
       });
       await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-      const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
+      const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
       const post=(path,body={})=>fetch(app.url+'/api/v1/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
       const accepted=await(await post('/session-a/chat',{input:'A normal reply'})).json();await started;
       const path=`/session-a/turns/${accepted.turn.id}`;
@@ -167,7 +168,7 @@ test('TC-039: owned cancellation before HTTP Stop acknowledgement preserves part
       res.writeHead(404);res.end();
     });
     await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-    const home=await mkdtemp(join(tmpdir(),'ned-stop-order-'));let app;t.after(async()=>{await app?.close();await rm(home,{recursive:true,force:true});});app=createCommunicatorServer({home,env:{},databasePath:join(home,'ned.sqlite'),initializeDatabase:true,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();
+    const home=await mkdtemp(join(tmpdir(),'ned-stop-order-'));let app;t.after(async()=>{await app?.close();await rm(home,{recursive:true,force:true});});app=createCommunicatorServer({modelSetup:configuredModelSetup(),home,env:{},databasePath:join(home,'ned.sqlite'),initializeDatabase:true,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();
     const post=(path,body={})=>fetch(app.url+'/api/v1/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
     const accepted=await(await post('/session-a/chat',{input:'Synthetic cancellation'})).json();await started;
     const path=`/session-a/turns/${accepted.turn.id}`;

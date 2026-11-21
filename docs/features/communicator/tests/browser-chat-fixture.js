@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {mkdtemp,rm} from 'node:fs/promises';
@@ -9,7 +10,7 @@ import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 export {expect};
-export async function browserChat(t,{existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,viewport={width:1280,height:900}}={}){
+export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,viewport={width:1280,height:900}}={}){
   const home=await mkdtemp(join(tmpdir(),'ned-chat-browser-'));
   let database,app,browser,gateway;
   t.after(async()=>{
@@ -54,7 +55,7 @@ export async function browserChat(t,{existing=false,rows=[],historyFailure=false
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
   const databasePath=join(home,'ned.sqlite');database=openNedDatabase({databaseUrl:databasePath});
-  app=createCommunicatorServer({databasePath,home,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}});
+  app=createCommunicatorServer({modelSetup:modelSetup??configuredModelSetup(),databasePath,home,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}});
   await app.listen();
   try{browser=await chromium.launch({headless:true,channel:'chromium'});}
   catch(error){throw new Error('Chromium is required. Run npm ci && npx playwright install --with-deps chromium before chat E2E tests.',{cause:error});}

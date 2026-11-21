@@ -20,8 +20,15 @@
     <section id="chat-activity" class="chat-activity" aria-label="Latest goal & task updates" hidden><div class="activity-heading"><button id="chat-activity-dismiss" type="button" aria-label="Dismiss updates">×</button></div><div id="chat-activity-content" role="status" aria-live="polite" aria-atomic="true"></div></section>
     <div id="transcript" class="transcript" role="region" aria-label="Conversation" tabindex="0"></div>
     <div class="compose-dock">
+      <button id="model-setup-toggle" type="button" aria-controls="model-setup" aria-expanded="false">Model provider</button>
       <p id="chat-status" role="status" aria-live="polite">Loading chat…</p>
       <button id="chat-retry">Reload</button>
+      <section id="model-setup" aria-labelledby="model-setup-title" hidden>
+        <h2 id="model-setup-title">Choose a model provider</h2><p id="model-setup-status" role="status">Model provider is required before chatting.</p>
+        <a id="model-hub-link" target="_blank" rel="noopener noreferrer" hidden>Set up in NED Hub</a>
+        <form id="model-setup-form" autocomplete="off" hidden><div class="model-field"><label for="model-provider">Provider</label><select id="model-provider"><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div><div class="model-field"><label for="model-name">Model</label><input id="model-name" value="gpt-4.1" maxlength="200" required></div><div class="model-field model-key-field"><label for="model-key">API key</label><input id="model-key" type="password" autocomplete="new-password" minlength="16" maxlength="4096" required></div></form>
+        <div class="model-actions"><button id="model-connect" type="submit" form="model-setup-form">Connect provider</button><button id="model-check" type="button">Check connection</button></div>
+      </section>
       <form id="chat-form">
         <ul id="chat-task-references" class="task-reference-list" aria-label="Referenced tasks"></ul><p id="chat-reference-status" class="sr-only" role="status"></p>
         <label class="sr-only" for="chat-message">Message</label>

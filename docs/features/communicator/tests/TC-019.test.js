@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -37,7 +38,7 @@ test('TC-019: actual HTTP SSE flushes before prose, streams before terminal and 
   const events=streamEvents('session-a','Early 🙂');
   const gateway=http.createServer(async(req,res)=>{posts++;for await(const chunk of req)void chunk;upstream=res;res.writeHead(200,{'content-type':'text/event-stream'});res.write(raw(events.slice(0,2)));ready();});
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
   const accepted=await(await fetch(`${app.url}/api/v1/chat/sessions/session-a/chat`,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'Hello'})})).json();await started;
   const endpoint=`${app.url}/api/v1/chat/sessions/session-a/turns/${accepted.turn.id}/events`;
   const response=await fetch(endpoint);assert.match(response.headers.get('content-type'),/^text\/event-stream/);assert.equal(response.headers.get('x-accel-buffering'),'no');
@@ -96,7 +97,7 @@ test('TC-019: background SSE returns bounded pending deltas before completion an
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
   const env={NED_HERMES_URL:`http://127.0.0.1:${gateway.address().port}`,get NED_HERMES_API_KEY(){return key;}};
-  const app=createCommunicatorServer({gateway:{env}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{env}});await app.listen();t.after(()=>app.close());
   const post=()=>fetch(`${app.url}/api/v1/chat/sessions/session-a/chat`,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'Hello'})});
   const accepted=await post();assert.equal(accepted.status,202);const {turn}=await accepted.json();
   const status=cursor=>fetch(`${app.url}/api/v1/chat/sessions/session-a/turns/${turn.id}${cursor===undefined?'':`?cursor=${cursor}`}`);
@@ -131,7 +132,7 @@ test('TC-019: long polls wake for prose, preserve fast completion and release di
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
   t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
   const accepted=await(await fetch(`${app.url}/api/v1/chat/sessions/session-a/chat`,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'Hello'})})).json();
   await requestReady;
   const endpoint=`${app.url}/api/v1/chat/sessions/session-a/turns/${accepted.turn.id}?wait=1`;

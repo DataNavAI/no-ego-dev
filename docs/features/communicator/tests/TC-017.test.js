@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import test from 'node:test';
 import {endStream} from './stream-fixtures.js';
 import assert from 'node:assert/strict';
@@ -89,7 +90,7 @@ test('TC-017: real COM upload perimeter and multimodal turn reject replay withou
     calls.push({path:req.url,body:JSON.parse(body)});endStream(res,'s1','Confirmed');
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-  const app=createCommunicatorServer({gateway:{env:{NED_HERMES_URL:`http://127.0.0.1:${gateway.address().port}`,get NED_HERMES_API_KEY(){return key;}}}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{env:{NED_HERMES_URL:`http://127.0.0.1:${gateway.address().port}`,get NED_HERMES_API_KEY(){return key;}}}});await app.listen();t.after(()=>app.close());
   const upload=(headers={})=>fetch(app.url+'/api/v1/chat/sessions/s1/attachments',{method:'POST',headers:{Origin:app.url,'Content-Type':'text/plain','X-NED-Filename':'report.txt',...headers},body:'Synthetic document'});
   for(const headers of [{Origin:'https://foreign.test'},{Origin:''},{'Content-Type':'image/png'}])assert.ok((await upload(headers)).status>=400);
   assert.equal(calls.length,0);
@@ -107,7 +108,7 @@ test('TC-017: image-heavy history adaptively preserves fifty ordered stable rows
   const requests=[];const rows=Array.from({length:100},(_,id)=>({id,role:'user',content:[{type:'text',text:`Message ${id}`},{type:'image_url',image_url:{url:'data:image/png;base64,'+'A'.repeat(150000)}}]}));
   const gateway=http.createServer((req,res)=>{const url=new URL(req.url,'http://local');const offset=Number(url.searchParams.get('offset')),limit=Number(url.searchParams.get('limit'));requests.push({offset,limit});res.end(JSON.stringify({data:rows.slice(Math.max(0,100-offset-limit),100-offset)}));});
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
   for(const offset of [0,50,100]){
     const response=await fetch(`${app.url}/api/v1/chat/sessions/s1/messages?offset=${offset}`);assert.equal(response.status,200);const text=await response.text();assert.equal(text.includes('data:image'),false);const data=JSON.parse(text).data;
     assert.deepEqual(data.map(row=>row.id),Array.from({length:offset===100?0:50},(_,index)=>50-offset+index));

@@ -1,3 +1,4 @@
+import {mountModelSetup} from './model-setup.js';
 import {mountTaskReferences} from './task-references.js';
 import {validateMessagePage} from './history.js';
 import {renderMessageContent,messageParts} from './message-content.js';
@@ -58,13 +59,14 @@ export function mountChat(libraries) {
   if(typeof globalThis.addEventListener==='function')globalThis.addEventListener('resize',fitDraft);
   const media=mountComposerMedia({document,draft,getSession:()=>sessionId,changed:()=>{fitDraft();render();},request:fetch});
   const references=mountTaskReferences({document,draft,changed:()=>{fitDraft();render();}});
+  const modelSetup=mountModelSetup({document,request:fetch,changed:render});
   const controls = ['older','newer','latest','chat-send','chat-retry'];
   const atBottom = () => transcript.scrollHeight-transcript.clientHeight-transcript.scrollTop < 64;
   const bottom = smooth => transcript.scrollTo({top:transcript.scrollHeight,behavior:smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant'});
   function render() {
     for (const id of controls) if(element(id))element(id).disabled = busy;
     const sending=Boolean(activeTurn);
-    element('chat-send').disabled = sending ? activeTurn.stopRequested : busy || loadingOlder || uncertain || !sessionId || !historyReady || media.pending();
+    element('chat-send').disabled = sending ? activeTurn.stopRequested : busy || loadingOlder || uncertain || !modelSetup.ready() || !sessionId || !historyReady || media.pending();
     element('chat-send').dataset.state=sending?(activeTurn.stopRequested?'stopping':'stop'):'send';
     element('chat-send').setAttribute('aria-label',sending?(activeTurn.stopRequested?'Stopping response':'Stop response'):'Send message');
     media.render(busy||uncertain||!sessionId||!historyReady);
@@ -236,7 +238,7 @@ export function mountChat(libraries) {
     if(!busy&&!uncertain&&!media.pending()&&sessionId&&historyReady&&(draft.value.trim()||media.ready()||references.ready()))element('chat-form').requestSubmit();
   });
   element('chat-form').addEventListener('submit',event=>{
-    event.preventDefault();if(busy||loadingOlder||uncertain||media.pending()||!sessionId||!historyReady||!draft.value.trim()&&!media.ready()&&!references.ready())return;
+    event.preventDefault();if(busy||loadingOlder||uncertain||!modelSetup.ready()||media.pending()||!sessionId||!historyReady||!draft.value.trim()&&!media.ready()&&!references.ready())return;
     const input=draft.value;
     lastStopped=false;activeTurn={id:null,stopRequested:false};showPending(input);draft.value='';fitDraft();
     void action(async()=>{
@@ -247,6 +249,7 @@ export function mountChat(libraries) {
       media.clear();references.clear();
       if(following){await history();await fillUnderfilled();bottom(true);}else refreshNeeded='New reply available. Jump to latest.';
       }catch(error){
+        void modelSetup.refresh(true);
         if(!draft.value)draft.value=input;
         if(pendingUser){if(['invalid_attachment','invalid_reference'].includes(error.code))transcript.replaceChildren(...Array.from(transcript.children).filter(row=>row!==pendingUser));else pendingUser.dataset.state='incomplete';}
         fitDraft();throw error;

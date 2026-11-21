@@ -1,3 +1,4 @@
+import {createModelSetup} from './model-setup.js';
 import {readProjectWork} from './work.js';
 import {readTaskDelivery} from './task-delivery.js';
 import {createSecretsHandler} from './secrets.js';
@@ -7,13 +8,15 @@ import {createProjectReader,ProjectError} from './projects.js';
 
 const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
 
-export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true}={}){
+export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup}={}){
   const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
   const projects=createProjectReader({databasePath,home,env});
-  const chat=createChatGateway({env,...chatGateway,databasePath,logger});
+  const models=modelSetup??createModelSetup({home,env,enabled:secretsEnabled});
+  const chat=createChatGateway({home,env,...chatGateway,databasePath,logger,beforeChat:()=>models.prepare()});
   const activity=createActivityStreams(databasePath);
   const handler=async(req,res,send,origin)=>{
     const error=(status,code,message,extra)=>send(status,{error:{code,message}},extra);
+    if(req.url==='/api/model-setup'||req.url.startsWith('/api/model-setup?')||req.url.startsWith('/api/model-setup/'))return models.handle(req,res,send,origin);
     if(req.url.startsWith('/api/chat/'))return chat(req,res,send);
     if(req.url==='/api/secrets'||req.url.startsWith('/api/secrets/')||req.url.startsWith('/api/secrets?'))return secrets(req,res,send,origin);
     if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});
@@ -25,7 +28,7 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
       return activity.handle(req,res,id);
     }
     if(pathname==='/api/health')return send(200,{status:'ok',service:'nedcom'});
-    if(pathname==='/api/capabilities')return send(200,capabilities);
+    if(pathname==='/api/capabilities')return send(200,{...capabilities,capabilities:{...capabilities.capabilities,modelSetup:secretsEnabled}});
     if(pathname==='/api/projects'||pathname.startsWith('/api/projects/')){
       const controller=new AbortController(),abort=()=>controller.abort();res.once('close',abort);
       try{
@@ -53,6 +56,7 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
     }
     return error(404,'not_found','Not found.');
   };
-  handler.close=()=>{chat.close();projects.close();activity.close();};
+  handler.setHubRegistration=input=>models.register(input);
+  handler.close=async()=>{chat.close();projects.close();activity.close();await models.close();};
   return handler;
 }

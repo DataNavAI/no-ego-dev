@@ -56,6 +56,7 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
     finally{req.url=original;}
     return true;
   };
-  handler.close=()=>closePromise??=(async()=>{closing=true;browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})();
+  handler.setHubRegistration=input=>browser?.setHubRegistration(input);
+  handler.close=()=>closePromise??=(async()=>{closing=true;await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})();
   return handler;
 }

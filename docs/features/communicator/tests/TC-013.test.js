@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -79,7 +80,7 @@ test('TC-013: structured history metadata and pinned browser modules cross the r
   const content=[{type:'text',text:'Hello'},{type:'tool_use',name:'read',input:{path:'synthetic'}}];
   const gateway=http.createServer((req,res)=>res.end(JSON.stringify({data:[{id:1,role:'assistant',content,tool_calls:'[]',tool_name:'read',name:'calculator',tool_call_id:'call1',reasoning:'private',unexpected:'private'}]})));
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>gateway.close(resolve)));
-  const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
+  const app=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
   const response=await fetch(app.url+'/api/v1/chat/sessions/s1/messages');
   assert.deepEqual(await response.json(),{data:[{id:1,role:'assistant',content,tool_calls:'[]',tool_name:'read',name:'calculator',tool_call_id:'call1'}]});
   for(const asset of ['/vendor/marked.js','/vendor/dompurify.js','/message-content.js']){

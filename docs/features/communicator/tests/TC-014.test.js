@@ -1,3 +1,4 @@
+import {configuredModelSetup} from './model-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -40,7 +41,7 @@ async function fixture(t,{initial=[],malformed=false,fail=false,race=false}={}){
 }
 
 async function app(t,settings){
-  const instance=createCommunicatorServer({gateway:settings});await instance.listen();t.after(()=>instance.close());return instance;
+  const instance=createCommunicatorServer({modelSetup:configuredModelSetup(),gateway:settings});await instance.listen();t.after(()=>instance.close());return instance;
 }
 
 const ensure=instance=>fetch(`${instance.url}/api/v1/chat/sessions/fixed`,{method:'POST',headers:{Origin:instance.url,'Content-Type':'application/json'},body:'{}'});

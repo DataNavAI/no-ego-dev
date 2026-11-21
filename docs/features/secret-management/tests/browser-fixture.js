@@ -1,3 +1,4 @@
+import {configuredModelSetup} from '../../communicator/tests/model-fixture.js';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -59,7 +60,7 @@ export async function browserChat(t){
     rmSync(home,{recursive:true,force:true});
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
-  app=createCommunicatorServer({home,databasePath:join(home,'ned.sqlite'),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-gateway-key'}});
+  app=createCommunicatorServer({modelSetup:configuredModelSetup(),home,databasePath:join(home,'ned.sqlite'),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-gateway-key'}});
   await app.listen();
   browser=await chromium.launch({headless:true,channel:'chromium'});
   const page=await browser.newPage({viewport:{width:1280,height:900}});
