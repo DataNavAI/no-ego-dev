@@ -41,12 +41,12 @@ test('TC-003: late reveal after navigation cannot restore a value and retry reco
   await page.getByRole('tab',{name:'Settings',exact:true}).click();await expect(page.locator('#secret-list')).toContainText('No secrets saved.');
   await page.locator('#secret-key').fill('TOKEN');await page.locator('#secret-value').fill('synthetic-delayed');await page.getByRole('button',{name:'Save secret',exact:true}).click();await expect(page.locator('#secret-status')).toHaveText('Secret saved.');
   let release;const gate=new Promise(resolve=>{release=resolve;});let requested;const seen=new Promise(resolve=>{requested=resolve;});
-  await page.route('**/api/secrets/TOKEN/reveal',async route=>{requested();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({key:'TOKEN',value:'synthetic-delayed'})});});
+  await page.route('**/api/v1/secrets/TOKEN/reveal',async route=>{requested();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({key:'TOKEN',value:'synthetic-delayed'})});});
   await page.getByRole('button',{name:'Show or hide TOKEN'}).click();await seen;await page.getByRole('tab',{name:'Chat',exact:true}).click();release();
   await page.getByRole('tab',{name:'Settings',exact:true}).click();await expect(page.locator('.secret-revealed')).toBeHidden();await expect(page.locator('.secret-revealed')).toHaveValue('');
-  await page.route('**/api/secrets',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
+  await page.route('**/api/v1/secrets',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
   await page.getByRole('tab',{name:'Chat',exact:true}).click();await page.getByRole('tab',{name:'Settings',exact:true}).click();
   await expect(page.locator('#secret-status')).toHaveText('Secrets are unavailable. Retry.');
-  await page.unroute('**/api/secrets');await page.locator('#secret-retry').click();await expect(page.locator('#secret-list')).toContainText('TOKEN');
+  await page.unroute('**/api/v1/secrets');await page.locator('#secret-retry').click();await expect(page.locator('#secret-list')).toContainText('TOKEN');
   assert.deepEqual(f.errors,[]);
 });

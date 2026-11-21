@@ -1,5 +1,10 @@
 # Feature: NED Communicator
 
+HTTP interface authority: [NED API v1](../../api.md), owned by Core and mounted
+by COM. Unversioned NED endpoint examples below are retained compatibility
+aliases; the shipped browser uses `/api/v1`. Hermes/Hub upstream endpoints are
+separate dependency protocols, not additional NED APIs.
+
 Runtime storage update (#150): [agent runtime home](../agent-runtime-home/SPEC.md) governs default DB, Hub credential and log paths throughout this specification. `<agent-home>/.ned` replaces the OS-user shared `~/.ned` in agent contexts; the latter remains only for standalone/no-context compatibility or deliberate `NED_AGENT_HOME=$HOME`. `--database` > `NED_DATABASE_URL` > selected runtime DB, with no automatic migration. The CLI initializes a missing task database before publishing its URL without importing projects/tasks; direct server/read-only callers do not initialize unless requested. Gateway settings and project display labels keep their separate selected-Hermes-profile/OS-home ownership. Agent-runtime-home TC-001/002/003 verify selection, CLI-to-COM reads and store alignment; existing COM cases continue to cover their feature-specific behavior.
 
 ## Consistent control styling enhancement
@@ -708,4 +713,4 @@ Coverage: FR-066–070 → CUJ-024 → TC-042. No paid analytics, workflow evalu
 
 ### Chat cancellation ordering
 
-For an owned in-flight Stop, a matching authenticated Hermes `run.cancelled`/`run.interrupted` event may precede its HTTP acknowledgement. COM records stopped completion with accumulated text from that event. Unsolicited or foreign-identity cancellation remains failed. Communicator TC-039 holds the acknowledgement until the terminal stream is consumed; no-ego-dev#181 and Hub#134 track this regression. This does not configure model providers or certify hosted inference.
+For an owned in-flight Stop, a matching authenticated Hermes `run.cancelled`/`run.interrupted` event may precede its HTTP acknowledgement. Core's NED API records stopped completion with accumulated text from that event. Unsolicited or foreign-identity cancellation remains failed. Communicator TC-039 holds the acknowledgement until the terminal stream is consumed; no-ego-dev#181 and Hub#134 track this regression. This does not configure model providers or certify hosted inference.

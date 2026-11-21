@@ -18,7 +18,7 @@ export function mountGoalTasks({document,fetch}){
   let projectId='',generation=0,snapshot=null;const opened=new Set(),requests=new WeakMap();
   const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
   const button=(text,action)=>{const element=node('button',text);element.type='button';element.addEventListener('click',action);return element;};
-  const base=taskId=>`/api/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`;
+  const base=taskId=>`/api/v1/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`;
   async function request(url,current){const response=await fetch(url);const data=await response.json();if(current!==generation)return null;if(!response.ok||data.projectId!==projectId)throw new Error();return data;}
   async function taskDetails(item,container,offset=0,requestedFocus=null){
     const token=(requests.get(container)||0)+1;requests.set(container,token);

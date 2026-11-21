@@ -50,16 +50,16 @@ test('TC-015: authenticated retry reaches real COM and rejects foreign origins w
     stream.write(`GET ${path} HTTP/1.1\r\nHost: ned-com\r\nx-ned-instance: fixture\r\nx-forwarded-host: 127.0.0.1:${server.address().port}\r\nx-forwarded-proto: http\r\n${requestOrigin===null?'':`Origin: ${requestOrigin}\r\n`}Connection: close\r\n\r\n`);
     await once(stream,'end');stream.destroy();return text;
   }
-  assert.match(await request('/api/health',origin),/200 OK[\s\S]*"status":"ok"/);
+  assert.match(await request('/api/v1/health',origin),/200 OK[\s\S]*"status":"ok"/);
   assert.match(await request('/styles.css',null),/200 OK[\s\S]*text\/css/);
-  assert.match(await request('/api/health','https://foreign.example'),/403 Forbidden/);
+  assert.match(await request('/api/v1/health','https://foreign.example'),/403 Forbidden/);
   assert.match(await request('//foreign.example/',origin),/400 Bad Request/);
   control.close();await once(control,'close');
   // A second ready control proves repeat registration uses the same stable identity.
   await new Promise(resolve=>{opened=resolve;});
   assert.equal(calls,3);assert.deepEqual(registrations[2],registrations[0]);
   assert.ok(states.includes('offline; retrying'));
-  await connection.close();assert.equal((await fetch(`${local}/api/health`)).status,200);
+  await connection.close();assert.equal((await fetch(`${local}/api/v1/health`)).status,200);
   for(const ws of wss.clients)ws.terminate();
 });
 

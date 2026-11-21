@@ -1,5 +1,5 @@
 import http from 'node:http';
-import {coreNamespace} from '../../core/src/auth.js';
+import {exposeNedApiPath} from '../../core/src/api-paths.js';
 import {spawn} from 'node:child_process';
 export async function startPublicTunnel(target,{env=process.env,spawn:launch=spawn,startupTimeout=30000,signal}={}) {
   const local=new URL(target);
@@ -8,7 +8,7 @@ export async function startPublicTunnel(target,{env=process.env,spawn:launch=spa
   const failure=new Promise(resolve=>{failed=resolve;});
   const sockets=new Set();
   const bridge=http.createServer((req,res)=>{
-    if(coreNamespace(req.url).blocked){res.writeHead(403);res.end();return;}
+    if(!exposeNedApiPath(req.url,{publicTunnel:true})){res.writeHead(403);res.end();return;}
     if(!publicUrl){res.writeHead(503);res.end();return;}
     if(req.headers.host!==new URL(publicUrl).host||(req.headers.origin!==undefined&&req.headers.origin!==publicUrl)){res.writeHead(403);res.end();return;}
     if(/^\/api\/secrets(?:\/|\?|$)/.test(req.url)){res.writeHead(403);res.end();return;}

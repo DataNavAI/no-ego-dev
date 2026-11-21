@@ -16,14 +16,14 @@ test('TC-039: scrolling loads older raw pages single-flight, preserves viewport 
   const chat=await ready(),transcript=chat.elements.get('transcript');
   transcript.scrollTop=0;const anchor=transcript.firstElementChild,top=anchor.getBoundingClientRect().top;
   transcript.dispatch('scroll');transcript.dispatch('scroll');
-  assert.equal(chat.requests.length,1);assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=50');
+  assert.equal(chat.requests.length,1);assert.equal(chat.requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=50');
   await chat.respond({data:page(0)});await chat.respond({data:page(50)});
   assert.equal(anchor.dataset.messageId,transcript.children.find(row=>row.dataset.messageId===anchor.dataset.messageId).dataset.messageId);
   assert.equal(transcript.children.find(row=>row.dataset.messageId===anchor.dataset.messageId).getBoundingClientRect().top,top);
-  transcript.scrollTop=0;transcript.dispatch('scroll');assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=100');
+  transcript.scrollTop=0;transcript.dispatch('scroll');assert.equal(chat.requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=100');
   await chat.respond({},403);transcript.dispatch('scroll');assert.equal(chat.requests.length,0);assert.deepEqual(chat.delays(),[]);
   assert.equal(chat.elements.get('chat-retry').hidden,false);assert.match(chat.elements.get('chat-status').textContent,/Earlier messages/);
-  chat.elements.get('chat-retry').click();assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=100');
+  chat.elements.get('chat-retry').click();assert.equal(chat.requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=100');
   await chat.respond({data:[]});await chat.respond({data:page(50)});transcript.dispatch('scroll');assert.equal(chat.requests.length,0);
 });
 
@@ -34,7 +34,7 @@ test('TC-039: pending user echo and cleared draft precede acknowledgement; early
   assert.equal(chat.elements.get('transcript').children.at(-1).textContent,'YouImmediate message');assert.equal(chat.elements.get('transcript').children.at(-1).dataset.state,'pending');
   send.click();assert.equal(send.disabled,true);assert.equal(chat.requests.length,1);
   await chat.respond({turn:{id:turnId,status:'pending'}},202);
-  assert.equal(chat.requests[0].url,`/api/chat/sessions/nedcom-main/turns/${turnId}/stop`);assert.deepEqual(JSON.parse(chat.requests[0].options.body),{});
+  assert.equal(chat.requests[0].url,`/api/v1/chat/sessions/nedcom-main/turns/${turnId}/stop`);assert.deepEqual(JSON.parse(chat.requests[0].options.body),{});
   await chat.respond({turn:{id:turnId,status:'stopping'}});assert.equal(send.disabled,true);
   draft.value='Next draft';
   await chat.respond({turn:{id:turnId,status:'pending'},stream:{cursor:0,next:7,text:'Partial'}});
@@ -69,15 +69,15 @@ test('TC-039: HTTP Stop is owned, retries early registration, waits for stream c
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
   const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,env}});await app.listen();t.after(()=>app.close());
-  const post=(path,body={})=>fetch(app.url+'/api/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const post=(path,body={})=>fetch(app.url+'/api/v1/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
   const accepted=await(await post('/session-a/chat',{input:'Stop this response'})).json();await started;
   const path=`/session-a/turns/${accepted.turn.id}`;
   assert.equal((await post(`/other-session/turns/${accepted.turn.id}/stop`)).status,404);
   assert.equal((await post(path+'/stop',{run_id:'foreign'})).status,400);assert.equal(stops,0);
   const stop=await post(path+'/stop');assert.equal(stop.status,200);assert.equal((await stop.json()).turn.status,'stopping');assert.equal(stops,2);assert.equal(upstream.writableEnded,false);
-  assert.equal((await(await fetch(app.url+'/api/chat/sessions'+path)).json()).turn.status,'pending');
+  assert.equal((await(await fetch(app.url+'/api/v1/chat/sessions'+path)).json()).turn.status,'pending');
   upstream.end(events.slice(3).map(streamFrame).join(''));
-  const stream=await fetch(app.url+'/api/chat/sessions'+path+'/events');const wire=await stream.text();assert.match(wire,/"status":"stopped"/);assert.match(wire,/Partial response/);
+  const stream=await fetch(app.url+'/api/v1/chat/sessions'+path+'/events');const wire=await stream.text();assert.match(wire,/"status":"stopped"/);assert.match(wire,/Partial response/);
   await post(path+'/stop');assert.equal(stops,2);
   env.NED_HERMES_API_KEY='rotated';assert.equal((await post(path+'/stop')).status,404);assert.equal(stops,2);
 });
@@ -88,9 +88,9 @@ test('TC-039: hidden and underfilled pages fill automatically, bound a batch and
     const hidden=start=>Array.from({length:50},(_,index)=>({id:start+index,role:'tool',content:'Hidden'}));
     const latest=hidden(1000);if(visible)latest[0]={...latest[0],role:'assistant',content:'Short visible page'};
     await chat.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});await chat.respond({data:latest});
-    assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=50');
+    assert.equal(chat.requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=50');
     for(let ordinal=1;ordinal<=20;ordinal++){
-      assert.equal(chat.requests[0].url,`/api/chat/sessions/nedcom-main/messages?offset=${ordinal*50}`);
+      assert.equal(chat.requests[0].url,`/api/v1/chat/sessions/nedcom-main/messages?offset=${ordinal*50}`);
       await chat.respond({data:hidden(1000-ordinal*50)});await chat.respond({data:latest});
     }
     assert.equal(chat.requests.length,0);assert.equal(transcript.children.length,0);assert.equal(chat.elements.get('older').hidden,true);
@@ -124,13 +124,13 @@ test('TC-039: normal completion wins a racing Stop; rejected Stop preserves live
       });
       await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
       const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
-      const post=(path,body={})=>fetch(app.url+'/api/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const post=(path,body={})=>fetch(app.url+'/api/v1/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
       const accepted=await(await post('/session-a/chat',{input:'A normal reply'})).json();await started;
       const path=`/session-a/turns/${accepted.turn.id}`;
       assert.equal((await post(path+'/stop')).status,response.status===200&&response.body.run_id==='run_synthetic'?200:503);
       assert.equal(upstream.writableEnded,false);assert.equal((await post('/session-a/chat',{input:'Do not replay while pending'})).status,409);
       upstream.end(events.slice(3).map(streamFrame).join(''));
-      const wire=await(await fetch(app.url+'/api/chat/sessions'+path+'/events')).text();assert.match(wire,/"status":"completed"/);assert.doesNotMatch(wire,/"status":"stopped"/);
+      const wire=await(await fetch(app.url+'/api/v1/chat/sessions'+path+'/events')).text();assert.match(wire,/"status":"completed"/);assert.doesNotMatch(wire,/"status":"stopped"/);
       assert.match(wire,/Normally completed/);await post(path+'/stop');assert.equal(stops,1);
     });
   }
@@ -168,14 +168,14 @@ test('TC-039: owned cancellation before HTTP Stop acknowledgement preserves part
     });
     await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
     const home=await mkdtemp(join(tmpdir(),'ned-stop-order-'));let app;t.after(async()=>{await app?.close();await rm(home,{recursive:true,force:true});});app=createCommunicatorServer({home,env:{},databasePath:join(home,'ned.sqlite'),initializeDatabase:true,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();
-    const post=(path,body={})=>fetch(app.url+'/api/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const post=(path,body={})=>fetch(app.url+'/api/v1/chat/sessions'+path,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify(body)});
     const accepted=await(await post('/session-a/chat',{input:'Synthetic cancellation'})).json();await started;
     const path=`/session-a/turns/${accepted.turn.id}`;
     let stop;
     try{
       if(requested){stop=post(path+'/stop');await stopping;}
       else upstream.end(streamFrame({event:'run.cancelled',data:{...events[0].data,seq:4}}));
-      const wire=await(await fetch(app.url+'/api/chat/sessions'+path+'/events')).text();
+      const wire=await(await fetch(app.url+'/api/v1/chat/sessions'+path+'/events')).text();
       assert.match(wire,requested?/"status":"stopped"/:/"status":"failed"/);
       if(requested)assert.match(wire,/Partial response/);
     }finally{acknowledge?.();await stop;}

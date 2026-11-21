@@ -36,7 +36,7 @@ test('TC-042: delivery metadata is validated, idempotent, durable and project sc
   assert.equal((await put({...input,remainingSeconds:1})).status,409);
   for(const invalid of [{...input,impact:'line\nbreak'},{...input,remainingSeconds:-1},{...input,estimatedFinish:'yesterday'},{...input,outputs:[{id:'bad',kind:'image',title:'Remote',image:'https://evil.invalid/a.png'}]},{...input,outputs:[{id:'bad',kind:'image',title:'SVG',image:'data:image/png;base64,PHN2Zz48L3N2Zz4='}]},{...input,secret:'not accepted'}])assert.equal((await put(invalid,JSON.stringify(invalid).length.toString())).status,400);
   const work=readProjectWork(f.databasePath,f.projectId).items.find(item=>item.id===task.id);assert.equal(work.delivery.remainingSeconds,1200);assert.equal(work.delivery.trackedSeconds,null);assert.equal(work.description,undefined);assert.equal(work.delivery.outputs.length,2);assert.equal(JSON.stringify(work).includes(image.toString('base64')),false);
-  const base=`/api/projects/${f.projectId}/tasks/${task.id}`;
+  const base=`/api/v1/projects/${f.projectId}/tasks/${task.id}`;
   const detail=await(await fetch(app.url+base)).json();assert.equal(detail.impact,input.impact);assert.equal(detail.outputs[0].text,input.outputs[0].text);assert.equal(detail.outputs[1].image,undefined);assert.deepEqual(detail.attempts,[]);
   const screenshot=await fetch(app.url+base+'/outputs/screen');assert.equal(screenshot.status,200);assert.equal((await sharp(Buffer.from(await screenshot.arrayBuffer())).metadata()).width,4);
   const doc=await fetch(app.url+base+'/outputs/brief');assert.ok(doc.headers.get('content-type').startsWith('text/plain'));assert.equal(await doc.text(),input.outputs[0].text);
@@ -59,7 +59,7 @@ test('TC-042: attempts paginate and only persisted same-gateway session bindings
   await f.core.stop(f.projectId,attempt.id,{},'stop-original');
   for(let index=0;index<21;index++){const queued=await f.core.createAttempt(f.projectId,task.id,{instructions:'Do not execute'},`extra-${index}`);await f.core.stop(f.projectId,queued.id,{},`stop-${index}`);}
   const app=createCommunicatorServer({databasePath:f.databasePath,home:f.root,env:{},gateway});await app.listen();t.after(()=>app.close());
-  const root=`/api/projects/${f.projectId}/tasks/${task.id}`;
+  const root=`/api/v1/projects/${f.projectId}/tasks/${task.id}`;
   const attempts=await(await fetch(app.url+root)).json();assert.equal(attempts.attempts[0].number,22);assert.equal(attempts.attempts.length,20);assert.equal(attempts.nextOffset,20);
   const older=await(await fetch(app.url+root+'?offset=20')).json();assert.deepEqual(older.attempts.map(row=>row.number),[2,1]);assert.equal(older.nextOffset,null);
   assert.equal(await(await fetch(app.url+root+'/outputs/attempt-result')).text(),'Visible recorded output');
@@ -76,13 +76,13 @@ test('TC-042: compact task pane progressively discloses outputs and logs, preser
   const item=(id,type,status,parentId=null)=>({id,title:id,type,status,parentId,priority:2,createdAt:'2026-11-18',dependsOn:[]});
   const work={projectId:'alpha',items:[item('Launch','goal','planned'),{...item('Checkout','task','working','Launch'),delivery:{trackedSeconds:1440,remainingSeconds:1200,outputs:[{id:'brief',title:'Short plan',kind:'document'}]}},item('Review','task','ready','Launch'),item('Done','task','done','Launch')]};
   let release,hold=false,attemptState='running',resultText='Current result',failOlder=true;
-  await page.route('**/api/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
-  await page.route('**/api/projects/*',route=>route.fulfill({json:{preview:{status:'unconfigured'}}}));
-  await page.route('**/api/projects/*/work',route=>route.fulfill({json:route.request().url().includes('/alpha/')?work:{projectId:'beta',items:[]}}));
-  await page.route('**/api/projects/alpha/tasks/Checkout?offset=*',async route=>{if(hold)await new Promise(resolve=>{release=resolve;});await route.fulfill({json:{projectId:'alpha',taskId:'Checkout',impact:'Reduce purchase abandonment.',outputs:[{id:'brief',title:'Short plan',kind:'document',text:'<script>not executable</script>\nMake payment easier.'}],attempts:[{id:'attempt',number:1,state:'running'}],nextOffset:null}});});
-  await page.route('**/api/projects/alpha/tasks/Checkout/attempts/attempt',route=>route.fulfill({json:{projectId:'alpha',attempt:{state:attemptState,resultText,sessions:[{sessionId:'session',role:'worker',workerIndex:0}]}}}));
-  await page.route('**/api/projects/alpha/tasks/Checkout/attempts/attempt/sessions/session/messages?offset=*',route=>{const offset=Number(new URL(route.request().url()).searchParams.get('offset'));if(offset===50&&failOlder){failOlder=false;return route.fulfill({status:503,json:{}});}return route.fulfill({json:{projectId:'alpha',data:offset===0?Array.from({length:50},(_,index)=>({id:`msg${index+50}`,role:'assistant',content:`Visible log message ${index+50}`})):[{id:'msg0',role:'assistant',content:'Older message'}]}});});
-  await page.route('**/api/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'data: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
+  await page.route('**/api/v1/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
+  await page.route('**/api/v1/projects/*',route=>route.fulfill({json:{preview:{status:'unconfigured'}}}));
+  await page.route('**/api/v1/projects/*/work',route=>route.fulfill({json:route.request().url().includes('/alpha/')?work:{projectId:'beta',items:[]}}));
+  await page.route('**/api/v1/projects/alpha/tasks/Checkout?offset=*',async route=>{if(hold)await new Promise(resolve=>{release=resolve;});await route.fulfill({json:{projectId:'alpha',taskId:'Checkout',impact:'Reduce purchase abandonment.',outputs:[{id:'brief',title:'Short plan',kind:'document',text:'<script>not executable</script>\nMake payment easier.'}],attempts:[{id:'attempt',number:1,state:'running'}],nextOffset:null}});});
+  await page.route('**/api/v1/projects/alpha/tasks/Checkout/attempts/attempt',route=>route.fulfill({json:{projectId:'alpha',attempt:{state:attemptState,resultText,sessions:[{sessionId:'session',role:'worker',workerIndex:0}]}}}));
+  await page.route('**/api/v1/projects/alpha/tasks/Checkout/attempts/attempt/sessions/session/messages?offset=*',route=>{const offset=Number(new URL(route.request().url()).searchParams.get('offset'));if(offset===50&&failOlder){failOlder=false;return route.fulfill({status:503,json:{}});}return route.fulfill({json:{projectId:'alpha',data:offset===0?Array.from({length:50},(_,index)=>({id:`msg${index+50}`,role:'assistant',content:`Visible log message ${index+50}`})):[{id:'msg0',role:'assistant',content:'Older message'}]}});});
+  await page.route('**/api/v1/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'data: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
   await page.reload();await f.ready();
   const select=id=>page.locator('#project').evaluate((node,value)=>{node.value=value;node.dispatchEvent(new Event('change'));},id);
   await select('alpha');await f.draft.fill('Keep this draft');await page.locator('#goals-pane-tab').click();

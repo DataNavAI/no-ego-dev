@@ -38,12 +38,12 @@ test('TC-005: only exact native successful results survive history projection; m
 test('TC-005: shared reveal retains Origin/custom-header and disabled-server controls',async t=>{
   const f=setup(t);f.store.set('TOKEN','synthetic-http-share');const grant=f.store.share(f.store.get('TOKEN',{file:true}).path);
   const app=createCommunicatorServer({home:f.home,databasePath:join(f.home,'ned.sqlite')});await app.listen();t.after(()=>app.close());
-  const url=app.url+'/api/secrets/shares/'+grant.share_id+'/reveal';
+  const url=app.url+'/api/v1/secrets/shares/'+grant.share_id+'/reveal';
   assert.equal((await fetch(url,{method:'POST'})).status,403);
   const good=await fetch(url,{method:'POST',headers:{Origin:app.url,'X-NED-Secrets':'1'}});assert.equal(good.status,200);assert.equal(good.headers.get('cache-control'),'no-store');assert.equal((await good.json()).value,'synthetic-http-share');
   assert.equal((await fetch(url,{headers:{'X-NED-Secrets':'1'}})).status,403);
   const disabled=createCommunicatorServer({home:f.home,databasePath:join(f.home,'ned.sqlite'),secretsEnabled:false});await disabled.listen();t.after(()=>disabled.close());
-  assert.equal((await fetch(disabled.url+'/api/secrets/shares/'+grant.share_id+'/reveal',{method:'POST',headers:{Origin:disabled.url,'X-NED-Secrets':'1'}})).status,403);
+  assert.equal((await fetch(disabled.url+'/api/v1/secrets/shares/'+grant.share_id+'/reveal',{method:'POST',headers:{Origin:disabled.url,'X-NED-Secrets':'1'}})).status,403);
 });
 test('TC-005: native tool resolves a PATH symlink to the container-style JavaScript CLI',t=>{
   const f=setup(t);f.store.set('TOKEN','synthetic-fallback-token');const path=f.store.get('TOKEN',{file:true}).path;
@@ -67,6 +67,6 @@ test('TC-005: HTTP history removes native inputs in serialized calls and structu
   const gateway=createServer((req,res)=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify({data:rows}));});
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>gateway.close(resolve)));
   const app=createCommunicatorServer({home:f.home,databasePath:join(f.home,'ned.sqlite'),gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
-  const response=await fetch(app.url+'/api/chat/sessions/nedcom-main/messages?offset=0');assert.equal(response.status,200);const output=await response.text();assert.ok(!output.includes(path),'Native export path must not reach browser history');
+  const response=await fetch(app.url+'/api/v1/chat/sessions/nedcom-main/messages?offset=0');assert.equal(response.status,200);const output=await response.text();assert.ok(!output.includes(path),'Native export path must not reach browser history');
   const result=JSON.parse(output).data;assert.deepEqual(JSON.parse(result[0].tool_calls),[generic]);assert.deepEqual(JSON.parse(result[1].content),[{type:'text',text:'Ready'},ordinary]);assert.deepEqual(result[2].content,[ordinary]);assert.deepEqual(result[3].content,[[{type:'text',text:'Nested prose'}]]);assert.deepEqual(result[4].content,{ordinary:'structured data'});
 });

@@ -37,7 +37,7 @@ test('TC-007: durable requests expire, isolate, revoke and retry without overwri
 });
 test('TC-007: protected HTTP submits metadata only, rejects malformed writes, and serializes competing submissions',async t=>{
   const home=setup(t),events=[],app=createCommunicatorServer({home,databasePath:join(home,'ned.sqlite'),logger:{event:(...args)=>events.push(args)}});await app.listen();t.after(()=>app.close());
-  const store=createSecretStore({home}),grant=store.request('TOKEN'),path=`/api/secrets/requests/${grant.request_id}`;
+  const store=createSecretStore({home}),grant=store.request('TOKEN'),path=`/api/v1/secrets/requests/${grant.request_id}`;
   const call=(suffix='submit',body={value:'synthetic-http-request'},headers={})=>fetch(app.url+path+'/'+suffix,{method:'POST',headers:{Origin:app.url,'X-NED-Secrets':'1',...(body===undefined?{}:{'Content-Type':'application/json'}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)})});
   for(const [body,headers,code] of [[{value:'bad'},{Origin:'https://attacker.example'},403],[{value:'bad'},{Origin:''},403],[{value:'bad'},{'X-NED-Secrets':''},403],[{value:'bad'},{'Sec-Fetch-Site':'cross-site'},403],[{value:'bad',key:'OTHER'},{},400],[{value:''},{},400],[{value:'x'.repeat(65537)},{},400],[{value:'x'.repeat(400001)},{},413],[[],{},400]])assert.equal((await call('submit',body,headers)).status,code);
   const status=await fetch(app.url+path+'/status',{method:'POST',headers:{Origin:app.url,'X-NED-Secrets':'1'}});assert.deepEqual(await status.json(),{key:'TOKEN',saved:false});

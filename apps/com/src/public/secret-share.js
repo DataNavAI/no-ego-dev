@@ -1,11 +1,4 @@
-export function secretShare(value){
-  try{
-    if(typeof value==='string'){if(value.length>2048)return null;value=JSON.parse(value);}
-    if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).length!==4||!['success','action','share_id','expires_at'].every(key=>Object.hasOwn(value,key))||value.success!==true||value.action!=='secure_share_secret'||typeof value.share_id!=='string'||!/^[a-f0-9]{64}$/.test(value.share_id)||typeof value.expires_at!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value.expires_at)||!Number.isFinite(Date.parse(value.expires_at)))return null;
-    return {success:true,action:'secure_share_secret',share_id:value.share_id,expires_at:value.expires_at};
-  }catch{return null;}
-}
-export function secretShareRow(row){return row?.role==='tool'&&(row.tool_name??row.name)==='ned'?secretShare(row.content):null;}
+export {secretShare,secretShareRow} from './secret-events.js';
 export function renderSecretCard(share,document){
   const card=document.createElement('section');card.className='secret-share-card';card.setAttribute('aria-label','Shared secret');
   const title=document.createElement('strong');title.textContent='Secret ready';
@@ -24,7 +17,7 @@ export function renderSecretCard(share,document){
     if(Date.parse(share.expires_at)<=Date.now()){status.textContent='Secret is unavailable. Ask NED to share it again.';return;}
     clear();const epoch=generation;busy=true;button.disabled=true;status.textContent='';
     try{
-      const response=await fetch(`/api/secrets/shares/${share.share_id}/reveal`,{method:'POST',headers:{'X-NED-Secrets':'1'},signal:AbortSignal.timeout(15000)});
+      const response=await fetch(`/api/v1/secrets/shares/${share.share_id}/reveal`,{method:'POST',headers:{'X-NED-Secrets':'1'},signal:AbortSignal.timeout(15000)});
       if(!response.ok)throw new Error('Unavailable');const data=await response.json();
       if(typeof data.value!=='string'||data.value.length>65536)throw new Error('Unavailable');
       if(disposed||epoch!==generation||hidden()||!card.isConnected)return;

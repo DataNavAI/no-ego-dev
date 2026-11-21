@@ -1,11 +1,91 @@
 # NED architecture
 
-NED distributes a native CLI, COM browser application, core service and Hermes profile. Current implementations are in `apps/com` and `apps/core`; compatibility entrypoints retain supported old imports. [Feature specifications](features/README.md) and [API contracts](api.md) must change with implementation.
+Status: NED API v1 consolidation is a source candidate; deployment is a
+separate acceptance gate. The existing CLI/Core/COM responsibilities below are
+retained, with API ownership consolidated in Core.
 
-COM binds loopback and serves browser assets, project/workspace interfaces and chat. Its native Hub connector registers through Hub and opens an outbound authenticated WebSocket tunnel. The bridge validates exact instance Host/Origin before translating requests to loopback COM. Hub owns browser access and isolated public origins; ordinary interactions do not invoke Kubernetes.
+## Components and flows
 
-Chat goes through COM's `/api/chat` gateway to the authenticated local Hermes API. COM owns bounded turn state/IDs, incremental events and cancellation; Hermes owns inference, provider access and session history. Operator-authenticated `/api/core` is a separate interface. Core owns local SQLite task/project data; provider credentials and configuration belong to the private Hermes profile, never this distribution.
+```text
+CLI / trusted integrations -> /api/v1/operator/* -> Core task/coordination service
+COM browser -> /api/v1/* -> Core browser services -> Hermes / project data / vault
+COM static host + Hub/public bridge -> the same Core-owned NED API handler
+```
 
-An authenticated matching cancellation during an owned in-flight Stop may precede its HTTP acknowledgement. COM records stopped completion with accumulated text. Unsolicited/foreign cancellation fails. Communicator TC-039 holds the acknowledgement until terminal consumption; native#181 and Hub#134 track verification.
+- `apps/core` owns the NED API v1 router, route exposure policy, project read
+  models, chat/attachment/stream services, secret operations and coordination.
+- `apps/com` owns browser assets, local web hosting and Hub/public transport
+  adapters. It consumes the same API contract as other clients, not a separate
+  COM-specific backend API. Legacy module entrypoints remain compatibility shims.
+- `apps/cli` owns command parsing/presentation and uses the operator API. Ordinary
+  task commands start a bounded backend-only loopback server with an in-memory
+  bearer; configured servers must match the selected runtime and database.
+- Shared root `src` owns runtime selection, SQLite task graph and encrypted vault
+  primitives. One root lockfile/installer releases all three apps together.
 
-Account-level provider inheritance and guided setup are planned in Hub#135/native#182. Health is not proof of configured inference. Hub/ned-iac own hosted Kubernetes resources, account storage and rollout; this source does not prove deployed images. Preserve user workspaces and configured profiles across updates. Synthetic Hermes tests do not certify paid inference or hosted OAuth.
+The authoritative HTTP contract is [NED API v1](api.md). Core execution ownership,
+outbox/admission/verification and automation details remain in the supporting
+[orchestration design](features/core-orchestration/DESIGN.md).
+
+## State and ownership
+
+The selected runtime's `.ned` directory owns SQLite, private operator credentials
+and encrypted secrets. Project/task/goal/attempt/session IDs are opaque retained
+identifiers, never reconstructed from display titles. Core is the only owner of
+task mutations, transactions, idempotency receipts, worker admission and completion
+verification. Project UI data is a read model of this same store. Chat session
+history and model execution belong to the selected Hermes gateway; transient turn
+and attachment state stays bounded and is scoped to session/gateway identity.
+
+No API unification migration moves databases, creates another work graph, changes
+actor identity or copies host profiles. Existing durable-volume replacement and
+backup/restore ownership remains in the [container contract](features/standalone-container/SPEC.md)
+and [deployment runbook](features/aws-staging-deployment/RUNBOOK.md).
+
+For an owned in-flight Stop, an authenticated matching cancellation can establish
+stopped completion before the HTTP acknowledgement; partial text is retained.
+Unsolicited/foreign cancellation remains failed (Communicator TC-039).
+
+Account-level provider inheritance and guided setup are planned in Hub#135/native#182,
+not enabled by API consolidation. Hub/ned-iac retain hosted Kubernetes/account
+storage ownership. This source does not certify hosted images, OAuth or paid
+inference; preserve user workspaces and configured profiles across deployment.
+
+## Security and transport
+
+All listeners bind loopback and require the exact bound Host and permitted Origin.
+The operator family requires a runtime-private bearer, never delivered to a browser.
+Hub and public bridges deny that family and its legacy/malformed aliases before
+forwarding; an authenticated Hub user is not implicitly a local operator.
+Quick public tunnels additionally deny secret operations. Browser mutations retain
+their resource-specific CSRF/media/receipt checks; secret access requires explicit
+privacy headers and reveal/entry intent. Unknown future API families are not
+automatically exposed by transport adapters.
+
+The full Core listener and COM listener share one handler. Backend-only CLI servers
+intentionally enable only operator operations and do not start browser/chat/vault
+services or an automatic coordinator. API services close owned streams, probes,
+workers and listeners on disconnect/shutdown; they do not stop a host Hermes.
+
+## Compatibility, failure and rollback
+
+Canonical clients use `/api/v1`; old Core/COM URLs are direct compatibility aliases,
+not redirects, so request bodies, SSE streams, cursors and idempotency remain intact.
+Operator and browser project views have distinct paths, never auth-dependent response
+shapes. API unavailability produces bounded errors; CLI never writes directly as a
+fallback or blindly retries ambiguous mutations. Reuse a retained idempotency key
+with identical input after authoritative readback.
+
+Rollback reinstalls the prior co-released CLI/COM/Core generation and reloads the
+browser. No irreversible data/schema migration is introduced. Legacy aliases stay
+until an explicit future migration removes them with consumer/rollback evidence.
+
+## Operational evidence and verification
+
+Reuse privacy-safe chat request phase/status/duration diagnostics and persisted
+Core lifecycle events/metrics. Never add request payloads, credentials, raw secret
+values or model text to routing telemetry. This internal contract refactor adds no
+analytics provider or personal-data collection. Stream tests use deterministic held
+chunks; ownership/idempotency tests use real SQLite/HTTP. Native container tests,
+independent review and installed-local readback establish release acceptance, not
+merely the presence of these documents. Live/paid provider acceptance is separate.

@@ -10,7 +10,7 @@ export function mountActivity({document,EventSource}){
     const current=++generation;stream?.close();stream=undefined;
     const id=project.value;signature='';content.replaceChildren();panel.hidden=true;
     if(!id)return;
-    stream=new EventSource('/api/activity/events?project='+encodeURIComponent(id));
+    stream=new EventSource('/api/v1/activity/events?project='+encodeURIComponent(id));
     stream.onmessage=event=>{
       if(current!==generation)return;
       try{

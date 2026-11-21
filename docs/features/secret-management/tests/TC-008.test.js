@@ -15,7 +15,7 @@ test('TC-008: chat button stores a masked secret privately and recovers complete
   await enter.click();await input.fill('synthetic-chat-entry');await page.screenshot({path:'/tmp/ned-secret-entry-desktop.png'});
   await card.getByRole('button',{name:'Save secret',exact:true}).click();await expect(card).toContainText('Secret saved.');await expect(input).toHaveValue('');assert.equal(f.store.get('ADMIN_PASSWORD'),'synthetic-chat-entry');await expect(f.draft).toHaveValue('Preserved draft');
   assert.ok(!JSON.stringify(f.requests).includes('synthetic-chat-entry'));assert.equal(await card.locator('.message-copy').count(),0);
-  const history=await page.request.get(new URL('/api/chat/sessions/nedcom-main/messages?offset=0',page.url()).href);assert.ok(!(await history.text()).includes('synthetic-chat-entry'));
+  const history=await page.request.get(new URL('/api/v1/chat/sessions/nedcom-main/messages?offset=0',page.url()).href);assert.ok(!(await history.text()).includes('synthetic-chat-entry'));
   assert.equal(await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}})).then(text=>text.includes('synthetic-chat-entry')),false);
   await page.reload();await page.locator('.secret-request-card').getByRole('button',{name:'Enter secret',exact:true}).click();await expect(page.locator('.secret-request-card')).toContainText('Secret saved.');assert.equal(f.store.get('ADMIN_PASSWORD'),'synthetic-chat-entry');assert.deepEqual(f.errors,[]);
 });
@@ -27,14 +27,14 @@ test('TC-008: mobile entry clears on cancellation, timeout and navigation; delay
   await page.clock.install();await enter.click();await input.fill('synthetic-timeout');await page.clock.fastForward(30001);await expect(input).toHaveValue('');await expect(input).toBeHidden();await page.clock.resume();
   await enter.click();await input.fill('synthetic-delayed-save');
   let release,seen;const gate=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
-  await page.route('**/api/secrets/requests/*/submit',async route=>{seen();await gate;await route.continue();});
+  await page.route('**/api/v1/secrets/requests/*/submit',async route=>{seen();await gate;await route.continue();});
   await card.getByRole('button',{name:'Save secret',exact:true}).click();await requested;await expect(input).toHaveValue('');assert.equal(await enter.isDisabled(),true);
   await page.locator('#navigation-open').click();await page.getByRole('tab',{name:'Settings',exact:true}).click();release();await expect.poll(()=>f.store.list().length).toBe(1);await expect(input).toHaveValue('');
   await page.locator('#navigation-open').click();await page.getByRole('tab',{name:'Chat',exact:true}).click();await expect(input).toBeHidden();await enter.click();await expect(card).toContainText('Secret saved.');assert.deepEqual(f.errors,[]);
 });
 test('TC-008: failed acknowledgement clears bytes and a retry sees saved state without replacing',async t=>{
   const f=await requestCard(t),{page,card,input,enter}=f;
-  await page.route('**/api/secrets/requests/*/submit',async route=>{await route.fetch();await route.fulfill({status:503,body:'Unavailable'});});
+  await page.route('**/api/v1/secrets/requests/*/submit',async route=>{await route.fetch();await route.fulfill({status:503,body:'Unavailable'});});
   await enter.click();await input.fill('synthetic-lost-ack');await card.getByRole('button',{name:'Save secret',exact:true}).click();await expect(card).toContainText('Could not save secret. Retry.');await expect(input).toHaveValue('');
   await enter.click();await expect(card).toContainText('Secret saved.');assert.equal(f.store.get('ADMIN_PASSWORD'),'synthetic-lost-ack');assert.deepEqual(f.errors,[]);
 });

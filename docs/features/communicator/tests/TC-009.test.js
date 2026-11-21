@@ -20,20 +20,20 @@ test('TC-009: default profile discovery connects without NED overrides and rerea
   const port=gateway.address().port;
   await writeFile(envfile,`API_SERVER_KEY='synthetic-host-key'\nAPI_SERVER_PORT=${port}\nOTHER_SECRET=unrelated\n`,{mode:0o600});
   const app=createCommunicatorServer({gateway:{env:{},home}});await app.listen();t.after(()=>app.close());
-  const first=await fetch(app.url+'/api/chat/sessions');assert.equal(first.status,200);
+  const first=await fetch(app.url+'/api/v1/chat/sessions');assert.equal(first.status,200);
   assert.deepEqual(await first.json(),{data:[{id:'host-session',title:'Host chat'}],has_more:false});
   assert.deepEqual(observations[0],{path:'/api/sessions?limit=50&offset=0',key:'Bearer synthetic-host-key'});
   await writeFile(envfile,`API_SERVER_KEY="synthetic-rotated-key" # comment\nAPI_SERVER_PORT=${port}\n`,{mode:0o600});
-  assert.equal((await fetch(app.url+'/api/chat/sessions')).status,200);
+  assert.equal((await fetch(app.url+'/api/v1/chat/sessions')).status,200);
   assert.equal(observations[1].key,'Bearer synthetic-rotated-key');
   await writeFile(envfile,'API_SERVER_KEY=synthetic-rotated-key\nAPI_SERVER_PORT=invalid\n');
-  const invalid=await fetch(app.url+'/api/chat/sessions');assert.equal(invalid.status,503);assert.ok(!(await invalid.text()).includes('synthetic'));
+  const invalid=await fetch(app.url+'/api/v1/chat/sessions');assert.equal(invalid.status,503);assert.ok(!(await invalid.text()).includes('synthetic'));
   assert.equal(observations.length,2);
   await writeFile(envfile,'');
   const config=join(profile,'config.yaml');
   await writeFile(config,`gateway:\n  api_server:\n    port: ${port}\n    key: synthetic-yaml-key\n`,{mode:0o644});
-  assert.equal((await fetch(app.url+'/api/chat/sessions')).status,503);assert.equal(observations.length,2);
-  await chmod(config,0o600);assert.equal((await fetch(app.url+'/api/chat/sessions')).status,200);
+  assert.equal((await fetch(app.url+'/api/v1/chat/sessions')).status,503);assert.equal(observations.length,2);
+  await chmod(config,0o600);assert.equal((await fetch(app.url+'/api/v1/chat/sessions')).status,200);
   assert.equal(observations[2].key,'Bearer synthetic-yaml-key');
 });
 

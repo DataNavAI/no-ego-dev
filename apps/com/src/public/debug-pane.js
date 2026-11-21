@@ -51,9 +51,9 @@ export function mountDebugPane({document,view=window,request=fetch}){
   const open=()=>{
     opened=true;layout();notifyLayout();close.focus();renderEvents();
     const token=++generation;health.textContent='Checking…';
-    void Promise.resolve().then(()=>request('/api/health',{signal:AbortSignal.timeout(5000)})).then(async response=>{
+    void Promise.resolve().then(()=>request('/api/v1/health',{signal:AbortSignal.timeout(5000)})).then(async response=>{
       const data=response.ok?await response.json():null;
-      if(token===generation)health.textContent=data?.status==='ok'&&data?.service==='nedcom'?'Available':'Unavailable';
+      if(token===generation)health.textContent=data?.status==='ok'&&data?.service==='ned-api'?'Available':'Unavailable';
     }).catch(()=>{if(token===generation)health.textContent='Unavailable';});
   };
   const click=()=>opened?shut():open();

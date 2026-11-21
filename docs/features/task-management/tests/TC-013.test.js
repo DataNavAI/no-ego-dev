@@ -174,7 +174,7 @@ test('TC-013: default command-scoped backend replays across processes without st
   assert.equal((await fixtureValue.cli(['task','init','--json'])).code,0);
   const args=['task','create','Single persisted task','--request-id','default-create','--json'];
   const first=await fixtureValue.cli(args);
-  const repeated=fixtureValue.processCli(args,{NED_AGENT_HOME:fixtureValue.home,NED_CORE_URL:undefined});
+  const repeated=fixtureValue.processCli(args,{NED_AGENT_HOME:fixtureValue.home,NED_API_URL:undefined,NED_CORE_URL:undefined});
   assert.equal(repeated.status,0,repeated.stderr);
   assert.deepEqual(JSON.parse(repeated.stdout),JSON.parse(first.stdout[0]));
   const database=fixtureValue.database();

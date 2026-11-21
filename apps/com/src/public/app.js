@@ -41,8 +41,8 @@ async function json(resource) {
 async function load() {
   const generation = state.requestGeneration;
   try {
-    const capabilities=await json('/api/capabilities');
-    const inventory=capabilities.capabilities?.projects ? await json('/api/projects') : {projects:[]};
+    const capabilities=await json('/api/v1/capabilities');
+    const inventory=capabilities.capabilities?.projects ? await json('/api/v1/projects') : {projects:[]};
     state=settleLoad(state,generation,{...capabilities,...inventory});
   } catch(error) {state=settleLoad(state,generation,null,error.code ?? 'inventory');}
   render();
@@ -51,7 +51,7 @@ async function load() {
 }
 async function loadDetail() {
   const generation=state.requestGeneration;const id=state.projectId;
-  try {const detail=await json('/api/projects/'+encodeURIComponent(id));state=settleDetail(state,generation,detail);}
+  try {const detail=await json('/api/v1/projects/'+encodeURIComponent(id));state=settleDetail(state,generation,detail);}
   catch(error){state=settleDetail(state,generation,null,error.code ?? 'inventory');}
   render();
 }
@@ -151,7 +151,7 @@ let workspaceStream;
 let taskSequence=0;
 function startWorkspace(){
   if(workspaceStream||typeof EventSource!=='function')return;
-  workspaceStream=new EventSource('/api/workspace/events');
+  workspaceStream=new EventSource('/api/v1/workspace/events');
   workspaceStream.onmessage=event=>{
     let snapshot;
     try{snapshot=JSON.parse(event.data);if(snapshot.error||!Array.isArray(snapshot.projects)||snapshot.projects.some(row=>typeof row.id!=='string'||typeof row.name!=='string'))return;}catch{return;}

@@ -91,7 +91,7 @@ export function mountProjectWork({document,fetch}){
       if(goalsFocus)document.getElementById('heading')?.focus();
     }
     try{
-      const response=await fetch('/api/projects/'+encodeURIComponent(id)+'/work');const data=await response.json();
+      const response=await fetch('/api/v1/projects/'+encodeURIComponent(id)+'/work');const data=await response.json();
       if(current!==generation)return;
       if(!response.ok||data.projectId!==id)throw new Error();
       dashboardModel(data.items);

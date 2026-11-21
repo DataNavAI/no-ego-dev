@@ -5,7 +5,7 @@ import {mountPaneResize} from '../../../../apps/com/src/public/pane-resize.js';
 import {chatHarness} from './chat-harness.js';
 import * as debugDiagnostics from '../../../../apps/com/src/public/debug-pane.js';
 
-function fixture(width=1280,request=async()=>({ok:true,json:async()=>({status:'ok',service:'nedcom'})})){
+function fixture(width=1280,request=async()=>({ok:true,json:async()=>({status:'ok',service:'ned-api',version:1})})){
   const document=new EventTarget(),view=new EventTarget(),nodes=new Map();
   const make=()=>{
     const node=new EventTarget();node.children=[];node.attributes={};node.hidden=false;
@@ -23,7 +23,7 @@ function fixture(width=1280,request=async()=>({ok:true,json:async()=>({status:'o
   pane.show=()=>{pane.open=true;pane.modal=false;};pane.showModal=()=>{pane.open=true;pane.modal=true;};pane.close=()=>{pane.open=false;};
   nodes.get('app-shell').dataset={};
   let requests=0;
-  const dispose=mountDebugPane({document,view,request:(...args)=>{requests++;assert.equal(args[0],'/api/health');return request(...args);}});
+  const dispose=mountDebugPane({document,view,request:(...args)=>{requests++;assert.equal(args[0],'/api/v1/health');return request(...args);}});
   const click=id=>nodes.get(id).dispatchEvent(new Event('click'));
   click('debug-clear');
   const tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -81,7 +81,7 @@ test('TC-032: failed health is explicit and stale probes cannot overwrite a reop
     subject.click('debug-toggle');await subject.tick();assert.equal(subject.pane.modal,true);
     subject.click('debug-close');subject.click('debug-toggle');await subject.tick();
     assert.equal(subject.nodes.get('debug-health').textContent,'Unavailable');
-    resolveOld({ok:true,json:async()=>({status:'ok',service:'nedcom',token:'SECRET'})});await subject.tick();
+    resolveOld({ok:true,json:async()=>({status:'ok',service:'ned-api',version:1,token:'SECRET'})});await subject.tick();
     assert.equal(subject.nodes.get('debug-health').textContent,'Unavailable');assert.equal(subject.requests(),2);
     const cancel=new Event('cancel',{cancelable:true});subject.pane.dispatchEvent(cancel);
     assert.equal(cancel.defaultPrevented,true);assert.equal(subject.pane.hidden,true);

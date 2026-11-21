@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 import {createSecretStore} from '../../../../src/secrets.js';
-async function fixture(t,extra={}){const home=mkdtempSync(join(tmpdir(),'ned-secret-http-'));const events=[];const app=createCommunicatorServer({home,databasePath:join(home,'ned.sqlite'),logger:{event:(...args)=>events.push(args)},...extra});await app.listen();t.after(async()=>{await app.close();rmSync(home,{recursive:true,force:true});});const call=(path='',method='GET',body,headers={})=>fetch(app.url+'/api/secrets'+path,{method,headers:{Origin:app.url,'X-NED-Secrets':'1',...(body!==undefined?{'Content-Type':'application/json'}:{}),...headers},...(body!==undefined?{body:JSON.stringify(body)}:{})});return {app,home,events,call};}
+async function fixture(t,extra={}){const home=mkdtempSync(join(tmpdir(),'ned-secret-http-'));const events=[];const app=createCommunicatorServer({home,databasePath:join(home,'ned.sqlite'),logger:{event:(...args)=>events.push(args)},...extra});await app.listen();t.after(async()=>{await app.close();rmSync(home,{recursive:true,force:true});});const call=(path='',method='GET',body,headers={})=>fetch(app.url+'/api/v1/secrets'+path,{method,headers:{Origin:app.url,'X-NED-Secrets':'1',...(body!==undefined?{'Content-Type':'application/json'}:{}),...headers},...(body!==undefined?{body:JSON.stringify(body)}:{})});return {app,home,events,call};}
 test('TC-002: Settings API shares encrypted CLI vault and requires explicit reveal',async t=>{
   const f=await fixture(t),value='synthetic-HTTP-only';
   assert.equal((await f.call('/ADMIN_PASSWORD','PUT',{value})).status,200);
@@ -26,7 +26,7 @@ test('TC-002: Settings API shares encrypted CLI vault and requires explicit reve
     ['/ADMIN_PASSWORD','PUT',{value:'a'.repeat(400001)},{},413],
     ['/ADMIN_PASSWORD/reveal','POST',{anything:'ignored'},{},400],
   ]){const out=await f.call(path,method,body,headers);assert.equal(out.status,expected,`${method} ${path}`);}
-  const invalid=await fetch(f.app.url+'/api/secrets/ADMIN_PASSWORD',{method:'PUT',headers:{Origin:f.app.url,'X-NED-Secrets':'1','Content-Type':'application/json'},body:'{invalid'});assert.equal(invalid.status,400);
+  const invalid=await fetch(f.app.url+'/api/v1/secrets/ADMIN_PASSWORD',{method:'PUT',headers:{Origin:f.app.url,'X-NED-Secrets':'1','Content-Type':'application/json'},body:'{invalid'});assert.equal(invalid.status,400);
   assert.equal(createSecretStore({home:f.home}).get('ADMIN_PASSWORD'),value);
   assert.equal(JSON.stringify(f.events).includes(value),false);
   assert.equal((await f.call('/ADMIN_PASSWORD','DELETE')).status,200);

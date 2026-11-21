@@ -24,12 +24,12 @@ test('TC-034: authoritative references stay project-scoped and invalid data neve
  const ref={projectId:'project-0',itemId:'task-sentinel'};
  const resolved=resolveWorkReferences([ref],'Discuss',f.databasePath);assert.match(resolved,/Private task/);assert.doesNotMatch(resolved,/Other project task|Keep private/);assert.ok(resolved.includes(f.roots[0]));
  const other=resolveWorkReferences([{...ref,projectId:'project-1'}],'',f.databasePath);assert.match(other,/Other project task/);assert.doesNotMatch(other,/Private task/);
- const send=references=>fetch(f.app.url+'/api/chat/sessions/s1/chat',{method:'POST',headers:{Origin:f.app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'',references})});
+ const send=references=>fetch(f.app.url+'/api/v1/chat/sessions/s1/chat',{method:'POST',headers:{Origin:f.app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'',references})});
  for(const bad of [[{...ref,itemId:'missing'}],[{...ref,title:'Spoof'}],[ref,ref],Array.from({length:9},()=>ref),{},null]){
   const response=await send(bad);assert.equal(response.status,400);assert.equal(calls.length,0);
  }
  const response=await send([ref]);assert.equal(response.status,202);const {turn}=await response.json();
- const events=await fetch(`${f.app.url}/api/chat/sessions/s1/turns/${turn.id}/events`);await events.text();
+ const events=await fetch(`${f.app.url}/api/v1/chat/sessions/s1/turns/${turn.id}/events`);await events.text();
  assert.equal(calls.length,1);assert.match(JSON.stringify(calls[0]),/NED_WORK_REFERENCES/);assert.match(JSON.stringify(calls[0]),/task-sentinel/);
 });
 test('TC-034: reference pills deduplicate, preserve identity/draft on failure and clear after confirmed success',async()=>{

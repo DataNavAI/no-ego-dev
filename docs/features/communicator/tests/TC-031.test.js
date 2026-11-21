@@ -15,10 +15,10 @@ test('TC-031: workspace follows latest task event while work stays project-scope
  assert.equal(readWorkspace(f.databasePath).latestTask.projectId,'project-1');
  const data=readProjectWork(f.databasePath,'project-0');assert.equal(data.projectId,'project-0');assert.equal(data.items.find(x=>x.id==='t').parentId,'sg');
  assert.ok(!data.items.some(x=>x.id==='b'));assert.doesNotMatch(JSON.stringify(data),/PRIVATE|description|actor/);
- assert.equal((await f.get('/api/projects/project-0/work')).status,200);
- assert.equal((await f.get('/api/projects/missing/work')).status,404);
+ assert.equal((await f.get('/api/v1/projects/project-0/work')).status,200);
+ assert.equal((await f.get('/api/v1/projects/missing/work')).status,404);
  assert.throws(()=>readProjectWork(f.home+'/missing.sqlite','project-0'),error=>error.status===503);
- const stream=await fetch(f.app.url+'/api/workspace/events');const reader=stream.body.getReader();
+ const stream=await fetch(f.app.url+'/api/v1/workspace/events');const reader=stream.body.getReader();
  try{const chunk=new TextDecoder().decode((await reader.read()).value);assert.match(chunk,/latestTask/);assert.match(chunk,/project-1/);}finally{await reader.cancel();}
  const before=f.writer.connection.prepare('SELECT COUNT(*) AS n FROM ned_task_events').get().n;
  readProjectWork(f.databasePath,'project-0');assert.equal(f.writer.connection.prepare('SELECT COUNT(*) AS n FROM ned_task_events').get().n,before);
@@ -48,7 +48,7 @@ test('TC-031: shipped controller populates new project options before following 
  Object.defineProperty(project,'value',{get:()=>selected,set:value=>{selected=project.options.some(option=>option.value===value)?value:'';}});
  const snapshot={projects:[{id:'a',name:'Alpha'},{id:'b',name:'Beta'},{id:'new',name:'New project',displayPath:'/private/project/path'}],latestTask:{projectId:'new',sequence:100},revision:100};
  streams[0].onmessage({data:JSON.stringify(snapshot)});
- assert.equal(project.value,'new');assert.equal(project.options.find(option=>option.value==='new').textContent,'New project');assert.equal(harness.requests.at(-1).url,'/api/projects/new');
+ assert.equal(project.value,'new');assert.equal(project.options.find(option=>option.value==='new').textContent,'New project');assert.equal(harness.requests.at(-1).url,'/api/v1/projects/new');
  await harness.respond({preview:{status:'unconfigured'}});
  project.value='a';project.dispatch('change');await harness.respond({preview:{status:'unconfigured'}});
  streams[0].onmessage({data:JSON.stringify(snapshot)});assert.equal(project.value,'a');assert.equal(harness.requests.length,0);

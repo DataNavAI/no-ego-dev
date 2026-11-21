@@ -37,7 +37,7 @@ Actor: human or agent maintaining a project visible in COM. Critical because sep
 - Cleanup: await closure of owned servers/connections and remove test-owned data; no real profile or project mutation.
 - Pass evidence: executed assertions and independently inspected source; written cases are not passes.
 
-Coverage extension: FR-015–017 → CUJ-008 → TC-013; FR-018 → CUJ-008 and existing TC-012 behavioral evaluation. The [API design](API_DESIGN.md) governs request/retained-state examples; [Core API reference](../core-orchestration/API.md) is updated alongside implementation.
+Coverage extension: FR-015–017 → CUJ-008 → TC-013; FR-018 → CUJ-008 and existing TC-012 behavioral evaluation. The [API design](API_DESIGN.md) governs request/retained-state examples; [Core API reference](../../api.md) is updated alongside implementation.
 
 - **FR-001 — Context:** Explicit, idempotent `task init`. Realpath resolves project identity; SHA-256 identifies the path within the shared database. Cwd is the default project. Actor defaults to `human:<OS username>` or accepts `agent:<id>`/`human:<id>` with 1–100 alphanumeric, dot, underscore, @, or hyphen characters. No project hooks/instructions are modified.
 - **FR-002 — Shared persistence:** Tasks use the common NED SQLite module and database, not a feature-specific database. Projects, work items, dependencies, and history share the file with other NED feature records. Configure through `--database` > `NED_DATABASE_URL` > local default. Versioned schema creation is transactional/idempotent; reject unsupported engines and newer schemas without destruction. Foreign keys and project-scoped lookups enforce isolation; runtime DB/WAL/journal files stay out of packages and source control.
