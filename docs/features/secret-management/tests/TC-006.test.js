@@ -13,7 +13,7 @@ test('TC-006: native tool result creates an explicit private retrieval card afte
   f.messages.push({id:'native-assistant',role:'assistant',content:'The secret is ready.',tool_calls:[{id:'call',function:{name:'ned',arguments:JSON.stringify({action:'secure_share_secret',path})}}]});
   f.turns[0].finish();
   const card=page.locator('.secret-share-card');await expect(card).toHaveCount(1);await expect(card).toContainText('Secret ready');await expect(card.locator('textarea')).toBeHidden();
-  const history=await page.request.get(new URL('/api/chat/sessions/nedcom-main/messages?offset=0',page.url()).href);const raw=await history.text();assert.ok(!raw.includes(path));assert.ok(!raw.includes('synthetic-card-password'));assert.ok(!raw.includes('must-not-reach-browser'));
+  const history=await page.request.get(new URL('/api/v1/chat/sessions/nedcom-main/messages?offset=0',page.url()).href);const raw=await history.text();assert.ok(!raw.includes(path));assert.ok(!raw.includes('synthetic-card-password'));assert.ok(!raw.includes('must-not-reach-browser'));
   await card.getByRole('button',{name:'Reveal secret',exact:true}).click();await expect(card.locator('textarea')).toHaveValue('synthetic-card-password');
   assert.equal(await card.locator('.message-copy').count(),0);assert.equal(JSON.stringify(f.requests).includes('synthetic-card-password'),false);
   await page.screenshot({path:'/tmp/ned-secret-card-desktop.png'});
@@ -31,7 +31,7 @@ test('TC-006: a delayed shared-secret reveal cannot restore bytes after leaving 
   const f=await browserChat(t);await f.ready();const {page}=f;const store=createSecretStore({home:f.home});store.set('TOKEN','synthetic-delayed-card');const share=store.share(store.get('TOKEN',{file:true}).path);
   f.messages.push({id:'native-tool',role:'tool',name:'ned',content:JSON.stringify(share)});await page.reload();await expect(page.locator('.secret-share-card')).toBeVisible();
   let release,seen;const gate=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
-  await page.route('**/api/secrets/shares/*/reveal',async route=>{seen();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({value:'synthetic-delayed-card'})});});
+  await page.route('**/api/v1/secrets/shares/*/reveal',async route=>{seen();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({value:'synthetic-delayed-card'})});});
   await page.getByRole('button',{name:'Reveal secret',exact:true}).click();await requested;await page.getByRole('tab',{name:'Settings',exact:true}).click();release();
   await expect(page.locator('.secret-share-value')).toHaveValue('');await page.getByRole('tab',{name:'Chat',exact:true}).click();await expect(page.locator('.secret-share-value')).toBeHidden();assert.deepEqual(f.errors,[]);
 });

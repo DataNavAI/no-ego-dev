@@ -1,5 +1,5 @@
 import http from 'node:http';
-import {coreNamespace} from '../../core/src/auth.js';
+import {exposeNedApiPath} from '../../core/src/api-paths.js';
 import {hostname} from 'node:os';
 import {resolveHubOrigin} from '../../../src/hub-credentials.js';
 import {pipeline} from 'node:stream';
@@ -52,7 +52,7 @@ function createBridge(config, target,logger) {
       res.writeHead(403);res.end();return;
     }
     if (!req.url.startsWith('/') || req.url.startsWith('//')) {res.writeHead(400);res.end();return;}
-    if(coreNamespace(req.url).blocked){res.writeHead(403);res.end();return;}
+    if(!exposeNedApiPath(req.url)){res.writeHead(403);res.end();return;}
     const headers = {...req.headers,host:target.host};
     if (headers.origin !== undefined) headers.origin = target.origin;
     for (const key of Object.keys(headers)) if (key.startsWith('x-forwarded-') || key === 'x-ned-instance') delete headers[key];

@@ -8,14 +8,14 @@ async function exhaustUnavailable(chat){await chat.respond({},503);await chat.ti
 test('TC-010: transient history failures retry the same read twice while input stays disabled',async()=>{
   const chat=await chatHarness();await chat.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});
   await chat.respond({},502);assert.deepEqual(chat.delays(),[250]);assert.equal(chat.elements.get('chat-message').disabled,true);assert.equal(chat.elements.get('chat-retry').hidden,true);
-  await chat.tick();assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');
+  await chat.tick();assert.equal(chat.requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=0');
   await chat.respond({},504);assert.deepEqual(chat.delays(),[750]);await chat.tick();
-  assert.equal(chat.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');await chat.respond({data:page(1,1)});
+  assert.equal(chat.requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=0');await chat.respond({data:page(1,1)});
   assert.equal(chat.elements.get('chat-message').disabled,false);assert.equal(chat.elements.get('transcript').children.length,1);assert.deepEqual(chat.delays(),[]);
 });
 test('TC-010: fixed-session transient network errors are bounded but authorization, timeout and malformed data are not retried',async()=>{
   const chat=await chatHarness();await chat.fail(new TypeError('Failed to fetch'));
-  assert.deepEqual(chat.delays(),[250]);await chat.tick();assert.equal(chat.requests[0].url,'/api/chat/sessions/fixed');await chat.respond({},503);await chat.tick();await chat.respond({},502);
+  assert.deepEqual(chat.delays(),[250]);await chat.tick();assert.equal(chat.requests[0].url,'/api/v1/chat/sessions/fixed');await chat.respond({},503);await chat.tick();await chat.respond({},502);
   assert.equal(chat.elements.get('chat-retry').hidden,false);assert.equal(chat.elements.get('chat-message').disabled,true);assert.deepEqual(chat.delays(),[]);assert.equal(chat.requests.length,0);
   for(const status of [400,401,403]){const denied=await chatHarness();await denied.respond({},status);assert.deepEqual(denied.delays(),[]);assert.equal(denied.elements.get('chat-retry').hidden,false);}
   for(const name of ['TimeoutError','AbortError']){const timeout=await chatHarness();await timeout.fail(Object.assign(new Error('PRIVATE'),{name}));assert.deepEqual(timeout.delays(),[]);assert.equal(timeout.elements.get('chat-retry').hidden,false);}
@@ -53,10 +53,10 @@ test('TC-010: send restores composer focus after settlement without stealing int
 });
 test('TC-010: startup ensures the canonical session before history and Reload recovers',async()=>{
   const existing=await chatHarness();
-  assert.equal(existing.requests[0]?.url,'/api/chat/sessions/fixed');
+  assert.equal(existing.requests[0]?.url,'/api/v1/chat/sessions/fixed');
   assert.deepEqual(JSON.parse(existing.requests[0].options.body),{});
   await existing.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});
-  assert.equal(existing.requests[0]?.url,'/api/chat/sessions/nedcom-main/messages?offset=0');
+  assert.equal(existing.requests[0]?.url,'/api/v1/chat/sessions/nedcom-main/messages?offset=0');
   assert.equal(existing.elements.get('chat-message').disabled,true);
   await existing.respond({data:page(1,1)});
   assert.equal(existing.elements.get('chat-message').disabled,false);
@@ -75,7 +75,7 @@ test('TC-010: startup ensures the canonical session before history and Reload re
   assert.equal(historyFailure.requests.length,0);
   historyFailure.elements.get('chat-retry').dispatch('click');
   await historyFailure.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});
-  assert.equal(historyFailure.requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');
+  assert.equal(historyFailure.requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=0');
   await historyFailure.respond({data:[]});
   assert.equal(historyFailure.elements.get('chat-message').disabled,false);
 });
@@ -102,7 +102,7 @@ test('TC-010: controller sends once, preserves failed draft and reconciles befor
   assert.equal(elements.get('chat-send').disabled,false);assert.equal(elements.get('chat-send').attributes['aria-label'],'Stop response');
   await respond({turn:{id:turnId,status:'pending'}},202);
   await respond({turn:{id:turnId,status:'completed'},message:{content:'Delivered'},session_id:'nedcom-main'});
-  assert.equal(requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');
+  assert.equal(requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=0');
   await exhaustUnavailable(harness);
   assert.equal(elements.get('chat-message').value,'Retain this message');assert.equal(elements.get('chat-send').disabled,true);
   elements.get('chat-form').dispatch('submit');assert.equal(requests.length,0);
@@ -128,10 +128,10 @@ test('TC-010: controller pages partial history without duplicates and honors red
   const {elements,requests,respond}=await selected({reducedMotion:true});
   const transcript=elements.get('transcript');
   for(const [offset,rows] of [[50,page(900)],[100,page(850)],[150,page(800)],[200,page(775,25)]]){
-    elements.get('older').dispatch('click');assert.equal(requests[0].url,`/api/chat/sessions/nedcom-main/messages?offset=${offset}`);await respond({data:rows});await respond({data:page(950)});assert.ok(transcript.children.length<=200);
+    elements.get('older').dispatch('click');assert.equal(requests[0].url,`/api/v1/chat/sessions/nedcom-main/messages?offset=${offset}`);await respond({data:rows});await respond({data:page(950)});assert.ok(transcript.children.length<=200);
   }
   assert.equal(elements.get('older').hidden,true);
-  elements.get('newer').dispatch('click');assert.equal(requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');await respond({data:page(950)});await respond({data:page(950)});
+  elements.get('newer').dispatch('click');assert.equal(requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=0');await respond({data:page(950)});await respond({data:page(950)});
   const contents=transcript.children.map(article=>article.children[1].textContent);
   assert.equal(new Set(contents).size,200);assert.equal(contents[0],'Message 800');assert.equal(contents.at(-1),'Message 999');
   elements.get('latest').dispatch('click');await respond({data:page(950)});
@@ -160,7 +160,7 @@ test('TC-010: shifted history is rejected without changing the reader and Latest
 test('TC-010: a full-page external append is detected by the retained history head',async()=>{
   const {elements,respond,requests}=await selected();const transcript=elements.get('transcript');const previous=transcript.textContent;
   elements.get('older').dispatch('click');await respond({data:page(1000)});
-  assert.equal(requests[0].url,'/api/chat/sessions/nedcom-main/messages?offset=0');
+  assert.equal(requests[0].url,'/api/v1/chat/sessions/nedcom-main/messages?offset=0');
   await respond({data:page(1050)});
   assert.equal(transcript.textContent,previous);assert.equal(transcript.children.length,50);assert.match(elements.get('chat-status').textContent,/History changed/);
   assert.equal(elements.get('older').hidden,true);
@@ -179,7 +179,7 @@ test('TC-010: pending HTTP stream never replays and unknown terminal status pres
   elements.get('chat-message').value='Long-running request';elements.get('chat-form').dispatch('submit');
   const accepted=await respond({turn:{id:turnId,status:'pending'}},202);
   assert.equal(accepted.options.method,'POST');
-  assert.equal(requests[0].url,`/api/chat/sessions/nedcom-main/turns/${turnId}/events`);
+  assert.equal(requests[0].url,`/api/v1/chat/sessions/nedcom-main/turns/${turnId}/events`);
   await respond({turn:{id:turnId,status:'pending'}});
   assert.equal(requests.length,0);assert.equal(elements.get('chat-send').disabled,false);assert.equal(elements.get('chat-send').attributes['aria-label'],'Stop response');
   elements.get('chat-form').dispatch('submit');assert.equal(requests.length,0);

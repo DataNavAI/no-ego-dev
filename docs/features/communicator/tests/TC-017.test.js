@@ -90,14 +90,14 @@ test('TC-017: real COM upload perimeter and multimodal turn reject replay withou
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
   const app=createCommunicatorServer({gateway:{env:{NED_HERMES_URL:`http://127.0.0.1:${gateway.address().port}`,get NED_HERMES_API_KEY(){return key;}}}});await app.listen();t.after(()=>app.close());
-  const upload=(headers={})=>fetch(app.url+'/api/chat/sessions/s1/attachments',{method:'POST',headers:{Origin:app.url,'Content-Type':'text/plain','X-NED-Filename':'report.txt',...headers},body:'Synthetic document'});
+  const upload=(headers={})=>fetch(app.url+'/api/v1/chat/sessions/s1/attachments',{method:'POST',headers:{Origin:app.url,'Content-Type':'text/plain','X-NED-Filename':'report.txt',...headers},body:'Synthetic document'});
   for(const headers of [{Origin:'https://foreign.test'},{Origin:''},{'Content-Type':'image/png'}])assert.ok((await upload(headers)).status>=400);
   assert.equal(calls.length,0);
   const response=await upload();assert.equal(response.status,201);const {attachment}=await response.json();
-  const send=(session,ids)=>fetch(`${app.url}/api/chat/sessions/${session}/chat`,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'',attachments:ids})});
+  const send=(session,ids)=>fetch(`${app.url}/api/v1/chat/sessions/${session}/chat`,{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:JSON.stringify({input:'',attachments:ids})});
   assert.equal((await send('s2',[attachment.id])).status,400);key='rotated';assert.equal((await send('s1',[attachment.id])).status,400);key='synthetic';assert.equal(calls.length,0);
   const accepted=await send('s1',[attachment.id]);assert.equal(accepted.status,202);const {turn}=await accepted.json();
-  let result;do{result=await(await fetch(`${app.url}/api/chat/sessions/s1/turns/${turn.id}`)).json();}while(result.turn.status==='pending');
+  let result;do{result=await(await fetch(`${app.url}/api/v1/chat/sessions/s1/turns/${turn.id}`)).json();}while(result.turn.status==='pending');
   assert.equal(result.turn.status,'completed');assert.equal(calls.length,1);assert.deepEqual(calls[0].body,{input:[{type:'text',text:'Attachment: report.txt\nSynthetic document'}]});
   assert.equal(calls[0].path,'/api/sessions/s1/chat/stream');
   assert.equal((await send('s1',[attachment.id])).status,400);assert.equal(calls.length,1);
@@ -109,7 +109,7 @@ test('TC-017: image-heavy history adaptively preserves fifty ordered stable rows
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
   const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
   for(const offset of [0,50,100]){
-    const response=await fetch(`${app.url}/api/chat/sessions/s1/messages?offset=${offset}`);assert.equal(response.status,200);const text=await response.text();assert.equal(text.includes('data:image'),false);const data=JSON.parse(text).data;
+    const response=await fetch(`${app.url}/api/v1/chat/sessions/s1/messages?offset=${offset}`);assert.equal(response.status,200);const text=await response.text();assert.equal(text.includes('data:image'),false);const data=JSON.parse(text).data;
     assert.deepEqual(data.map(row=>row.id),Array.from({length:offset===100?0:50},(_,index)=>50-offset+index));
     if(data.length)assert.equal(data[0].content,`Message ${50-offset}\n\nImage attachment`);
   }
@@ -141,7 +141,7 @@ test('TC-017: shipped composer blocks uploading, sends attachment-only once and 
   await harness.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});await harness.respond({data:[]});
   element('chat-files').files=[{name:'report.txt',size:5,arrayBuffer:async()=>Buffer.from('Hello')}];element('chat-files').dispatch('change');await harness.flush();
   assert.equal(element('chat-send').disabled,true);element('chat-message').dispatch('keydown',{key:'Enter'});assert.equal(harness.requests.length,1);
-  assert.equal(harness.requests[0].url,'/api/chat/sessions/nedcom-main/attachments');assert.equal(harness.requests[0].options.headers['Content-Type'],'text/plain');
+  assert.equal(harness.requests[0].url,'/api/v1/chat/sessions/nedcom-main/attachments');assert.equal(harness.requests[0].options.headers['Content-Type'],'text/plain');
   await harness.respond({attachment:{id:'receipt',name:'report.txt',size:5}});assert.equal(element('chat-send').disabled,false);assert.match(element('chat-attachments').textContent,/Ready/);
   element('chat-message').dispatch('keydown',{key:'Enter'});await harness.flush();assert.deepEqual(JSON.parse(harness.requests[0].options.body),{input:'',attachments:['receipt']});
   element('chat-form').dispatch('submit');assert.equal(harness.requests.length,1);

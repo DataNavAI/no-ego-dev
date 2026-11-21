@@ -20,24 +20,24 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
   assert.equal(app.url, null); await app.listen();
   assert.equal(app.server.address().address, '127.0.0.1');
   const port = app.server.address().port;
-  for (const [path, type] of [['/','text/html'], ['/styles.css','text/css'], ['/app.js','text/javascript'], ['/state.js','text/javascript'], ['/chat-entry.js','text/javascript'], ['/chat-ui.js','text/javascript'], ['/history.js','text/javascript'], ['/api/health','application/json'], ['/api/capabilities','application/json']]) {
+  for (const [path, type] of [['/','text/html'], ['/styles.css','text/css'], ['/app.js','text/javascript'], ['/state.js','text/javascript'], ['/chat-entry.js','text/javascript'], ['/chat-ui.js','text/javascript'], ['/history.js','text/javascript'], ['/api/v1/health','application/json'], ['/api/v1/capabilities','application/json']]) {
     const get = await request(app.url,path); const head = await request(app.url,path,{method:'HEAD'});
     assert.equal(get.status,200); assert.ok(get.headers['content-type'].startsWith(type));
     assert.equal(head.status,200); assert.equal(head.body,''); assert.equal(head.headers['content-type'],get.headers['content-type']);
     assert.equal(get.headers['cache-control'],'no-store'); assert.equal(get.headers['x-content-type-options'],'nosniff');
     assert.ok(get.headers['content-security-policy'].includes("frame-ancestors 'none'")); assert.equal(get.headers['access-control-allow-origin'],undefined);
   }
-  assert.deepEqual(JSON.parse((await request(app.url,'/api/health')).body),{status:'ok',service:'nedcom'});
-  assert.deepEqual(JSON.parse((await request(app.url,'/api/capabilities')).body),{service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}});
-  for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/health',{headers,method:'POST'})).status,403);
-  assert.equal((await request(app.url,'/api/health',{headers:{Origin:app.url}})).status,200);
+  assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/health')).body),{status:'ok',service:'ned-api',version:1});
+  assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/capabilities')).body),{service:'ned-api',version:1,readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}});
+  for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/v1/health',{headers,method:'POST'})).status,403);
+  assert.equal((await request(app.url,'/api/v1/health',{headers:{Origin:app.url}})).status,200);
   for (const method of ['POST','PUT','PATCH','DELETE','OPTIONS']) { const res = await request(app.url,'/absent',{method}); assert.equal(res.status,405); assert.equal(res.headers.allow,'GET, HEAD'); }
   for (const path of ['/../package.json','/%2e%2e/package.json','/app.js/extra','/%ZZ']) {
     const res = await request(app.url,path); assert.equal(res.status,404); assert.deepEqual(JSON.parse(res.body),{error:{code:'not_found',message:'Not found.'}});
   }
   assert.equal((await request(app.url,'/app.js?file=../package.json')).status,200);
   const occupied = createCommunicatorServer({port}); await assert.rejects(occupied.listen(),/Unable to start NEDCOM/); await occupied.close();
-  await Promise.all([request(app.url,'/'),request(app.url,'/api/health')]);
+  await Promise.all([request(app.url,'/'),request(app.url,'/api/v1/health')]);
   await app.close(); await app.close(); assert.equal(app.url,null);
   await assert.rejects(request(`http://127.0.0.1:${port}`,'/'));
   const restarted = createCommunicatorServer({port}); t.after(() => restarted.close()); await restarted.listen();

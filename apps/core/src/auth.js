@@ -1,23 +1,12 @@
+import {nedApiPath} from './api-paths.js';
 import {constants,lstatSync,mkdirSync,openSync,closeSync,readFileSync,writeFileSync,fstatSync,fsyncSync} from 'node:fs';
 import path from 'node:path';
 import {randomBytes,timingSafeEqual} from 'node:crypto';
 import {resolveRuntimeHome,ensureRuntimeHome} from '../../../src/runtime-home.js';
 
 export function coreNamespace(raw='') {
-  try {
-    const unsafe=value=>[...value].some(character=>character.charCodeAt(0)<=32||character.charCodeAt(0)===127||character==='\\');
-    if(!raw.startsWith('/')||raw.startsWith('//')||unsafe(raw))return {blocked:true,valid:false};
-    let pathname=raw.split('?')[0];
-    for(let count=0;count<5;count++){
-      const decoded=decodeURIComponent(pathname);
-      if(decoded===pathname)break;
-      pathname=decoded;
-      if(count===4)return {blocked:true,valid:false};
-    }
-    if(/[?#]/.test(pathname)||unsafe(pathname))return {blocked:true,valid:false};
-    pathname=new URL(pathname,'http://localhost').pathname.replace(/\/{2,}/g,'/');
-    return {blocked:/^\/api\/core(?:\/|$)/.test(pathname),valid:pathname===raw.split('?')[0],pathname};
-  }catch{return {blocked:true,valid:false};}
+  const route=nedApiPath(raw);
+  return {blocked:route.kind==='operator'||route.kind==='invalid',valid:route.valid,pathname:route.pathname};
 }
 
 export function loadOperatorCredential({home,env=process.env}={}) {

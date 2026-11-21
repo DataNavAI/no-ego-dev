@@ -6,7 +6,7 @@ import {browserChat,expect} from './browser-chat-fixture.js';
 
 test('TC-037: new chat boots the served application, creates once, streams before completion and reopens persisted messages',{timeout:45000},async t=>{
   const chat=await browserChat(t,{edgeFixedFailures:1});await chat.ready();
-  assert.equal(chat.network.filter(path=>path==='/api/chat/sessions/fixed').length,2);
+  assert.equal(chat.network.filter(path=>path==='/api/v1/chat/sessions/fixed').length,2);
   await expect(chat.page.locator('#transcript article')).toHaveCount(0);
   assert.equal(chat.requests.filter(row=>row.method==='POST'&&row.url==='/api/sessions').length,1);
   await chat.send('First message from a new chat');

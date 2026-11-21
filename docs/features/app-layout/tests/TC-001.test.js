@@ -75,6 +75,6 @@ test('TC-001: app-owned entrypoints and packaged assets work outside the checkou
   const packed=await execute(process.platform==='win32'?'npm.cmd':'npm',['pack','--dry-run','--json','--ignore-scripts'],{cwd:root,env,timeout:30000,maxBuffer:8*1024*1024});
   const files=new Set(JSON.parse(packed.stdout)[0].files.map(file=>file.path));
   assert.equal([...files].some(file=>/^apps\/ned-/.test(file)),false,'packed apps must use the short directory names');
-  for(const file of ['apps/core/src/index.js','apps/cli/src/cli.js','apps/com/src/server.js','apps/com/src/attachment-worker.js','apps/com/src/public/app.js','apps/com/src/public/vendor/webawesome.js','src/communicator/server.js'])assert.ok(files.has(file),file);
+  for(const file of ['apps/core/src/index.js','apps/core/src/api.js','apps/core/src/attachment-worker.js','apps/cli/src/cli.js','apps/com/src/server.js','apps/com/src/attachment-worker.js','apps/com/src/public/app.js','apps/com/src/public/vendor/webawesome.js','src/communicator/server.js','docs/api.md','docs/architecture.md'])assert.ok(files.has(file),file);
   assert.equal([...files].some(file=>/\.(sqlite|db)(-|$)|\/tests\//.test(file)),false);
 });

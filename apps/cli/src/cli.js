@@ -42,7 +42,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '  ned task <list|get|start|block|unblock|done|history|children> [id] [--json]',
       '  ned <task|goal> delivery <id> [--file <delivery.json>] [--json]',
       '  ned task attempts <id> [--cursor <token>] [--json]',
-      '  Task commands: [--api <loopback-Core-URL>] [--request-id <stable-key>]',
+      '  Task commands: [--api <loopback-NED-API-URL>] [--request-id <stable-key>]',
       '  ned <ready|status|tree> [--json]',
       '  ned telemetry status',
       '  ned telemetry enable --yes  # centralized NED metrics (custom collector flags are optional)',

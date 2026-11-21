@@ -8,7 +8,7 @@ home = Path(os.environ["HERMES_HOME"]).resolve()
 project = home / "workspace"
 actor = "agent:workflow-eval"
 env = {**os.environ, "NED_AGENT_HOME": str(home)}
-for name in ("NED_DATABASE_URL", "NED_CORE_URL", "NODE_OPTIONS"):
+for name in ("NED_DATABASE_URL", "NED_API_URL", "NED_CORE_URL", "NODE_OPTIONS"):
     env.pop(name, None)
 evidence = []
 

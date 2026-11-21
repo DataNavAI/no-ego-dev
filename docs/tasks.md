@@ -4,13 +4,13 @@ Behavioral contract and required test coverage: [feature spec](features/task-man
 
 NED stores project work in its shared database. No Beads installation, external task service, model authorization, cloud account, or Hermes restart is required.
 
-All CLI task operations use Core's authenticated HTTP API. Without configuration,
+All CLI task operations use NED API v1's authenticated operator family. Without configuration,
 the CLI starts and closes a temporary local backend (no coordinator/model dispatch).
 For an existing same-profile Core/COM use `--api http://127.0.0.1:18791` or
-`NED_CORE_URL`; never use the public Hub/tunnel URL. Runtime/database identities
+`NED_API_URL` (legacy `NED_CORE_URL` remains supported); never use the public Hub/tunnel URL. Runtime/database identities
 must match. Explicit connection failures do not fall back to another store.
 Operator credentials remain private files, never CLI arguments. See the
-[API contract](features/core-orchestration/API.md) and
+[API contract](api.md) and
 [agent skill](../skills/task-management/SKILL.md).
 
 ## Shared database configuration
@@ -90,7 +90,7 @@ Delivery files completely replace impact, remainingSeconds, estimatedFinish and
 outputs; omitted fields clear. Read first and intentionally preserve wanted
 outputs, omitting read-only updatedAt. Unknown estimates are null. Use actual
 short documents or PNG/JPEG data URIs, not local paths or remote URLs. Bounds and
-examples are in the [Core delivery contract](features/core-orchestration/API.md#delivery-metadata-for-goals--tasks).
+examples are in the [Core delivery contract](api.md#delivery-metadata-for-goals--tasks).
 Commands never dispatch work. Attempts return20 newest summaries per task plus
 an opaque continuation; keep it unchanged and scoped to the same task/project.
 Managed attempts still require verification before task completion.

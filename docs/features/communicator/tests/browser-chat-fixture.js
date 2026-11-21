@@ -62,7 +62,7 @@ export async function browserChat(t,{existing=false,rows=[],historyFailure=false
   const errors=[],network=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',request=>network.push(new URL(request.url()).pathname));
-  if(edgeFixedFailures)await page.route('**/api/chat/sessions/fixed',route=>{
+  if(edgeFixedFailures)await page.route('**/api/v1/chat/sessions/fixed',route=>{
     if(edgeFixedFailures>0){edgeFixedFailures--;return route.fulfill({status:502,contentType:'text/plain',body:'Synthetic edge failure'});}
     return route.continue();
   });

@@ -24,7 +24,7 @@ export async function runCoreCli(flags,io=console,dependencies={}){
     const env=dependencies.env||process.env,home=dependencies.home;
     const databasePath=resolveDatabasePath({databaseUrl:options.databaseUrl,home,env});
     app=await(dependencies.createServer||createCoreServer)({port:options.port,databasePath,home,env});
-    io.log(`NED Core: ${await app.listen()} (private operator bearer required; automatic dispatch disabled)`);
+    io.log(`NED Core: ${await app.listen()} (NED API v1; private operator bearer required; automatic dispatch disabled)`);
     await stopped;return 0;
   }catch{io.error('NED Core could not start or stop. Check local configuration and private storage.');return 1;}
   finally{signals.off('SIGINT',stop);signals.off('SIGTERM',stop);await app?.close();}

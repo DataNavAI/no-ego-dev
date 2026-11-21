@@ -1,6 +1,6 @@
 # NED Core orchestration design
 
-Designed against NED `802db16415c5cc12de98a5b9138a50a9590b202a`; behavioral authority [SPEC.md](SPEC.md), consumer contract [API.md](API.md). Source now follows the user-requested [app project roots](../app-layout/SPEC.md); compatibility imports remain under `src/`.
+Designed against NED `802db16415c5cc12de98a5b9138a50a9590b202a`; behavioral authority [SPEC.md](SPEC.md), consumer contract [API.md](../../api.md). Source now follows the user-requested [app project roots](../app-layout/SPEC.md); compatibility imports remain under `src/`.
 
 ## Grounding
 
@@ -12,7 +12,7 @@ R2 safety refinement: that upstream same-key convergence is finite-retention beh
 
 ## Components
 
-`apps/core/src/` owns the headless facade/store/coordinator/Hermes adapter/HTTP handler. `apps/com/src/` owns COM and its assets; `apps/cli/src/` owns command dispatch. `ned core serve` runs loopback HTTP; COM lazily mounts the same authenticated handler under `/api/core/v1` and consumes the shared Core work reader. Existing project/filesystem readers are reused, not forked. Existing task service's shared database connection seam makes task claim+attempt/event/outbox one transaction. Old COM response shapes and source import wrappers remain compatible. Shared task/runtime/security code stays in root `src/`; shared gateway settings and ProjectError no longer require Core to depend on COM.
+`apps/core/src/` owns the headless facade/store/coordinator/Hermes adapter/HTTP handler. `apps/com/src/` owns COM and its assets; `apps/cli/src/` owns command dispatch. `ned core serve` runs loopback HTTP; COM lazily mounts the same authenticated handler under `/api/v1/operator` and consumes the shared Core work reader. Existing project/filesystem readers are reused, not forked. Existing task service's shared database connection seam makes task claim+attempt/event/outbox one transaction. Old COM response shapes and source import wrappers remain compatible. Shared task/runtime/security code stays in root `src/`; shared gateway settings and ProjectError no longer require Core to depend on COM.
 
 Core owns independent accepted-run observers, not reconcile request/browser. Tick deterministic and bounded, no LLM coordinator conversation. No background dispatch scheduling starts by default. Trusted startup configuration selects one Hermes settings/profile through existing `resolveGatewaySettings`; requests cannot override it. Store opaque origin+credential/profile fingerprint; key rotation/identity mismatch blocks continuation for operator review, never cross-profile bind. Never expose raw keys/URLs.
 
@@ -106,7 +106,7 @@ At high watermark retain all evidence; no automatic deletion/compaction. API cap
 
 ## Versioned HTTP contract
 
-Prefix `/api/core/v1`; success `{data:...}`, error `{error:{code,message}}`.401 auth,403 transport,400 invalid,404 absent/foreign,409 state/key/lease conflict,413 oversized,503 dependency. Bounded sanitized errors; no raw upstream text. All mutation methods require JSON+Idempotency-Key. Pages `{data:[],nextCursor:null|string}`; opaque version/project/filter-bound cursor validated, limit1–100 default50. Raw IDs retained separately from display labels.
+Prefix `/api/v1/operator`; success `{data:...}`, error `{error:{code,message}}`.401 auth,403 transport,400 invalid,404 absent/foreign,409 state/key/lease conflict,413 oversized,503 dependency. Bounded sanitized errors; no raw upstream text. All mutation methods require JSON+Idempotency-Key. Pages `{data:[],nextCursor:null|string}`; opaque version/project/filter-bound cursor validated, limit1–100 default50. Raw IDs retained separately from display labels.
 
 | Method/path | Request → response → retained state/next action |
 | --- | --- |
@@ -138,7 +138,7 @@ Trusted Node example (operatorToken loaded privately, never printed):
 
 ```js
 const headers = {Authorization: `Bearer ${operatorToken}`, 'Content-Type':'application/json', 'Idempotency-Key':'attempt-example-1'};
-const response = await fetch(`${core}/api/core/v1/projects/${projectId}/tasks/${taskId}/attempts`, {method:'POST',headers,body:JSON.stringify({instructions:'Run approved synthetic acceptance.',role:'worker'})});
+const response = await fetch(`${core}/api/v1/operator/projects/${projectId}/tasks/${taskId}/attempts`, {method:'POST',headers,body:JSON.stringify({instructions:'Run approved synthetic acceptance.',role:'worker'})});
 const attemptId = (await response.json()).data.id;
 ```
 

@@ -32,7 +32,7 @@ test('TC-029: project-scoped latest event snapshots are bounded, validated and r
 test('TC-029: one HTTP SSE response delivers initial and changed project status',async t=>{
   const f=await fixture(t);event(f,'project-0','t','task','working','Task A',1);
   const controller=new AbortController();t.after(()=>controller.abort());
-  const response=await fetch(f.app.url+'/api/activity/events?project=project-0',{signal:controller.signal});
+  const response=await fetch(f.app.url+'/api/v1/activity/events?project=project-0',{signal:controller.signal});
   assert.match(response.headers.get('content-type'),/text\/event-stream/);
   const reader=response.body.getReader();const decoder=new TextDecoder();
   const initial=decoder.decode((await reader.read()).value);assert.match(initial,/working/);assert.doesNotMatch(initial,/PRIVATE/);
@@ -40,7 +40,7 @@ test('TC-029: one HTTP SSE response delivers initial and changed project status'
   let changed='';
   while(!changed.includes('done'))changed+=decoder.decode((await reader.read()).value);
   assert.match(changed,/done/);controller.abort();
-  assert.equal((await f.get('/api/activity/events?project=')).status,400);
+  assert.equal((await f.get('/api/v1/activity/events?project=')).status,400);
 });
 test('TC-029: tool/unknown/malformed structured payloads never produce visible projection',()=>{
   for(const content of ['private',[],{secret:'private'},'x'.repeat(70000)])assert.deepEqual(messageParts({role:'tool',content}),[]);

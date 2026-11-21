@@ -7,15 +7,15 @@ const work={projectId:'alpha',items:[item('Launch','goal','planned'),item('Desig
 test('TC-041: dashboard preserves workspace state, refreshes progress and isolates delayed project data',async t=>{
   const f=await browserChat(t);await f.ready();const {page}=f;
   let snapshot=structuredClone(work),fail=false,hold=false,release;
-  await page.route('**/api/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
-  await page.route('**/api/projects/*',route=>route.fulfill({json:{preview:{status:'available',url:'http://localhost:9999'}}}));
-  await page.route('**/api/projects/*/work',async route=>{
-    const id=new URL(route.request().url()).pathname.split('/')[3];const captured=structuredClone(snapshot);
+  await page.route('**/api/v1/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
+  await page.route('**/api/v1/projects/*',route=>route.fulfill({json:{preview:{status:'available',url:'http://localhost:9999'}}}));
+  await page.route('**/api/v1/projects/*/work',async route=>{
+    const id=new URL(route.request().url()).pathname.split('/').at(-2);const captured=structuredClone(snapshot);
     if(hold&&id==='alpha'){hold=false;await new Promise(resolve=>{release=resolve;});}
     await route.fulfill({status:fail?503:200,json:fail?{}:id==='alpha'?captured:{projectId:'beta',items:[]}});
   });
-  await page.route('**/api/projects/*/activity',route=>route.fulfill({json:{projectId:'alpha',goal:null,task:null}}));
-  await page.route('**/api/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'data: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
+  await page.route('**/api/v1/projects/*/activity',route=>route.fulfill({json:{projectId:'alpha',goal:null,task:null}}));
+  await page.route('**/api/v1/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'data: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
   await page.reload();await f.ready();await expect(page.locator('#project option[value=alpha]')).toHaveCount(1);
   const select=async id=>page.locator('#project').evaluate((node,id)=>{node.value=id;node.dispatchEvent(new Event('change'));},id);
   const refresh=()=>page.locator('#project').evaluate(node=>node.dispatchEvent(new Event('ned-work-refresh')));

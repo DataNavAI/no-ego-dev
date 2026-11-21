@@ -35,7 +35,7 @@ test('TC-030: HTTP gateway failure records phase and response status without ups
   const events=[];
   const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${provider.address().port}`,key:'SECRET synthetic key'},logger:{event:(event,details)=>events.push({event,...details})}});
   await app.listen();t.after(()=>app.close());
-  const response=await fetch(app.url+'/api/chat/sessions/fixed',{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:'{}'});
+  const response=await fetch(app.url+'/api/v1/chat/sessions/fixed',{method:'POST',headers:{Origin:app.url,'Content-Type':'application/json'},body:'{}'});
   assert.equal(response.status,503);await response.body.cancel();
   assert.equal(events.find(row=>row.event==='chat_failure')?.phase,'fixed_session');
   const complete=events.find(row=>row.event==='chat_request');assert.equal(complete?.status,503);assert.equal(complete?.phase,'fixed_session');assert.ok(Number.isInteger(complete?.durationMs));

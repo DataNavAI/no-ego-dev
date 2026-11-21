@@ -19,8 +19,9 @@ separate repositories or a rewrite of shared runtime/domain services.
   generated-asset paths and documentation use the short directory names; public
   `ned` commands, `@ned/*` package identities, service/actor names and legacy
   compatibility entrypoints remain unchanged. No runtime data is migrated.
-- FR-002: Core owns its coordination API/runtime modules, COM owns its server and
-  browser assets, CLI owns command dispatch. Existing shared runtime/domain modules
+- FR-002: Core owns NED API v1 and its coordination/chat/project/secret backend
+  services; COM owns the static web host, browser assets and transport adapters;
+  CLI owns command dispatch. Existing shared runtime/domain modules
   remain shared; app copies cannot introduce parallel authoritative task stores.
 - FR-003: Existing `ned` commands and compatibility server/CLI imports retain
   behavior. Root install/lockfile, lint, tests, UI generation, distributable package

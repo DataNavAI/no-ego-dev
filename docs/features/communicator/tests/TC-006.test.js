@@ -65,7 +65,7 @@ test('TC-006: bounded nonsymlink configuration and HEAD-only reachability',async
   preview.on('connection',socket=>{sockets.add(socket);socket.on('close',()=>sockets.delete(socket));});
   await new Promise(resolve=>preview.listen(0,'127.0.0.1',resolve));t.after(()=>{for(const socket of sockets)socket.destroy();preview.close();});
   const url=`http://127.0.0.1:${preview.address().port}/app`;const config=path.join(f.roots[0],'.nedcom.json');
-  const read=async()=> (await f.get('/api/projects/project-0')).body.preview;
+  const read=async()=> (await f.get('/api/v1/projects/project-0')).body.preview;
   writeFileSync(config,JSON.stringify({version:1,previewUrl:url}));assert.deepEqual(await read(),{status:'available',url});
   assert.equal(requests[0].method,'HEAD');assert.equal(requests[0].headers.cookie,undefined);assert.equal(requests[0].headers.authorization,undefined);
   for(const status of [302,500,0]){code=status;const start=Date.now();assert.deepEqual(await read(),{status:'stopped'});assert.ok(Date.now()-start<1600);}

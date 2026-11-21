@@ -1,8 +1,10 @@
 # NED COM
 
 `src/server.js` owns the web transport, `src/cli.js` starts COM, and `src/public/`
-owns browser modules and static assets. Task coordination and authoritative work
-reads belong to Core. Shared security/runtime services remain at root `src/`.
+owns browser modules and static assets. All NED API v1 routing and backend services
+belong to Core; COM mounts that same handler. Prior backend module imports remain
+compatibility exports, not another API. Shared security/runtime services remain at
+root `src/`. See [NED API v1](../../docs/api.md).
 
 From the repository root, run `npm ci`, `node bin/ned.js com --help`, and
 `node bin/ned.js com`. Verify with `npm run test:spec -- --feature communicator`.

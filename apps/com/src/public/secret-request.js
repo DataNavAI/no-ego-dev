@@ -1,12 +1,4 @@
-export function secretRequestRow(row){
-  if(row?.role!=='tool'||(row.tool_name??row.name)!=='ned')return null;
-  try{
-    let value=row.content;if(typeof value==='string'){if(value.length>2048)return null;value=JSON.parse(value);}
-    const keys=['success','action','request_id','key','expires_at'];
-    if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).length!==keys.length||!keys.every(key=>Object.hasOwn(value,key))||value.success!==true||value.action!=='request_secret'||typeof value.request_id!=='string'||!/^[a-f0-9]{64}$/.test(value.request_id)||typeof value.key!=='string'||!/^[A-Z][A-Z0-9_]{0,127}$/.test(value.key)||typeof value.expires_at!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value.expires_at)||!Number.isFinite(Date.parse(value.expires_at)))return null;
-    return Object.fromEntries(keys.map(key=>[key,value[key]]));
-  }catch{return null;}
-}
+export {secretRequestRow} from './secret-events.js';
 export function renderSecretRequest(request,document){
   const card=document.createElement('section');card.className='secret-share-card secret-request-card';card.setAttribute('aria-label','Requested secret');
   const title=document.createElement('strong');title.textContent='Secret requested';
@@ -33,7 +25,7 @@ export function renderSecretRequest(request,document){
   for(const node of [document.getElementById('chat'),document.getElementById('left-pane')])if(node)observer.observe(node,{attributes:true,attributeFilter:['hidden']});
   const transcript=document.getElementById('transcript');if(transcript)observer.observe(transcript,{childList:true,subtree:true});
   const call=async(action,value)=>{
-    const response=await fetch(`/api/secrets/requests/${request.request_id}/${action}`,{method:'POST',headers:{'X-NED-Secrets':'1',...(action==='submit'?{'Content-Type':'application/json'}:{})},...(action==='submit'?{body:JSON.stringify({value})}:{}),signal:AbortSignal.timeout(15000)});
+    const response=await fetch(`/api/v1/secrets/requests/${request.request_id}/${action}`,{method:'POST',headers:{'X-NED-Secrets':'1',...(action==='submit'?{'Content-Type':'application/json'}:{})},...(action==='submit'?{body:JSON.stringify({value})}:{}),signal:AbortSignal.timeout(15000)});
     if(!response.ok)throw new Error('Unavailable');const result=await response.json();
     if(result.key!==request.key||typeof result.saved!=='boolean')throw new Error('Unavailable');return result;
   };

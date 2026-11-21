@@ -43,7 +43,7 @@ async function app(t,settings){
   const instance=createCommunicatorServer({gateway:settings});await instance.listen();t.after(()=>instance.close());return instance;
 }
 
-const ensure=instance=>fetch(`${instance.url}/api/chat/sessions/fixed`,{method:'POST',headers:{Origin:instance.url,'Content-Type':'application/json'},body:'{}'});
+const ensure=instance=>fetch(`${instance.url}/api/v1/chat/sessions/fixed`,{method:'POST',headers:{Origin:instance.url,'Content-Type':'application/json'},body:'{}'});
 
 test('TC-014: fixed session is reused across refresh and COM restart without adopting unrelated recency',async t=>{
   const gateway=await fixture(t,{initial:[{id:'recent-unrelated',title:'Other',source:'cli'},canonical]});
@@ -102,6 +102,6 @@ test('TC-014: fixed ensure accepts only same-origin empty JSON objects',async t=
     {headers:{Origin:instance.url,'Content-Type':'text/plain'},body:'{}'},
     {headers:{Origin:instance.url,'Content-Type':'application/json'},body:'[]'},
     {headers:{Origin:instance.url,'Content-Type':'application/json'},body:'{"extra":true}'},
-  ])assert.ok([400,403].includes((await fetch(`${instance.url}/api/chat/sessions/fixed`,{method:'POST',...request})).status));
+  ])assert.ok([400,403].includes((await fetch(`${instance.url}/api/v1/chat/sessions/fixed`,{method:'POST',...request})).status));
   assert.equal(gateway.calls.length,0);
 });

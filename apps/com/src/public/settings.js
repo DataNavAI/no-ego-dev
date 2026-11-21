@@ -6,7 +6,7 @@ export function mountSettings({document,fetch:request=globalThis.fetch,setTimeou
   function hideValues(){for(const timer of timers)cancel(timer);timers.clear();for(const input of list.querySelectorAll('textarea')){input.value='';input.hidden=true;}for(const button of list.querySelectorAll('[data-reveal]')){button.textContent='Show';button.setAttribute('aria-expanded','false');}}
   function controls(){for(const control of panel.querySelectorAll('button,input'))control.disabled=busy;}
   async function api(path='',method='GET',body){
-    const response=await request('/api/secrets'+path,{method,headers:{'X-NED-Secrets':'1',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+    const response=await request('/api/v1/secrets'+path,{method,headers:{'X-NED-Secrets':'1',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
     if(!response.ok)throw new Error('Secrets unavailable');return response.json();
   }
   async function run(operation,apply,message='Secrets are unavailable. Retry.'){

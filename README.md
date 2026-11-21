@@ -16,4 +16,4 @@ remain in `src/`; compatibility entrypoints delegate to the app-owned source.
 
 Run `npm ci` at the repository root, then `node bin/ned.js --help`.
 See the [layout contract](docs/features/app-layout/SPEC.md) and
-[Core API specification](docs/features/core-orchestration/API.md).
+[NED API v1 specification](docs/api.md) and [architecture](docs/architecture.md).

@@ -126,7 +126,7 @@ export function mountChat(libraries) {
     for(let attempt=0;;attempt++){
     const started=Date.now();let response,failureKind;
     try{
-    response = await fetch('/api/chat/sessions'+path,{...(body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {}),signal:AbortSignal.timeout(20000)});
+    response = await fetch('/api/v1/chat/sessions'+path,{...(body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {}),signal:AbortSignal.timeout(20000)});
     if (!response.ok) {
       const body=await readFailureBody(response);failureKind=classifyFailureBody(body);
       let failure;try{failure=JSON.parse(body);}catch{failure=null;}
@@ -157,7 +157,7 @@ export function mountChat(libraries) {
     if(activeTurn.stopRequested)void requestStop(activeTurn);
     liveText='';liveArticle=undefined;liveContent=undefined;
     recordChatDiagnostic('streaming');
-    const response=await fetch(`/api/chat/sessions${path}/turns/${accepted.turn.id}/events`,{headers:{Accept:'text/event-stream'},signal:AbortSignal.timeout(610000)});
+    const response=await fetch(`/api/v1/chat/sessions${path}/turns/${accepted.turn.id}/events`,{headers:{Accept:'text/event-stream'},signal:AbortSignal.timeout(610000)});
     const result=await consumeTurnStream(response,accepted.turn.id,sessionId,text=>{liveText=text;showStream(liveText);showActivity('writing');},showActivity);
     lastStopped=result.turn.status==='stopped';
     recordChatDiagnostic('completed');

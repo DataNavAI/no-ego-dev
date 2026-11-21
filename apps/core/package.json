@@ -4,5 +4,5 @@
   "private": true,
   "type": "module",
   "main": "./src/index.js",
-  "description": "NED coordination, execution and operator API backend."
+  "description": "NED API v1 backend, coordination and browser-facing services."
 }

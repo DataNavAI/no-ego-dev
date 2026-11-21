@@ -45,7 +45,7 @@ export function mountComposerMedia({document,draft,getSession,changed,request=fe
       if(files.length>=4||files.reduce((sum,row)=>sum+row.size,0)+file.size>16777216){message('Choose up to four files, at most 16 MB together.');continue;}
       const row={name:file.name,size:file.size,image:mimeTypes[extension].startsWith('image/')};files.push(row);render();changed();
       try{
-        const response=await request(`/api/chat/sessions/${encodeURIComponent(getSession())}/attachments`,{method:'POST',headers:{'Content-Type':mimeTypes[extension],'X-NED-Filename':encodeURIComponent(file.name)},body:await file.arrayBuffer(),signal:AbortSignal.timeout(20000)});
+        const response=await request(`/api/v1/chat/sessions/${encodeURIComponent(getSession())}/attachments`,{method:'POST',headers:{'Content-Type':mimeTypes[extension],'X-NED-Filename':encodeURIComponent(file.name)},body:await file.arrayBuffer(),signal:AbortSignal.timeout(20000)});
         const data=await response.json();
         if(!response.ok)throw new Error(data.error?.message ?? 'Attachment could not be uploaded. Try again.');
         if(typeof data.attachment?.id!=='string')throw new Error('Attachment could not be uploaded. Try again.');

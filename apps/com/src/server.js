@@ -1,17 +1,8 @@
-import {readProjectWork} from './work.js';
-import {readTaskDelivery} from './task-delivery.js';
-import {createCoreService} from '../../core/src/index.js';
-import {createCoreHandler} from '../../core/src/http.js';
-import {authorized,coreNamespace,loadOperatorCredential} from '../../core/src/auth.js';
+import {createNedApiHandler} from '../../core/src/api.js';
 import {resolveDatabasePath,openNedDatabase} from '../../../src/database.js';
 import {existsSync} from 'node:fs';
-import {createSecretsHandler} from './secrets.js';
 import http from 'node:http';
-import {createActivityStreams} from './activity.js';
-import {createChatGateway} from './chat.js';
-import {createProjectReader,ProjectError} from './projects.js';
 import {readFile} from 'node:fs/promises';
-import {requestDiagnostic,requestPhase} from './public/request-diagnostic.js';
 const assets = new Map([['/',['index.html','text/html']],['/styles.css',['styles.css','text/css']],['/app.js',['app.js','text/javascript']],['/state.js',['state.js','text/javascript']],['/chat-ui.js',['chat-ui.js','text/javascript']]]);
 assets.set('/chat-entry.js',['chat-entry.js','text/javascript']);
 assets.set('/history.js',['history.js','text/javascript']);
@@ -40,90 +31,40 @@ const vendorAssets=new Map([
   ['/vendor/marked.js',import.meta.resolve('marked')],
   ['/vendor/dompurify.js',new URL('./purify.es.mjs',import.meta.resolve('dompurify')).href],
 ]);
-const capabilities = {service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
-export function createCommunicatorServer({host = '127.0.0.1', port = 0, databasePath, home, env=process.env, gateway,logger,secretsEnabled=true,initializeDatabase=false} = {}) {
-  if (host !== '127.0.0.1' || !Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid NEDCOM address.');
+
+const protocolAssets=new Map([['/history.js','history.js'],['/request-diagnostic.js','request-diagnostic.js'],['/secret-events.js','secret-events.js']]);
+export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,home,env=process.env,gateway,logger,secretsEnabled=true,initializeDatabase=false}={}){
+  if(host!=='127.0.0.1'||!Number.isInteger(port)||port<0||port>65535)throw new Error('Invalid NEDCOM address.');
   databasePath??=resolveDatabasePath({home,env});
-  let url = null;
-  let core,coreHandler,corePending;
-  const ensureCore=()=>corePending??=(async()=>{
-    const credential=loadOperatorCredential({home,env});
-    core=await createCoreService({databasePath,home,env});
-    coreHandler=createCoreHandler({service:core,credential,boundOrigin:()=>url});
-    return coreHandler;
-  })();
-  const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
-  const projects=createProjectReader({databasePath,home,env});
-  const chat=createChatGateway({env,...gateway,databasePath,logger});
-  const activity=createActivityStreams(databasePath);
-  const server = http.createServer(async (req,res) => {
-    const phase=requestPhase(req.url),started=Date.now();
-    if(phase){let recorded=false;const record=()=>{if(recorded)return;recorded=true;logger?.event('chat_request',requestDiagnostic(phase,{status:res.headersSent?res.statusCode:0,durationMs:Date.now()-started}));};res.once('finish',record);res.once('close',record);}
-    const send = (status,type,body,extra = {}) => { res.writeHead(status,{'content-type':`${type}; charset=utf-8`,'cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':policy,...extra}); res.end(req.method === 'HEAD' ? undefined : body); };
-    const error = (status,code,message,extra) => send(status,'application/json',JSON.stringify({error:{code,message}}),extra);
-    if (req.headers.host !== `127.0.0.1:${server.address()?.port}` || (req.headers.origin !== undefined && req.headers.origin !== url)) return error(403,'forbidden','Access forbidden.');
-    const corePath=coreNamespace(req.url);
-    if(corePath.blocked&&!corePath.valid)return error(404,'not_found','Not found.');
-    if(corePath.blocked){
-      try{
-        if(!authorized(req.headers.authorization,loadOperatorCredential({home,env})))return error(401,'unauthorized','Operator authorization required.');
-        return await(await ensureCore())(req,res);
-      }catch{return error(503,'core_unavailable','Core service unavailable.');}
-    }
-    if (req.url.startsWith('/api/chat/')) return chat(req,res,(status,data) => send(status,'application/json',JSON.stringify(data)));
-    if (req.url === '/api/secrets' || req.url.startsWith('/api/secrets/') || req.url.startsWith('/api/secrets?')) return secrets(req,res,(status,data)=>send(status,'application/json',JSON.stringify(data)),url);
-    if (!['GET','HEAD'].includes(req.method)) return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});
-    const path = req.url.split('?')[0];
-    if(path==='/api/workspace/events'&&req.method==='GET')return activity.handle(req,res,null);
-    if(path==='/api/activity/events'&&req.method==='GET'){
-      const id=new URL(req.url,url).searchParams.get('project');
-      if(!id||!/^[A-Za-z0-9_-]{1,256}$/.test(id))return error(400,'invalid_project','Project is unavailable.');
-      return activity.handle(req,res,id);
-    }
-    if (path === '/api/health') return send(200,'application/json',JSON.stringify({status:'ok',service:'nedcom'}));
-    if (path === '/api/capabilities') return send(200,'application/json',JSON.stringify(capabilities));
-    if(path === '/api/projects' || path.startsWith('/api/projects/')) {
-      const controller=new AbortController();const abort=()=>controller.abort();res.once('close',abort);
-      try {
-        const outputRoute=/^\/api\/projects\/([A-Za-z0-9_-]{1,256})\/tasks\/([A-Za-z0-9_-]{1,256})\/outputs\/([A-Za-z0-9_-]{1,64})$/.exec(path);
-        if(outputRoute){
-          const data=await readTaskDelivery({databasePath,home,env,gateway,projectId:outputRoute[1],taskId:outputRoute[2],signal:controller.signal});
-          const output=data.outputs.find(row=>row.id===outputRoute[3]);if(!output)return error(404,'output_unavailable','Output unavailable.');
-          return output.kind==='image'?send(200,'image/png',Buffer.from(output.image,'base64')):send(200,'text/plain',output.text);
-        }
-        const taskRoute=/^\/api\/projects\/([A-Za-z0-9_-]{1,256})\/tasks\/([A-Za-z0-9_-]{1,256})(?:\/attempts\/([A-Za-z0-9_-]{1,256})(?:\/sessions\/([A-Za-z0-9_-]{1,200})\/messages)?)?$/.exec(path);
-        if(taskRoute){
-          const query=new URL(req.url,url).searchParams;
-          if([...query.keys()].some(key=>key!=='offset')||query.getAll('offset').length>1||query.has('offset')&&!/^(0|[1-9]\d{0,5})$/.test(query.get('offset')))return error(400,'invalid_page','Invalid page.');
-          const result=await readTaskDelivery({databasePath,home,env,gateway,projectId:taskRoute[1],taskId:taskRoute[2],attemptId:taskRoute[3],sessionId:taskRoute[4],offset:Number(query.get('offset')||0),signal:controller.signal});
-          if(result.outputs)result.outputs=result.outputs.map(output=>({id:output.id,kind:output.kind,title:output.title,...(output.kind==='document'?{text:output.text}:{})}));
-          return send(200,'application/json',JSON.stringify(result));
-        }
-        const match=/^\/api\/projects\/([^/]+)\/work$/.exec(path);
-        const result=match?readProjectWork(databasePath,decodeURIComponent(match[1])):path === '/api/projects' ? projects.list() : await projects.detail(decodeURIComponent(path.slice('/api/projects/'.length)),controller.signal);
-        return send(200,'application/json',JSON.stringify(result));
-      } catch(failure) {
-        if(failure instanceof ProjectError)return error(failure.status,failure.code,failure.message);
-        if(failure instanceof URIError)return error(404,'project_unavailable','Project is unavailable.');
-        return error(500,'internal_error','Unable to read project data.');
-      } finally {res.off('close',abort);}
-    }
-    if(vendorAssets.has(path)){
-      try{return send(200,'text/javascript',await readFile(new URL(vendorAssets.get(path))));}
+  let url=null;
+  const api=createNedApiHandler({databasePath,home,env,chatGateway:gateway,logger,secretsEnabled,boundOrigin:()=>url,legacyInvalidStatus:404});
+  const server=http.createServer(async(req,res)=>{
+    const send=(status,type,body,extra={})=>{res.writeHead(status,{'content-type':type+'; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':policy,...extra});res.end(req.method==='HEAD'?undefined:body);};
+    const error=(status,code,message,extra)=>send(status,'application/json',JSON.stringify({error:{code,message}}),extra);
+    if(req.headers.host!==`127.0.0.1:${server.address()?.port}`||(req.headers.origin!==undefined&&req.headers.origin!==url))return error(403,'forbidden','Access forbidden.');
+    if(await api(req,res))return;
+    if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});
+    const pathname=req.url.split('?')[0];
+    if(protocolAssets.has(pathname)){
+      try{return send(200,'text/javascript',await readFile(new URL('../../core/src/protocol/'+protocolAssets.get(pathname),import.meta.url)));}
       catch{return error(500,'internal_error','Unable to read NEDCOM resources.');}
     }
-    const asset = assets.get(path);
-    if (!asset) return error(404,'not_found','Not found.');
-    try { send(200,asset[1],await readFile(new URL(`./public/${asset[0]}`,import.meta.url))); }
-    catch { error(500,'internal_error','Unable to read NEDCOM resources.'); }
+    if(vendorAssets.has(pathname)){
+      try{return send(200,'text/javascript',await readFile(new URL(vendorAssets.get(pathname))));}
+      catch{return error(500,'internal_error','Unable to read NEDCOM resources.');}
+    }
+    const asset=assets.get(pathname);
+    if(!asset)return error(404,'not_found','Not found.');
+    try{send(200,asset[1],await readFile(new URL('./public/'+asset[0],import.meta.url)));}
+    catch{error(500,'internal_error','Unable to read NEDCOM resources.');}
   });
-  return {server, get url() { return url; }, async listen() {
+  return {server,get url(){return url;},async listen(){
     if(initializeDatabase&&!existsSync(databasePath)){const database=openNedDatabase({databaseUrl:databasePath});database.close();}
-    return new Promise((resolve,reject) => {
-      const failed = () => {server.off('listening',ready); reject(new Error('Unable to start NEDCOM.'));};
-      const ready = () => {server.off('error',failed); url = `http://127.0.0.1:${server.address().port}`; resolve(url);};
-      server.once('error',failed); server.once('listening',ready); server.listen(port,host);
+    return new Promise((resolve,reject)=>{
+      const failed=()=>{server.off('listening',ready);reject(new Error('Unable to start NEDCOM.'));};
+      const ready=()=>{server.off('error',failed);url=`http://127.0.0.1:${server.address().port}`;resolve(url);};
+      server.once('error',failed);server.once('listening',ready);server.listen(port,host);
     });
-  }, async close() {chat.close();projects.close();activity.close();coreHandler?.close();await corePending?.catch(()=>{});await core?.close();url = null; return new Promise((resolve,reject) => {server.close(error => error && error.code !== 'ERR_SERVER_NOT_RUNNING' ? reject(new Error('Unable to stop NEDCOM.')) : resolve()); server.closeAllConnections();});} };
+  },async close(){await api.close();url=null;return new Promise((resolve,reject)=>{server.close(error=>error&&error.code!=='ERR_SERVER_NOT_RUNNING'?reject(new Error('Unable to stop NEDCOM.')):resolve());server.closeAllConnections();});}};
 }

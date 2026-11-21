@@ -106,15 +106,17 @@ A task can instead use `--parent <goal-or-subgoal-id>` for existing nested plans
 
 For this no-ego-dev distribution, after each completed task run `node scripts/deploy-hermes-skills.mjs` from its checkout. The default local Hermes instance is staging. Check the deployment result before reporting staging updated; failures require remediation and truthful status. Do not deploy to named profiles or AWS through this command. Fresh Hermes sessions load the new skill files; existing sessions may retain earlier instructions.
 
-## Core connection and recovery
+## NED API connection and recovery
 
-Task commands use the authenticated NED Core HTTP API. By default the CLI starts
+Task commands use the authenticated operator family of NED API v1. By default the CLI starts
 a temporary loopback backend for the selected runtime/database and closes it
 after the command; no daemon, coordinator dispatch, model or gateway is required.
-To share a running local COM/Core listener, set `NED_CORE_URL` or pass
+To share a running local COM/Core listener, set `NED_API_URL` or pass
 `--api http://127.0.0.1:18791` on every command. Use the listener's actual loopback
 URL, not a public tunnel/Hub URL. For a configured server the CLI reads its private
 operator credential; standalone commands use a transient process-private bearer.
+Legacy `NED_CORE_URL` remains supported; selection is `--api`, then `NED_API_URL`,
+then `NED_CORE_URL`. Do not unset a failed configured selection to bypass it.
 Never read, print or put either credential in arguments or task records.
 
 The CLI verifies the server's runtime and database identity before sending task

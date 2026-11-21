@@ -80,7 +80,7 @@ test('TC-013: structured history metadata and pinned browser modules cross the r
   const gateway=http.createServer((req,res)=>res.end(JSON.stringify({data:[{id:1,role:'assistant',content,tool_calls:'[]',tool_name:'read',name:'calculator',tool_call_id:'call1',reasoning:'private',unexpected:'private'}]})));
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>gateway.close(resolve)));
   const app=createCommunicatorServer({gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic'}});await app.listen();t.after(()=>app.close());
-  const response=await fetch(app.url+'/api/chat/sessions/s1/messages');
+  const response=await fetch(app.url+'/api/v1/chat/sessions/s1/messages');
   assert.deepEqual(await response.json(),{data:[{id:1,role:'assistant',content,tool_calls:'[]',tool_name:'read',name:'calculator',tool_call_id:'call1'}]});
   for(const asset of ['/vendor/marked.js','/vendor/dompurify.js','/message-content.js']){
     const resource=await fetch(app.url+asset);assert.equal(resource.status,200);assert.match(resource.headers.get('content-type'),/text\/javascript/);assert.match(resource.headers.get('content-security-policy'),/script-src 'self'/);assert.ok((await resource.text()).length>100);
