@@ -118,7 +118,12 @@ authority. Authentication failures never expose storage, credentials or handlers
   body conflicts, old payloads remain compatible and backend-only disables browser
   resource families. Browser reads never create an operator token on COM startup.
 - Steps and assertions: inspect JSON/status and actual persisted task/event counts;
-  exercise CLI canonical request URLs through existing task transport cases.
+  exercise CLI canonical request URLs through existing task transport cases. With
+  no explicit databasePath, start full Core listeners using supplied home and env
+  database selection, and a shared handler using databaseUrl. Set the process DB
+  to a distinct synthetic nonexistent path; assert selected-project work returns
+  200 with an empty items array, activity SSE returns that project with empty
+  updates, and no process-context database is created. Restore the process env.
 - Variants / negative cases: missing auth, mismatched runtime/DB, unknown resource,
   invalid JSON/key, same key across canonical/alias and body mismatch; existing
   task/Core suites own exhaustive ownership, concurrency and verification fences.

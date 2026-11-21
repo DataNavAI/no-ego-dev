@@ -1,4 +1,5 @@
 import {nedApiPath} from './api-paths.js';
+import {resolveDatabasePath} from '../../../src/database.js';
 import {createBrowserApi} from './browser-api.js';
 import {createCoreService} from './runtime-service.js';
 import {createCoreHandler} from './http.js';
@@ -6,6 +7,7 @@ import {authorized,loadOperatorCredential} from './auth.js';
 import {requestDiagnostic,requestPhase} from './protocol/request-diagnostic.js';
 
 export function createNedApiHandler({boundOrigin,operatorService,operatorCredential,browserEnabled=true,legacyInvalidStatus=400,...options}={}){
+  options.databasePath=operatorService?.database?.filename??options.databasePath??resolveDatabasePath(options);
   let operatorPending,operatorHandler,ownedService,closing=false,closePromise;
   const browser=browserEnabled?createBrowserApi(options):null;
   const operator=()=>operatorPending??=(async()=>{

@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {stat} from 'node:fs/promises';
+import {stat,mkdtemp,mkdir,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import http from 'node:http';
+import {createTaskService} from '../../../../src/tasks.js';
+import {createNedApiServer} from '../../../../apps/core/src/index.js';
+import {createNedApiHandler} from '../../../../apps/core/src/api.js';
 import path from 'node:path';
 import {apiFixture} from './helpers.js';
 import {createTaskApiClient} from '../../../../apps/cli/src/task-api.js';
@@ -41,4 +46,32 @@ test('TC-002: CLI NED_API_URL selection is authoritative with explicit and legac
   context.after(()=>explicit.close());assert.equal((await explicit.initialize()).projectId,fixture.projectId);
   await assert.rejects(createTaskApiClient({...options,env:{...fixture.env,NED_API_URL:'https://invalid.example',NED_CORE_URL:fixture.app.url}}),{code:'invalid_api'});
   assert.deepEqual(requests,['/api/v1/operator/context','/api/v1/operator/task-management','/api/v1/operator/context','/api/v1/operator/task-management']);
+});
+
+for(const selection of ['home','env','databaseUrl'])test(`TC-002: browser work and activity retain the selected ${selection} database without an explicit path`,async context=>{
+  const root=await mkdtemp(path.join(tmpdir(),'ned-api-selection-'));
+  const previousDatabase=process.env.NED_DATABASE_URL,foreignDatabase=path.join(root,'process-context.sqlite');
+  process.env.NED_DATABASE_URL=foreignDatabase;
+  context.after(()=>{if(previousDatabase===undefined)delete process.env.NED_DATABASE_URL;else process.env.NED_DATABASE_URL=previousDatabase;});
+  let task,app,handler,server;
+  context.after(async()=>{await app?.close();await handler?.close();if(server){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}task?.close();await rm(root,{recursive:true,force:true});});
+  const home=path.join(root,'home'),project=path.join(root,'project');await mkdir(home,{mode:0o700});await mkdir(project);
+  const databasePath=selection==='home'?path.join(home,'.ned','ned.sqlite'):path.join(root,'selected.sqlite');
+  task=await createTaskService({project,databaseUrl:databasePath,actor:'agent:selection-test'});await task.initialize();
+  let url;
+  if(selection==='databaseUrl'){
+    handler=createNedApiHandler({home,env:{},databaseUrl:databasePath,boundOrigin:()=>url});
+    server=http.createServer((req,res)=>{void handler(req,res);});
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));url=`http://127.0.0.1:${server.address().port}`;
+  }else{
+    app=await createNedApiServer({home,env:selection==='env'?{NED_DATABASE_URL:databasePath}:{}});url=await app.listen();
+    assert.equal(app.service.database.filename,databasePath);
+  }
+  const response=await fetch(`${url}/api/v1/projects/${task.project.id}/work`,{signal:AbortSignal.timeout(5000)});
+  assert.equal(response.status,200);assert.deepEqual(await response.json(),{projectId:task.project.id,items:[]});
+  const stream=await fetch(`${url}/api/v1/activity/events?project=${task.project.id}`,{signal:AbortSignal.timeout(5000)});
+  const reader=stream.body.getReader();
+  try{const frame=await reader.read();assert.equal(new TextDecoder().decode(frame.value),`data: ${JSON.stringify({projectId:task.project.id,updates:[]})}\n\n`);}
+  finally{await reader.cancel();}
+  await assert.rejects(stat(foreignDatabase),{code:'ENOENT'});
 });
