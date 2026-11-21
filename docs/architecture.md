@@ -55,9 +55,11 @@ inference; preserve user workspaces and configured profiles across deployment.
 
 All listeners bind loopback and require the exact bound Host and permitted Origin.
 Every API, including health/discovery/reads/streams and legacy aliases, requires
-instance authentication. CLI uses a private bearer; browser navigation challenges
-with standard HTTP Basic (username ned, private instance key). Application JS,
-URLs, local storage and logs never contain the key. Container COM may additionally
+instance authentication. CLI uses a persistent private bearer. The public browser
+shell requests a token, validates before loading data and saves access bound to
+origin/instance identity. Forget and401 clear access and stop active streams.
+HTTP streaming uses fetch with Bearer headers. URLs, shipped assets and logs never
+contain the key. Legacy Basic credentials remain accepted. Container COM may additionally
 accept its configured Basic credentials. The socket-less Hub bridge injects the
 target instance credential only on authenticated instance-bound channels after
 metadata/Origin validation; public quick tunnels never inject credentials.

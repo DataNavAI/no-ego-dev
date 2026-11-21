@@ -1,4 +1,5 @@
 import {initialState,beginLoad,settleLoad,selectProject,beginDetail,settleDetail,view,followTaskProject} from './state.js';
+import {apiFetch as fetch,ApiEventSource as EventSource} from './api-client.js';
 import {mountMobileNavigation} from './mobile-navigation.js';
 let state = initialState();
 let retryFocusIntent = false;
@@ -146,6 +147,7 @@ if(mobileViewport)mountMobileNavigation({document,viewport:mobileViewport,onSele
   target?.focus();
 }});
 syncNavigation();render();void load();
+document.addEventListener('ned-auth-restored',()=>{workspaceStream?.close();workspaceStream=null;state=beginLoad(state);render();void load();});
 
 let workspaceStream;
 let taskSequence=0;

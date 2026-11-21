@@ -18,6 +18,9 @@ security boundaries: [architecture](../../architecture.md).
 
 ## Requirements
 
+Source extension: [persistent tokens and direct sign-in](INSTANCE-TOKENS.md),
+tracked by native188/Hub142. Release and deployment remain separate gates.
+
 Authentication design: [AUTHENTICATION.md](AUTHENTICATION.md). Implementation and
 release/deployment verification are separate; no staging rollout is implied.
 
@@ -42,12 +45,12 @@ release/deployment verification are separate; no staging rollout is implied.
   side effects. Exact Host/Origin policy remains enforced. Hub grants authority
   only through its authenticated instance-bound channel; public tunnels never
   inject credentials. Malformed/encoded paths and unknown families cannot bypass
-  authentication or remote validation. The COM document challenges before use.
+  authentication or remote validation. The public COM shell asks for a token before loading data.
 - FR-005: Chat submission/attachments/stop retain their existing Origin, type,
   size, session/context and receipt checks. Secrets retain X-NED-Secrets, Origin,
   reveal/entry constraints. No credential reaches browser bundles, logs, URLs or
-  error bodies. Browser-managed HTTP credentials are not placed in application
-  storage. Presentation reads do not start coordination work.
+  error bodies. A user-entered token is stored only after validation, bound to the
+  browser origin and instance identity. Presentation reads do not start coordination work.
 - FR-006: Chat and activity/event streams retain progressive delivery, event IDs,
   cursor validation, bounded buffering, disconnect cleanup and stop semantics.
   Aliases are dispatched directly, without redirects or buffering whole responses.
@@ -60,8 +63,33 @@ release/deployment verification are separate; no staging rollout is implied.
   Legacy aliases remain supported for v1; removal requires a separately reviewed
   migration and evidence that consumers have moved. Rollback reinstalls a prior
   release and reloads browser assets; no irreversible data migration is needed.
+- FR-009: Native CLI and listeners reuse one private persistent instance token.
+  NED_API_TOKEN or absolute NED_API_TOKEN_FILE imports a valid64hex token; invalid,
+  ambiguous, unsafe or conflicting input fails without replacement or fallback.
+  Instance identity persists independently of credential rotation.
+- FR-010: Direct UI validates access before loading private data, remembers it
+  across reloads when storage permits, offers Forget, and returns to sign-in on401.
+  Storage failure permits tab-only use with a notice. Reauthentication never replays
+  a message. Fetch streams carry Bearer headers and stop on logout/auth failure.
 
 ## Critical user journeys
+
+### CUJ-004: Sign in directly and resume safely
+Actor: direct browser owner. Starting state: public static shell, no browser token,
+private instance token available to the owner. Enter a token, validate it, then
+load data; reload reuses origin/instance-bound storage. Wrong or expired access
+returns to sign-in without data loading or message replay. Storage failure keeps
+the session tab-only. Forget removes browser access and closes active streams.
+This is critical to replace the browser-native password prompt without exposing
+unauthenticated API data. TC-006/007; existing new/existing chat cases remain required.
+
+### CUJ-005: Bootstrap a stable native/container credential
+Actor: local CLI or authorized container provisioner. Starting state: empty or
+existing private runtime and optional token input. Generate only when no input or
+saved token exists; otherwise import/reuse the matching token. Restart preserves
+token and instance identity. Invalid/conflicting input fails without mutation or
+fallback. This is critical to keep Hub, CLI and browser access stable across runs.
+TC-005; managed custody/provisioning is owned by Hub142.
 
 ### CUJ-001: Use the same API through Core, CLI and COM
 
@@ -109,7 +137,7 @@ require authority. Failures expose no storage/credentials and start no work.
   GET/HEAD/POST across health, discovery, streams, reads, mutations and aliases;
   removed operator namespace404 after authentication; no task writes occur. Public
   bridges forward no authority; trusted Hub bridges overwrite client authorization
-  only after channel validation. Real browser navigation uses HTTP credentials.
+  only after channel validation. Real browser navigation uses the token-entry screen and shared Bearer client.
 - Cleanup: close only owned test servers/bridges.
 - Pass evidence: named assertions and existing bridge regression results; no skips.
 
@@ -177,6 +205,42 @@ require authority. Failures expose no storage/credentials and start no work.
 - Cleanup: remove only the owned vault/runtime after closing handlers.
 - Pass evidence: exact state/privacy assertions; no real secret in outputs.
 
+### TC-005: Stable token generation, injection and CLI reuse
+- Journey / requirements: CUJ-001, CUJ-005 / FR-003, FR-004, FR-007; INSTANCE-TOKENS.md bootstrap contract.
+- Level / automation: integration; tests/TC-005.test.js.
+- Preconditions / fixtures: owned temporary runtime/project; synthetic64hex tokens, private input file, no gateway/model; empty private auth directory.
+- Given: no stored key or a previously persisted key.
+- When: use environment/file injection, reopen without injection, repeat the same input, then present conflicting/invalid/unsafe input; run two command-scoped CLI API clients.
+- Then: generated/imported key persists privately and both clients reuse it; conflicts preserve source and saved bytes; invalid input never generates a replacement.
+- Steps and assertions: execute the case; check exact synthetic token bytes,0600 persisted mode, input unchanged, matching restart, both injection modes and actual authenticated CLI service initialization/readback.
+- Variants / negative cases: empty/malformed token, both inputs, missing/relative/symlink/unsafe-permission file; no model/provider side effects. Concurrent lifecycle is additionally covered by existing private-credential/CLI cases; Hub bootstrap concurrency has separate Hub tests.
+- Cleanup: close owned API servers and remove only temporary home/project/input files.
+- Pass evidence: named assertions, RED old ignored injection/transient CLI key, GREEN exact candidate.
+
+### TC-006: Direct browser first/repeat use, expiration and storage failure
+- Journey / requirements: CUJ-002, CUJ-004 / FR-004–FR-007; INSTANCE-TOKENS.md browser contract.
+- Level / automation: end-to-end; tests/TC-006.test.js.
+- Preconditions / fixtures: real served COM, actual Chromium, owned SQLite/runtime, synthetic gateway, no preexisting browser storage or external credentials.
+- Given: the static access form and hidden app with no API authority.
+- When: enter wrong then correct token, reload, Forget; rotate the fixture's key and request Debug health, reauthenticate; separately make Storage.setItem throw.
+- Then: wrong access loads no gateway data; successful access persists only after validation, survives reload, and never puts tokens in URLs. Forget removes storage.401 clears stale access and preserves unsent draft without sending a turn. Blocked storage works for this tab and requires sign-in on reload.
+- Steps and assertions: execute the real browser case at390px and1280px; verify form/app visibility, empty gateway captures before access, stored fixture token/instance identity, cleared password input, reload, settings Forget,401 recovery and zero sent messages.
+- Variants / negative cases: wrong token, changed key, browser storage denial; external provider/SSO is inapplicable to this synthetic direct-access flow. Existing Hub bridge cases cover delegated authentication.
+- Cleanup: close browser/COM/gateway/SQLite and delete test-owned profiles.
+- Pass evidence: actual DOM/network assertions; no skips or screenshots containing keys/private conversations.
+
+### TC-007: Authenticated HTTP event streaming and cancellation
+- Journey / requirements: CUJ-002, CUJ-004 / FR-004, FR-006; INSTANCE-TOKENS.md streaming contract.
+- Level / automation: integration; tests/TC-007.test.js plus real browser chat cases.
+- Preconditions / fixtures: synthetic token/storage and fetch responses with bounded byte-split Unicode SSE, opaque event ID and retry hint; second connection401.
+- Given: a validated token and active fetch SSE reader.
+- When: consume frames, reconnect, receive401; separately Forget during an active response and try an external resource URL.
+- Then: incremental Unicode/event identity survives, reconnect uses Last-Event-ID and Bearer,401 clears access/stops reconnect, Forget aborts the request, and no token can be sent to an external URL.
+- Steps and assertions: execute the case; assert exact message/ID/headers, two connections only, closed state, storage deletion, aborted signal and rejected foreign resource. Existing served Chromium flows verify the assembled stream before withheld terminal.
+- Variants / negative cases: invalid auth/URL, disconnect/reconnect, split multibyte characters; no real gateway/model or unbounded polling.
+- Cleanup: close readers/streams and cancel owned retry timers; no filesystem state.
+- Pass evidence: named assertions and actual browser streaming regressions.
+
 ## Coverage and acceptance
 
 | Requirements | Journeys | Cases / evidence |
@@ -185,6 +249,8 @@ require authority. Failures expose no storage/credentials and start no work.
 | FR-004, FR-005 | CUJ-003 | TC-001, TC-004, existing bridge/secret cases |
 | FR-006 | CUJ-002 | TC-003, served browser new/existing chat flows |
 | FR-008 | CUJ-001–CUJ-003 | Canonical docs reviewed against implementation; full gates |
+| FR-009 | CUJ-005 | TC-005 |
+| FR-010 | CUJ-004 | TC-006, TC-007; communicator new/existing chat cases |
 
 Release requires complete automated cases, independent exact-candidate review,
 native container acceptance, green CI, merge and verified default local install/

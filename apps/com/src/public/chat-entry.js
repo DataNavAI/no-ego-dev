@@ -1,10 +1,11 @@
 import {mountChat} from './chat-ui.js';
+import {apiFetch,ApiEventSource} from './api-client.js';
 import {mountActivity} from './activity-ui.js';
 import {mountPaneResize} from './pane-resize.js';
 import {mountDebugPane} from './debug-pane.js';
 import {marked} from '/vendor/marked.js';
 import DOMPurify from '/vendor/dompurify.js';
-mountDebugPane({document});
+mountDebugPane({document,request:apiFetch});
 mountChat({marked,DOMPurify});
-mountActivity({document,EventSource:globalThis.EventSource});
+mountActivity({document,EventSource:ApiEventSource});
 mountPaneResize({shell:document.getElementById('app-shell'),divider:document.getElementById('pane-divider')});

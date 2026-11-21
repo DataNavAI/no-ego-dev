@@ -39,6 +39,7 @@ export function mountActivity({document,EventSource}){
   const hide=()=>{panel.hidden=true;};
   dismiss?.addEventListener('click',hide);
   project.addEventListener('change',select);
+  document.addEventListener?.('ned-auth-restored',select);
   select();
   return ()=>{generation++;stream?.close();project.removeEventListener('change',select);dismiss?.removeEventListener('click',hide);};
 }

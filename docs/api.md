@@ -15,6 +15,7 @@ enable only coordination resources. Every API requires authentication. See [arch
 | --- | --- | --- |
 | `GET /api/v1` | Identity/version and authentication requirement | Authenticated |
 | `GET /api/v1/health` | `{status:"ok",service:"ned-api",version:1}` | Authenticated |
+| `GET /api/v1/auth/context` | Stable opaque `{instanceId}` for browser credential binding | Authenticated; no-store |
 | `GET /api/v1/capabilities` | UI capabilities; service ned-api/version1 | Authenticated |
 | `/api/v1/projects` | Project UI read models, delivery, attempt/session inspection | Authenticated; read-only presentation methods |
 | `/api/v1/chat` | Selected Hermes sessions, messages, attachments and turns | Authenticated; same-origin, bounded mutations/streams |
@@ -37,7 +38,7 @@ objects. Errors consistently use `{error:{code,message}}`.
 CLI task commands use `--api <loopback-listener-origin>`, then `NED_API_URL`,
 then legacy `NED_CORE_URL`. Configured origins are HTTP loopback without a path,
 embedded credential, query or fragment. With no configured origin, the CLI starts
-a backend-only server with a process-private bearer, verifies runtime/database
+a backend-only server using the persistent instance bearer, verifies runtime/database
 fingerprints, makes the same HTTP request and closes it. No coordinator starts.
 
 Legacy `/api/core/v1/*` remains an authenticated coordination alias. Its registry,
@@ -64,7 +65,7 @@ routes and are unchanged.
 
 Every API and legacy alias, including discovery/health and streams, authenticates
 before dispatch. Missing or invalid credentials return401 with a bounded error and
-`WWW-Authenticate: Basic realm="NED", charset="UTF-8"`. Listeners also require the
+`WWW-Authenticate: Bearer realm="NED"`. Listeners also require the
 exact loopback Host and absent or exact same Origin. Unknown API families and
 malformed paths are denied by transport adapters. Requests cannot select DB,
 profile, gateway origin or provider credentials.
@@ -190,15 +191,18 @@ Authorization: Bearer <runtime-private-instance-key>
 ```
 
 The token is stored in `<selected-runtime>/.ned/core/operator-token`, with private
-directory/file permissions. Never place it in a URL, browser bundle, browser
-storage or a log. Authenticated callers have authority over the selected runtime;
-an actor label is not an authentication credential. Browser navigation receives
-a standard HTTP Basic challenge: username `ned`, password the private instance
-key. The browser handles Basic credentials for fetch/uploads/EventSource; no
-key is embedded in JavaScript, local storage or URLs. The COM document challenges
-before loading instance data. Browser password managers may retain credentials;
-rotate the private key and restart the instance to revoke credentials and active
-streams. Existing key storage is retained for compatibility.
+directory/file permissions. Never place it in a URL, shipped browser bundle or log.
+Authenticated callers have authority over the selected runtime; an actor label is
+not an authentication credential. The public COM shell asks for the access token,
+validates it with `GET /api/v1/auth/context`, then saves it in local storage bound
+to the origin and private stable instance identity. Settings offers Forget token.
+401 clears saved access and returns to sign-in without resubmitting messages.
+Fetch-based event streams carry the same Bearer header. Basic username `ned`
+with the instance key remains accepted for compatibility. Existing key storage is
+retained. `NED_API_TOKEN` or `NED_API_TOKEN_FILE` imports a provisioned token;
+see [instance token bootstrap](features/ned-api/INSTANCE-TOKENS.md) for validation
+and conflict behavior. Auth context returns only `{instanceId}` and requires the
+same authentication as every other API.
 
 Container COM also accepts `NED_COM_USERNAME`/`NED_COM_PASSWORD`; absent a separate
 pair it accepts plaintext dashboard credentials. A dashboard password hash is
@@ -276,8 +280,8 @@ ownership/history/completion fences. No operation dispatches a worker.
 credentials. Keep continuation tokens unchanged, scoped to task+project.
 
 CLI uses `--api` > `NED_API_URL` > legacy `NED_CORE_URL`, or a command-scoped temporary Core listener
-without coordinator startup if neither is set. Temporary listeners use a random
-process-private bearer instead of creating a persistent operator token; only
+without coordinator startup if neither is set. Temporary listeners use the same
+persistent instance bearer as full listeners; only
 backend-only programmatic construction accepts that credential override. Full
 Core/COM listeners keep their existing private-token storage requirement.
 Explicit failure never falls

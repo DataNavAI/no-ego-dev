@@ -1,3 +1,4 @@
+import {apiFetch as fetch} from './api-client.js';
 export {secretRequestRow} from './secret-events.js';
 export function renderSecretRequest(request,document){
   const card=document.createElement('section');card.className='secret-share-card secret-request-card';card.setAttribute('aria-label','Requested secret');

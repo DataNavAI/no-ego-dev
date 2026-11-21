@@ -1,5 +1,5 @@
 import {nedApiPath} from './api-paths.js';
-import {constants,lstatSync,mkdirSync,openSync,closeSync,readFileSync,writeFileSync,fstatSync,fsyncSync} from 'node:fs';
+import {constants,lstatSync,mkdirSync,openSync,closeSync,readSync,readFileSync,writeFileSync,fstatSync,fsyncSync} from 'node:fs';
 import path from 'node:path';
 import {randomBytes,timingSafeEqual} from 'node:crypto';
 import {resolveRuntimeHome,ensureRuntimeHome} from '../../../src/runtime-home.js';
@@ -10,6 +10,27 @@ export function coreNamespace(raw='') {
 }
 
 export function loadOperatorCredential({home,env=process.env}={}) {
+  let injected;
+  try{
+    if(env.NED_API_TOKEN!==undefined&&env.NED_API_TOKEN_FILE!==undefined)throw new Error();
+    if(env.NED_API_TOKEN!==undefined)injected=env.NED_API_TOKEN;
+    if(env.NED_API_TOKEN_FILE!==undefined){
+      if(typeof env.NED_API_TOKEN_FILE!=='string'||!path.isAbsolute(env.NED_API_TOKEN_FILE)||env.NED_API_TOKEN_FILE.includes('\0'))throw new Error();
+      const descriptor=openSync(env.NED_API_TOKEN_FILE,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+      try{
+        const info=fstatSync(descriptor);
+        if(!info.isFile()||info.size>128||info.mode&0o027||process.getuid&&![0,process.getuid()].includes(info.uid)||info.mode&0o040&&process.getgid&&info.gid!==process.getgid())throw new Error();
+        const value=Buffer.alloc(129),length=readSync(descriptor,value,0,value.length,0);if(length>128)throw new Error();injected=value.subarray(0,length).toString('utf8').trim();
+      }finally{closeSync(descriptor);}
+    }
+    if(injected!==undefined&&(typeof injected!=='string'||!/^[a-f0-9]{64}$/.test(injected)))throw new Error();
+  }catch{throw new Error('Invalid NED API token injection. Supply one valid private token source.');}
+  return loadPrivateValue({home,env},'operator-token',injected);
+}
+
+export function loadApiInstanceId(options){return loadPrivateValue(options,'instance-id');}
+
+function loadPrivateValue({home,env=process.env}={},name,injected){
   const selected=resolveRuntimeHome({home,env});
   if(typeof selected!=='string'||!path.isAbsolute(selected))throw new Error('Unsafe Core runtime selection.');
   const root=path.resolve(selected);
@@ -23,10 +44,10 @@ export function loadOperatorCredential({home,env=process.env}={}) {
     try{mkdirSync(directory,{mode:0o700});}catch(error){if(error.code!=='EEXIST')throw error;}
     safe(directory,true);
   }
-  const filename=path.join(root,'.ned','core','operator-token');
+  const filename=path.join(root,'.ned','core',name);
   let descriptor;
   try{
-    try{descriptor=openSync(filename,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);writeFileSync(descriptor,randomBytes(32).toString('hex')+'\n');fsyncSync(descriptor);}
+    try{descriptor=openSync(filename,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);writeFileSync(descriptor,(injected??randomBytes(32).toString('hex'))+'\n');fsyncSync(descriptor);}
     catch(error){if(error.code!=='EEXIST')throw error;}
     finally{if(descriptor!==undefined){closeSync(descriptor);descriptor=undefined;}}
     const before=safe(filename,false);
@@ -35,8 +56,9 @@ export function loadOperatorCredential({home,env=process.env}={}) {
     if(opened.ino!==before.ino||opened.dev!==before.dev||opened.size>128)throw new Error();
     const token=readFileSync(descriptor,'utf8').trim();
     if(!/^[a-f0-9]{64}$/.test(token))throw new Error();
+    if(injected!==undefined&&!timingSafeEqual(Buffer.from(token),Buffer.from(injected)))throw new Error();
     return token;
-  }catch{throw new Error('Unable to load private Core operator credential.');}
+  }catch{throw new Error('Unable to load private NED API credential. Check storage and injected-token agreement; existing credentials were preserved.');}
   finally{if(descriptor!==undefined)closeSync(descriptor);}
 }
 

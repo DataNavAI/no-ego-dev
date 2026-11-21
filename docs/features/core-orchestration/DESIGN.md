@@ -20,7 +20,7 @@ Enrollment authorizes eligibility but does not itself create instructions or que
 
 ## Operator auth and transport
 
-Create32-byte random instance key once in `<runtime>/.ned/core/operator-token`,0700 parent/0600 file, with no symlink/unsafe-owner modes. Every API requires this bearer or browser Basic authentication; optional container Basic credentials use a complete configured pair. Actor remains audit data, not authentication. Canonical resources share `/api/v1` with no privilege group. Presentation schemas are independent of credential type; legacy envelopes remain aliases. [Canonical auth and transport contract](../../api.md#connection-and-authentication) governs Hub delegation, public tunnel credential pass-through, exact Host/Origin and no secret URLs/application storage/logs.
+Create32-byte random instance key once in `<runtime>/.ned/core/operator-token`,0700 parent/0600 file, with no symlink/unsafe-owner modes. Every API requires this bearer or browser Basic authentication; optional container Basic credentials use a complete configured pair. Actor remains audit data, not authentication. Canonical resources share `/api/v1` with no privilege group. Presentation schemas are independent of credential type; legacy envelopes remain aliases. [Canonical auth and transport contract](../../api.md#connection-and-authentication) governs Hub delegation, public tunnel credential pass-through, exact Host/Origin and no secrets in URLs, shipped assets or logs. The entered browser token is intentionally saved in origin/instance-bound application storage after validation.
 
 ## Additive schema
 

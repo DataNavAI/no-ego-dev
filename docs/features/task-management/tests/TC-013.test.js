@@ -181,6 +181,8 @@ test('TC-013: default command-scoped backend replays across processes without st
   assert.equal(database.connection.prepare('SELECT COUNT(*) AS n FROM ned_work_items').get().n,1);
   assert.equal(database.connection.prepare('SELECT COUNT(*) AS n FROM ned_core_owner').get().n,0);
   assert.equal(database.connection.prepare('SELECT COUNT(*) AS n FROM ned_core_attempts').get().n,0);
-  await assert.rejects(stat(path.join(fixtureValue.home,'.ned','core','operator-token')),{code:'ENOENT'});
+  const credential=path.join(fixtureValue.home,'.ned','core','operator-token');
+  assert.match(await readFile(credential,'utf8'),/^[a-f0-9]{64}\n?$/);
+  assert.equal((await stat(credential)).mode&0o777,0o600);
   await assert.rejects(createCoreServer({home:fixtureValue.home,env:{},operatorCredential:'a'.repeat(64)}),/backend-only/);
 });
