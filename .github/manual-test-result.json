@@ -1,14 +1,14 @@
 {
-  "candidate_sha": "d0c6b4140c590b12f76d85de148c25894d8ca586",
+  "candidate_sha": "ff75150acaf5d392c5d659d8662faffb25ebfb39",
   "result": "pass",
-  "tested_at": "2026-11-22T05:52:54.208698+00:00",
-  "environment": "macOS arm64; Node 24.22.2; served Chromium at 1280x900 and 320x740; isolated synthetic NED profiles/provider boundaries",
+  "tested_at": "2026-11-22T07:30:10.874246+00:00",
+  "environment": "macOS arm64; Node24; served Chromium at1280x900 and320x740; isolated synthetic model/gateway",
   "commands": [
     "npm run lint",
-    "npm run test:all (versioned exact-staged commit hook, all spec/Node cases, Python and pinned-Hermes)",
+    "npm run test:all (exact-staged pre-commit full spec/Node/Python and actual pinned Hermes)",
     "npm run build:ui:check",
-    "node --test docs/features/communicator/tests/TC-038.test.js docs/features/model-setup/tests/TC-002.test.js",
-    "Rendered desktop/mobile first-use and device challenge captures self-reviewed"
+    "node --test docs/features/ned-api/tests/TC-006.test.js docs/features/ned-api/tests/TC-007.test.js",
+    "Served delegated desktop/mobile browser check"
   ],
-  "observations": "Full gate passed including208 Python tests with9 existing skips and8 actual pinned-Hermes cases. Exact committed candidate browser rerun passed five journeys: full-viewport required setup, Escape/focus containment, key rejection/retry and secret clearing, preserved draft, configured bypass/optional Close, inherited account default, first-use device cancel/retry/complete and NED access-loss/reconnect. Existing interrupted-chat recovery passes without optional model settings blocking Reload. Desktop/mobile synthetic captures inspected. No live provider consent or paid inference. Merge/local installation and managed image staging rollout remain separate post-merge checks."
+  "observations": "Direct first/repeat/forgotten/rotated access works. Delegated access hides private credentials from first HTML, during delayed validation, after connection and after marked401; network failures offer Reconnect. Advisory header cannot authorize401; legacy storage cleared only after authenticated context. Screenshots captured for inspection. No hosted consent or paid inference. Managed image/Hub gateway staging acceptance remains separate."
 }
