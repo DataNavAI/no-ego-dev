@@ -251,7 +251,7 @@ export function mountChat(libraries) {
       media.clear();references.clear();
       if(following){await history();await fillUnderfilled();bottom(true);}else refreshNeeded='New reply available. Jump to latest.';
       }catch(error){
-        void modelSetup.refresh(true);
+        void modelSetup.refresh();
         if(!draft.value)draft.value=input;
         if(pendingUser){if(['invalid_attachment','invalid_reference'].includes(error.code))transcript.replaceChildren(...Array.from(transcript.children).filter(row=>row!==pendingUser));else pendingUser.dataset.state='incomplete';}
         fitDraft();throw error;
