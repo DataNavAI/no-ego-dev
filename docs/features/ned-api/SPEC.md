@@ -273,3 +273,6 @@ Implementation and cases exist; release results are recorded separately.
 No alias removal date is set; removal is explicitly out of scope. Existing privacy-
 safe request diagnostics and Core events remain the operational evidence; no new
 analytics service or payload/credential logging is introduced by this refactor.
+
+### Delegated browser presentation (FR-010 / TC-006, TC-007)
+Hub Connect never renders private-token entry, including initial/delayed access validation, failed network checks and Hub-marked401 responses. Reconnect reloads the instance origin so Hub can restore the owner session. The response header `X-NED-Hub-Access: 1` is a presentation hint only: successful authenticated auth-context and instance identity remain mandatory. Legacy saved direct tokens are cleared after authenticated Hub context; direct unmarked401 still permits explicit token entry.

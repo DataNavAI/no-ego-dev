@@ -1,6 +1,6 @@
 export function createApiClient({request=(...args)=>globalThis.fetch(...args),storage=()=>globalThis.localStorage,origin=globalThis.location?.origin??''}={}){
   const key='ned.instance-access.v1',controllers=new Set(),listeners=new Set();
-  let token=null,authVersion=0;
+  let token=null,authVersion=0,hubAccess=false;
   const read=()=>{try{const value=JSON.parse(storage()?.getItem(key)??'null');return value?.origin===origin&&/^[a-f0-9]{64}$/.test(value.token)&&/^[a-f0-9]{64}$/.test(value.instanceId)?value:null;}catch{return null;}};
   const clear=()=>{try{const target=storage();target?.removeItem(key);return !target?.getItem(key);}catch{return false;}};
   function forget(reason='forgotten'){
@@ -14,7 +14,8 @@ export function createApiClient({request=(...args)=>globalThis.fetch(...args),st
     try{
       const response=await request(resource,{...options,redirect:'error',headers:Object.fromEntries(headers),signal:options.signal?AbortSignal.any([options.signal,controller.signal]):controller.signal});
       if(version!==authVersion){cleanup();await response.body?.cancel();throw new DOMException('Access changed.','AbortError');}
-      if(response.status===401){cleanup();forget('expired');return response;}
+      if(response.headers.get('x-ned-hub-access')==='1')hubAccess=true;
+      if(response.status===401){cleanup();forget(hubAccess?'hub-expired':'expired');return response;}
       if(!response.body){cleanup();return response;}
       const reader=response.body.getReader();
       const body=new ReadableStream({async pull(stream){try{const result=await reader.read();if(result.done){cleanup();stream.close();}else stream.enqueue(result.value);}catch(error){cleanup();stream.error(error);}},async cancel(reason){cleanup();await reader.cancel(reason);}});
@@ -31,12 +32,13 @@ export function createApiClient({request=(...args)=>globalThis.fetch(...args),st
     let data;
     try{data=await response.json();}catch{if(version===authVersion)forget('invalid');throw new Error('Could not verify NED. Try again.');}
     if(version!==authVersion)throw new Error('Access changed. Reconnect to NED.');
-    if(!/^[a-f0-9]{64}$/.test(data?.instanceId)||expectedId&&data.instanceId!==expectedId){forget('changed');throw new Error('This NED instance has changed. Enter its access token.');}
+    if(!/^[a-f0-9]{64}$/.test(data?.instanceId)||!hubAccess&&expectedId&&data.instanceId!==expectedId){forget('changed');throw new Error('This NED instance has changed. Enter its access token.');}
     let remembered=true;
-    if(candidate&&persist){try{const target=storage();if(!target)throw new Error();target.setItem(key,JSON.stringify({origin,instanceId:data.instanceId,token:candidate}));}catch{remembered=false;}}
-    return {instanceId:data.instanceId,remembered,delegated:candidate===null};
+    if(hubAccess){token=null;clear();}
+    if(!hubAccess&&candidate&&persist){try{const target=storage();if(!target)throw new Error();target.setItem(key,JSON.stringify({origin,instanceId:data.instanceId,token:candidate}));}catch{remembered=false;}}
+    return {instanceId:data.instanceId,remembered,delegated:hubAccess||candidate===null};
   }
-  return {fetch:fetchApi,validate,async restore(){const saved=read();return validate(saved?.token??null,false,saved?.instanceId);},forget,onLost(listener){listeners.add(listener);return()=>listeners.delete(listener);}};
+  return {get delegated(){return hubAccess;},fetch:fetchApi,validate,async restore(){const saved=read();return validate(saved?.token??null,false,saved?.instanceId);},forget,onLost(listener){listeners.add(listener);return()=>listeners.delete(listener);}};
 }
 
 export const apiClient=createApiClient();
