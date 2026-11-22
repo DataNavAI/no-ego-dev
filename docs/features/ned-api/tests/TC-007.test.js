@@ -38,3 +38,10 @@ test('TC-007: forgetting access aborts an active stream and credentials never go
   await client.validate('a'.repeat(64));const response=await client.fetch('/api/v1/workspace/events');client.forget();assert.equal(signal.aborted,true);await response.body.cancel();
   await assert.rejects(client.fetch('https://foreign.example/api/v1/health'));
 });
+
+test('TC-007: Hub presentation hint never grants access and clears legacy browser credentials only after verified context',async()=>{
+  let saved=JSON.stringify({origin:'https://instance.example',token:'a'.repeat(64),instanceId:'b'.repeat(64)}),status=200,received,lost;
+  const client=createApiClient({origin:'https://instance.example',storage:()=>({getItem:()=>saved,setItem:(_key,value)=>{saved=value;},removeItem:()=>{saved=null;}}),request:async(_resource,options)=>{received=options.headers;return Response.json({instanceId:'d'.repeat(64)},{status,headers:{'X-NED-Hub-Access':'1'}});}});
+  const result=await client.restore();assert.equal(result.delegated,true);assert.equal(result.instanceId,'d'.repeat(64));assert.equal(saved,null);
+  client.onLost(reason=>{lost=reason;});status=401;await assert.rejects(client.restore(),{code:'unauthorized'});assert.equal(lost,'hub-expired');assert.equal(received.authorization,undefined);
+});

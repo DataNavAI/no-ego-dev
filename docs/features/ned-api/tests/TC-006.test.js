@@ -60,3 +60,27 @@ test('TC-006: unavailable browser storage keeps authenticated access in this tab
   assert.equal(await fixture.page.locator('#access-memory').getAttribute('hidden'),null);
   await fixture.page.reload();await expect(fixture.page.locator('#access-gate')).toBeVisible();assert.equal(fixture.turns.length,0);
 });
+
+test('TC-006: Hub connection hides private credentials from initial paint through delegated access loss',{timeout:45000},async context=>{
+  const fixture=await browserChat(context,{deferLogin:true}),page=fixture.page;
+  let release,seen;const held=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
+  await page.route('**/api/**',async route=>{
+    const headers={...route.request().headers(),authorization:'Bearer '+fixture.accessToken};
+    if(!route.request().url().endsWith('/auth/context'))return route.continue({headers});
+    seen();await held;const response=await route.fetch({headers});
+    await route.fulfill({response,headers:{...response.headers(),'x-ned-hub-access':'1'}});
+  });
+  try{
+    await page.reload({waitUntil:'domcontentloaded'});await requested;
+    await expect(page.locator('#access-gate')).toBeVisible();await expect(page.locator('#access-token')).toBeHidden();await expect(page.locator('#access-submit')).toBeHidden();
+    release();await fixture.ready();await expect(page.locator('#access-token')).toBeHidden();assert.equal(await page.evaluate(()=>localStorage.getItem('ned.instance-access.v1')),null);
+    await page.route('**/api/v1/health',route=>route.fulfill({status:401,headers:{'x-ned-hub-access':'1'},body:'{}'}));
+    await page.locator('#debug-toggle').click();await expect(page.locator('#access-gate')).toBeVisible();await expect(page.locator('#access-token')).toBeHidden();await expect(page.locator('#access-retry')).toBeVisible();assert.equal(fixture.turns.length,0);
+  }finally{release();}
+});
+
+test('TC-006: unavailable startup verification offers reconnect without private token entry',{timeout:45000},async context=>{
+  const fixture=await browserChat(context,{deferLogin:true}),page=fixture.page;
+  await page.route('**/api/v1/auth/context',route=>route.abort());await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('#access-retry')).toBeVisible();await expect(page.locator('#access-token')).toBeHidden();await expect(page.locator('#access-status')).toContainText('Could not reach NED');assert.equal(fixture.requests.length,0);
+});

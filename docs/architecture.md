@@ -126,3 +126,5 @@ source merge does not certify staging enablement. No new telemetry receives raw
 keys, grants, chat content or profile data.
 
 First-use model setup in COM is an authenticated full-screen modal gate driven by Core model status, not a browser completion flag. The workspace remains unavailable until configuration is confirmed; existing configured profiles bypass onboarding. The same form serves optional provider settings. See [model setup](features/model-setup/SPEC.md) and its [interstitial contract](features/model-setup/design/interstitial.md). Provider API/auth ownership is unchanged.
+
+Hub-delegated browser access keeps private token controls hidden from initial HTML through validation, load failures and access expiry. An advisory `X-NED-Hub-Access: 1` response header selects reconnect UI and clears legacy browser token storage; it grants no authority. Authentication still requires a successful Core auth-context response and instance identity. Direct unmarked401 responses enable the direct-token form; unavailable verification offers Reconnect without requesting a private credential.
