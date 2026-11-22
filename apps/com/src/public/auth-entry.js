@@ -4,7 +4,7 @@ const shell=document.getElementById('app-shell'),gate=document.getElementById('a
 let initialized=false,busy=true,instanceId,accessVersion=0;
 submit.disabled=true;
 function show(message='Enter this instance’s access token to continue.'){
-  shell.hidden=true;shell.inert=true;gate.hidden=false;document.getElementById('access-memory').hidden=true;status.textContent=message;input.value='';input.focus();
+  document.dispatchEvent(new Event('ned-auth-lost'));shell.hidden=true;shell.inert=true;gate.hidden=false;document.getElementById('access-memory').hidden=true;status.textContent=message;input.value='';input.focus();
 }
 async function enter(result){
   const version=accessVersion;
@@ -15,7 +15,7 @@ async function enter(result){
   if(!initialized){await Promise.all([import('./vendor/webawesome.js'),import('./settings.js'),import('./app.js'),import('./chat-entry.js'),import('./work-entry.js')]);initialized=true;}
   else document.dispatchEvent(new Event('ned-auth-restored'));
   if(version!==accessVersion)return;
-  gate.hidden=true;shell.hidden=false;shell.inert=false;
+  gate.hidden=true;shell.hidden=false;shell.inert=false;document.dispatchEvent(new Event('ned-auth-entered'));
 }
 apiClient.onLost(reason=>{accessVersion++;show(reason==='expired'?'Access expired or changed. Enter an access token to reconnect.':'Enter this instance’s access token to continue.');});
 form.addEventListener('submit',async event=>{

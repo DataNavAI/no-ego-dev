@@ -124,3 +124,5 @@ Hub-owned provider OAuth is retired (Hub#137); optional account API-key defaults
 Hermes SDK, real container/EKS and live provider consent are separate evidence;
 source merge does not certify staging enablement. No new telemetry receives raw
 keys, grants, chat content or profile data.
+
+First-use model setup in COM is an authenticated full-screen modal gate driven by Core model status, not a browser completion flag. The workspace remains unavailable until configuration is confirmed; existing configured profiles bypass onboarding. The same form serves optional provider settings. See [model setup](features/model-setup/SPEC.md) and its [interstitial contract](features/model-setup/design/interstitial.md). Provider API/auth ownership is unchanged.

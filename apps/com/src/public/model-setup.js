@@ -3,10 +3,30 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   if(!card||!toggle)return {ready:()=>true,refresh:async()=>{}};
   const element=id=>document.getElementById(id),status=element('model-setup-status'),form=element('model-setup-form'),provider=element('model-provider'),model=element('model-name'),key=element('model-key'),hub=element('model-hub-link'),check=element('model-check');
   let state,ready=false,busy=false,opened=false,nonce,closed=false,version=0,login,pollTimer;
+  let authenticated=!document.getElementById('app-shell')?.hidden;
+  const closeButton=element('model-setup-close');
+  function dismiss(){if(!ready)return;opened=false;render();toggle.focus();}
+  card.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
+  closeButton.addEventListener('click',dismiss);
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Tab'||!card.open)return;
+    const controls=[...card.querySelectorAll('a[href],button,input,select,textarea')].filter(e=>!e.disabled&&e.getClientRects().length);
+    const first=controls[0],last=controls.at(-1),active=document.activeElement;
+    if(!first){event.preventDefault();element('model-setup-title').focus();}
+    else if(event.shiftKey&&(active===first||!controls.includes(active))){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&(active===last||!controls.includes(active))){event.preventDefault();first.focus();}
+  });
+  document.addEventListener('ned-auth-lost',()=>{authenticated=false;version++;ready=false;state=null;nonce=null;login=null;clearTimeout(pollTimer);key.value='';render();});
+  document.addEventListener('ned-auth-entered',()=>{const recheck=!authenticated;authenticated=true;render();if(recheck)void discover();});
   const pending=()=>login&&['starting','waiting','authorizing'].includes(login.state);
   const defaults={openai:'gpt-4.1',openrouter:'openai/gpt-4.1',gemini:'gemini-2.5-flash',anthropic:'claude-sonnet-4-5','openai-codex':'gpt-5-codex'};
   function render(){
-    card.hidden=ready&&!opened;
+    const visible=!closed&&authenticated&&(!ready||opened);
+    card.classList.toggle('model-onboarding',!ready);
+    closeButton.hidden=!ready;
+    card.hidden=!visible;
+    if(visible&&!card.open){card.showModal();element('model-setup-title').focus();}
+    else if(!visible&&card.open){card.close();if(authenticated&&ready)element('chat-message').focus();}
     form.hidden=!state;
     element('model-connect').hidden=form.hidden;
     hub.hidden=!state?.settingsUrl;
@@ -50,6 +70,7 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     const current=++version;busy=true;key.value='';render();
     try{
       const response=await request('/api/v1/model-setup',{method:'POST',headers:{'Content-Type':'application/json','X-NED-Models':'1'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+      if(closed||current!==version)return;
       if(!response.ok)throw new Error('Rejected');
       if(response.status===202){const data=await response.json();login=data.login;schedulePoll();status.textContent='Waiting for provider sign-in…';return;}
       const data=await read();if(closed||current!==version)return;
@@ -61,24 +82,28 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   function schedulePoll(){clearTimeout(pollTimer);if(!closed&&pending())pollTimer=setTimeout(()=>void poll(),1500);}
   async function poll(){
     if(closed||!pending())return;
-    try{const response=await request('/api/v1/model-setup?login='+encodeURIComponent(login.id),{headers:{'X-NED-Models':'1'},signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error();const data=await response.json();if(closed)return;login=data.login;if(pending()){status.textContent=login.state==='authorizing'?'Saving provider connection…':'Waiting for provider sign-in…';render();schedulePoll();}else{const complete=login.state==='complete';login=null;opened=!complete;await refresh();if(!complete)status.textContent='Provider sign-in did not complete. Check connection and try again.';}}
-    catch{if(!closed){status.textContent='Sign-in status is unavailable. Check connection before trying again.';login=null;render();}}
+    const current=version;
+    try{const response=await request('/api/v1/model-setup?login='+encodeURIComponent(login.id),{headers:{'X-NED-Models':'1'},signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error();const data=await response.json();if(closed||current!==version)return;login=data.login;if(pending()){status.textContent=login.state==='authorizing'?'Saving provider connection…':'Waiting for provider sign-in…';render();schedulePoll();}else{const complete=login.state==='complete';login=null;opened=!complete;await refresh();if(!complete)status.textContent='Provider sign-in did not complete. Check connection and try again.';}}
+    catch{if(!closed&&current===version){status.textContent='Sign-in status is unavailable. Check connection before trying again.';login=null;render();}}
   }
   element('model-disconnect').addEventListener('click',()=>{if(busy||pending()||!nonce)return;if(!globalThis.confirm('Disconnect this instance provider? Other instances and Hub account settings stay unchanged.'))return;void write({action:'disconnect',nonce,confirm:true});});
   element('model-login-cancel').addEventListener('click',async()=>{
-    if(busy||!pending())return;busy=true;render();
-    try{const response=await request('/api/v1/model-setup',{method:'POST',headers:{'Content-Type':'application/json','X-NED-Models':'1'},body:JSON.stringify({action:'cancel-login',id:login.id}),signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error();login=null;clearTimeout(pollTimer);await refresh(true);status.textContent='Provider sign-in cancelled.';}catch{status.textContent='Check connection before retrying sign-in.';}finally{busy=false;render();}
+    if(busy||!pending())return;const current=version;busy=true;render();
+    try{const response=await request('/api/v1/model-setup',{method:'POST',headers:{'Content-Type':'application/json','X-NED-Models':'1'},body:JSON.stringify({action:'cancel-login',id:login.id}),signal:AbortSignal.timeout(15000)});if(closed||current!==version)return;if(!response.ok)throw Error();login=null;clearTimeout(pollTimer);await refresh(true);status.textContent='Provider sign-in cancelled.';}catch{status.textContent='Check connection before retrying sign-in.';}finally{busy=false;render();}
   });
   form.addEventListener('submit',event=>{event.preventDefault();if(!nonce||busy)return;const body={nonce,provider:provider.value,model:model.value,replace:state?.source!=='local',...(provider.value==='openai-codex'?{action:'login'}:{apiKey:key.value})};nonce=null;void write(body);});
   provider.addEventListener('change',()=>{model.value=defaults[provider.value]??'';render();});
   check.addEventListener('click',()=>{if(busy)return;if(state?.source==='hub')void write({action:'inherit'});else void refresh();});
   toggle.addEventListener('click',()=>{opened=!opened;render();if(opened)void refresh();});
-  queueMicrotask(async()=>{
+  async function discover(){
+    const current=++version;busy=true;render();
     try{
       const response=await request('/api/v1/capabilities',{signal:AbortSignal.timeout(15000)}),data=await response.json();
-      if(data.capabilities?.modelSetup===false){ready=true;card.hidden=true;toggle.hidden=true;changed();return;}
+      if(closed||current!==version)return;
+      if(data.capabilities?.modelSetup===false){busy=false;ready=true;opened=false;toggle.hidden=true;render();return;}
     }catch{/* The model status request remains authoritative when discovery fails. */}
-    await refresh();
-  });
-  return {ready:()=>ready,refresh,close(){closed=true;version++;clearTimeout(pollTimer);key.value='';element('model-device-code').textContent='';}};
+    if(!closed&&current===version)await refresh();
+  }
+  queueMicrotask(()=>{if(authenticated)void discover();});
+  return {ready:()=>ready,refresh,close(){closed=true;version++;clearTimeout(pollTimer);key.value='';element('model-device-code').textContent='';render();}};
 }

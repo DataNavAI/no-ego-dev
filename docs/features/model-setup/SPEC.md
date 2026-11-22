@@ -90,7 +90,7 @@ configured.” / “Model provider is required before chatting.” / “Model se
 are unavailable. Check configuration and try again.” Error: “Provider connection
 could not be saved. Check the credentials and try again.” Never show provider
 response bodies. Existing credentials are never repopulated into the password
-input. A compact card above the composer preserves the existing conversation.
+input. First-use setup is a full-screen interstitial; see [layout and interaction contract](design/interstitial.md).
 
 ## Coverage and acceptance
 
@@ -109,10 +109,7 @@ Stopping preserves profile/workspace; credentials can remain in encrypted-volume
 backups under their retention policy. Retiring setup must preserve user config,
 remove routes/controls and revoke Hub capabilities without erasing workspaces.
 
-The compact card uses a two-column provider/model row, a full-width password field
-and neutral actions with a black Connect provider primary action. It scrolls only
-when space requires, keeping the composer/draft below it. Model provider toggles
-the card on desktop/mobile. Check connection obtains authoritative status after
+The shared form uses a two-column provider/model row on desktop and one column on mobile, a full-width password field and neutral actions with a black Connect provider primary action. The first-use full-screen interstitial and optional settings dialog scroll vertically when necessary. Model provider opens optional settings on desktop/mobile. Check connection obtains authoritative status after
 uncertainty; credentials are never automatically replayed. Rendered synthetic
 captures live under `design/` and are produced by TC-002.
 
@@ -137,7 +134,7 @@ Given an authenticated instance owner and an isolated Hermes profile, select Gem
 
 Automated references: tests/TC-003.test.js and tests/hermes/live.test.js (run through npm run test:core:hermes) and the existing TC-002 served browser journey. Existing TC-001/TC-002 remain the API-key/inheritance/authentication regression base, updated for hosted overrides.
 
-Design: extend the existing approved compact card/design captures. Provider/model fields stay; Gemini/Claude add provider choices. Device login replaces the password field with verification instructions, external noopener link, copyable code, waiting/error status and Cancel. Buttons disable double submission; narrow screens wrap within the existing card. No new navigation/layout or approval gate. Capture desktop/320px from the served UI and self-review reflow/focus/secret exclusion.
+Design: retain the existing provider form/design captures; the #196 interstitial revision supersedes the compact layout. Provider/model fields stay; Gemini/Claude add provider choices. Device login replaces the password field with verification instructions, external noopener link, copyable code, waiting/error status and Cancel. Buttons disable double submission; narrow screens wrap within the existing card. No new navigation/layout or approval gate. Capture desktop/320px from the served UI and self-review reflow/focus/secret exclusion.
 Metrics: existing sanitized API status and bounded job-state outcomes only; no codes, tokens, prompts, account identifiers or new analytics service.
 
 Commit boundary: after provider approval, the current NED API authority and unchanged snapshot authorize the private commit. Cancellation/expiry before that point prevents persistence; authorizing is no longer cancellable (409/readback). Shutdown or a filesystem failure during Hermes multi-file persistence is uncertain and requires authoritative readback; per-file atomicity is not a cross-file/provider transaction, and no blind exchange replay or grant rollback is claimed.
@@ -145,3 +142,8 @@ Commit boundary: after provider approval, the current NED API authority and unch
 Resource reservation includes terminating login processes until actual child exit; cancel response waits for owned cleanup before admitting a replacement. The installed adapter admits at most2 subprocesses including discovery/configuration, and non-inference credential HTTP operations are capped at8. Regression TC-003 holds child exit after cancellation and proves a replacement cannot start early.
 
 Shutdown also fences interpreter discovery before spawn and awaits pending commit-authorization/lock cleanup before releasing an operation slot; closed adapters cannot reopen. Commit-check errors retain their NED401/409 domain classification instead of becoming an opaque helper error.
+
+## First-use full-screen setup (#196)
+
+- FR-011: Authenticated missing/unknown model configuration presents a full-screen, keyboard-contained interstitial before the workspace can be used. Loading, errors and cancelled login remain in the flow. Only authoritative configured status (or explicit model-setup capability absence) admits the workspace. Configured profiles bypass first-use setup; optional model settings can be closed. Access loss closes setup and restored access revalidates it. Preserve drafts and current provider/secret behavior.
+- CUJ-001 / TC-002 also cover FR-011. Serve the actual COM UI with synthetic provider boundaries; assert desktop/mobile viewport coverage, keyboard focus containment, Escape cannot bypass missing config, success restores workspace, reload bypass, optional settings dismissal, error recovery and access-loss/reconnect. Remove only test-owned profiles/listeners. Design: [interstitial](design/interstitial.md); captures in design/. No live provider claims.

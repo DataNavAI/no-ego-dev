@@ -33,17 +33,35 @@
 #chat-send[data-state="stop"] svg path,#chat-send[data-state="stopping"] svg path{d:path('M4 4h8v8H4z');fill:currentColor;stroke:none}
 #chat-send[data-state="stopping"]{opacity:.6}
 
-#model-setup { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 12px; max-height: 55dvh; overflow: auto; }
 #model-setup[hidden], #model-setup [hidden] { display: none; }
-#model-setup h2 { font-size: 16px; margin: 0 0 8px; }
-#model-setup p { font-size: 14px; margin: 8px 0; }
 #model-setup-form { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
 .model-field { display: grid; gap: 4px; min-width: 0; font-size: 14px; }
 .model-key-field { grid-column: 1 / -1; }
-#model-setup input, #model-setup select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+#model-setup input, #model-setup select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
 .model-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 #model-setup button { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--hover); }
 #model-connect { background: var(--text)!important; color: var(--surface)!important; }
 #model-connect:disabled { background: var(--hover)!important; color: var(--muted)!important; }
 #model-hub-link { display: inline-flex; align-items: center; min-height: 44px; }
 #model-setup-toggle { display: block; margin: 0 0 4px auto; min-height: 36px; border: 0; border-radius: 8px; padding: 4px 8px; background: transparent; color: var(--muted); font-size: 12px; }
+
+/* One model form: required first-use interstitial or optional settings dialog. */
+#model-setup { box-sizing: border-box; width: min(624px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 32px); border: 1px solid var(--border); border-radius: 12px; overflow: auto; margin: auto; padding: 32px; color: var(--text); background: var(--surface); }
+#model-setup::backdrop { background: rgb(0 0 0 / 35%); }
+#model-setup.model-onboarding { position: fixed; inset: 0; width: 100%; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; padding: 32px; overflow-y: auto; overscroll-behavior: contain; }
+#model-setup.model-onboarding::backdrop { background: var(--surface); }
+.model-setup-content { width: min(100%, 560px); margin: auto; }
+.model-onboarding .model-setup-content { padding-block: max(0px, calc((100dvh - 640px) / 2)); }
+.model-setup-header { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: 32px; }
+.model-setup-header strong { font-size: 20px; letter-spacing: -1px; }
+#model-setup h2 { font-size: 32px; line-height: 1.15; letter-spacing: -1px; margin: 0 0 16px; }
+#model-setup p { font-size: 14px; line-height: 1.5; margin: 12px 0 24px; }
+#model-setup-form { margin-top: 24px; gap: 20px 16px; }
+#model-setup .model-actions { margin-top: 24px; }
+#model-device-code { overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  #model-setup, #model-setup.model-onboarding { padding: 20px; }
+  #model-setup-form { grid-template-columns: minmax(0,1fr); }
+  .model-setup-header { margin-bottom: 24px; }
+  #model-setup h2 { font-size: 28px; }
+}
