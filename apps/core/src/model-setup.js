@@ -1,3 +1,4 @@
+import {cleanModelCatalog} from './model-catalog.js';
 import {constants} from 'node:fs';
 import {open,mkdir,lstat,rename,unlink} from 'node:fs/promises';
 import {homedir} from 'node:os';
@@ -39,7 +40,7 @@ async function jsonResponse(response,limit=32768){
   for await(const chunk of response.body){size+=chunk.length;if(size>limit){await response.body.cancel().catch(()=>{});throw new ModelSetupError();}chunks.push(chunk);}
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
-export function createModelSetup({home=homedir(),env=process.env,fetch:request=globalThis.fetch,enabled=true,hermesAdapter,clock=Date.now}={}){
+export function createModelSetup({home=homedir(),env=process.env,fetch:request=globalThis.fetch,enabled=true,hermesAdapter,modelCatalog,clock=Date.now}={}){
   const root=env.HERMES_HOME??path.join(home,'.hermes'),intents=new Map(),requests=new Set();
   const adapter=hermesAdapter??createHermesModelAdapter({env,profile:root}),logins=new Map();
   let hub,closed=false,queue=Promise.resolve();
@@ -132,20 +133,22 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
       return {provider:'custom:ned-hub',model:c.model};
     });
   }
+  async function catalog(){try{return cleanModelCatalog(await (modelCatalog?modelCatalog():adapter.catalog?.()));}catch{return cleanModelCatalog(null);}}
   async function status(){
     if(closed)throw new ModelSetupError();
     const deviceLogin=enabled&&process.platform!=='win32'&&await adapter.available();
     const identity=hub,current=await profile();if(identity!==hub)throw new ModelSetupError(409,'model_setup_changed');
+    const models=modelCatalog||deviceLogin?await catalog():cleanModelCatalog(null);
     const settingsUrl=identity?identity.origin+'/?settings=model':null;
     for(const [nonce,intent]of intents)if(intent.expires<clock())intents.delete(nonce);
     if(intents.size>=16)intents.delete(intents.keys().next().value);
-    const nonce=randomBytes(32).toString('base64url');intents.set(nonce,{fingerprint:current.fingerprint,expires:clock()+300000});
+    const nonce=randomBytes(32).toString('base64url');intents.set(nonce,{fingerprint:current.fingerprint,expires:clock()+300000,models});
     if(current.kind==='hub'){
-      if(!hub||current.marker.origin!==hub.origin||current.marker.instanceId!==hub.id)return {deviceLogin,login:activeLogin(),configured:false,source:'hub',settingsUrl,hosted:hub?.kind==='hosted',canDisconnect:['local','hub','instance'].includes(current.config.ned_model?.kind),nonce};
-      const data=await remote(identity);if(identity!==hub)throw new ModelSetupError(409,'model_setup_changed');return {deviceLogin,login:activeLogin(),configured:Boolean(data.connection)&&data.connection.version===current.marker.connectionVersion&&current.entry.api_key===hub.token,source:'hub',settingsUrl,hosted:hub.kind==='hosted',canDisconnect:true,provider:data.connection?.provider,model:data.connection?.model??null,nonce};
+      if(!hub||current.marker.origin!==hub.origin||current.marker.instanceId!==hub.id)return {models,catalogSource:'installed-hermes',deviceLogin,login:activeLogin(),configured:false,source:'hub',settingsUrl,hosted:hub?.kind==='hosted',canDisconnect:['local','hub','instance'].includes(current.config.ned_model?.kind),nonce};
+      const data=await remote(identity);if(identity!==hub)throw new ModelSetupError(409,'model_setup_changed');return {models,catalogSource:'installed-hermes',deviceLogin,login:activeLogin(),configured:Boolean(data.connection)&&data.connection.version===current.marker.connectionVersion&&current.entry.api_key===hub.token,source:'hub',settingsUrl,hosted:hub.kind==='hosted',canDisconnect:true,provider:data.connection?.provider,model:data.connection?.model??null,nonce};
     }
-    if(current.kind==='profile')return {deviceLogin,login:activeLogin(),configured:true,source:'profile',settingsUrl,hosted:hub?.kind==='hosted',canDisconnect:['local','hub','instance'].includes(current.config.ned_model?.kind),provider:current.config.ned_model?.selectedProvider??current.model.provider,model:publicModel(current),nonce};
-    return {deviceLogin,login:activeLogin(),configured:false,source:current.config.ned_model?.kind==='instance'?'local':hub?'hub':'local',settingsUrl,hosted:hub?.kind==='hosted',canDisconnect:['local','hub','instance'].includes(current.config.ned_model?.kind),nonce};
+    if(current.kind==='profile')return {models,catalogSource:'installed-hermes',deviceLogin,login:activeLogin(),configured:true,source:'profile',settingsUrl,hosted:hub?.kind==='hosted',canDisconnect:['local','hub','instance'].includes(current.config.ned_model?.kind),provider:current.config.ned_model?.selectedProvider??current.model.provider,model:publicModel(current),nonce};
+    return {models,catalogSource:'installed-hermes',deviceLogin,login:activeLogin(),configured:false,source:current.config.ned_model?.kind==='instance'?'local':hub?'hub':'local',settingsUrl,hosted:hub?.kind==='hosted',canDisconnect:['local','hub','instance'].includes(current.config.ned_model?.kind),nonce};
   }
   const pending=j=>['starting','waiting','authorizing'].includes(j.state);
   const publicLogin=j=>j&&({id:j.id,state:j.state,expiresAt:j.expiresAt,...(pending(j)&&j.verificationUri?{verificationUri:j.verificationUri,userCode:j.userCode}:{})});
@@ -179,6 +182,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
     if(!enabled||closed)throw new ModelSetupError(403,'model_setup_forbidden');
     const intent=intents.get(input?.nonce);intents.delete(input?.nonce);
     if(!intent||intent.expires<clock()||Object.keys(input).some(k=>!['action','nonce','provider','model','replace'].includes(k))||input.provider!=='openai-codex'||!validModel(input.model)||input.replace!==undefined&&typeof input.replace!=='boolean')throw new ModelSetupError(400,'model_setup_invalid');
+    if(!intent.models?.[input.provider]?.includes(input.model)||!(await catalog())[input.provider]?.includes(input.model))throw new ModelSetupError(400,'model_setup_invalid');
     if([...logins.values()].some(j=>!j.finished))throw new ModelSetupError(409,'model_login_active');
     const current=await profile();if(current.fingerprint!==intent.fingerprint||current.kind!=='missing'&&input.replace!==true)throw new ModelSetupError(409,'model_setup_changed');
     if(!await adapter.available())throw new ModelSetupError(503,'model_authentication_unavailable');
@@ -219,6 +223,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
       if(!enabled)throw new ModelSetupError(403,'model_setup_forbidden');
       const intent=intents.get(input?.nonce);intents.delete(input?.nonce);
       if(!intent||intent.expires<clock()||!input||Object.keys(input).some(k=>!['nonce','provider','model','apiKey','replace'].includes(k))||input.replace!==undefined&&typeof input.replace!=='boolean'||typeof input.provider!=='string'||!Object.hasOwn(providerUrls,input.provider)||!validModel(input.model)||typeof input.apiKey!=='string'||!/^[\x21-\x7e]{16,4096}$/.test(input.apiKey))throw new ModelSetupError(400,'model_setup_invalid');
+      if(!intent.models?.[input.provider]?.includes(input.model)||!(await catalog())[input.provider]?.includes(input.model))throw new ModelSetupError(400,'model_setup_invalid');
       return (async()=>{
         const current=await profile();if(current.fingerprint!==intent.fingerprint||current.kind!=='missing'&&input.replace!==true)throw new ModelSetupError(409,'model_setup_changed');
         const provider=input.provider,headers=provider==='gemini'?{'x-goog-api-key':input.apiKey}:provider==='anthropic'?{'x-api-key':input.apiKey,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+input.apiKey};

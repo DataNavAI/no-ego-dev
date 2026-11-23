@@ -1,0 +1,1 @@
+export const modelCatalog=async()=>({openai:['gpt-4.1','gpt-4.1-mini'],openrouter:['openai/gpt-4.1','anthropic/claude-fixture'],gemini:['gemini-2.5-flash','chosen'],anthropic:['claude-sonnet-4-5','chosen'],'openai-codex':['gpt-5-codex','fixture-model','fixture']});

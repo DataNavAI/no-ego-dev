@@ -14,3 +14,8 @@ Primary journey: authenticated unconfigured instance → choose provider/model �
 Verification: TC-002 served-browser tests own full-screen geometry, required/optional focus, narrow reflow, secret clearing, configured bypass and auth-loss transitions. Capture/inspect desktop/mobile with NED_MODEL_SCREENSHOT_DIR. Existing model API/Hermes tests retain provider boundary coverage; no new live consent or paid inference.
 
 Chat/network failure rechecks model status without forcing optional settings open for an already configured profile; existing chat Reload/recovery remains reachable (communicator TC-038).
+
+# Provider/model picker — #200
+Remove the Hub settings link entirely. Keep the existing full-screen/optional modal layout and Provider control. Replace Model text entry with a native select using installed Hermes model IDs for that provider. Select the first supported model for new setup/provider switches; preserve an existing configured model as a disabled current-configuration option if it is outside the list. Empty lists show Models unavailable, explanatory status and disabled Connect; Check connection retries. No editable/custom-model escape hatch in this flow. Reuse existing Base inputs, focus, 44px targets and responsive columns. Capture desktop/mobile actual rendered select and empty/error states. Model access varies by account; UI copy is specified in FR-011.
+
+Updated setup/device desktop/mobile captures use the deterministic model catalog fixture. Actual installed Hermes catalog/transport compatibility is verified separately by TC-003.

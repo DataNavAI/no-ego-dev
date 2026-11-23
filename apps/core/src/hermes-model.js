@@ -1,3 +1,4 @@
+import {cleanModelCatalog} from './model-catalog.js';
 import {spawn} from 'node:child_process';
 import {access} from 'node:fs/promises';
 import {homedir} from 'node:os';
@@ -37,6 +38,6 @@ export function createHermesModelAdapter({env=process.env,profile}={}){
     child.stdin.on('error',()=>{});child.stdin.write(JSON.stringify(input)+'\n');
     const operation={stop,done};operations.add(operation);void done.then(()=>operations.delete(operation),()=>operations.delete(operation));return operation;
   }
-  let availability;
-  return {start,async close(){closed=true;for(const op of operations)op.stop();await Promise.allSettled([...operations].map(op=>op.done));},async available(){if(closed)return false;return availability??=(async()=>{let ok=false,operation;try{operation=await start({action:'inspect'},{event:m=>{ok=m.type==='available'&&m.deviceLogin===true;}});const timeout=setTimeout(operation.stop,10000);try{await operation.done;}finally{clearTimeout(timeout);}return ok;}catch{return false;}})();}};
+  let availability,models=cleanModelCatalog(null);
+  return {start,async catalog(){await this.available();return cleanModelCatalog(closed?null:models);},async close(){closed=true;for(const op of operations)op.stop();await Promise.allSettled([...operations].map(op=>op.done));},async available(){if(closed)return false;return availability??=(async()=>{let ok=false,operation;try{operation=await start({action:'inspect'},{event:m=>{ok=m.type==='available'&&m.deviceLogin===true;if(ok)models=cleanModelCatalog(m.models);}});const timeout=setTimeout(operation.stop,10000);try{await operation.done;}finally{clearTimeout(timeout);}if(!ok)availability=undefined;return ok;}catch{availability=undefined;return false;}})();}};
 }

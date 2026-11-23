@@ -38,7 +38,22 @@ def main():
         from hermes_cli.auth_constants import CODEX_OAUTH_CLIENT_ID
     request = read()
     if request.get("action") == "inspect":
-        emit({"type": "available", "deviceLogin": True})
+        with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
+            from hermes_cli.models import _PROVIDER_MODELS, OPENROUTER_MODELS
+            # NED OpenAI uses Chat Completions: use Hermes' native openai list,
+            # not the separate openai-api picker containing Responses-only models.
+            catalogs = {}
+            for provider in ("openai", "openrouter", "gemini", "anthropic", "openai-codex"):
+                rows = OPENROUTER_MODELS if provider == "openrouter" else _PROVIDER_MODELS.get(provider, [])
+                ids = [row[0] if isinstance(row, (list, tuple)) else row for row in rows]
+                catalogs[provider] = []
+                used = 0
+                for model in dict.fromkeys(model for model in ids if isinstance(model, str) and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}", model)):
+                    if len(catalogs[provider]) >= 100 or used + len(model) > 2000:
+                        break
+                    catalogs[provider].append(model)
+                    used += len(model)
+        emit({"type": "available", "deviceLogin": True, "models": catalogs})
         return
     action, provider, model = (request.get(k) for k in ("action", "provider", "model"))
     if not isinstance(model, str) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}", model):

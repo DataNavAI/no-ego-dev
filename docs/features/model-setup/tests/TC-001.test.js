@@ -1,3 +1,4 @@
+import {modelCatalog} from './catalog-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,stat,rm,symlink} from 'node:fs/promises';
@@ -10,7 +11,7 @@ import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 import {exposeNedApiPath} from '../../../../apps/core/src/api-paths.js';
 async function fixture(t,{config='',env={},fetch:request=async()=>new Response('{}'),enabled=true}={}){
   const root=await mkdtemp(path.join(tmpdir(),'ned-model-setup-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});if(config)await writeFile(path.join(profile,'config.yaml'),config,{mode:0o600});
-  const models=createModelSetup({home:root,env:{HERMES_HOME:profile,...env},fetch:request,enabled});
+  const models=createModelSetup({modelCatalog,home:root,env:{HERMES_HOME:profile,...env},fetch:request,enabled});
   t.after(async()=>{await models.close();await rm(root,{recursive:true,force:true});});return {root,profile,models,file:path.join(profile,'config.yaml')};
 }
 test('TC-001: private local setup validates provider, preserves YAML and consumes opaque writes once',async t=>{
@@ -62,4 +63,13 @@ test('TC-001: API credential revocation during provider validation prevents prof
   const saved=await fetch(app.url+'/api/v1/model-setup',{method:'POST',headers:{Authorization:'Bearer '+credential,Origin:app.url,'X-NED-Models':'1','Content-Type':'application/json'},body:JSON.stringify({nonce,provider:'openai',model:'gpt-4.1',apiKey:'synthetic-provider-key'})});
   assert.equal(saved.status,401);assert.equal((await saved.json()).error.code,'model_setup_unauthorized');assert.equal(await readFile(f.file,'utf8'),original);
   assert.equal((await fetch(app.url+'/api/v1/model-setup',{headers:{Authorization:'Bearer '+app.apiCredential,'X-NED-Models':'1'}})).status,200);
+});
+
+
+test('TC-001: model choices are provider-bound and rechecked before any credential validation/write',async t=>{
+ const f=await fixture(t);let calls=0,rows={openai:['listed-model'],openrouter:['other-provider/model']};
+ const models=createModelSetup({home:f.root,env:{HERMES_HOME:f.profile},modelCatalog:async()=>rows,fetch:async()=>{calls++;return Response.json({});}});t.after(()=>models.close());
+ for(const model of ['unknown-model','other-provider/model']){await assert.rejects(models.configure({nonce:(await models.status()).nonce,provider:'openai',model,apiKey:'synthetic-provider-key'}),e=>e.status===400);}
+ const selected=await models.status();rows={openai:[]};await assert.rejects(models.configure({nonce:selected.nonce,provider:'openai',model:'listed-model',apiKey:'synthetic-provider-key'}),e=>e.status===400);assert.equal(calls,0);
+ await assert.rejects(readFile(f.file),e=>e.code==='ENOENT');
 });
