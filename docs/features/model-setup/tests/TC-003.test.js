@@ -1,3 +1,4 @@
+import {modelCatalog} from './catalog-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,rm,readFile,writeFile} from 'node:fs/promises';
@@ -10,7 +11,7 @@ const until=async(fn,predicate)=>{for(let i=0;i<1000;i++){const value=await fn()
 async function fixture(t,{clock=Date.now}={}){
   const root=await mkdtemp(path.join(tmpdir(),'ned-device-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});let event,commit,resolve,reject,commits=0,stops=0;
   const adapter={available:async()=>true,async start(input,hooks){event=hooks.event;commit=hooks.beforeCommit;const done=new Promise((yes,no)=>{resolve=yes;reject=no;});queueMicrotask(()=>event({type:'challenge',verificationUri:'https://auth.openai.com/codex/device',userCode:'NED-TEST',deviceSecret:'never-return'}));return {done,stop(){stops++;reject(Error('stopped'));}};}};
-  const models=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter,clock});t.after(async()=>{await models.close();await rm(root,{recursive:true,force:true});});
+  const models=createModelSetup({modelCatalog,home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter,clock});t.after(async()=>{await models.close();await rm(root,{recursive:true,force:true});});
   return {models,profile,get commits(){return commits;},get stops(){return stops;},async approve(){let release;try{release=await commit();commits++;await writeFile(path.join(profile,'config.yaml'),'model: {provider: openai, default: persisted}\n',{mode:0o600});resolve();}catch{reject(Error('denied'));}finally{await release?.();}},event:value=>event(value)};
 }
 async function start(f,authorize=()=>true){return f.models.startLogin({action:'login',nonce:(await f.models.status()).nonce,provider:'openai-codex',model:'fixture-model'},authorize);}
@@ -36,7 +37,7 @@ test('TC-003: Gemini and Claude keys validate at fixed native provider endpoints
   for(const provider of ['gemini','anthropic'])await t.test(provider,async t=>{
     const root=await mkdtemp(path.join(tmpdir(),'ned-native-key-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});let commits=0;
     const key='synthetic-native-provider-key';const adapter={available:async()=>true,async start(input,hooks){assert.equal(input.action,'configure');assert.equal(input.provider,provider);assert.equal(input.apiKey,key);const done=(async()=>{const release=await hooks.beforeCommit();try{commits++;await writeFile(path.join(profile,'.env'),(provider==='gemini'?'GEMINI_API_KEY':'ANTHROPIC_API_KEY')+'='+key+'\n',{mode:0o600});await writeFile(path.join(profile,'config.yaml'),'model: {provider: '+provider+', default: chosen}\nned_model: {kind: instance}\n',{mode:0o600});}finally{await release();}})();return {done,stop(){}};}};
-    const models=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter,fetch:async(url,options)=>{if(String(url).includes('/api/models/instances/'))return Response.json({configured:false,connection:null,baseUrl:'https://hub.example/api/models/instances/'+ 'a'.repeat(36)+'/v1'});assert.equal(url,provider==='gemini'?'https://generativelanguage.googleapis.com/v1beta/models':'https://api.anthropic.com/v1/models');assert.equal(options.headers[provider==='gemini'?'x-goog-api-key':'x-api-key'],key);assert.equal(options.redirect,'error');return new Response('{}');}});
+    const models=createModelSetup({modelCatalog,home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter,fetch:async(url,options)=>{if(String(url).includes('/api/models/instances/'))return Response.json({configured:false,connection:null,baseUrl:'https://hub.example/api/models/instances/'+ 'a'.repeat(36)+'/v1'});assert.equal(url,provider==='gemini'?'https://generativelanguage.googleapis.com/v1beta/models':'https://api.anthropic.com/v1/models');assert.equal(options.headers[provider==='gemini'?'x-goog-api-key':'x-api-key'],key);assert.equal(options.redirect,'error');return new Response('{}');}});
     t.after(async()=>{await models.close();await rm(root,{recursive:true,force:true});});
     await models.register({origin:'https://hub.example',id:'11111111-1111-4111-8111-111111111111',token:'ned_'+'a'.repeat(43),kind:'hosted'});
     const result=await models.configure({nonce:(await models.status()).nonce,provider,model:'chosen',apiKey:key});assert.equal(result.configured,true);assert.equal(commits,1);assert.equal((await models.prepare()).provider,provider);assert(!(JSON.stringify(await models.status())).includes(key));
@@ -46,7 +47,7 @@ test('TC-003: Gemini and Claude keys validate at fixed native provider endpoints
 test('TC-003: cancellation retains its process slot until the owned child actually exits',async t=>{
   const root=await mkdtemp(path.join(tmpdir(),'ned-device-stop-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});const exits=[];let started=0;
   const adapter={available:async()=>true,async start(input,hooks){started++;const done=new Promise((resolve,reject)=>{exits.push(()=>reject(Error('owned child exited')));});queueMicrotask(()=>hooks.event({type:'challenge',verificationUri:'https://auth.openai.com/codex/device',userCode:'NED-TEST'}));return {done,stop(){/* Termination requested; the controlled child has not exited. */}};}};
-  const models=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter});t.after(async()=>{for(const exit of exits)exit();await models.close();await rm(root,{recursive:true,force:true});});
+  const models=createModelSetup({modelCatalog,home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter});t.after(async()=>{for(const exit of exits)exit();await models.close();await rm(root,{recursive:true,force:true});});
   const request=async()=>models.startLogin({action:'login',nonce:(await models.status()).nonce,provider:'openai-codex',model:'fixture'},()=>true);
   const job=await request();await until(()=>models.login(job.id),j=>j.state==='waiting');const cancelling=models.cancelLogin(job.id);await assert.rejects(request(),e=>e.code==='model_login_active');assert.equal(started,1);for(const exit of exits)exit();await cancelling;
 });

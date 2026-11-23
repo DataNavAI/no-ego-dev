@@ -1,14 +1,13 @@
 {
-  "candidate_sha": "ff75150acaf5d392c5d659d8662faffb25ebfb39",
+  "candidate_sha": "8a7cbf8dc117fddebe6f37ad67deb7edb1f7fff2",
   "result": "pass",
-  "tested_at": "2026-11-22T07:30:10.874246+00:00",
-  "environment": "macOS arm64; Node24; served Chromium at1280x900 and320x740; isolated synthetic model/gateway",
+  "tested_at": "2026-11-23T03:02:18.268513+00:00",
+  "environment": "macOS arm64; Node24; served Chromium at1280x900 and320x740; isolated synthetic credentials; actual pinned Hermes catalog separately verified",
   "commands": [
     "npm run lint",
-    "npm run test:all (exact-staged pre-commit full spec/Node/Python and actual pinned Hermes)",
+    "npm run test:all (exact staged full pre-commit gates, including Python and actual pinned Hermes)",
     "npm run build:ui:check",
-    "node --test docs/features/ned-api/tests/TC-006.test.js docs/features/ned-api/tests/TC-007.test.js",
-    "Served delegated desktop/mobile browser check"
+    "node --test docs/features/model-setup/tests/TC-002.test.js"
   ],
-  "observations": "Direct first/repeat/forgotten/rotated access works. Delegated access hides private credentials from first HTML, during delayed validation, after connection and after marked401; network failures offer Reconnect. Advisory header cannot authorize401; legacy storage cleared only after authenticated context. Screenshots captured for inspection. No hosted consent or paid inference. Managed image/Hub gateway staging acceptance remains separate."
+  "observations": "Reviewed desktop/mobile full-screen setup and device flow captures. No Hub configuration link. Provider-specific select defaults and lists; switching provider clears typed key; retry preserves supported selection; empty catalogs block new configuration and recover; unlisted existing configured models stay intact. API rejects forged/cross-provider/removed selections before credential use. Real pinned Hermes validates all five catalogs, including OpenAI Chat Completions transport mapping. No live consent, account entitlement or paid inference claimed; managed-image staging acceptance is separate."
 }

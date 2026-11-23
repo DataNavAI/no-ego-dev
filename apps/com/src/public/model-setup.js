@@ -1,7 +1,7 @@
 export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{}}={}){
   const card=document.getElementById('model-setup'),toggle=document.getElementById('model-setup-toggle');
   if(!card||!toggle)return {ready:()=>true,refresh:async()=>{}};
-  const element=id=>document.getElementById(id),status=element('model-setup-status'),form=element('model-setup-form'),provider=element('model-provider'),model=element('model-name'),key=element('model-key'),hub=element('model-hub-link'),check=element('model-check');
+  const element=id=>document.getElementById(id),status=element('model-setup-status'),form=element('model-setup-form'),provider=element('model-provider'),model=element('model-name'),key=element('model-key'),check=element('model-check');
   let state,ready=false,busy=false,opened=false,nonce,closed=false,version=0,login,pollTimer;
   let authenticated=!document.getElementById('app-shell')?.hidden;
   const closeButton=element('model-setup-close');
@@ -19,7 +19,15 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   document.addEventListener('ned-auth-lost',()=>{authenticated=false;version++;ready=false;state=null;nonce=null;login=null;clearTimeout(pollTimer);key.value='';render();});
   document.addEventListener('ned-auth-entered',()=>{const recheck=!authenticated;authenticated=true;render();if(recheck)void discover();});
   const pending=()=>login&&['starting','waiting','authorizing'].includes(login.state);
-  const defaults={openai:'gpt-4.1',openrouter:'openai/gpt-4.1',gemini:'gemini-2.5-flash',anthropic:'claude-sonnet-4-5','openai-codex':'gpt-5-codex'};
+  const providers=['openai','openrouter','gemini','anthropic','openai-codex'];
+  const choices=()=>Array.isArray(state?.models?.[provider.value])?state.models[provider.value].filter(id=>typeof id==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}$/.test(id)).slice(0,100):[];
+  function populate(selected){
+    model.replaceChildren();const ids=choices();
+    for(const id of ids){const option=document.createElement('option');option.value=id;option.textContent=id;model.append(option);}
+    if(selected&&!ids.includes(selected)){const option=document.createElement('option');option.value=selected;option.textContent=selected+' (current configuration)';option.disabled=true;model.prepend(option);}
+    if(!model.options.length){const option=document.createElement('option');option.value='';option.textContent='Models unavailable';model.append(option);}
+    model.value=selected??ids[0]??'';
+  }
   function render(){
     const visible=!closed&&authenticated&&(!ready||opened);
     card.classList.toggle('model-onboarding',!ready);
@@ -29,14 +37,13 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     else if(!visible&&card.open){card.close();if(authenticated&&ready)element('chat-message').focus();}
     form.hidden=!state;
     element('model-connect').hidden=form.hidden;
-    hub.hidden=!state?.settingsUrl;
-    hub.removeAttribute('href');
-    if(state?.settingsUrl)hub.href=state.settingsUrl;
+    const listed=choices().includes(model.value);
+    element('model-catalog-status').textContent=choices().length?'Models supported by this NED installation. Access depends on your provider account.':'Model list is unavailable. Check connection to try again.';
     const device=provider.value==='openai-codex';
     key.closest('.model-key-field').hidden=device;key.required=!device;
     provider.querySelector('[value="openai-codex"]').disabled=!state?.deviceLogin;
     for(const input of [provider,model,key,element('model-connect')])input.disabled=busy||Boolean(pending());
-    element('model-connect').disabled=busy||Boolean(pending())||!nonce;
+    element('model-connect').disabled=busy||Boolean(pending())||!nonce||!listed;
     element('model-connect').textContent=device?'Sign in with OpenAI':'Connect provider';
     element('model-login-cancel').hidden=!pending();element('model-login-cancel').disabled=busy||login?.state==='authorizing';
     const panel=element('model-device');panel.hidden=!pending()||!login.verificationUri;
@@ -52,7 +59,6 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     if(!response.ok)throw new Error('Model settings are unavailable. Check configuration and try again.');
     const data=await response.json();
     if(typeof data.configured!=='boolean'||!['local','profile','hub'].includes(data.source))throw new Error('Model settings are unavailable. Check configuration and try again.');
-    if(data.settingsUrl){const url=new URL(data.settingsUrl);if(url.protocol!=='https:'&&!(url.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(url.hostname)))throw new Error('Invalid settings');}
     return data;
   }
   async function refresh(forceOpen=false){
@@ -60,7 +66,7 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     const current=++version;busy=true;render();
     try{
       const data=await read();if(closed||current!==version)return;
-      state=data;nonce=data.nonce;ready=data.configured;key.value='';if(Object.hasOwn(defaults,data.provider))provider.value=data.provider;if(typeof data.model==='string')model.value=data.model;if(data.login){login=data.login;schedulePoll();}
+      const previousProvider=provider.value,previousModel=model.value;state=data;nonce=data.nonce;ready=data.configured;key.value='';if(providers.includes(data.provider))provider.value=data.provider;populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;schedulePoll();}
       status.textContent=ready?'Model provider is configured.':'Model provider is required before chatting.';
     }catch{if(!closed&&current===version){ready=false;status.textContent='Model settings are unavailable. Check configuration and try again.';}}
     finally{if(!closed&&current===version){busy=false;render();}}
@@ -91,8 +97,9 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     if(busy||!pending())return;const current=version;busy=true;render();
     try{const response=await request('/api/v1/model-setup',{method:'POST',headers:{'Content-Type':'application/json','X-NED-Models':'1'},body:JSON.stringify({action:'cancel-login',id:login.id}),signal:AbortSignal.timeout(15000)});if(closed||current!==version)return;if(!response.ok)throw Error();login=null;clearTimeout(pollTimer);await refresh(true);status.textContent='Provider sign-in cancelled.';}catch{status.textContent='Check connection before retrying sign-in.';}finally{busy=false;render();}
   });
-  form.addEventListener('submit',event=>{event.preventDefault();if(!nonce||busy)return;const body={nonce,provider:provider.value,model:model.value,replace:state?.source!=='local',...(provider.value==='openai-codex'?{action:'login'}:{apiKey:key.value})};nonce=null;void write(body);});
-  provider.addEventListener('change',()=>{model.value=defaults[provider.value]??'';render();});
+  form.addEventListener('submit',event=>{event.preventDefault();if(!nonce||busy||!choices().includes(model.value))return;const body={nonce,provider:provider.value,model:model.value,replace:state?.source!=='local',...(provider.value==='openai-codex'?{action:'login'}:{apiKey:key.value})};nonce=null;void write(body);});
+  provider.addEventListener('change',()=>{key.value='';populate();render();});
+  model.addEventListener('change',render);
   check.addEventListener('click',()=>{if(busy)return;if(state?.source==='hub')void write({action:'inherit'});else void refresh();});
   toggle.addEventListener('click',()=>{opened=!opened;render();if(opened)void refresh();});
   async function discover(){
