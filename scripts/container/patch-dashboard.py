@@ -8,7 +8,7 @@ def patch_dashboard(path):
     path = Path(path)
     original = path.read_bytes()
     # Source identity belongs to the official digest pinned in Dockerfile.
-    expected = "7f4143db80fcb1ef667ff9faed9076f334b73b55a78dfb781bacc932845be13e"
+    expected = "df385eeb525d4c6a4e746b64cfdbe33867a7fa5376848a5319bd2f9356bdf78b"
     if hashlib.sha256(original).hexdigest() != expected:
         raise ValueError("Pinned Hermes dashboard source changed; review the compatibility patch")
     source = original.decode()

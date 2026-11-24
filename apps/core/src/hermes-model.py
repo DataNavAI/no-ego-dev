@@ -8,6 +8,9 @@ import json
 import os
 from pathlib import Path
 import re
+import runpy
+import shutil
+import signal
 import sys
 
 
@@ -36,6 +39,8 @@ def main():
             _codex_exchange_authorization_code, _save_codex_tokens,
         )
         from hermes_cli.auth_constants import CODEX_OAUTH_CLIENT_ID
+    subscription = runpy.run_path(str(Path(__file__).with_name("subscription-auth.py")))
+    signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
     request = read()
     if request.get("action") == "inspect":
         with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
@@ -53,13 +58,29 @@ def main():
                         break
                     catalogs[provider].append(model)
                     used += len(model)
+        # Installed plugin catalogs are local support metadata, not entitlement.
+        if sys.platform == "linux":
+            plugin_root = Path(source or "/opt/hermes") / "plugins" / "model-providers"
+            for provider, filename, variable in (
+                ("claude-subscription-directsdk-experimental", "model_catalog.py", "PICKER_ROUTES"),
+                ("antigravity-subscription-directsdk", "models.py", "_FALLBACK_MODELS"),
+            ):
+                directory = plugin_root / provider
+                command = subscription["PROVIDERS"][provider]["command"]
+                if (directory / filename).is_file() and shutil.which(command, path="/usr/local/bin:/usr/bin:/bin"):
+                    with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
+                        ids = [item.removesuffix("[1m]") for item in runpy.run_path(str(directory / filename))[variable]]
+                    catalogs[provider] = [item for item in ids if isinstance(item, str) and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}", item)][:30]
         emit({"type": "available", "deviceLogin": True, "models": catalogs})
         return
     action, provider, model = (request.get(k) for k in ("action", "provider", "model"))
     if not isinstance(model, str) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}", model):
         raise ValueError("invalid model")
-    if action == "disconnect" and provider in ("openai-codex", "gemini", "anthropic", "hub"):
+    staged = None
+    if action == "disconnect" and provider in ("openai-codex", "gemini", "anthropic", "hub", *subscription["PROVIDERS"]):
         pass
+    elif action == "subscription" and provider in subscription["PROVIDERS"]:
+        staged = subscription["authorize"](provider, emit, read)
     elif action == "device" and provider == "openai-codex":
         with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
             device = _codex_request_device_code("https://auth.openai.com", CODEX_OAUTH_CLIENT_ID)
@@ -89,16 +110,21 @@ def main():
         if action == "disconnect":
             from hermes_cli.auth import clear_provider_auth
             from hermes_cli.credential_lifecycle import remove_provider_env_credential
-            if provider != "hub":
+            if provider in subscription["PROVIDERS"]:
+                subscription["disconnect"](config, provider)
+            if provider != "hub" and provider not in subscription["PROVIDERS"]:
                 clear_provider_auth(provider)
                 for name in {"gemini": ("GEMINI_API_KEY", "GOOGLE_API_KEY"), "anthropic": ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN")}.get(provider, ()):
                     remove_provider_env_credential(name)
-            config = load_config_readonly()
+            if provider not in subscription["PROVIDERS"]:
+                config = load_config_readonly()
             marker = config.get("ned_model") or {}
             owned = marker.get("provider")
             if marker.get("kind") in ("local", "hub") and owned in ("ned-model", "ned-hub") and selected.get("provider") == "custom:" + owned:
                 config.get("providers", {}).pop(owned, None)
             selected = {"provider": "custom:ned-unconfigured", "default": "", "name": ""}
+        elif action == "subscription":
+            subscription["persist"](*staged, provider, config)
         elif action == "device":
             _save_codex_tokens(tokens)
         else:

@@ -144,3 +144,20 @@ docker exec --user hermes ned-model-test /opt/hermes/.venv/bin/python \
 ```
 
 Require exit0 and the expected final reply. Capture provider output privately and report only the reply assertion; errors may contain sensitive provider details. Expired/rejected tokens, missing entitlement, network failure or quota exhaustion do not count as a pass. Remove the exact test container with `docker rm -f -v`, its explicitly named test volumes, and the exported env file; preserve the original host auth file. The credential-free `npm run test:container` never performs this import or model call.
+
+## Subscription runtime candidate (#206)
+
+The candidate Dockerfile uses official Hermes v0.23.4's immutable multi-architecture
+index `sha256:ef0650d523ee1b5ab32c779acabc446d9936869a9932591553688a62bcf0c42f`.
+Registry leaves: amd64 `sha256:3bc37fd8546e90fc41fe0d29511b4052840c281617cbcec6093bfe03d86a4ad9`,
+arm64 `sha256:2223ae201f9b5994468d6e6ec499fc92cfb4a451592c013a02d314ffdaafd860`.
+The guarded dashboard redirect patch is retained against the reviewed v0.23.4
+source digest, not applied by accepting an unknown upstream source. The pinned
+Hermes integration suite uses Python 3.14; Linux/macOS CI provisions it explicitly.
+
+[Subscription authentication](../model-setup/subscription-auth.md) describes the
+checksummed official clients/provider plugins, profile isolation patch and
+no-consent challenge/cancellation probe. Run the normal native-architecture
+container acceptance as well. These checks do not certify live Claude/Google
+consent, subscription entitlement or paid inference. A source change is not a
+staging deployment; qualify the managed image in the test cluster before rollout.

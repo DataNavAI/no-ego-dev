@@ -1,0 +1,50 @@
+{
+  "hermes": {
+    "revision": "8fc0374447313e276f6b9a2764bfc750190c966a",
+    "version": "0.23.4"
+  },
+  "claude": {
+    "version": "2.1.331",
+    "platforms": {
+      "x86_64": {
+        "url": "https://registry.npmjs.org/@anthropic-ai/claude-code-linux-x64/-/claude-code-linux-x64-2.1.331.tgz",
+        "sha512": "IpvZ9c/NopO/sr8ThWLVAUDXVAFT3auLWrhbR6wq1dgkuJfZYdTtoXf6GajE5KL9R58iTt/86OPXrJAsM4+l8g==",
+        "member": "package/claude"
+      },
+      "aarch64": {
+        "url": "https://registry.npmjs.org/@anthropic-ai/claude-code-linux-arm64/-/claude-code-linux-arm64-2.1.331.tgz",
+        "sha512": "zy+OOB7i1J7rCjNoPB2ZBD7EAtT0Eus1wH+toklZGL2XpwHyw+POGUGOpEBBE6xe5EkAYWXzFSTQ3uD8UtWlRg==",
+        "member": "package/claude"
+      }
+    }
+  },
+  "antigravity": {
+    "version": "1.5.16",
+    "platforms": {
+      "x86_64": {
+        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.5.16-5250855658717184/linux-x64/cli_linux_x64.tar.gz",
+        "sha512hex": "3dee9f26e298156db673f6ce2a0f5dfed5b30006e04ceb9809c68070e7b717587b33a3da0f8bc2eda45af81a50bc8b14c82b28ae5832bcfe3e7fd49397117b31",
+        "member": "antigravity"
+      },
+      "aarch64": {
+        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.5.16-5250855658717184/linux-arm/cli_linux_arm64.tar.gz",
+        "sha512hex": "23c193151499a4986fd5fa0d8132665cc8ffbad6cc0b3ff4fd53a2cb68abb76b149a992b836d53063443cd89add335f14d8134fb02abdcecbf6e1eaef6c53d33",
+        "member": "antigravity"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "claude-subscription-directsdk-experimental",
+      "url": "https://codeload.github.com/NousResearch/hermes-official-plugins/tar.gz/72eb3b87215e98d11cecfb26ca95b86be73b32de",
+      "sha256": "c5824676e51014b5506a916f6fa0705bb43d57e55ad9d84483da03592b497f31",
+      "subdir": "claude-subscription-directsdk"
+    },
+    {
+      "name": "antigravity-subscription-directsdk",
+      "url": "https://codeload.github.com/soyelmismo/hermes-antigravity-subscription/tar.gz/f1c1a8ccc5a560b8d5926e2b7e4b544d272d2dd2",
+      "sha256": "a3ad73ed2a589c75a5817be5e06d3bc78594be97c271dea71fd4a4286b509a00",
+      "subdir": ""
+    }
+  ]
+}

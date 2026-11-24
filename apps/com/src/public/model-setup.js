@@ -16,10 +16,12 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     else if(event.shiftKey&&(active===first||!controls.includes(active))){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&(active===last||!controls.includes(active))){event.preventDefault();first.focus();}
   });
-  document.addEventListener('ned-auth-lost',()=>{authenticated=false;version++;ready=false;state=null;nonce=null;login=null;clearTimeout(pollTimer);key.value='';render();});
+  document.addEventListener('ned-auth-lost',()=>{authenticated=false;version++;ready=false;state=null;nonce=null;login=null;clearTimeout(pollTimer);key.value='';element('model-login-code').value='';render();});
   document.addEventListener('ned-auth-entered',()=>{const recheck=!authenticated;authenticated=true;render();if(recheck)void discover();});
   const pending=()=>login&&['starting','waiting','authorizing'].includes(login.state);
-  const providers=['openai','openrouter','gemini','anthropic','openai-codex'];
+  const subscriptions=['claude-subscription-directsdk-experimental','antigravity-subscription-directsdk'];
+  const providers=['openai','openrouter','gemini','anthropic','openai-codex',...subscriptions];
+  const loginCode=element('model-login-code');
   const choices=()=>Array.isArray(state?.models?.[provider.value])?state.models[provider.value].filter(id=>typeof id==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}$/.test(id)).slice(0,100):[];
   function populate(selected){
     model.replaceChildren();const ids=choices();
@@ -39,16 +41,22 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     element('model-connect').hidden=form.hidden;
     const listed=choices().includes(model.value);
     element('model-catalog-status').textContent=choices().length?'Models supported by this NED installation. Access depends on your provider account.':'Model list is unavailable. Check connection to try again.';
-    const device=provider.value==='openai-codex';
+    const device=provider.value==='openai-codex'||subscriptions.includes(provider.value);
     key.closest('.model-key-field').hidden=device;key.required=!device;
     provider.querySelector('[value="openai-codex"]').disabled=!state?.deviceLogin;
+    for(const id of subscriptions)provider.querySelector('[value="'+id+'"]').disabled=!state?.models?.[id]?.length;
     for(const input of [provider,model,key,element('model-connect')])input.disabled=busy||Boolean(pending());
     element('model-connect').disabled=busy||Boolean(pending())||!nonce||!listed;
-    element('model-connect').textContent=device?'Sign in with OpenAI':'Connect provider';
+    element('model-connect').textContent=device?provider.value==='openai-codex'?'Sign in with OpenAI':provider.value.startsWith('claude-')?'Sign in with Claude':'Sign in with Google':'Connect provider';
     element('model-login-cancel').hidden=!pending();element('model-login-cancel').disabled=busy||login?.state==='authorizing';
     const panel=element('model-device');panel.hidden=!pending()||!login.verificationUri;
     const link=element('model-device-link');link.removeAttribute('href');element('model-device-code').textContent='';
-    if(!panel.hidden){link.href=login.verificationUri;element('model-device-code').textContent=login.userCode;}
+    if(!panel.hidden){link.href=login.verificationUri;element('model-device-code').textContent=login.userCode??'';}
+    const manual=Boolean(pending()&&login.method==='manual_code');
+    element('model-device-instructions').textContent=manual?'Open the verification page, sign in, then paste the authorization code below. Credentials stay in this instance.':'Open the verification page and enter this code. Credentials stay in this instance.';
+    element('model-login-code-field').hidden=!manual||!login.acceptsCode;
+    loginCode.disabled=busy||!login?.acceptsCode;
+    element('model-login-submit').disabled=busy||!login?.acceptsCode||!/^[\x21-\x7e]{6,4096}$/.test(loginCode.value);
     check.disabled=busy||Boolean(pending());
     element('model-disconnect').hidden=!state?.canDisconnect;element('model-disconnect').disabled=busy||Boolean(pending());
     toggle.setAttribute('aria-expanded',String(!card.hidden));
@@ -66,14 +74,14 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     const current=++version;busy=true;render();
     try{
       const data=await read();if(closed||current!==version)return;
-      const first=!state,previousProvider=provider.value,previousModel=model.value;state=data;nonce=data.nonce;ready=data.configured;key.value='';if(data.configured&&providers.includes(data.provider))provider.value=data.provider;else if(first||provider.value==='openai-codex'&&!data.deviceLogin)provider.value=data.deviceLogin?'openai-codex':'openai';populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;schedulePoll();}
+      const first=!state,previousProvider=provider.value,previousModel=model.value;state=data;nonce=data.nonce;ready=data.configured;key.value='';if(data.configured&&providers.includes(data.provider))provider.value=data.provider;else if(first||provider.value==='openai-codex'&&!data.deviceLogin)provider.value=data.deviceLogin?'openai-codex':'openai';populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;if(providers.includes(login.provider)){provider.value=login.provider;populate(login.model);}if(pending())opened=true;schedulePoll();}
       status.textContent=ready?'Model provider is configured.':'Model provider is required before chatting.';
     }catch{if(!closed&&current===version){ready=false;status.textContent='Model settings are unavailable. Check configuration and try again.';}}
     finally{if(!closed&&current===version){busy=false;render();}}
   }
   async function write(body){
     if(busy||closed)return;
-    const current=++version;busy=true;key.value='';render();
+    const current=++version;busy=true;key.value='';loginCode.value='';render();
     try{
       const response=await request('/api/v1/model-setup',{method:'POST',headers:{'Content-Type':'application/json','X-NED-Models':'1'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
       if(closed||current!==version)return;
@@ -97,7 +105,9 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     if(busy||!pending())return;const current=version;busy=true;render();
     try{const response=await request('/api/v1/model-setup',{method:'POST',headers:{'Content-Type':'application/json','X-NED-Models':'1'},body:JSON.stringify({action:'cancel-login',id:login.id}),signal:AbortSignal.timeout(15000)});if(closed||current!==version)return;if(!response.ok)throw Error();login=null;clearTimeout(pollTimer);await refresh(true);status.textContent='Provider sign-in cancelled.';}catch{status.textContent='Check connection before retrying sign-in.';}finally{busy=false;render();}
   });
-  form.addEventListener('submit',event=>{event.preventDefault();if(!nonce||busy||!choices().includes(model.value))return;const body={nonce,provider:provider.value,model:model.value,replace:state?.source!=='local',...(provider.value==='openai-codex'?{action:'login'}:{apiKey:key.value})};nonce=null;void write(body);});
+  form.addEventListener('submit',event=>{event.preventDefault();if(!nonce||busy||!choices().includes(model.value))return;const body={nonce,provider:provider.value,model:model.value,replace:state?.source!=='local',...(provider.value==='openai-codex'||subscriptions.includes(provider.value)?{action:'login'}:{apiKey:key.value})};nonce=null;void write(body);});
+  loginCode.addEventListener('input',render);
+  element('model-login-submit').addEventListener('click',()=>{if(busy||!login?.acceptsCode||!/^[\x21-\x7e]{6,4096}$/.test(loginCode.value))return;void write({action:'submit-login-code',id:login.id,code:loginCode.value});});
   provider.addEventListener('change',()=>{key.value='';populate();render();});
   model.addEventListener('change',render);
   check.addEventListener('click',()=>{if(busy)return;if(state?.source==='hub')void write({action:'inherit'});else void refresh();});
@@ -112,5 +122,5 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     if(!closed&&current===version)await refresh();
   }
   queueMicrotask(()=>{if(authenticated)void discover();});
-  return {ready:()=>ready,refresh,close(){closed=true;version++;clearTimeout(pollTimer);key.value='';element('model-device-code').textContent='';render();}};
+  return {ready:()=>ready,refresh,close(){closed=true;version++;clearTimeout(pollTimer);key.value='';loginCode.value='';element('model-device-code').textContent='';render();}};
 }

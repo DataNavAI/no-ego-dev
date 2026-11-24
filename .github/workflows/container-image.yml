@@ -10,6 +10,7 @@ on:
       - 'apps/**'
       - 'bin/**'
       - 'scripts/container/**'
+      - 'scripts/subscription-runtime/**'
       - 'docs/features/standalone-container/**'
       - '.github/workflows/container-image.yml'
       - 'config.yaml'

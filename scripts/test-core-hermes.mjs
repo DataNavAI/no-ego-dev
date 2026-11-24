@@ -5,8 +5,8 @@ import {fileURLToPath} from 'node:url';
 import {cachedArchive,runCommand} from './core-hermes-support.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const revision='6e07eb48387044dbcaf12490931c2b8ca7ec8653';
-const checksum='63de899415219adac1ce83b40980bc9526e5c448277ebf7a02d240bccebdcb1e';
+const revision='8fc0374447313e276f6b9a2764bfc750190c966a';
+const checksum='620bf64a63c7fabd995df402e46d5eee0cdab7e5d01a4aeddc3a6fa5dee54cc0';
 const cache=process.env.NED_HERMES_TEST_CACHE;
 if(!cache||!path.isAbsolute(cache))throw new Error('Set NED_HERMES_TEST_CACHE to an absolute external dependency-cache directory. See HERMES-TESTING.md.');
 if(process.platform==='win32')throw new Error('Hermes acceptance currently requires POSIX process-group teardown.');
@@ -27,9 +27,10 @@ try{
     return Buffer.from(await response.arrayBuffer());
   });
   await mkdir(source);await command('tar',['-xzf',archive,'-C',source,'--strip-components=1']);
+  await command('python',['scripts/subscription-runtime/install.py','--hermes-root',source,'--plugins-only']);
   const environment=path.join(temporary,'venv');
   const cases=path.join(temporary,'cases');await mkdir(cases);
-  await command('uv',['sync','--project',source,'--locked','--no-dev','--extra','messaging','--python','3.11'],{
+  await command('uv',['sync','--project',source,'--locked','--no-dev','--extra','messaging','--python','3.14'],{
     ...process.env,UV_CACHE_DIR:path.join(cache,'uv'),UV_PYTHON_INSTALL_DIR:path.join(cache,'python'),UV_PROJECT_ENVIRONMENT:environment,
   });
   console.log(`Hermes integration source: ${revision}; aimock: 1.48.0`);
