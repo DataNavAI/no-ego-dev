@@ -66,7 +66,7 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     const current=++version;busy=true;render();
     try{
       const data=await read();if(closed||current!==version)return;
-      const previousProvider=provider.value,previousModel=model.value;state=data;nonce=data.nonce;ready=data.configured;key.value='';if(providers.includes(data.provider))provider.value=data.provider;populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;schedulePoll();}
+      const first=!state,previousProvider=provider.value,previousModel=model.value;state=data;nonce=data.nonce;ready=data.configured;key.value='';if(data.configured&&providers.includes(data.provider))provider.value=data.provider;else if(first||provider.value==='openai-codex'&&!data.deviceLogin)provider.value=data.deviceLogin?'openai-codex':'openai';populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;schedulePoll();}
       status.textContent=ready?'Model provider is configured.':'Model provider is required before chatting.';
     }catch{if(!closed&&current===version){ready=false;status.textContent='Model settings are unavailable. Check configuration and try again.';}}
     finally{if(!closed&&current===version){busy=false;render();}}
