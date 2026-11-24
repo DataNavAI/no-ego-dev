@@ -1,0 +1,15 @@
+prompt: |
+  Apply the ned-chat-mobile-review skill to the scenarios in the supplied fixture. Explain the
+  browser setup, ordered actions, evidence, and expected report for each. The
+  inputs are synthetic descriptions and cannot be played or used as live URLs.
+  Do not claim that a recording or live acceptance occurred.
+expectations:
+  - Uses the specified mobile emulation and private recording context
+  - Exercises the real chat workflow in the proposed live procedure and counts every send
+  - Stops at ten sends and finalizes even partial recording
+  - Uses timestamps and visible UI evidence for recommendations
+  - Identifies incomplete capture and limits of edited or device-mismatched Muse footage
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/README.md
