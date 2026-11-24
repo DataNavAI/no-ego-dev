@@ -1,7 +1,10 @@
 # Maintained official multi-arch Hermes image; registry evidence in RUNBOOK.md.
-FROM nousresearch/hermes-agent@sha256:c69536a39e885b8943329bda68cdf44492458b96aa74a212239bde9d2aeb406a
+FROM nousresearch/hermes-agent@sha256:ef0650d523ee1b5ab32c779acabc446d9936869a9932591553688a62bcf0c42f AS subscription-runtime
 USER root
 WORKDIR /opt/ned
+COPY scripts/subscription-runtime/ scripts/subscription-runtime/
+RUN /opt/hermes/.venv/bin/python /opt/ned/scripts/subscription-runtime/install.py --hermes-root /opt/hermes --bin-dir /usr/local/bin
+FROM subscription-runtime AS ned
 RUN /usr/bin/python3 -m venv /opt/ned/python && /opt/ned/python/bin/pip install --no-cache-dir PyYAML==6.0.3
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit && \

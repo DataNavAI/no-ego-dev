@@ -59,3 +59,34 @@ test('TC-003: closing the adapter before or during interpreter discovery cannot 
     assert.equal(await adapter.available(),false);
   }
 });
+
+for(const [provider,verificationUri]of [
+  ['claude-subscription-directsdk-experimental','https://claude.ai/oauth/authorize?opaque-synthetic-challenge'],
+  ['antigravity-subscription-directsdk','https://accounts.google.com/o/oauth2/auth?state=synthetic'],
+])test('TC-003: '+provider+' manual authorization codes are submitted once and never read back',async t=>{
+  const root=await mkdtemp(path.join(tmpdir(),'ned-manual-code-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});let resolve,reject,submissions=0;
+  const adapter={available:async()=>true,async start(input,hooks){
+    assert.equal(input.action,'subscription');assert.equal(input.provider,provider);
+    const done=new Promise((yes,no)=>{resolve=yes;reject=no;});queueMicrotask(()=>hooks.event({type:'challenge',method:'manual_code',verificationUri}));
+    return {done,stop(){reject(Error('stopped'));},submit(code){assert.equal(code,'synthetic-authorization-code');submissions++;}};
+  }};
+  const service=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter,modelCatalog:async()=>({[provider]:['fixture-model']})});
+  t.after(async()=>{resolve();await service.close();await rm(root,{recursive:true,force:true});});
+  const nonce=(await service.status()).nonce,job=await service.startLogin({action:'login',nonce,provider,model:'fixture-model'},()=>true);
+  const waiting=await until(()=>service.login(job.id),j=>j.state==='waiting');assert.equal(waiting.method,'manual_code');assert.equal(waiting.acceptsCode,true);assert.equal(waiting.provider,provider);
+  assert.throws(()=>service.submitLoginCode(job.id,'bad\ncode'),e=>e.status===400);assert.equal(submissions,0);
+  const submitted=service.submitLoginCode(job.id,'synthetic-authorization-code');assert.equal(submitted.acceptsCode,false);assert(!JSON.stringify(submitted).includes('synthetic-authorization-code'));
+  assert.throws(()=>service.submitLoginCode(job.id,'synthetic-authorization-code'),e=>e.status===409);assert.equal(submissions,1);
+  await service.cancelLogin(job.id);assert.throws(()=>service.submitLoginCode(job.id,'synthetic-authorization-code'),e=>e.status===409);
+});
+
+test('TC-003: manual code rejects an expired or revoked job before passing input to its client',async t=>{
+  for(const mode of ['revoked','expired'])await t.test(mode,async t=>{
+    const root=await mkdtemp(path.join(tmpdir(),'ned-manual-denial-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});let authorized=true,now=1000,reject;
+    const provider='antigravity-subscription-directsdk',adapter={available:async()=>true,async start(input,hooks){const done=new Promise((_,no)=>{reject=no;});queueMicrotask(()=>hooks.event({type:'challenge',method:'manual_code',verificationUri:'https://accounts.google.com/o/oauth2/auth?state=synthetic'}));return {done,stop(){reject(Error('stopped'));},submit(){assert.fail('denied code reached client');}};}};
+    const service=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter,clock:()=>now,modelCatalog:async()=>({[provider]:['fixture']})});t.after(async()=>{await service.close();await rm(root,{recursive:true,force:true});});
+    const job=await service.startLogin({action:'login',nonce:(await service.status()).nonce,provider,model:'fixture'},()=>authorized);await until(()=>service.login(job.id),j=>j.state==='waiting');
+    if(mode==='revoked')authorized=false;else now=job.expiresAt;
+    assert.throws(()=>service.submitLoginCode(job.id,'synthetic-authorization-code'),e=>e.status===(mode==='revoked'?401:409));
+  });
+});

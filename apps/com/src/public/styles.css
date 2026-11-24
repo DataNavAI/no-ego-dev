@@ -164,3 +164,4 @@ body{padding-bottom:0}
 @media(max-width:767px){.dashboard-panel{padding:16px}.preview-toolbar{gap:12px;padding:0 12px}.canvas-tabs{gap:16px}.dashboard-summary h2{font-size:20px}}
 
 #model-device{min-width:0;overflow-wrap:anywhere}#model-device code{font-size:18px;font-weight:600;overflow-wrap:anywhere}#model-device a{display:inline-block;min-height:44px;padding-top:10px}
+#model-login-code-field{display:grid;gap:8px;min-width:0;margin-top:16px}#model-login-code-field[hidden]{display:none}#model-login-code{width:100%;min-width:0;box-sizing:border-box}#model-login-submit{min-height:44px}

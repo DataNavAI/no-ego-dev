@@ -99,3 +99,25 @@ test('TC-002: first setup defaults to ChatGPT Subscription, preserves choices an
  await mkdir(path.join(root,'profile'),{recursive:true,mode:0o700});await (await import('node:fs/promises')).writeFile(path.join(root,'profile/config.yaml'),'model: {provider: anthropic, default: chosen, api_key: synthetic-existing-key}\n',{mode:0o600});available=true;
  await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(provider).toHaveValue('anthropic');await expect(model).toHaveValue('chosen');assert.deepEqual(chat.errors,[]);
 });
+
+test('TC-002: subscription sign-in offers a one-shot private authorization code field in the full-screen flow',{timeout:45000},async t=>{
+  const root=await mkdtemp(path.join(tmpdir(),'ned-subscription-ui-')),profile=path.join(root,'profile');await mkdir(profile,{mode:0o700});t.after(()=>rm(root,{recursive:true,force:true}));
+  const provider='antigravity-subscription-directsdk',claude='claude-subscription-directsdk-experimental';let starts=0,submissions=0;
+  const adapter={available:async()=>true,async start(input,hooks){
+    starts++;assert.equal(input.provider,provider);let resolve,reject;const done=new Promise((yes,no)=>{resolve=yes;reject=no;});
+    queueMicrotask(()=>hooks.event({type:'challenge',method:'manual_code',verificationUri:'https://accounts.google.com/o/oauth2/auth?state=synthetic'}));
+    return {done,stop(){reject(Error('cancelled'));},submit(code){submissions++;assert.equal(code,'synthetic-authorization-code');void(async()=>{let release;try{release=await hooks.beforeCommit();await import('node:fs/promises').then(fs=>fs.writeFile(path.join(profile,'config.yaml'),'model: {provider: openai, default: fixture, api_key: synthetic-configured-key}\n',{mode:0o600}));resolve();}catch(error){reject(error);}finally{await release?.();}})();}};
+  }};
+  const models=createModelSetup({home:root,env:{HERMES_HOME:profile},hermesAdapter:adapter,modelCatalog:async()=>({...await modelCatalog(),[provider]:['gemini-fixture','gemini-second'],[claude]:['claude-fixture']})});
+  const chat=await browserChat(t,{modelSetup:models});await chat.ready();
+  await chat.page.getByLabel('Provider',{exact:true}).selectOption(claude);await expect(chat.page.getByRole('button',{name:'Sign in with Claude',exact:true})).toBeVisible();assert.equal(starts,0);
+  await chat.page.getByLabel('Provider',{exact:true}).selectOption(provider);await expect(chat.page.getByLabel('Model',{exact:true})).toHaveValue('gemini-fixture');await expect(chat.page.getByLabel('API key',{exact:true})).toBeHidden();
+  await chat.page.getByLabel('Model',{exact:true}).selectOption('gemini-second');await chat.page.getByRole('button',{name:'Sign in with Google',exact:true}).click();await expect(chat.page.getByLabel('Authorization code',{exact:true})).toBeVisible();
+  await chat.page.reload();await chat.ready();await expect(chat.page.getByLabel('Model',{exact:true})).toHaveValue('gemini-second');await expect(chat.page.getByLabel('Authorization code',{exact:true})).toBeVisible();assert.equal(starts,1);
+  await expect(chat.page.locator('#model-device-link')).toHaveAttribute('href','https://accounts.google.com/o/oauth2/auth?state=synthetic');
+  await expect(chat.page.getByRole('button',{name:'Complete sign-in',exact:true})).toBeDisabled();
+  for(const width of [1280,320]){await chat.page.setViewportSize({width,height:900});assert.equal(await chat.page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);if(process.env.NED_MODEL_SCREENSHOT_DIR){await mkdir(process.env.NED_MODEL_SCREENSHOT_DIR,{recursive:true});await chat.page.screenshot({path:path.join(process.env.NED_MODEL_SCREENSHOT_DIR,'subscription-'+width+'.png')});}}
+  await chat.page.getByLabel('Authorization code',{exact:true}).fill('synthetic-authorization-code');await expect(chat.page.getByLabel('Authorization code',{exact:true})).toHaveAttribute('type','password');
+  await chat.page.getByRole('button',{name:'Complete sign-in',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();assert.equal(starts,1);assert.equal(submissions,1);
+  assert(!(await chat.page.content()).includes('synthetic-authorization-code'));assert(!(await chat.page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).includes('synthetic-authorization-code'));assert.deepEqual(chat.errors,[]);
+});

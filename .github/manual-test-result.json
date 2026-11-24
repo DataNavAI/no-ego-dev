@@ -1,14 +1,15 @@
 {
-  "candidate_sha": "b90868800cb1c2f7b3c23c4a08f93db3c44f2131",
+  "candidate_sha": "28e3030f76b32779e4499e45160b2c3b389703c2",
   "result": "pass",
-  "tested_at": "2026-11-24T08:08:28.211662+00:00",
-  "environment": "Isolated macOS checkout, Chromium 1440x900 and iPhone 13 touch WebKit 390x664, disposable served Communicator with fixture-backed streaming.",
+  "tested_at": "2026-11-24T16:37:24.562447+00:00",
+  "environment": "Isolated macOS checkout, Node 24, served COM in Chromium at 1280x900 and 320x900; disposable profile and explicitly synthetic provider boundary. Native Linux ARM64 container separately qualified.",
   "commands": [
     "npm run lint",
-    "python -m pytest",
-    "npm run test:spec -- --all",
-    "node --test smoke.mjs partial.mjs (private disposable browser acceptance harness)",
-    "ffmpeg playback decode of four captured WebM recordings"
+    "npm run test:all",
+    "npm run build:ui:check",
+    "node --test docs/features/model-setup/tests/TC-002.test.js",
+    "docker run fixed container-clients.mjs against the final Linux image (no consent/exchange/inference)",
+    "python docs/features/standalone-container/tests/container_acceptance.py --image ned-provider-subscriptions:final --expected-architecture arm64"
   ],
-  "observations": "Four sends and completions per device. The recordings show empty chat, streaming, a long checklist, transcript scrolling and multiline composition; desktop also resizes. Both interruption variants retain decodable footage after one send. Compared visible composer controls with the edited Meta Muse launch clip at 0:16–0:17; timing and native keyboard were outside the evidence. The six synthetic skill scenarios and independent review are separate from browser acceptance."
+  "observations": "Visually inspected served desktop/mobile full-screen subscription setup captures. Provider/model controls, external consent link, private code field, disabled Complete sign-in action and vertically scrolling mobile layout fit the existing interstitial. Browser cases verified first-use ChatGPT default, provider switching, exact selected model/job retained after reload without a second login, one-shot code submission, secret clearing, cancellation and configured bypass. Actual pinned Claude/Antigravity clients reached approved consent origins and cancelled without profile changes; no real account consent, subscription entitlement or inference was tested. Actual Hermes integration proved per-profile Antigravity credential routing without launch-profile/keyring fallback. macOS/Windows subscription OAuth is not enabled by this Linux implementation."
 }

@@ -36,3 +36,10 @@ test('TC-003 Hermes: real device exchange/store and Gemini/Claude config use pri
     const removed=parse(await readFile(path.join(profile,'config.yaml'),'utf8'));assert.equal(removed.model.provider,'custom:ned-unconfigured');assert.equal(removed.providers[owned],undefined);assert.equal(removed.providers.unrelated.api_key,'synthetic-unrelated-key');assert.equal(removed.ned_model.kind,'instance');await adapter.close();
   }
 });
+
+test('TC-003 Hermes: actual Antigravity plugin never borrows launch-profile credentials or keyring',{timeout:15000},async t=>{
+  const python=process.env.NED_HERMES_TEST_PYTHON,source=process.env.NED_HERMES_TEST_SOURCE;if(!python||!source)throw Error('Use npm run test:core:hermes');
+  const root=await mkdtemp(path.join(tmpdir(),'ned-subscription-scope-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const result=JSON.parse(execFileSync(python,['-I',fileURLToPath(new URL('./subscription-scope.py',import.meta.url)),root],{env:{PATH:'/usr/bin:/bin',HOME:root,HERMES_HOME:root,NED_HERMES_TEST_SOURCE:source},encoding:'utf8',stdio:['pipe','pipe','pipe'],timeout:12000}));
+  assert.deepEqual(result,{profiles:2,scope:'PASS',hostFallback:'DENIED'});
+});

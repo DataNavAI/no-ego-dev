@@ -1,4 +1,4 @@
-export const modelProviders=Object.freeze(['openai','openrouter','gemini','anthropic','openai-codex']);
+export const modelProviders=Object.freeze(['openai','openrouter','gemini','anthropic','openai-codex','claude-subscription-directsdk-experimental','antigravity-subscription-directsdk']);
 export function cleanModelCatalog(value){
   const result={};
   for(const provider of modelProviders){

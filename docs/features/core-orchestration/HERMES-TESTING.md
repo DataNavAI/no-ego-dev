@@ -79,9 +79,8 @@ Core cases retain exhaustive ambiguity/crash/ownership tests.
 The fast TC-008 case separately verifies concurrent/warm/corrupt caches and that
 timeout or interruption fails even if child TERM cleanup returns exit0.
 
-Pinned Hermes: `6e07eb48387044dbcaf12490931c2b8ca7ec8653`, the public parent of
-the host's local launch-path-only patch at implementation time. Archive SHA256:
-`63de899415219adac1ce83b40980bc9526e5c448277ebf7a02d240bccebdcb1e`.
+Pinned Hermes: v0.23.4, `8fc0374447313e276f6b9a2764bfc750190c966a`, using its locked Python 3.14 environment. Archive SHA256:
+`620bf64a63c7fabd995df402e46d5eee0cdab7e5d01a4aeddc3a6fa5dee54cc0`.
 Update the revision/checksum deliberately and rerun all cases when upgrading.
 
 ## Model-stub research and choice
