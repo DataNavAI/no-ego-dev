@@ -1,13 +1,14 @@
 {
-  "candidate_sha": "8a7cbf8dc117fddebe6f37ad67deb7edb1f7fff2",
+  "candidate_sha": "7c4d91b0edaf56fec196a74785c7ec8fa86ff34c",
   "result": "pass",
-  "tested_at": "2026-11-23T03:02:18.268513+00:00",
-  "environment": "macOS arm64; Node24; served Chromium at1280x900 and320x740; isolated synthetic credentials; actual pinned Hermes catalog separately verified",
+  "tested_at": "2026-11-24T07:42:59.159215+00:00",
+  "environment": "macOS arm64; Node24; served Chromium at1280x900 and320x740; isolated synthetic model catalog and adapter availability",
   "commands": [
     "npm run lint",
-    "npm run test:all (exact staged full pre-commit gates, including Python and actual pinned Hermes)",
+    "npm run test:all (full exact-staged pre-commit Node/spec/Python and pinned Hermes)",
+    "node --test docs/features/model-setup/tests/TC-002.test.js",
     "npm run build:ui:check",
-    "node --test docs/features/model-setup/tests/TC-002.test.js"
+    "Served desktop/mobile exact-candidate visual acceptance"
   ],
-  "observations": "Reviewed desktop/mobile full-screen setup and device flow captures. No Hub configuration link. Provider-specific select defaults and lists; switching provider clears typed key; retry preserves supported selection; empty catalogs block new configuration and recover; unlisted existing configured models stay intact. API rejects forged/cross-provider/removed selections before credential use. Real pinned Hermes validates all five catalogs, including OpenAI Chat Completions transport mapping. No live consent, account entitlement or paid inference claimed; managed-image staging acceptance is separate."
+  "observations": "ChatGPT Subscription is the first selected option for fresh supported setup; catalog model is selected, API key hidden and existing explicit device sign-in action enabled. Existing configured provider/model and explicit unconfigured choices survive status refresh. Unavailable device auth selects OpenAI API on refresh and first load instead of a disabled subscription choice. Baseline regression failed for old OpenAI default; corrected6 served browser cases pass. Screenshots visually inspected. No provider login, consent, paid inference or managed staging deployment claimed by this local evidence."
 }

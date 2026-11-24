@@ -67,7 +67,7 @@ test('TC-002: status failure cannot bypass first-use setup and lost access clear
   const card=chat.page.locator('#model-setup');await expect(card).toBeVisible();await expect(chat.page.locator('#model-setup-status')).toContainText('Checking model configuration');
   await chat.page.keyboard.press('Escape');await expect(card).toBeVisible();release();
   await expect(chat.page.locator('#model-setup-status')).toContainText('unavailable');await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();
-  await expect(chat.page.locator('#model-setup-form')).toBeVisible();await chat.page.getByLabel('API key',{exact:true}).fill('synthetic-unsaved-key');
+  await expect(chat.page.locator('#model-setup-form')).toBeVisible();await chat.page.getByLabel('Provider',{exact:true}).selectOption('openai');await chat.page.getByLabel('API key',{exact:true}).fill('synthetic-unsaved-key');
   await chat.page.evaluate(async()=>{const {apiClient}=await import('/api-client.js');apiClient.forget();});
   await expect(card).toBeHidden();await expect(chat.page.locator('#access-gate')).toBeVisible();await expect(chat.page.locator('#model-key')).toHaveValue('');
   await chat.page.locator('#access-token').fill(chat.accessToken);await chat.page.locator('#access-submit').click();
@@ -86,4 +86,16 @@ test('TC-002: provider choices, unavailable retry and existing unlisted model st
  inventory=await modelCatalog();await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(select).toHaveValue('gpt-4.1');
  await mkdir(path.join(root,'profile'),{recursive:true,mode:0o700});await (await import('node:fs/promises')).writeFile(path.join(root,'profile/config.yaml'),'model: {provider: openai, default: existing-custom-model, api_key: synthetic-existing-key}\n',{mode:0o600});
  await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(select).toHaveValue('existing-custom-model');await expect(select.locator('option:checked')).toBeDisabled();await expect(chat.page.getByRole('button',{name:'Connect provider',exact:true})).toBeDisabled();await expect(chat.page.locator('#model-setup-close')).toBeVisible();assert.deepEqual(chat.errors,[]);
+});
+
+
+test('TC-002: first setup defaults to ChatGPT Subscription, preserves choices and falls back when unavailable',{timeout:45000},async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-chatgpt-default-'));t.after(()=>rm(root,{recursive:true,force:true}));let available=true;
+ const models=createModelSetup({home:root,env:{HERMES_HOME:path.join(root,'profile')},modelCatalog,hermesAdapter:{available:async()=>available,close:async()=>{}}});
+ const chat=await browserChat(t,{modelSetup:models});await chat.ready();const provider=chat.page.getByLabel('Provider',{exact:true}),model=chat.page.getByLabel('Model',{exact:true});
+ await expect(provider).toHaveValue('openai-codex');await expect(provider.locator('option:checked')).toHaveText('ChatGPT Subscription');await expect(model).toHaveValue('gpt-5-codex');await expect(chat.page.locator('#model-key')).toBeHidden();await expect(chat.page.getByRole('button',{name:'Sign in with OpenAI',exact:true})).toBeEnabled();
+ await provider.selectOption('openrouter');await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(provider).toHaveValue('openrouter');
+ await provider.selectOption('openai-codex');available=false;await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(provider).toHaveValue('openai');await expect(provider.locator('[value="openai-codex"]')).toBeDisabled();await expect(chat.page.locator('#model-key')).toBeVisible();await chat.page.reload();await chat.ready();await expect(provider).toHaveValue('openai');
+ await mkdir(path.join(root,'profile'),{recursive:true,mode:0o700});await (await import('node:fs/promises')).writeFile(path.join(root,'profile/config.yaml'),'model: {provider: anthropic, default: chosen, api_key: synthetic-existing-key}\n',{mode:0o600});available=true;
+ await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(provider).toHaveValue('anthropic');await expect(model).toHaveValue('chosen');assert.deepEqual(chat.errors,[]);
 });
