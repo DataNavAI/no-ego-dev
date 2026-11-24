@@ -1,14 +1,14 @@
 {
-  "candidate_sha": "7c4d91b0edaf56fec196a74785c7ec8fa86ff34c",
+  "candidate_sha": "b90868800cb1c2f7b3c23c4a08f93db3c44f2131",
   "result": "pass",
-  "tested_at": "2026-11-24T07:42:59.159215+00:00",
-  "environment": "macOS arm64; Node24; served Chromium at1280x900 and320x740; isolated synthetic model catalog and adapter availability",
+  "tested_at": "2026-11-24T08:08:28.211662+00:00",
+  "environment": "Isolated macOS checkout, Chromium 1440x900 and iPhone 13 touch WebKit 390x664, disposable served Communicator with fixture-backed streaming.",
   "commands": [
     "npm run lint",
-    "npm run test:all (full exact-staged pre-commit Node/spec/Python and pinned Hermes)",
-    "node --test docs/features/model-setup/tests/TC-002.test.js",
-    "npm run build:ui:check",
-    "Served desktop/mobile exact-candidate visual acceptance"
+    "python -m pytest",
+    "npm run test:spec -- --all",
+    "node --test smoke.mjs partial.mjs (private disposable browser acceptance harness)",
+    "ffmpeg playback decode of four captured WebM recordings"
   ],
-  "observations": "ChatGPT Subscription is the first selected option for fresh supported setup; catalog model is selected, API key hidden and existing explicit device sign-in action enabled. Existing configured provider/model and explicit unconfigured choices survive status refresh. Unavailable device auth selects OpenAI API on refresh and first load instead of a disabled subscription choice. Baseline regression failed for old OpenAI default; corrected6 served browser cases pass. Screenshots visually inspected. No provider login, consent, paid inference or managed staging deployment claimed by this local evidence."
+  "observations": "Four sends and completions per device. The recordings show empty chat, streaming, a long checklist, transcript scrolling and multiline composition; desktop also resizes. Both interruption variants retain decodable footage after one send. Compared visible composer controls with the edited Meta Muse launch clip at 0:16–0:17; timing and native keyboard were outside the evidence. The six synthetic skill scenarios and independent review are separate from browser acceptance."
 }
