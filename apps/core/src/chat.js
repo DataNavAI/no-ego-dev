@@ -168,7 +168,8 @@ export function createChatGateway(options = {}) {
           if(result.status===409)result=await read('GET',`/api/sessions/${fixedSession.id}`);
         }
         if(![200,201].includes(result.status)||!valid(result))throw new Error('Invalid fixed session');
-        return send(200,{session:fixedSession});
+        const activeTurn=[...turns.values()].find(turn=>turn.session===fixedSession.id&&turn.context===identity&&turn.status==='pending');
+        return send(200,{session:fixedSession,...(activeTurn?{active_turn:{id:activeTurn.id,status:'pending'}}:{})});
       }
       const path = match[1] ? `/api/sessions/${match[1]}/${match[2]}${turn?'/stream':''}` : '/api/sessions';
       if(!mutation&&match[2]==='messages')return send(200,await readHistoryPage({origin,session:match[1],offset,key,signal:controller.signal}));

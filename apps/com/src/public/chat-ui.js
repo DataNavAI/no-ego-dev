@@ -25,12 +25,20 @@ export function mountChat(libraries) {
   const element = id => document.getElementById(id);
   const transcript = element('transcript');
   const status = element('chat-status');
-  const activityLabels={working:'Working…',thinking:'Thinking…',searching:'Searching the web…',reading:'Reading files…',running:'Running a command…',writing:'Writing response…'};
+  const activityLabels={
+    working:'NED is preparing a reply…',thinking:'NED is thinking…',
+    searching:'NED is searching the web…',reading:'NED is reading files…',
+    running:'NED is running a command…',writing:'NED is writing a reply…',
+  };
   function showActivity(activity){
     if(!activeTurn)return;
-    status.dataset.activity='true';
-    const label=activeTurn.stopRequested?'Stopping response…':activityLabels[activity];
-    if(label&&status.textContent!==label)status.textContent=label;
+    if(activity)activeTurn.activity=activity;
+    const label=activeTurn.stopRequested?'Stopping response…':activityLabels[activeTurn.activity];
+    if(!label)return;
+    const following=atBottom();
+    ensureLiveArticle();
+    if(progress.textContent!==label)progress.textContent=label;
+    if(following)bottom(false);
   }
   const empty = element('chat-empty');
   const draft = element('chat-message');
@@ -44,7 +52,7 @@ export function mountChat(libraries) {
   let historyHead = null;
   let historyReady = false;
   let loadingOlder=false,olderFailed=false,olderNotice='',activeTurn=null,pendingUser=null,lastStopped=false;
-  let liveArticle,liveContent,liveText='';
+  let liveArticle,liveContent,progress;
   function fitDraft() {
     if(draft.clientWidth===0)return;
     draft.style.height='0px';
@@ -84,8 +92,17 @@ export function mountChat(libraries) {
     element('latest').hidden = !sessionId || (!refreshNeeded && offset === 0);
     draft.disabled = !sessionId || !historyReady || busy&&!sending;
   }
+  function clearTransientReferences(){
+    liveArticle=undefined;liveContent=undefined;progress=undefined;pendingUser=null;
+  }
+  function markIncomplete(){
+    if(!liveArticle||liveArticle.dataset.state==='completed')return;
+    liveArticle.dataset.state='incomplete';
+    progress.hidden=true;
+    liveArticle.hidden=liveContent.hidden;
+  }
   function draw() {
-    liveArticle=undefined;liveContent=undefined;liveText='';
+    clearTransientReferences();
     transcript.replaceChildren(...rows.filter(row=>messageParts(row).length).map(row => {
       const article = document.createElement('article');
       article.className = `chat-message ${row.role === 'user' ? 'user-message' : 'assistant-message'}`;
@@ -109,26 +126,32 @@ export function mountChat(libraries) {
     transcript.replaceChildren(...children,pendingUser);
     if(following)bottom(false);else transcript.scrollTop=top+(anchorTop===undefined?0:anchor.getBoundingClientRect().top-anchorTop);
   }
+  function ensureLiveArticle(){
+    if(liveArticle)return;
+    const following=atBottom(),top=transcript.scrollTop;
+    liveArticle=document.createElement('article');liveArticle.className='chat-message assistant-message';
+    liveArticle.dataset.state='waiting';
+    const author=document.createElement('strong');author.textContent='Hermes';
+    progress=document.createElement('p');progress.className='reply-progress';progress.setAttribute('role','status');
+    liveContent=document.createElement('p');liveContent.className='message-content';liveContent.hidden=true;
+    liveContent.setAttribute('aria-label','Assistant message');
+    liveArticle.append(author,liveContent,progress);
+    const children=Array.from(transcript.children);
+    const viewport=transcript.getBoundingClientRect().top;
+    const anchor=children.find(child=>{const rect=child.getBoundingClientRect();return (rect.bottom ?? rect.top+100)>viewport;});
+    const anchorTop=anchor?.getBoundingClientRect().top;
+    if(children.length>=200){const remove=children.findLastIndex(child=>child!==anchor&&child!==pendingUser);children.splice(remove,1);}
+    transcript.replaceChildren(...children,liveArticle);
+    if(!following&&anchorTop!==undefined)transcript.scrollTop=top+anchor.getBoundingClientRect().top-anchorTop;
+  }
   function showStream(text){
     if(!text)return;
-    const following=atBottom();let top=transcript.scrollTop;
-    if(!liveArticle){
-      liveArticle=document.createElement('article');liveArticle.className='chat-message assistant-message';
-      liveArticle.dataset.state='streaming';
-      const author=document.createElement('strong');author.textContent='Hermes';
-      liveContent=document.createElement('p');liveContent.className='message-content';
-      liveContent.setAttribute?.('aria-label','Assistant message');
-      liveArticle.append(author,liveContent);
-      const children=Array.from(transcript.children);
-      const viewport=transcript.getBoundingClientRect().top;
-      const anchor=children.find(child=>{const rect=child.getBoundingClientRect();return (rect.bottom ?? rect.top+100)>viewport;});
-      const anchorTop=anchor?.getBoundingClientRect().top;
-      if(children.length>=200){const remove=children.findLastIndex(child=>child!==anchor&&child!==pendingUser);children.splice(remove,1);}
-      transcript.replaceChildren(...children,liveArticle);
-      if(!following&&anchorTop!==undefined)top+=anchor.getBoundingClientRect().top-anchorTop;
-    }
+    const following=atBottom();
+    ensureLiveArticle();
+    liveArticle.dataset.state='streaming';
+    liveContent.hidden=false;
     liveContent.textContent=text;
-    if(following)bottom(false);else transcript.scrollTop=top;
+    if(following)bottom(false);
   }
   async function api(path, body) {
     const phase=path==='/fixed'?'fixed_session':path.includes('/messages?')?'history':'turn_stream';
@@ -153,10 +176,10 @@ export function mountChat(libraries) {
     }
   }
   async function requestStop(turn){
-    turn.stopRequested=true;render();status.textContent='Stopping response…';
+    turn.stopRequested=true;render();showActivity();
     if(!turn.id)return;
     try{await api(`/${encodeURIComponent(sessionId)}/turns/${turn.id}/stop`,{});}
-    catch{if(activeTurn!==turn)return;turn.stopRequested=false;render();status.textContent='Could not stop the response. Try Stop again.';}
+    catch{if(activeTurn!==turn)return;turn.stopRequested=false;render();showActivity();status.textContent='Could not stop the response. Try Stop again.';}
   }
   async function sendTurn(input) {
     const path=`/${encodeURIComponent(sessionId)}`;
@@ -165,10 +188,13 @@ export function mountChat(libraries) {
     if(!/^[a-f0-9-]{36}$/.test(accepted.turn?.id)||accepted.turn.status!=='pending')throw new Error('Unavailable');
     activeTurn.id=accepted.turn.id;pendingUser.dataset.state='sent';
     if(activeTurn.stopRequested)void requestStop(activeTurn);
-    liveText='';liveArticle=undefined;liveContent=undefined;
+    return followTurn(accepted.turn.id);
+  }
+  async function followTurn(id) {
+    const path=`/${encodeURIComponent(sessionId)}`;
     recordChatDiagnostic('streaming');
-    const response=await fetch(`/api/v1/chat/sessions${path}/turns/${accepted.turn.id}/events`,{headers:{Accept:'text/event-stream'},signal:AbortSignal.timeout(610000)});
-    const result=await consumeTurnStream(response,accepted.turn.id,sessionId,text=>{liveText=text;showStream(liveText);showActivity('writing');},showActivity);
+    const response=await fetch(`/api/v1/chat/sessions${path}/turns/${id}/events`,{headers:{Accept:'text/event-stream'},signal:AbortSignal.timeout(610000)});
+    const result=await consumeTurnStream(response,id,sessionId,text=>{showStream(text);showActivity('writing');},showActivity);
     lastStopped=result.turn.status==='stopped';
     recordChatDiagnostic('completed');
         if(liveArticle){const following=atBottom();const top=transcript.scrollTop;liveArticle.dataset.state='completed';liveArticle.hidden=!messageParts(result.message).length;liveArticle.replaceChildren(liveArticle.firstElementChild,renderMessageContent(result.message,document,libraries));if(following)bottom(false);else transcript.scrollTop=top;}
@@ -176,12 +202,12 @@ export function mountChat(libraries) {
   }
   async function action(work, mutation = false) {
     if (busy) return;
-    busy = true;if(mutation)status.dataset.activity='true';status.textContent = mutation ? 'Working…' : 'Loading chat…';render();
+    busy = true;lastStopped=false;status.textContent = mutation ? '' : 'Loading chat…';render();
     recordChatDiagnostic(mutation?'sending':'loading');
     element('chat-retry').hidden=true;
-    try {await work();if(!mutation)recordChatDiagnostic('ready');status.textContent = refreshNeeded || olderNotice || (mutation&&lastStopped?'Response stopped.':sessionId ? '' : 'Start a new chat.');}
-    catch(error) {recordChatDiagnostic('failed');status.textContent = ['invalid_attachment','invalid_reference'].includes(error.code)?error.message:mutation ? 'Delivery could not be confirmed. Reload the session before sending again.' : error.code==='history_changed' ? refreshNeeded : 'Chat is unavailable. Check the Hermes gateway, then retry.';element('chat-retry').hidden=false;if(mutation&&!['invalid_attachment','invalid_reference'].includes(error.code)){uncertain=true;if(liveArticle)liveArticle.dataset.state='incomplete';}}
-    finally {delete status.dataset.activity;busy=false;render();}
+    try {await work();if(!mutation)recordChatDiagnostic('ready');status.textContent = refreshNeeded || olderNotice || (lastStopped?'Response stopped.':sessionId ? '' : 'Start a new chat.');}
+    catch(error) {recordChatDiagnostic('failed');status.textContent = ['invalid_attachment','invalid_reference'].includes(error.code)?error.message:mutation ? 'Delivery could not be confirmed. Reload the session before sending again.' : error.code==='history_changed' ? refreshNeeded : 'Chat is unavailable. Check the Hermes gateway, then retry.';element('chat-retry').hidden=false;if(mutation&&!['invalid_attachment','invalid_reference'].includes(error.code)){uncertain=true;markIncomplete();}}
+    finally {busy=false;render();}
   }
   async function history(direction = 'latest') {
     const next = direction === 'older' ? offset+rows.length : direction === 'newer' ? Math.max(0,offset-50) : 0;
@@ -228,9 +254,29 @@ export function mountChat(libraries) {
     sessionId=data.session.id;
     await history();
     await fillUnderfilled();
+    bottom(false);
+    if(data.active_turn){
+      const turn=data.active_turn;
+      if(!/^[a-f0-9-]{36}$/.test(turn.id)||turn.status!=='pending')throw new Error('Unavailable');
+      uncertain=true;
+      activeTurn={id:turn.id,stopRequested:false};
+      status.textContent='';
+      showActivity('working');
+      render();
+      try{
+        await followTurn(turn.id);
+        if(atBottom()){
+          await history();
+          await fillUnderfilled();
+          bottom(false);
+        }else refreshNeeded='New reply available. Jump to latest.';
+      }catch(error){
+        markIncomplete();
+        throw error;
+      }finally{activeTurn=null;}
+    }
     uncertain=false;
     recordChatDiagnostic('ready');
-    bottom(false);
   }
   document.addEventListener('ned-auth-restored',()=>void action(initialize));
   element('older').addEventListener('click',()=>void loadOlder());
@@ -249,7 +295,7 @@ export function mountChat(libraries) {
   element('chat-form').addEventListener('submit',event=>{
     event.preventDefault();if(busy||loadingOlder||uncertain||!modelSetup.ready()||media.pending()||!sessionId||!historyReady||!draft.value.trim()&&!media.ready()&&!references.ready())return;
     const input=draft.value;
-    lastStopped=false;activeTurn={id:null,stopRequested:false};showPending(input);draft.value='';fitDraft();
+    clearTransientReferences();activeTurn={id:null,stopRequested:false};showPending(input);showActivity('working');draft.value='';fitDraft();
     void action(async()=>{
       try{
       const data=await sendTurn(input);
@@ -260,7 +306,8 @@ export function mountChat(libraries) {
       }catch(error){
         void modelSetup.refresh();
         if(!draft.value)draft.value=input;
-        if(pendingUser){if(['invalid_attachment','invalid_reference'].includes(error.code))transcript.replaceChildren(...Array.from(transcript.children).filter(row=>row!==pendingUser));else pendingUser.dataset.state='incomplete';}
+        if(pendingUser){if(['invalid_attachment','invalid_reference'].includes(error.code))transcript.replaceChildren(...Array.from(transcript.children).filter(row=>row!==pendingUser&&row!==liveArticle));else pendingUser.dataset.state='incomplete';}
+        if(['invalid_attachment','invalid_reference'].includes(error.code))clearTransientReferences();
         fitDraft();throw error;
       }
       finally{activeTurn=null;}

@@ -20,16 +20,18 @@ test('TC-040: upstream activity cannot forward metadata or cross message/run/ses
 test('TC-040: Stop dominates later activity and prose; failure clears activity styling',async()=>{
   const chat=await chatHarness();await chat.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});await chat.respond({data:[]});
   chat.elements.get('chat-message').value='Work';chat.elements.get('chat-form').dispatch('submit');
-  const status=chat.elements.get('chat-status');assert.equal(status.textContent,'Working…');
+  const status=chat.elements.get('chat-status');
+  const progress=chat.elements.get('transcript').children.at(-1).children.at(-1);
+  assert.equal(progress.textContent,'NED is preparing a reply…');
   const id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   await chat.respond({turn:{id,status:'pending'}},202);
   await chat.respond({turn:{id,status:'pending'},activity:{turn_id:id,session_id:'nedcom-main',version:1,activity:'thinking'}});
-  assert.equal(status.textContent,'Thinking…');chat.elements.get('chat-send').click();
-  assert.equal(status.textContent,'Stopping response…');
+  assert.equal(progress.textContent,'NED is thinking…');chat.elements.get('chat-send').click();
+  assert.equal(progress.textContent,'Stopping response…');
   await chat.respond({turn:{id,status:'pending'},activity:{turn_id:id,session_id:'nedcom-main',version:2,activity:'reading'},stream:{cursor:0,next:5,text:'Hello'}});
-  assert.equal(status.textContent,'Stopping response…');
+  assert.equal(progress.textContent,'Stopping response…');
   await chat.respond({turn:{id,status:'failed'}});
-  assert.match(status.textContent,/Delivery could not be confirmed/);assert.equal(status.dataset.activity,undefined);
+  assert.match(status.textContent,/Delivery could not be confirmed/);assert.equal(progress.hidden,true);
 });
 
 test('TC-040: activity uses only known categories, not private tool metadata',()=>{
@@ -64,17 +66,18 @@ test('TC-040: browser activity validates closed enum and identity independently 
 test('TC-040: real browser shows pre-prose activity then clears it after streaming',async t=>{
   const fixture=await browserChat(t);await fixture.ready();
   await fixture.draft.fill('Synthetic activity request');await fixture.draft.press('Enter');
-  await expect(fixture.page.locator('#chat-status')).toHaveText('Working…');
+  const progress=fixture.page.locator('#transcript .reply-progress');
+  await expect(progress).toHaveText('NED is preparing a reply…');
   await expect.poll(()=>fixture.turns.length).toBe(1);
   const turn=fixture.turns[0];
-  for(const [event,tool,label] of [['tool.progress','_thinking','Thinking…'],['tool.started','web_search','Searching the web…'],['tool.started','PRIVATE tool','Working…'],['tool.started','read_file','Reading files…'],['tool.failed','read_file','Working…']]){
-    turn.activity(event,tool);await expect(fixture.page.locator('#chat-status')).toHaveText(label);
+  for(const [event,tool,label] of [['tool.progress','_thinking','NED is thinking…'],['tool.started','web_search','NED is searching the web…'],['tool.started','PRIVATE tool','NED is preparing a reply…'],['tool.started','read_file','NED is reading files…'],['tool.failed','read_file','NED is preparing a reply…']]){
+    turn.activity(event,tool);await expect(progress).toHaveText(label);
     await expect(fixture.page.locator('[data-state="streaming"]')).toHaveCount(0);
   }
   assert.doesNotMatch(await fixture.page.locator('body').innerText(),/PRIVATE/);
-  turn.partial();await expect(fixture.page.locator('#chat-status')).toHaveText('Writing response…');
+  turn.partial();await expect(progress).toHaveText('NED is writing a reply…');
   await expect(fixture.page.locator('[data-state="streaming"]')).toContainText('Visible partial 1');
-  turn.finish();await expect(fixture.page.locator('#chat-status')).toHaveText('');
+  turn.finish();await expect(progress).toHaveCount(0);
   await expect(fixture.page.locator('#chat-send')).toHaveAttribute('aria-label','Send message');
   assert.equal(fixture.network.filter(path=>/\/turns\/[^/]+\/events$/.test(path)).length,1);
   assert.equal(fixture.network.filter(path=>/\/turns\/[^/]+$/.test(path)).length,0);

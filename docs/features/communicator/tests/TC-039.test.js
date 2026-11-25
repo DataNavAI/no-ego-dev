@@ -33,7 +33,8 @@ test('TC-039: pending user echo and cleared draft precede acknowledgement; early
   const chat=await ready(),draft=chat.elements.get('chat-message'),send=chat.elements.get('chat-send');
   draft.value='Immediate message';chat.elements.get('chat-form').dispatch('submit');
   assert.equal(draft.value,'');assert.equal(draft.disabled,false);assert.equal(send.disabled,false);assert.equal(send.attributes['aria-label'],'Stop response');
-  assert.equal(chat.elements.get('transcript').children.at(-1).textContent,'YouImmediate message');assert.equal(chat.elements.get('transcript').children.at(-1).dataset.state,'pending');
+  const pending=chat.elements.get('transcript').children.find(row=>row.dataset.state==='pending');
+  assert.equal(pending.textContent,'YouImmediate message');
   send.click();assert.equal(send.disabled,true);assert.equal(chat.requests.length,1);
   await chat.respond({turn:{id:turnId,status:'pending'}},202);
   assert.equal(chat.requests[0].url,`/api/v1/chat/sessions/nedcom-main/turns/${turnId}/stop`);assert.deepEqual(JSON.parse(chat.requests[0].options.body),{});

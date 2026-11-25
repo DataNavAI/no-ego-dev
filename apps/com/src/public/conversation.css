@@ -115,7 +115,11 @@
 .chat-pane .compose-dock #chat-send:disabled{background:var(--chat-disabled);color:#748295}
 .chat-pane .compose-dock #chat-send[data-state="stop"]{background:#2166a5;color:var(--surface)}
 .chat-pane #chat-message::placeholder,.chat-pane #chat-status{color:var(--muted)}
-.chat-pane #chat-status[data-activity]{color:var(--focus)}
+.chat-pane .reply-progress{display:flex;align-items:center;gap:8px;margin:4px 0 0;color:var(--muted);font-size:13px}
+.chat-pane .reply-progress[hidden]{display:none}
+.reply-progress::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:var(--focus);animation:reply-pulse 1.4s ease-in-out infinite alternate}
+@keyframes reply-pulse{from{opacity:.45}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.reply-progress::before{animation:none}}
 @media(forced-colors:active){
   .chat-pane .compose-dock #chat-form:has(textarea:focus-visible){outline-color:Highlight}
 }
