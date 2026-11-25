@@ -505,3 +505,16 @@ On qualified Linux runtimes, `models` also contains `claude-subscription-directs
 `GET /api/v1/preview` returns `{revision,preview,delivery}`. PUT JSON `{project,port,name?,expectedRevision,replace?}` registers a ready IPv4 loopback HTTP app. DELETE JSON `{expectedRevision}` clears only its current metadata. Mutations require exact Origin, application/json, body<=4096bytes. One active app across projects; a changed active target requires replace:true and matching revision. Same-input retry is idempotent; stale changed update/clear409. CLI `ned preview register|status|clear` uses this API and the existing runtime/database context handshake, including backend-only transient listeners.
 
 `delivery:{mode:"local-link",remoteAvailable:false}` is intentional: registration is not private embedded/remote transport. localUrl refers to the instance. Existing legacy project Open app remains unchanged. No arbitrary URLs, command execution or app proxy. See [preview contract](features/web-app-previews/SPEC.md) for bounds, failure states, isolation and planned delivery.
+
+### Private preview access
+
+`POST /api/v1/preview/access` accepts exactly `{ "mode": "frame" }` or
+`{ "mode": "tab" }` under current API authentication and exact COM Origin. It
+returns a one-use30second body grant and generation-specific separate origin;
+clients POST the grant to its fixed bootstrapPath, never put it in a URL. Invalid
+mode/JSON returns400, oversized body413, origin403, method405, unavailable
+verified delivery503. Capability `delivery.mode:"private-relay"` requires a live
+delivery controller and captured listener identity. `remoteAvailable` additionally
+requires negotiated Hub support. Neither capability proves app rendering/HMR.
+See [preview specification](features/web-app-previews/SPEC.md) for lifecycle,
+listener ownership, browser support and revocation requirements.

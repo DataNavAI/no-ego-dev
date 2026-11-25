@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {inspectPreviewListener,samePreviewListener} from './preview-listener.js';
 import path from 'node:path';
 import {realpath,lstat} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
@@ -40,18 +41,24 @@ export function createPreviewService(options={}){
     });
   }
   function present(state,status){
-    return {revision:state.revision,preview:state.preview?{id:state.preview.id,name:state.preview.name,project:{id:state.preview.projectId,name:path.basename(state.preview.project)},port:state.preview.port,status,localUrl:`http://127.0.0.1:${state.preview.port}/`}:null,delivery};
+    const transports=state.preview?.identity?access((db,key)=>db.connection.prepare("SELECT value FROM ned_feature_data WHERE namespace=? AND key LIKE 'delivery:%'").all(key).map(row=>JSON.parse(row.value)).filter(value=>value.expires>Date.now())):[];
+    const currentDelivery=transports.length?{mode:'private-relay',remoteAvailable:transports.some(value=>value.remoteAvailable),generation:transports.sort((a,b)=>Number(b.remoteAvailable)-Number(a.remoteAvailable))[0].generation}:delivery;
+    return {revision:state.revision,preview:state.preview?{id:state.preview.id,name:state.preview.name,project:{id:state.preview.projectId,name:path.basename(state.preview.project)},port:state.preview.port,status,localUrl:`http://127.0.0.1:${state.preview.port}/`}:null,delivery:currentDelivery};
   }
   async function observe(state,signal){
     if(!state.preview)return present(state);
     let status;
     try{await projectRoot(state.preview.project);status=await probe(state.preview.port,signal);}catch{status='unavailable';}
+    if(status==='available'&&state.preview.identity&&!samePreviewListener(state.preview.identity,await inspectPreviewListener(state.preview.port,state.preview.project).catch(()=>null)))status='unavailable';
     safe();
     // Never attach an observation of an old target to the new singleton.
     if(read().revision!==state.revision)throw fail(409,'preview_changed');
     return present(state,status);
   }
   return {
+    delivery(owner,remoteAvailable,remove=false){safe();return access((db,key)=>db.write(()=>{db.connection.prepare("DELETE FROM ned_feature_data WHERE namespace=? AND key LIKE 'delivery:%' AND json_extract(value,'$.expires')<?").run(key,Date.now());if(remove)db.connection.prepare('DELETE FROM ned_feature_data WHERE namespace=? AND key=?').run(key,'delivery:'+owner);else db.setFeatureValue(key,'delivery:'+owner,{expires:Date.now()+5000,remoteAvailable,generation:owner});}));},
+    snapshot(){safe();return read();},
+    async binding(id,revision){safe();const state=read();if(!state.preview||state.preview.id!==id||state.revision!==revision||!samePreviewListener(state.preview.identity,await inspectPreviewListener(state.preview.port,state.preview.project).catch(()=>null)))throw fail(503,'preview_listener_unavailable');if(read().revision!==revision)throw fail(409,'preview_changed');return state.preview;},
     async status({signal}={}){safe();return observe(read(),signal);},
     async register(input,{signal,authorized=()=>true,blockedPorts=[]}={}){
       safe();
@@ -61,26 +68,29 @@ export function createPreviewService(options={}){
       if(Number(new URL(settings.url).port||80)===input.port)throw fail(400,'invalid_preview_port');
       const project=await projectRoot(input.project),name=input.name??path.basename(project);
       if(typeof name!=='string'||!name.trim()||name.length>80||/[\p{Cc}\p{Cf}]/u.test(name))throw fail(400,'invalid_preview_name');
-      const matches=state=>state.preview?.project===project&&state.preview?.port===input.port&&state.preview?.name===name;
+      const metadataMatches=state=>state.preview?.project===project&&state.preview?.port===input.port&&state.preview?.name===name;
+      const identity=await inspectPreviewListener(input.port,project).catch(()=>null);
+      const matches=state=>metadataMatches(state)&&(!identity&&!state.preview?.identity||samePreviewListener(identity,state.preview?.identity));
       const before=read();
       if(before.revision!==input.expectedRevision&&!matches(before))throw fail(409,'preview_changed');
-      if(before.preview&&!matches(before)&&input.replace!==true)throw fail(409,'preview_replace_required');
+      if(before.preview&&!metadataMatches(before)&&input.replace!==true)throw fail(409,'preview_replace_required');
       if(signal?.aborted||!authorized())throw fail(401,'unauthorized');
       const status=await probe(input.port,signal);
       safe();if(signal?.aborted||!authorized())throw fail(401,'unauthorized');
       if(status==='stopped')throw fail(503,'preview_not_running');
       // A folder removed during readiness must not be registered or recreated.
       await projectRoot(project);
+      if(identity&&!samePreviewListener(identity,await inspectPreviewListener(input.port,project).catch(()=>null)))throw fail(409,'preview_changed');
       safe();if(signal?.aborted||!authorized())throw fail(401,'unauthorized');
       const state=access((db,key)=>db.write(()=>{
         const current=db.getFeatureValue(key,'active')??empty();
         if(matches(current))return current;
         if(current.revision!==input.expectedRevision)throw fail(409,'preview_changed');
-        if(current.preview&&input.replace!==true)throw fail(409,'preview_replace_required');
+        if(current.preview&&!metadataMatches(current)&&input.replace!==true)throw fail(409,'preview_replace_required');
         if(current.revision===Number.MAX_SAFE_INTEGER)throw fail(409,'preview_revision_exhausted');
         let row=db.connection.prepare('SELECT id FROM ned_projects WHERE path=?').get(project);
         if(!row){row={id:randomUUID()};db.connection.prepare('INSERT INTO ned_projects(id,path,initialized_at) VALUES(?,?,?)').run(row.id,project,new Date().toISOString());}
-        const next={revision:current.revision+1,preview:{id:randomUUID(),projectId:row.id,project,port:input.port,name}};
+        const next={revision:current.revision+1,preview:{id:randomUUID(),projectId:row.id,project,port:input.port,name,identity}};
         db.setFeatureValue(key,'active',next);return next;
       }));
       return present(state,status);
@@ -120,5 +130,5 @@ export function createPreviewHandler(options){
     }catch(failure){return error([400,401,403,404,409,413,503].includes(failure.status)?failure.status:503,failure.code&&/^[a-z_]{1,64}$/.test(failure.code)?failure.code:'preview_unavailable');}
     finally{res.off('close',abort);}
   };
-  handler.close=()=>service.close();return handler;
+  handler.service=service;handler.close=()=>service.close();return handler;
 }

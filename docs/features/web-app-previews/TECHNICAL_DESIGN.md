@@ -1,6 +1,6 @@
 # Single active preview: implementation and delivery boundary
 
-The [SPEC](SPEC.md) is authoritative. The user's one-app decision supersedes the earlier slot registry/menu-versus-tabs proposal. Registration/status is implemented; app-origin tunneling remains planned. No native registration action is shipped: the agent uses the API-backed CLI and web-app-preview skill.
+The [SPEC](SPEC.md) is authoritative. The user's one-app decision supersedes the earlier slot registry/menu-versus-tabs proposal. Registration/status and isolated private delivery are implemented in the candidate. No native registration action is shipped: the agent uses the API-backed CLI and web-app-preview skill.
 
 ## Current architecture
 
@@ -10,11 +10,11 @@ The [SPEC](SPEC.md) is authoritative. The user's one-app decision supersedes the
 - Record `{revision,preview}` plus clear tombstone is changed in an immediate SQLite transaction. Nonempty replacement requires replace:true. Expected revision protects concurrent writes; exact target/name/project retry returns the current ID/revision without a write. Tombstones avoid delete/recreate ABA. Publication may create project metadata atomically, never work items/config files.
 - Readiness uses HEAD `/` on fixed IPv4 loopback,1second deadline, no redirect following, credentials or response body; headers bounded32KiB. Registration refuses no-response and control ports. HTTP errors remain observations, not proof of rendering. Status rechecks revision after asynchronous probe; auth is rechecked before publication according to the listener's configured authority (COM credentials can be reloaded; explicitly supplied backend credentials remain listener-lifetime authority).
 - Project path is canonicalized; final-component symlink/non-directory/missing path denied. OS aliases in ancestor paths (e.g. macOS /var) normalize to the same project. Project existence is rechecked after readiness; GET never recreates a missing folder.
-- Active pending probes are cancelled on caller disconnect/service close. No app content/logs/bodies are persisted. The API never acts as a reverse proxy or process supervisor.
+- Active pending probes are cancelled on caller disconnect/service close. No app content/logs/bodies are persisted. The registry never acts as a process supervisor; the separate delivery listener relays only a currently verified registration.
 
 ## API and command examples
 
-GET `/api/v1/preview` returns revision0/preview:null initially. PUT JSON accepts project, integer port, optional name, expectedRevision and optional replace. DELETE accepts expectedRevision. All use current NED API authentication; PUT/DELETE require exact Origin/application/json and at most4KiB. Unknown fields, query/suffix/method misuse fail closed. `delivery:{mode:"local-link",remoteAvailable:false}` explicitly disclaims a private route.
+GET `/api/v1/preview` returns revision0/preview:null initially. PUT JSON accepts project, integer port, optional name, expectedRevision and optional replace. DELETE accepts expectedRevision. All use current NED API authentication; PUT/DELETE require exact Origin/application/json and at most4KiB. Unknown fields, query/suffix/method misuse fail closed. `delivery:{mode:"local-link",remoteAvailable:false}` disclaims private delivery. A live COM/Core delivery controller publishes a five-second renewable heartbeat and reports private-relay only for an ownership-verified listener; remoteAvailable requires the Hub capability.
 
 ```sh
 ned preview status --json
@@ -25,17 +25,48 @@ ned preview clear --expected-revision 2 --json
 
 Ports are examples;1024–65535 permitted except current API/configured gateway and reserved8642/18789–18791 control defaults. Label1–80 printable characters. CLI defaults to cwd/basename and reads current revision if omitted. No slot/list/get-by-ID and no app selector. After uncertain mutation read status before retry; changed stale intent gets409. An agent request to show a different app authorizes preview replacement, not killing unrelated processes.
 
-## Compatibility and remaining delivery work
+## Isolated delivery
 
-Existing `.nedcom.json` project reader/Open app remains unchanged; registered metadata does not rewrite config or embed a frame. A localUrl is the instance's loopback, not a remotely usable URL. This control-plane slice deliberately does not weaken COM response CSP or add a same-origin app proxy. No browser UI change is required for registration management.
+COM mounts one managed Preview panel while retaining legacy project links when
+no registration exists. It does not change the chat draft or project selection.
+The authenticated `POST /api/v1/preview/access` accepts only a frame/tab mode,
+requires exact COM Origin and returns a thirty-second one-use body grant.
+COM submits it through a transient POST form to a fresh app origin; no bearer URL
+or local storage is used. A protected cookie-verification page acknowledges the
+bound generation to the exact COM parent before navigating to the app root.
+Missing verification leaves a truthful unavailable state and a new-tab fallback.
 
-#157 and ned-hub#81 still own actual private presentation. Before implementing that delivery, use one generation-specific app origin, exact authenticated target binding and separate control/app authority. Retain these unresolved gates from the historical design:
+Local origins use `pv-<id>.localhost` on a separate loopback listener. Secure,
+HttpOnly host-only frame cookies use SameSite=None and Partitioned (Chromium
+loopback exception); top-level cookies are distinct. Other browser/privacy
+combinations may require the explicit top-level fallback. This is not a claim
+of universal local third-party-cookie support.
 
-- Prove listener UID/PID/start/cwd ownership and port-reuse revocation before routing app bytes. Current HTTP status is not that proof.
-- Prove compatible local/remote schemeful-site, HTTPS, cookie, Host/Origin and control-cookie isolation. Never assume127.0.0.1 COM plus sibling localhost Strict cookies works.
-- Protect body-based one-use bootstrap from service-worker interception; never reuse unsafe origins or leak grants in URLs, app DOM, storage or logs. A reserved path alone is insufficient.
-- Fixed configured namespace CSP must admit origins before document load; exact authorization remains at ingress. Preserve app CSP/X-Frame-Options; test iframe/top-level recovery.
-- Stream HTTP/assets/forms plus WS/HMR under bounded backpressure/quotas without forwarding NED/Hub credentials. Prove inferred-host HMR lifecycle; do not restart forever to chase a newly allocated host.
-- Revoke old routes/streams on replace, clear, disconnect or auth revocation. Test real browser cross-origin DOM/storage, cookie tossing and workers; do not promise arbitrary app-cookie isolation merely because origins differ.
+Hub capability negotiation sends only ID/revision on the authenticated control
+channel. Hub selects a random `preview--<32hex>` alias in its configured proxy
+namespace, binds access to the current user's COM lease and owns bootstrap and
+cookie verification. The 41-character alias cannot collide with an instance slug
+(max40). Typed preview data channels contain no caller-controlled port. Native
+Core resolves that ID/revision to the registered listener and revalidates it.
+Hub forwards no NED API authorization to app channels.
 
-These are future implementation acceptance gates, not new user choices. Historical mock HTML/images remain archived exploration only. The single-preview skill explains current limits rather than constructing a public URL or telling remote users to open localhost.
+Listener verification requires unique IPv4 loopback ownership, same UID, process
+start identity and canonical cwd within the project. Linux also binds the socket
+inode; macOS uses lsof PID/FD and ps start time. macOS does not expose a portable
+kernel socket generation through this adapter; same-PID, same-second in-process
+listener replacement is a residual limitation. Unsupported/unverifiable listeners
+retain metadata-only compatibility and cannot receive app bytes.
+
+HTTP bodies, headers, connection counts, connect/idle deadlines and grant/lease
+maps are bounded. Core checks binding before and after connecting and sweeps
+active streams every two seconds. Replacement, clear, listener changes and
+control/access revocation close old routes. Worker creation is denied; reserved
+cookies, domain cookies and trusted headers are stripped. App CSP/X-Frame-Options
+remain effective. Same-app loopback redirects are rewritten, other private
+redirects rejected. Referrer-Policy origin preserves form Origin validation
+without sending paths; no bearer occurs in those paths.
+
+The cross-repository browser procedure in TC-004 proves actual app rendering,
+POST forms, Vite HMR, new-tab opener isolation and revocation. Local fixtures do
+not prove deployed DNS/TLS/OAuth or managed rollout. Hub publication and the
+infrastructure deployment owner remain responsible for that separate evidence.

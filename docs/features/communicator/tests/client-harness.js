@@ -42,7 +42,7 @@ export async function clientHarness({EventSource}={}) {
   elements.get('workspace-settings-tab').textContent='Settings';elements.get('workspace-settings-tab').setAttribute('aria-controls','settings');
   element('goals-pane-tab').textContent='Goals & Tasks';elements.get('goals-pane-tab').setAttribute('aria-controls','goals-panel');element('goals-panel');element('goals-pane-heading');
   const source = await readFile(new URL('../../../../apps/com/src/public/app.js', import.meta.url), 'utf8');
-  runInNewContext(source.replace(/^import[^\n]+\n/gm, ''), { ...state, document, fetch, Option: class {constructor(label,value){this.textContent=label;this.value=value;}},EventSource,Event:class{constructor(type){this.type=type;}}, encodeURIComponent,matchMedia:()=>viewport,getComputedStyle:()=>({display:'block',visibility:'visible'}) });
+  runInNewContext(source.replace(/^import[^\n]+\n/gm, ''), { ...state, mountPreview:()=>{}, document, fetch, Option: class {constructor(label,value){this.textContent=label;this.value=value;}},EventSource,Event:class{constructor(type){this.type=type;}}, encodeURIComponent,matchMedia:()=>viewport,getComputedStyle:()=>({display:'block',visibility:'visible'}) });
   const flush = () => new Promise(resolve => setImmediate(resolve));
   async function respond(data, status = 200) {
     const request = requests.shift();

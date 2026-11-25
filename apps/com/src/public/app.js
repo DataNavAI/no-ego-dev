@@ -1,3 +1,4 @@
+import {mountPreview} from './preview-ui.js';
 import {initialState,beginLoad,settleLoad,selectProject,beginDetail,settleDetail,view,followTaskProject} from './state.js';
 import {apiFetch as fetch,ApiEventSource as EventSource} from './api-client.js';
 let state = initialState();
@@ -104,3 +105,5 @@ function startWorkspace(){
     else {render();project.dispatchEvent(new Event('ned-work-refresh'));}
   };
 }
+
+mountPreview({document});
