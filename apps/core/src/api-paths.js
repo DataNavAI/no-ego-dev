@@ -22,6 +22,7 @@ export function nedApiPath(raw='',method='GET'){
     if(pathname===NED_API_BASE)return {kind:'discovery',valid:true,api:true,legacy:false,pathname,target:raw};
     if(pathname.startsWith(NED_API_BASE+'/')){
       const suffix=pathname.slice(NED_API_BASE.length),family=suffix.split('/')[1];
+      if(family==='preview')return {kind:'resource',handler:'preview',valid:true,api:true,legacy:false,pathname,family,target:raw};
       if(family==='auth')return {kind:'resource',handler:'authentication',valid:true,api:true,legacy:false,pathname,family,target:raw};
       if(suffix==='/execution-capabilities')return {kind:'resource',handler:'coordination',valid:true,api:true,legacy:false,pathname,family,target:'/api/core/v1/capabilities'+query};
       if(['context','task-management','coordinator','project-registrations'].includes(family)||family==='projects'&&(!['GET','HEAD'].includes(method)||/^\/projects\/[^/]+\/(?:attempts|automations|events|metrics)(?:\/|$)/.test(suffix)))return {kind:'resource',handler:'coordination',valid:true,api:true,legacy:false,pathname,family,target:'/api/core/v1'+(family==='project-registrations'?suffix.replace('/project-registrations','/projects'):suffix)+query};

@@ -1,3 +1,4 @@
+import {runPreviewCli} from './preview-cli.js';
 import {runSecretCli} from '../../../src/secret-cli.js';
 import {runCoreCli} from '../../core/src/cli.js';
 import { createRequire } from 'node:module';
@@ -15,6 +16,7 @@ function flagValue(flags, name) {
 
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (command === 'preview') return runPreviewCli(flags,io,dependencies);
   if (command === 'core') return runCoreCli(flags,io,dependencies);
   if (command === 'secret') return runSecretCli(flags, io, dependencies);
   if (command === 'com') return runCommunicatorCli(flags, io, dependencies);
@@ -32,6 +34,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '',
       'Usage:',
       '  ned --version',
+      '  ned preview <register|status|clear> (see ned preview --help)',
       '  ned core serve [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--help]',
       '  ned secret <list|set|get|delete|share> (see ned secret --help)',
       '  ned com [--login [--no-browser] | --logout] [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--public] [--help]',
