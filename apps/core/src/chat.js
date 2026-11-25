@@ -1,3 +1,4 @@
+import {decorateReactions,saveReaction} from './chat-reactions.js';
 import {ModelSetupError} from './model-setup.js';
 import {resolveWorkReferences} from './work-references.js';
 import {resolveGatewaySettings} from './gateway-settings.js';
@@ -29,18 +30,19 @@ export function createChatGateway(options = {}) {
   if (configuredUrl!==undefined && !/^http:\/\/127\.0\.0\.1:[0-9]+\/?$/.test(configuredUrl)) throw new Error('Invalid Hermes gateway origin.');
   const chat=async function(req, res, send) {
     const resource = new URL(req.url, 'http://127.0.0.1');
+    const reacting=resource.pathname==='/api/chat/sessions/nedcom-main/reactions';
     const fixed=resource.pathname==='/api/chat/sessions/fixed';
     const match = resource.pathname.match(/^\/api\/chat\/sessions(?:\/([A-Za-z0-9_-]{1,200})\/(messages|chat|turns|attachments)(?:\/([a-f0-9-]{36})(\/(?:events|stop))?)?)?$/);
-    if (!match && !fixed) return send(404, {error:{code:'not_found',message:'Not found.'}});
+    if (!match && !fixed && !reacting) return send(404, {error:{code:'not_found',message:'Not found.'}});
     const mutation = req.method === 'POST';
-    if(fixed && !mutation)return send(405,{error:{code:'method_not_allowed',message:'Method not allowed.'}});
-    if(!fixed&&Boolean(match[3])!==(match[2]==='turns'))return send(404,{error:{code:'not_found',message:'Not found.'}});
+    if((fixed||reacting) && !mutation)return send(405,{error:{code:'method_not_allowed',message:'Method not allowed.'}});
+    if(!fixed&&!reacting&&Boolean(match[3])!==(match[2]==='turns'))return send(404,{error:{code:'not_found',message:'Not found.'}});
     const upload=match?.[2]==='attachments';
     const stopping=match?.[4]==='/stop';
-    const allowed = fixed || match[2] === 'chat'||upload||stopping ? mutation : ['messages','turns'].includes(match[2]) ? req.method === 'GET' : ['GET','POST'].includes(req.method);
+    const allowed = fixed || reacting || match[2] === 'chat'||upload||stopping ? mutation : ['messages','turns'].includes(match[2]) ? req.method === 'GET' : ['GET','POST'].includes(req.method);
     if (!allowed) return send(405, {error:{code:'method_not_allowed',message:'Method not allowed.'}});
     if (mutation && (!req.headers.origin || !upload&&req.headers['content-type'] !== 'application/json')) return send(403,{error:{code:'forbidden',message:'Access forbidden.'}});
-    const polling=!fixed&&match[2]==='turns';
+    const polling=!fixed&&!reacting&&match[2]==='turns';
     const parameter=polling?'cursor':'offset';
     let offset = resource.searchParams.get(parameter) ?? '0';
     const wait=polling&&resource.searchParams.get('wait')==='1';
@@ -52,6 +54,10 @@ export function createChatGateway(options = {}) {
       if(!/^http:\/\/127\.0\.0\.1:[0-9]+\/?$/.test(settings.url)||!settings.key)throw new Error();
       origin=new URL(settings.url).origin;key=settings.key;
     } catch {return send(503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}});}
+    if(reacting){
+      if(resource.search)return send(400,{error:{code:'invalid_reaction',message:'Invalid message reaction.'}});
+      return saveReaction(req,send,{databasePath:options.databasePath,origin,key,session:fixedSession.id});
+    }
     prune();
     const identity=context(origin,key);
     if(upload){
@@ -172,7 +178,10 @@ export function createChatGateway(options = {}) {
         return send(200,{session:fixedSession,...(activeTurn?{active_turn:{id:activeTurn.id,status:'pending'}}:{})});
       }
       const path = match[1] ? `/api/sessions/${match[1]}/${match[2]}${turn?'/stream':''}` : '/api/sessions';
-      if(!mutation&&match[2]==='messages')return send(200,await readHistoryPage({origin,session:match[1],offset,key,signal:controller.signal}));
+      if(!mutation&&match[2]==='messages'){
+        const history=await readHistoryPage({origin,session:match[1],offset,key,signal:controller.signal});
+        return send(200,match[1]===fixedSession.id?decorateReactions(options.databasePath,origin,key,match[1],history):history);
+      }
       const query = mutation ? '' : match[2] === 'messages' ? `?order=latest&limit=50&offset=${offset}` : `?limit=50&offset=${offset}`;
       const upstream = await fetch(origin + path + query,{method:req.method,headers:{Authorization:`Bearer ${key}`,...(mutation ? {'Content-Type':'application/json'} : {})},body,redirect:'error',signal:controller.signal});
       if (!upstream.ok) { await upstream.body?.cancel(); return finish(upstream.status === 404 ? 404 : 503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}}); }

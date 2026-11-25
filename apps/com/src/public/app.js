@@ -45,6 +45,16 @@ project.addEventListener('change',() => {
 const chat=document.getElementById('chat');
 const preview=document.getElementById('preview');
 const leftPane=document.getElementById('left-pane');
+const mobileNavigation=document.getElementById('mobile-navigation');
+const navigationToggle=document.getElementById('navigation-toggle');
+document.addEventListener('click',event=>{
+  if(mobileNavigation.open&&!mobileNavigation.contains(event.target))mobileNavigation.open=false;
+});
+mobileNavigation.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&mobileNavigation.open){
+    event.stopPropagation();mobileNavigation.open=false;navigationToggle.focus();
+  }
+});
 const leftToggle=document.getElementById('left-toggle');
 const previewToggle=document.getElementById('preview-toggle');
 const mobileViewport=typeof matchMedia==='function'?matchMedia('(max-width: 767px)'):null;
@@ -74,17 +84,23 @@ function syncNavigation(){
   leftToggle.setAttribute('aria-pressed',String(workspace==='left'));
   previewToggle.setAttribute('aria-pressed',String(workspace==='preview'));
 }
-leftToggle.addEventListener('click',()=>{workspace='left';syncNavigation();chat.focus();});
+leftToggle.addEventListener('click',()=>{workspace='left';mobileNavigation.open=false;syncNavigation();chat.focus();});
 document.getElementById('workspace-skip')?.addEventListener('click',()=>{workspace='preview';syncNavigation();preview.focus();});
-previewToggle.addEventListener('click',()=>{workspace='preview';syncNavigation();canvasHeading().focus();});
+previewToggle.addEventListener('click',()=>{workspace='preview';mobileNavigation.open=false;syncNavigation();canvasHeading().focus();});
 document.getElementById('preview-retry').addEventListener('click',()=>{
   const next=state.projectId?beginDetail(state):beginLoad(state);if(next===state)return;
   previewRetryFocus=document.activeElement===document.getElementById('preview-retry');state=next;render();void(state.projectId?loadDetail():load());
 });
 mobileViewport?.addEventListener?.('change',()=>{
-  const focusInLeft=leftPane.contains(document.activeElement);const focusInPreview=preview.contains(document.activeElement);
+  const active=document.activeElement;
+  const focusInLeft=leftPane.contains(active),focusInPreview=preview.contains(active);
+  const focusInMenu=mobileNavigation.contains(active);
+  mobileNavigation.open=false;
   syncNavigation();
-  if(leftPane.hidden&&focusInLeft)leftToggle.focus();else if(preview.hidden&&focusInPreview)previewToggle.focus();
+  if(focusInMenu&&!mobileViewport.matches){
+    const destination=workspace==='left'?chat:canvasHeading();
+    destination.focus();
+  }else if(leftPane.hidden&&focusInLeft||preview.hidden&&focusInPreview)navigationToggle.focus();
 });
 syncNavigation();render();void load();
 document.addEventListener('ned-auth-restored',()=>{workspaceStream?.close();workspaceStream=null;state=beginLoad(state);render();void load();});

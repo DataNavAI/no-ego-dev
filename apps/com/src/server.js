@@ -26,7 +26,7 @@ assets.set('/goals-tasks.js',['goals-tasks.js','text/javascript']);
 assets.set('/base.css',['base.css','text/css']);
 assets.set('/work-entry.js',['work-entry.js','text/javascript']);
 assets.set('/activity-ui.js',['activity-ui.js','text/javascript']);
-assets.set('/mobile-navigation.js',['mobile-navigation.js','text/javascript']);
+assets.set('/message-reaction.js',['message-reaction.js','text/javascript']);
 assets.set('/conversation.css',['conversation.css','text/css']);
 for(const [name,type] of [['webawesome.js','text/javascript'],['webawesome-theme.css','text/css'],['webawesome-LICENSE.txt','text/plain'],['wa-check.svg','image/svg+xml'],['wa-chevron.svg','image/svg+xml']])assets.set('/vendor/'+name,['vendor/'+name,type]);
 const vendorAssets=new Map([
@@ -35,7 +35,7 @@ const vendorAssets=new Map([
 ]);
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob:; base-uri 'none'; frame-ancestors 'none'; form-action http://*.localhost:*; frame-src http://*.localhost:*;";
 
-const protocolAssets=new Map([['/history.js','history.js'],['/request-diagnostic.js','request-diagnostic.js'],['/secret-events.js','secret-events.js']]);
+const protocolAssets=new Map([['/reaction-emoji.js','reaction-emoji.js'],['/history.js','history.js'],['/request-diagnostic.js','request-diagnostic.js'],['/secret-events.js','secret-events.js']]);
 for(const [name,type] of [['api-client.js','text/javascript'],['auth-entry.js','text/javascript'],['auth.css','text/css']])assets.set('/'+name,[name,type]);
 export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,home,env=process.env,gateway,logger,secretsEnabled=true,initializeDatabase=false,basicCredentials,modelSetup}={}){
   if(host!=='127.0.0.1'||!Number.isInteger(port)||port<0||port>65535)throw new Error('Invalid NEDCOM address.');

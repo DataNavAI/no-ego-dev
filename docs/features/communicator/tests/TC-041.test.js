@@ -15,7 +15,7 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
     await route.fulfill({status:fail?503:200,json:fail?{}:id==='alpha'?captured:{projectId:'beta',items:[]}});
   });
   await page.route('**/api/v1/projects/*/activity',route=>route.fulfill({json:{projectId:'alpha',goal:null,task:null}}));
-  await page.route('**/api/v1/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'data: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
+  await page.route('**/api/v1/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'retry: 60000\ndata: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
   await page.reload();await f.ready();
   const select=async id=>page.locator('#project').evaluate((node,id)=>{node.value=id;node.dispatchEvent(new Event('change'));},id);
   const refresh=()=>page.locator('#project').evaluate(node=>node.dispatchEvent(new Event('ned-work-refresh')));
@@ -28,7 +28,7 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
   await expect(page.locator('#chat-task-references')).toContainText('Build');
   await expect(f.draft).toHaveValue('Keep this draft');assert.equal(f.turns.length,0);
   await page.screenshot({path:'/tmp/ned-dashboard-open-1280.png'});
-  await page.setViewportSize({width:390,height:844});await page.locator('#preview-toggle').click();
+  await page.setViewportSize({width:390,height:844});await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();
   await page.screenshot({path:'/tmp/ned-dashboard-open-390.png'});
   await page.setViewportSize({width:1280,height:900});
   await page.locator('#dashboard-show-completed').check();await expect(page.locator('#dashboard .work-title')).toHaveText(['Launch','Build','Design','Review']);
@@ -47,7 +47,7 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
   await expect(f.draft).toHaveValue('Keep this draft');await expect(page.locator('#chat-task-references')).toContainText('Build');
   for(const width of [1280,390,320]){
     await page.setViewportSize({width,height:900});
-    if(width<768){await page.locator('#preview-toggle').click();}
+    if(width<768){await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();}
     await expect(page.locator('#dashboard')).toBeVisible();
     assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
     await page.screenshot({path:`/tmp/ned-dashboard-${width}.png`});

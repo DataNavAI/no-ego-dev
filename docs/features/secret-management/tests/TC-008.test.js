@@ -21,16 +21,16 @@ test('TC-008: chat button stores a masked secret privately and recovers complete
 });
 test('TC-008: mobile entry clears on cancellation, timeout and navigation; delayed save cannot restore hidden input',async t=>{
   const f=await requestCard(t),{page,card,input,enter}=f;
-  await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Chat',exact:true}).click();
+  await page.setViewportSize({width:390,height:844});await page.locator('#navigation-toggle').click();await page.locator('#left-toggle').click();
   await enter.click();await input.fill('synthetic-mobile');await page.screenshot({path:'/tmp/ned-secret-entry-mobile.png'});assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
-  await page.getByRole('button',{name:'Project',exact:true}).click();await page.getByRole('tab',{name:'Settings',exact:true}).click();await expect(input).toHaveValue('');await page.getByRole('button',{name:'Chat',exact:true}).click();
+  await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();await page.getByRole('tab',{name:'Settings',exact:true}).click();await expect(input).toHaveValue('');await page.locator('#navigation-toggle').click();await page.locator('#left-toggle').click();
   await page.clock.install();await enter.click();await input.fill('synthetic-timeout');await page.clock.fastForward(30001);await expect(input).toHaveValue('');await expect(input).toBeHidden();await page.clock.resume();
   await enter.click();await input.fill('synthetic-delayed-save');
   let release,seen;const gate=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
   await page.route('**/api/v1/secrets/requests/*/submit',async route=>{seen();await gate;await route.continue();});
   await card.getByRole('button',{name:'Save secret',exact:true}).click();await requested;await expect(input).toHaveValue('');assert.equal(await enter.isDisabled(),true);
-  await page.getByRole('button',{name:'Project',exact:true}).click();await page.getByRole('tab',{name:'Settings',exact:true}).click();release();await expect.poll(()=>f.store.list().length).toBe(1);await expect(input).toHaveValue('');
-  await page.getByRole('button',{name:'Chat',exact:true}).click();await expect(input).toBeHidden();await enter.click();await expect(card).toContainText('Secret saved.');assert.deepEqual(f.errors,[]);
+  await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();await page.getByRole('tab',{name:'Settings',exact:true}).click();release();await expect.poll(()=>f.store.list().length).toBe(1);await expect(input).toHaveValue('');
+  await page.locator('#navigation-toggle').click();await page.locator('#left-toggle').click();await expect(input).toBeHidden();await enter.click();await expect(card).toContainText('Secret saved.');assert.deepEqual(f.errors,[]);
 });
 test('TC-008: failed acknowledgement clears bytes and a retry sees saved state without replacing',async t=>{
   const f=await requestCard(t),{page,card,input,enter}=f;
