@@ -6,7 +6,7 @@ import {apiFixture} from './helpers.js';
 
 for(const kind of ['core','com'])test(`TC-001: ${kind} authenticates every API request before data or work dispatch`,async context=>{
   const fixture=await apiFixture(context,{kind});
-  for(const route of ['/api/v1','/api/v1/health','/api/v1/capabilities','/api/v1/projects','/api/v1/workspace/events','/api/v1/activity/events?project='+fixture.projectId,'/api/v1/chat/sessions','/api/v1/secrets','/api/v1/context','/api/v1/task-management','/api/v1/coordinator/reconcile','/api/v1/project-registrations','/api/health','/api/projects','/api/core/v1/projects','/api/v1/unknown']){
+  for(const route of ['/api/v1','/api/v1/health','/api/v1/capabilities','/api/v1/preview','/api/v1/projects','/api/v1/workspace/events','/api/v1/activity/events?project='+fixture.projectId,'/api/v1/chat/sessions','/api/v1/secrets','/api/v1/context','/api/v1/task-management','/api/v1/coordinator/reconcile','/api/v1/project-registrations','/api/health','/api/projects','/api/core/v1/projects','/api/v1/unknown']){
     for(const method of ['GET','HEAD','POST']){
       const response=await fixture.request(route,{authenticated:false,method,headers:{origin:fixture.app.url}});
       assert.equal(response.status,401,`${method} ${route}`);assert.match(response.headers.get('www-authenticate'),/^Bearer realm="NED"/);

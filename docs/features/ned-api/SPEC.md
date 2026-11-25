@@ -27,7 +27,7 @@ release/deployment verification are separate; no staging rollout is implied.
 - FR-001: One Core-owned API handler serves `/api/v1` on both the full Core and
   COM listeners. Core owns chat, project read models, activity and secret API
   services as well as coordination. COM owns static UI and transport adapters.
-  Backend-only ephemeral CLI servers enable only coordination operations, after authentication.
+  Backend-only ephemeral CLI servers enable coordination and singleton preview registration/status operations, after authentication. Preview is managed through `/api/v1/preview`; its [feature contract](../web-app-previews/SPEC.md) and TC-001/003 cover singleton persistence and API-backed CLI selection. It does not enable embedded app delivery or browser-only chat/secrets.
 - FR-002: All resources share `/api/v1` without a privilege path group.
   Presentation resources retain their canonical schemas. Coordination resources
   use direct context/task-management/coordinator and project execution/automation

@@ -1,3 +1,4 @@
+import {createPreviewHandler} from './preview.js';
 import {nedApiPath} from './api-paths.js';
 import {resolveDatabasePath} from '../../../src/database.js';
 import {createBrowserApi} from './browser-api.js';
@@ -11,6 +12,7 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
   let operatorPending,operatorHandler,ownedService,closing=false,closePromise;
   const credential=()=>operatorCredential??loadApiCredential(options);
   const apiAuthenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
+  const preview=createPreviewHandler(options);
   const browser=browserEnabled?createBrowserApi({...options,apiAuthenticated}):null;
   const operator=()=>operatorPending??=(async()=>{
     const service=operatorService??await createCoreService(options);
@@ -34,6 +36,7 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
     catch{return error(503,'api_unavailable','API authentication unavailable.'),true;}
     if(!route.valid){const status=req.url.startsWith('/api/v1')?400:legacyInvalidStatus;error(status,status===404?'not_found':'invalid_request',status===404?'Not found.':'Invalid request path.');return true;}
     if(route.kind==='unknown')return error(404,'not_found','Not found.'),true;
+    if(route.handler==='preview'){await preview(req,res,send,origin,()=>!res.destroyed&&apiAuthenticated(req));return true;}
     if(route.handler==='authentication'){
       if(req.url!=='/api/v1/auth/context')return error(404,'not_found','Not found.'),true;
       if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.'),true;
@@ -67,6 +70,6 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
   handler.setHubRegistration=input=>browser?.setHubRegistration(input);
   handler.credential=credential;
   handler.authenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
-  handler.close=()=>closePromise??=(async()=>{closing=true;await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})();
+  handler.close=()=>closePromise??=(async()=>{closing=true;preview.close();await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})();
   return handler;
 }

@@ -1,0 +1,22 @@
+prompt: |
+  Read and use web-app-preview to handle the user's requests in the fixture.
+  Work only in disposable homes/projects. Exercise the current checkout's real
+  CLI and preserve command/output/state evidence outside the source checkout.
+  Read the candidate CLI locator in $HERMES_HOME/preview-candidate.json.
+  Do not deploy or change real Hermes profiles, expose ports, or read credentials.
+expectations:
+  - Inspects existing preview state and current CLI support before registering.
+  - Runs a real fixture app using a persistent/background process and verifies HTTP readiness.
+  - Uses the same explicit synthetic agent home, project and database for every command.
+  - Registers one preview through the API-backed CLI and reads back its ID/revision/status.
+  - Replaces the active app explicitly when requested, using the observed revision, without offering a multi-app selector.
+  - Preserves the active preview when the user asks to keep it, and reconciles stale conflicts before another mutation.
+  - Reports local-link and remoteAvailable false truthfully; never presents instance localhost as a remote usable preview or claims an embedded tunnel exists.
+  - Does not equate registration with process supervision, production deployment, rendering or HMR verification.
+  - Does not print API token/secret values or switch runtime home/API on failure.
+  - Clears only the current registration with observed revision, verifies the empty state and stops only fixture-owned processes.
+setupCommands:
+  - python3 evaldata/setup.py
+teardownCommands: []
+parameters:
+  fixture: evaldata/scenarios.md

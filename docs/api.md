@@ -6,7 +6,7 @@ The API's official name is **NED API v1**, not NED COM API or a separate Core AP
 Base path: `/api/v1`. Both the full Core listener and COM listener use one
 Core-owned handler. COM adds browser assets and authenticated Hub/public transport;
 it does not maintain a separate backend. Backend-only ephemeral CLI listeners
-enable only coordination resources. Every API requires authentication. See [architecture](architecture.md) and
+enable coordination and preview registration resources. Every API requires authentication. See [architecture](architecture.md) and
 [API behavior/acceptance](features/ned-api/SPEC.md).
 
 ## Resource families and callers
@@ -20,6 +20,7 @@ enable only coordination resources. Every API requires authentication. See [arch
 | `/api/v1/projects` | Project UI read models, delivery, attempt/session inspection | Authenticated; read-only presentation methods |
 | `/api/v1/chat` | Selected Hermes sessions, messages, attachments and turns | Authenticated; same-origin, bounded mutations/streams |
 | `/api/v1/workspace/events`, `/api/v1/activity/events` | Read-model SSE updates | Authenticated |
+| `GET/PUT/DELETE /api/v1/preview` | One active preview registration/status per selected instance; local-link only, no embedded/private relay | Authenticated; mutations exact Origin |
 | `/api/v1/secrets` | Explicit private vault operations and secret cards | Authenticated; explicit privacy headers/Origin |
 | `/api/v1/project-registrations` | Paged project registry | Authenticated |
 | `/api/v1/{context,task-management,coordinator,execution-capabilities}` | Context, task commands, reconciliation and execution capabilities | Authenticated |
@@ -498,3 +499,9 @@ OpenAI API choices use Hermes’ native Chat Completions catalog, matching NED�
 First-time COM model setup defaults to **ChatGPT Subscription** (`openai-codex`) when installed Hermes device authentication is available. It uses the existing explicit device-login flow; no authentication starts automatically. Existing configured provider/model selections and user choices on status refresh are preserved. If device authentication is unavailable, fresh/unconfigured setup selects OpenAI API instead of a disabled subscription option. Provider IDs and the authenticated API contract remain unchanged. Tracked in [#202](https://github.com/DataNavAI/no-ego-dev/issues/202).
 
 On qualified Linux runtimes, `models` also contains `claude-subscription-directsdk-experimental` and `antigravity-subscription-directsdk`. Empty lists disable unavailable subscriptions. Start them with the existing login POST, selecting the exact provider/model and fresh nonce. Manual-code jobs include `provider`, `model`, `method: "manual_code"`, `verificationUri`, and `acceptsCode`; retain the exact job ID and open the vendor URL. POST `{action:"submit-login-code",id,code}` once (6–4096 printable ASCII characters) to submit its code:202 returns the same job's public status;400 invalid code,401 revoked owner,404 unknown job,409 expired/cancelled/already-submitted/nonwaiting job. Read status after an uncertain response; never replay the code automatically. No grant or code appears in readback. Existing cancellation, deadline, Origin and authority checks apply. Subscription credentials are isolated per instance; disconnect removes only the current NED-owned credential and disables that provider. See [subscription authentication](features/model-setup/subscription-auth.md) for storage, platform and release boundaries. This source contract does not imply a completed staging rollout or live provider verification.
+
+### Single active preview
+
+`GET /api/v1/preview` returns `{revision,preview,delivery}`. PUT JSON `{project,port,name?,expectedRevision,replace?}` registers a ready IPv4 loopback HTTP app. DELETE JSON `{expectedRevision}` clears only its current metadata. Mutations require exact Origin, application/json, body<=4096bytes. One active app across projects; a changed active target requires replace:true and matching revision. Same-input retry is idempotent; stale changed update/clear409. CLI `ned preview register|status|clear` uses this API and the existing runtime/database context handshake, including backend-only transient listeners.
+
+`delivery:{mode:"local-link",remoteAvailable:false}` is intentional: registration is not private embedded/remote transport. localUrl refers to the instance. Existing legacy project Open app remains unchanged. No arbitrary URLs, command execution or app proxy. See [preview contract](features/web-app-previews/SPEC.md) for bounds, failure states, isolation and planned delivery.

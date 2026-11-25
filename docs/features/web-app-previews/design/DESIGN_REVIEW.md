@@ -1,4 +1,6 @@
-# Web app previews — design review
+# Web app previews — archived multi-app exploration
+
+**Superseded:** The user selected one active app per NED instance in #210. DEC-01 is closed without selecting A/B. These images are historical exploration only; no app chooser should be implemented. See the current [SPEC](../SPEC.md).
 
 Status: draft proposal · revision preview-design-r2 · lineage preview-155 · decision owner: project user · decision requested: DEC-01 · PR mode: MERGEABLE documentation proposal, not runtime implementation.
 Canonical [spec](../SPEC.md), [architecture](../TECHNICAL_DESIGN.md), [UI brief and acceptance IDs](ui-brief.md), [runnable prototype](options.html?variant=A). GitHub shows HTML source rather than executing it; open the local HTML file to interact. The images below render directly in the review page. No real app, tunnel or authentication is running in these mocks.
