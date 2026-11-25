@@ -30,16 +30,16 @@ test('TC-037: ready composer is one-line compact, grows and shrinks, with reacha
     await expect(chat.draft).toBeVisible();
     const geometry=()=>chat.page.evaluate(()=>{
       const rect=selector=>{const {x,y,width,height,bottom}=globalThis.document.querySelector(selector).getBoundingClientRect();return {x,y,width,height,bottom};};
-      return {form:rect('#chat-form'),draft:rect('#chat-message'),send:rect('#chat-send'),attach:rect('#chat-attach'),link:rect('#chat-add-link'),overflow:globalThis.document.documentElement.scrollWidth>globalThis.innerWidth||globalThis.document.documentElement.scrollHeight>globalThis.innerHeight};
+      return {form:rect('#chat-form'),draft:rect('#chat-message'),send:rect('#chat-send'),tools:rect('#chat-tools-toggle'),attach:rect('#chat-attach'),link:rect('#chat-add-link'),overflow:globalThis.document.documentElement.scrollWidth>globalThis.innerWidth||globalThis.document.documentElement.scrollHeight>globalThis.innerHeight};
     });
     const initial=await geometry();
     if(capture)await chat.page.screenshot({path:join(capture,`empty-${viewport.width}.png`)});
-    assert.ok(initial.form.height<=120,`${viewport.width}: empty form ${initial.form.height}px exceeds120px`);
-    assert.ok(initial.draft.height<=36,`${viewport.width}: empty textarea must fit one line`);
-    for(const action of [initial.attach,initial.link,initial.send]){
+    assert.ok(initial.form.height<=72,`${viewport.width}: empty form ${initial.form.height}px exceeds72px`);
+    assert.ok(initial.draft.height<=38,`${viewport.width}: empty textarea must fit one line`);
+    for(const action of [initial.tools,initial.send]){
       assert.ok(action.height>=44);assert.ok(action.y>=0&&action.bottom<=viewport.height);
     }
-    assert.ok(initial.attach.x+initial.attach.width<=initial.link.x);assert.ok(initial.link.x+initial.link.width<=initial.send.x);
+    assert.ok(initial.tools.x+initial.tools.width<=initial.draft.x);assert.ok(initial.draft.x+initial.draft.width<=initial.send.x);
     assert.equal(initial.overflow,false);
     await chat.draft.fill(Array.from({length:60},(_,index)=>`Synthetic line ${index}`).join('\n'));
     await expect.poll(async()=>(await geometry()).draft.height).toBeGreaterThan(initial.draft.height);
@@ -49,6 +49,9 @@ test('TC-037: ready composer is one-line compact, grows and shrinks, with reacha
     await chat.page.locator('#chat-files').setInputFiles(Array.from({length:4},(_,index)=>({name:`Synthetic-long-filename-${index}-for-optional-context.txt`,mimeType:'text/plain',buffer:Buffer.from('Synthetic upload only.')})));
     await expect(chat.page.locator('#chat-attachments li')).toHaveCount(4);
     await expect(chat.page.locator('#chat-attachments')).not.toContainText('Uploading');
+    const tools=chat.page.getByRole('button',{name:'Message options',exact:true});
+    await tools.click();
+    const withTools=await geometry();assert.ok(withTools.attach.height>=44&&withTools.link.height>=44);
     await chat.page.locator('#chat-add-link').click();
     await expect(chat.page.locator('#chat-link-url')).toBeFocused();
     const help=chat.page.getByRole('button',{name:'Supported files',exact:true});
@@ -58,8 +61,12 @@ test('TC-037: ready composer is one-line compact, grows and shrinks, with reacha
     const opened=await geometry();assert.equal(opened.overflow,false);assert.ok(opened.send.bottom<=viewport.height);assert.ok(opened.form.y>=0);
     if(capture)await chat.page.screenshot({path:join(capture,`context-${viewport.width}.png`)});
     await help.press('Escape');await expect(help).toHaveAttribute('aria-expanded','false');await expect(help).toBeFocused();
-    await chat.page.locator('#chat-link-cancel').click();
+    await chat.page.locator('#chat-link-url').press('Escape');
+    await expect(chat.page.locator('#chat-link-editor')).toBeHidden();
+    await expect(chat.draft).toBeFocused();
+    await expect(chat.page.locator('#chat-empty')).toBeHidden();
     for(let remaining=4;remaining>0;remaining--)await chat.page.getByRole('button',{name:/^Remove Synthetic-long-filename/}).first().click();
+    await tools.click();
     await expect.poll(async()=>(await geometry()).form.height).toBe(initial.form.height);
     assert.deepEqual(chat.errors,[]);
   }

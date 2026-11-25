@@ -60,7 +60,7 @@ Related issues: integrated COM login [#142](https://github.com/DataNavAI/no-ego-
 
 ## User outcome and scope
 ### Desktop pane resizing enhancement
-- FR-040: At widths of at least 768px, a visible focusable vertical separator resizes the preserved left Chat/Goals/Artifacts pane by pointer drag or Left/Right keys (16px; Shift 64px), Home and End. Left and Preview retain at least 320px each, with an 8px separator. Initial widths remain 360px above 1100px and 320px otherwise. Store the chosen width locally when storage is available; malformed or unavailable storage must not prevent use. Clamp the rendered width when the viewport shrinks without replacing chat nodes or losing drafts. Mobile retains the single-pane switch and has no separator.
+- FR-040: At widths of at least 768px, a visible focusable vertical separator resizes the preserved left Chat/Goals/Artifacts pane by pointer drag or Left/Right keys (16px; Shift 64px), Home and End. Left and Preview retain at least 320px each, with an 8px separator. FR-073 defines the initial chat width. Store the chosen width locally when storage is available; malformed or unavailable storage must not prevent use. Clamp the rendered width when the viewport shrinks without replacing chat nodes or losing drafts. Mobile retains the single-pane switch and has no separator.
 
 ### CUJ-013: Adjust conversation space
 Actor: desktop chat user. Critical because longer messages need adjustable reading and writing width without losing Preview. Starting state: existing chat draft, desktop workspace. Drag the separator or focus it and use arrows/Home/End; continue typing; reload to restore the chosen width. Resize to mobile and back without losing selected tab/draft. Storage failure falls back to usable in-memory resizing; no network or session mutation occurs.
@@ -364,7 +364,7 @@ Actor: local or authenticated remote COM owner. Critical because context must ar
 - Regression: the named image-projection case covers ordinary numeric/string/object/typed-text/malformed JSON strings and actual ordinary arrays unchanged, plus mixed native image/text/unknown objects/scalars retaining every non-image field and no data URL. Capture assertion RED on `[1,2]`, then GREEN after correction; image-heavy chronological paging remains covered independently.
 
 ### Composer presentation refinement
-- FR-039: The existing composer presents one softly bordered rounded card with a readable growing prompt, compact footer containing visible Attach file and Add link actions, a 44px information disclosure named Supported files and a distinct 44px Send action. The redundant static Hermes footer label is omitted. In the ready empty state with no optional context, the textarea fits one line and the entire form is at most 120 CSS pixels tall at 1280×900, 390×844 and 320×740. Optional context does not reserve an empty row. Supported file limits expand in the bounded context scroller; the disclosure reports its expanded state and Escape closes it and restores its focus. Attachment chips and the link editor remain in that scroller; footer actions remain reachable at 320px with four long filenames and a maximum-height draft. Preserve FR-038 growth/shrink sizing, Enter/Shift+Enter, focus, pending/uncertain states and all upload/link/stream contracts. No provider/model selector or unsupported controls are introduced. Governing visual contract: UI-AC-16 in [ui-brief](design/ui-brief.md).
+- FR-039: The existing composer presents one softly bordered rounded card with a readable growing prompt, single-row layout with a 44px Message options disclosure and a distinct 44px Send action. The redundant static Hermes footer label is omitted. In the ready empty state with no optional context, the textarea fits one line and the entire form is at most 72 CSS pixels tall at 1280×900, 390×844 and 320×740. Optional context does not reserve an empty row. Supported file limits expand in the bounded context scroller; the disclosure reports its expanded state and Escape closes it and restores its focus. Attachment chips and the link editor remain in that scroller; footer actions remain reachable at 320px with four long filenames and a maximum-height draft. Preserve FR-038 growth/shrink sizing, Enter/Shift+Enter, focus, pending/uncertain states and all upload/link/stream contracts. The existing Model provider button remains available inside Message options. Governing visual contract: UI-AC-16 in [ui-brief](design/ui-brief.md).
 - Coverage: FR-039 → CUJ-008 / CUJ-011 / CUJ-012 → TC-010 existing controller regressions, TC-037 automated compact/grow/clear/context geometry, TC-018 and TC-020 rendered procedures. At 1280×800, 390×844 and 320×844, capture empty, focused draft, wrapped/multiline capped draft, ready/disabled send, four long selected filenames, open Supported files, URL validation and streaming states. Assert no page overflow, 44px non-overlapping actions, visible focus, footer reachability and unchanged left tabs/Preview. Expand/collapse Supported files by keyboard, insert/cancel a link and remove a file. Repeat at 200% text. Use synthetic data; cleanup closes owned fixtures. A screenshot or this written procedure is not a pass; independent rendered evidence remains required.
 
 ### TC-018: Rendered attachment and link journey
@@ -736,3 +736,23 @@ A human uses the conversation on the left and checks goals, progress, preview, o
 - Cleanup / pass evidence: close browser and Core, delete fixture-owned temporary directories, and require the test assertions to pass.
 
 Coverage: FR-071 and FR-072 → CUJ-025 → TC-043.
+
+### CUJ-026: Start a chat, add context, and follow a reply
+
+A user opens Chat, sees what they can ask, sends a draft, follows a streamed response, and adds context or continues the conversation. The right workspace remains available on desktop. At phone widths Chat stays usable without opening the project workspace.
+
+- FR-073: In an uncustomized desktop layout, Chat occupies at least 48% of the window at 1440px, with the project workspace still available and the divider preference respected. On mobile, Chat fills the viewport. A ready empty transcript gives one short cue that disappears while composing, adding context, or sending.
+- FR-074: The ready composer uses one row with Message, Send, and one disclosure for Attach file, Add link, file help, and Model provider. The draft grows vertically, and send, stop, context insertion, error recovery, and keyboard focus remain available. Send is disabled for an empty draft without context. Escape dismisses the focused link editor and returns focus to the draft before a separate Escape dismisses Message options. Conversation text uses at least 16px with a bounded reading column.
+
+### TC-044: Chat UI quality score
+
+- Journey / requirements: CUJ-026 / FR-073, FR-074.
+- Level / automation: served Chromium browser and visual review; [TC-044](tests/TC-044.test.js).
+- Preconditions / fixtures: fresh default layout, synthetic streaming gateway, empty chat, 1440×900 desktop and 390×844 mobile. Repeat each layout at narrower width; use the same prompts and checks before and after changes.
+- Given: ready chat with no messages.
+- When: navigate by keyboard, inspect context actions, send, complete a streamed reply, compose a multiline draft, resize and exercise retry.
+- Then: each layout exceeds 90% independently. The score is the share of the twelve binary checks reported by TC-044. Each check has equal weight. A fixture or capture failure cannot count as a pass.
+- Variants: desktop at 1024px and mobile at 320px, a forced session load failure and recovery, and browser keyboard navigation. Native keyboards and live model timing are outside this score.
+- Cleanup / pass evidence: close disposable fixture resources; retain score output and privately captured ready, reply, tools and narrow screenshots. Compare visual hierarchy with the recorded Muse desktop walkthrough while keeping NED's own design.
+
+Coverage: FR-073 and FR-074 → CUJ-026 → TC-044, with lifecycle and history coverage in TC-037–040.

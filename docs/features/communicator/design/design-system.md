@@ -9,6 +9,12 @@ Scope: live COM shell, controls, chat and Goals & Tasks. Legacy onboarding/docum
 
 Official references: [Base](https://base.uber.com/6d2425e9f/p/294ab4-base-design-system), [design language](https://base.uber.com/6d2425e9f/v/0/p/76be65-design-language), [typography](https://base.uber.com/6d2425e9f/p/976582-typography-10/b/667160), [Base Web](https://baseweb.design/). Base Web software is [MIT licensed](https://github.com/uber/baseweb/blob/main/LICENSE); that does not establish font redistribution rights. No Uber Move fonts or library code are copied.
 
+## Current chat hierarchy
+
+The desktop conversation starts at 54% of the workspace width within the existing pane bounds; an explicit saved width takes precedence. On phone widths Chat occupies the full pane. Use a centered conversation column up to 704px and a composer up to 728px. Keep message text at least 16px. In an empty ready chat, centered copy provides a single cue above the bottom-pinned composer.
+
+Align the Message options disclosure, growing textarea, and Send on a single row at rest. Keep a 44px target at each end, a visible keyboard focus indicator, and disabled Send while there is no message or attached context. The disclosure expands secondary actions immediately above the composer and Escape returns focus to its trigger. The project workspace remains separate. See FR-073/074 and TC-044 for the rendered checks.
+
 ## Historical component contracts
 The following sections retain acceptance traceability. Their workflow/geometry constraints remain unless explicitly replaced; conflicting foundational colors/type yield to the current default above.
 

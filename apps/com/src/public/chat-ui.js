@@ -32,6 +32,7 @@ export function mountChat(libraries) {
     const label=activeTurn.stopRequested?'Stopping response…':activityLabels[activity];
     if(label&&status.textContent!==label)status.textContent=label;
   }
+  const empty = element('chat-empty');
   const draft = element('chat-message');
   let busy = false;
   let uncertain = false;
@@ -49,7 +50,6 @@ export function mountChat(libraries) {
     draft.style.height='0px';
     draft.style.height=`${Math.max(34,draft.scrollHeight)}px`;
   }
-  draft.addEventListener('input',fitDraft);
   if(typeof ResizeObserver!=='undefined'){
     let width=0;
     new ResizeObserver(entries=>{
@@ -64,12 +64,19 @@ export function mountChat(libraries) {
   const controls = ['older','newer','latest','chat-send','chat-retry'];
   const atBottom = () => transcript.scrollHeight-transcript.clientHeight-transcript.scrollTop < 64;
   const bottom = smooth => transcript.scrollTo({top:transcript.scrollHeight,behavior:smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant'});
+  function renderSend(){
+    const send=element('chat-send'),sending=Boolean(activeTurn);
+    const hasContent=draft.value.trim()||media.ready()||references.ready();
+    send.disabled=sending ? activeTurn.stopRequested : busy||loadingOlder||uncertain||!modelSetup.ready()||!sessionId||!historyReady||media.pending()||!hasContent;
+    send.dataset.state=sending?(activeTurn.stopRequested?'stopping':'stop'):'send';
+    send.setAttribute('aria-label',sending?(activeTurn.stopRequested?'Stopping response':'Stop response'):'Send message');
+  }
+  draft.addEventListener('input',()=>{fitDraft();renderSend();});
   function render() {
     for (const id of controls) if(element(id))element(id).disabled = busy;
     const sending=Boolean(activeTurn);
-    element('chat-send').disabled = sending ? activeTurn.stopRequested : busy || loadingOlder || uncertain || !modelSetup.ready() || !sessionId || !historyReady || media.pending();
-    element('chat-send').dataset.state=sending?(activeTurn.stopRequested?'stopping':'stop'):'send';
-    element('chat-send').setAttribute('aria-label',sending?(activeTurn.stopRequested?'Stopping response':'Stop response'):'Send message');
+    if(empty)empty.hidden=!sessionId||!historyReady||!modelSetup.ready()||busy||transcript.childElementCount>0;
+    renderSend();
     media.render(busy||uncertain||!sessionId||!historyReady);
     references.render(busy||uncertain||!sessionId||!historyReady);
     element('older').hidden = true;

@@ -32,7 +32,7 @@
 #model-connect { background: var(--text)!important; color: var(--surface)!important; }
 #model-connect:disabled { background: var(--hover)!important; color: var(--muted)!important; }
 #model-hub-link { display: inline-flex; align-items: center; min-height: 44px; }
-#model-setup-toggle { display: block; margin: 0 0 4px auto; min-height: 36px; border: 0; border-radius: 8px; padding: 4px 8px; background: transparent; color: var(--muted); font-size: 12px; }
+
 
 /* One model form: required first-use interstitial or optional settings dialog. */
 #model-setup { box-sizing: border-box; width: min(624px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 32px); border: 1px solid var(--border); border-radius: 12px; overflow: auto; margin: auto; padding: 32px; color: var(--text); background: var(--surface); }
@@ -54,3 +54,22 @@
   .model-setup-header { margin-bottom: 24px; }
   #model-setup h2 { font-size: 28px; }
 }
+
+.chat-empty{position:absolute;z-index:1;top:42%;left:16px;right:16px;text-align:center;pointer-events:none}
+.chat-pane:has(#chat-message:not(:placeholder-shown),#chat-tools:not([hidden]),.attachment-list:not(:empty),#chat-link-editor:not([hidden]),.task-reference-list:not(:empty)) .chat-empty{display:none}
+.chat-empty p{margin:0;font-size:clamp(20px,2.6vw,28px);font-weight:650;letter-spacing:-.025em}
+.chat-pane .transcript{padding-inline:max(16px,calc((100% - 704px)/2))}
+.chat-pane .compose-dock{max-width:728px}
+.compose-dock #chat-form{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:end;gap:0 8px;padding:7px;border-radius:16px}
+#chat-form>.task-reference-list,#chat-tools,#chat-form>.composer-context{grid-column:1/-1;grid-row:auto}
+#chat-form>.task-reference-list{grid-row:1;margin:0 0 4px}
+#chat-tools{grid-row:2;gap:4px;align-items:center;border-bottom:1px solid var(--border);padding:0 2px 4px;margin-bottom:4px}
+#chat-form>.composer-context{grid-row:3;margin:0;contain:none;max-height:min(220px,34dvh);min-height:0}
+#chat-form>#chat-tools-toggle,#chat-form>#chat-message,#chat-form>#chat-send{grid-row:4}
+#chat-tools-toggle,#chat-send{align-self:end}
+#chat-tools-toggle,#chat-tools button{min-height:44px;border:0;background:transparent;border-radius:8px;color:var(--text);padding:4px 8px}
+#chat-tools-toggle{width:44px;display:grid;place-items:center}
+#chat-tools-toggle:hover,#chat-tools-toggle[aria-expanded=true],#chat-tools button:hover{background:var(--hover,#eee)}
+#chat-tools-toggle svg,#chat-tools svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#chat-tools button{display:inline-flex;align-items:center;gap:5px;font-size:12px}
+#chat-form #chat-message{margin:0;align-self:center;font-size:16px;line-height:1.45;padding:5px 0}

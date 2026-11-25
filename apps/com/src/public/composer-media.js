@@ -14,6 +14,20 @@ export function mountComposerMedia({document,draft,getSession,changed,request=fe
   if(!picker)return {pending:()=>false,ready:()=>false,ids:()=>[],clear(){},render(){}};
   let files=[];let locked=true;let selection=[0,0];
   const fileHelp=element('chat-file-help'),supportedFiles=element('chat-supported-files');
+  const tools=element('chat-tools'),toggle=element('chat-tools-toggle');
+  function showTools(open){
+    if(!tools||!toggle)return;
+    tools.hidden=!open;
+    toggle.setAttribute('aria-expanded',String(open));
+    if(!open&&supportedFiles&&!supportedFiles.hidden)showFileHelp(false);
+  }
+  toggle?.addEventListener('click',()=>showTools(tools.hidden));
+  element('chat-form')?.addEventListener('keydown',event=>{
+    if(event.defaultPrevented||event.key!=='Escape'||!tools||tools.hidden)return;
+    event.preventDefault();showTools(false);toggle.focus({preventScroll:true});
+  });
+  element('chat-form')?.addEventListener('submit',()=>showTools(false));
+
   const showFileHelp=show=>{supportedFiles.hidden=!show;fileHelp.setAttribute('aria-expanded',String(show));};
   fileHelp?.addEventListener('click',()=>showFileHelp(supportedFiles.hidden));
   const dismissFileHelp=event=>{
@@ -60,6 +74,10 @@ export function mountComposerMedia({document,draft,getSession,changed,request=fe
   });
   const close=()=>{element('chat-link-editor').hidden=true;draft.focus({preventScroll:true});};
   element('chat-link-cancel').addEventListener('click',close);
+  element('chat-link-editor').addEventListener('keydown',event=>{
+    if(event.key!=='Escape')return;
+    event.preventDefault();close();
+  });
   element('chat-link-insert').addEventListener('click',()=>{
     try{
       const result=insertLink(draft.value,...selection,element('chat-link-url').value,element('chat-link-label').value);

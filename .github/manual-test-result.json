@@ -1,15 +1,14 @@
 {
-  "candidate_sha": "23120ba67bbb82b5f0755e35d2c409217d89143f",
+  "candidate_sha": "ecf9df775500888fe4b7f58d549bee34eb1c1ada",
   "result": "pass",
-  "tested_at": "2026-11-25T04:20:41.037380+00:00",
-  "environment": "Isolated macOS checkout; real Hermes skill evaluation with native terminal/process tools, disposable agent homes/projects and shared SQLite DB; synthetic loopback HTTP apps. No real profile mutation or private tunnel.",
+  "tested_at": "2026-11-25T04:40:33.641864+00:00",
+  "environment": "Disposable macOS browser fixtures using synthetic Hermes responses, with desktop Chromium and iPhone 13 WebKit device emulation for walkthroughs",
   "commands": [
     "npm run lint",
-    "npm run test:spec -- --all",
     "python -m pytest",
-    "npm run test:all",
-    "node --test docs/features/web-app-previews/tests/TC-*.test.js",
-    "python -m eval_runner.cli skills/web-app-preview --output-root /tmp/ned-single-preview-release-evals --markdown --hermes-command \"hermes chat -t skills,terminal --max-turns 45 --run-budget 600\""
+    "npm run test:spec -- --all",
+    "node --test docs/features/communicator/tests/TC-{037,044}.test.js docs/features/model-setup/tests/TC-002.test.js",
+    "node --test videos.mjs (private browser capture harness)"
   ],
-  "observations": "Nine focused API/CLI cases pass. Full hook passes including Python215 passed9 skipped and real Core/Hermes integration. Fresh Hermes exercise on this unchanged code commit used real candidate CLI: Shop GET/HEAD200 and revision1; explicit Admin replacement revision2; implicit replacement rejected; stale Shop clear rejected without changing Admin; stopping only Admin yielded stopped without restart; homeB saw no preview in the shared DB; clear left preview:null revision3 with tombstone, and owned fixture processes were verified stopped. Evaluator reported pass with no infrastructure failure; task controller inspected the actual fixture report. Temporary revision-guard removal made concurrency assertions fail before restoring the source. No UI changed. Private embedded/remote HTTP/WS/HMR delivery TC-004 remains NOT RUN and tracked separately; local-link metadata is not remote viewing."
+  "observations": "The fixed TC-044 score rose from 6/12 desktop and 8/12 mobile to 12/12 on both. Browser acceptance verified the new chat width, compact composer, empty cue, keyboard focus and nested Escape, upload/link controls, streaming, draft growth and recovery. Four-turn desktop and emulated iPhone recordings decode successfully. Independent UI review additionally verified short viewport behavior. The score does not cover native mobile keyboards or live-model timing."
 }
