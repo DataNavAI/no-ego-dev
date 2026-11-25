@@ -1,14 +1,15 @@
 {
-  "candidate_sha": "c59db729732e7c72688c6f545cab76a30c8f7fb0",
+  "candidate_sha": "3a2af6c192881bf06f64c5aae9f0d82b8b2fc517",
   "result": "pass",
-  "tested_at": "2026-11-25T20:20:59.469249+00:00",
-  "environment": "Disposable Chromium desktop/mobile with real Communicator/Core and synthetic Hermes/access fixtures",
+  "tested_at": "2026-11-25T20:46:33.076080+00:00",
+  "environment": "Disposable served Chromium at desktop and phone widths with held Hermes gateway fixture streams and simulated phone VisualViewport resize/pan",
   "commands": [
     "npm run lint",
     "npm run test:spec -- --all",
     "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-050.test.js docs/features/ned-api/tests/TC-006.test.js",
-    "python3 /tmp/ned-auto-reconnect/render.py"
+    "node --test docs/features/communicator/tests/TC-051.test.js",
+    "python3 /tmp/ned-scroll-keyboard-evidence/render.py",
+    "python -m eval_runner.cli skills/ned-chat-desktop-review skills/ned-chat-mobile-review --markdown"
   ],
-  "observations": "Inspected rendered access and reply reconnection. Saved and delegated access recovered in the tab after temporary failure; repeated authentication denial kept private-token controls hidden. Browser offline/online restored current history with draft intact. After partial prose, the reply used the same turn events URL and completed with exactly one submission. Credential rotation and Forget still require explicit access."
+  "observations": "Inspected live tail, panned viewport and short mobile composer screenshots. Resizing kept the streamed tail in view while following; scrolling away paused and keyboard Jump returned focus and resumed following. Completion preserved intentional scroll position during history fetch. Multiline draft, Send and Stop fit in a simulated 320x260 visible viewport with context and activity. Review skill evals passed. No physical-device keyboard footage was available, leaving that weighted criterion unobserved."
 }
