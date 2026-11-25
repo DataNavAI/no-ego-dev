@@ -1,14 +1,15 @@
 {
-  "candidate_sha": "de2d3f62296f34b12328c8c89ddff8f9c9912c90",
+  "candidate_sha": "95e0cb1f94e0c0d0b4a64fdaf75cf7c7b2e40af9",
   "result": "pass",
-  "tested_at": "2026-11-25T19:25:47.592539+00:00",
-  "environment": "Disposable Chromium with actual Communicator and Core, isolated NED SQLite and synthetic Hermes history fixture",
+  "tested_at": "2026-11-25T19:47:37.512378+00:00",
+  "environment": "Isolated Chromium desktop/narrow viewport with real Communicator/Core and loopback test gateway, plus pinned Hermes with aimock instead of inference",
   "commands": [
     "npm run lint",
     "npm run test:spec -- --all",
     "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-048.test.js",
-    "zsh /tmp/ned-menu-reactions/render.sh"
+    "npm run test:chat:e2e",
+    "npm run test:core:hermes",
+    "python3 /tmp/ned-attachment-evidence/render.py"
   ],
-  "observations": "Reviewed desktop and narrow mobile screenshots. Verified keyboard selection, Escape and focus across resize, navigation to preserved workspace, reachable picker after a long reply at 320px, and saved emoji after reload. Checked replacement, removal, retry after failure, invalid targets, foreign origin and authentication. No upstream agent turn was started."
+  "observations": "Captured ready attachment chips, readable reloaded history and mobile retry guidance. Verified mixed PDF/DOCX/PNG and text, attachment-only and text-only turns, invalid JSON, held upload, transport error, interrupted send, receipt rejection and recovery without replay. Confirmed real Hermes delivers the exact PDF text and PNG bytes to the mocked model and returns terminal history."
 }

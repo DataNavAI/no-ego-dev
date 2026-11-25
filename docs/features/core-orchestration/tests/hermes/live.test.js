@@ -1,3 +1,7 @@
+import sharp from 'sharp';
+import {createCommunicatorServer,fetch as comFetch} from '../../../ned-api/tests/auth-client.js';
+import {configuredModelSetup} from '../../../communicator/tests/model-fixture.js';
+import {pdfFixture} from '../../../communicator/tests/media-fixtures.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {writeFile,access} from 'node:fs/promises';
@@ -124,4 +128,58 @@ test('model-setup: running Hermes SDK uses an inherited scoped Hub capability af
   let result;try{result=await until(async()=>{const response=await fetch(app.url+'/api/v1/chat/sessions/nedcom-main/turns/'+accepted.turn.id,{headers:{Authorization:'Bearer '+app.apiCredential}});return response.json();},v=>v.turn.status!=='pending','inherited model completion');}catch(error){throw new Error(error.message+'; inferenceCalls='+inferenceCalls+'; paths='+JSON.stringify(fixture.requests.map(r=>r.path))+'; gateway='+fixture.diagnostics().slice(-6000),{cause:error});}
   assert.equal(result.turn.status,'completed');assert.equal(result.message.content,'Account model connection works.');assert(metadataCalls>=2);assert(inferenceCalls>=1);
   const profile=await readFile(path.join(fixture.home,'config.yaml'),'utf8');assert(profile.includes(token));assert(!profile.includes('test-only-model'));assert(!profile.includes('synthetic-provider-key'));
+});
+
+
+test('Communicator sends document and image attachments through real Hermes to the mocked model',{timeout:60000},async t=>{
+  const fixture=await hermesFixture({configureProfile(config){config.model.supports_vision=true;}});
+  let app;
+  t.after(async()=>{try{await app?.close();}finally{await fixture.close();}});
+  const home=path.join(fixture.root,'com');
+  app=createCommunicatorServer({home,env:{},databasePath:path.join(home,'ned.sqlite'),gateway:fixture.gateway,modelSetup:configuredModelSetup()});
+  await app.listen();
+  fixture.mock.on({}, {content:'I received the attachment.'});
+  const base=app.url+'/api/v1/chat/sessions';
+  const session=base+'/nedcom-main';
+  const post=async(url,body,type='application/json',headers={})=>comFetch(url,{
+    method:'POST',headers:{origin:app.url,'content-type':type,...headers},body,signal:AbortSignal.timeout(20000),
+  });
+  assert.equal((await post(base+'/fixed','{}')).status,200);
+  async function upload(name,type,bytes){
+    const response=await post(session+'/attachments',bytes,type,{'x-ned-filename':name});
+    const data=await response.json();
+    assert.equal(response.status,201,JSON.stringify(data));
+    return data.attachment.id;
+  }
+  async function turn(input,attachments){
+    const response=await post(session+'/chat',JSON.stringify({input,attachments}));
+    const data=await response.json();
+    assert.equal(response.status,202,JSON.stringify(data));
+    const stream=await comFetch(session+'/turns/'+data.turn.id+'/events',{signal:AbortSignal.timeout(25000)});
+    assert.equal(stream.status,200);
+    const terminal=(await stream.text()).match(/^event: terminal\r?\ndata: (.+)$/m);
+    assert.ok(terminal,'Hermes turn has a terminal event');
+    const result=JSON.parse(terminal[1]);
+    assert.equal(result.turn.status,'completed',JSON.stringify(result));
+    assert.equal(result.message.content,'I received the attachment.');
+  }
+  const pdf=await upload('report.pdf','application/pdf',pdfFixture('NED_SYNTHETIC_REPORT'));
+  await turn('',[pdf]);
+  const png=await sharp({create:{width:4,height:3,channels:3,background:'red'}}).png().toBuffer();
+  const image=await upload('example.png','image/png',png);
+  await turn('NED_SYNTHETIC_IMAGE',[image]);
+  const requests=fixture.requests.filter(({path})=>path.endsWith('/chat/completions'));
+  const currentUser=({body})=>body.messages.findLast(message=>message.role==='user').content;
+  assert.equal(requests.length,2);
+  assert.match(currentUser(requests[0]),/Attachment: report\.pdf\nNED_SYNTHETIC_REPORT/);
+  const parts=currentUser(requests[1]);
+  assert.ok(Array.isArray(parts),'vision-capable model receives multimodal parts');
+  assert.ok(parts.some(part=>part.type==='text'&&part.text.includes('NED_SYNTHETIC_IMAGE')));
+  assert.ok(parts.some(part=>part.type==='image_url'&&part.image_url.url===`data:image/png;base64,${png.toString('base64')}`));
+  const history=await comFetch(session+'/messages');
+  assert.equal(history.status,200);
+  const rows=(await history.json()).data;
+  assert.deepEqual(rows.map(row=>row.role),['user','assistant','user','assistant']);
+  assert.equal(rows[2].content,'NED_SYNTHETIC_IMAGE\n[screenshot]');
+  assert.doesNotMatch(JSON.stringify(rows),/data:image/);
 });
