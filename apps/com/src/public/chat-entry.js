@@ -9,3 +9,26 @@ mountDebugPane({document,request:apiFetch});
 mountChat({marked,DOMPurify});
 mountActivity({document,EventSource:ApiEventSource});
 mountPaneResize({shell:document.getElementById('app-shell'),divider:document.getElementById('pane-divider')});
+
+const viewport=globalThis.visualViewport;
+if(viewport){
+  const shell=document.getElementById('app-shell');
+  const mobile=matchMedia('(max-width: 767px)');
+  const fitVisibleViewport=()=>{
+    if(mobile.matches&&viewport.scale===1&&viewport.height>0){
+      shell.style.setProperty('--chat-viewport-height',`${Math.floor(viewport.height)}px`);
+      shell.style.setProperty('--chat-viewport-top',`${Math.max(0,viewport.offsetTop)}px`);
+      shell.dataset.fitViewport='true';
+      shell.toggleAttribute('data-compact-chat',viewport.height<340);
+    }else{
+      shell.style.removeProperty('--chat-viewport-height');
+      shell.style.removeProperty('--chat-viewport-top');
+      delete shell.dataset.fitViewport;
+      shell.removeAttribute('data-compact-chat');
+    }
+  };
+  viewport.addEventListener('resize',fitVisibleViewport);
+  viewport.addEventListener('scroll',fitVisibleViewport);
+  mobile.addEventListener('change',fitVisibleViewport);
+  fitVisibleViewport();
+}

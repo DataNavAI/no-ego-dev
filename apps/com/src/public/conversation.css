@@ -13,6 +13,16 @@
 .mobile-navigation{display:none;position:relative}
 @media(max-width:767px){
   .shell{grid-template-rows:56px minmax(0,1fr)}
+  .shell[data-fit-viewport]{
+    position:fixed;inset-inline:0;top:var(--chat-viewport-top);height:var(--chat-viewport-height);
+    /* Reserve space for navigation, the primary row, and its margins. */
+    --composer-room:max(0px, calc(var(--chat-viewport-height) - 128px));
+  }
+  .shell[data-compact-chat] #chat-activity{display:none}
+  .shell[data-fit-viewport] #chat-tools{max-height:clamp(44px, calc(var(--composer-room) * .3), 132px);overflow:auto;overscroll-behavior:contain}
+  .shell[data-fit-viewport] #chat-form>.task-reference-list{min-height:0;max-height:min(96px, calc(var(--composer-room) * .18))}
+  .shell[data-fit-viewport] #chat-form>.composer-context{max-height:clamp(44px, calc(var(--composer-room) * .3), 220px)}
+  .shell[data-fit-viewport] #chat-form #chat-message{max-height:clamp(44px, calc(var(--composer-room) * .22), 160px)}
   .workspace-toolbar{flex-wrap:nowrap;gap:10px;padding:4px 10px;align-content:normal}
   .workspace-toolbar>.mobile-navigation{display:block}
   #debug-toggle{font-size:12px;border:0;background:transparent;margin-left:auto;padding:6px;flex:none}

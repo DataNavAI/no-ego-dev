@@ -1,6 +1,6 @@
 ---
 name: ned-chat-mobile-review
-description: Review the NED Communicator chat on mobile using browser device emulation, a recorded conversation and timestamped comparison with Meta Muse.
+description: Review the NED Communicator chat on mobile using browser device emulation, a recorded conversation and timestamped comparison with Meta Muse. Verify live reply following and native keyboard reachability.
 ---
 
 # NED chat review on mobile
@@ -24,9 +24,9 @@ Use fictional prompts that require no tools or external actions:
 3. Enter these as two lines of the same draft: “Add a small Markdown table showing who brings what.” and “Use fictional names.”
 4. “Summarize it in one sentence.”
 
-While a long reply is visible, scroll back to an earlier turn and return to the latest one. Enter a multiline draft and check composer behavior. Exercise additional chat actions only when needed to confirm a UI defect, keeping the same send ceiling.
+During a long streamed reply, capture two live updates at latest and confirm the tail stays visible. Before completion, scroll up and capture another update without movement of the earlier text. Use Jump to latest while generation is active, then capture another visible increment and the final reply. If the reply finishes too soon, use a controlled streaming fixture or mark the missing phase unobserved. Enter a multiline draft and check composer behavior. Exercise additional chat actions only when needed to confirm a UI defect, keeping the same send ceiling.
 
-Check composer wrapping, touch targets, horizontal overflow, pane dismissal, transcript anchoring and reachability of the latest reply. Mobile emulation can omit the native keyboard, browser chrome and safe areas. Record them as unobserved unless real evidence covers them; a smaller viewport can probe constrained height but is only a simulation.
+Check composer wrapping, touch targets, horizontal overflow, pane dismissal, transcript anchoring and reachability of the latest reply. Record a separate physical-phone check when authorized. Show the native keyboard opening, type a multiline draft, verify the input and Send or Stop above the keyboard, and dismiss it with the draft intact. Record keyboard, browser chrome and safe-area states as unobserved when physical evidence is unavailable. A Playwright visual viewport simulation checks geometry but cannot satisfy the native-keyboard criterion.
 
 ## Review the footage and compare
 
@@ -43,12 +43,12 @@ Score this layout independently. Inspect the idle and working composer, two spea
 | Color and role clarity | 15 | Distinguishable labels and surfaces, coherent action colors, normal text at 4.5:1 and necessary controls at 3:1. |
 | Conversation hierarchy | 10 | Active speaker and exchange are clear, short replies group their controls, and pane chrome stays secondary. |
 | Secondary-action restraint | 15 | Copy and tools remain keyboard/touch reachable without dominating rest states. Focus follows intent. |
-| Composer stability | 15 | The one-line row shifts no more than 4 CSS px between waiting and settled. Multiline expansion keeps actions reachable. |
+| Composer stability | 15 | The one-line row shifts no more than 4 CSS px between waiting and settled. Multiline expansion keeps actions reachable. On a physical phone the entry and primary action remain above the native keyboard during opening, input and dismissal. |
 | Agent feedback | 15 | Accepted, working, streaming and settled states are clear with actionable Stop and no stale or conflicting signal. |
-| Transcript continuity | 20 | Earlier text stays anchored. Return to latest and show the final reply after the layout change or follow-up. |
+| Transcript continuity | 20 | The live tail stays visible while following, including across a layout change. Earlier text holds as the reply grows. Jump to latest resumes following before completion, and the final reply is visible. |
 | Structured content | 10 | List and table hierarchy supports scanning. Wide content scrolls locally without clipping chat controls. |
 
-Assign **2** when the full criterion is observed, **1** for partial success with a specific defect, and **0** for failure. Multiply each weight by the rating divided by two. A missing observation earns no points and makes the evaluation incomplete. Require over 90% per device, with a separate functional browser result. Unreachable critical controls, lost drafts, unreadable content, or a hidden final reply without a discoverable recovery path fail the evaluation regardless of points. During capture, use any return-to-latest control and show the final reply. A desktop Muse reference can establish shared visual hierarchy on mobile; state the limits on device-specific comparisons.
+Assign **2** when the full criterion is observed, **1** for partial success with a specific defect, and **0** for failure. Multiply each weight by the rating divided by two. A missing observation earns no points and makes the evaluation incomplete. Require over 90% per device, with a separate functional browser result. Unreachable critical controls, lost drafts, offscreen reply tail while following, unreadable content, or a hidden final reply without a discoverable recovery path fail the evaluation regardless of points. During capture, use any return-to-latest control and show the final reply. A desktop Muse reference can establish shared visual hierarchy on mobile; state the limits on device-specific comparisons.
 
 ## Deliver the review
 
