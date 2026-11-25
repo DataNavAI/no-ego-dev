@@ -1,14 +1,14 @@
 {
-  "candidate_sha": "ecf9df775500888fe4b7f58d549bee34eb1c1ada",
+  "candidate_sha": "1b338aefc80178a5bacd45cfca311ebb129a47b6",
   "result": "pass",
-  "tested_at": "2026-11-25T04:40:33.641864+00:00",
-  "environment": "Disposable macOS browser fixtures using synthetic Hermes responses, with desktop Chromium and iPhone 13 WebKit device emulation for walkthroughs",
+  "tested_at": "2026-11-25T07:36:20.794941+00:00",
+  "environment": "Disposable Chromium desktop and narrow viewport for functional checks, Chromium and iPhone 13 WebKit for four-turn synthetic browser walkthroughs, recorded Muse desktop comparison",
   "commands": [
     "npm run lint",
     "python -m pytest",
     "npm run test:spec -- --all",
-    "node --test docs/features/communicator/tests/TC-{037,044}.test.js docs/features/model-setup/tests/TC-002.test.js",
-    "node --test videos.mjs (private browser capture harness)"
+    "node --test docs/features/communicator/tests/TC-{044,046}.test.js",
+    "node --test videos.mjs (private fixture-backed capture harness)"
   ],
-  "observations": "The fixed TC-044 score rose from 6/12 desktop and 8/12 mobile to 12/12 on both. Browser acceptance verified the new chat width, compact composer, empty cue, keyboard focus and nested Escape, upload/link controls, streaming, draft growth and recovery. Four-turn desktop and emulated iPhone recordings decode successfully. Independent UI review additionally verified short viewport behavior. The score does not cover native mobile keyboards or live-model timing."
+  "observations": "Measured NED and Muse recordings at matching states. Published seven weighted visual dimensions with explicit incomplete-evidence and critical-failure rules, distinct from the prior 12/12 functional score. Browser tests verify palette scope, normal-text contrast, primary glyph/focus contrast and transcript-start reply alignment. Both final replies are visible after four turns, including desktop resize and return to latest. Independent visual re-review and eight synthetic skill scenarios passed. Existing clips leave a complete weighted visual score unestablished."
 }
