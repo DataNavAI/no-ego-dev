@@ -1,13 +1,15 @@
 {
-  "candidate_sha": "892ba92d473ceb4e7b0a49d0b0ab59e805b8ebc6",
+  "candidate_sha": "23120ba67bbb82b5f0755e35d2c409217d89143f",
   "result": "pass",
-  "tested_at": "2026-11-25T03:41:07.832321+00:00",
-  "environment": "Disposable local Communicator with an isolated Core database, registered synthetic projects, Chromium browser at desktop and 390/320 px mobile widths, synthetic Hermes gateway",
+  "tested_at": "2026-11-25T04:20:41.037380+00:00",
+  "environment": "Isolated macOS checkout; real Hermes skill evaluation with native terminal/process tools, disposable agent homes/projects and shared SQLite DB; synthetic loopback HTTP apps. No real profile mutation or private tunnel.",
   "commands": [
     "npm run lint",
-    "python -m pytest",
     "npm run test:spec -- --all",
-    "NED_UI_EVIDENCE_DIR=/tmp/ned-chat-first-evidence node --test docs/features/communicator/tests/TC-043.test.js docs/features/secret-management/tests/TC-{003,006,008}.test.js"
+    "python -m pytest",
+    "npm run test:all",
+    "node --test docs/features/web-app-previews/tests/TC-*.test.js",
+    "python -m eval_runner.cli skills/web-app-preview --output-root /tmp/ned-single-preview-release-evals --markdown --hermes-command \"hermes chat -t skills,terminal --max-turns 45 --run-budget 600\""
   ],
-  "observations": "The project dropdown and left tabs are gone. An actual ned task focus switches workspace project without losing the draft or changing the workspace tab. An idempotent replay, rejected unregistered project, unrelated later task event, and reload preserve the explicit focus. The project name and all workspace tabs appear at 320 px. Mobile Chat and Project switches preserve the draft. Secret-store and private chat-card browser tests pass, including clearing input and revealed values on access loss."
+  "observations": "Nine focused API/CLI cases pass. Full hook passes including Python215 passed9 skipped and real Core/Hermes integration. Fresh Hermes exercise on this unchanged code commit used real candidate CLI: Shop GET/HEAD200 and revision1; explicit Admin replacement revision2; implicit replacement rejected; stale Shop clear rejected without changing Admin; stopping only Admin yielded stopped without restart; homeB saw no preview in the shared DB; clear left preview:null revision3 with tombstone, and owned fixture processes were verified stopped. Evaluator reported pass with no infrastructure failure; task controller inspected the actual fixture report. Temporary revision-guard removal made concurrency assertions fail before restoring the source. No UI changed. Private embedded/remote HTTP/WS/HMR delivery TC-004 remains NOT RUN and tracked separately; local-link metadata is not remote viewing."
 }
