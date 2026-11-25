@@ -1,15 +1,13 @@
 {
-  "candidate_sha": "28e3030f76b32779e4499e45160b2c3b389703c2",
+  "candidate_sha": "892ba92d473ceb4e7b0a49d0b0ab59e805b8ebc6",
   "result": "pass",
-  "tested_at": "2026-11-24T16:37:24.562447+00:00",
-  "environment": "Isolated macOS checkout, Node 24, served COM in Chromium at 1280x900 and 320x900; disposable profile and explicitly synthetic provider boundary. Native Linux ARM64 container separately qualified.",
+  "tested_at": "2026-11-25T03:41:07.832321+00:00",
+  "environment": "Disposable local Communicator with an isolated Core database, registered synthetic projects, Chromium browser at desktop and 390/320 px mobile widths, synthetic Hermes gateway",
   "commands": [
     "npm run lint",
-    "npm run test:all",
-    "npm run build:ui:check",
-    "node --test docs/features/model-setup/tests/TC-002.test.js",
-    "docker run fixed container-clients.mjs against the final Linux image (no consent/exchange/inference)",
-    "python docs/features/standalone-container/tests/container_acceptance.py --image ned-provider-subscriptions:final --expected-architecture arm64"
+    "python -m pytest",
+    "npm run test:spec -- --all",
+    "NED_UI_EVIDENCE_DIR=/tmp/ned-chat-first-evidence node --test docs/features/communicator/tests/TC-043.test.js docs/features/secret-management/tests/TC-{003,006,008}.test.js"
   ],
-  "observations": "Visually inspected served desktop/mobile full-screen subscription setup captures. Provider/model controls, external consent link, private code field, disabled Complete sign-in action and vertically scrolling mobile layout fit the existing interstitial. Browser cases verified first-use ChatGPT default, provider switching, exact selected model/job retained after reload without a second login, one-shot code submission, secret clearing, cancellation and configured bypass. Actual pinned Claude/Antigravity clients reached approved consent origins and cancelled without profile changes; no real account consent, subscription entitlement or inference was tested. Actual Hermes integration proved per-profile Antigravity credential routing without launch-profile/keyring fallback. macOS/Windows subscription OAuth is not enabled by this Linux implementation."
+  "observations": "The project dropdown and left tabs are gone. An actual ned task focus switches workspace project without losing the draft or changing the workspace tab. An idempotent replay, rejected unregistered project, unrelated later task event, and reload preserve the explicit focus. The project name and all workspace tabs appear at 320 px. Mobile Chat and Project switches preserve the draft. Secret-store and private chat-card browser tests pass, including clearing input and revealed values on access loss."
 }
