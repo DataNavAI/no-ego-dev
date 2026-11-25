@@ -720,7 +720,7 @@ For an owned in-flight Stop, a matching authenticated Hermes `run.cancelled`/`ru
 
 A human uses the conversation on the left and checks goals, progress, preview, or settings in the right-hand workspace. On a phone, Chat and Project controls switch between those panes. An agent in a registered project runs `ned task focus --project <directory>` using the same NED instance and database. The right workspace switches to the named project without changing the chat, draft, or selected workspace tab.
 
-- FR-071: Show the chat as the only view inside the left pane. Remove the project selector from the toolbar. Keep Goals & Tasks, Preview, Dashboard, and Settings accessible in the project workspace. On mobile, default to Chat and expose direct Chat and Project controls.
+- FR-071: Show the chat as the only view inside the left pane. Remove the project selector from the toolbar. Keep Goals & Tasks, Preview, Dashboard, and Settings accessible in the project workspace. On mobile, default to Chat and expose Chat and Project through the Navigation disclosure (FR-079).
 - FR-072: The authenticated Core task command persists the focused registered project. All Communicator tabs for that instance observe the last successful signal via the workspace stream, including on reload. Until there is a valid explicit signal, the most recent task event supplies the project. Invalid or uninitialized project requests preserve the prior selection.
 
 ### TC-043: Agent-focused project in a chat-first workspace
@@ -805,3 +805,27 @@ A user reloads the chat while NED is preparing or streaming a reply. The reopene
 - Pass evidence: both viewport subtests pass.
 
 Coverage: FR-077–078 → CUJ-028 → TC-047, with activity and Stop coverage in TC-039/040.
+
+### Mobile navigation and message reactions
+
+- FR-079: At widths below 768px the header has a Navigation disclosure with Chat and Project choices. Selection closes it, preserves the chosen project view and focuses the destination. Escape closes it and returns focus to the trigger. Desktop retains its split layout.
+- FR-080: Saved assistant messages in NED Chat offer one reaction from the supported emoji set. Selecting another replaces it, and selecting the same one removes it. The saved choice is visible and available after reload. Failed saves preserve the last confirmed choice and can be retried.
+- FR-081: Authenticated same-origin POST `/api/v1/chat/sessions/nedcom-main/reactions` accepts `{message_id, target, emoji}`. The ID is the string form of the Hermes history ID, the target is the message's signed `reaction_target` from the NED history response, and emoji is 👍, 👎, ❤️, 😂, 🎉, or null to remove. The response is `{reaction}`; setting the same value twice is idempotent. History returns `reaction_target` and `reaction` on assistant rows. Modified or cross-session targets fail. NED persists feedback in its instance database and reads canonical message IDs from Hermes, whose API-server transport offers no reaction hook target. No model interaction is generated.
+
+### CUJ-029: Navigate a phone and react to an answer
+
+A mobile user opens the header disclosure to view a project, returns to chat, and reacts to a completed answer. The saved reaction follows the answer after reload. If saving fails the user can try again.
+
+### TC-048: Mobile navigation and persistent reactions
+
+- Journey / requirements: CUJ-029 / FR-079–081.
+- Level / automation: end-to-end; [TC-048](tests/TC-048.test.js).
+- Preconditions / fixtures: isolated Communicator and Hermes loopback history containing one synthetic user message and one assistant answer.
+- Given: a signed-in user at 390px.
+- When: open and dismiss navigation, visit Project and return to Chat, then select an emoji and reload.
+- Then: the menu preserves destination state and the reaction returns on the assistant message. Replace and remove it. The user message has no reaction control and Hermes receives no new turn.
+- Steps and assertions: run `node --test docs/features/communicator/tests/TC-048.test.js`; also check a rejected save keeps the existing reaction tampered targets fail, and all five choices are inside the transcript viewport below a long reply at 320px.
+- Cleanup: close the isolated browser and servers and remove their test-owned database.
+- Pass evidence: real browser assertions, API checks, and rendered narrow-layout inspection.
+
+Coverage: FR-079–081 → CUJ-029 → TC-048.

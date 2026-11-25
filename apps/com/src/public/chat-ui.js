@@ -1,3 +1,4 @@
+import {renderReaction} from './message-reaction.js';
 import {apiFetch as fetch} from './api-client.js';
 import {mountModelSetup} from './model-setup.js';
 import {mountTaskReferences} from './task-references.js';
@@ -109,7 +110,13 @@ export function mountChat(libraries) {
       article.dataset.messageId=String(row.id);
       const author = document.createElement('strong'); author.textContent = row.role === 'user' ? 'You' : row.role === 'assistant' ? 'Hermes' : 'Tool';
       const content = renderMessageContent(row,document,libraries);
-      article.append(author,content);return article;
+      article.append(author,content);
+      if(row.role==='assistant'&&row.reaction_target){
+        const actions=content.querySelector('.message-actions');
+        const reaction=renderReaction(row,document,fetch);
+        if(actions)actions.prepend(reaction);else article.append(reaction);
+      }
+      return article;
     }));
   }
   function showPending(input){
