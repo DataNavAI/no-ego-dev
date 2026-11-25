@@ -73,3 +73,49 @@
 #chat-tools-toggle svg,#chat-tools svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 #chat-tools button{display:inline-flex;align-items:center;gap:5px;font-size:12px}
 #chat-form #chat-message{margin:0;align-self:center;font-size:16px;line-height:1.45;padding:5px 0}
+
+/* Conversation colors are local to Chat; the project workspace keeps its own surfaces. */
+.chat-pane{
+  --chat-canvas:#f8f9fb;
+  --chat-assistant:#e9edf2;
+  --chat-user:#cce4fa;
+  --chat-accent-hover:#b8d8f5;
+  --chat-disabled:#e9edf2;
+  --surface:#fff;
+  --text:#17263c;
+  --muted:#4e6075;
+  --border:#dce4ed;
+  --hover:#e9eff6;
+  --focus:#2166a5;
+  background:var(--chat-canvas);
+  color:var(--text);
+}
+
+.chat-pane .chat-message>strong{color:var(--muted)}
+.chat-pane .chat-message.user-message{background:var(--chat-user)}
+.chat-pane .assistant-message{
+  width:fit-content;
+  max-width:100%;
+  padding:10px 12px;
+  margin-inline:0 auto;
+  margin-bottom:8px;
+  border-radius:12px 12px 12px 4px;
+  background:var(--chat-assistant);
+}
+.chat-pane .user-message .message-copy::after{background:var(--chat-user)}
+.chat-pane .assistant-message .message-copy::after{background:var(--chat-assistant)}
+.chat-pane .compose-dock{background:transparent}
+.chat-pane .compose-dock #chat-form{background:var(--surface);border-color:var(--border)}
+.chat-pane .compose-dock #chat-form:focus-within{border-color:#9aafc5}
+.chat-pane .compose-dock #chat-send:not(:disabled){
+  background:var(--chat-user);
+  color:var(--text);
+}
+.chat-pane .compose-dock #chat-send:hover:not(:disabled){background:var(--chat-accent-hover)}
+.chat-pane .compose-dock #chat-send:disabled{background:var(--chat-disabled);color:#748295}
+.chat-pane .compose-dock #chat-send[data-state="stop"]{background:#2166a5;color:var(--surface)}
+.chat-pane #chat-message::placeholder,.chat-pane #chat-status{color:var(--muted)}
+.chat-pane #chat-status[data-activity]{color:var(--focus)}
+@media(forced-colors:active){
+  .chat-pane .compose-dock #chat-form:has(textarea:focus-visible){outline-color:Highlight}
+}

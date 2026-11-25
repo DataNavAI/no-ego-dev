@@ -744,7 +744,7 @@ A user opens Chat, sees what they can ask, sends a draft, follows a streamed res
 - FR-073: In an uncustomized desktop layout, Chat occupies at least 48% of the window at 1440px, with the project workspace still available and the divider preference respected. On mobile, Chat fills the viewport. A ready empty transcript gives one short cue that disappears while composing, adding context, or sending.
 - FR-074: The ready composer uses one row with Message, Send, and one disclosure for Attach file, Add link, file help, and Model provider. The draft grows vertically, and send, stop, context insertion, error recovery, and keyboard focus remain available. Send is disabled for an empty draft without context. Escape dismisses the focused link editor and returns focus to the draft before a separate Escape dismisses Message options. Conversation text uses at least 16px with a bounded reading column.
 
-### TC-044: Chat UI quality score
+### TC-044: Chat UI functional score
 
 - Journey / requirements: CUJ-026 / FR-073, FR-074.
 - Level / automation: served Chromium browser and visual review; [TC-044](tests/TC-044.test.js).
@@ -756,3 +756,28 @@ A user opens Chat, sees what they can ask, sends a draft, follows a streamed res
 - Cleanup / pass evidence: close disposable fixture resources; retain score output and privately captured ready, reply, tools and narrow screenshots. Compare visual hierarchy with the recorded Muse desktop walkthrough while keeping NED's own design.
 
 Coverage: FR-073 and FR-074 → CUJ-026 → TC-044, with lifecycle and history coverage in TC-037–040.
+
+### CUJ-027: Review chat polish against matching recorded states
+
+A reviewer can distinguish functional browser success from visual and interaction polish. A user can distinguish the two speakers and primary action with a quiet, accessible chat palette.
+
+- FR-075: Use a near-white chat canvas and composer, cool gray assistant replies, and pale blue user replies and ready Send. Keep user replies aligned right and assistant replies aligned left, including short replies. Preserve visible author labels and focus, accessible foreground contrast, keyboard behavior and project workspace appearance.
+- FR-076: Video reviews use the weighted [chat video evaluation](design/chat-video-evaluation.md) in addition to TC-044. Score each device independently and treat missing required evidence and critical UI failures as a failed threshold.
+
+### TC-045: Palette and stricter video review
+
+- Journey / requirements: CUJ-027 / FR-075 and FR-076.
+- Level / automation: manual; [video scorecard](design/chat-video-evaluation.md) and desktop/mobile review skill evals. The rendered palette and contrast are also checked in [TC-046](tests/TC-046.test.js).
+- Preconditions: verified candidate recordings, same fictional prompts, and known Muse reference. Use the timed events rather than comparing response duration across providers.
+- Given: playable desktop and mobile footage. When: inspect the seven scored dimensions and run the critical-failure check. Then: retain per-device ratings with timestamped evidence and retest actions. Where evidence is missing, mark the row and result incomplete.
+- Cleanup / pass evidence: private recordings, completed scorecards and retained comparison offsets. Keep video acceptance and the functional score separate.
+
+### TC-046: Distinct chat palette and legible actions
+
+- Journey / requirements: CUJ-027 / FR-075.
+- Level / automation: browser; [TC-046](tests/TC-046.test.js).
+- Preconditions: disposable NED chat with fixture response and empty draft.
+- Given: ready chat with one exchange. When: inspect computed colors and enter a new draft. Then: assistant and user have distinct muted surfaces, labels remain, normal text meets 4.5:1, enabled Send glyph and focus meet 3:1 against adjacent colors, and the workspace surface retains its prior color.
+- Variants: desktop and narrow mobile. Close the test-owned browser and server; named assertions are pass evidence.
+
+Coverage: FR-075 → CUJ-027 → TC-045/046. FR-076 → CUJ-027 → TC-045.
