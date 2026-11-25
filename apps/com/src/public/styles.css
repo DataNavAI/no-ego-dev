@@ -32,7 +32,6 @@ nav{display:flex;gap:2px;flex-wrap:wrap}nav button{min-height:28px;padding:2px 7
 .compose-dock{width:min(768px,calc(100% - 32px));flex:none;margin:0 auto 12px;position:relative;display:flex;flex-direction:column;min-height:0;max-height:calc(100% - 112px)}
 .project-chooser{display:block;width:max-content;max-width:100%;margin:0 0 7px 8px}.project-chooser select{max-width:260px;height:27px;min-height:27px;padding:0 20px 0 0;border:0;background:transparent;color:#707070;text-overflow:ellipsis}
 #chat-status{position:absolute;left:8px;bottom:107px;max-width:calc(100% - 96px);margin:0;color:#60656d;font-size:12px;overflow-wrap:anywhere}#chat-status:empty{display:none}#chat-retry{position:absolute;right:8px;bottom:100px}
-#chat-status[data-activity]{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #chat-form{height:auto;min-height:82px;display:flex;flex-direction:column;gap:6px;padding:10px 10px 8px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:0 5px 0 #00000008,0 10px 18px #00000005}
 textarea{width:100%;height:34px;min-height:34px;max-height:min(160px,25dvh);overflow-y:auto;resize:none;padding:3px 2px;border:0;background:transparent;line-height:1.4}textarea::placeholder{color:#777}textarea:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:4px}
 .composer-actions{height:28px;display:flex;align-items:center}.backend-label{color:#606060;font-size:12px;padding-left:2px}

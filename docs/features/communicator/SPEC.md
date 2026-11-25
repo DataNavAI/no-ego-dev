@@ -781,3 +781,27 @@ A reviewer can distinguish functional browser success from visual and interactio
 - Variants: desktop and narrow mobile. Close the test-owned browser and server; named assertions are pass evidence.
 
 Coverage: FR-075 → CUJ-027 → TC-045/046. FR-076 → CUJ-027 → TC-045.
+
+### Active replies across browser reloads
+
+- FR-077: An in-progress reply shows a labeled, polite status in the transcript at the reply position, with a static indicator under reduced motion. The composer keeps its Stop action and uses its separate status for errors.
+- FR-078: When opening the fixed session, the browser discovers its active turn under the same authenticated gateway identity and subscribes to the existing stream from the beginning. Reload does not submit the prompt again. Sending remains disabled until the turn ends, and Stop continues to target that turn. Completed messages come from canonical history.
+
+### CUJ-028: Return to an in-progress reply
+
+A user reloads the chat while NED is preparing or streaming a reply. The reopened chat restores the waiting signal or visible reply text, and the user can let the reply finish or use Stop. If reconnecting fails, Retry checks the session again without resending.
+
+### TC-047: Reload before and during streamed prose
+
+- Journey / requirements: CUJ-028 / FR-077–078.
+- Level / automation: end-to-end, `tests/TC-047.test.js`.
+- Preconditions / fixtures: fresh browser and isolated COM/Hermes loopback fixture with a manually advanced reply to a synthetic prompt.
+- Given: the user has submitted one request and Hermes is still working.
+- When: the user reloads before prose, then reloads again after receiving a partial response.
+- Then: the transcript displays in-place progress and restores streamed text. Stop is available and the provider receives one request. On completion one final assistant reply is visible.
+- Steps and assertions: run `node --test docs/features/communicator/tests/TC-047.test.js`; exercise desktop and narrow mobile viewports.
+- Variants / negative cases: the fixture gates progress, partial text, and terminal completion to avoid timing-dependent reloads. Existing TC-039 covers owned Stop; credential setup is outside the fixture.
+- Cleanup: close the isolated fixture browser and loopback servers.
+- Pass evidence: both viewport subtests pass.
+
+Coverage: FR-077–078 → CUJ-028 → TC-047, with activity and Stop coverage in TC-039/040.
