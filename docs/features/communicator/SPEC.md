@@ -829,3 +829,14 @@ A mobile user opens the header disclosure to view a project, returns to chat, an
 - Pass evidence: real browser assertions, API checks, and rendered narrow-layout inspection.
 
 Coverage: FR-079–081 → CUJ-029 → TC-048.
+
+### TC-049: Send attachments through the integrated chat
+
+- Journey / requirements: CUJ-011 / FR-031–033.
+- Level / automation: end-to-end; [TC-049](tests/TC-049.test.js), included by `npm run test:chat:e2e`. The pinned Hermes suite also drives the real attachment route through Hermes into a loopback mocked model.
+- Preconditions / fixtures: isolated signed-in Chromium chat, synthetic PNG, PDF, DOCX, TXT and invalid JSON. The gateway stream is deterministically controlled; the Hermes integration provisions its existing isolated mocked model.
+- Given: an empty ready conversation. When: choose several attachments, send them with a prompt, send an attachment alone, and send a text follow-up. Then: each browser send reaches the gateway once with intact content, and confirmed attachments clear. The separate real Hermes case verifies PDF text and PNG bytes at the mocked model. Reload restores readable history with no exposed image data URL.
+- Steps and assertions: run `npm run test:chat:e2e` and `npm run test:core:hermes` with the existing test cache configured. At mobile width hold an upload, reject malformed JSON and show retry guidance for a non-JSON gateway failure without clearing valid context, interrupt a sent turn, reload the session, and remove and reattach its consumed file. Assert Send is disabled during upload and during uncertainty, no mutation replays automatically, and recovery sends the replacement receipt exactly once.
+- Cleanup / pass evidence: the test closes its isolated browser and servers and removes its profile and fixtures. Require passing browser and model-boundary assertions.
+
+Coverage: FR-031–033 → CUJ-011 → TC-017/018/049.

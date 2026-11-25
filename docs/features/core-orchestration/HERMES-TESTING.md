@@ -44,7 +44,7 @@ text is readable before terminal completion rather than merely seeing a stream
 content type. Scripted tool responses exercise real file access and delegation.
 
 Assertions cover streaming and explicit verification/completion, real file-tool
-round trips, child-session bindings, stopping a held model call, deliberate test
+round trips, attachment-only PDF text and prompt-plus-image delivery from Communicator to the mocked model, child-session bindings, stopping a held model call, deliberate test
 failure and startup failure cleanup. Failures are nonzero; no missing dependency
 or unsupported platform is represented as a passing or skipped live test.
 
@@ -57,7 +57,7 @@ a model-stream delivery failure without relaxing the assertion or retrying it.
 The normal `npm run test:spec -- --all` intentionally reports TC-007 as external
 manual/scripted acceptance NOT RUN, matching container acceptance conventions.
 The standard Linux/macOS CI npm-test jobs invoke this suite through medium;
-there is no duplicate dedicated Hermes workflow. Its six-case result remains
+there is no duplicate dedicated Hermes workflow. Its result remains
 separate from the ordinary spec report (which still lists TC-007 NOT RUN).
 
 ## Isolation and limitations
