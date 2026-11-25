@@ -1,14 +1,15 @@
 {
-  "candidate_sha": "f8f1aa8800ae07fa08aa95d9af58d0245c252bc5",
+  "candidate_sha": "9b565e4fdc2092753276c361a079c46c493b62a3",
   "result": "pass",
-  "tested_at": "2026-11-25T07:57:46.199496+00:00",
-  "environment": "Local Chromium at 1280x844 and 390x844 with isolated Core, Communicator and synthetic Hermes streaming fixture",
+  "tested_at": "2026-11-25T08:47:41.191533+00:00",
+  "environment": "macOS arm64, Node25.6.1, disposable real Hermes profile and Chromium desktop1280x800/mobile390x844; actual native COM/Hub connector and local Hub with project-owned Vite; synthetic auth/provider only",
   "commands": [
     "npm run lint",
     "npm run test:spec -- --all",
     "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-047.test.js",
-    "zsh /tmp/ned-reload-evidence/render.sh"
+    "git commit (versioned lint/test:all hook)",
+    "python -m eval_runner.cli skills/web-app-preview --hermes-command \"hermes chat -t terminal,skills\" --output-root /tmp/ned-private-preview-exact-evals --markdown",
+    "NED_CLI_ROOT=<exact candidate> npx playwright test --config playwright.instance.config.ts tests/instance-integration/preview.spec.ts (Hub checkout)"
   ],
-  "observations": "Inspected rendered desktop and mobile waiting and streaming states. Reload before prose restores inline progress and Stop. Reload after a partial delta restores streamed text. Reduced-motion mobile has a static indicator. The original request reaches the upstream once and canonical history shows one finished assistant reply."
+  "observations": "Exact candidate Hermes skill evaluation passed. Actual separate-origin app rendered at both viewport sizes, real Vite HMR updated content without direct-port fallback; POST form, Reload, user-gesture new tab/null opener, anonymous401, parent-DOM and worker denial, and current WS closure on parent access revocation passed. Native TC-008 passed ownership, one-use grant/replay, credential/cookie isolation, 16WS quota while COM remains responsive, clear, real child-process port reuse and credential rotation. Python215 passed,9 existing skips; automated spec/commit checks passed. Companion Hub candidate base c608e64 with staged tree 7ad43993d06dc2cc674905621133496e4a2e4db6. Hosted DNS/TLS/OAuth rollout, physical devices and other browser/privacy configurations are not certified; macOS listener identity limitations are documented."
 }

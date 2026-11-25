@@ -18,7 +18,7 @@ export async function createCoreServer({port=0,home,env=process.env,databasePath
   const server=http.createServer(async(req,res)=>{if(!await handler(req,res)){res.writeHead(404);res.end();}});
   return {server,service,setHubRegistration:input=>handler.setHubRegistration(input),get url(){return url;},async listen(){
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',resolve);});
-    url=`http://127.0.0.1:${server.address().port}`;return url;
+    url=`http://127.0.0.1:${server.address().port}`;handler.startPreview();return url;
   },async close(){await handler.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await service.close();}};
 }
 

@@ -44,8 +44,23 @@ Replacement changes the active metadata only; it does not stop the old process. 
 - Remove registration with `ned preview clear --expected-revision <observed> --json`; verify `preview:null`. A stale clear must not remove a newer preview. Clearing does not kill processes or remove legacy project config. Stop only processes owned by this task when they are no longer needed.
 - Never claim registration is production deployment, process supervision, rendered-browser QA or successful tunneling. Keep the development task open if its requested visible/remote preview still cannot be delivered.
 
-## Current delivery limitation
+## Private delivery and recovery
 
-`delivery.mode:"local-link"` and `remoteAvailable:false` mean the new API/CLI only manages registration/status. `localUrl` belongs to the NED **instance**. Do not send it to a remote user as a working link: their localhost is a different machine. Private embedded HTTP/WebSocket/HMR delivery is not implemented by registration. Existing COM legacy project Open app behavior is separate; do not claim registration automatically embeds or rewrites it.
+Inspect the returned delivery capability rather than guessing a tunnel URL. With
+`delivery.mode:"private-relay"`, COM can show the single registered app in Preview
+and provides Reload and Open in new tab. `remoteAvailable:true` means the connected
+Hub negotiated private delivery; it is not proof of rendered output or working HMR.
+Verify the actual app in the browser before reporting it visible.
 
-If remote/embedded access is missing, say plainly: “The app is running, but this NED instance cannot show it here yet.” Explain the actual next delivery work without asking a nontechnical user to configure ports, weakening COM isolation, pasting bearer tokens, or inventing a public URL. When a verified private-delivery capability exists in a later release, use its documented API instead of guessing a route.
+Private delivery requires a uniquely identifiable loopback listener owned by the
+agent user with its working directory inside the registered project. Start the
+server from that project. If a restarted process replaces the listener, register
+it again using the current revision so stale access cannot reach a different app.
+Do not weaken ownership checks or register a control service to bypass failure.
+
+`delivery.mode:"local-link"` means only registration/status is available on that
+connection. `localUrl` belongs to the NED instance, not a remote user's computer.
+If delivery is unavailable, say: “The app is running, but this NED instance cannot
+show it here yet.” Keep the task open, inspect the supported connection and app
+process, and use the documented COM controls. Never invent a public URL, expose a
+port publicly, paste access grants, or ask users to configure a tunnel.

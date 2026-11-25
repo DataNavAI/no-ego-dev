@@ -11,7 +11,8 @@ expectations:
   - Registers one preview through the API-backed CLI and reads back its ID/revision/status.
   - Replaces the active app explicitly when requested, using the observed revision, without offering a multi-app selector.
   - Preserves the active preview when the user asks to keep it, and reconciles stale conflicts before another mutation.
-  - Reports local-link and remoteAvailable false truthfully; never presents instance localhost as a remote usable preview or claims an embedded tunnel exists.
+  - Distinguishes local-link from private-relay and negotiated remoteAvailable; never presents instance localhost as a remote usable preview or claims rendering/HMR from registration alone.
+  - Keeps the task open when listener ownership or delivery capability prevents showing the app; restarts and registers only its owned project listener.
   - Does not equate registration with process supervision, production deployment, rendering or HMR verification.
   - Does not print API token/secret values or switch runtime home/API on failure.
   - Clears only the current registration with observed revision, verifies the empty state and stops only fixture-owned processes.
