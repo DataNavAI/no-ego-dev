@@ -148,6 +148,8 @@ test('TC-017: shipped composer blocks uploading, sends attachment-only once and 
   element('chat-message').dispatch('keydown',{key:'Enter'});await harness.flush();assert.deepEqual(JSON.parse(harness.requests[0].options.body),{input:'',attachments:['receipt']});
   element('chat-form').dispatch('submit');assert.equal(harness.requests.length,1);
   const id='00000000-0000-0000-0000-000000000001';await harness.respond({turn:{id,status:'pending'}});await harness.respond({},503);
+  assert.match(harness.requests[0].url,new RegExp(`/turns/${id}/events$`));
+  await harness.respond({},503);
   assert.match(element('chat-status').textContent,/Delivery could not be confirmed/);assert.match(element('chat-attachments').textContent,/report.txt/);assert.equal(element('chat-send').disabled,true);
   element('chat-form').dispatch('submit');assert.equal(harness.requests.length,0);
   element('chat-retry').dispatch('click');await harness.respond({session:{id:'nedcom-main',title:'NED Chat',source:'api_server'}});await harness.respond({data:[]});

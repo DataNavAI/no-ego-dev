@@ -27,10 +27,18 @@ export function createApiClient({request=(...args)=>globalThis.fetch(...args),st
     const version=++authVersion;token=candidate;
     let response;
     try{response=await fetchApi('/api/v1/auth/context',{signal:AbortSignal.timeout(10000)});}
-    catch{if(version===authVersion)token=null;throw new Error('Could not reach NED. Try again.');}
-    if(!response.ok){await response.body?.cancel();if(version===authVersion)token=null;throw Object.assign(new Error(response.status===401?'Access token was not accepted.':'Could not verify NED. Try again.'),{code:response.status===401?'unauthorized':'unavailable'});}
+    catch{if(version===authVersion)token=null;throw Object.assign(new Error('Could not reach NED. Try again.'),{retryable:true});}
+    if(!response.ok){await response.body?.cancel();if(version===authVersion)token=null;throw Object.assign(new Error(response.status===401?'Access token was not accepted.':'Could not verify NED. Try again.'),{code:response.status===401?'unauthorized':'unavailable',retryable:[502,503,504].includes(response.status)});}
     let data;
-    try{data=await response.json();}catch{if(version===authVersion)forget('invalid');throw new Error('Could not verify NED. Try again.');}
+    try{data=await response.json();}
+    catch(error){
+      const retryable=['TypeError','TimeoutError'].includes(error.name);
+      if(version===authVersion){
+        if(retryable)token=null;
+        else forget('invalid');
+      }
+      throw Object.assign(new Error('Could not verify NED. Try again.'),{retryable});
+    }
     if(version!==authVersion)throw new Error('Access changed. Reconnect to NED.');
     if(!/^[a-f0-9]{64}$/.test(data?.instanceId)||!hubAccess&&expectedId&&data.instanceId!==expectedId){forget('changed');throw new Error('This NED instance has changed. Enter its access token.');}
     let remembered=true;

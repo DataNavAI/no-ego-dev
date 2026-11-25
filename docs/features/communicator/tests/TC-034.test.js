@@ -67,6 +67,7 @@ test('TC-034: uncertain delivery retains references and locks replay/removal',as
  h.document.dispatchEvent({type:'ned-reference-work',detail:{projectId:'a',itemId:'task',title:'Task',projectName:'Alpha'}});
  get('chat-message').value='Keep draft';get('chat-form').dispatch('submit');
  const id='00000000-0000-0000-0000-000000000002';await h.respond({turn:{id,status:'pending'}});await h.respond({},503);
+ assert.equal(h.requests[0].url,`/api/v1/chat/sessions/nedcom-main/turns/${id}/events`);await h.respond({},503);
  assert.equal(get('chat-task-references').children.length,1);assert.equal(get('chat-message').value,'Keep draft');assert.equal(get('chat-send').disabled,true);
  get('chat-task-references').children[0].children[2].click();assert.equal(get('chat-task-references').children.length,1);get('chat-form').dispatch('submit');assert.equal(h.requests.length,0);
 });

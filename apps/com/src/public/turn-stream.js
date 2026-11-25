@@ -30,7 +30,13 @@ export async function consumeTurnStream(response,turnId,session,onText,onActivit
   }
   try{
     while(true){
-      const {done,value}=await reader.read();
+      let chunk;
+      try{chunk=await reader.read();}
+      catch(error){
+        if(['AbortError','TimeoutError'].includes(error.name))throw error;
+        throw Object.assign(new Error('Reply connection interrupted.',{cause:error}),{code:'stream_disconnected'});
+      }
+      const {done,value}=chunk;
       if(done){buffer+=decoder.decode();break;}
       wire+=value.length;if(wire>67108864)throw new Error('Unavailable');
       buffer+=decoder.decode(value,{stream:true});
@@ -38,7 +44,8 @@ export async function consumeTurnStream(response,turnId,session,onText,onActivit
       while((newline=buffer.indexOf('\n'))>=0){const value=buffer.slice(0,newline).replace(/\r$/,'');buffer=buffer.slice(newline+1);line(value);}
       if(buffer.length>25165824)throw new Error('Unavailable');
     }
-    if(buffer||data.length||!terminal)throw new Error('Unavailable');
+    if(!terminal)throw Object.assign(new Error('Reply connection interrupted.'),{code:'stream_disconnected'});
+    if(buffer||data.length)throw new Error('Unavailable');
     return terminal;
   }finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
 }
