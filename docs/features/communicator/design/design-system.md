@@ -15,6 +15,10 @@ The desktop conversation starts at 54% of the workspace width within the existin
 
 Align the Message options disclosure, growing textarea, and Send on a single row at rest. Keep a 44px target at each end, a visible keyboard focus indicator, and disabled Send while there is no message or attached context. The disclosure expands secondary actions immediately above the composer and Escape returns focus to its trigger. The project workspace remains separate. See FR-073/074 and TC-044 for the rendered checks.
 
+## Chat color roles
+
+Recorded Muse chat frames informed the muted neutral and powder-blue direction. In NED chat use canvas `#f8f9fb`, composer `#fff`, assistant reply `#e9edf2`, user reply `#cce4fa`, primary text `#17263c`, secondary text `#4e6075`, and focus `#2166a5`. Ready Send uses the user accent with a dark glyph. Disabled Send uses a separate quiet surface. Apply these roles inside Chat and preserve the separate project workspace palette. Use author labels and alignment as redundant role cues. Retain NED's own typography, shell, and layout.
+
 ## Historical component contracts
 The following sections retain acceptance traceability. Their workflow/geometry constraints remain unless explicitly replaced; conflicting foundational colors/type yield to the current default above.
 
