@@ -44,8 +44,8 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
       const events=streamEvents(session.id,`**Completed reply ${ordinal}**`);
       res.writeHead(200,{'content-type':'text/event-stream'});
       res.write(events.slice(0,2).map(streamFrame).join(''));
-      let activitySequence=100;
-      turns.push({input,res,activity(event,tool_name){res.write(streamFrame({event,data:{session_id:session.id,run_id:'run_synthetic',message_id:'msg_synthetic',seq:activitySequence++,tool_name,delta:'PRIVATE REASONING',args:{secret:'PRIVATE ARGUMENT'},preview:'PRIVATE OUTPUT'}}));},interrupt(){res.end();},partial(){res.write(streamFrame({...events[2],data:{...events[2].data,delta:`Visible partial ${ordinal}`}}));},finish(){
+      let liveSequence=10;
+      turns.push({input,res,activity(event,tool_name){res.write(streamFrame({event,data:{session_id:session.id,run_id:'run_synthetic',message_id:'msg_synthetic',seq:liveSequence++,tool_name,delta:'PRIVATE REASONING',args:{secret:'PRIVATE ARGUMENT'},preview:'PRIVATE OUTPUT'}}));},interrupt(){res.end();},partial(delta=`Visible partial ${ordinal}`){res.write(streamFrame({...events[2],data:{...events[2].data,seq:liveSequence++,delta}}));},finish(){
         messages.push({id:`sent-${ordinal}`,role:'user',content:input},{id:`reply-${ordinal}`,role:'assistant',content:`**Completed reply ${ordinal}**`});
         res.end(events.slice(3).map(streamFrame).join(''));
       }});

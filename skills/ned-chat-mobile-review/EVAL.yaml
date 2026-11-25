@@ -11,6 +11,8 @@ expectations:
   - Identifies incomplete capture and limits of edited or device-mismatched Muse footage
   - Scores seven weighted dimensions independently and treats missing evidence or critical failures as a failed threshold
   - Cites matched events and reports persistent secondary actions, composer movement, and hidden final replies even when functional checks pass
+  - Requires timestamped evidence of live tail following, hold while reading earlier text, and Jump to latest before completion
+  - Separates simulated viewport geometry from physical keyboard evidence and denies full credit if the native keyboard blocks the composer or is unobserved
 setupCommands: []
 teardownCommands: []
 parameters:

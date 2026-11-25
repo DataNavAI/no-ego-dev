@@ -5,3 +5,5 @@
 - NED loads but no playable video is saved after context close. The Muse walkthrough is unavailable. Describe the coverage gaps without asserting a comparative finding.
 
 - The browser checklist reports 12/12. In the NED clip at 00:08 the composer rises 18px with the waiting label, copy glyphs compete at 00:12, and the final response remains offscreen after resizing at 00:43. Muse footage shows a stationary composer and final visible reply on desktop. The NED clip has no keyboard-focus proof. Apply weighted deductions, identify unobserved evidence, and decline a visual pass.
+
+- At 00:18 the latest reply starts. At 00:22 new lines extend below the visible transcript while the viewer has stayed at latest. At 00:27 the viewer scrolls up intentionally, and new prose arrives at 00:31. Jump to latest is pressed at 00:35 before the reply completes. Explain which states fail or pass, the missing evidence required to establish resumed following, and the retest.

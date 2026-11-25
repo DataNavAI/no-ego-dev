@@ -767,7 +767,7 @@ A reviewer can distinguish functional browser success from visual and interactio
 ### TC-045: Palette and stricter video review
 
 - Journey / requirements: CUJ-027 / FR-075 and FR-076.
-- Level / automation: manual; [video scorecard](design/chat-video-evaluation.md) and desktop/mobile review skill evals. The rendered palette and contrast are also checked in [TC-046](tests/TC-046.test.js).
+- Level / automation: manual; [video scorecard](design/chat-video-evaluation.md) and the [desktop](../../../skills/ned-chat-desktop-review/EVAL.yaml) and [mobile](../../../skills/ned-chat-mobile-review/EVAL.yaml) review skill evals. The rendered palette and contrast are also checked in [TC-046](tests/TC-046.test.js).
 - Preconditions: verified candidate recordings, same fictional prompts, and known Muse reference. Use the timed events rather than comparing response duration across providers.
 - Given: playable desktop and mobile footage. When: inspect the seven scored dimensions and run the critical-failure check. Then: retain per-device ratings with timestamped evidence and retest actions. Where evidence is missing, mark the row and result incomplete.
 - Cleanup / pass evidence: private recordings, completed scorecards and retained comparison offsets. Keep video acceptance and the functional score separate.
@@ -860,3 +860,23 @@ A user leaves a signed-in tab, then returns after a network interruption. When t
 - Cleanup / pass evidence: close isolated browser and HTTP fixtures. Require the named browser assertions and one upstream turn on stream recovery.
 
 Coverage: FR-082–083 → CUJ-030 → TC-050.
+
+### Keep the live reply and mobile composer in view
+
+- FR-084: While a reader follows latest, streamed updates and changes to composer or viewport height keep the reply tail visible. Scrolling up pauses automatic following and exposes Jump to latest during generation. Selecting it resumes following without another request. Completion preserves the reader's chosen position or shows the completed reply at latest.
+- FR-085: In mobile Chat, the text entry and Send or Stop stay inside the visible viewport when the keyboard opens, moves, or closes. Multiline drafts and scrollable context remain usable. Project activity notices temporarily leave the layout when the visible mobile viewport is shorter than 340px and return when it expands. Respect browser zoom and preserve the user's draft.
+
+### CUJ-031: Read a growing reply and compose above the keyboard
+
+A user follows a long answer while it streams, pauses to read earlier text, and returns to the answer before it completes. On a phone, the user opens the keyboard, enters a multiline follow-up, and can send or dismiss the keyboard without losing the draft.
+
+### TC-051: Live tail following and mobile visual viewport
+
+- Journey / requirements: CUJ-031 / FR-084–085.
+- Level / automation: end-to-end; [TC-051](tests/TC-051.test.js).
+- Preconditions / fixtures: isolated served browser with a controlled long reply and synthetic phone visual viewport events. Mobile browser chrome and an OS keyboard require separate physical-device video evidence under TC-045.
+- Given: a ready conversation and active long reply. When: shorten the viewport, add more prose, scroll away, use Jump to latest, and add a final update. Then: the live tail stays visible while following, the reader holds position when away, and return resumes following with one upstream turn.
+- Steps and assertions: run `node --test docs/features/communicator/tests/TC-051.test.js`. At phone width focus a multiline draft and shrink and pan the visual viewport without resizing the layout viewport. Verify draft, composer, and Send are in frame before/during/after the transition. Verify browser zoom is left alone. At 320px wide and 260px visible height repeat with a 14-line draft, the link editor open and a project activity notice.
+- Cleanup / pass evidence: close fixture browser and servers. Browser geometry tests are distinct from OS keyboard footage.
+
+Coverage: FR-084–085 → CUJ-031 → TC-051 and the critical evidence under TC-045.

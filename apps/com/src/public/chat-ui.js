@@ -36,7 +36,7 @@ export function mountChat(libraries) {
     if(activity)activeTurn.activity=activity;
     const label=activeTurn.stopRequested?'Stopping response…':activityLabels[activeTurn.activity];
     if(!label)return;
-    const following=atBottom();
+    const following=followingLatest();
     ensureLiveArticle();
     if(progress.textContent!==label)progress.textContent=label;
     if(following)bottom(false);
@@ -71,9 +71,33 @@ export function mountChat(libraries) {
   const media=mountComposerMedia({document,draft,getSession:()=>sessionId,changed:()=>{fitDraft();render();},request:fetch});
   const references=mountTaskReferences({document,draft,changed:()=>{fitDraft();render();}});
   const modelSetup=mountModelSetup({document,request:fetch,changed:render});
-  const controls = ['older','newer','latest','chat-send','chat-retry'];
-  const atBottom = () => transcript.scrollHeight-transcript.clientHeight-transcript.scrollTop < 64;
-  const bottom = smooth => transcript.scrollTo({top:transcript.scrollHeight,behavior:smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant'});
+  const controls = ['older','newer','chat-send','chat-retry'];
+  const atBottom = () => transcript.scrollHeight-transcript.clientHeight-transcript.scrollTop <= 4;
+  let followLatest=true, observedTop=transcript.scrollTop;
+  function followingLatest(){
+    // A layout change can move the tail without moving the reader's scroll position.
+    if(transcript.scrollTop!==observedTop){
+      observedTop=transcript.scrollTop;
+      followLatest=atBottom();
+    }
+    return followLatest;
+  }
+  function bottom(smooth){
+    followLatest=true;
+    transcript.scrollTo({top:transcript.scrollHeight,behavior:smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant'});
+    observedTop=transcript.scrollTop;
+  }
+  function renderLatest(){
+    const latest=element('latest');
+    const live=Boolean(activeTurn)&&!followingLatest();
+    latest.hidden=!sessionId||(!live&&!refreshNeeded&&offset===0);
+    latest.disabled=busy&&!live;
+  }
+  if(typeof ResizeObserver!=='undefined'){
+    new ResizeObserver(()=>{
+      if(historyReady&&followingLatest())bottom(false);
+    }).observe(transcript);
+  }
   function renderSend(){
     const send=element('chat-send'),sending=Boolean(activeTurn);
     const hasContent=draft.value.trim()||media.ready()||references.ready();
@@ -91,7 +115,7 @@ export function mountChat(libraries) {
     references.render(busy||uncertain||!sessionId||!historyReady);
     element('older').hidden = true;
     element('newer').hidden = true;
-    element('latest').hidden = !sessionId || (!refreshNeeded && offset === 0);
+    renderLatest();
     draft.disabled = !sessionId || !historyReady || busy&&!sending;
   }
   function clearTransientReferences(){
@@ -121,7 +145,7 @@ export function mountChat(libraries) {
     }));
   }
   function showPending(input){
-    const following=atBottom(),top=transcript.scrollTop;
+    const following=followingLatest(),top=transcript.scrollTop;
     const children=Array.from(transcript.children);
     const viewport=transcript.getBoundingClientRect().top;
     const anchor=children.find(child=>{const rect=child.getBoundingClientRect();return (rect.bottom ?? rect.top+100)>viewport;});
@@ -132,11 +156,11 @@ export function mountChat(libraries) {
     pendingUser.append(author,renderMessageContent({role:'user',content:text},document,libraries));
     if(children.length>=200)children.splice(anchor===children.at(-1)?0:199,1);
     transcript.replaceChildren(...children,pendingUser);
-    if(following)bottom(false);else transcript.scrollTop=top+(anchorTop===undefined?0:anchor.getBoundingClientRect().top-anchorTop);
+    if(following)bottom(false);else{transcript.scrollTop=top+(anchorTop===undefined?0:anchor.getBoundingClientRect().top-anchorTop);observedTop=transcript.scrollTop;}
   }
   function ensureLiveArticle(){
     if(liveArticle)return;
-    const following=atBottom(),top=transcript.scrollTop;
+    const following=followingLatest(),top=transcript.scrollTop;
     liveArticle=document.createElement('article');liveArticle.className='chat-message assistant-message';
     liveArticle.dataset.state='waiting';
     const author=document.createElement('strong');author.textContent='Hermes';
@@ -150,11 +174,11 @@ export function mountChat(libraries) {
     const anchorTop=anchor?.getBoundingClientRect().top;
     if(children.length>=200){const remove=children.findLastIndex(child=>child!==anchor&&child!==pendingUser);children.splice(remove,1);}
     transcript.replaceChildren(...children,liveArticle);
-    if(!following&&anchorTop!==undefined)transcript.scrollTop=top+anchor.getBoundingClientRect().top-anchorTop;
+    if(!following&&anchorTop!==undefined){transcript.scrollTop=top+anchor.getBoundingClientRect().top-anchorTop;observedTop=transcript.scrollTop;}
   }
   function showStream(text){
     if(!text)return;
-    const following=atBottom();
+    const following=followingLatest();
     ensureLiveArticle();
     liveArticle.dataset.state='streaming';
     liveContent.hidden=false;
@@ -231,7 +255,7 @@ export function mountChat(libraries) {
     }
     lastStopped=result.turn.status==='stopped';
     recordChatDiagnostic('completed');
-        if(liveArticle){const following=atBottom();const top=transcript.scrollTop;liveArticle.dataset.state='completed';liveArticle.hidden=!messageParts(result.message).length;liveArticle.replaceChildren(liveArticle.firstElementChild,renderMessageContent(result.message,document,libraries));if(following)bottom(false);else transcript.scrollTop=top;}
+        if(liveArticle){const following=followingLatest();const top=transcript.scrollTop;liveArticle.dataset.state='completed';liveArticle.hidden=!messageParts(result.message).length;liveArticle.replaceChildren(liveArticle.firstElementChild,renderMessageContent(result.message,document,libraries));if(following)bottom(false);else{transcript.scrollTop=top;observedTop=transcript.scrollTop;}}
         return result;
   }
   async function action(work, mutation = false) {
@@ -259,6 +283,7 @@ export function mountChat(libraries) {
         if(String(latest.data.at(-1)?.id ?? '')!==historyHead)throw Object.assign(new Error('History changed.'),{code:'history_changed'});
       }
     }catch(error){refreshNeeded='History changed. Jump to latest to reload.';throw error;}
+    followingLatest();
     const anchorId=transcript.firstElementChild?.dataset.messageId;
     const anchor = transcript.firstElementChild?.getBoundingClientRect().top;const top = transcript.scrollTop;
     if (direction === 'latest') {rows=updated;offset=0;older=data.data.length===50;refreshNeeded=false;olderFailed=false;olderNotice='';historyHead=String(data.data.at(-1)?.id ?? '');}
@@ -269,6 +294,7 @@ export function mountChat(libraries) {
     render();
     if (direction === 'older' && anchor !== undefined) transcript.scrollTop=top+(Array.from(transcript.children).find(child=>child.dataset.messageId===anchorId)?.getBoundingClientRect().top ?? anchor)-anchor;
     else transcript.scrollTop=top;
+    observedTop=transcript.scrollTop;
   }
   function historyFailure(error){olderFailed=true;olderNotice=error.code==='history_changed'?refreshNeeded:'Earlier messages could not be loaded.';status.textContent=olderNotice;element('chat-retry').hidden=false;}
   async function fillUnderfilled(limit=20){
@@ -302,10 +328,10 @@ export function mountChat(libraries) {
       render();
       try{
         await followTurn(turn.id);
-        if(atBottom()){
+        if(followingLatest()){
           await history();
           await fillUnderfilled();
-          bottom(false);
+          if(followingLatest())bottom(false);
         }else refreshNeeded='New reply available. Jump to latest.';
       }catch(error){
         markIncomplete();
@@ -331,9 +357,15 @@ export function mountChat(libraries) {
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)reconnectChat();});
   element('older').addEventListener('click',()=>void loadOlder());
   element('newer').addEventListener('click',()=>void action(()=>history('newer')));
-  element('latest').addEventListener('click',()=>void action(async()=>{await history();await fillUnderfilled();bottom(true);}));
+  element('latest').addEventListener('click',()=>{
+    if(activeTurn){
+      if(document.activeElement===element('latest'))transcript.focus({preventScroll:true});
+      bottom(false);renderLatest();return;
+    }
+    void action(async()=>{await history();await fillUnderfilled();bottom(true);});
+  });
   element('chat-retry').addEventListener('click',()=>{if(olderFailed&&!refreshNeeded){olderFailed=false;olderNotice='';element('chat-retry').hidden=true;void loadOlder();}else void action(initialize);});
-  transcript.addEventListener('scroll',()=>{if(transcript.scrollTop<=80)void loadOlder();});
+  transcript.addEventListener('scroll',()=>{renderLatest();if(transcript.scrollTop<=80)void loadOlder();});
   transcript.addEventListener('wheel',event=>{if(event.deltaY<0&&transcript.scrollTop<=80)void loadOlder();},{passive:true});
   transcript.addEventListener('keydown',event=>{if(['PageUp','Home','ArrowUp'].includes(event.key)&&transcript.scrollTop<=80)void loadOlder();});
   element('chat-send').addEventListener('click',event=>{if(activeTurn){event.preventDefault();void requestStop(activeTurn);}});
@@ -349,10 +381,10 @@ export function mountChat(libraries) {
     void action(async()=>{
       try{
       const data=await sendTurn(input);
-      const following=atBottom();
+      const following=followingLatest();
       if(data.session_id!==sessionId)throw new Error('Unavailable');
       media.clear();references.clear();
-      if(following){await history();await fillUnderfilled();bottom(true);}else refreshNeeded='New reply available. Jump to latest.';
+      if(following){await history();await fillUnderfilled();if(followingLatest())bottom(true);}else refreshNeeded='New reply available. Jump to latest.';
       }catch(error){
         void modelSetup.refresh();
         if(!draft.value)draft.value=input;
