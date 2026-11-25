@@ -6,7 +6,7 @@ export function paneBounds(viewport){
 
 export function paneWidth(preference,viewport){
   const {min,max}=paneBounds(viewport);
-  const fallback=viewport>1100?360:320;
+  const fallback=Math.round(viewport*.54);
   return Math.min(max,Math.max(min,Number.isFinite(preference)?preference:fallback));
 }
 
@@ -62,10 +62,12 @@ export function mountPaneResize({shell,divider,view=window,storage=()=>view.loca
   divider.addEventListener('lostpointercapture',end);
   divider.addEventListener('keydown',key);
   view.addEventListener('resize',render);
+  view.document?.addEventListener?.('ned-auth-entered',render);
   render();
   return ()=>{
     end();
     for(const [name,handler] of [['pointerdown',down],['pointermove',move],['pointerup',end],['pointercancel',end],['lostpointercapture',end],['keydown',key]])divider.removeEventListener(name,handler);
     view.removeEventListener('resize',render);
+    view.document?.removeEventListener?.('ned-auth-entered',render);
   };
 }

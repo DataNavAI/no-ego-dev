@@ -25,6 +25,7 @@ test('TC-002: served local provider setup clears secrets, preserves draft and by
   reject=false;await chat.page.getByLabel('API key',{exact:true}).fill('synthetic-local-provider-key');await chat.page.getByRole('button',{name:'Connect provider'}).click();await expect(card).toBeHidden();await expect(chat.page.locator('#chat-send')).toBeEnabled();await expect(chat.draft).toHaveValue('Keep this draft during setup');
   await chat.page.reload();await chat.ready();await chat.page.getByRole('button',{name:'Chat',exact:true}).click();await expect(card).toBeHidden();assert.equal(calls,2);assert(!(await chat.page.content()).includes('synthetic-local-provider-key'));assert(!(await chat.page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).includes('synthetic-local-provider-key'));
   const config=await readFile(path.join(root,'profile/config.yaml'),'utf8');assert(config.includes('synthetic-local-provider-key'));
+  await chat.page.getByRole('button',{name:'Message options',exact:true}).click();
   await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(card).toBeVisible();await chat.page.getByRole('button',{name:'Close model settings',exact:true}).click();await expect(card).toBeHidden();await expect(chat.page.locator('#model-setup-toggle')).toBeFocused();
   await chat.send('Configured local provider interaction');assert.deepEqual(chat.errors,[]);
 });
@@ -35,7 +36,7 @@ test('TC-002: hosted setup offers instance configuration and optional account in
   const models=createModelSetup({modelCatalog,home:root,env:{HERMES_HOME:path.join(root,'profile')},fetch:async()=>Response.json({configured,connection:configured?connection:null,baseUrl:origin+'/api/models/instances/'+id+'/v1'})});
   await models.register({origin,id,token,kind:'hosted'});
   const chat=await browserChat(t,{modelSetup:models});await chat.ready();await expect(chat.page.locator('#model-setup')).toBeVisible();await expect(chat.page.locator('#model-setup-form')).toBeVisible();await expect(chat.page.getByRole('link',{name:'Set up in NED Hub'})).toHaveCount(0);
-  configured=true;await chat.page.getByRole('button',{name:'Check connection'}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await expect(chat.page.locator('#chat-send')).toBeEnabled();
+  configured=true;await chat.page.getByRole('button',{name:'Check connection'}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.draft.fill('Ready after setup');await expect(chat.page.locator('#chat-send')).toBeEnabled();
   const profile=await readFile(path.join(root,'profile/config.yaml'),'utf8');assert(profile.includes(token));assert(!profile.includes('synthetic-local-provider-key'));await chat.send('Hosted inherited connection');assert.deepEqual(chat.errors,[]);
 });
 
@@ -49,7 +50,7 @@ test('TC-002: instance device login shows only challenge, supports cancel/retry 
   if(process.env.NED_MODEL_SCREENSHOT_DIR){await mkdir(process.env.NED_MODEL_SCREENSHOT_DIR,{recursive:true});for(const width of [1280,320]){await chat.page.setViewportSize({width,height:900});assert.equal(await chat.page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);await chat.page.screenshot({path:path.join(process.env.NED_MODEL_SCREENSHOT_DIR,'device-'+width+'.png')});}}
 
   await chat.page.getByRole('button',{name:'Cancel sign-in',exact:true}).click();await expect(chat.page.locator('#model-setup-status')).toContainText('cancelled');assert(stops>0);await chat.page.keyboard.press('Escape');await expect(chat.page.locator('#model-setup')).toBeVisible();
-  await chat.page.getByRole('button',{name:'Sign in with OpenAI',exact:true}).click();await expect(chat.page.locator('#model-device-code')).toHaveText('NED-TEST');await approve();await expect(chat.page.locator('#chat-send')).toBeEnabled();assert(!(await chat.page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).includes('NED-TEST'));
+  await chat.page.getByRole('button',{name:'Sign in with OpenAI',exact:true}).click();await expect(chat.page.locator('#model-device-code')).toHaveText('NED-TEST');await approve();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.draft.fill('Ready after device sign-in');await expect(chat.page.locator('#chat-send')).toBeEnabled();assert(!(await chat.page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).includes('NED-TEST'));
 });
 
 
@@ -85,7 +86,7 @@ test('TC-002: provider choices, unavailable retry and existing unlisted model st
  inventory={};await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(select).toHaveValue('');await expect(chat.page.getByRole('button',{name:'Connect provider',exact:true})).toBeDisabled();await expect(chat.page.locator('#model-catalog-status')).toContainText('unavailable');
  inventory=await modelCatalog();await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(select).toHaveValue('gpt-4.1');
  await mkdir(path.join(root,'profile'),{recursive:true,mode:0o700});await (await import('node:fs/promises')).writeFile(path.join(root,'profile/config.yaml'),'model: {provider: openai, default: existing-custom-model, api_key: synthetic-existing-key}\n',{mode:0o600});
- await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(select).toHaveValue('existing-custom-model');await expect(select.locator('option:checked')).toBeDisabled();await expect(chat.page.getByRole('button',{name:'Connect provider',exact:true})).toBeDisabled();await expect(chat.page.locator('#model-setup-close')).toBeVisible();assert.deepEqual(chat.errors,[]);
+ await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.page.getByRole('button',{name:'Message options',exact:true}).click();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(select).toHaveValue('existing-custom-model');await expect(select.locator('option:checked')).toBeDisabled();await expect(chat.page.getByRole('button',{name:'Connect provider',exact:true})).toBeDisabled();await expect(chat.page.locator('#model-setup-close')).toBeVisible();assert.deepEqual(chat.errors,[]);
 });
 
 
@@ -97,7 +98,7 @@ test('TC-002: first setup defaults to ChatGPT Subscription, preserves choices an
  await provider.selectOption('openrouter');await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(provider).toHaveValue('openrouter');
  await provider.selectOption('openai-codex');available=false;await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(provider).toHaveValue('openai');await expect(provider.locator('[value="openai-codex"]')).toBeDisabled();await expect(chat.page.locator('#model-key')).toBeVisible();await chat.page.reload();await chat.ready();await expect(provider).toHaveValue('openai');
  await mkdir(path.join(root,'profile'),{recursive:true,mode:0o700});await (await import('node:fs/promises')).writeFile(path.join(root,'profile/config.yaml'),'model: {provider: anthropic, default: chosen, api_key: synthetic-existing-key}\n',{mode:0o600});available=true;
- await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(provider).toHaveValue('anthropic');await expect(model).toHaveValue('chosen');assert.deepEqual(chat.errors,[]);
+ await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();await chat.page.getByRole('button',{name:'Message options',exact:true}).click();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();await expect(provider).toHaveValue('anthropic');await expect(model).toHaveValue('chosen');assert.deepEqual(chat.errors,[]);
 });
 
 test('TC-002: subscription sign-in offers a one-shot private authorization code field in the full-screen flow',{timeout:45000},async t=>{
