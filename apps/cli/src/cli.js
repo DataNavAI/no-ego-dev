@@ -36,6 +36,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       '  ned secret <list|set|get|delete|share> (see ned secret --help)',
       '  ned com [--login [--no-browser] | --logout] [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--public] [--help]',
       '  ned version',
+      '  ned task focus [--project <directory>]  Show this project in NED chat',
       '  ned task init [--project <directory>] [--database <SQLite-path-or-file-URL>]',
       '  ned <goal|subgoal|task|issue> create <title> [--parent <id>] [--json]',
       '  ned task create <title> [--goal <milestone-id>] [--json]',

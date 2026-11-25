@@ -58,13 +58,12 @@ export function renderDashboard(document,container,data,options={}){
 }
 export function mountProjectWork({document,fetch}){
   const delivery=mountGoalTasks({document,fetch});
-  const project=document.getElementById('project'),container=document.getElementById('project-work'),dashboard=document.getElementById('dashboard');
-  let generation=0;let showCompleted=false;let dashboardCompleted=false;let snapshot;let selectedId;let pending;
-  const onReference=item=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:item.projectId,itemId:item.id,title:item.title,projectName:project.selectedOptions?.[0]?.textContent||'Project'}}));
+  const project=document.getElementById('project'),dashboard=document.getElementById('dashboard');
+  let generation=0;let dashboardCompleted=false;let snapshot;let selectedId;let pending;
+  const onReference=item=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:item.projectId,itemId:item.id,title:item.title,projectName:project.dataset.name||'Project'}}));
   const draw=()=>{
     if(!snapshot)return;
-    renderProjectWork(document,container,snapshot,{showCompleted,onFilter:value=>{showCompleted=value;draw();document.getElementById('goals-show-completed')?.focus();},onReference});
-    if(dashboard)renderDashboard(document,dashboard,snapshot,{projectName:project.selectedOptions?.[0]?.textContent,showCompleted:dashboardCompleted,onFilter:value=>{dashboardCompleted=value;draw();document.getElementById('dashboard-show-completed')?.focus();},onReference});
+    if(dashboard)renderDashboard(document,dashboard,snapshot,{projectName:project.dataset.name,showCompleted:dashboardCompleted,onFilter:value=>{dashboardCompleted=value;draw();document.getElementById('dashboard-show-completed')?.focus();},onReference});
     delivery.update(snapshot);
   };
   const message=(text,retry=false)=>{
@@ -78,17 +77,14 @@ export function mountProjectWork({document,fetch}){
     if(pending?.id===id)return;
     const current=++generation;pending={id,generation:current};
     const active=document.activeElement;const ownedFocus=Boolean(dashboard?.contains(active));
-    const goalsFocus=container.contains(active);
     const changed=id!==selectedId;
-    if(changed){snapshot=undefined;showCompleted=false;dashboardCompleted=false;selectedId=id;}
+    if(changed){snapshot=undefined;dashboardCompleted=false;selectedId=id;}
     const scroll=dashboard?.scrollTop||0;
     const previous=snapshot;
-    if(!previous)container.replaceChildren();
-    if(!id){pending=undefined;message('Choose a project to view progress.');return;}
+    if(!id){pending=undefined;message('Waiting for your agent to set the current project.');return;}
     if(!previous){
-      container.textContent='Loading goals…';message('Loading progress…');
+      message('Loading progress…');
       if(ownedFocus)dashboard?.focus();
-      if(goalsFocus)document.getElementById('heading')?.focus();
     }
     try{
       const response=await fetch('/api/v1/projects/'+encodeURIComponent(id)+'/work');const data=await response.json();
@@ -97,10 +93,9 @@ export function mountProjectWork({document,fetch}){
       dashboardModel(data.items);
       if(previous&&JSON.stringify(previous)===JSON.stringify(data))return;
       snapshot=data;draw();if(dashboard)dashboard.scrollTop=scroll;
-      if(goalsFocus&&document.activeElement===document.body)document.getElementById('heading')?.focus();
       if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-heading')?.focus();
     }catch{
-      if(current===generation){snapshot=undefined;container.textContent='Goals could not be loaded.';message('Progress could not be loaded.',true);if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-retry')?.focus();}
+      if(current===generation){snapshot=undefined;message('Progress could not be loaded.',true);if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-retry')?.focus();}
     }finally{if(pending?.generation===current)pending=undefined;}
   }
   project.addEventListener('change',load);project.addEventListener('ned-work-refresh',load);void load();

@@ -32,12 +32,12 @@ test('TC-002: Retry settlement restores keyboard focus without overriding naviga
       assert.equal(retry.disabled, true);
       assert.equal(document.activeElement, document.body, 'disabled native button releases focus');
       retry.dispatch('click'); assert.equal(requests.length, 1, 'single-flight even for duplicate event');
-      if (outcome === 'other-control') project.focus();
-      if (outcome === 'project-switch') { project.focus(); project.value = 'b'; project.dispatch('change'); }
-      if (outcome.startsWith('section-switch')) { elements.get('Tasks').focus(); elements.get('Tasks').dispatch('click'); if (outcome === 'section-switch-blur') document.activeElement = document.body; }
+      if (outcome === 'other-control') elements.get('preview-tab').focus();
+      if (outcome === 'project-switch') { elements.get('preview-tab').focus(); project.value = 'b'; project.dispatch('change'); }
+      if (outcome.startsWith('section-switch')) { elements.get('goals-pane-tab').focus(); elements.get('goals-pane-tab').dispatch('click'); if (outcome === 'section-switch-blur') document.activeElement = document.body; }
       await respond(outcome === 'error' ? { error: { code: 'database_unavailable' } } : { preview: { status: outcome === 'available' ? 'available' : 'unconfigured', url: 'http://127.0.0.1:8000/' } }, outcome === 'error' ? 503 : 200);
       if (outcome === 'project-switch') await respond({ preview: { status: 'unconfigured' } });
-      const expected = ['other-control','project-switch'].includes(outcome) ? project : outcome === 'section-switch-blur' ? document.body : outcome === 'section-switch' ? elements.get('Tasks') : outcome === 'available' ? elements.get('preview-heading') : retry;
+      const expected = ['other-control','project-switch'].includes(outcome) ? elements.get('preview-tab') : outcome === 'section-switch-blur' ? document.body : outcome === 'section-switch' ? elements.get('goals-pane-tab') : outcome === 'available' ? elements.get('preview-heading') : retry;
       assert.equal(document.activeElement, expected, 'settlement preserves the keyboard destination');
       if (['unconfigured','error'].includes(outcome)) { assert.equal(retry.hidden, false); assert.equal(retry.disabled, false); }
       if (outcome === 'available') assert.equal(retry.hidden, true);

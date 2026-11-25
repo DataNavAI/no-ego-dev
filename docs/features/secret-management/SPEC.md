@@ -70,7 +70,7 @@ Agent receives a key name and consumes its file path without printing bytes. Cri
 - Level / automation: end-to-end; [TC-003.test.js](tests/TC-003.test.js).
 - Preconditions / fixtures: Disposable COM/Chromium, synthetic value, desktop1280px and mobile390px; no project required.
 - Given: Chat active with draft.
-- When: Select Settings by keyboard, save, reveal/hide, replace, navigate away/back, refresh, delete with cancel/confirm; resize mobile and click #left-toggle to restore the selected left tab.
+- When: Select Settings by keyboard, save, reveal/hide, replace, navigate away/back, refresh, delete with cancel/confirm; resize mobile, switch between Chat and Project, and verify the selected workspace tab and secret clearance. Forget instance access while Settings is open and verify that revealed values and unsaved secret input are cleared.
 - Then: Masked by default, no secret in chat/history/browser storage; draft preserved, hidden panels inert, visible value cleared on leaving and hidden page. Error/retry recover. Responsive screenshot captures show usable form and navigation.
 - Steps and assertions: Run named browser test. Save synthetic screenshots outside repository; inspect desktop/mobile and320px overflow.
 - Variants / negative cases: Double actions disabled in flight; stale reveal after navigation cannot repopulate hidden panel. Browser layer uniquely verifies DOM/focus/visibility and real fetch wiring.

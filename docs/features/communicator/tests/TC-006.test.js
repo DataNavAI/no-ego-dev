@@ -8,52 +8,14 @@ import {fixture} from './fixtures.js';
 import {validatePreviewUrl} from '../../../../apps/com/src/projects.js';
 import {initialState,settleLoad,selectProject,selectSection,settleDetail,beginDetail,view} from '../../../../apps/com/src/public/state.js';
 import {clientHarness} from './client-harness.js';
-test('TC-006: shipped client retains newer project and section after delayed detail success',async t=>{
-  for(const navigation of ['project','section'])await t.test(navigation,async()=>{
-    const {elements,requests,respond}=await clientHarness();
-    elements.get('retry').dispatch('click');const stale=requests.shift();
-    if(navigation==='project'){
-      elements.get('project').value='b';elements.get('project').dispatch('change');
-      await respond({project:{id:'b'},preview:{status:'unconfigured'}});
-    }else elements.get('Tasks').dispatch('click');
-    stale.resolve({ok:true,json:async()=>({project:{id:'a'},preview:{status:'available',url:'http://127.0.0.1:4321'}})});
-    await new Promise(resolve=>setImmediate(resolve));
-    assert.equal(elements.get('project').value,navigation==='project'?'b':'a');
-    assert.equal(elements.get('heading').textContent,'Goals');
-    assert.equal(elements.get('open-app').hidden,true);
-  });
-});
-test('TC-006: left tabs preserve preview, chat nodes and selected panel across mobile views',async()=>{
-  const {elements,setMobile}=await clientHarness();
-  const transcript=elements.get('chat');transcript.value='retained draft and history sentinel';
-  assert.equal(elements.get('preview-heading').textContent,'No app preview configured');
-  elements.get('Artifacts').dispatch('click');
-  assert.equal(elements.get('content').hidden,false);assert.equal(elements.get('chat').hidden,true);
-  assert.equal(elements.get('heading').textContent,'Artifacts');
-  assert.equal(elements.get('preview-heading').textContent,'No app preview configured');
-  elements.get('Artifacts').dispatch('click');assert.equal(elements.get('content').hidden,false,'repeating selected tab retains panel');
-  setMobile(true);
-  assert.equal(elements.get('left-pane').hidden,false);assert.equal(elements.get('preview').inert,true);
-  elements.get('preview-toggle').dispatch('click');
-  assert.equal(elements.get('left-pane').hidden,true);assert.equal(elements.get('content').inert,true);assert.equal(elements.get('preview').hidden,false);
-  elements.get('left-toggle').dispatch('click');
-  assert.equal(elements.get('content').hidden,false);assert.equal(elements.get('Artifacts')['aria-selected'],'true');
-  elements.get('mobile-sidebar-toggle').dispatch('click');
-  assert.equal(elements.get('chat').hidden,false);assert.equal(transcript.value,'retained draft and history sentinel');
-  setMobile(false);assert.equal(elements.get('preview').hidden,false);assert.equal(elements.get('left-pane').hidden,false);
-});
-test('TC-006: mobile initially shows Preview; keyboard tab navigation wraps and updates focus',async()=>{
-  const {elements,document,setMobile}=await clientHarness();setMobile(true);
-  assert.equal(elements.get('preview').hidden,false);assert.equal(elements.get('left-pane').inert,true);
-  elements.get('left-toggle').dispatch('click');
-  elements.get('mobile-sidebar-toggle').dispatch('keydown',{key:'ArrowRight',preventDefault(){}});
-  assert.equal(document.activeElement,elements.get('Tasks'));assert.equal(elements.get('heading').textContent,'Goals');
-  elements.get('Tasks').dispatch('keydown',{key:'End',preventDefault(){}});
-  assert.equal(document.activeElement,elements.get('Artifacts'));
-  elements.get('Artifacts').dispatch('keydown',{key:'ArrowRight',preventDefault(){}});
-  assert.equal(document.activeElement,elements.get('mobile-sidebar-toggle'));assert.equal(elements.get('content').inert,true);
-  elements.get('project').value='';elements.get('project').dispatch('change');
-  elements.get('Tasks').dispatch('click');assert.equal(elements.get('content').hidden,false);assert.equal(elements.get('heading').textContent,'Project is unavailable.');
+test('TC-006: delayed detail for the previous project cannot replace the new preview',async()=>{
+  const {elements,requests,respond}=await clientHarness();
+  elements.get('preview-retry').dispatch('click');const stale=requests.shift();
+  const project=elements.get('project');project.value='b';project.dispatch('change');
+  await respond({project:{id:'b'},preview:{status:'unconfigured'}});
+  stale.resolve({ok:true,json:async()=>({project:{id:'a'},preview:{status:'available',url:'http://127.0.0.1:4321'}})});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(project.value,'b');assert.equal(elements.get('preview-open').hidden,true);
 });
 test('TC-006: strict raw local URL policy',()=>{
   for(const value of ['http://localhost:80/','http://127.1:80/','http://2130706433:80/','http://127.0.0.1/','http://127.0.0.1:0/','http://127.0.0.1:65536/','http://127.0.0.1:80/?token=secret','http://u:p@127.0.0.1:80/','http://127.0.0.1:80/#x','https://127.0.0.1:80/','http://[::1]:80/','http://127.0.0.1:80/\\remote','http://127.0.0.1:80/\n']) assert.equal(validatePreviewUrl(value),null,value);
@@ -108,9 +70,9 @@ test('TC-006: preview retry restores focus to result without stealing intentiona
     const {elements,document,respond}=await clientHarness();const retry=elements.get('preview-retry');
     retry.focus();retry.dispatch('click');
     assert.equal(retry.disabled,true);
-    if(intentional)elements.get('project').focus();
+    if(intentional)elements.get('preview-tab').focus();
     await respond({preview:{status:'available',url:'http://127.0.0.1:4321/'}});
     assert.equal(elements.get('preview-open').hidden,false);assert.equal(retry.hidden,true);
-    assert.equal(document.activeElement,elements.get(intentional?'project':'preview-heading'));
+    assert.equal(document.activeElement,elements.get(intentional?'preview-tab':'preview-heading'));
   }
 });

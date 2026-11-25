@@ -6,8 +6,10 @@ export function readWorkspace(databasePath=resolveDatabasePath()){
   try{
     const latest=db.prepare("SELECT e.project_id AS projectId,e.sequence FROM ned_task_events e JOIN ned_work_items w ON w.project_id=e.project_id AND w.id=e.item_id WHERE w.type IN ('task','issue') ORDER BY e.sequence DESC LIMIT 1").get()||null;
     const revision=db.prepare('SELECT COALESCE(MAX(sequence),0) AS revision FROM ned_task_events').get().revision;
-    const coreRevision=db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ned_core_events'").get()?db.prepare('SELECT COALESCE(MAX(sequence),0) AS revision FROM ned_core_events').get().revision:0;
-    return {latestTask:latest,revision,coreRevision};
+    const hasCoreEvents=db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ned_core_events'").get();
+    const coreRevision=hasCoreEvents?db.prepare('SELECT COALESCE(MAX(sequence),0) AS revision FROM ned_core_events').get().revision:0;
+    const focus=db.prepare("SELECT p.id AS projectId FROM ned_feature_data f JOIN ned_projects p ON p.id=f.value WHERE f.namespace='communicator' AND f.key='focused-project'").get();
+    return {latestTask:latest,revision,coreRevision,...(focus?{focusedProjectId:focus.projectId}:{})};
   }finally{db.close();}
 }
 export function readProjectWork(databasePath=resolveDatabasePath(),projectId){

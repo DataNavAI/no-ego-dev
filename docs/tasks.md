@@ -108,3 +108,7 @@ python -m pytest
 ```
 
 Tests are colocated in `docs/features/task-management/tests/TC-NNN.test.js`. The runner validates spec mappings and rejects missing/unknown cases, skips, cancellations, and TODOs. Automated cases use disposable SQLite files and real loopback HTTP, including process races and crash recovery. TC-012 separately evaluates realistic skill behavior in a disposable environment; it is not a code-test pass. The commit gate runs every automated feature case, not only the selected developer subset.
+
+### Show the current project in Communicator
+
+Run `ned task focus --project /absolute/project --actor agent:<id> --json` after registering the directory with `ned task init`. Use the same NED runtime and database as Communicator. The signal updates the Project workspace for that instance, including open browser tabs, while keeping the chat session and draft. Run the command again when the active project changes.

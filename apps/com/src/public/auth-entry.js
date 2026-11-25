@@ -12,7 +12,7 @@ async function enter(result){
   instanceId=result.instanceId;delegated=result.delegated;credentials.hidden=true;retry.hidden=true;
   input.value='';
   const notice=document.getElementById('access-memory');notice.hidden=result.remembered||delegated;notice.textContent=result.remembered?'':'Connected for this tab. Browser storage is unavailable.';
-  if(!initialized){await Promise.all([import('./vendor/webawesome.js'),import('./settings.js'),import('./app.js'),import('./chat-entry.js'),import('./work-entry.js')]);initialized=true;}
+  if(!initialized){await Promise.all([import('./settings.js'),import('./app.js'),import('./chat-entry.js'),import('./work-entry.js')]);initialized=true;}
   else document.dispatchEvent(new Event('ned-auth-restored'));
   if(version!==accessVersion)return;
   gate.hidden=true;shell.hidden=false;shell.inert=false;document.dispatchEvent(new Event('ned-auth-entered'));
