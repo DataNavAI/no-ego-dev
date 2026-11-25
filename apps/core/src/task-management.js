@@ -4,7 +4,7 @@ import {fail,decode} from './store.js';
 import {readDelivery,validateDelivery} from './delivery.js';
 
 const reads=new Set(['getItems','getItem','getChildren','getDependencies','getReadyTasks','getTree','getGoalProgress','getStatus','getActivity','getDelivery','getTaskAttempts']);
-const arity={initialize:[0,0],createItem:[2,2],getItems:[0,0],getItem:[1,1],getChildren:[1,1],getDependencies:[1,1],getReadyTasks:[0,0],getTree:[0,0],getGoalProgress:[1,1],getStatus:[0,0],getActivity:[1,1],startTask:[1,1],completeTask:[1,2],blockTask:[2,2],unblockTask:[1,1],getDelivery:[1,1],setDelivery:[2,2],getTaskAttempts:[1,2]};
+const arity={initialize:[0,0],focusProject:[0,0],createItem:[2,2],getItems:[0,0],getItem:[1,1],getChildren:[1,1],getDependencies:[1,1],getReadyTasks:[0,0],getTree:[0,0],getGoalProgress:[1,1],getStatus:[0,0],getActivity:[1,1],startTask:[1,1],completeTask:[1,2],blockTask:[2,2],unblockTask:[1,1],getDelivery:[1,1],setDelivery:[2,2],getTaskAttempts:[1,2]};
 const object=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>keys.includes(key));
 
 export function createTaskCommand({store,mutate,saveDelivery}){
@@ -24,6 +24,7 @@ export function createTaskCommand({store,mutate,saveDelivery}){
     let delivery;
     if(operation==='setDelivery')delivery=await validateDelivery(args[1]);
     const execute=()=>{
+      if(operation==='focusProject'){store.project(projectId);store.sql.prepare("INSERT INTO ned_feature_data(namespace,key,value) VALUES('communicator','focused-project',?) ON CONFLICT(namespace,key) DO UPDATE SET value=excluded.value").run(projectId);return {projectId};}
       if(operation==='setDelivery'){task.sync.getItem(args[0]);return saveDelivery(projectId,args[0],delivery);}
       if(operation==='getDelivery'){task.sync.getItem(args[0]);return readDelivery(store.sql,projectId,args[0]);}
       if(operation==='getTaskAttempts'){

@@ -105,13 +105,13 @@ export async function runTaskCli(argv, io, dependencies = {}) {
       top
         ? positional.length !== 1
         : !action ||
-          (action === 'init' || action === 'list' ? rest.length !== 0 : rest.length !== 1)
+          (['init','list','focus'].includes(action) ? rest.length !== 0 : rest.length !== 1)
     ) {
       throw new Error(
         'Usage: ned <goal|subgoal|task|issue> <create|list|get|start|block|unblock|done|history|children> [title-or-id], or ned <ready|status|tree>. Use ned task init first.',
       );
     }
-    if (action === 'init' && command !== 'task') throw new Error('Use ned task init.');
+    if (['init','focus'].includes(action) && command !== 'task') throw new Error(`Use ned task ${action}.`);
     if (action === 'block' && (options.on ? options.reason || options.service : !options.reason))
       throw new Error('Use block --on <id> or block --reason <text> [--service <name>].');
     if (options.goal !== undefined && (!options.goal || command !== 'task' || options.parent !== undefined))
@@ -120,6 +120,7 @@ export async function runTaskCli(argv, io, dependencies = {}) {
       throw new Error('--discovered-from is supported for issues only.');
     const actions = [
       'init',
+      'focus',
       'create',
       'list',
       'get',
@@ -153,6 +154,7 @@ export async function runTaskCli(argv, io, dependencies = {}) {
         tree: () => service.getTree(),
       }[command]();
     else if (action === 'init') result = await service.initialize();
+    else if (action === 'focus') result = await service.focusProject();
     else if (action === 'create') {
       if (options.goal && (await service.getItem(options.goal)).type !== 'goal')
         throw new Error('--goal must reference a goal milestone.');

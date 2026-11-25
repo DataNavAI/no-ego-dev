@@ -40,7 +40,7 @@ test('TC-006: direct UI validates before loading data, remembers access and forg
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ned.instance-access.v1')).token),fixture.accessToken);
   assert.equal(fixture.network.some(url=>url.includes(fixture.accessToken)),false);await expect(page.locator('#access-token')).toHaveValue('');
   await page.reload();await fixture.ready();await expect(page.locator('#access-gate')).toBeHidden();
-  await page.setViewportSize({width:1280,height:900});await page.locator('#settings-tab').click();await page.locator('#access-forget').click();
+  await page.setViewportSize({width:1280,height:900});await page.locator('#workspace-settings-tab').click();await page.locator('#access-forget').click();
   await expect(page.locator('#access-gate')).toBeVisible();assert.equal(await page.evaluate(()=>localStorage.getItem('ned.instance-access.v1')),null);
 });
 

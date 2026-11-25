@@ -1,22 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mountActivity} from '../../../../apps/com/src/public/activity-ui.js';
-import {mountMobileNavigation} from '../../../../apps/com/src/public/mobile-navigation.js';
 import {clientHarness} from './client-harness.js';
 
-test('TC-036: mobile current location is exclusive while desktop remembers the selected left tab',async()=>{
-  const {elements,setMobile}=await clientHarness();setMobile(true);
-  for(const id of ['mobile-sidebar-toggle','Tasks','Artifacts']){
-    const tab=elements.get(id);tab.dispatch('click');
-    assert.equal(tab['aria-current'],'page');assert.equal(tab['aria-selected'],'true');
-    elements.get('preview-toggle').dispatch('click');
-    assert.equal(elements.get('preview-toggle')['aria-current'],'page');assert.equal(tab['aria-selected'],'false');assert.equal(tab['aria-current'],undefined);
-    setMobile(false);assert.equal(tab['aria-selected'],'true');assert.equal(elements.get('preview-toggle')['aria-current'],undefined);
-    setMobile(true);assert.equal(tab['aria-selected'],'false');
-    elements.get('left-toggle').dispatch('click');assert.equal(tab['aria-current'],'page');assert.equal(elements.get('preview-toggle')['aria-current'],undefined);
-  }
+test('TC-036: mobile shows Chat first and switches to the preserved workspace tab',async()=>{
+  const {elements,setMobile,document}=await clientHarness();setMobile(true);
+  assert.equal(elements.get('chat').inert,false);
+  assert.equal(elements.get('preview').inert,true);
+  elements.get('preview-toggle').dispatch('click');
+  assert.equal(elements.get('chat').inert,true);
+  assert.equal(elements.get('preview').hidden,false);
+  elements.get('goals-pane-tab').dispatch('keydown',{key:'End',preventDefault(){}});
+  assert.equal(document.activeElement,elements.get('workspace-settings-tab'));
+  elements.get('left-toggle').dispatch('click');
+  assert.equal(document.activeElement,elements.get('chat'));
+  elements.get('preview-toggle').dispatch('click');
+  assert.equal(elements.get('workspace-settings-tab')['aria-selected'],'true');
+  setMobile(false);
+  assert.equal(elements.get('left-pane').hidden,false);
+  assert.equal(elements.get('preview').hidden,false);
 });
-
 function node(){
   const target=new EventTarget();target.children=[];target.dataset={};target.attributes={};
   target.setAttribute=(name,value)=>{target.attributes[name]=value;};target.removeAttribute=name=>delete target.attributes[name];
@@ -43,18 +46,4 @@ test('TC-036: repeated notices remain dismissed, changed updates reappear and st
   streams[1].onerror();assert.equal(panel.hidden,false);assert.equal(content.textContent,'Updates unavailable.');
   nodes.get('chat-activity-dismiss').dispatchEvent(new Event('click'));streams[1].onerror();assert.equal(panel.hidden,true);
   dispose();assert.equal(streams[1].closed,true);
-});
-
-test('TC-036: drawer moves existing navigation, closes on selection/Escape and restores desktop nodes',()=>{
-  const ids=['navigation-drawer','navigation-open','navigation-close','navigation-items','project-control','preview-toggle'];
-  const nodes=new Map(ids.map(id=>[id,node()]));const tabs=node(),toolbar=node(),left=node(),switcher=node();
-  toolbar.append(nodes.get('project-control'));left.append(tabs);switcher.append(nodes.get('preview-toggle'));
-  const document={getElementById:id=>nodes.get(id),querySelector:()=>tabs,activeElement:null};for(const target of [...nodes.values(),tabs])target.focus=()=>{document.activeElement=target;};
-  const drawer=nodes.get('navigation-drawer');drawer.showModal=()=>{drawer.open=true;};drawer.close=()=>{drawer.open=false;};
-  const viewport=new EventTarget();viewport.matches=true;let selected=0;
-  mountMobileNavigation({document,viewport,onSelect:()=>selected++});assert.equal(nodes.get('project-control').parentElement,nodes.get('navigation-items'));
-  const click=id=>nodes.get(id).dispatchEvent(new Event('click'));click('navigation-open');assert.equal(drawer.open,true);assert.equal(document.activeElement,nodes.get('navigation-close'));
-  const escape=new Event('cancel',{cancelable:true});drawer.dispatchEvent(escape);assert.equal(escape.defaultPrevented,true);assert.equal(document.activeElement,nodes.get('navigation-open'));
-  click('navigation-open');const nav=node();nav.closest=()=>nav;tabs.append(nav);const select=new Event('click');Object.defineProperty(select,'target',{value:nav});drawer.dispatchEvent(select);assert.equal(drawer.open,false);assert.equal(selected,1);
-  click('navigation-open');viewport.matches=false;viewport.dispatchEvent(new Event('change'));assert.equal(drawer.open,false);assert.equal(tabs.parentElement,left);assert.equal(nodes.get('project-control').parentElement,toolbar);assert.equal(nodes.get('preview-toggle').parentElement,switcher);
 });

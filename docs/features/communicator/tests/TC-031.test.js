@@ -43,13 +43,12 @@ test('TC-031: rendered hierarchy keeps nested literal titles and rejects orphane
  assert.throws(()=>renderProjectWork(document,container,{items:[{...items[0],parentId:'t'},items[1]]}));
 });
 
-test('TC-031: shipped controller populates new project options before following its task',async()=>{
+test('TC-031: shipped controller stores the new project identity before following its task',async()=>{
  const streams=[];class EventSource{constructor(){streams.push(this);}}
- const harness=await clientHarness({EventSource});const project=harness.elements.get('project');let selected=project.value;
- Object.defineProperty(project,'value',{get:()=>selected,set:value=>{selected=project.options.some(option=>option.value===value)?value:'';}});
+ const harness=await clientHarness({EventSource});const project=harness.elements.get('project');
  const snapshot={projects:[{id:'a',name:'Alpha'},{id:'b',name:'Beta'},{id:'new',name:'New project',displayPath:'/private/project/path'}],latestTask:{projectId:'new',sequence:100},revision:100};
  streams[0].onmessage({data:JSON.stringify(snapshot)});
- assert.equal(project.value,'new');assert.equal(project.options.find(option=>option.value==='new').textContent,'New project');assert.equal(harness.requests.at(-1).url,'/api/v1/projects/new');
+ assert.equal(project.value,'new');assert.equal(project.dataset.name,'New project');assert.equal(harness.requests.at(-1).url,'/api/v1/projects/new');
  await harness.respond({preview:{status:'unconfigured'}});
  project.value='a';project.dispatch('change');await harness.respond({preview:{status:'unconfigured'}});
  streams[0].onmessage({data:JSON.stringify(snapshot)});assert.equal(project.value,'a');assert.equal(harness.requests.length,0);

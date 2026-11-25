@@ -37,7 +37,7 @@ export async function chatHarness({reducedMotion=false,media=false,references=fa
   }
   const shell=node();
   for(const id of ['transcript','chat-status','chat-message','older','newer','latest','chat-send','chat-retry','chat-form'])node(id);
-  if(references)for(const id of ['chat-task-references','chat-reference-status','mobile-sidebar-toggle'])node(id);
+  if(references)for(const id of ['chat-task-references','chat-reference-status','left-toggle'])node(id);
   if(media)for(const id of ['chat-files','chat-attach','chat-add-link','chat-link-editor','chat-link-url','chat-link-label','chat-link-insert','chat-link-cancel','chat-link-error','chat-attachments','chat-attachment-status'])node(id);
   document.getElementById=id=>elements.get(id);
   document.createElement=()=>node();

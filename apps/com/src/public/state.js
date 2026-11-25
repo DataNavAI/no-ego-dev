@@ -21,7 +21,7 @@ export function view(state) {
   if (state.status === 'loading') return {title:'Loading projects…',body:'',...identity,retry:Boolean(state.retrying)};
   if (state.detailLoading) return {title:'Loading project…',body:'',...identity,retry:Boolean(state.retrying)};
   if (state.error) {
-    const errors = {project_unavailable:['Project is unavailable.','Choose another project or retry.'],folder:['Project folder is unavailable.','Check access to the project folder, then retry.'],project_folder_unavailable:['Project folder is unavailable.','Check access to the project folder, then retry.'],database_unavailable:['Project data could not be loaded.','Check that the NED database is available, then retry.']};
+    const errors = {project_unavailable:['Project is unavailable.','Ask the agent to set an available project or retry.'],folder:['Project folder is unavailable.','Check access to the project folder, then retry.'],project_folder_unavailable:['Project folder is unavailable.','Check access to the project folder, then retry.'],database_unavailable:['Project data could not be loaded.','Check that the NED database is available, then retry.']};
     const [title,body] = errors[state.error] ?? ['Projects could not be loaded','Check that NEDCOM is running, then retry.'];
     return {title,body,...identity,retry:true};
   }
@@ -32,11 +32,12 @@ export function view(state) {
   }
   if (state.projectId) return {title:state.section==='Tasks'?'Goals':state.section==='WIP app'?'Preview':state.section,body:{Tasks:state.workAvailable?'':'Task browsing is not available yet.',Artifacts:'Artifact browsing is not available yet.','WIP app':'App previews are not available yet.'}[state.section],...identity,retry:false};
   if (state.status === 'unavailable') return {title:'Projects',body:'Project browsing is not available yet.',...identity,retry:false};
-  return {title:state.projects.length ? 'Projects' : 'No projects yet',body:state.projects.length ? 'Choose a project to browse its tasks, artifacts and app.' : 'Register a project with NED, then retry.',...identity,retry:!state.projects.length};
+  return {title:state.projects.length ? 'Projects' : 'No projects yet',body:state.projects.length ? 'Ask your agent to set the current project.' : 'Register a project with NED, then retry.',...identity,retry:!state.projects.length};
 }
 export function followTaskProject(currentId,lastSequence,snapshot){
   const rows=Array.isArray(snapshot?.projects)?snapshot.projects:[];
   const exists=id=>rows.some(row=>row.id===id);
+  if(exists(snapshot?.focusedProjectId))return {projectId:snapshot.focusedProjectId,sequence:lastSequence};
   const latest=snapshot?.latestTask;
   const next=latest&&Number.isSafeInteger(latest.sequence)&&latest.sequence>lastSequence&&exists(latest.projectId);
   return {projectId:next?latest.projectId:exists(currentId)?currentId:null,sequence:next?latest.sequence:lastSequence};

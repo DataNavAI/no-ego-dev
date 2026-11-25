@@ -9,7 +9,7 @@ import {loadOperatorCredential} from '../../core/src/auth.js';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const failure=(code,message)=>Object.assign(new Error(message),{code});
 const messages={not_initialized:'Run ned task init for this project first.',not_found:'Work item or project not found.',not_owner:'Task belongs to another actor.',not_ready:'Task is not ready to start.',verification_required:'Managed attempt must be verified before completing this task.',idempotency_conflict:'Request ID already used for a different command. Read back state before continuing.',invalid_actor:'Actor must be agent:<id> or human:<id>.'};
-const methods=['initialize','createItem','getItems','getItem','getChildren','getDependencies','getReadyTasks','getTree','getGoalProgress','getStatus','getActivity','startTask','completeTask','blockTask','unblockTask','getDelivery','setDelivery','getTaskAttempts'];
+const methods=['initialize','focusProject','createItem','getItems','getItem','getChildren','getDependencies','getReadyTasks','getTree','getGoalProgress','getStatus','getActivity','startTask','completeTask','blockTask','unblockTask','getDelivery','setDelivery','getTaskAttempts'];
 
 function apiOrigin(value){
   try{

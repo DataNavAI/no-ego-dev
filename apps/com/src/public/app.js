@@ -1,13 +1,8 @@
 import {initialState,beginLoad,settleLoad,selectProject,beginDetail,settleDetail,view,followTaskProject} from './state.js';
 import {apiFetch as fetch,ApiEventSource as EventSource} from './api-client.js';
-import {mountMobileNavigation} from './mobile-navigation.js';
 let state = initialState();
-let retryFocusIntent = false;
 let previewRetryFocus=false;
 const project = document.getElementById('project');
-const retry = document.getElementById('retry');
-const heading = document.getElementById('heading');
-const announcement = document.getElementById('announcement');
 function render() {
   const previewModel=view({...state,section:'WIP app'});
   for(const [id,value] of [['preview-heading',previewModel.title],['preview-message',previewModel.body],['preview-identity',previewModel.projectName]])document.getElementById(id).textContent=value;
@@ -17,24 +12,7 @@ function render() {
     if(previewWasFocused||document.activeElement===document.body){if(previewRetry.hidden)document.getElementById('preview-heading').focus();else previewRetry.focus();}
     previewRetryFocus=false;
   }
-  const work=document.getElementById('project-work');if(work)work.hidden=state.section!=='Tasks'||!state.projectId;
-  const model = view(state); const retryFocused = document.activeElement === retry;
-  heading.textContent = model.title; document.getElementById('message').textContent = model.body;
-  document.getElementById('identity').textContent = [model.projectName,model.displayPath].filter(Boolean).join(' · ');
-  const link=document.getElementById('open-app');link.hidden=!model.url;link.removeAttribute('href');if(model.url)link.href=model.url;document.getElementById('new-tab-note').hidden=!model.url;
-  project.replaceChildren(new Option(state.status === 'loading' ? 'Loading projects…' : 'Projects',''));
-  for (const row of state.projects) project.add(new Option(row.name,row.id));
-  project.value = state.projectId ?? ''; project.disabled = (state.status === 'loading' && !state.projects.length) || state.status === 'unavailable';
-  document.getElementById('navigation-hint').hidden = Boolean(state.projectId);
-  retry.hidden = !model.retry; retry.disabled = state.status === 'loading' || state.detailLoading;
-  document.getElementById('card').classList.toggle('error',Boolean(state.error) || state.detail?.preview?.status==='invalid' || state.detail?.preview?.status==='unavailable');
-  announcement.setAttribute('role',state.error ? 'alert' : 'status');announcement.setAttribute('aria-live',state.error ? 'assertive' : 'polite');
-  const text = `${model.title} ${model.body}`.trim(); if (announcement.textContent !== text) announcement.textContent = text;
-  if (retry.hidden && (retryFocused || (retryFocusIntent && document.activeElement === document.body))) heading.focus();
-  if (state.status !== 'loading' && !state.detailLoading) {
-    if (retryFocusIntent && document.activeElement === document.body && !retry.hidden && !retry.disabled) retry.focus();
-    retryFocusIntent = false;
-  }
+  project.dataset.name=previewModel.projectName;
 }
 async function json(resource) {
   const response=await fetch(resource);const data=await response.json();if(!response.ok)throw Object.assign(new Error('Unavailable'),{code:data.error?.code});return data;
@@ -56,29 +34,24 @@ async function loadDetail() {
   catch(error){state=settleDetail(state,generation,null,error.code ?? 'inventory');}
   render();
 }
-retry.addEventListener('click',() => {
-  const next=state.projectId ? beginDetail(state) : beginLoad(state);if(next===state)return;
-  retryFocusIntent=document.activeElement===retry;state=next;render();void (state.projectId ? loadDetail() : load());
+project.addEventListener('change',() => {
+  previewRetryFocus=false;
+  state=selectProject(state,project.value);
+  if(!project.value)state={...state,error:null};
+  render();
+  if(state.projectId)void loadDetail();
 });
-project.addEventListener('change',() => {retryFocusIntent=false;previewRetryFocus=false;state=selectProject(state,project.value);if(selectedTab.dataset.section)state={...state,section:selectedTab.dataset.section};render();if(state.projectId)void loadDetail();});
-const shell=document.getElementById('app-shell');
-const detail=document.getElementById('content');
 const chat=document.getElementById('chat');
 const preview=document.getElementById('preview');
 const leftPane=document.getElementById('left-pane');
-const chatToggle=document.getElementById('mobile-sidebar-toggle');
 const leftToggle=document.getElementById('left-toggle');
 const previewToggle=document.getElementById('preview-toggle');
-const sectionTabs=[...document.querySelectorAll('[data-section]')];
-const settingsTab=document.getElementById('settings-tab');
-const settings=document.getElementById('settings');
-const tabs=[chatToggle,...sectionTabs,...(settingsTab?[settingsTab]:[])];
 const mobileViewport=typeof matchMedia==='function'?matchMedia('(max-width: 767px)'):null;
-let workspace=mobileViewport?.matches?'left':'preview';
-let selectedTab=chatToggle;
+let workspace='left';
 let canvasView='Goals & Tasks';
-const canvasTabs=[document.getElementById('goals-pane-tab'),document.getElementById('preview-tab'),document.getElementById('dashboard-tab')].filter(Boolean);
+const canvasTabs=[document.getElementById('goals-pane-tab'),document.getElementById('preview-tab'),document.getElementById('dashboard-tab'),document.getElementById('workspace-settings-tab')].filter(Boolean);
 function selectCanvas(tab,focus=false){
+  previewRetryFocus=false;
   canvasView=tab.textContent;
   for(const item of canvasTabs){const active=item===tab;item.setAttribute('aria-selected',String(active));item.tabIndex=active?0:-1;document.getElementById(item.getAttribute('aria-controls')).hidden=!active;}
   syncNavigation();if(focus)tab.focus();
@@ -90,47 +63,17 @@ for(const tab of canvasTabs){
     event.preventDefault();selectCanvas(next,true);
   });
 }
-const canvasHeading=()=>canvasView==='Goals & Tasks'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
+const canvasHeading=()=>canvasView==='Goals & Tasks'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Settings'?document.getElementById('settings-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
 function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   leftPane.hidden=mobile&&workspace!=='left';leftPane.inert=leftPane.hidden;
-  chat.hidden=selectedTab!==chatToggle;chat.inert=chat.hidden||leftPane.hidden;
-  detail.hidden=selectedTab===chatToggle||Boolean(settingsTab&&selectedTab===settingsTab);detail.inert=detail.hidden||leftPane.hidden;
-  if(settings){settings.hidden=selectedTab!==settingsTab||leftPane.hidden;settings.inert=settings.hidden;}
+  chat.inert=leftPane.hidden;
   preview.hidden=mobile&&workspace!=='preview';preview.inert=preview.hidden;
-  shell.dataset.workspace=workspace;
-  leftToggle.textContent=selectedTab.textContent||'Chat';
+  document.getElementById('settings').hidden=canvasView!=='Settings'||preview.hidden;
   leftToggle.setAttribute('aria-pressed',String(workspace==='left'));
   previewToggle.setAttribute('aria-pressed',String(workspace==='preview'));
-  previewToggle.textContent=canvasView;
-  for(const tab of tabs){
-    const current=tab===selectedTab&&(!mobile||workspace==='left');
-    tab.setAttribute('aria-selected',String(current));tab.setAttribute('tabindex',tab===selectedTab?'0':'-1');
-    if(mobile&&current)tab.setAttribute('aria-current','page');else tab.removeAttribute('aria-current');
-  }
-  if(mobile&&workspace==='preview')previewToggle.setAttribute('aria-current','page');else previewToggle.removeAttribute('aria-current');
-  detail.setAttribute('aria-labelledby',selectedTab.id);
-  const title=document.getElementById('mobile-view-title');
-  if(title)title.textContent=workspace==='preview'?canvasView:selectedTab.textContent||'Chat';
 }
-function selectTab(tab,focus=false){
-  retryFocusIntent=false;previewRetryFocus=false;selectedTab=tab;
-  if(tab.dataset.section)state={...state,section:tab.dataset.section};
-  workspace='left';render();syncNavigation();if(focus)tab.focus();
-}
-for(const tab of tabs){
-  tab.addEventListener('click',()=>selectTab(tab));
-  tab.addEventListener('keydown',event=>{
-    const current=tabs.indexOf(tab);let next;
-    if(event.key==='ArrowRight'||event.key==='ArrowDown')next=(current+1)%tabs.length;
-    else if(event.key==='ArrowLeft'||event.key==='ArrowUp')next=(current+tabs.length-1)%tabs.length;
-    else if(event.key==='Home')next=0;
-    else if(event.key==='End')next=tabs.length-1;
-    else return;
-    event.preventDefault();selectTab(tabs[next],true);
-  });
-}
-leftToggle.addEventListener('click',()=>{workspace='left';syncNavigation();selectedTab.focus();});
+leftToggle.addEventListener('click',()=>{workspace='left';syncNavigation();chat.focus();});
 document.getElementById('workspace-skip')?.addEventListener('click',()=>{workspace='preview';syncNavigation();preview.focus();});
 previewToggle.addEventListener('click',()=>{workspace='preview';syncNavigation();canvasHeading().focus();});
 document.getElementById('preview-retry').addEventListener('click',()=>{
@@ -142,10 +85,6 @@ mobileViewport?.addEventListener?.('change',()=>{
   syncNavigation();
   if(leftPane.hidden&&focusInLeft)leftToggle.focus();else if(preview.hidden&&focusInPreview)previewToggle.focus();
 });
-if(mobileViewport)mountMobileNavigation({document,viewport:mobileViewport,onSelect:()=>{
-  const target=workspace==='preview'?canvasHeading():selectedTab===chatToggle?document.getElementById('chat-heading'):heading;
-  target?.focus();
-}});
 syncNavigation();render();void load();
 document.addEventListener('ned-auth-restored',()=>{workspaceStream?.close();workspaceStream=null;state=beginLoad(state);render();void load();});
 
@@ -160,7 +99,8 @@ function startWorkspace(){
     const next=followTaskProject(state.projectId,taskSequence,snapshot);taskSequence=next.sequence;
     const changed=next.projectId!==state.projectId;
     state={...state,projects:snapshot.projects};
-    if(changed){render();project.value=next.projectId||'';project.dispatchEvent(new Event('change'));}
+    project.dataset.name=snapshot.projects.find(row=>row.id===next.projectId)?.name||'';
+    if(changed){project.value=next.projectId||'';project.dispatchEvent(new Event('change'));}
     else {render();project.dispatchEvent(new Event('ned-work-refresh'));}
   };
 }

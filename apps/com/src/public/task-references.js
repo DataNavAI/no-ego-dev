@@ -22,7 +22,7 @@ export function mountTaskReferences({document,draft,changed}){
       if(references.length===8){status.textContent='Use up to 8 task references.';return;}
       references.push({...ref});
     }
-    status.textContent='';render();changed();document.getElementById('mobile-sidebar-toggle').click();draft.focus({preventScroll:true});
+    status.textContent='';render();changed();document.getElementById('left-toggle').click();draft.focus({preventScroll:true});
   });
   return {ready:()=>references.length>0,values:()=>references.map(({projectId,itemId})=>({projectId,itemId})),render,clear(){references=[];status.textContent='';render();}};
 }

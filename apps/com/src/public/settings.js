@@ -3,7 +3,8 @@ export function mountSettings({document,fetch:request=globalThis.fetch,setTimeou
   const panel=document.getElementById('settings');if(!panel)return;
   const form=document.getElementById('secret-form'),key=document.getElementById('secret-key'),value=document.getElementById('secret-value'),status=document.getElementById('secret-status'),list=document.getElementById('secret-list'),retry=document.getElementById('secret-retry');
   let generation=0,busy=false;const timers=new Set();
-  const active=()=>!panel.hidden&&document.visibilityState!=='hidden';
+  const shell=document.getElementById('app-shell');
+  const active=()=>!panel.hidden&&!shell?.hidden&&document.visibilityState!=='hidden';
   function hideValues(){for(const timer of timers)cancel(timer);timers.clear();for(const input of list.querySelectorAll('textarea')){input.value='';input.hidden=true;}for(const button of list.querySelectorAll('[data-reveal]')){button.textContent='Show';button.setAttribute('aria-expanded','false');}}
   function controls(){for(const control of panel.querySelectorAll('button,input'))control.disabled=busy;}
   async function api(path='',method='GET',body){
@@ -48,6 +49,7 @@ export function mountSettings({document,fetch:request=globalThis.fetch,setTimeou
   retry.addEventListener('click',load);
   const change=()=>{generation++;hideValues();value.value='';status.textContent='';if(active())load();};
   const observer=new MutationObserver(change);observer.observe(panel,{attributes:true,attributeFilter:['hidden']});
+  if(shell)observer.observe(shell,{attributes:true,attributeFilter:['hidden']});
   document.addEventListener('visibilitychange',change);
   globalThis.addEventListener?.('pagehide',()=>{generation++;hideValues();value.value='';});
   return {clear:change};
