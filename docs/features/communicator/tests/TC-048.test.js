@@ -66,7 +66,11 @@ test('TC-048: mobile navigation and authenticated reaction persistence',async t=
   await page.reload();
   await expect(page.locator('.message-reaction summary[aria-label="Change reaction, Celebrate selected"]')).toBeVisible();
   await navigation.click();
-  await page.locator('#left-toggle').focus();
+  const chatChoice=page.locator('#left-toggle');
+  await chatChoice.focus();
+  await expect(chatChoice).toBeFocused();
+  // Simulate Chromium clearing focus before dispatching the breakpoint change.
+  await chatChoice.evaluate(button=>button.blur());
   await page.setViewportSize({width:1280,height:844});
   await expect(chat).toBeFocused();
   await expect(navigation).toBeHidden();

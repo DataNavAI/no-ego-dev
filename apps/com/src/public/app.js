@@ -47,8 +47,14 @@ const preview=document.getElementById('preview');
 const leftPane=document.getElementById('left-pane');
 const mobileNavigation=document.getElementById('mobile-navigation');
 const navigationToggle=document.getElementById('navigation-toggle');
+let navigationHadFocus=false;
+document.addEventListener('focusin',event=>{
+  navigationHadFocus=mobileNavigation.contains(event.target);
+});
 document.addEventListener('click',event=>{
-  if(mobileNavigation.open&&!mobileNavigation.contains(event.target))mobileNavigation.open=false;
+  if(mobileNavigation.contains(event.target))return;
+  navigationHadFocus=false;
+  if(mobileNavigation.open)mobileNavigation.open=false;
 });
 mobileNavigation.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&mobileNavigation.open){
@@ -94,8 +100,10 @@ document.getElementById('preview-retry').addEventListener('click',()=>{
 mobileViewport?.addEventListener?.('change',()=>{
   const active=document.activeElement;
   const focusInLeft=leftPane.contains(active),focusInPreview=preview.contains(active);
-  const focusInMenu=mobileNavigation.contains(active);
+  // The disappearing menu can lose focus before the media-query event is delivered.
+  const focusInMenu=mobileNavigation.contains(active)||active===document.body&&navigationHadFocus;
   mobileNavigation.open=false;
+  navigationHadFocus=false;
   syncNavigation();
   if(focusInMenu&&!mobileViewport.matches){
     const destination=workspace==='left'?chat:canvasHeading();
