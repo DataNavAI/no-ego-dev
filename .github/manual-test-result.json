@@ -1,14 +1,14 @@
 {
-  "candidate_sha": "1b338aefc80178a5bacd45cfca311ebb129a47b6",
+  "candidate_sha": "f8f1aa8800ae07fa08aa95d9af58d0245c252bc5",
   "result": "pass",
-  "tested_at": "2026-11-25T07:36:20.794941+00:00",
-  "environment": "Disposable Chromium desktop and narrow viewport for functional checks, Chromium and iPhone 13 WebKit for four-turn synthetic browser walkthroughs, recorded Muse desktop comparison",
+  "tested_at": "2026-11-25T07:57:46.199496+00:00",
+  "environment": "Local Chromium at 1280x844 and 390x844 with isolated Core, Communicator and synthetic Hermes streaming fixture",
   "commands": [
     "npm run lint",
-    "python -m pytest",
     "npm run test:spec -- --all",
-    "node --test docs/features/communicator/tests/TC-{044,046}.test.js",
-    "node --test videos.mjs (private fixture-backed capture harness)"
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-047.test.js",
+    "zsh /tmp/ned-reload-evidence/render.sh"
   ],
-  "observations": "Measured NED and Muse recordings at matching states. Published seven weighted visual dimensions with explicit incomplete-evidence and critical-failure rules, distinct from the prior 12/12 functional score. Browser tests verify palette scope, normal-text contrast, primary glyph/focus contrast and transcript-start reply alignment. Both final replies are visible after four turns, including desktop resize and return to latest. Independent visual re-review and eight synthetic skill scenarios passed. Existing clips leave a complete weighted visual score unestablished."
+  "observations": "Inspected rendered desktop and mobile waiting and streaming states. Reload before prose restores inline progress and Stop. Reload after a partial delta restores streamed text. Reduced-motion mobile has a static indicator. The original request reaches the upstream once and canonical history shows one finished assistant reply."
 }
