@@ -27,7 +27,7 @@ export function mountChat(libraries) {
   const transcript = element('transcript');
   const status = element('chat-status');
   const activityLabels={
-    working:'NED is preparing a reply…',thinking:'NED is thinking…',
+    reconnecting:'Reconnecting to the reply…',working:'NED is preparing a reply…',thinking:'NED is thinking…',
     searching:'NED is searching the web…',reading:'NED is reading files…',
     running:'NED is running a command…',writing:'NED is writing a reply…',
   };
@@ -44,6 +44,7 @@ export function mountChat(libraries) {
   const empty = element('chat-empty');
   const draft = element('chat-message');
   let busy = false;
+  let reconnectNeeded=false,authLost=false,reconnectQueued=false;
   let uncertain = false;
   let sessionId = '';
   let rows = [];
@@ -177,7 +178,10 @@ export function mountChat(libraries) {
     }catch(error){
       recordRequestDiagnostic(phase,{status:response?.status,durationMs:Date.now()-started,error,failure:failureKind});
       const transient=!['AbortError','TimeoutError'].includes(error.name)&&([502,503,504].includes(response?.status)||!response&&error.name==='TypeError');
-      if(!repeatable||!transient||attempt>=2)throw error;
+      if(!repeatable||!transient||attempt>=2){
+        if(repeatable&&(transient||error.name==='TimeoutError'))error.reconnectable=true;
+        throw error;
+      }
       await new Promise(resolve=>setTimeout(resolve,attempt===0?250:750));
     }
     }
@@ -200,8 +204,31 @@ export function mountChat(libraries) {
   async function followTurn(id) {
     const path=`/${encodeURIComponent(sessionId)}`;
     recordChatDiagnostic('streaming');
-    const response=await fetch(`/api/v1/chat/sessions${path}/turns/${id}/events`,{headers:{Accept:'text/event-stream'},signal:AbortSignal.timeout(610000)});
-    const result=await consumeTurnStream(response,id,sessionId,text=>{showStream(text);showActivity('writing');},showActivity);
+    let result,displayedLength=0;
+    for(let attempt=0;;attempt++){
+      try{
+        let response;
+        try{response=await fetch(`/api/v1/chat/sessions${path}/turns/${id}/events`,{headers:{Accept:'text/event-stream'},signal:AbortSignal.timeout(610000)});}
+        catch(error){
+          if(error.name==='TypeError')error.code='stream_disconnected';
+          throw error;
+        }
+        if([502,503,504].includes(response.status)){
+          await response.body?.cancel();
+          throw Object.assign(new Error('Reply connection interrupted.'),{code:'stream_disconnected'});
+        }
+        result=await consumeTurnStream(response,id,sessionId,text=>{
+          // A fresh subscription starts at cursor zero. Keep the visible prefix while it catches up.
+          if(text.length<=displayedLength)return;
+          displayedLength=text.length;
+          showStream(text);showActivity('writing');
+        },showActivity);
+        break;
+      }catch(error){
+        if(attempt||authLost||error.code!=='stream_disconnected')throw error;
+        showActivity('reconnecting');
+      }
+    }
     lastStopped=result.turn.status==='stopped';
     recordChatDiagnostic('completed');
         if(liveArticle){const following=atBottom();const top=transcript.scrollTop;liveArticle.dataset.state='completed';liveArticle.hidden=!messageParts(result.message).length;liveArticle.replaceChildren(liveArticle.firstElementChild,renderMessageContent(result.message,document,libraries));if(following)bottom(false);else transcript.scrollTop=top;}
@@ -213,8 +240,11 @@ export function mountChat(libraries) {
     recordChatDiagnostic(mutation?'sending':'loading');
     element('chat-retry').hidden=true;
     try {await work();if(!mutation)recordChatDiagnostic('ready');status.textContent = refreshNeeded || olderNotice || (lastStopped?'Response stopped.':sessionId ? '' : 'Start a new chat.');}
-    catch(error) {recordChatDiagnostic('failed');status.textContent = ['invalid_attachment','invalid_reference'].includes(error.code)?error.message:mutation ? 'Delivery could not be confirmed. Reload the session before sending again.' : error.code==='history_changed' ? refreshNeeded : 'Chat is unavailable. Check the Hermes gateway, then retry.';element('chat-retry').hidden=false;if(mutation&&!['invalid_attachment','invalid_reference'].includes(error.code)){uncertain=true;markIncomplete();}}
-    finally {busy=false;render();}
+    catch(error) {if(error.reconnectable)reconnectNeeded=true;recordChatDiagnostic('failed');status.textContent = ['invalid_attachment','invalid_reference'].includes(error.code)?error.message:mutation ? 'Delivery could not be confirmed. Reload the session before sending again.' : error.code==='history_changed' ? refreshNeeded : 'Chat is unavailable. Check the Hermes gateway, then retry.';element('chat-retry').hidden=false;if(mutation&&!['invalid_attachment','invalid_reference'].includes(error.code)){uncertain=true;markIncomplete();}}
+    finally {
+      busy=false;render();
+      if(reconnectQueued)reconnectChat();
+    }
   }
   async function history(direction = 'latest') {
     const next = direction === 'older' ? offset+rows.length : direction === 'newer' ? Math.max(0,offset-50) : 0;
@@ -251,11 +281,11 @@ export function mountChat(libraries) {
     loadingOlder=true;
     try{await history('older');await fillUnderfilled(19);status.textContent=olderNotice;}
     catch(error){historyFailure(error);}
-    finally{loadingOlder=false;render();}
+    finally{loadingOlder=false;render();if(reconnectQueued)reconnectChat();}
   }
   async function initialize() {
     recordChatDiagnostic('connecting');
-    historyReady=false;
+    reconnectNeeded=false;historyReady=false;
     const data=await api('/fixed',{});
     if(data.session?.id!=='nedcom-main'||data.session.title!=='NED Chat'||data.session.source!=='api_server')throw new Error('Unavailable');
     sessionId=data.session.id;
@@ -285,7 +315,20 @@ export function mountChat(libraries) {
     uncertain=false;
     recordChatDiagnostic('ready');
   }
-  document.addEventListener('ned-auth-restored',()=>void action(initialize));
+  function reconnectChat(){
+    if(!reconnectNeeded||authLost){reconnectQueued=false;return;}
+    if(busy||loadingOlder){reconnectQueued=true;return;}
+    reconnectQueued=false;
+    void action(initialize);
+  }
+  document.addEventListener('ned-auth-lost',()=>{authLost=true;reconnectNeeded=false;reconnectQueued=false;});
+  document.addEventListener('ned-auth-restored',()=>{
+    authLost=false;reconnectNeeded=true;
+    reconnectChat();
+  });
+  globalThis.addEventListener?.('offline',()=>{if(sessionId)reconnectNeeded=true;});
+  globalThis.addEventListener?.('online',reconnectChat);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)reconnectChat();});
   element('older').addEventListener('click',()=>void loadOlder());
   element('newer').addEventListener('click',()=>void action(()=>history('newer')));
   element('latest').addEventListener('click',()=>void action(async()=>{await history();await fillUnderfilled();bottom(true);}));
