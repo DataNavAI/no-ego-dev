@@ -761,7 +761,7 @@ Coverage: FR-073 and FR-074 → CUJ-026 → TC-044, with lifecycle and history c
 
 A reviewer can distinguish functional browser success from visual and interaction polish. A user can distinguish the two speakers and primary action with a quiet, accessible chat palette.
 
-- FR-075: Use a near-white chat canvas and composer, cool gray assistant replies, and pale blue user replies and ready Send. Keep user replies aligned right and assistant replies aligned left, including short replies. Preserve visible author labels and focus, accessible foreground contrast, keyboard behavior and project workspace appearance.
+- FR-075: Use a near-white chat canvas and composer, cool gray assistant replies, and pale blue user replies and ready Send. Keep user replies aligned right and assistant replies aligned left, including short replies. Label assistant replies NED while preparing, streaming, and in history. Preserve visible focus, accessible foreground contrast, keyboard behavior and project workspace appearance.
 - FR-076: Video reviews use the weighted [chat video evaluation](design/chat-video-evaluation.md) in addition to TC-044. Score each device independently and treat missing required evidence and critical UI failures as a failed threshold.
 
 ### TC-045: Palette and stricter video review
