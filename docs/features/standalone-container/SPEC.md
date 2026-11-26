@@ -24,6 +24,8 @@ Assumptions: Docker supports Linux arm64 or amd64; ports are published on host l
 - FR-010: After authentication, the dashboard root redirects to `/sessions`, retaining the query string (including profile selection). Unauthenticated access must still use the existing authentication gate; explicit dashboard/API/asset routes remain unchanged. A compatibility patch to the pinned upstream server must fail the image build if the expected upstream source identity changes.
 - FR-011: Health checks connect only to the internal dashboard and COM endpoints while sending the exact configured COM Host, including a custom external port. Default and remapped loopback origins must both report healthy when the real services are healthy. Non-200 responses, malformed or wrong health payloads, connection errors and bounded request timeouts must fail health.
 
+- FR-016: The image exposes its preinstalled Google Chrome for Testing as `google-chrome` on PATH without downloading a duplicate browser. Actual-image CI on native AMD64 and ARM64 runs credential-free functional checks of the essential toolchain as `hermes`, in an isolated network-disabled container with disposable HOME/fixtures. Missing tools, incorrect results and bounded timeouts fail with a named case; no version-only browser pass.
+
 ## Critical user journeys
 ### CUJ-001: First run
 Actor: operator. Critical because assembling both actual services and the entire profile cannot be proven by syntax tests.
@@ -46,6 +48,12 @@ Actor: operator. Critical because healthy services alone do not prove model acce
 Starting state: valid locally stored OpenAI Codex token, explicit operator authorization and fresh test-owned volumes.
 Actions: export a private access-only runtime snapshot, start the container, run a bounded one-shot model query, remove test resources.
 Success: expected model reply, unchanged source auth file, no refresh token or unrelated credentials imported. Failure: expired or rejected tokens require operator reauthentication; never rotate the host refresh token or automatically copy other stores.
+
+### CUJ-005: Use the installed development toolchain
+Actor: agent/operator. Critical because an installed binary can still have missing native libraries or fail to execute on one architecture.
+Starting state: built NED image; no model/provider credentials or host profile mounts.
+Actions: run `npm run test:container`; the runner executes the offline tool suite as hermes, then existing lifecycle acceptance.
+Success: shell, source control/search, archive/crypto, compilers, Python/Node/native SQLite, local npm/npx, media, CLI and Chrome JS/screenshot roundtrips pass. Failure: named nonzero case, preserve image identity in CI and correct the image; test-owned container/fixtures are removed.
 
 ## Detailed test cases
 ### TC-001: Container COM adapter enforces origin and shutdown
@@ -127,6 +135,18 @@ Success: expected model reply, unchanged source auth file, no refresh token or u
 - Cleanup: close the socket and remove its temporary directory.
 - Pass evidence: named automated case with every assertion passing.
 
+### TC-009: Essential installed tools execute real workflows
+- Journey / requirements: CUJ-005 / FR-007, FR-008, FR-016
+- Level / automation: manual; actual-image integration procedure below is also executed by native container CI. [tool suite](../../../scripts/container/test-tools.py), [Docker runner](tests/container_acceptance.py).
+- Preconditions / fixtures: Docker daemon, built pinned NED image, native host matching `--expected-architecture`; fresh network-disabled, read-only-root test container running as hermes with writable test-only `/tmp`; [synthetic broken browser](tests/fixtures/broken-chrome.sh) for negative variants. No credentials, host HOME, provider access or persisted state.
+- Given: image includes its documented essential tools and a Google Chrome for Testing browser.
+- When: run `npm run test:container -- --context <context> --expected-architecture arm64` (amd64 on a native x64 runner), or reuse `--image <tag>`.
+- Then: all nine named tool groups return pass; final receipt includes tool results, image/platform identity and cleanup. Any missing/broken tool, nonzero subprocess, wrong payload or deadline failure exits nonzero, never skip.
+- Steps and assertions: shell pipelines operate on synthetic text; Git commits/reads a local fixture and rg matches/misses; tar/gzip preserve binary bytes, OpenSSL matches SHA256 and OpenSSH derives a generated key; Make/GCC/G++ build and run exact-output binaries; Hermes Python SQLite and NED YAML roundtrip; Node native SQLite returns42 and offline npm packs/installs a local package whose npx CLI returns `NED_NPM_42`; FFmpeg generates audio that ffprobe identifies as mono PCM; NED/Hermes/browser-harness CLI load and AWS generates a credential-free JSON skeleton; curl reads a loopback fixture and Chrome executes JS to render `NED_BROWSER_42` plus emits a PNG screenshot.
+- Variants / negative cases: an unavailable-browser fixture returns127 and fails the browser case; a synthetic browser that reports a valid version but leaves DOM pending must fail JavaScript assertion. Both native architectures run the same suite; emulation is not a native pass. Network is disabled at Docker level; package registry/provider availability is inapplicable. External OAuth, cloud authorization, media codec breadth and interactive GUI behavior are outside this smoke contract.
+- Cleanup: runner removes only uniquely named test container and its anonymous volumes on success/failure. Python temporary HOME, package/cache, SQLite, keys, Chrome profiles and screenshots live only in test `/tmp` and are removed; no user data or image writes.
+- Pass evidence: actual image-ID/native-architecture receipt, nine named pass rows, negative probe fails for intended browser defect; CI on both native architectures. Merely discovering a file or reading this procedure is not a pass.
+
 ## Coverage and acceptance
 | Requirement | Journey | Test cases | Automated test / manual procedure |
 | --- | --- | --- | --- |
@@ -136,13 +156,15 @@ Success: expected model reply, unchanged source auth file, no refresh token or u
 | FR-004 | CUJ-001, CUJ-002 | TC-002, TC-004 | initializer / volume retention |
 | FR-005 | CUJ-001, CUJ-003 | TC-002, TC-003, TC-004 | context and runtime inspection |
 | FR-006 | CUJ-001, CUJ-003 | TC-003, TC-004 | documented commands exercised |
-| FR-007 | CUJ-001, CUJ-002, CUJ-003 | TC-003, TC-004 | `npm run test:container`; on-demand actual Docker script |
-| FR-008 | CUJ-001, CUJ-002 | TC-003, TC-004 | Native GitHub matrix; `--expected-architecture amd64` / `arm64` |
+| FR-007 | CUJ-001, CUJ-002, CUJ-003, CUJ-005 | TC-003, TC-004, TC-009 | `npm run test:container`; on-demand actual Docker script |
+| FR-008 | CUJ-001, CUJ-002, CUJ-005 | TC-003, TC-004, TC-009 | Native GitHub matrix; `--expected-architecture amd64` / `arm64` |
 
 | FR-009 | CUJ-004 | TC-005 | Runtime-only token export and bounded real provider query |
 | FR-010 | CUJ-001 | TC-003 | Actual image redirect/query/auth assertions and first-login browser procedure |
 | FR-012, FR-013 | CUJ-002 | TC-006, TC-007 | Staging registration adapter and local promotion admission |
 | FR-011 | CUJ-001, CUJ-002 | TC-006, TC-003, TC-004 | Real HTTP health integration and default/custom image origins |
+
+| FR-016 | CUJ-005 | TC-009 | Offline image tool suite; native AMD64/ARM64 CI |
 
 ## Open questions and coverage gaps
 Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPTANCE.md). Native AMD64 and ARM64 matrix acceptance is required for the new architecture coverage; results in PR checks and the final manual-test receipt must identify actual executed candidates. Native browser visual inspection remains separate. Live model calls are outside credential-free acceptance; TC-005 records separate authorized provider evidence. No claim of artifact/task support before those independent changes merge.

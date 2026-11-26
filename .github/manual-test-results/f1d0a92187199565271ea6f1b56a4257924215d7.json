@@ -1,0 +1,89 @@
+{
+  "environment": "macOS ARM64 host, explicit Colima eval Linux ARM64 daemon, pinned NED/Hermes image, Python3.14/Node25 local gates. Fresh network-disabled read-only-root tool containers run as hermes with private tmpfs HOME; no host profiles or provider credentials.",
+  "commands": [
+    "npm run lint",
+    "npm run test:all (small/medium automated cases, Python and real pinned Hermes/aimock integration)",
+    "python -m pytest (215 passed,9 existing opt-in skips)",
+    "npm run test:container -- --context colima-eval --expected-architecture arm64 (fresh final-code build and actual image execution)",
+    "Actual missing-browser image rejection: previous committed runner hides group, corrected runner emits TC-009 offline installed tools: curl/chrome-javascript/screenshot and exits1; owned test resources cleaned",
+    "Both browser-negative variants execute inside container acceptance: unavailable executable127 and valid-version/no-render stub both fail the intended browser case",
+    "Issue247 controlled legacy RED on Linux Node20.20.2/22.23.5; corrected full TC-003 three times plus15 focused repetitions on each; Git2.47.3",
+    "Installed commit hook repeats full lint/small/medium/spec/Python/real-Hermes gates on source and evidence commits"
+  ],
+  "observations": "TC-003/004/009 actual native ARM64 image acceptance PASS. Nine tool groups exercise synthetic workflows: shell/files, local Git/ripgrep, tar/gzip/OpenSSL/OpenSSH key roundtrip, GCC/G++/Make binaries, Python SQLite/YAML and pip dependency consistency, Node native SQLite plus offline local npm pack/install/npx, FFmpeg/ffprobe generated audio, NED/Hermes/browser-harness CLI and AWS offline API skeleton, curl plus real Google Chrome JavaScript DOM rendering and screenshot. Chrome156.0.8078.80 was already in pinned Hermes; build exposes it on PATH without another download. Missing/version-only browser stubs rejected; runner named-case diagnostics confirmed against a deliberately broken image. Existing service authentication/Host-Origin denial, service restart, graceful shutdown, volume/profile/database persistence and negative startup also pass. All test-owned containers, anonymous/named volumes and synthetic runtime credentials removed. No live model/cloud request, host credential/profile mount, production change or broader SDK/provider/SSH-auth/interactive-GUI qualification. Canonical spec runner manual NOT RUN entries remain distinct from this actual on-demand Docker evidence. Native AMD64 and ARM64 exact-head CI are separate required merge checks. Pre-existing CI blocker247 repaired with a test-only committed-running-record barrier, preserving the original10second deadline and all real live-child ownership/promotion/removal/recovery assertions. Controlled interleaving reproduces the legacy2!=1 race on both Linux Node20/22; corrected full TC-003 passes three times and affected two tests15 further times per version. No runtime policy change, skipped gate, relaxed assertion or unchanged blind retry. Initial bookworm fixtures lacked required Git check-attr --source and did not count as full passes; qualifying trixie fixtures use Git2.47.3. Earlier named-tool diagnostic evidence remains applicable: its source is unchanged by the readiness-only correction.",
+  "candidate_sha": "f1d0a92187199565271ea6f1b56a4257924215d7",
+  "tested_at": "2026-11-26T22:43:00.141071+00:00",
+  "result": "pass",
+  "container_acceptance": {
+    "result": "pass",
+    "cases": [
+      "TC-003",
+      "TC-004",
+      "TC-009"
+    ],
+    "tools": {
+      "result": "pass",
+      "cases": [
+        "shell/coreutils",
+        "git/ripgrep",
+        "archive/crypto/ssh",
+        "gcc/g++/make",
+        "python/sqlite/yaml",
+        "node/npm/npx/native-sqlite",
+        "ffmpeg/ffprobe",
+        "ned/hermes/browser-harness/aws",
+        "curl/chrome-javascript/screenshot"
+      ],
+      "cleanup": "temporary fixtures removed",
+      "negative_browser_variants": [
+        "missing",
+        "version-only"
+      ]
+    },
+    "image_id": "sha256:f6d82a91ea8f0981453a6a8042946a0d54b02309bc475c223a75a5cf53b6c150",
+    "tested_at": "2026-11-26T22:41:39.337804+00:00",
+    "stop_seconds": 3.36,
+    "platform": "aarch64",
+    "host_architecture": "arm64",
+    "docker_architecture": "arm64",
+    "image_architecture": "arm64",
+    "node_architecture": "arm64",
+    "expected_architecture": "arm64",
+    "native_execution": true,
+    "com_origins": [
+      "http://127.0.0.1:8787",
+      "http://127.0.0.1:8790"
+    ],
+    "dashboard_root": "authenticated /sessions redirect with query retained",
+    "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
+    "cleanup": "owned containers, volumes and synthetic runtime credentials removed"
+  },
+  "linux_readiness": {
+    "20": {
+      "full_tc003_passes": 3,
+      "focused_pair_repetitions": 15,
+      "legacy_controlled_red": true,
+      "node": "v20.20.2",
+      "git": "git version 2.47.3",
+      "platform": "Linux ARM64"
+    },
+    "22": {
+      "full_tc003_passes": 3,
+      "focused_pair_repetitions": 15,
+      "legacy_controlled_red": true,
+      "node": "v22.23.5",
+      "git": "git version 2.47.3",
+      "platform": "Linux ARM64"
+    }
+  },
+  "evidence_sha256": {
+    "ned-image-repaired-final-acceptance.txt": "0ffe5bd12867d42eb70673a9e7132b9b7cbfbf76125f50775eb904faa9ce8ce6",
+    "ned-image-missing-diagnostic.txt": "1e1cfc34334f0a6510bdcc8d3dcf551d67d07eb1fc6bb7d55b019b42b7907d7b",
+    "ned-owner-linux20-trixie-tests.txt": "0f243142bd513dd6cdbdb24a4e7f99f931521bb72fd4c715f51f9b566011ac4a",
+    "ned-owner-linux20-full-repeats.txt": "680fa3cce2efb3c670e4b7b0b3155fe5377b8cb71b78699165690f501ed2b336",
+    "ned-owner-linux20-red.txt": "5168fe42118462fc6b5a663d9b894bedfe4e9739acbf7dc58221daae9ad0a150",
+    "ned-owner-linux22-trixie-tests.txt": "e99c7695034597b1e65415951ca93f9f9fe9d3b7192eb56ae096d6ea6112110d",
+    "ned-owner-linux22-full-repeats.txt": "7ab951e1fb057c03e3e8edef451cc957b7786955b96b8dab82f44516573a81c5",
+    "ned-owner-linux22-red.txt": "63eb896408aea02659dafd9220a0c2c0a374d366c6effed26f1f5f80c02f246b"
+  }
+}

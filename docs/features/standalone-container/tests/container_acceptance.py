@@ -17,6 +17,9 @@ import urllib.request
 import base64
 
 ROOT = Path(__file__).resolve().parents[4]
+TOOL_CASES = {"shell/coreutils", "git/ripgrep", "archive/crypto/ssh", "gcc/g++/make",
+              "python/sqlite/yaml", "node/npm/npx/native-sqlite", "ffmpeg/ffprobe",
+              "ned/hermes/browser-harness/aws", "curl/chrome-javascript/screenshot"}
 
 
 def main():
@@ -33,17 +36,17 @@ def main():
     name = identity
     image = args.image or identity + ":test"
     volumes = [identity + "-" + part for part in ("profile", "db", "projects", "unrelated")]
-    containers = [name, name + "-noauth", name + "-unrelated", name + "-seed"]
+    containers = [name, name + "-noauth", name + "-unrelated", name + "-seed", name + "-tools", name + "-broken-tools"]
     stage = "Docker prerequisite"
     clean = []
     built = False
     resource_names = {"containers": containers, "volumes": volumes}
     print(json.dumps({"test_resources": resource_names}), flush=True)
 
-    def command(*arguments, timeout=180, check=True):
+    def command(*arguments, timeout=180, check=True, input=None):
         result = subprocess.run(  # noqa: S603 - fixed Docker executable, argv, no shell
             cli + list(arguments), capture_output=True, text=True,
-            timeout=timeout, check=False, cwd=ROOT,
+            timeout=timeout, check=False, cwd=ROOT, input=input,
         )
         if check and result.returncode != 0:
             # Docker stderr can contain operator config. Never print arbitrary output.
@@ -84,6 +87,34 @@ def main():
         image_architecture = docker("image", "inspect", image, "--format", "{{.Architecture}}")
         if args.expected_architecture:
             assert image_architecture == args.expected_architecture  # noqa: S101
+        stage = "TC-009 offline installed tools"
+        tool_run = command("run", "--name", containers[4], "--network", "none", "--read-only",
+                             "--tmpfs", "/tmp:rw,exec,mode=1777", "--user", "hermes", "--workdir", "/tmp",  # noqa: S108 -- private disposable container tmpfs, no host mount
+                             "--entrypoint", "/opt/ned/python/bin/python", image,
+                             "/opt/ned/scripts/container/test-tools.py", timeout=300, check=False)
+        tool_receipt = json.loads(tool_run.stdout.splitlines()[-1])
+        if tool_run.returncode:
+            # Only a known case name reaches diagnostics; never relay raw output.
+            if tool_receipt.get("case") in TOOL_CASES:
+                stage += ": " + tool_receipt["case"]
+            raise RuntimeError("Installed tool suite failed")
+        assert tool_receipt["result"] == "pass" and set(tool_receipt["cases"]) == TOOL_CASES and len(tool_receipt["cases"]) == len(TOOL_CASES)  # noqa: S101
+        broken_browser = (ROOT / "docs/features/standalone-container/tests/fixtures/broken-chrome.sh").read_text()
+        for variant in ("missing", "version-only"):
+            rejected = command("run", "-i", "--name", containers[5], "--network", "none", "--read-only",
+                               "--tmpfs", "/tmp:rw,exec,mode=1777", "--user", "hermes", "--workdir", "/tmp",  # noqa: S108 -- container-private tmpfs
+                               "-e", "NED_BROWSER_FIXTURE=" + variant, "--entrypoint", "bash", image, "-c",
+                               'mkdir -p /tmp/ned-fake-bin; cat > /tmp/ned-fake-bin/google-chrome; '
+                               'chmod 700 /tmp/ned-fake-bin/google-chrome; export PATH="/tmp/ned-fake-bin:$PATH"; '
+                               'exec /opt/ned/python/bin/python /opt/ned/scripts/container/test-tools.py',
+                               input=broken_browser, timeout=300, check=False)
+            failure = json.loads(rejected.stdout.splitlines()[-1])
+            assert rejected.returncode == 1 and failure["case"] == "curl/chrome-javascript/screenshot" and failure["result"] == "fail"  # noqa: S101
+            expected_error = "google-chrome failed" if variant == "missing" else "Chrome JavaScript DOM rendering"
+            assert expected_error in failure["error"]  # noqa: S101
+            docker("rm", "-v", containers[5])
+        tool_receipt["negative_browser_variants"] = ["missing", "version-only"]
+        print(json.dumps({"case": "TC-009", "tools": tool_receipt}), flush=True)
         with tempfile.TemporaryDirectory(prefix=identity + "-") as temp:
             envfile = Path(temp) / "runtime.env"
             password = secrets.token_urlsafe(32)
@@ -226,7 +257,7 @@ def main():
             content = docker("run", "--name", containers[3], "--entrypoint", "sh", "-v", volumes[3] + ":/check", image,
                              "-c", "test ! -e /check/SOUL.md && cat /check/sentinel")
             assert content == "unchanged"  # noqa: S101
-            receipt = {"result": "pass", "cases": ["TC-003", "TC-004"], "image_id": image_id,
+            receipt = {"result": "pass", "cases": ["TC-003", "TC-004", "TC-009"], "tools": tool_receipt, "image_id": image_id,
                        "tested_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                        "stop_seconds": round(stop_seconds, 2), "platform": daemon_raw,
                        "host_architecture": host_architecture, "docker_architecture": daemon_architecture,

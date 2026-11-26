@@ -1,0 +1,69 @@
+{
+  "environment": "macOS ARM64 host, explicit Colima eval Linux ARM64 daemon, pinned NED/Hermes image, Python3.14/Node25 local gates. Fresh network-disabled read-only-root tool containers run as hermes with private tmpfs HOME; no host profiles or provider credentials.",
+  "commands": [
+    "npm run lint",
+    "npm run test:all (small/medium automated cases, Python and real pinned Hermes/aimock integration)",
+    "python -m pytest (215 passed,9 existing opt-in skips)",
+    "npm run test:container -- --context colima-eval --expected-architecture arm64 (fresh final-code build and actual image execution)",
+    "Actual missing-browser image rejection: previous committed runner hides group, corrected runner emits TC-009 offline installed tools: curl/chrome-javascript/screenshot and exits1; owned test resources cleaned",
+    "Both browser-negative variants execute inside container acceptance: unavailable executable127 and valid-version/no-render stub both fail the intended browser case"
+  ],
+  "observations": "TC-003/004/009 actual native ARM64 image acceptance PASS. Nine tool groups exercise synthetic workflows: shell/files, local Git/ripgrep, tar/gzip/OpenSSL/OpenSSH key roundtrip, GCC/G++/Make binaries, Python SQLite/YAML and pip dependency consistency, Node native SQLite plus offline local npm pack/install/npx, FFmpeg/ffprobe generated audio, NED/Hermes/browser-harness CLI and AWS offline API skeleton, curl plus real Google Chrome JavaScript DOM rendering and screenshot. Chrome156.0.8078.80 was already in pinned Hermes; build exposes it on PATH without another download. Missing/version-only browser stubs rejected; runner named-case diagnostics confirmed against a deliberately broken image. Existing service authentication/Host-Origin denial, service restart, graceful shutdown, volume/profile/database persistence and negative startup also pass. All test-owned containers, anonymous/named volumes and synthetic runtime credentials removed. No live model/cloud request, host credential/profile mount, production change or broader SDK/provider/SSH-auth/interactive-GUI qualification. Canonical spec runner manual NOT RUN entries remain distinct from this actual on-demand Docker evidence. Native AMD64 and ARM64 exact-head CI are separate required merge checks.",
+  "candidate_sha": "b7864ff4aa964faa889a11ddeb6be1f5fe9805c1",
+  "tested_at": "2026-11-26T22:17:35.900471+00:00",
+  "result": "pass",
+  "container_acceptance": {
+    "result": "pass",
+    "cases": [
+      "TC-003",
+      "TC-004",
+      "TC-009"
+    ],
+    "tools": {
+      "result": "pass",
+      "cases": [
+        "shell/coreutils",
+        "git/ripgrep",
+        "archive/crypto/ssh",
+        "gcc/g++/make",
+        "python/sqlite/yaml",
+        "node/npm/npx/native-sqlite",
+        "ffmpeg/ffprobe",
+        "ned/hermes/browser-harness/aws",
+        "curl/chrome-javascript/screenshot"
+      ],
+      "cleanup": "temporary fixtures removed",
+      "negative_browser_variants": [
+        "missing",
+        "version-only"
+      ]
+    },
+    "image_id": "sha256:9cce61668e5e4280d980464a48f43f432e3943c324752c11691fcda59f1dbb94",
+    "tested_at": "2026-11-26T22:16:51.485147+00:00",
+    "stop_seconds": 3.44,
+    "platform": "aarch64",
+    "host_architecture": "arm64",
+    "docker_architecture": "arm64",
+    "image_architecture": "arm64",
+    "node_architecture": "arm64",
+    "expected_architecture": "arm64",
+    "native_execution": true,
+    "com_origins": [
+      "http://127.0.0.1:8787",
+      "http://127.0.0.1:8790"
+    ],
+    "dashboard_root": "authenticated /sessions redirect with query retained",
+    "observations": "Actual authenticated dashboard and COM HTTP/perimeter, complete profile/CLI, service replacement, clean shutdown, retained state and negative startup passed; no model calls.",
+    "cleanup": "owned containers, volumes and synthetic runtime credentials removed"
+  },
+  "diagnostic_regression": {
+    "baseline": "generic TC-009 failure, group absent",
+    "corrected": "TC-009 offline installed tools: curl/chrome-javascript/screenshot",
+    "expected_exit_code": 1
+  },
+  "evidence_sha256": {
+    "ned-image-final-code-acceptance.txt": "b1985de19d590653eaf85e2c48c22145163ac3442952898ca817b17b8b074d48",
+    "ned-image-missing-diagnostic.txt": "1e1cfc34334f0a6510bdcc8d3dcf551d67d07eb1fc6bb7d55b019b42b7907d7b",
+    "ned-image-baseline-diagnostic.txt": "6565aea7d09633aa90b7b9888aa9e9aa23ddf827bb28f6a971fc0e4813930658"
+  }
+}
