@@ -6,18 +6,20 @@ Operator setup: [Usage](USAGE.md)
 
 ## User outcome and scope
 
-A NED operator can choose which GitHub account, AWS role, or GoDaddy account NED uses. A skill requests a connection through the CLI, and the operator completes it in private COM Settings. This initial release targets native NEDCOM on macOS/Linux. It does not configure commit authorship, change global provider CLI sessions, provision provider accounts, or copy existing IFA grants. Existing profiles that require guarded IFA retain that policy. Public tunnels, the isolated named NED staging runtime, and container/hosted COM are excluded until their owner authorization and credential custody are qualified.
+A NED operator can choose which GitHub account, AWS role, or GoDaddy account NED uses. A skill requests a connection through the CLI, and the operator completes it in private COM Settings. This initial release targets native NEDCOM on macOS/Linux. It does not configure commit authorship, change global provider CLI sessions, provision provider accounts, or copy existing IFA grants. Existing profiles that require guarded IFA retain that policy. A Hub-registered standalone container also supports AWS for its authenticated Hub owner. Public tunnels, hosted COM, and other container providers remain outside scope.
 
 GitHub uses a configured device-enabled GitHub App client ID. Its installation and app permissions control repository access. AWS uses IAM Identity Center in the commercial AWS partition with an AWS access portal URL, Identity Center region and explicitly selected assigned account/role. GoDaddy Domains v3 uses a scoped PAT and verifies access to an operator-selected domain through the registered domain detail endpoint. Verification probes do not certify write authority.
 
 ## Requirements
 
-- FR-001. `ned identity connect <github|aws|godaddy> --url <private-loopback-COM-origin>` creates an expiring, repeatable request and outputs only a status and COM location. The Settings panel can also request a connection. Exact-origin browser writes and a purpose-specific header are required; public, isolated staging, and hosted modes reject all routes. Local COM trusts its OS account like existing local Settings.
+- FR-001. `ned identity connect <github|aws|godaddy> --url <private-loopback-COM-origin>` creates an expiring, repeatable request and outputs only a status and COM location. The Settings panel can also request a connection. Exact-origin browser writes and a purpose-specific header are required; public, isolated staging, and hosted modes reject all routes except the owner-only standalone AWS path in FR-006. Local COM trusts its OS account like existing local Settings.
 - FR-002. GitHub and AWS use official provider device authorization, honor polling intervals, and validate the returned identity through read-only provider calls. AWS proves the requested account and role are assigned by obtaining temporary role credentials. GoDaddy accepts only a PAT in the private Settings password input and verifies the exact domain. Show the verified identity and require explicit confirmation before replacing any existing connection.
 - FR-003. Pending requests expire within ten minutes and disappear on restart. Opaque request IDs bind each approval to the reviewed attempt. Polling, cancel, expiry, stale controls and overlapping requests cannot overwrite an existing connection. Confirmed records use the encrypted vault in a separate namespace inaccessible through generic Secrets API or CLI. Status exposes only provider identity and connection metadata. Disconnect deletes the local connection and identifies the provider as the owner of upstream revocation.
 - FR-004. `ned identity exec github -- gh api <relative-endpoint> …` and `ned identity exec aws -- aws …` use the selected connection in an isolated provider CLI environment. `ned identity domain` performs the scoped GoDaddy domain read without exporting a PAT. Unavailable or expired connection fails closed without ambient fallback. GitHub access expires per provider and can be reconnected. AWS can mint short-lived credentials for its stored role while the portal token is valid, and requires reconnection when it expires. No token values appear in NED status, browser responses, process arguments, or logs. An operator invoking a provider CLI remains responsible for the effects of that command.
 
 - FR-005. A pending provider request created during a chat turn appears as a provider-specific action in Chat when the reply ends. It opens the existing private Settings flow and clears after confirmation or cancellation. Chat text cannot create this action. Once connected, a subsequent explicit chat request can use the confirmed identity.
+
+- FR-006. A Hub-registered standalone container can queue AWS through its local agent CLI. Only the owner-authorized Hub browser transport can view, complete, or disconnect this enrollment. The container provides its own AWS CLI. Other providers, unauthenticated requests, direct browser transport, and the public tunnel cannot use this route.
 
 ## Critical user journeys
 
@@ -91,13 +93,24 @@ Starting from a pending request or a connected account, the operator can cancel 
 - Cleanup: close the browser and both servers, then remove the test home.
 - Pass evidence: the browser transcript, CLI status, and mock provider’s authorization/read counters agree.
 
+### TC-006: Standalone AWS through the Hub boundary
+
+- Journey / requirements: CUJ-001, CUJ-002 / FR-002–FR-006.
+- Level / automation: integration; [TC-006.test.js](tests/TC-006.test.js).
+- Preconditions: disposable container adapter and credential home, authenticated Hub protocol fixture, synthetic AWS device and protected-resource endpoints.
+- Given: an owner opens Chat through the Hub bridge. When the agent queues AWS and the owner approves the assigned role, then Chat shows Connect AWS and a retry uses the bound identity.
+- Variants: reject anonymous and cross-account requests at ingress, reject direct browser actions, and leave other providers unavailable.
+- Cleanup: close the listeners, browser and fake provider, and remove fixture state.
+- Pass evidence: automated browser scenario and authorization boundary assertions.
+
 ## Coverage and acceptance
 
 | Requirement | Journey | Test cases |
 | --- | --- | --- |
 | FR-001, FR-002, FR-003 | CUJ-001, CUJ-002 | TC-001, TC-002, TC-003, TC-004 |
 | FR-004 | CUJ-001, CUJ-002 | TC-001, TC-003, TC-005 |
-| FR-005 | CUJ-001 | TC-005 |
+| FR-005 | CUJ-001 | TC-005, TC-006 |
+| FR-006 | CUJ-001, CUJ-002 | TC-006 |
 
 ## Open questions and coverage gaps
 

@@ -1,3 +1,4 @@
+FROM amazon/aws-cli@sha256:bc6b7bba44ce38f9604ede49c584824af919047ea03fbcc7c7610671fdef95d8 AS aws-cli
 # Maintained official multi-arch Hermes image; registry evidence in RUNBOOK.md.
 FROM nousresearch/hermes-agent@sha256:ef0650d523ee1b5ab32c779acabc446d9936869a9932591553688a62bcf0c42f AS subscription-runtime
 USER root
@@ -5,6 +6,8 @@ WORKDIR /opt/ned
 COPY scripts/subscription-runtime/ scripts/subscription-runtime/
 RUN /opt/hermes/.venv/bin/python /opt/ned/scripts/subscription-runtime/install.py --hermes-root /opt/hermes --bin-dir /usr/local/bin
 FROM subscription-runtime AS ned
+COPY --from=aws-cli /usr/local/aws-cli /usr/local/aws-cli
+RUN ln -s /usr/local/aws-cli/v2/current/bin/aws /usr/local/bin/aws && aws --version
 RUN /usr/bin/python3 -m venv /opt/ned/python && /opt/ned/python/bin/pip install --no-cache-dir PyYAML==6.0.3
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit && \
@@ -31,7 +34,7 @@ RUN chmod -R a+rX /opt/ned && \
     cp /opt/ned/scripts/container/run-com /etc/s6-overlay/s6-rc.d/ned-com/run && \
     touch /etc/s6-overlay/s6-rc.d/user/contents.d/ned-com && \
     touch /etc/s6-overlay/s6-rc.d/ned-com/dependencies.d/base
-ENV HERMES_DASHBOARD=1 HERMES_DASHBOARD_HOST=0.0.0.0 HERMES_DASHBOARD_PORT=9119 \
+ENV NED_CONTAINER=1 HERMES_DASHBOARD=1 HERMES_DASHBOARD_HOST=0.0.0.0 HERMES_DASHBOARD_PORT=9119 \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2 HERMES_SKIP_CONFIG_MIGRATION=1 NED_DATABASE_URL=/var/lib/ned/ned.sqlite \
     NED_COM_ORIGIN=http://127.0.0.1:8787
 VOLUME ["/opt/data", "/var/lib/ned", "/projects"]

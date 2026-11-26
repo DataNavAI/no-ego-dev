@@ -1,4 +1,4 @@
-# Connect a provider to native NED
+# Connect a provider to NED
 
 Start private `ned com` and use the loopback URL it prints. During development, use `node bin/ned.js` from this checkout for both COM and identity commands. Open **Settings → Provider connections**, or have the skill queue a request:
 
@@ -27,4 +27,14 @@ ned identity domain
 
 The GitHub wrapper accepts relative `gh api` paths. The AWS wrapper needs an installed AWS CLI. Both wrappers pass credentials only to a trusted provider executable and use separate CLI configuration. They do not grant a sandbox to the process or authorize command side effects. GoDaddy use currently provides a domain read. Reconnect when GitHub or AWS sessions expire. Disconnect removes the local connection. Use provider security settings to revoke upstream access.
 
-This feature is bound to the native NED OS home and private loopback COM. It does not use a project task database as a vault or alter existing guarded IFA access. Public tunnels, the isolated named NED staging runtime, Hub-bridged access and container COM do not expose these controls.
+Native provider connections are bound to the selected OS runtime home. The Hub-connected AWS flow below stores its identity in the standalone container profile. Public tunnels, managed hosted instances and other container provider flows remain unavailable. Guarded IFA policies still apply.
+
+## AWS in a Hub-registered standalone container
+
+From Chat on your instance in NED Hub, ask NED to use AWS. The instance runs
+`ned identity connect aws` locally. Select **Connect AWS** in Chat and follow the
+AWS IAM Identity Center sign-in in Settings. Confirm the displayed role and retry
+the original request. The container includes AWS CLI; the selected identity
+applies through `ned identity exec aws -- aws …`.
+
+If an upgrade retains a previously seeded container profile, synchronize the provider identity skill from the new image before starting a fresh chat. Preserve operator-edited skill files.

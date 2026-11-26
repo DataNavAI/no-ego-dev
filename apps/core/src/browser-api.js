@@ -10,9 +10,9 @@ import {createProjectReader,ProjectError} from './projects.js';
 
 const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
 
-export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,maintenance,identityOptions,identityEnabled=false,apiAuthenticated=()=>true}={}){
+export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,maintenance,identityOptions,identityEnabled=false,hubAwsIdentity=false,apiAuthenticated=()=>true}={}){
   const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
-  const identity=createIdentityHandler({githubClientId:env.NED_GITHUB_APP_CLIENT_ID,...identityOptions,home,env,enabled:identityEnabled&&secretsEnabled&&nativeIdentityAllowed(env)});
+  const identity=createIdentityHandler({githubClientId:env.NED_GITHUB_APP_CLIENT_ID,...identityOptions,home,env,enabled:secretsEnabled&&(hubAwsIdentity||identityEnabled&&nativeIdentityAllowed(env)),allowedProviders:hubAwsIdentity?['aws']:undefined});
   const projects=createProjectReader({databasePath,home,env});
   const models=modelSetup??createModelSetup({home,env,enabled:secretsEnabled});
   const live=(req,res)=>{try{return !res.destroyed&&apiAuthenticated(req);}catch{return false;}};

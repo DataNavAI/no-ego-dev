@@ -10,7 +10,7 @@ import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 export {expect};
-export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,identityOptions,onTurn,viewport={width:1280,height:900},deferLogin=false}={}){
+export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,identityOptions,onTurn,startApp,preparePage,viewport={width:1280,height:900},deferLogin=false}={}){
   const home=await mkdtemp(join(tmpdir(),'ned-chat-browser-'));
   let database,app,browser,gateway;
   t.after(async()=>{
@@ -56,8 +56,9 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
   const databasePath=join(home,'ned.sqlite');database=openNedDatabase({databaseUrl:databasePath});
-  app=createCommunicatorServer({modelSetup:modelSetup??configuredModelSetup(),databasePath,home,identityOptions,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}});
-  await app.listen();
+  const options={modelSetup:modelSetup??configuredModelSetup(),databasePath,home,identityOptions,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}};
+  if(startApp)app=await startApp(options);
+  else{app=createCommunicatorServer(options);await app.listen();}
   try{browser=await chromium.launch({headless:true,channel:'chromium'});}
   catch(error){throw new Error('Chromium is required. Run npm ci && npx playwright install --with-deps chromium before chat E2E tests.',{cause:error});}
   const page=await browser.newPage({viewport});page.setDefaultTimeout(10000);
@@ -68,6 +69,7 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
     if(edgeFixedFailures>0){edgeFixedFailures--;return route.fulfill({status:502,contentType:'text/plain',body:'Synthetic edge failure'});}
     return route.continue();
   });
+  await preparePage?.(page,app.url);
   await page.goto(app.url);
   if(!deferLogin){await page.locator('#access-token').fill(app.apiCredential);await page.locator('#access-submit').click();}
   const draft=page.locator('#chat-message');
