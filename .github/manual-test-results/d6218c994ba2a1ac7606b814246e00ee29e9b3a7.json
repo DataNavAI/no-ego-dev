@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "d6218c994ba2a1ac7606b814246e00ee29e9b3a7",
+  "result": "pass",
+  "tested_at": "2026-11-26T18:36:32.135635+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "commands": [
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-{051,052}.test.js docs/features/provider-identity/tests/TC-{005,006,007}.test.js"
+  ],
+  "observations": "Desktop and narrow Chromium show Jump to latest above the composer without shifting the transcript. The small visual viewport preserves composer and button access. Mobile AWS authorization starts from a NED message and leaves no action after confirmation. Project and Debug are available via navigation."
+}

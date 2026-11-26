@@ -47,8 +47,10 @@ export function mountDebugPane({document,view=window,request=fetch}){
     if(!opened){if(pane.open)pane.close();pane.hidden=true;pane.inert=true;}
   };
   const notifyLayout=()=>view.dispatchEvent(new Event('resize'));
-  const shut=()=>{opened=false;generation++;layout();notifyLayout();toggle.focus();};
+  const focusToggle=()=> (view.innerWidth<768?element('navigation-toggle'):toggle).focus();
+  const shut=()=>{opened=false;generation++;layout();notifyLayout();focusToggle();};
   const open=()=>{
+    if(view.innerWidth<768)element('mobile-navigation').open=false;
     opened=true;layout();notifyLayout();close.focus();renderEvents();
     const token=++generation;health.textContent='Checking…';
     void Promise.resolve().then(()=>request('/api/v1/health',{signal:AbortSignal.timeout(5000)})).then(async response=>{
