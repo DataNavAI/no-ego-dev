@@ -1,0 +1,13 @@
+{
+  "candidate_sha": "3319eed4791b07103838eca3c363ea0dc184e8f6",
+  "result": "pass",
+  "tested_at": "2026-11-26T11:51:25.109397+00:00",
+  "environment": "macOS ARM64 pinned Node22.14.0; real Chromium with synthetic project/chat; disposable Git repositories",
+  "commands": [
+    "npm run lint",
+    "npm run test:all (commit hook)",
+    "node --test docs/features/manual-release-acceptance/tests/TC-001.test.js tests/cli/manual-test-gate.test.js",
+    "node /Volumes/Agent/Codex/worktrees/muse-layout/verify-layout.mjs"
+  ],
+  "observations": "Final integrated light Muse layout, NED package version and current saved instance model render at desktop/mobile sizes. Browser checks preserve draft, references, selected context/Preview and resized layout; no overflow at320px or200% text. Model checks distinguish saved configuration from unsaved choices, clear stale identity on failure/auth loss and preserve setup retry. New exact-candidate receipt gate retains legacy and stale-candidate rejection and passes12 integration assertions including independent legacy merge without conflict. Full lint, all automated feature specs, Python215passed9existing skips, and10 actual Hermes integration cases passed under Node22 via normal commit hook. Self-review complete. Private Muse content not copied. Existing unrelated live-provider/manual/physical-device cases not claimed."
+}
