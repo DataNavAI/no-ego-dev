@@ -1,14 +1,14 @@
 {
-  "candidate_sha": "e50533656c38d692af7d08447f95d113c8d86017",
+  "candidate_sha": "db93f3942b5d54a8141663bd6dcb6b40342f6be9",
   "result": "pass",
-  "tested_at": "2026-11-26T08:59:04.064014+00:00",
-  "environment": "macOS ARM64, Colima Linux ARM64, direct Docker single-container launch and synthetic Hub",
+  "tested_at": "2026-11-26T09:40:20.423Z",
+  "environment": "macOS ARM64; real Chromium with isolated synthetic NED home, auth and gateway; desktop1280x844 and mobile320x844",
   "commands": [
     "npm run lint",
-    "npm run test:all",
-    "actionlint .github/workflows/public-container.yml",
-    "docker build --provenance=false --sbom=false --tag ned-public-release-test:231 .",
-    "python3 /tmp/ned-public-run-test.py"
+    "npm test",
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node /Volumes/Agent/Codex/worktrees/ui-version/verify-version.mjs"
   ],
-  "observations": "A direct Docker launch reached an authenticated Hub fixture and remained healthy. Only loopback COM was published, three named data volumes were attached, and the mounted credential was copied into a Hermes-owned 0600 file. The synthetic Hub token was absent from logs and container environment. Workflow lint passed. Publishing a live registry manifest and verifying public anonymous pull are post-merge checks."
+  "observations": "Served version matches root package metadata and CLI source (0.2.1). Inspected both viewport captures: muted version beside NED,6px gap, no horizontal overflow, browser errors empty. Existing HTTP lifecycle case passes with visible/accessibility version assertions and GET/HEAD protections. Full local Node/spec and real Hermes/mock-model integration suites pass; Python215passed9existing skips. Self-review confirmed only root HTML is templated, unchanged API protocol/auth and no hardcoded second version. Existing unrelated manual/live-provider cases not claimed."
 }
