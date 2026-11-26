@@ -16,6 +16,8 @@ A hosted NED instance may update automatically after five quiet minutes, without
 - FR-005: The Native maintenance protocol runs only on its authenticated managed control connection, binds identity/generation, bounds pending requests/responses, rejects malformed/stale inputs and loses authority on reconnect. It uses Core's internal service API; browser tunnel paths do not gain maintenance authority.
 - FR-006: Authenticated meaningful UI pointer/keyboard activity is rate-bounded, content-free and updates the quiet clock. Ordinary API work is rejected with retryable503 while committed; reads/health/recovery remain available. Existing auth/Origin/profile isolation and model setup behavior remain enforced.
 
+- FR-007: Unsaved visible provider/secret password fields defer automatic maintenance using only a pending-input boolean. Clearing or successfully saving the input clears that marker; neither values nor field names are sent. Hidden/disabled saved controls do not fabricate pending work.
+
 ## Critical user journeys
 
 ### CUJ-001: Busy to prepared to safely committed
@@ -46,7 +48,7 @@ Actor: user and Native connector. A background chat, Core attempt, command, uplo
 
 ### TC-002: API, background scope and Native protocol boundaries
 
-- Journey / requirements: CUJ-003 / FR-004–006.
+- Journey / requirements: CUJ-003 / FR-004–007.
 - Level / automation: integration; [TC-002.test.js](tests/TC-002.test.js).
 - Preconditions / fixtures: real temporary Core/COM listener and authenticated local WebSocket Hub fixture; controlled synthetic work/provider boundary, no real model keys.
 - Given: valid current adapter, user activity/background work and a pending intent.
@@ -56,11 +58,13 @@ Actor: user and Native connector. A background chat, Core attempt, command, uplo
 - Cleanup: close listeners/sockets/children and fixture databases; remove fixture state only.
 - Pass evidence: HTTP/WS responses and side-effect/persistence assertions. Published Linux process qualification and staged busy→idle auto-update are separate Hub182 release gates.
 
+TC-002 also covers unsaved provider API-key input across a full quiet window, content-free metadata, explicit clear and successful save. Visible password inputs are combined with composer drafts; input/reset and render changes recheck only presence. Hidden/disabled controls are excluded and field values/names never enter activity metadata.
+
 ## Coverage and acceptance
 
 | Requirement | Journeys | Tests |
 | --- | --- | --- |
 | FR-001–004 | CUJ-001/002 | TC-001 |
-| FR-004–006 | CUJ-003 | TC-002 |
+| FR-004–007 | CUJ-003 | TC-002 |
 
 Source implementation and automated cases are present. Device-login lifecycle coverage is shared with [model setup TC-003](../model-setup/tests/TC-003.test.js). TC-002 includes an actual Core listener, long-lived synthetic chat provider stream, Native WebSocket control connection and served Chromium keyboard interaction. Linux inventory cases use a synthetic process filesystem; real managed-container qualification, merged local installation and Hub test/staging automatic-update acceptance remain separate release gates and are not established by these fixtures.
