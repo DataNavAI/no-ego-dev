@@ -23,6 +23,8 @@ GitHub uses a configured device-enabled GitHub App client ID. Its installation a
 
 - FR-007. In authenticated Hub Chat, a supported standalone instance offers Connect AWS while AWS is disconnected or expired. Selecting it queues a request and opens the private Settings form even if the assistant has only replied with prose or a link. Opening Chat alone does not queue a request.
 
+- FR-008. The Hermes `ned` tool action `request_provider_auth` queues a provider request and returns a non-secret request receipt. NED renders a conversation card only for a validated native tool result. The card opens an accessible modal after checking that its request still matches the authenticated instance. Stale cards never act on newer requests. Manual Settings remains available.
+
 ## Critical user journeys
 
 ### CUJ-001: Connect and use a chosen identity
@@ -105,6 +107,14 @@ Starting from a pending request or a connected account, the operator can cancel 
 - Cleanup: close the listeners, browser and fake provider, and remove fixture state.
 - Pass evidence: automated browser scenario and authorization boundary assertions.
 
+### TC-007: Hermes provider card and modal
+
+- Journey / requirements: CUJ-001, CUJ-002 / FR-008.
+- Level / automation: integration; [TC-007.test.js](tests/TC-007.test.js).
+- Given: an authorized runtime and a synthetic provider, when the registered Hermes tool successfully queues a request, then its receipt renders a card and the card opens the private modal. Assistant prose cannot create the card.
+- Variants: reject unrecognized actions or provider names and stale request receipts. Closing the dialog preserves the request and returns focus to its trigger.
+- Cleanup: dismiss the modal and dispose of browser, gateway and synthetic runtime state.
+
 ## Coverage and acceptance
 
 | Requirement | Journey | Test cases |
@@ -113,6 +123,7 @@ Starting from a pending request or a connected account, the operator can cancel 
 | FR-004 | CUJ-001, CUJ-002 | TC-001, TC-003, TC-005 |
 | FR-005 | CUJ-001 | TC-005, TC-006 |
 | FR-006, FR-007 | CUJ-001, CUJ-002 | TC-006 |
+| FR-008 | CUJ-001, CUJ-002 | TC-007 |
 
 ## Open questions and coverage gaps
 

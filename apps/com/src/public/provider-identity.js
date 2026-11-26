@@ -23,6 +23,28 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   let disabled = false;
   let chatGeneration = 0;
   let authGeneration = 0;
+  let modalGeneration = 0;
+  let modalTrigger;
+  const modal = document.createElement('dialog');
+  modal.className = 'provider-auth-modal';
+  modal.setAttribute('aria-labelledby','provider-auth-title');
+  const title = document.createElement('h2');
+  title.id = 'provider-auth-title';
+  const modalStatus = document.createElement('p');
+  modalStatus.setAttribute('role','status');
+  const modalBody = document.createElement('div');
+  const close = button('Close',()=>modal.close());
+  modal.append(title,modalStatus,modalBody,close);
+  document.body.append(modal);
+  modal.addEventListener('close',()=>{
+    modalGeneration++;
+    modalBody.replaceChildren();
+    if (modalTrigger?.isConnected) modalTrigger.focus();
+    modalTrigger = undefined;
+  });
+  document.addEventListener('ned-provider-auth-card',event=>{
+    void openModal(event.detail.receipt,event.detail.trigger);
+  });
 
   function node(tag, value) {
     const element = document.createElement(tag);
@@ -83,7 +105,31 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     return control;
   }
 
-  function render(connection) {
+  async function openModal(receipt, trigger) {
+    if (modal.open) return;
+    const epoch = ++modalGeneration;
+    modalTrigger = trigger;
+    title.textContent = 'Connect ' + names[receipt.provider];
+    modalStatus.textContent = 'Checking authorization request…';
+    modal.showModal();
+    try {
+      const {connections} = await api('');
+      if (epoch !== modalGeneration || !modal.open) return;
+      const connection = connections.find(item => item.provider === receipt.provider);
+      if (connection?.request?.id !== receipt.request_id) {
+        modalStatus.textContent = 'This request has ended. Ask NED to start a new connection.';
+        return;
+      }
+      modalStatus.textContent = '';
+      modalBody.replaceChildren(render(connection,{current:()=>modalGeneration,statusNode:modalStatus,prefix:'modal-provider',done:()=>modal.close()}));
+      modalBody.querySelector('input, button')?.focus();
+    } catch {
+      if (epoch === modalGeneration && modal.open) modalStatus.textContent = 'Authorization is unavailable. Try again.';
+    }
+  }
+
+  function render(connection, context = {}) {
+    const {current = ()=>generation,statusNode=announcement,prefix='provider',done} = context;
     const {provider, status, identity, request: pending} = connection;
     const section = node('section');
     section.className = 'provider-connection';
@@ -91,7 +137,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     const heading = node('h4', names[provider]);
     heading.tabIndex = -1;
     section.append(heading, node('p', identity ? `${status === 'expired' ? 'Expired' : 'Connected'} as ${summary(identity)}` : 'Disconnected'));
-    const localGeneration = generation;
+    const localGeneration = current();
     let busy = false;
     async function action(name, body) {
       if (busy) return;
@@ -99,29 +145,39 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
       section.setAttribute('aria-busy', 'true');
       const controls = [...section.querySelectorAll('input, button')];
       controls.forEach(control => {control.disabled = true;});
-      announcement.textContent = '';
+      statusNode.textContent = '';
       try {
         const result = await api(`/${provider}/${name}`, 'POST', body, name === 'disconnect' ? connection.connectionId : pending?.id);
-        if (localGeneration !== generation) return;
+        if (localGeneration !== current()) return;
         if (JSON.stringify(result) === JSON.stringify(connection)) {
-          announcement.textContent = 'Still waiting for provider approval.';
+          statusNode.textContent = 'Still waiting for provider approval.';
           return;
         }
-        const replacement = render(result);
+        if (done && !result.request) {
+          done();
+          return;
+        }
+        const replacement = render(result,context);
         section.replaceWith(replacement);
         replacement.querySelector('h4').focus();
-        if (name === 'confirm') announcement.textContent = 'Connection saved.';
-        if (name === 'disconnect') announcement.textContent = 'Disconnected from NED. To revoke the grant, use the provider’s security settings.';
+        if (name === 'confirm') statusNode.textContent = 'Connection saved.';
+        if (name === 'disconnect') statusNode.textContent = 'Disconnected from NED. To revoke the grant, use the provider’s security settings.';
       } catch (error) {
-        if (localGeneration !== generation) return;
+        if (localGeneration !== current()) return;
         try {
           const {connections} = await api('');
-          if (localGeneration !== generation) return;
-          const replacement = render(connections.find(item => item.provider === provider));
+          if (localGeneration !== current()) return;
+          const connection = connections.find(item => item.provider === provider);
+          if (done && connection?.request?.id !== pending?.id) {
+            modalBody.replaceChildren();
+            statusNode.textContent = 'This request has ended. Ask NED to start a new connection.';
+            return;
+          }
+          const replacement = render(connection,context);
           section.replaceWith(replacement);
           replacement.querySelector('h4').focus();
         } catch { /* Keep the current controls available when readback fails. */ }
-        if (localGeneration === generation) announcement.textContent = error.message;
+        if (localGeneration === current()) statusNode.textContent = error.message;
       } finally {
         busy = false;
         section.removeAttribute('aria-busy');
@@ -145,7 +201,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
       form.autocomplete = 'off';
       for (const [name, label, type = 'text'] of fields[provider]) {
         const input = node('input');
-        input.id = `provider-${provider}-${name}`;
+        input.id = `${prefix}-${provider}-${name}`;
         input.name = name;
         input.type = type;
         input.required = true;
@@ -205,12 +261,14 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   new MutationObserver(refresh).observe(settings, {attributes: true, attributeFilter: ['hidden']});
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-      for (const input of list.querySelectorAll('input[type=password]')) input.value = '';
+      for (const input of [...list.querySelectorAll('input[type=password]'), ...modalBody.querySelectorAll('input[type=password]')]) input.value = '';
     }
   });
   globalThis.addEventListener?.('ned-chat-settled', refreshChatRequests);
   globalThis.addEventListener?.('pagehide', () => {generation++; chatGeneration++; authGeneration++; list.replaceChildren();});
   document.addEventListener('ned-auth-lost', () => {
+    modalGeneration++;
+    if (modal.open) modal.close();
     generation++; chatGeneration++; authGeneration++;
     list.replaceChildren(); panel.hidden = true;
     chatRequests?.replaceChildren();

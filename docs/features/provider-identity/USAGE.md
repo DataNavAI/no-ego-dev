@@ -38,3 +38,15 @@ the original request. The container includes AWS CLI; the selected identity
 applies through `ned identity exec aws -- aws …`.
 
 If an upgrade retains a previously seeded container profile, synchronize the provider identity skill from the new image before starting a fresh chat. Preserve operator-edited skill files.
+
+## Request authorization from Hermes
+
+Call the `ned` tool with `{"action":"request_provider_auth","provider":"aws"}`.
+The user opens **Review connection** on the resulting NED Chat card. The modal
+uses the same provider validation and confirmation as Settings. The card expires
+with its request and cannot substitute a newer request after expiry or cancellation.
+
+Hub-connected standalone NED supports AWS automatically. For a private native
+COM listener, configure the Hermes process with `NED_IDENTITY_COM_ORIGIN`
+set to the exact private `http://127.0.0.1:<port>` origin. This setting belongs
+to the runtime operator. The tool does not accept a URL argument.
