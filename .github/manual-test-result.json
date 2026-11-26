@@ -1,12 +1,14 @@
 {
-  "candidate_sha": "f57cba6feb762b97d437eccfcdca872f7e304a3c",
+  "candidate_sha": "e50533656c38d692af7d08447f95d113c8d86017",
   "result": "pass",
-  "tested_at": "2026-11-26T08:44:26.895253+00:00",
-  "environment": "macOS ARM64, Colima ARM64, Docker Compose remote Git and a separate synthetic Hub endpoint",
+  "tested_at": "2026-11-26T08:59:04.064014+00:00",
+  "environment": "macOS ARM64, Colima Linux ARM64, direct Docker single-container launch and synthetic Hub",
   "commands": [
     "npm run lint",
     "npm run test:all",
-    "NED_COMPOSE_TEST_SOURCE=<exact candidate remote Git Compose reference> python3 /tmp/ned-229-compose-test.py"
+    "actionlint .github/workflows/public-container.yml",
+    "docker build --provenance=false --sbom=false --tag ned-public-release-test:231 .",
+    "python3 /tmp/ned-public-run-test.py"
   ],
-  "observations": "Compose built the remote candidate, started the same NED listener and reached an authenticated synthetic Hub. Docker reported healthy; only loopback COM was published. Three named volumes remained distinct. The standalone container staged a 0600 Hermes-owned token and its environment/logs contained no Hub token. The fixture used a disposable project and synthetic credentials."
+  "observations": "A direct Docker launch reached an authenticated Hub fixture and remained healthy. Only loopback COM was published, three named data volumes were attached, and the mounted credential was copied into a Hermes-owned 0600 file. The synthetic Hub token was absent from logs and container environment. Workflow lint passed. Publishing a live registry manifest and verifying public anonymous pull are post-merge checks."
 }
