@@ -1,5 +1,6 @@
 import {secretRequestRow,renderSecretRequest} from './secret-request.js';
 import {secretShareRow,renderSecretCard} from './secret-share.js';
+import {providerAuthRow} from './secret-events.js';
 const LIMIT=4*1024*1024;
 const toolEnvelope=value=>/^\s*[[{]\s*\{?\s*"(?:tool_calls?|tool_use|tool_result|function_call)"\s*:/.test(value)||/^\s*[[{]\s*\{?\s*"type"\s*:\s*"(?:tool_|function)/.test(value);
 function literalLinks(text,document){
@@ -17,6 +18,7 @@ function literalLinks(text,document){
 }
 const stringify=value=>typeof value==='string'?value:JSON.stringify(value,null,2) ?? '';
 export function messageParts(row){
+  const provider=providerAuthRow(row);if(provider)return [{kind:'provider-auth',provider}];
   const request=secretRequestRow(row);if(request)return [{kind:'secret-request',request}];
   const share=secretShareRow(row);if(share)return [{kind:'secret-share',share}];
   if(!['user','assistant'].includes(row.role))return [];
@@ -46,6 +48,16 @@ export function renderMessageContent(row,document,libraries){
   root.setAttribute?.('role','group');root.setAttribute?.('aria-label',`${author} message`);
   const parts=messageParts(row);
   for(const part of parts){
+    if(part.kind==='provider-auth'){
+      const receipt=part.provider;
+      const name={aws:'AWS',github:'GitHub',godaddy:'GoDaddy'}[receipt.provider];
+      const card=document.createElement('section');card.className='provider-auth-card';
+      const heading=document.createElement('strong');heading.textContent='Connect '+name;
+      const text=document.createElement('p');text.textContent='Authorize NED to use your '+name+' account.';
+      const open=document.createElement('button');open.type='button';open.textContent='Review connection';
+      open.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('ned-provider-auth-card',{detail:{receipt,trigger:open}})));
+      card.append(heading,text,open);root.append(card);continue;
+    }
     if(part.kind==='secret-request'){root.append(renderSecretRequest(part.request,document));continue;}
     if(part.kind==='secret-share'){root.append(renderSecretCard(part.share,document));continue;}
     if(part.kind==='text'&&row.role!=='user'&&libraries){

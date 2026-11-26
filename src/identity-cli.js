@@ -29,13 +29,21 @@ function localOrigin(value) {
   return `http://127.0.0.1:${match[1]}`;
 }
 
-async function requestConnection(provider, url, request, credentials) {
+async function requestConnection(provider, url, request, credentials, receipt) {
   const origin = localOrigin(url);
   const response = await request(`${origin}/api/v1/identity/${provider}/request`, {
     method: 'POST', headers: {Origin: origin, Authorization: 'Bearer ' + loadApiCredential(credentials), 'X-NED-Identity': '1'}, redirect: 'error',
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) throw new IdentityError('com_unavailable', 'Open a private native NEDCOM instance and try again.');
+  if (receipt) {
+    const result = await response.json();
+    const id = result.request?.id;
+    const expires = result.request?.expiresAt;
+    if (result.provider !== provider || typeof id !== 'string' || !/^[a-f0-9-]{36}$/.test(id) || !Number.isSafeInteger(expires))
+      throw new IdentityError('com_unavailable', 'NED could not verify the authorization request.');
+    return {success:true,action:'request_provider_auth',provider,request_id:id,expires_at:new Date(expires).toISOString()};
+  }
   return {provider, status: 'requested', settings: origin};
 }
 
@@ -67,6 +75,8 @@ async function execute(provider, command, args, {store, adapters, clock, launch,
 }
 
 export async function runIdentityCli(args, io, dependencies = {}) {
+  const receipt = args[0] === 'connect' && args.at(-1) === '--receipt';
+  if (receipt) args = args.slice(0,-1);
   const [action, provider, separator, command, ...rest] = args;
   const clock = dependencies.identityOptions?.clock || Date.now;
   const request = dependencies.identityOptions?.fetch || fetch;
@@ -78,13 +88,13 @@ export async function runIdentityCli(args, io, dependencies = {}) {
     const container = containerAwsIdentityAllowed(dependencies.env);
     const allowedProviders = container ? ['aws'] : providers;
     if (container && action === 'connect' && provider === 'aws' && args.length === 2) {
-      io.log(JSON.stringify(await requestConnection(provider, 'http://127.0.0.1:8787', request, dependencies)));
+      io.log(JSON.stringify(await requestConnection(provider, 'http://127.0.0.1:8787', request, dependencies, receipt)));
       return 0;
     }
     if (!container && !nativeIdentityAllowed(dependencies.env))
       throw new IdentityError('identity_disabled', 'Provider connections are unavailable in this NED environment.');
     if (action === 'connect' && !container && args.length === 4 && allowedProviders.includes(provider) && separator === '--url') {
-      io.log(JSON.stringify(await requestConnection(provider, command, request, dependencies)));
+      io.log(JSON.stringify(await requestConnection(provider, command, request, dependencies, receipt)));
       return 0;
     }
     if (action === 'status' && args.length <= 2 && (!provider || allowedProviders.includes(provider))) {

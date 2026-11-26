@@ -15,3 +15,19 @@ export function secretShare(value){
   }catch{return null;}
 }
 export function secretShareRow(row){return row?.role==='tool'&&(row.tool_name??row.name)==='ned'?secretShare(row.content):null;}
+
+export function providerAuthRow(row){
+  if(row?.role!=='tool'||(row.tool_name??row.name)!=='ned')return null;
+  try{
+    let value=row.content;
+    if(typeof value==='string'){if(value.length>2048)return null;value=JSON.parse(value);}
+    const keys=['success','action','provider','request_id','expires_at'];
+    if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).length!==keys.length
+      ||!keys.every(key=>Object.hasOwn(value,key))||value.success!==true||value.action!=='request_provider_auth'
+      ||!['aws','github','godaddy'].includes(value.provider)||typeof value.request_id!=='string'
+      ||!/^[a-f0-9-]{36}$/.test(value.request_id)||typeof value.expires_at!=='string'
+      ||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value.expires_at)
+      ||!Number.isFinite(Date.parse(value.expires_at)))return null;
+    return Object.fromEntries(keys.map(key=>[key,value[key]]));
+  }catch{return null;}
+}
