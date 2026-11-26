@@ -1,14 +1,12 @@
 {
-  "candidate_sha": "3d80bf14b3ad3361b2068ffddb5d39fed53dce8e",
+  "candidate_sha": "f57cba6feb762b97d437eccfcdca872f7e304a3c",
   "result": "pass",
-  "tested_at": "2026-11-26T08:32:44.449912+00:00",
-  "environment": "macOS 26 ARM64, Colima ARM64, disposable Docker volumes and synthetic process/lease fixtures",
+  "tested_at": "2026-11-26T08:44:26.895253+00:00",
+  "environment": "macOS ARM64, Colima ARM64, Docker Compose remote Git and a separate synthetic Hub endpoint",
   "commands": [
     "npm run lint",
     "npm run test:all",
-    "npm run test:spec -- --feature standalone-container",
-    "npm run test:container -- --context colima-ned-staging --image ned-local-maintenance-final-test:228",
-    "python3 /tmp/ned-228-updater-check.py"
+    "NED_COMPOSE_TEST_SOURCE=<exact candidate remote Git Compose reference> python3 /tmp/ned-229-compose-test.py"
   ],
-  "observations": "Actual Docker acceptance passed for authenticated COM/dashboard health, service restart, shutdown, volume retention and negative startup. A disposable opted-in container denied maintenance with a running command and accepted prepare, commit and release when idle. The transaction rehearsal exercised busy deferral, copied-volume promotion, and recovery to the old container when candidate health failed. The connected local pilot used the verified main image and an independently authenticated staging tunnel. Candidate cutover and first scheduled live promotion are post-merge checks."
+  "observations": "Compose built the remote candidate, started the same NED listener and reached an authenticated synthetic Hub. Docker reported healthy; only loopback COM was published. Three named volumes remained distinct. The standalone container staged a 0600 Hermes-owned token and its environment/logs contained no Hub token. The fixture used a disposable project and synthetic credentials."
 }
