@@ -132,7 +132,18 @@ export function mountChat(libraries) {
   }
   function draw() {
     clearTransientReferences();
-    transcript.replaceChildren(...rows.filter(row=>messageParts(row).length).map(row => {
+    const visible = [];
+    const cards = [];
+    for (const row of rows) {
+      const parts = messageParts(row);
+      if (!parts.length) continue;
+      if (parts[0].kind === 'provider-auth') {cards.push(row); continue;}
+      if (row.role === 'user') visible.push(...cards.splice(0));
+      visible.push(row);
+      if (row.role === 'assistant') visible.push(...cards.splice(0));
+    }
+    visible.push(...cards);
+    transcript.replaceChildren(...visible.map(row => {
       const article = document.createElement('article');
       article.className = `chat-message ${row.role === 'user' ? 'user-message' : 'assistant-message'}`;
       article.dataset.messageId=String(row.id);

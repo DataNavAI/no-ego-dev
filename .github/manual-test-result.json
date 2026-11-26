@@ -1,12 +1,13 @@
 {
-  "candidate_sha": "b365f70a25f30254da85360406541201c0d28d39",
+  "candidate_sha": "0ff09bb7ce982ed3ad9bd769f2b53f62599a6409",
   "result": "pass",
-  "tested_at": "2026-11-26T11:28:34.934969+00:00",
-  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "tested_at": "2026-11-26T11:41:53.022308+00:00",
+  "environment": "macOS ARM64, Node 22, Chromium, registered Hermes Python plugin, real NED CLI and private COM, synthetic gateway history and mock AWS endpoint",
   "commands": [
-    "npm run test:spec -- --all",
-    "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-044.test.js"
+    "npm run lint",
+    "npm run test:all",
+    "npm run test:spec -- --feature provider-identity",
+    "python -m eval_runner.cli skills/ned-provider-identity --markdown"
   ],
-  "observations": "Desktop and mobile reply screenshots show round user bubbles and substantially rounded NED bubbles with a tighter lower-left corner. Wrapped replies fit in the transcript."
+  "observations": "Hermes tool registration and invocation produced a structured AWS receipt. Assistant prose could not create a card. The card opened the actual AWS setup modal with initial focus, Escape restored focus, Cancel ended the request, and an old card could not open a replacement. The existing standalone browser flow completed mock approval and a protected read. The provider-identity skill eval passed."
 }
