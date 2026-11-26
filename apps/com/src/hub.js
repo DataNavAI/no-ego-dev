@@ -1,6 +1,6 @@
 import {createMaintenanceControl} from './maintenance-control.js';
 import http from 'node:http';
-import {exposeNedApiPath} from '../../core/src/api-paths.js';
+import {exposeHubAwsIdentityPath,exposeNedApiPath} from '../../core/src/api-paths.js';
 import {hostname} from 'node:os';
 import {resolveHubOrigin} from '../../../src/hub-credentials.js';
 import {pipeline} from 'node:stream';
@@ -47,13 +47,13 @@ export function readHubConfiguration(env = process.env) {
 }
 
 // This bridge has no listening socket: only authenticated Hub data channels enter it.
-function createBridge(config, target,logger,apiCredential) {
+function createBridge(config, target,logger,apiCredential,hubAwsIdentity) {
   return http.createServer((req,res) => {
     if (req.headers.host !== 'ned-com' || req.headers['x-ned-instance'] !== config.slug || req.headers['x-forwarded-host'] !== config.instance.host || req.headers['x-forwarded-proto'] !== config.instance.protocol.slice(0,-1) || (req.headers.origin !== undefined && req.headers.origin !== config.instance.origin)) {
       res.writeHead(403);res.end();return;
     }
     if (!req.url.startsWith('/') || req.url.startsWith('//')) {res.writeHead(400);res.end();return;}
-    if(!exposeNedApiPath(req.url)){res.writeHead(403);res.end();return;}
+    if(!exposeNedApiPath(req.url)&&!(hubAwsIdentity&&exposeHubAwsIdentityPath(req.url))){res.writeHead(403);res.end();return;}
     const headers = {...req.headers,host:target.host};
     try{const credential=typeof apiCredential==='function'?apiCredential():apiCredential;if(typeof credential!=='string'||!/^[a-f0-9]{64}$/.test(credential))throw new Error();headers.authorization=`Bearer ${credential}`;}catch{res.writeHead(503);res.end();return;}
     if (headers.origin !== undefined) headers.origin = target.origin;
@@ -69,11 +69,11 @@ function createBridge(config, target,logger,apiCredential) {
   });
 }
 
-export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger,apiCredential,preview,maintenance} = {}) {
+export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger,apiCredential,preview,maintenance,hubAwsIdentity=false} = {}) {
   if(typeof apiCredential!=='function'&&(typeof apiCredential!=='string'||!/^[a-f0-9]{64}$/.test(apiCredential)))throw new Error('NED API credential required for Hub transport.');
   const target = new URL(targetUrl);
   if (target.protocol !== 'http:' || !loopback(target.hostname) || target.pathname !== '/' || target.username || target.password || target.search || target.hash) throw new Error('Invalid COM target.');
-  const bridge = createBridge(config,target,logger,apiCredential);
+  const bridge = createBridge(config,target,logger,apiCredential,hubAwsIdentity);
   const streams = new Set();
   const previewBridges=new Set();let previewPoll;
   let stopped = false,control,retry,heartbeat,attempt = 0,abort;

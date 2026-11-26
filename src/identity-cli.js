@@ -4,10 +4,11 @@ import {mkdtemp, rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createIdentityProviders, IdentityError, providers} from './identity-providers.js';
-import {createIdentityStore, identityStatus, nativeIdentityAllowed, requireConnection} from './identity-store.js';
+import {containerAwsIdentityAllowed, createIdentityStore, identityStatus, nativeIdentityAllowed, requireConnection} from './identity-store.js';
 
 const usage = [
   'Usage: ned identity connect <github|aws|godaddy> --url <private-loopback-COM-origin>',
+  '       ned identity connect aws (Hub-registered standalone container)',
   '       ned identity status [github|aws|godaddy]',
   '       ned identity exec <github|aws> -- <gh|aws> <arguments>',
   '       ned identity domain',
@@ -74,21 +75,27 @@ export async function runIdentityCli(args, io, dependencies = {}) {
       io.log(usage);
       return 0;
     }
-    if (!nativeIdentityAllowed(dependencies.env))
+    const container = containerAwsIdentityAllowed(dependencies.env);
+    const allowedProviders = container ? ['aws'] : providers;
+    if (container && action === 'connect' && provider === 'aws' && args.length === 2) {
+      io.log(JSON.stringify(await requestConnection(provider, 'http://127.0.0.1:8787', request, dependencies)));
+      return 0;
+    }
+    if (!container && !nativeIdentityAllowed(dependencies.env))
       throw new IdentityError('identity_disabled', 'Provider connections are unavailable in this NED environment.');
-    if (action === 'connect' && args.length === 4 && providers.includes(provider) && separator === '--url') {
+    if (action === 'connect' && !container && args.length === 4 && allowedProviders.includes(provider) && separator === '--url') {
       io.log(JSON.stringify(await requestConnection(provider, command, request, dependencies)));
       return 0;
     }
-    if (action === 'status' && args.length <= 2 && (!provider || providers.includes(provider))) {
+    if (action === 'status' && args.length <= 2 && (!provider || allowedProviders.includes(provider))) {
       const store = createIdentityStore(dependencies.home, dependencies.env);
-      io.log(JSON.stringify({connections: (provider ? [provider] : providers).map(name => ({
+      io.log(JSON.stringify({connections: (provider ? [provider] : allowedProviders).map(name => ({
         provider: name, ...identityStatus(store.get(name), clock),
       }))}));
       return 0;
     }
-    const domain = action === 'domain' && args.length === 1;
-    const exec = action === 'exec' && ['github', 'aws'].includes(provider) && separator === '--';
+    const domain = !container && action === 'domain' && args.length === 1;
+    const exec = action === 'exec' && allowedProviders.includes(provider) && provider !== 'godaddy' && separator === '--';
     if (domain || exec) {
       const store = createIdentityStore(dependencies.home, dependencies.env);
       const adapters = createIdentityProviders(dependencies.identityOptions);

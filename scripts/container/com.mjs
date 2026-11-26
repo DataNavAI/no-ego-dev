@@ -5,6 +5,8 @@ import {isAbsolute} from 'node:path';
 import {createCommunicatorServer} from '../../src/communicator/server.js';
 import {readHubConfiguration, startHubConnection} from '../../apps/com/src/hub.js';
 import {localMaintenance} from './local-maintenance.mjs';
+import {nedApiPath} from '../../apps/core/src/api-paths.js';
+import {containerAwsIdentityAllowed} from '../../src/identity-store.js';
 
 async function hubConfiguration(env) {
   const file = env.NED_HUB_TOKEN_FILE;
@@ -29,18 +31,25 @@ async function hubConfiguration(env) {
   }
 }
 
-export async function startContainerCom({origin = 'http://127.0.0.1:8787', port = 8787, host = '0.0.0.0', databasePath,home,env=process.env, createServer = createCommunicatorServer, connectHub = startHubConnection, onHubStatus} = {}) {
+export async function startContainerCom({origin = 'http://127.0.0.1:8787', port = 8787, host = '0.0.0.0', databasePath,home,env=process.env, createServer = createCommunicatorServer, connectHub = startHubConnection, onHubStatus,identityOptions,gateway,modelSetup} = {}) {
   const publicUrl = new URL(origin);
   if (publicUrl.protocol !== 'http:' || publicUrl.username || publicUrl.password || publicUrl.pathname !== '/' || publicUrl.search || publicUrl.hash || !['127.0.0.1','localhost'].includes(publicUrl.hostname)) throw new Error('NED_COM_ORIGIN must be a loopback HTTP origin.');
   const explicit=env.NED_COM_USERNAME!==undefined||env.NED_COM_PASSWORD!==undefined;
   if(explicit&&(!env.NED_COM_USERNAME||!env.NED_COM_PASSWORD))throw new Error('Configure both COM username and password.');
   const username=explicit?env.NED_COM_USERNAME:env.HERMES_DASHBOARD_BASIC_AUTH_USERNAME,password=explicit?env.NED_COM_PASSWORD:env.HERMES_DASHBOARD_BASIC_AUTH_PASSWORD;
   const hub = await hubConfiguration(env);
+  const hubAwsIdentity = Boolean(hub && containerAwsIdentityAllowed(env));
   const local = await localMaintenance({env, databasePath});
-  const upstream = createServer({identityEnabled:false,databasePath,home,env,maintenance:local?.maintenance,basicCredentials:username&&password?{username,password}:undefined});
+  const upstream = createServer({identityEnabled:false,hubAwsIdentity,identityOptions,gateway,modelSetup,databasePath,home,env,maintenance:local?.maintenance,basicCredentials:username&&password?{username,password}:undefined});
   const internal = new URL(await upstream.listen().catch(async error => {await local?.close(); throw error;}));
   const server = http.createServer((req,res) => {
-    if (req.headers.host !== publicUrl.host || (req.headers.origin !== undefined && req.headers.origin !== publicUrl.origin) || !req.url.startsWith('/') || req.url.startsWith('//')) {
+    const localOrigin = 'http://127.0.0.1:' + server.address().port;
+    const localCli = hubAwsIdentity && req.method === 'POST' && req.url === '/api/v1/identity/aws/request'
+      && ['127.0.0.1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
+      && req.headers.host === new URL(localOrigin).host && req.headers.origin === localOrigin;
+    const identityRoute = nedApiPath(req.url).family === 'identity';
+    if ((!localCli && (req.headers.host !== publicUrl.host || (req.headers.origin !== undefined && req.headers.origin !== publicUrl.origin)))
+        || !req.url.startsWith('/') || req.url.startsWith('//') || (hubAwsIdentity && identityRoute && !localCli)) {
       res.writeHead(403, {'content-type':'application/json'}); res.end(JSON.stringify({error:{code:'forbidden'}})); return;
     }
     const headers = {...req.headers, host:internal.host};
@@ -58,6 +67,7 @@ export async function startContainerCom({origin = 'http://127.0.0.1:8787', port 
     await new Promise((resolve,reject) => {server.once('error',reject); server.listen(port,host,resolve);});
     if (hub) connection = connectHub(hub, internal.origin, {
       apiCredential: () => upstream.apiCredential,
+      hubAwsIdentity,
       preview: upstream.preview,
       onRegistered: registration => upstream.setHubRegistration(registration),
       onStatus: onHubStatus,

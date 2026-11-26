@@ -31,7 +31,7 @@ const fields = {
   godaddy: ['domain', 'token'],
 };
 
-export function createIdentityHandler({home, env, enabled, fetch, clock = Date.now, githubClientId} = {}) {
+export function createIdentityHandler({home, env, enabled, allowedProviders = providers, fetch, clock = Date.now, githubClientId} = {}) {
   const pending = new Map();
   function end(provider) {
     clearTimeout(pending.get(provider)?.timer);
@@ -89,12 +89,13 @@ export function createIdentityHandler({home, env, enabled, fetch, clock = Date.n
     const match = /^\/api\/identity\/(github|aws|godaddy)\/(request|start|poll|confirm|cancel|disconnect)$/.exec(req.url);
     if (!list && !(match && req.method === 'POST')) return fail(404, 'not_found', 'Identity action is unavailable.');
     const [, provider, action] = match || [];
+    if (!list && !allowedProviders.includes(provider)) return fail(403, 'identity_disabled', 'This provider is unavailable in this NED instance.');
     if (action !== 'start' && (req.headers['transfer-encoding'] || Number(req.headers['content-length'] || 0) > 0))
       return fail(400, 'invalid_body', 'This action does not accept a body.');
 
     try {
       const store = createIdentityStore(home, env);
-      if (list) return send(200, {connections: providers.map(name => details(name, store))});
+      if (list) return send(200, {connections: allowedProviders.map(name => details(name, store))});
       details(provider, store);
       const current = pending.get(provider);
       const observedId = req.headers['x-ned-identity-id'];

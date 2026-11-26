@@ -5,6 +5,10 @@ export function nativeIdentityAllowed(env = process.env) {
   return process.platform !== 'win32' && env.HERMES_PROFILE !== 'ned-staging' && !env.NED_MANAGED_INSTANCE_ID;
 }
 
+export function containerAwsIdentityAllowed(env = process.env) {
+  return process.platform !== 'win32' && env.NED_CONTAINER === '1' && Boolean(env.NED_HUB_TOKEN_FILE && env.NED_INSTANCE_NAME);
+}
+
 export function createIdentityStore(home, env) {
   const vault = createSecretStore({home, env, namespace: 'provider-identities'});
   function key(provider) { return provider.toUpperCase(); }
