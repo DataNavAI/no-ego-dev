@@ -116,7 +116,7 @@ def build(repo, revision):
     with tempfile.TemporaryFile() as archive:
         subprocess.run(["git", "-C", repo, "archive", revision], check=True, stdout=archive)
         archive.seek(0)
-        docker("build", "--label", f"{REVISION}={revision}", "--tag", tag, "-", stdin=archive, timeout=1800)
+        docker("build", "--build-arg", f"NED_BUILD_REVISION={revision}", "--label", f"{REVISION}={revision}", "--tag", tag, "-", stdin=archive, timeout=1800)
     image = json.loads(docker("image", "inspect", tag))[0]
     if image["Config"]["Labels"][REVISION] != revision:
         raise RuntimeError("Built image has the wrong revision")

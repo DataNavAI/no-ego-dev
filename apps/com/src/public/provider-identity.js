@@ -247,7 +247,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
           button('Keep connection', () => {confirmation.hidden = true; remove.focus();}));
         section.append(remove, confirmation);
       }
-    } else if (pending.state === 'requested'&&compact) {
+    } else if (compact&&!['sign_in','confirm'].includes(pending.state)) {
       const review=button('Review connection',()=>void openModal({provider,request_id:pending.id},review));section.append(review);
     } else if (pending.state === 'requested') {
       const form = node('form');

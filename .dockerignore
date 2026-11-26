@@ -27,6 +27,7 @@
 !eval_runner/
 !eval_runner/**
 !scripts/
+!scripts/stamp-version.mjs
 !scripts/container/
 !scripts/container/**
 **/__pycache__/**

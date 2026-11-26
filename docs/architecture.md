@@ -1,5 +1,25 @@
 # NED architecture
 
+## Running software identity
+
+The root package and distribution base version is `0.3.0`. CLI version/help and
+the COM brand share `src/version.js`, reporting `0.3.0+<seven-character commit>`.
+They first resolve their own checkout HEAD (including worktrees/packed refs,
+without requiring Git on PATH), then stamped `build-info.json`, the native
+installer's generation manifest, or an exported source revision. They never borrow the caller's
+working-directory repository or a runtime environment revision. Missing identity
+is explicit as `+unknown`. This is software identity; NED API v1 and its protocol
+`version: 1` fields are unchanged.
+
+Git archives substitute the source SHA using `.gitattributes`; npm's `prepack`
+stamps included, ignored build metadata. Docker's `NED_BUILD_REVISION` build arg
+stamps the same metadata and is supplied by maintained local/staging/public-image
+builders. Direct checkout Docker builds should supply
+`--build-arg NED_BUILD_REVISION="$(git rev-parse HEAD)"`; exported source archives
+already carry the revision. Stamps with a known conflicting source identity fail.
+Do not hand-edit package versions per commit. See communicator FR-086/TC-001 and
+the build-version regression tests for the observable contract.
+
 ## Hosted idle maintenance
 
 Core owns idle truth and the SQLite work/maintenance admission barrier described
