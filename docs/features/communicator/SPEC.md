@@ -880,3 +880,8 @@ A user follows a long answer while it streams, pauses to read earlier text, and 
 - Cleanup / pass evidence: close fixture browser and servers. Browser geometry tests are distinct from OS keyboard footage.
 
 Coverage: FR-084–085 → CUJ-031 → TC-051 and the critical evidence under TC-045.
+
+## Running version in the brand (#234)
+- FR-086: The main navigation shows `v<running package version>` beside the NED logo on desktop and mobile. The server fills it from the same root package metadata used by the CLI at process startup, without a second hardcoded version or browser request. Preserve auth/navigation behavior, a readable accessible version label, and compact-width reflow. A version change takes effect when the updated process starts.
+
+Coverage: FR-086 → CUJ-001 → TC-001 (served GET/HEAD lifecycle and exact package-version label). TC-001 additionally reads root package metadata and asserts the real HTTP HTML contains both visible and accessible version text. Rendered manual acceptance: start the isolated server with synthetic auth/chat state, inspect at1280×900 and320×844, confirm logo/version adjacency, no page overflow and unchanged navigation; close the owned browser/server and remove synthetic state. No provider call, state migration or package version bump is involved.
