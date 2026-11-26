@@ -2,7 +2,7 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   const card=document.getElementById('model-setup'),toggle=document.getElementById('model-setup-toggle');
   if(!card||!toggle)return {ready:()=>true,refresh:async()=>{}};
   const element=id=>document.getElementById(id),status=element('model-setup-status'),form=element('model-setup-form'),provider=element('model-provider'),model=element('model-name'),key=element('model-key'),check=element('model-check');
-  let state,ready=false,busy=false,opened=false,nonce,closed=false,version=0,login,pollTimer;
+  let state,ready=false,busy=false,opened=false,nonce,closed=false,version=0,login,pollTimer,verificationFailed=false;
   let authenticated=!document.getElementById('app-shell')?.hidden;
   const closeButton=element('model-setup-close'),title=element('model-setup-title');
   function dismiss(){if(!ready)return;opened=false;render();toggle.focus();}
@@ -31,6 +31,12 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     model.value=selected??ids[0]??'';
   }
   function render(){
+    const currentModel=element('current-model');
+    if(currentModel){
+      const name=!closed&&authenticated?(busy?'Checking model…':verificationFailed?'Model unavailable':!ready&&!state?'Model unavailable':!ready?'No model configured':typeof state?.model==='string'&&state.model.trim()?state.model:'Model unavailable'):'';
+      currentModel.textContent=name;currentModel.hidden=!name;currentModel.title=name;
+      currentModel.setAttribute('aria-label','Current model: '+name);
+    }
     const visible=!closed&&authenticated&&(!ready||opened);
     const heading=state?'Choose a model provider':busy?'Getting NED ready':'Model settings unavailable';
     if(title.textContent!==heading)title.textContent=heading;
@@ -81,9 +87,9 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     render();
     try{
       const data=await read();if(closed||current!==version)return;
-      const first=!state,previousProvider=provider.value,previousModel=model.value;state=data;nonce=data.nonce;ready=data.configured;key.value='';if(data.configured&&providers.includes(data.provider))provider.value=data.provider;else if(first||provider.value==='openai-codex'&&!data.deviceLogin)provider.value=data.deviceLogin?'openai-codex':'openai';populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;if(providers.includes(login.provider)){provider.value=login.provider;populate(login.model);}if(pending())opened=true;schedulePoll();}
+      const first=!state,previousProvider=provider.value,previousModel=model.value;state=data;verificationFailed=false;nonce=data.nonce;ready=data.configured;key.value='';if(data.configured&&providers.includes(data.provider))provider.value=data.provider;else if(first||provider.value==='openai-codex'&&!data.deviceLogin)provider.value=data.deviceLogin?'openai-codex':'openai';populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;if(providers.includes(login.provider)){provider.value=login.provider;populate(login.model);}if(pending())opened=true;schedulePoll();}
       status.textContent=ready?'Model provider is configured.':'Model provider is required before chatting.';
-    }catch{if(!closed&&current===version){ready=false;status.textContent='Model settings are unavailable. Check configuration and try again.';}}
+    }catch{if(!closed&&current===version){ready=false;verificationFailed=true;status.textContent='Model settings are unavailable. Check configuration and try again.';}}
     finally{if(!closed&&current===version){busy=false;render();}}
   }
   async function write(body){
@@ -95,9 +101,9 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
       if(!response.ok)throw new Error('Rejected');
       if(response.status===202){const data=await response.json();login=data.login;schedulePoll();status.textContent='Waiting for provider sign-in…';return;}
       const data=await read();if(closed||current!==version)return;
-      state=data;nonce=data.nonce;ready=data.configured;opened=!ready;
+      state=data;verificationFailed=false;nonce=data.nonce;ready=data.configured;opened=!ready;
       status.textContent=ready?'Model provider is configured.':'Model provider is required before chatting.';
-    }catch{if(!closed&&current===version){ready=false;nonce=null;status.textContent='Provider connection could not be saved. Check the credentials and try again.';}}
+    }catch{if(!closed&&current===version){ready=false;verificationFailed=true;nonce=null;status.textContent='Provider connection could not be saved. Check the credentials and try again.';}}
     finally{if(!closed&&current===version){busy=false;render();}}
   }
   function schedulePoll(){clearTimeout(pollTimer);if(!closed&&pending())pollTimer=setTimeout(()=>void poll(),1500);}
