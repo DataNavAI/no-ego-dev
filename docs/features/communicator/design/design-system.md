@@ -1,3 +1,6 @@
+## Current Muse-inspired shell
+User chose the light theme. UI-AC-27 uses the existing color/type tokens with64px desktop rail,56px header,8px divider,360px default context pane and280px minimum context. Default chat width is viewport minus432px, bounded at320px minimum. Below768px retain full-width Chat/Project views and existing navigation disclosure. This supersedes the54% default below; explicit stored width is preserved within new bounds.
+
 # NED UI design system — Uber Base
 
 ## Current default (2026-11-18)

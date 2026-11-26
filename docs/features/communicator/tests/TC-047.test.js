@@ -13,6 +13,7 @@ test('TC-047: reload reconnects to the same generation',async t=>{
     await draft.fill('Keep going after reload');
     await draft.press('Enter');
     await expect(progress).toHaveText('NED is preparing a reply…');
+    await expect(page.locator('.assistant-message[data-state="waiting"] > strong')).toHaveText('NED');
     await expect.poll(()=>turns.length).toBe(1);
     await page.reload();
     await expect(progress).toHaveText('NED is preparing a reply…');

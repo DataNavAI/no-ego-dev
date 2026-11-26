@@ -1,14 +1,12 @@
 {
-  "candidate_sha": "db93f3942b5d54a8141663bd6dcb6b40342f6be9",
+  "candidate_sha": "4161d9e9c6251e3d9d8d8f61a96b8c267d6e60da",
   "result": "pass",
-  "tested_at": "2026-11-26T09:40:20.423Z",
-  "environment": "macOS ARM64; real Chromium with isolated synthetic NED home, auth and gateway; desktop1280x844 and mobile320x844",
+  "tested_at": "2026-11-26T09:22:30.447763+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
   "commands": [
-    "npm run lint",
-    "npm test",
     "npm run test:spec -- --all",
     "python -m pytest",
-    "node /Volumes/Agent/Codex/worktrees/ui-version/verify-version.mjs"
+    "node --test docs/features/communicator/tests/TC-{046,047}.test.js"
   ],
-  "observations": "Served version matches root package metadata and CLI source (0.2.1). Inspected both viewport captures: muted version beside NED,6px gap, no horizontal overflow, browser errors empty. Existing HTTP lifecycle case passes with visible/accessibility version assertions and GET/HEAD protections. Full local Node/spec and real Hermes/mock-model integration suites pass; Python215passed9existing skips. Self-review confirmed only root HTML is templated, unchanged API protocol/auth and no hardcoded second version. Existing unrelated manual/live-provider cases not claimed."
+  "observations": "Waiting and saved assistant replies identify the speaker as NED in both browser layouts. Verified completed history, reload and streaming paths."
 }

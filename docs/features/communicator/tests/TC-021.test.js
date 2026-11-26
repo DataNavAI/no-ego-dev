@@ -27,32 +27,32 @@ function fixture(saved=null,{broken=false,width=1280}={}){
 }
 
 test('TC-021: sizing preserves defaults and clamps invalid or extreme preferences',()=>{
-  assert.deepEqual(paneBounds(768),{min:320,max:440});
-  assert.equal(paneWidth(undefined,1280),691);
-  assert.equal(paneWidth(undefined,800),432);
-  assert.equal(paneWidth(2000,1280),952);
+  assert.deepEqual(paneBounds(768),{min:320,max:416});
+  assert.equal(paneWidth(undefined,1280),848);
+  assert.equal(paneWidth(undefined,800),368);
+  assert.equal(paneWidth(2000,1280),928);
   assert.equal(paneWidth(10,1280),320);
-  assert.equal(paneWidth(NaN,1280),691);
+  assert.equal(paneWidth(NaN,1280),848);
 });
 
 test('TC-021: keyboard controls expose accurate bounds and persist without submitting',()=>{
   const subject=fixture();
   try{
-    assert.equal(subject.values.get('aria-valuenow'),'691');
+    assert.equal(subject.values.get('aria-valuenow'),'848');
     assert.equal(subject.fire('ArrowRight').defaultPrevented,false);
     assert.equal(subject.fire('keydown',{key:'ArrowRight'}).defaultPrevented,true);
-    assert.equal(subject.stored(),'707');
+    assert.equal(subject.stored(),'864');
     subject.fire('keydown',{key:'ArrowRight',shiftKey:true});
-    assert.equal(subject.stored(),'771');
+    assert.equal(subject.stored(),'928');
     subject.fire('keydown',{key:'Home'});assert.equal(subject.stored(),'320');
-    subject.fire('keydown',{key:'End'});assert.equal(subject.stored(),'952');
-    subject.fire('keydown',{key:'ArrowLeft',ctrlKey:true});assert.equal(subject.stored(),'952');
-    subject.fire('keydown',{key:'ArrowLeft'});assert.equal(subject.stored(),'936');
-    subject.viewport(800);assert.equal(subject.values.get('aria-valuenow'),'472');
-    assert.equal(subject.stored(),'936');
-    subject.viewport(1280);assert.equal(subject.values.get('aria-valuenow'),'936');
+    subject.fire('keydown',{key:'End'});assert.equal(subject.stored(),'928');
+    subject.fire('keydown',{key:'ArrowLeft',ctrlKey:true});assert.equal(subject.stored(),'928');
+    subject.fire('keydown',{key:'ArrowLeft'});assert.equal(subject.stored(),'912');
+    subject.viewport(800);assert.equal(subject.values.get('aria-valuenow'),'448');
+    assert.equal(subject.stored(),'912');
+    subject.viewport(1280);assert.equal(subject.values.get('aria-valuenow'),'912');
     const reloaded=fixture(subject.stored());
-    assert.equal(reloaded.values.get('aria-valuenow'),'936');reloaded.dispose();
+    assert.equal(reloaded.values.get('aria-valuenow'),'912');reloaded.dispose();
   }finally{subject.dispose();}
 });
 
@@ -63,11 +63,11 @@ test('TC-021: pointer identity, clamping, release and mobile interruption preser
     subject.fire('pointerdown',{button:0,isPrimary:false,pointerId:1,clientX:360});assert.equal(subject.captured(),null);
     subject.fire('pointerdown',{button:0,pointerId:2,clientX:360});
     assert.equal(subject.captured(),2);assert.equal(subject.view.document.activeElement,subject.divider);
-    subject.fire('pointermove',{pointerId:3,clientX:900});assert.equal(subject.values.get('aria-valuenow'),'691');
-    subject.fire('pointermove',{pointerId:2,clientX:600});assert.equal(subject.values.get('aria-valuenow'),'931');
+    subject.fire('pointermove',{pointerId:3,clientX:900});assert.equal(subject.values.get('aria-valuenow'),'848');
+    subject.fire('pointermove',{pointerId:2,clientX:600});assert.equal(subject.values.get('aria-valuenow'),'928');
     subject.fire('pointerup',{pointerId:3});assert.equal(subject.captured(),2);
-    subject.fire('pointermove',{pointerId:2,clientX:9999});assert.equal(subject.values.get('aria-valuenow'),'952');
-    subject.fire('pointerup',{pointerId:2});assert.equal(subject.captured(),null);assert.equal(subject.stored(),'952');
+    subject.fire('pointermove',{pointerId:2,clientX:9999});assert.equal(subject.values.get('aria-valuenow'),'928');
+    subject.fire('pointerup',{pointerId:2});assert.equal(subject.captured(),null);assert.equal(subject.stored(),'928');
     subject.fire('pointerdown',{button:0,pointerId:4,clientX:952});
     subject.fire('pointermove',{pointerId:4,clientX:0});assert.equal(subject.values.get('aria-valuenow'),'320');
     subject.fire('pointercancel',{pointerId:4});assert.equal(subject.captured(),null);
@@ -82,8 +82,8 @@ test('TC-021: pointer identity, clamping, release and mobile interruption preser
 
 test('TC-021: malformed and inaccessible local storage cannot break resizing',()=>{
   for(const saved of ['null','Infinity','{}','-9','', '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999']){
-    const subject=fixture(saved);assert.equal(subject.values.get('aria-valuenow'),'691');subject.dispose();
+    const subject=fixture(saved);assert.equal(subject.values.get('aria-valuenow'),'848');subject.dispose();
   }
   const subject=fixture(null,{broken:true});
-  subject.fire('keydown',{key:'ArrowRight'});assert.equal(subject.values.get('aria-valuenow'),'707');subject.dispose();
+  subject.fire('keydown',{key:'ArrowRight'});assert.equal(subject.values.get('aria-valuenow'),'864');subject.dispose();
 });

@@ -33,7 +33,7 @@ test('TC-046: chat roles and primary action use a distinct, readable palette',{t
     assert.deepEqual(composer.bg,[255,255,255]);
     for(const pair of [user,reply,composer])assert.ok(contrast(pair.fg,pair.bg)>=4.5);
     await expect(page.locator('.user-message > strong')).toHaveText('You');
-    await expect(page.locator('.assistant-message > strong')).toHaveText('Hermes');
+    await expect(page.locator('.assistant-message > strong')).toHaveText('NED');
     assert.ok(contrast((await style('.user-message > strong')).fg,user.bg)>=4.5);
     assert.ok(contrast((await style('.assistant-message > strong')).fg,reply.bg)>=4.5);
     await draft.fill('Turn that into a checklist.');

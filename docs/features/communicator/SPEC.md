@@ -761,7 +761,7 @@ Coverage: FR-073 and FR-074 → CUJ-026 → TC-044, with lifecycle and history c
 
 A reviewer can distinguish functional browser success from visual and interaction polish. A user can distinguish the two speakers and primary action with a quiet, accessible chat palette.
 
-- FR-075: Use a near-white chat canvas and composer, cool gray assistant replies, and pale blue user replies and ready Send. Keep user replies aligned right and assistant replies aligned left, including short replies. Preserve visible author labels and focus, accessible foreground contrast, keyboard behavior and project workspace appearance.
+- FR-075: Use a near-white chat canvas and composer, cool gray assistant replies, and pale blue user replies and ready Send. Keep user replies aligned right and assistant replies aligned left, including short replies. Label assistant replies NED while preparing, streaming, and in history. Preserve visible focus, accessible foreground contrast, keyboard behavior and project workspace appearance.
 - FR-076: Video reviews use the weighted [chat video evaluation](design/chat-video-evaluation.md) in addition to TC-044. Score each device independently and treat missing required evidence and critical UI failures as a failed threshold.
 
 ### TC-045: Palette and stricter video review
@@ -885,3 +885,22 @@ Coverage: FR-084–085 → CUJ-031 → TC-051 and the critical evidence under TC
 - FR-086: The main navigation shows `v<running package version>` beside the NED logo on desktop and mobile. The server fills it from the same root package metadata used by the CLI at process startup, without a second hardcoded version or browser request. Preserve auth/navigation behavior, a readable accessible version label, and compact-width reflow. A version change takes effect when the updated process starts.
 
 Coverage: FR-086 → CUJ-001 → TC-001 (served GET/HEAD lifecycle and exact package-version label). TC-001 additionally reads root package metadata and asserts the real HTTP HTML contains both visible and accessible version text. Rendered manual acceptance: start the isolated server with synthetic auth/chat state, inspect at1280×900 and320×844, confirm logo/version adjacency, no page overflow and unchanged navigation; close the owned browser/server and remove synthetic state. No provider call, state migration or package version bump is involved.
+
+## Muse-inspired workspace (#235)
+- FR-087: Keep NED's light palette while adopting the supplied Muse screenshot's hierarchy: a64px desktop navigation rail, a wide central conversation with its pinned composer, and a right project context pane (360px default, resizable to existing safe chat/project bounds). The right pane starts open with Goals & Tasks and retains Preview, Dashboard and Settings tabs. Named rail actions open real existing content; do not introduce unsupported Muse actions or a new conversation/session list. The running-version brand remains visible.
+- FR-088: Project controls close/reopen the right pane without remounting chat, Preview or project panels. Keep the selected context tab, draft, attachments, references and project identity. Closing restores focus to the project toggle. Preserve tab keyboard navigation, visible focus and hidden/inert semantics; keyboard and pointer resizing reserve the desktop rail and minimum project width.
+- FR-089: Below768px, use the existing compact navigation disclosure and full-width Chat or Project view. Project context temporarily replaces Chat, with a Close action returning to chat and its preserved draft. Outside click/Escape dismiss the disclosure; resize and project/auth events cannot leave focus in a hidden pane. Debug remains a separate functional diagnostic surface.
+
+### CUJ-032: Converse with project context beside the chat
+Actor: project user. Start with the fixed NED chat, a selected project and existing work. Read/reply in the central conversation; inspect the right-side goals or preview; hide context for more reading room and reopen it in the same state. Use rail shortcuts, keyboard resize and mobile Chat/Project navigation without losing work. This is critical because context changes must not interrupt chat or erase a draft. Recovery uses existing project/error/auth flows.
+
+### TC-052: Muse layout, state continuity and compact navigation
+- Journey / requirements: CUJ-032 / FR-087–089.
+- Level / automation: end-to-end; [tests/TC-052.test.js](tests/TC-052.test.js).
+- Preconditions / fixtures: isolated browserChat fixture, two synthetic persisted messages, configured synthetic gateway/model, no live provider credentials. Desktop1440×900;390×844 and320×844 compact layouts.
+- Given: ready chat and open project pane. When: type a draft, select Preview, close/reopen context, resize by keyboard, use Settings/Goals rail shortcuts and switch mobile views. Then: rail and pane have the specified geometry; preview DOM marker, selected tab and draft survive; closing restores the opener; mobile uses the full width; no overflow, browser exception or chat POST occurs.
+- Steps and assertions: `node --test docs/features/communicator/tests/TC-052.test.js`; optionally set NED_UI_EVIDENCE_DIR to an existing private directory for captures. Inspect these captures against UI-AC-27 and the user screenshot's structural hierarchy using synthetic content only.
+- Variants / negative cases: collapsed context widens chat; reopen retains the selected tab; mobile hidden chat is inert; repeated switching preserves state; existing TC-021/032 own resize storage, bounds and Debug integration, TC-036/043 own keyboard navigation/focus recovery, TC-037/044/051 own composer/stream/viewport regression and TC-031/041 own data isolation. No new backend/auth/provider boundary is introduced.
+- Cleanup / pass evidence: close fixture-owned servers/browser and remove synthetic state. Actual assertions plus desktop/mobile/200% text render evidence; unexecuted cases are not passes.
+
+Coverage: FR-087–089 → CUJ-032 → TC-052; TC-021/032,036/043,037/044/051 and031/041 retain their unique boundaries. This supersedes earlier fixed left-chat/large-preview geometry, not the data, security, reference or fixed-session contracts.

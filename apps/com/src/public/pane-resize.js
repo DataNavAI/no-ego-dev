@@ -1,12 +1,12 @@
 const preferenceKey='ned.com.leftPaneWidth';
 
 export function paneBounds(viewport){
-  return {min:320,max:Math.max(320,Math.floor(viewport)-328)};
+  return {min:320,max:Math.max(320,Math.floor(viewport)-352)};
 }
 
 export function paneWidth(preference,viewport){
   const {min,max}=paneBounds(viewport);
-  const fallback=Math.round(viewport*.54);
+  const fallback=Math.round(viewport)-432;
   return Math.min(max,Math.max(min,Number.isFinite(preference)?preference:fallback));
 }
 
@@ -28,8 +28,9 @@ export function mountPaneResize({shell,divider,view=window,storage=()=>view.loca
   };
   const render=()=>{
     const mobile=viewport()<768;
-    divider.hidden=mobile;divider.tabIndex=mobile?-1:0;
-    if(mobile){end();if(view.document?.activeElement===divider)view.document.getElementById('left-toggle')?.focus();return;}
+    const closed=shell.dataset?.contextOpen==='false';
+    divider.hidden=mobile||closed;divider.tabIndex=mobile||closed?-1:0;
+    if(mobile||closed){end();if(view.document?.activeElement===divider)view.document.getElementById(closed?'context-toggle':'left-toggle')?.focus();return;}
     current=paneWidth(preferred,viewport());
     shell.style.setProperty('--left-pane-width',`${current}px`);
     const bounds=paneBounds(viewport());
@@ -63,11 +64,13 @@ export function mountPaneResize({shell,divider,view=window,storage=()=>view.loca
   divider.addEventListener('keydown',key);
   view.addEventListener('resize',render);
   view.document?.addEventListener?.('ned-auth-entered',render);
+  view.document?.addEventListener?.('ned-context-layout',render);
   render();
   return ()=>{
     end();
     for(const [name,handler] of [['pointerdown',down],['pointermove',move],['pointerup',end],['pointercancel',end],['lostpointercapture',end],['keydown',key]])divider.removeEventListener(name,handler);
     view.removeEventListener('resize',render);
     view.document?.removeEventListener?.('ned-auth-entered',render);
+    view.document?.removeEventListener?.('ned-context-layout',render);
   };
 }

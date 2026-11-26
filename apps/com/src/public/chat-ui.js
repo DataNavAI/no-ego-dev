@@ -8,6 +8,8 @@ import {mountComposerMedia} from './composer-media.js';
 import {consumeTurnStream} from './turn-stream.js';
 import {recordChatDiagnostic,recordRequestDiagnostic} from './debug-pane.js';
 import {classifyFailureBody,readFailureBody} from './request-diagnostic.js';
+const assistantName = 'NED';
+
 export function mergePage(current, page, direction, newerCount = page.length) {
   validateMessagePage(page);
   const changed=()=>Object.assign(new Error('History changed.'),{code:'history_changed'});
@@ -134,7 +136,7 @@ export function mountChat(libraries) {
       const article = document.createElement('article');
       article.className = `chat-message ${row.role === 'user' ? 'user-message' : 'assistant-message'}`;
       article.dataset.messageId=String(row.id);
-      const author = document.createElement('strong'); author.textContent = row.role === 'user' ? 'You' : row.role === 'assistant' ? 'Hermes' : 'Tool';
+      const author = document.createElement('strong'); author.textContent = row.role === 'user' ? 'You' : row.role === 'assistant' ? assistantName : 'Tool';
       const content = renderMessageContent(row,document,libraries);
       article.append(author,content);
       if(row.role==='assistant'&&row.reaction_target){
@@ -164,7 +166,7 @@ export function mountChat(libraries) {
     const following=followingLatest(),top=transcript.scrollTop;
     liveArticle=document.createElement('article');liveArticle.className='chat-message assistant-message';
     liveArticle.dataset.state='waiting';
-    const author=document.createElement('strong');author.textContent='Hermes';
+    const author=document.createElement('strong');author.textContent=assistantName;
     progress=document.createElement('p');progress.className='reply-progress';progress.setAttribute('role','status');
     liveContent=document.createElement('p');liveContent.className='message-content';liveContent.hidden=true;
     liveContent.setAttribute('aria-label','Assistant message');

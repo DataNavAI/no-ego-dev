@@ -27,6 +27,7 @@ assets.set('/work-plan.js',['work-plan.js','text/javascript']);
 assets.set('/task-references.js',['task-references.js','text/javascript']);
 assets.set('/project-work.js',['project-work.js','text/javascript']);
 assets.set('/goals-tasks.js',['goals-tasks.js','text/javascript']);
+assets.set('/workspace.css',['workspace.css','text/css']);
 assets.set('/base.css',['base.css','text/css']);
 assets.set('/work-entry.js',['work-entry.js','text/javascript']);
 assets.set('/activity-ui.js',['activity-ui.js','text/javascript']);

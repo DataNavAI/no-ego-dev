@@ -118,7 +118,7 @@ test('TC-010: controller preserves a reader during a reply until Latest reconcil
   transcript.scrollTop=0;
   await respond({turn:{id:turnId,status:'pending'}},202);
   await respond({turn:{id:turnId,status:'completed'},message:{content:'Reply'},session_id:'nedcom-main'});
-  assert.equal(transcript.textContent,previous+'YouReply laterHermesReply');assert.equal(transcript.scrollTop,0);assert.equal(requests.length,0);
+  assert.equal(transcript.textContent,previous+'YouReply laterNEDReply');assert.equal(transcript.scrollTop,0);assert.equal(requests.length,0);
   assert.equal(elements.get('older').hidden,true);assert.match(elements.get('chat-status').textContent,/New reply/);
   elements.get('latest').dispatch('click');await respond({data:page(952)});
   assert.equal(transcript.scrollCalls.at(-1).behavior,'smooth');assert.equal(elements.get('older').hidden,true);
