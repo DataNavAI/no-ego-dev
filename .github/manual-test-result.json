@@ -1,13 +1,13 @@
 {
-  "candidate_sha": "0ff09bb7ce982ed3ad9bd769f2b53f62599a6409",
+  "candidate_sha": "661b6e6da96d37657b143e56849da713edda1b47",
   "result": "pass",
-  "tested_at": "2026-11-26T11:41:53.022308+00:00",
-  "environment": "macOS ARM64, Node 22, Chromium, registered Hermes Python plugin, real NED CLI and private COM, synthetic gateway history and mock AWS endpoint",
+  "tested_at": "2026-11-26T12:01:11.016404+00:00",
+  "environment": "Isolated NED container with GPT-6 Sol and independent GPT-6.2 Sol Chromium review, plus disposable local Hermes skill cases",
   "commands": [
     "npm run lint",
     "npm run test:all",
-    "npm run test:spec -- --feature provider-identity",
-    "python -m eval_runner.cli skills/ned-provider-identity --markdown"
+    "python -m eval_runner.cli skills/product-bootstrap --markdown",
+    "Harbor Develop with NedComAgent and BuyerVerifier"
   ],
-  "observations": "Hermes tool registration and invocation produced a structured AWS receipt. Assistant prose could not create a card. The card opened the actual AWS setup modal with initial focus, Escape restored focus, Cancel ended the request, and an old card could not open a replacement. The existing standalone browser flow completed mock approval and a protected read. The provider-identity skill eval passed."
+  "observations": "Both Harbor milestones passed source, mobile and desktop checks on the candidate skill. The dog-walker manual variant showed a small editor patch followed by a readback before substantive changes. In a repair-cafe case an editor denial left both authorized and unrelated directories unchanged. Skill guidance maintains existing access boundaries. The skill and eval package bytes match the Harbor-tested candidate after integration with main. Full lint and tests passed on the integrated revision."
 }

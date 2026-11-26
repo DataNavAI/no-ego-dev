@@ -68,7 +68,7 @@ Each self-contained skill is an agent-facing capability that needs corresponding
 | `play-store-cli` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/play-store-cli/SKILL.md); [eval](../../skills/play-store-cli/EVAL.yaml) |
 | `play-store-publisher` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/play-store-publisher/SKILL.md); [eval](../../skills/play-store-publisher/EVAL.yaml) |
 | `prd-reviewer` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/prd-reviewer/SKILL.md); [eval](../../skills/prd-reviewer/EVAL.yaml) |
-| `product-bootstrap` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/product-bootstrap/SKILL.md); [eval](../../skills/product-bootstrap/EVAL.yaml) |
+| `product-bootstrap` | implemented (profile instructions) | [spec](product-bootstrap/SPEC.md) | [instructions](../../skills/product-bootstrap/SKILL.md); [eval](../../skills/product-bootstrap/EVAL.yaml) |
 | `product-communication` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/product-communication/SKILL.md); [eval](../../skills/product-communication/EVAL.yaml) |
 | `product-manager` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/product-manager/SKILL.md); [eval](../../skills/product-manager/EVAL.yaml) |
 | `profile-skill-harvester` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/profile-skill-harvester/SKILL.md); [eval](../../skills/profile-skill-harvester/EVAL.yaml) |
