@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.4.3
+version: 0.4.4
 author: NoEgoDev
 license: MIT
 metadata:
@@ -39,6 +39,19 @@ revision, then record merge/deployment evidence and complete the owned NED task.
 Never use AWS or named-profile rollout as a substitute for this local target.
 If deployment/checks/access fails, keep work open with the actual blocker and
 continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.
+
+### NED development: refresh the local container after feature merges
+
+After merging a new NED feature, update and restart the owned local NED Docker
+container on the latest verified remote `main` before reporting completion. Use
+the project's maintained local-container updater; a skills copy, native COM
+service restart, or restart of an old image does not satisfy this requirement.
+Preserve the container's credentials, configuration, persistent data and rollback
+state. Respect active work and maintenance leases; a deferred update remains
+pending. Read back the running revision, health and configured Hub connectivity.
+Follow [local NED container delivery](references/local-ned-container-delivery.md)
+for the current updater and verification procedure. This requirement is specific
+to NED development, not an instruction to restart containers in unrelated projects.
 
 
 ## Development request intake: NED work graph

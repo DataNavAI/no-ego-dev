@@ -1,5 +1,8 @@
 # Eval data for coder
 
+See [local container after a NED feature merge](local-container-after-merge.md)
+for merged delivery, deferred maintenance and unrelated-project scenarios.
+
 Static fixture placeholder for deterministic evals. Add pinned repos, scripts, or sample project artifacts here.
 
 

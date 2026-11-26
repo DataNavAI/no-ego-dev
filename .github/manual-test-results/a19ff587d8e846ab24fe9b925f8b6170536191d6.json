@@ -1,0 +1,13 @@
+{
+  "candidate_sha": "a19ff587d8e846ab24fe9b925f8b6170536191d6",
+  "tested_at": "2026-11-26T18:06:54Z",
+  "environment": "Independent read-only agent; macOS checkout; synthetic coder-skill behavioral walkthroughs only, no deployment or provider calls",
+  "result": "pass",
+  "commands": [
+    "git rev-parse HEAD",
+    "git status --porcelain",
+    "shasum -a 256 skills/coder/SKILL.md skills/coder/EVAL.yaml skills/coder/references/local-ned-container-delivery.md skills/coder/evaldata/local-container-after-merge.md",
+    "Manual agent walkthrough of docs/features/development-workflow/SPEC.md TC-005 using skills/coder/evaldata/local-container-after-merge.md"
+  ],
+  "observations": "HEAD matched the exact candidate before and after read-only acceptance; working tree was clean. Skill SHA-256 80769ed5b6fa48e2657bbf31314b86a9b9b8b8443ce2e23921d64bb3ca479f53. Four synthetic outcomes passed: merged feature selects maintained updater and requires latest verified revision/new generation/immutable image/health/Hub readback before completion; pending latest-main CI keeps delivery pending without fallback; zero-exit Deferred for active work remains pending without killing work or bypassing maintenance/rollback; unrelated invoice application receives no NED-container action. No material independent review findings. These are manual synthetic decisions, not real deployment, provider qualification or statistical evaluation evidence. Repository lint/spec/Python/default medium checks separately passed on the candidate, including real Hermes with a model-only stub; Python had 215 passed and nine existing skips."
+}
