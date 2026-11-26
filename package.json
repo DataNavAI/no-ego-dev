@@ -1,6 +1,6 @@
 {
   "name": "no-ego-dev",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Local project tasks, Communicator and Hermes profile distribution.",
   "type": "module",
   "bin": {
@@ -11,6 +11,8 @@
   "files": [
     "bin/",
     "scripts/install.sh",
+    "scripts/stamp-version.mjs",
+    "build-info.json",
     "src/",
     "apps/",
     "distribution.yaml",
@@ -54,6 +56,7 @@
     "test:all": "npm test",
     "check": "sh -n .githooks/pre-commit && bash -n scripts/install.sh && node --check scripts/verify-manual-test-result.mjs && node --check bin/ned.js && node --check bin/ned-launcher.js && node --check src/launcher.js && node --check bin/ned-web.js && node --check apps/cli/src/cli.js && node --check src/model-providers.js && node --check src/profile-archive.js && node --check src/telemetry.js && node --check src/web/app.js && node --check src/web/dev-server.js && node --check src/web/public/app.js && node --check src/tasks.js && node --check apps/cli/src/task-cli.js && node --check src/database.js && node --check apps/core/src/index.js && node --check apps/core/src/coordinator.js && node --check apps/core/src/http.js && node --check apps/com/src/cli.js && node --check apps/com/src/server.js && node --check apps/com/src/projects.js && node --check apps/com/src/public/app.js && node --check apps/com/src/public/state.js && node --check scripts/run-spec-tests.mjs && node --check bin/ned-staging.js && node --check src/staging/controller.js && node --check src/staging/process-worker.js && python3 -m py_compile src/staging/native_bridge.py",
     "web:dev": "NED_WEB_DEV_MODE=1 node bin/ned-web.js",
+    "prepack": "node scripts/stamp-version.mjs",
     "pack:check": "npm pack --dry-run",
     "test:spec": "node scripts/run-spec-tests.mjs",
     "test:chat:e2e": "node --test docs/features/communicator/tests/TC-037.test.js docs/features/communicator/tests/TC-038.test.js docs/features/communicator/tests/TC-049.test.js docs/features/communicator/tests/TC-050.test.js docs/features/communicator/tests/TC-051.test.js",
