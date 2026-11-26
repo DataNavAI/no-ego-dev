@@ -143,3 +143,22 @@ test('TC-002: subscription sign-in offers a one-shot private authorization code 
   await chat.page.getByRole('button',{name:'Complete sign-in',exact:true}).click();await expect(chat.page.locator('#model-setup')).toBeHidden();assert.equal(starts,1);assert.equal(submissions,1);
   assert(!(await chat.page.content()).includes('synthetic-authorization-code'));assert(!(await chat.page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).includes('synthetic-authorization-code'));assert.deepEqual(chat.errors,[]);
 });
+
+
+test('TC-002: header follows verified instance model and clears stale identity',{timeout:45000},async t=>{
+  let saved={configured:true,source:'profile',provider:'openai',model:'saved-model',models:{openai:['saved-model','unsaved-model']}};
+  let fail=false;
+  const service={status:async()=>saved,prepare:async()=>({}),close:async()=>{},handle:async(_req,_res,send)=>send(fail?503:200,fail?{error:'unavailable'}:saved)};
+  const chat=await browserChat(t,{modelSetup:service,viewport:{width:320,height:844}});await chat.ready();
+  const label=chat.page.locator('#current-model');await expect(label).toHaveText('saved-model');
+  await chat.page.getByRole('button',{name:'Message options',exact:true}).click();
+  await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();
+  await chat.page.locator('#model-name').selectOption('unsaved-model');await expect(label).toHaveText('saved-model');
+  saved={...saved,model:'new-saved-model'};await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(label).toHaveText('new-saved-model');
+  await chat.page.getByRole('button',{name:'Close model settings',exact:true}).click();
+  assert.equal(await chat.page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);
+  if(await chat.page.locator('#model-setup-toggle').isHidden())await chat.page.getByRole('button',{name:'Message options',exact:true}).click();await chat.page.getByRole('button',{name:'Model provider',exact:true}).click();
+  saved={...saved,configured:false};await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(label).toHaveText('No model configured');
+  fail=true;await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(label).toHaveText('Model unavailable');
+  await chat.page.evaluate(()=>globalThis.document.dispatchEvent(new Event('ned-auth-lost')));await expect(label).toBeHidden();await expect(label).toHaveText('');
+});

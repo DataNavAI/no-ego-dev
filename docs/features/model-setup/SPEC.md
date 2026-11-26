@@ -35,6 +35,8 @@ No OpenAI hosted ChatGPT OAuth eligibility or paid inference is implied.
 - FR-006: Bound file/body/provider operations and cleanup; reject symlinks and
   unsafe secret permissions; no arbitrary URL/subprocess or operator-key discovery.
 
+- FR-013: The authenticated workspace header shows the saved current instance model from model status, never an unsaved selection. It updates after successful configuration/refresh, shows “No model configured” when unconfigured and “Model unavailable” after failed verification, and clears on access loss. Long IDs remain readable via accessible label/title without horizontal overflow.
+
 ## Critical user journeys
 
 ### CUJ-001: Configure before first chat
@@ -62,7 +64,8 @@ valid local overrides are retained. Workspace deletion is not part of setup.
 - Evidence: named assertions; synthetic endpoints do not certify hosted OAuth.
 
 ### TC-002: Rendered setup and configured bypass
-- Journey / requirements: CUJ-001; FR-005 and privacy.
+- Journey / requirements: CUJ-001; FR-005/013 and privacy.
+- Header procedure: load a configured synthetic model, change the saved status and refresh, choose an unsaved model, disconnect, fail status and revoke access. Assert current saved label, truthful empty/error states and hidden label after revocation; at320px assert no horizontal overflow. No model calls or configuration writes are triggered by viewing the label.
 - Level / automation: browser integration; tests/TC-002.test.js.
 - Given served COM with a temporary fresh profile and synthetic provider boundary.
 - When selecting/authenticating provider, recovering from failure and loading a
@@ -83,6 +86,9 @@ valid local overrides are retained. Workspace deletion is not part of setup.
 
 ## Design and copy
 
+The light workspace header places a muted12px current model label beside the NED/version brand. On phones it wraps to its own header row; long IDs truncate visually with the full model in the accessible label and title. Reuse the authenticated model status, with no additional request or interactive model picker.
+
+
 Reuse existing NED neutral controls and settings styling. Prompt title “Choose a
 model provider”; local fields “Provider”, “Model”, “API key”; actions “Connect
 provider”, “Set up in NED Hub”, “Check connection”. Status: “Model provider is
@@ -94,7 +100,7 @@ input. First-use setup is a full-screen interstitial; see [layout and interactio
 
 ## Coverage and acceptance
 
-FR-001–004/006 → CUJ-001/002 → TC-001; FR-007–010 → CUJ-003 → TC-003 and actual-Hermes adapter integration; FR-005 → CUJ-001 → TC-002;
+FR-001–004/006 → CUJ-001/002 → TC-001; FR-007–010 → CUJ-003 → TC-003 and actual-Hermes adapter integration; FR-005/013 → CUJ-001 → TC-002;
 actual SDK compatibility → CUJ-002 → the maintained actual-Hermes medium suite. Capture the implemented card and
 compare with this reused design direction before final commit. Canonical full
 checks, CI, merged default installation and actual container/test-cluster

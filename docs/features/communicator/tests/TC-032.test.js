@@ -95,7 +95,7 @@ test('TC-032: desktop debug reservation clamps a resized chat and restores its p
   const dispose=mountPaneResize({shell,divider,view,storage:()=>({getItem:()=> '900',setItem:()=>{}})});
   try{
     assert.equal(values['aria-valuenow'],'900');shell.dataset.debugOpen='true';view.dispatchEvent(new Event('resize'));
-    assert.equal(values['aria-valuenow'],'652');assert.equal(values['aria-valuemax'],'652');
+    assert.equal(values['aria-valuenow'],'628');assert.equal(values['aria-valuemax'],'628');
     shell.dataset.debugOpen='false';view.dispatchEvent(new Event('resize'));assert.equal(values['aria-valuenow'],'900');
   }finally{dispose();}
 });

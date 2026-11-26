@@ -29,6 +29,10 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
     assert.equal(get.headers['cache-control'],'no-store'); assert.equal(get.headers['x-content-type-options'],'nosniff');
     assert.ok(get.headers['content-security-policy'].includes("frame-ancestors 'none'")); assert.equal(get.headers['access-control-allow-origin'],undefined);
   }
+  const metadata=JSON.parse(await readFile(new URL('../../../../package.json',import.meta.url),'utf8'));
+  const html=(await request(app.url,'/')).body;
+  assert.ok(html.includes(`aria-label="NED version ${metadata.version}"`),'served brand identifies the running package version');
+  assert.ok(html.includes(`>v${metadata.version}</span>`),'visible version uses the package metadata');
   assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/health')).body),{status:'ok',service:'ned-api',version:1});
   assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/capabilities')).body),{service:'ned-api',version:1,readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true,modelSetup:true}});
   for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/v1/health',{headers,method:'POST'})).status,403);

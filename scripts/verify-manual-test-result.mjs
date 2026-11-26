@@ -4,9 +4,12 @@ import { execFileSync } from 'node:child_process';
 
 const baseSha = process.env.MANUAL_TEST_BASE_SHA;
 const headSha = process.env.MANUAL_TEST_HEAD_SHA || 'HEAD';
-const evidencePath = '.github/manual-test-result.json';
+const legacyEvidencePath = '.github/manual-test-result.json';
+const candidateEvidencePath = (sha) => `.github/manual-test-results/${sha}.json`;
+const isCandidateEvidence = (path) => /^\.github\/manual-test-results\/[a-f0-9]{40}\.json$/.test(path);
 const documentationOnly = (path) => (
-  path === evidencePath
+  path === legacyEvidencePath
+  || isCandidateEvidence(path)
   || path.startsWith('docs/')
   || path.startsWith('README')
   || path.startsWith('CHANGELOG')
@@ -22,6 +25,14 @@ const codeChanges = changed.filter((path) => !documentationOnly(path));
 if (codeChanges.length === 0) {
   console.log('Manual test gate: documentation-only change; fresh manual result not required.');
   process.exit(0);
+}
+
+const candidateSha = execFileSync('git', ['rev-parse', `${headSha}^`], { encoding: 'utf8' }).trim();
+const evidenceCommitPaths = execFileSync('git', ['diff-tree', '--no-commit-id', '--name-only', '-r', headSha], { encoding: 'utf8' })
+  .split('\n').map((path) => path.trim()).filter(Boolean);
+const evidencePath = evidenceCommitPaths[0];
+if (evidenceCommitPaths.length !== 1 || ![legacyEvidencePath, candidateEvidencePath(candidateSha)].includes(evidencePath)) {
+  throw new Error(`Manual test gate: the PR head must be an evidence-only follow-up commit touching ${candidateEvidencePath(candidateSha)} (or legacy ${legacyEvidencePath}); rerun the agent test for the final code candidate, then commit its evidence separately`);
 }
 
 let evidence;
@@ -44,12 +55,6 @@ if (!Array.isArray(evidence.commands) || evidence.commands.length === 0 || evide
 const testedAt = Date.parse(evidence.tested_at);
 if (!Number.isFinite(testedAt) || testedAt > Date.now() + 5 * 60 * 1000) {
   throw new Error(`Manual test gate: tested_at must be a valid non-future ISO timestamp`);
-}
-const candidateSha = execFileSync('git', ['rev-parse', `${headSha}^`], { encoding: 'utf8' }).trim();
-const evidenceCommitPaths = execFileSync('git', ['diff-tree', '--no-commit-id', '--name-only', '-r', headSha], { encoding: 'utf8' })
-  .split('\n').map((path) => path.trim()).filter(Boolean);
-if (evidenceCommitPaths.length !== 1 || evidenceCommitPaths[0] !== evidencePath) {
-  throw new Error(`Manual test gate: the PR head must be an evidence-only follow-up commit touching ${evidencePath}; rerun the agent test for the final code candidate, then commit its evidence separately`);
 }
 if (evidence.candidate_sha !== candidateSha) {
   throw new Error(`Manual test gate: candidate_sha ${evidence.candidate_sha} does not match exact final code candidate SHA ${candidateSha}; rerun the agent test for that candidate`);

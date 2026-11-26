@@ -3,6 +3,8 @@ import {resolveDatabasePath,openNedDatabase} from '../../../src/database.js';
 import {existsSync} from 'node:fs';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+const {version:NED_VERSION}=createRequire(import.meta.url)('../../../package.json');
 const assets = new Map([['/',['index.html','text/html']],['/styles.css',['styles.css','text/css']],['/app.js',['app.js','text/javascript']],['/state.js',['state.js','text/javascript']],['/chat-ui.js',['chat-ui.js','text/javascript']]]);
 assets.set('/preview-ui.js',['preview-ui.js','text/javascript']);
 assets.set('/model-setup.js',['model-setup.js','text/javascript']);
@@ -25,6 +27,7 @@ assets.set('/work-plan.js',['work-plan.js','text/javascript']);
 assets.set('/task-references.js',['task-references.js','text/javascript']);
 assets.set('/project-work.js',['project-work.js','text/javascript']);
 assets.set('/goals-tasks.js',['goals-tasks.js','text/javascript']);
+assets.set('/workspace.css',['workspace.css','text/css']);
 assets.set('/base.css',['base.css','text/css']);
 assets.set('/work-entry.js',['work-entry.js','text/javascript']);
 assets.set('/activity-ui.js',['activity-ui.js','text/javascript']);
@@ -61,7 +64,10 @@ export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,h
     }
     const asset=assets.get(pathname);
     if(!asset)return error(404,'not_found','Not found.');
-    try{send(200,asset[1],await readFile(new URL('./public/'+asset[0],import.meta.url)));}
+    try{
+      const content=await readFile(new URL('./public/'+asset[0],import.meta.url));
+      send(200,asset[1],asset[0]==='index.html'?content.toString('utf8').replaceAll('{{NED_VERSION}}',NED_VERSION):content);
+    }
     catch{error(500,'internal_error','Unable to read NEDCOM resources.');}
   });
   return {server,maintenance:api.maintenance,preview:api.preview,setHubRegistration:input=>api.setHubRegistration(input),get url(){return url;},get apiCredential(){return api.credential();},async listen(){

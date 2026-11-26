@@ -6,7 +6,7 @@ import * as state from '../../../../apps/com/src/public/state.js';
 export async function clientHarness({EventSource}={}) {
   const classes = () => { const values=new Set();return {toggle(name,on){if(on)values.add(name);else values.delete(name);},contains:name=>values.has(name)}; };
   const documentListeners=new Map();
-  const document = { body: {classList:classes()}, activeElement: null, addEventListener(type,callback){documentListeners.set(type,callback);}, dispatch(type,event={}){documentListeners.get(type)?.(event);} };
+  const document = { body: {classList:classes()}, activeElement: null, addEventListener(type,callback){documentListeners.set(type,callback);}, dispatch(type,event={}){documentListeners.get(type)?.(event);},dispatchEvent(event){this.dispatch(event.type,event);} };
   document.activeElement = document.body;
   const elements = new Map();
   function element(id) {
@@ -18,7 +18,7 @@ export async function clientHarness({EventSource}={}) {
       set disabled(value) { disabled = value; if (value) blur(); }, get disabled() { return disabled; },
       set hidden(value) { hidden = value; if (value) blur(); }, get hidden() { return hidden; },
       focus() { if (!disabled && !hidden) document.activeElement = node; },
-      dispatchEvent(event){node.dispatch(event.type,event);},
+      dispatchEvent(event){node.dispatch(event.type,event);},click(){node.dispatch('click');},
       options:[],
       setAttribute(name,value) { node[name]=value; }, getAttribute(name){return node[name];}, removeAttribute(name) {delete node[name];}, replaceChildren(...nodes) {node.options=nodes;}, add(option) {node.options.push(option);}, getClientRects(){return [{}];},
       addEventListener(type, callback) { listeners.set(type, callback); },
@@ -26,7 +26,7 @@ export async function clientHarness({EventSource}={}) {
     };
     elements.set(id, node); return node;
   }
-  for (const id of ['project','retry','heading','announcement','message','identity','open-app','new-tab-note','navigation-hint','card','app-shell','sidebar-toggle','mobile-sidebar-toggle','sidebar','content','chat','drawer-scrim','project-detail-toggle','aux-toggle','detail-close','preview','preview-tab','dashboard-tab','preview-panel','dashboard','preview-heading','preview-message','preview-identity','preview-open','preview-note','preview-retry','workspace-settings-tab','settings','settings-heading','preview-toggle','left-pane','left-toggle','mobile-navigation','navigation-toggle']) element(id);
+  for (const id of ['project','retry','heading','announcement','message','identity','open-app','new-tab-note','navigation-hint','card','app-shell','sidebar-toggle','mobile-sidebar-toggle','sidebar','content','chat','drawer-scrim','project-detail-toggle','aux-toggle','detail-close','preview','preview-tab','dashboard-tab','preview-panel','dashboard','preview-heading','preview-message','preview-identity','preview-open','preview-note','preview-retry','workspace-settings-tab','settings','settings-heading','preview-toggle','left-pane','left-toggle','mobile-navigation','navigation-toggle','context-toggle','context-close','goals-shortcut','preview-shortcut','dashboard-shortcut','settings-shortcut']) element(id);
   elements.get('content').hidden=true;elements.get('drawer-scrim').hidden=true;
   for(const id of ['sidebar-toggle','project-detail-toggle'])elements.get(id).parentElement=elements.get('sidebar');
   elements.get('chat').parentElement=elements.get('left-pane');elements.get('content').parentElement=elements.get('left-pane');
