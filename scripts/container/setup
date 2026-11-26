@@ -5,6 +5,13 @@ if [ -z "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-}${HERMES_DASHBOARD_BASIC_AUTH_
     echo "Set runtime dashboard password or password hash" >&2
     exit 1
 fi
+# Stage the optional read-only Hub token privately for the Hermes service.
+if [ "${NED_HUB_TOKEN_FILE:-}" = /run/ned-hub-credentials/token ]; then
+    source=/run/secrets/ned_hub_token
+    test -f "$source" && test "$(wc -c < "$source")" -le 520
+    install -d -m 0700 -o hermes -g hermes /run/ned-hub-credentials
+    install -m 0600 -o hermes -g hermes "$source" "$NED_HUB_TOKEN_FILE"
+fi
 # Run before upstream seeds anything, so unrelated volumes remain untouched.
 /opt/ned/python/bin/python /opt/ned/scripts/container/initialize.py /opt/ned /opt/data /projects
 mkdir -p /var/lib/ned /projects

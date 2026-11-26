@@ -1,14 +1,14 @@
 {
-  "candidate_sha": "3d80bf14b3ad3361b2068ffddb5d39fed53dce8e",
+  "candidate_sha": "e50533656c38d692af7d08447f95d113c8d86017",
   "result": "pass",
-  "tested_at": "2026-11-26T08:32:44.449912+00:00",
-  "environment": "macOS 26 ARM64, Colima ARM64, disposable Docker volumes and synthetic process/lease fixtures",
+  "tested_at": "2026-11-26T08:59:04.064014+00:00",
+  "environment": "macOS ARM64, Colima Linux ARM64, direct Docker single-container launch and synthetic Hub",
   "commands": [
     "npm run lint",
     "npm run test:all",
-    "npm run test:spec -- --feature standalone-container",
-    "npm run test:container -- --context colima-ned-staging --image ned-local-maintenance-final-test:228",
-    "python3 /tmp/ned-228-updater-check.py"
+    "actionlint .github/workflows/public-container.yml",
+    "docker build --provenance=false --sbom=false --tag ned-public-release-test:231 .",
+    "python3 /tmp/ned-public-run-test.py"
   ],
-  "observations": "Actual Docker acceptance passed for authenticated COM/dashboard health, service restart, shutdown, volume retention and negative startup. A disposable opted-in container denied maintenance with a running command and accepted prepare, commit and release when idle. The transaction rehearsal exercised busy deferral, copied-volume promotion, and recovery to the old container when candidate health failed. The connected local pilot used the verified main image and an independently authenticated staging tunnel. Candidate cutover and first scheduled live promotion are post-merge checks."
+  "observations": "A direct Docker launch reached an authenticated Hub fixture and remained healthy. Only loopback COM was published, three named data volumes were attached, and the mounted credential was copied into a Hermes-owned 0600 file. The synthetic Hub token was absent from logs and container environment. Workflow lint passed. Publishing a live registry manifest and verifying public anonymous pull are post-merge checks."
 }

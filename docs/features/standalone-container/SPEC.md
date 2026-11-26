@@ -153,3 +153,17 @@ Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPT
 - TC-006 also exercises opt-in registration wiring using a synthetic token and connector, including shared COM identity and connector shutdown.
 - FR-013: The opt-in Mac updater follows current main only after native CLI and smoke CI pass for that exact commit. It uses one local update process, builds before downtime, and takes a Core maintenance lease before replacing an already-running container. Unverified work or process activity defers updates. Replacement boots on copies of all three volumes. Failed readiness restores the previous container and its original volumes.
 - TC-007 covers the lease admission and protected local control boundary. The live updater setup, registration, and stopped-volume copy/rollback are verified separately with the [runbook](RUNBOOK.md).
+
+- FR-014: Publish one public standalone GitHub Container Registry image with native AMD64 and ARM64 variants for Linux-container Docker. A single `docker run` command pulls it anonymously, starts the local container, and registers it using the operator’s private staging Hub token. Named volumes persist runtime data. Published COM ports bind to loopback.
+- FR-015: Publish only from canonical main after its exact CLI and smoke checks and per-architecture container acceptance pass. The manifest contains both architectures, an immutable full-revision tag, and a latest tag updated only for current verified main.
+
+### TC-008: Public staging Hub container startup
+
+- Journey / requirements: CUJ-001 / FR-014, FR-015.
+- Level / automation: manual; [portable startup](RUNBOOK.md#portable-staging-hub-startup) and the [release workflow](../../../.github/workflows/public-container.yml).
+- Given: a verified main release, Docker with a fresh credential directory, and disposable synthetic runtime and Hub token inputs.
+- When: inspect and pull the GHCR image without registry credentials, then use the documented `docker run` command.
+- Then: the manifest advertises AMD64 and ARM64, Docker selects the host architecture, the single container becomes healthy, and the authenticated tunnel comes online against a fixture. Only loopback COM is published. The unprivileged Hermes user owns the staged Hub token at mode 0600. The Hub token is absent from container environment and logs.
+- Variants: a missing or unusable bind-mounted token prevents opt-in startup. A stale revision cannot advance the latest tag. Ordinary standalone startup without Hub remains supported.
+- Cleanup: stop the isolated container and its fixture. Verify named volumes persist through container recreation. Delete only disposable test-owned resources.
+- Pass evidence: public package and manifest URL, anonymous pull readback, native CI and Docker runtime results.

@@ -173,3 +173,33 @@ The owner uses `scripts/update-local-ned-container.py --repo /absolute/path/to/n
 The updater stops only the owned container after the lease commits. It copies all three stopped data volumes before booting the candidate with a new generation. Health requires Docker readiness and a fresh staging Hub online event. Failed promotion resumes the old container on its original volumes and releases the lease. A private journal is reconciled before another update. Previous containers and stopped volume copies are retained for explicit operator retention review. Watch retained volumes and available disk capacity separately. The automatic check reports deferred conditions in its private log; it leaves production and managed Hub instances outside its scope.
 
 Verification uses real Docker on the Mac. Confirm the container image revision equals the reviewed main SHA, Docker reports healthy, the authenticated gateway answers, and staging Hub shows the expected slug online. Verify the launch agent is loaded exactly once. For a disposable test generation, prove a running chat causes the maintenance command to defer, a healthy promotion preserves all three volume sentinels, and a failed candidate restores the original image and volumes. Use synthetic work and credentials, and keep evidence outside Git.
+
+## Portable staging Hub startup
+
+Use Docker in Linux-container mode on AMD64 or ARM64. The standalone image is published in [GitHub Container Registry](https://github.com/orgs/DataNavAI/packages/container/package/no-ego-dev). Pulling the public image requires no registry login.
+
+In [staging Hub](https://staging.ned.datanav.app/), issue a dedicated CLI token for your user and store only the token in a private file. Use a unique instance name. Create a private `ned.env` file with these settings:
+
+```dotenv
+HERMES_DASHBOARD_BASIC_AUTH_USERNAME=ned-operator
+HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=replace-with-a-generated-password
+HERMES_GATEWAY_BOOTSTRAP_STATE=running
+API_SERVER_ENABLED=true
+API_SERVER_HOST=127.0.0.1
+NED_ENV=staging
+NED_HUB_URL=https://staging.ned.datanav.app
+NED_INSTANCE_NAME=my-unique-ned
+NED_HUB_TOKEN_FILE=/run/ned-hub-credentials/token
+```
+
+Replace the bind mount source below with your private token’s absolute host path. On Windows, use a path such as `C:/Users/you/private/ned-hub-token`.
+
+```text
+docker run -d --pull always --name ned --restart unless-stopped --env-file ned.env --mount "type=bind,source=/absolute/path/to/private-hub-token,target=/run/secrets/ned_hub_token,readonly" -p 127.0.0.1:8787:8787 -v ned-profile:/opt/data -v ned-database:/var/lib/ned -v ned-projects:/projects ghcr.io/datanavai/no-ego-dev:latest
+```
+
+Connect from staging Hub when `docker logs ned` reports `NED Hub: online`. A full commit tag or image digest selects a fixed release. The container copies the bind-mounted token into a private Hermes-owned runtime file. Docker administrators can read runtime environment values, including the local dashboard password. The Hub token is absent from that environment. The same three named volumes can be reused when recreating the container.
+
+The [release workflow](../../../.github/workflows/public-container.yml) builds and accepts each native architecture before pushing a multi-architecture manifest. It advances `latest` only for the exact verified current main revision. On the first publication, a GitHub package administrator must make this specific package public in GitHub package settings if it initially has private visibility. Verify anonymous access in a fresh Docker credential directory before announcing the release.
+
+For acceptance, use a dedicated Docker container and three synthetic test volumes. Verify anonymous manifest inspection and pull, that only loopback COM is published, and that the Hermes-owned token copy has mode 0600. Use an authenticated Hub fixture to prove registration. Inspect only sanitized log and environment assertions.
