@@ -117,6 +117,16 @@ Success: expected model reply, unchanged source auth file, no refresh token or u
 - Cleanup: close all test listeners and connections through test teardown; no files or external resources created.
 - Pass evidence: named assertions with no skips, plus actual TC-003/004 image evidence.
 
+### TC-007: Local maintenance is private and atomic
+
+- Journey / requirements: CUJ-002 / FR-013.
+- Level / automation: integration; [tests/TC-007.test.js](tests/TC-007.test.js).
+- Preconditions / fixtures: disposable SQLite file and Unix socket, fixed synthetic image and identity, controlled clock and process state.
+- Given: a recent or active local container; when a prepared claim is interrupted by work, then commit is denied. When an idle claim commits, new work is rejected until release.
+- Steps and assertions: run `npm run test:spec -- --feature standalone-container --case TC-007`. Assert private socket permissions, wrong-generation and wrong-method denial, quiet window, process deferral, invalidation on work, blocked admission, and release.
+- Cleanup: close the socket and remove its temporary directory.
+- Pass evidence: named automated case with every assertion passing.
+
 ## Coverage and acceptance
 | Requirement | Journey | Test cases | Automated test / manual procedure |
 | --- | --- | --- | --- |
@@ -131,7 +141,15 @@ Success: expected model reply, unchanged source auth file, no refresh token or u
 
 | FR-009 | CUJ-004 | TC-005 | Runtime-only token export and bounded real provider query |
 | FR-010 | CUJ-001 | TC-003 | Actual image redirect/query/auth assertions and first-login browser procedure |
+| FR-012, FR-013 | CUJ-002 | TC-006, TC-007 | Staging registration adapter and local promotion admission |
 | FR-011 | CUJ-001, CUJ-002 | TC-006, TC-003, TC-004 | Real HTTP health integration and default/custom image origins |
 
 ## Open questions and coverage gaps
 Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPTANCE.md). Native AMD64 and ARM64 matrix acceptance is required for the new architecture coverage; results in PR checks and the final manual-test receipt must identify actual executed candidates. Native browser visual inspection remains separate. Live model calls are outside credential-free acceptance; TC-005 records separate authorized provider evidence. No claim of artifact/task support before those independent changes merge.
+
+## Local container registration
+
+- FR-012: A standalone container can opt in to staging Hub registration with a dedicated private Hub token file and a stable instance name. The authenticated outbound tunnel and direct loopback UI use the same COM server. Ordinary standalone containers without registration settings continue to start independently of Hub.
+- TC-006 also exercises opt-in registration wiring using a synthetic token and connector, including shared COM identity and connector shutdown.
+- FR-013: The opt-in Mac updater follows current main only after native CLI and smoke CI pass for that exact commit. It uses one local update process, builds before downtime, and takes a Core maintenance lease before replacing an already-running container. Unverified work or process activity defers updates. Replacement boots on copies of all three volumes. Failed readiness restores the previous container and its original volumes.
+- TC-007 covers the lease admission and protected local control boundary. The live updater setup, registration, and stopped-volume copy/rollback are verified separately with the [runbook](RUNBOOK.md).
