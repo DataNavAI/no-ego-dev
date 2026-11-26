@@ -105,9 +105,13 @@ document.addEventListener('ned-open-provider-settings',()=>{
   workspace='preview';mobileNavigation.open=false;
   selectCanvas(document.getElementById('workspace-settings-tab'),true);
 });
-function closeContext(){contextOpen=false;workspace='left';syncNavigation();contextToggle.focus();}
+const focusContextControl=()=> (mobileViewport?.matches?navigationToggle:contextToggle).focus();
+function closeContext(){contextOpen=false;workspace='left';syncNavigation();focusContextControl();}
 contextClose.addEventListener('click',closeContext);
-contextToggle.addEventListener('click',()=>{if(!preview.hidden)closeContext();else{contextOpen=true;workspace='preview';syncNavigation();}});
+contextToggle.addEventListener('click',()=>{
+  if(!preview.hidden)closeContext();
+  else{contextOpen=true;workspace='preview';syncNavigation();}
+});
 for(const [id,target] of [['goals-shortcut','goals-pane-tab'],['preview-shortcut','preview-tab'],['dashboard-shortcut','dashboard-tab'],['settings-shortcut','workspace-settings-tab']]){
   document.getElementById(id).addEventListener('click',()=>{document.getElementById(target).click();document.getElementById(target).focus();});
 }
@@ -130,7 +134,7 @@ mobileViewport?.addEventListener?.('change',()=>{
   if(focusInMenu&&!mobileViewport.matches&&active===document.body){
     const destination=workspace==='left'?chat:canvasHeading();
     destination.focus();
-  }else if(leftPane.hidden&&focusInLeft||preview.hidden&&focusInPreview)contextToggle.focus();
+  }else if(leftPane.hidden&&focusInLeft||preview.hidden&&focusInPreview)focusContextControl();
 });
 syncNavigation();render();void load();
 document.addEventListener('ned-auth-restored',()=>{workspaceStream?.close();workspaceStream=null;state=beginLoad(state);render();void load();});

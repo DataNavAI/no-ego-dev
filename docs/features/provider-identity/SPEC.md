@@ -17,11 +17,11 @@ GitHub uses a configured device-enabled GitHub App client ID. Its installation a
 - FR-003. Pending requests expire within ten minutes and disappear on restart. Opaque request IDs bind each approval to the reviewed attempt. Polling, cancel, expiry, stale controls and overlapping requests cannot overwrite an existing connection. Confirmed records use the encrypted vault in a separate namespace inaccessible through generic Secrets API or CLI. Status exposes only provider identity and connection metadata. Disconnect deletes the local connection and identifies the provider as the owner of upstream revocation.
 - FR-004. `ned identity exec github -- gh api <relative-endpoint> …` and `ned identity exec aws -- aws …` use the selected connection in an isolated provider CLI environment. `ned identity domain` performs the scoped GoDaddy domain read without exporting a PAT. Unavailable or expired connection fails closed without ambient fallback. GitHub access expires per provider and can be reconnected. AWS can mint short-lived credentials for its stored role while the portal token is valid, and requires reconnection when it expires. No token values appear in NED status, browser responses, process arguments, or logs. An operator invoking a provider CLI remains responsible for the effects of that command.
 
-- FR-005. A pending provider request created during a chat turn appears as a provider-specific action in Chat when the reply ends. It opens the existing private Settings flow and clears after confirmation or cancellation. Chat text cannot create this action. Once connected, a subsequent explicit chat request can use the confirmed identity.
+- FR-005. A pending provider request created during a chat turn appears as a provider-specific action inside a NED message in the conversation when the reply ends. It opens the existing private Settings flow and clears after confirmation or cancellation. Chat text cannot create this action. Once connected, a subsequent explicit chat request can use the confirmed identity.
 
 - FR-006. A Hub-registered standalone container can queue AWS through its local agent CLI. Only the owner-authorized Hub browser transport can view, complete, or disconnect this enrollment. The container provides its own AWS CLI. Other providers, unauthenticated requests, direct browser transport, and the public tunnel cannot use this route.
 
-- FR-007. In authenticated Hub Chat, a supported standalone instance offers Connect AWS while AWS is disconnected or expired. Selecting it queues a request and opens the private Settings form even if the assistant has only replied with prose or a link. Opening Chat alone does not queue a request.
+- FR-007. In authenticated Hub Chat, a supported standalone instance offers Connect AWS in a NED message at the latest end of the conversation while AWS is disconnected or expired. An existing action stays ahead of later turns. Selecting it queues a request and opens the private Settings form even if the assistant has only replied with prose or a link. Opening Chat alone does not queue a request.
 
 - FR-008. The Hermes `ned` tool action `request_provider_auth` queues a provider request and returns a non-secret request receipt. NED renders a conversation card only for a validated native tool result. The card opens an accessible modal after checking that its request still matches the authenticated instance. Stale cards never act on newer requests. Manual Settings remains available.
 
@@ -99,10 +99,10 @@ Starting from a pending request or a connected account, the operator can cancel 
 
 ### TC-006: Standalone AWS through the Hub boundary
 
-- Journey / requirements: CUJ-001, CUJ-002 / FR-002–FR-006.
+- Journey / requirements: CUJ-001, CUJ-002 / FR-002–FR-007.
 - Level / automation: integration; [TC-006.test.js](tests/TC-006.test.js).
 - Preconditions: disposable container adapter and credential home, authenticated Hub protocol fixture, synthetic AWS device and protected-resource endpoints.
-- Given: an owner opens Chat through the Hub bridge. When the agent queues AWS and the owner approves the assigned role, then Chat shows Connect AWS and a retry uses the bound identity.
+- Given: an owner opens Chat through the Hub bridge. When the agent queues AWS and the owner approves the assigned role, then Chat shows Connect AWS inside a NED message in the transcript, removes the action after connection, and a retry uses the bound identity.
 - Variants: an assistant link alone does not queue enrollment, but the owner can open the form from Chat. Reject anonymous and cross-account requests at ingress, reject direct browser actions, and leave other providers unavailable.
 - Cleanup: close the listeners, browser and fake provider, and remove fixture state.
 - Pass evidence: automated browser scenario and authorization boundary assertions.

@@ -118,7 +118,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   };
   const request='Read my protected AWS resource.';
   const linkOnly='Sign in to AWS.';
-  const fixture=await browserChat(t,{identityOptions,deferLogin:true,
+  const fixture=await browserChat(t,{identityOptions,deferLogin:true,viewport:{width:390,height:844},
     async startApp(options){
       const file=join(options.home,'hub-token');
       await writeFile(file,token,{mode:0o600});
@@ -156,16 +156,22 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
     turns.at(-1).finish();
     await expect(page.getByRole('button',{name:'Send message',exact:true})).toBeVisible();
   }
-  const shortcut=page.getByRole('group',{name:'Provider authentication'}).getByRole('button',{name:'Connect AWS'});
+  const conversation=page.getByRole('region',{name:'Conversation'});
+  const providerMessage=conversation.locator('article.assistant-message').filter({has:page.getByRole('button',{name:'Connect AWS'})});
+  const shortcut=providerMessage.getByRole('button',{name:'Connect AWS'});
   const settings=page.locator('[data-provider=aws]');
   await send(1,linkOnly);
   await expect(page.getByRole('region',{name:'Conversation'})).toContainText('https://example.test/aws-sign-in');
   const state=await fetch(hub.origin+path,{headers:{...headers,Cookie:'hub-owner=fixture'}});
   assert.equal((await state.json()).connections[0].request,null);
+  await expect(providerMessage).toContainText('NED');
+  const evidence = process.env.NED_UI_EVIDENCE_DIR;
+  if(evidence)await page.screenshot({path:join(evidence,'mobile-aws-message.png')});
   await shortcut.click();
   await expect(settings.locator('[name=startUrl]')).toBeVisible();
   await settings.getByRole('button',{name:'Cancel connection'}).click();
   await expect(settings.getByRole('button',{name:'Connect',exact:true})).toBeVisible();
+  await page.locator('#context-close').click();
   await send(2);
   await shortcut.click();
   await settings.locator('[name=startUrl]').fill('https://example.awsapps.com/start');
@@ -188,6 +194,8 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   assert.deepEqual(protectedReads,[]);
   await settings.getByRole('button',{name:'Confirm connection'}).click();
   await expect(settings).toContainText('Connected as');
+  await page.locator('#context-close').click();
+  await expect(shortcut).toHaveCount(0);
   await send(3);
   await expect(page.getByRole('region',{name:'Conversation'})).toContainText('Protected AWS resource read.');
   await expect(page.getByRole('region',{name:'Conversation'})).not.toContainText(portalToken);
