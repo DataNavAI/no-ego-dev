@@ -16,6 +16,17 @@ function literalLinks(text,document){
   }
   const tail=document.createElement('span');tail.textContent=text.slice(offset);paragraph.append(tail);return paragraph;
 }
+export function approvalLinkName(value){
+  try{const url=new URL(value);if(url.protocol!=='https:'||url.username||url.password||url.port)return null;
+    const aws=/(^|\.)signin\.aws$/.test(url.hostname)||/^device\.sso\.[a-z0-9-]+\.amazonaws\.com$/.test(url.hostname);
+    return aws?'Open AWS sign-in':null;
+  }catch{return null;}
+}
+function readableApprovalLinks(fragment,document){
+  const decorate=(link,label)=>{link.textContent=label;link.className='approval-link';link.setAttribute('target','_blank');link.setAttribute('rel','noopener noreferrer');};
+  for(const link of fragment.querySelectorAll('a')){const href=link.getAttribute('href');const label=approvalLinkName(href);if(label&&link.textContent.trim()===href)decorate(link,label);}
+  for(const code of fragment.querySelectorAll('code')){if(code.closest?.('pre'))continue;const href=code.textContent.trim(),label=approvalLinkName(href);if(!label)continue;const link=document.createElement('a');link.setAttribute('href',href);decorate(link,label);code.replaceWith(link);}
+}
 const stringify=value=>typeof value==='string'?value:JSON.stringify(value,null,2) ?? '';
 export function messageParts(row){
   const provider=providerAuthRow(row);if(provider)return [{kind:'provider-auth',provider}];
@@ -52,11 +63,13 @@ export function renderMessageContent(row,document,libraries){
       const receipt=part.provider;
       const name={aws:'AWS',github:'GitHub',godaddy:'GoDaddy'}[receipt.provider];
       const card=document.createElement('section');card.className='provider-auth-card';
+      card.setAttribute('data-auth-provider',receipt.provider);card.setAttribute('data-request-id',receipt.request_id);card.setAttribute('data-expires-at',receipt.expires_at);
       const heading=document.createElement('strong');heading.textContent='Connect '+name;
       const text=document.createElement('p');text.textContent='Authorize NED to use your '+name+' account.';
       const open=document.createElement('button');open.type='button';open.textContent='Review connection';
       open.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('ned-provider-auth-card',{detail:{receipt,trigger:open}})));
-      card.append(heading,text,open);root.append(card);continue;
+      card.append(heading,text,open);root.append(card);
+      if(document.defaultView)queueMicrotask(()=>document.dispatchEvent(new Event('ned-provider-card-mounted')));continue;
     }
     if(part.kind==='secret-request'){root.append(renderSecretRequest(part.request,document));continue;}
     if(part.kind==='secret-share'){root.append(renderSecretCard(part.share,document));continue;}
@@ -73,7 +86,7 @@ export function renderMessageContent(row,document,libraries){
         if(!/^https?:\/\//i.test(href))link.removeAttribute('href');
         else link.setAttribute('rel','noopener noreferrer');
       }
-      section.append(fragment);root.append(section);
+      readableApprovalLinks(fragment,document);section.append(fragment);root.append(section);
       }catch{const text=document.createElement('p');text.textContent=part.text;root.append(text);}
     }else if(part.kind==='text'&&row.role==='user'&&document.createElement('span').setAttribute)root.append(literalLinks(part.text,document));
     else {const text=document.createElement('p');text.textContent=part.text;root.append(text);}

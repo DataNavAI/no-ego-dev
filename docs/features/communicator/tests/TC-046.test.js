@@ -14,7 +14,7 @@ test('TC-046: chat roles and primary action use a distinct, readable palette',{t
     const style=selector=>page.locator(selector).evaluate(node=>{
       const css=globalThis.getComputedStyle(node);
       const rgb=cssColor=>cssColor.match(/\d+(?:\.\d+)?/g).slice(0,3).map(Number);
-      return {fg:rgb(css.color),bg:rgb(css.backgroundColor),outline:rgb(css.outlineColor)};
+      return {fg:rgb(css.color),bg:rgb(css.backgroundColor),transparent:css.backgroundColor==='rgba(0, 0, 0, 0)',outline:rgb(css.outlineColor)};
     });
     await ready();
     const canvas=await style('#chat'),workspace=await style('#preview'),disabled=await style('#chat-send');
@@ -23,7 +23,7 @@ test('TC-046: chat roles and primary action use a distinct, readable palette',{t
     await send('Suggest three items for a small picnic.');
     const user=await style('.user-message'),reply=await style('.assistant-message'),composer=await style('#chat-form');
     assert.deepEqual(user.bg,[204,228,250]);
-    assert.deepEqual(reply.bg,[233,237,242]);
+    if(device==='mobile'){assert.equal(reply.transparent,true);reply.bg=canvas.bg;}else assert.deepEqual(reply.bg,[233,237,242]);
     const aligned=await page.locator('.assistant-message').evaluate(node=>{
       const transcript=node.parentElement;
       const left=transcript.getBoundingClientRect().left+parseFloat(globalThis.getComputedStyle(transcript).paddingLeft);

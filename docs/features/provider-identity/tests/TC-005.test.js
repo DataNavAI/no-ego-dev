@@ -40,10 +40,10 @@ test('TC-005: a chat request opens provider authorization and retry reads the pr
   await expect(page.getByRole('region', {name: 'Conversation'})).toContainText('An assistant may mention');
   await expect(chatAuth).toBeHidden();
   await send(prompt, 2);
-  await expect(chatAuth.getByRole('button', {name: 'Connect GoDaddy'})).toBeVisible();
+  await expect(chatAuth.getByRole('button', {name: 'Review connection'})).toBeVisible();
   assert.deepEqual(provider.reads, [401]);
   assert.deepEqual(agentCalls, [{command: 'domain', code: 1}, {command: 'connect', code: 0}]);
-  await chatAuth.getByRole('button', {name: 'Connect GoDaddy'}).click();
+  await chatAuth.getByRole('button', {name: 'Review connection'}).click();
   const settings = page.locator('[data-provider=godaddy]');
   await expect(settings.getByLabel('Managed domain')).toBeVisible();
   await page.context().route('https://developer.godaddy.com/en/docs/api-users/auth', route =>
@@ -62,7 +62,7 @@ test('TC-005: a chat request opens provider authorization and retry reads the pr
   assert.deepEqual(provider.reads, [401, 200]);
   assert.equal((await cli(fixture.home, ['domain'], {identityOptions})).code, 1);
   await settings.getByRole('button', {name: 'Confirm connection'}).click();
-  await expect(settings).toContainText('Connected as ' + provider.domain);
+  await expect(page.getByRole('dialog',{name:'Connect GoDaddy'})).toBeHidden();
   await expect(chatAuth).toBeHidden();
   await send(prompt, 3);
   const conversation = page.getByRole('region', {name: 'Conversation'});

@@ -161,7 +161,7 @@ export function mountChat(libraries) {
       const article = document.createElement('article');
       article.className = `chat-message ${row.role === 'user' ? 'user-message' : 'assistant-message'}`;
       article.dataset.messageId=String(row.id);
-      const author = document.createElement('strong'); author.textContent = row.role === 'user' ? 'You' : row.role === 'assistant' ? assistantName : 'Tool';
+      const author = document.createElement('strong'); author.textContent = row.role === 'user' ? 'You' : assistantName;
       const content = renderMessageContent(row,document,libraries);
       article.append(author,content);
       if(row.role==='assistant'&&row.reaction_target){

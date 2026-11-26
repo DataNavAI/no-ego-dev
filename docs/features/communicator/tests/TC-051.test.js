@@ -82,7 +82,7 @@ test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async
   const {page,draft,ready,turns}=await browserChat(t,{
     viewport:{width:390,height:844},
     preparePage:page=>page.route('**/api/v1/identity',route=>route.fulfill({
-      json:{awsChatShortcut:true,connections:[{provider:'aws',status:'disconnected',request:null}]},
+      json:{awsChatShortcut:true,connections:[{provider:'aws',status:'disconnected',request:{id:'12345678-1234-1234-1234-123456789abc',state:'requested',expiresAt:Date.now()+600000}}]},
     })),
   });
   await ready();
@@ -92,7 +92,7 @@ test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async
   });
   await page.reload();
   await ready();
-  await expect(page.getByRole('button',{name:'Connect AWS'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Review connection'})).toBeVisible();
   const composer=page.locator('.compose-dock');
   const send=page.locator('#chat-send');
   const shell=page.locator('#app-shell');
@@ -182,7 +182,7 @@ test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async
   turns[0].partial('The original response continued after reload.');
   await expect(liveReply).toContainText('The original response continued after reload.');
   await expect.poll(replyEndsInView).toBe(true);
-  await expect(page.getByRole('button',{name:'Connect AWS'})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Review connection'})).toHaveCount(1);
   assert.equal(turns.length,1);
   turns[0].finish();
   await expect(send).toHaveAttribute('aria-label','Send message');

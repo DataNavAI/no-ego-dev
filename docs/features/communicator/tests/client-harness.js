@@ -26,7 +26,7 @@ export async function clientHarness({EventSource}={}) {
     };
     elements.set(id, node); return node;
   }
-  for (const id of ['project','retry','heading','announcement','message','identity','open-app','new-tab-note','navigation-hint','card','app-shell','sidebar-toggle','mobile-sidebar-toggle','sidebar','content','chat','drawer-scrim','project-detail-toggle','aux-toggle','detail-close','preview','preview-tab','dashboard-tab','preview-panel','dashboard','preview-heading','preview-message','preview-identity','preview-open','preview-note','preview-retry','workspace-settings-tab','settings','settings-heading','preview-toggle','left-pane','left-toggle','mobile-navigation','navigation-toggle','context-toggle','context-close','goals-shortcut','preview-shortcut','dashboard-shortcut','settings-shortcut']) element(id);
+  for (const id of ['project','retry','heading','announcement','message','identity','open-app','new-tab-note','navigation-hint','card','app-shell','sidebar-toggle','mobile-sidebar-toggle','sidebar','content','chat','drawer-scrim','project-detail-toggle','aux-toggle','detail-close','preview','preview-tab','dashboard-tab','preview-panel','dashboard','preview-heading','preview-message','preview-identity','preview-open','preview-note','preview-retry','workspace-settings-tab','settings','settings-heading','preview-toggle','left-pane','left-toggle','mobile-navigation','navigation-toggle','context-toggle','context-close','mobile-project-toggle','artifacts-status','goals-shortcut','preview-shortcut','dashboard-shortcut','settings-shortcut']) element(id);
   elements.get('content').hidden=true;elements.get('drawer-scrim').hidden=true;
   for(const id of ['sidebar-toggle','project-detail-toggle'])elements.get(id).parentElement=elements.get('sidebar');
   elements.get('chat').parentElement=elements.get('left-pane');elements.get('content').parentElement=elements.get('left-pane');
@@ -40,7 +40,7 @@ export async function clientHarness({EventSource}={}) {
   const requests = [];
   const fetch = url => new Promise(resolve => requests.push({ url, resolve }));
   elements.get('workspace-settings-tab').textContent='Settings';elements.get('workspace-settings-tab').setAttribute('aria-controls','settings');
-  element('goals-pane-tab').textContent='Goals & Tasks';elements.get('goals-pane-tab').setAttribute('aria-controls','goals-panel');element('goals-panel');element('goals-pane-heading');
+  element('goals-pane-tab').textContent='Goals';elements.get('goals-pane-tab').setAttribute('aria-controls','goals-panel');element('goals-panel');element('goals-pane-heading');element('artifacts-pane-tab').textContent='Artifacts';elements.get('artifacts-pane-tab').setAttribute('aria-controls','artifacts-panel');element('artifacts-panel');
   const source = await readFile(new URL('../../../../apps/com/src/public/app.js', import.meta.url), 'utf8');
   runInNewContext(source.replace(/^import[^\n]+\n/gm, ''), { ...state, mountPreview:()=>{}, document, fetch, Option: class {constructor(label,value){this.textContent=label;this.value=value;}},EventSource,Event:class{constructor(type){this.type=type;}}, encodeURIComponent,matchMedia:()=>viewport,getComputedStyle:()=>({display:'block',visibility:'visible'}) });
   const flush = () => new Promise(resolve => setImmediate(resolve));

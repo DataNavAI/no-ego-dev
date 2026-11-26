@@ -50,7 +50,7 @@ test('TC-004: mobile Settings presents CLI request, confirms identity, and clear
     await expect(page.locator('#app-shell')).toBeVisible();
   }
   await settings(url);
-  await page.getByRole('button', {name: 'Connect GitHub', exact: true}).click();
+  await page.locator('#navigation-toggle').click();await page.locator('#settings-shortcut').click();
   const github = page.locator('[data-provider=github]');
   const godaddy = page.locator('[data-provider=godaddy]');
   await github.getByLabel('GitHub username').fill('test-owner');

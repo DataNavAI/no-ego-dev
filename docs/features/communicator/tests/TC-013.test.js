@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {marked} from 'marked';
-import {messageParts,renderMessageContent} from '../../../../apps/com/src/public/message-content.js';
+import {messageParts,renderMessageContent,approvalLinkName} from '../../../../apps/com/src/public/message-content.js';
 import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 
 function dom(){
@@ -103,4 +103,10 @@ test('TC-013: bounded structured projections never fall back to raw tool payload
     assert.match(root.textContent,/Visible prose/);
     assert.ok(find(root,node=>node.className==='message-copy'));
   });
+});
+
+
+test('TC-013: readable AWS approval links require an exact HTTPS provider host',()=>{
+  for(const url of ['https://us-east-1.signin.aws/platform/authorize?request_uri=synthetic','https://device.sso.us-west-2.amazonaws.com/'])assert.equal(approvalLinkName(url),'Open AWS sign-in');
+  for(const url of ['http://us-east-1.signin.aws/','https://signin.aws.evil.invalid/','https://evil.invalid/?next=signin.aws','https://user:password@signin.aws/','https://signin.aws:444/','javascript:alert(1)','not a URL'])assert.equal(approvalLinkName(url),null);
 });

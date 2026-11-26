@@ -17,11 +17,11 @@ test('TC-006: native tool result creates an explicit private retrieval card afte
   await card.getByRole('button',{name:'Reveal secret',exact:true}).click();await expect(card.locator('textarea')).toHaveValue('synthetic-card-password');
   assert.equal(await card.locator('.message-copy').count(),0);assert.equal(JSON.stringify(f.requests).includes('synthetic-card-password'),false);
   await page.screenshot({path:'/tmp/ned-secret-card-desktop.png'});
-  await page.setViewportSize({width:390,height:844});await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();await expect(card.locator('textarea')).toHaveValue('');
-  await page.locator('#navigation-toggle').click();await page.locator('#left-toggle').click();await card.getByRole('button',{name:'Reveal secret',exact:true}).click();await expect(card.locator('textarea')).toHaveValue('synthetic-card-password');
+  await page.setViewportSize({width:390,height:844});await page.locator('#mobile-project-toggle').click();await expect(card.locator('textarea')).toHaveValue('');
+  if(await page.locator('#preview').isVisible())await page.locator('#context-close').click();await card.getByRole('button',{name:'Reveal secret',exact:true}).click();await expect(card.locator('textarea')).toHaveValue('synthetic-card-password');
   await card.getByRole('button',{name:'Hide',exact:true}).click();await expect(card.locator('textarea')).toHaveValue('');
   await page.reload();await expect(page.locator('.secret-share-card')).toHaveCount(1);await expect(page.locator('.secret-share-value')).toBeHidden();
-  await page.setViewportSize({width:390,height:844});await page.locator('#navigation-toggle').click();await page.locator('#left-toggle').click();await page.locator('.secret-share-card').scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/ned-secret-card-mobile.png'});
+  await page.setViewportSize({width:390,height:844});await expect(page.locator('#mobile-project-toggle')).toBeVisible();await page.locator('.secret-share-card').scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/ned-secret-card-mobile.png'});
   assert.equal(await page.locator('#transcript details:not(.message-reaction)').count(),0);assert.ok(!(await page.locator('#transcript').textContent()).includes('must-not-reach-browser'));
   store.set('ADMIN_PASSWORD','rotated');await page.locator('.secret-share-card').getByRole('button',{name:'Reveal secret',exact:true}).click();await expect(page.locator('.secret-share-card')).toContainText('Secret is unavailable. Ask NED to share it again.');await expect(page.locator('.secret-share-value')).toHaveValue('');
   assert.deepEqual(f.errors,[]);
@@ -32,6 +32,6 @@ test('TC-006: a delayed shared-secret reveal cannot restore bytes after leaving 
   f.messages.push({id:'native-tool',role:'tool',name:'ned',content:JSON.stringify(share)});await page.reload();await expect(page.locator('.secret-share-card')).toBeVisible();
   let release,seen;const gate=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
   await page.route('**/api/v1/secrets/shares/*/reveal',async route=>{seen();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({value:'synthetic-delayed-card'})});});
-  await page.getByRole('button',{name:'Reveal secret',exact:true}).click();await requested;await page.setViewportSize({width:390,height:844});await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();release();
-  await expect(page.locator('.secret-share-value')).toHaveValue('');await page.locator('#navigation-toggle').click();await page.locator('#left-toggle').click();await expect(page.locator('.secret-share-value')).toBeHidden();assert.deepEqual(f.errors,[]);
+  await page.getByRole('button',{name:'Reveal secret',exact:true}).click();await requested;await page.setViewportSize({width:390,height:844});await page.locator('#mobile-project-toggle').click();release();
+  await expect(page.locator('.secret-share-value')).toHaveValue('');if(await page.locator('#preview').isVisible())await page.locator('#context-close').click();await expect(page.locator('.secret-share-value')).toBeHidden();assert.deepEqual(f.errors,[]);
 });

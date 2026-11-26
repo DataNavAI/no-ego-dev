@@ -28,7 +28,7 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
   await expect(page.locator('#chat-task-references')).toContainText('Build');
   await expect(f.draft).toHaveValue('Keep this draft');assert.equal(f.turns.length,0);
   await page.screenshot({path:'/tmp/ned-dashboard-open-1280.png'});
-  await page.setViewportSize({width:390,height:844});await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();
+  await page.setViewportSize({width:390,height:844});await page.locator('#mobile-project-toggle').click();
   await page.screenshot({path:'/tmp/ned-dashboard-open-390.png'});
   await page.setViewportSize({width:1280,height:900});
   await page.locator('#dashboard-show-completed').check();await expect(page.locator('#dashboard .work-title')).toHaveText(['Launch','Build','Design','Review']);
@@ -46,8 +46,8 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
   fail=false;await page.locator('#dashboard-retry').click();await expect(page.locator('#dashboard')).toContainText('3 / 3 tasks completed');
   await expect(f.draft).toHaveValue('Keep this draft');await expect(page.locator('#chat-task-references')).toContainText('Build');
   for(const width of [1280,390,320]){
-    await page.setViewportSize({width,height:900});
-    if(width<768){await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();}
+    await page.setViewportSize({width,height:900});await page.evaluate(()=>new Promise(resolve=>globalThis.requestAnimationFrame(()=>globalThis.requestAnimationFrame(resolve))));
+    if(width<768&&await page.locator('#preview').isHidden()){await page.locator('#mobile-project-toggle').click();}
     await expect(page.locator('#dashboard')).toBeVisible();
     assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
     await page.screenshot({path:`/tmp/ned-dashboard-${width}.png`});

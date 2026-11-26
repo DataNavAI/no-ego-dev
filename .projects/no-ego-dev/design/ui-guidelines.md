@@ -1,6 +1,9 @@
 # NEDCOM scoped UI guidelines
 
-## Current governing layout — Muse-inspired (November26)
+## Current mobile refinement — organization (#255–260)
+The [illustrated mobile direction](../../../docs/features/communicator/design/mobile-organization/README.md) and communicator FR-090–095 supersede earlier mobile disclosure/bubble guidance: grouped identity, direct Project, More utilities, full-width Project with Back to chat, contextual trusted authorization cards and compact pinned composer. Keep desktop Muse rail/split layout. Preserve existing auth, keyboard, draft/media/reference and truthful unavailable-state contracts.
+
+## Current governing desktop layout — Muse-inspired (November26)
 User-approved direction: retain NED's light theme; slim64px desktop navigation rail, wide central chat, and collapsible/resizable right project context pane. Compact screens keep a native navigation disclosure and full-width Chat or Project views. Preserve version branding, fixed session, drafts, references, preview DOM, truthful project identity and all auth/error behavior. [UI-AC-27](../../../docs/features/communicator/design/ui-brief.md#muse-layout--current-ui-ac-27-235) and FR-087–089 supersede conflicting historical geometry below. Use only real NED actions; do not copy private Muse content or invent Call/Invite features.
 Scope: communicator only, separate from existing onboarding. Users browse a project's work, review artifacts and its app. Project identity precedes project content. Each section has one primary job. Plain labels: Project, Projects, Goal & Tasks, Artifacts, Preview, Retry. Recovery explains user action without exceptions/sensitive paths.
 

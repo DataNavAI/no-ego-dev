@@ -1,0 +1,13 @@
+{
+  "candidate_sha": "0ff5059b399612fbad62a44723f6be50e102ad48",
+  "result": "pass",
+  "tested_at": "2026-11-26T20:11:27.200899+00:00",
+  "environment": "macOS ARM64 pinned Node22.14.0; real Chromium with isolated NED profiles, synthetic provider status and populated temporary project/chat",
+  "commands": [
+    "npm run lint",
+    "npm run test:all (normal commit hook; all automated feature cases and Python)",
+    "node --test docs/features/communicator/tests/TC-053.test.js docs/features/provider-identity/tests/TC-007.test.js",
+    "node /Volumes/Agent/Codex/worktrees/mobile-organization/verify-mobile.mjs"
+  ],
+  "observations": "Issues255\u2013260: grouped mobile logo/version/current model with direct Project and More; utilities retained. Full-width Project has Back to chat and preserved draft, nonzero transcript scroll, task references, selected tab and Preview DOM. Goals label restored; Artifacts navigation uses a truthful unavailable state pending existing #117. Assistant prose has restrained mobile surface and44px secondary controls. Empty/populated composer stays bottom-pinned with safe-area spacing; existing multiline/media/keyboard-sized viewport/streaming checks pass. Idle AWS initiation moved to message options/settings; active trusted receipt/API cards show actual supplied code, named link, Copy feedback and current status. Status failure/expiration/auth loss remove stale code/links; deadline/visible-tab refresh and modal focus recovery covered with no duplicate POSTs. Ordinary prose cannot create trusted cards; long exact HTTPS AWS links have named presentation while code samples stay literal. Actual protected GitHub/GoDaddy/AWS mock-provider flows and secret clearing/navigation regressions pass. Full lint/all automated specs/Python/Hermes integration passed via normal hook. Fresh populated320/390/430/1280px and Project320/390px captures and200% text inspected with no page overflow or browser errors. Self-review complete. Private original screenshot/auth details never published; only redacted synthetic review images attached to each issue at immutable commit b300998. Physical Android keyboard/rotation and unrelated live-provider acceptance are not claimed. The enlarged-text finding was fixed: short authorization codes stay intact, Copy and secondary actions reflow to separate rows, and the primary label is concise with a full accessible name. TC-007 reproduced character stacking before the fix and now verifies readable code height at320px/200% text. Current main archive-fixture repair preserved; normal full hook and fresh browser/visual acceptance passed on the integrated contents. Self-review of final UI complete."
+}
