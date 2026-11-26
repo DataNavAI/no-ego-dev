@@ -5,7 +5,7 @@ if [ -z "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-}${HERMES_DASHBOARD_BASIC_AUTH_
     echo "Set runtime dashboard password or password hash" >&2
     exit 1
 fi
-# Compose mounts its secret as root. Stage it privately for the Hermes service.
+# Stage the optional read-only Hub token privately for the Hermes service.
 if [ "${NED_HUB_TOKEN_FILE:-}" = /run/ned-hub-credentials/token ]; then
     source=/run/secrets/ned_hub_token
     test -f "$source" && test "$(wc -c < "$source")" -le 520
