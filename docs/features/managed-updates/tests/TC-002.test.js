@@ -13,7 +13,7 @@ import {startHubConnection} from '../../../../apps/com/src/hub.js';
 import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 import {configuredModelSetup} from '../../communicator/tests/model-fixture.js';
 import {endStream} from '../../communicator/tests/stream-fixtures.js';
-import {chromium} from 'playwright';
+import {chromium,expect} from 'playwright/test';
 
 const instanceId='11111111-1111-4111-8111-111111111111';
 const intent={instanceId,generation:1,requestId:'22222222-2222-4222-8222-222222222222',targetImage:'registry.example/ned@sha256:'+'a'.repeat(64)};
@@ -102,4 +102,24 @@ test('TC-002: served browser forwards trusted keyboard activity without sending 
  now=301000;assert.equal(maintenance.prepare(intent).ready,true);
  const activity=page.waitForResponse(response=>response.url().endsWith('/api/v1/activity/interaction')&&response.request().postDataJSON()?.kind==='interaction');await page.keyboard.press('Tab');const response=await activity;
  assert.equal(response.status(),200);const body=response.request().postDataJSON();assert.deepEqual(Object.keys(body).sort(),['clientId','hasDraft','kind']);assert.equal(body.hasDraft,false);assert.equal(maintenance.status(intent).state,'none');assert.equal(maintenance.status(intent).reason,'recent_activity');
+});
+
+test('TC-002: unsaved provider keys defer maintenance without leaking values; clearing or saving releases pending input',{timeout:20000},async t=>{
+ const {dir,cleanup}=root(t);let now=1000,saved=false;
+ const env={NED_MANAGED_INSTANCE_ID:instanceId,NED_MANAGED_GENERATION:'1'},databasePath=path.join(dir,'ned.sqlite');
+ const maintenance=createManagedMaintenance({databasePath,env,clock:()=>now,inspectProcesses:()=>({idle:true})});cleanup.push(()=>maintenance.close());
+ const state=()=>({configured:saved,source:'profile',provider:'openai',model:'fixture-model',nonce:'n'.repeat(43),deviceLogin:false,models:{openai:['fixture-model']}});
+ const secret='synthetic-unsaved-provider-key';
+ const modelSetup={...configuredModelSetup(),async handle(req,_res,send){if(req.method==='POST'){let text='';for await(const chunk of req)text+=chunk;assert.equal(JSON.parse(text).apiKey,secret);saved=true;}send(200,state());}};
+ const app=createCommunicatorServer({home:dir,env,databasePath,maintenance,modelSetup,gateway:{key:''}});await app.listen();cleanup.push(()=>app.close());
+ const browser=await chromium.launch({headless:true});cleanup.push(()=>browser.close());const context=await browser.newContext({extraHTTPHeaders:{Authorization:'Bearer '+app.apiCredential}}),page=await context.newPage(),bodies=[];
+ page.on('request',request=>{if(request.url().endsWith('/api/v1/activity/interaction'))bodies.push(request.postDataJSON());});
+ const initial=page.waitForResponse(response=>response.url().endsWith('/api/v1/activity/interaction'));await page.goto(app.url);await initial;
+ const key=page.getByLabel('API key',{exact:true});await expect(key).toBeVisible();now=301000;await key.fill(secret);
+ await expect.poll(()=>maintenance.status(intent).reason,{timeout:2000}).toBe('pending_draft');assert.equal(maintenance.prepare(intent).ready,false);
+ assert.equal(JSON.stringify(bodies).includes(secret),false);await expect.poll(()=>bodies.some(body=>body.hasDraft)).toBe(true);now+=300000;assert.equal(maintenance.prepare(intent).ready,false);
+ const cleared=page.waitForResponse(response=>response.url().endsWith('/api/v1/activity/interaction')&&response.request().postDataJSON().hasDraft===false);await key.fill('');assert.equal((await(await cleared).json()).accepted,true);assert.notEqual(maintenance.status(intent).reason,'pending_draft');now+=300000;assert.equal(maintenance.prepare(intent).ready,true);maintenance.release(intent);
+ await key.fill(secret);await expect.poll(()=>maintenance.status(intent).reason).toBe('pending_draft');await page.getByRole('button',{name:'Connect provider',exact:true}).click();
+ await expect(key).not.toBeVisible();await expect.poll(()=>maintenance.status(intent).reason).toBe('recent_activity');assert.equal(saved,true);assert.equal(JSON.stringify(bodies).includes(secret),false);
+ now+=300000;assert.equal(maintenance.prepare(intent).ready,true);
 });

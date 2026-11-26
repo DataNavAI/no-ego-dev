@@ -6,8 +6,10 @@
 Host/Origin checks and a128-byte JSON limit. Its closed body is
 `{kind:"interaction"|"draft",clientId:<UUID>,hasDraft:<boolean>}`; it transmits no
 draft contents. A trusted keyboard/pointer interaction resets the five-minute
-quiet clock and cancels preparation. Draft updates track unsent work without
-resetting the clock. Responses are `{accepted:true|false}`; unconfigured local
+quiet clock and cancels preparation. Draft updates track composer work and unsaved visible provider/secret password
+inputs without resetting the clock. Only presence is transmitted, never field
+values or names. Input/reset/render changes recheck that presence; hidden or
+disabled controls are excluded. Responses are `{accepted:true|false}`; unconfigured local
 instances return false. Committed maintenance rejects mutations with503
 `instance_updating`; reads remain available. Lost draft cleanup conservatively
 defers automatic updates until cleared/manual replacement.

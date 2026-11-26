@@ -9,7 +9,7 @@ owner preferences, scheduling and Kubernetes replacement; neither browser assets
 nor the public HTTP bridge can commit or release maintenance.
 
 Five quiet minutes alone are insufficient: background chat, Core attempts, work
-scopes, provider login, pending drafts and unknown/container processes defer the
+scopes, provider login, pending composer/provider/secret inputs and unknown/container processes defer the
 update. Polling/health/stream traffic does not extend the quiet clock. Work and
 maintenance commit contend on the same SQLite write transaction, including
 transient CLI processes. Preparation expires; committed barriers survive socket

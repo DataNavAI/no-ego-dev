@@ -1,12 +1,12 @@
 {
-  "candidate_sha": "f27fb3b62a3acabc92bacfec3a0748f5dc1621c8",
+  "candidate_sha": "2e16a575d54cc14b74ec518ffc59f1037873960f",
   "result": "pass",
-  "tested_at": "2026-11-26T07:11:09.824830+00:00",
-  "environment": "macOS Node24, temporary SQLite runtime, real loopback Core/COM, headless Chromium, synthetic provider and process inventory",
+  "tested_at": "2026-11-26T08:02:08.551973+00:00",
+  "environment": "macOS Node24, actual disposable Core/COM with SQLite and Chromium; synthetic provider configuration boundary",
   "commands": [
-    "npm run lint (immutable code candidate via required commit hook)",
-    "npm run test:all (full small/medium specs, python -m pytest and real Hermes with mocked model via required commit hook)",
-    "Agent-inspected exact-candidate COM/browser rehearsal: prepare, trusted Tab, commit, authenticated new work, reopened SQLite guard, exact release"
+    "npm run lint and npm run test:all through the immutable-candidate commit hook (including Python and real Hermes with mocked models)",
+    "node --test --test-name-pattern=\"unsaved provider keys\" docs/features/managed-updates/tests/TC-002.test.js",
+    "Agent inspection of source, corrected-fixture RED assertion, fresh browser/Core acceptance output and activity payload privacy assertions"
   ],
-  "observations": "Observed recent_activity initially, prepared after five simulated quiet minutes, then trusted Chromium Tab canceled preparation and reset activity. Commit rejected a new authenticated coordinator mutation with503 instance_updating. A separately reopened guard retained committed state and only exact intent release cleared it. Focused integration also exercised independent SQLite actors, held background chat after202, actual authenticated Native WebSocket control, provider login busy lifecycle and synthetic Linux process inventory. No live AWS/Linux container, hosted provider inference or combined Hub auto-update acceptance is claimed; those remain Hub182/release gates."
+  "observations": "Fresh browser/Core acceptance confirmed that an unsaved provider key produces pending_draft, defers maintenance beyond a full quiet window, and clears on explicit clear or successful synthetic provider configuration. Activity payloads contain no field values. The original behavior failed the pending_draft assertion; a separate initial fixture setup error was corrected before that RED reproduction. Source combines composer drafts and visible enabled password inputs, observes input/reset/render changes and prioritizes changed pending-input metadata over a trailing activity timer. No live provider grant, managed Linux idle proof or AWS rollout is claimed; Hub182 acceptance remains pending."
 }
