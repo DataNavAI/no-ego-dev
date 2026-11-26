@@ -10,22 +10,14 @@ test('TC-048: mobile navigation and authenticated reaction persistence',async t=
   const {page}=fixture;
   await fixture.ready();
   const navigation=page.locator('#navigation-toggle');
-  await expect(navigation).toHaveAccessibleName('Navigation');
+  await expect(navigation).toHaveAccessibleName('More');
   const chat=page.locator('#chat');
-  await expect(page.locator('#preview-toggle')).toBeHidden();
-  await navigation.press('Enter');
-  await expect(page.locator('#preview-toggle')).toBeVisible();
-  await page.locator('#preview-toggle').press('Escape');
-  await expect(navigation).toBeFocused();
-  await expect(page.locator('#preview-toggle')).toBeHidden();
-  await navigation.click();
-  await page.locator('#preview-toggle').click();
-  await expect(chat).toBeHidden();
-  await expect(page.locator('#preview')).toBeVisible();
-  await navigation.click();
-  await page.locator('#left-toggle').click();
-  await expect(chat).toBeFocused();
-  await expect(page.locator('#left-toggle')).toBeHidden();
+  await expect(page.locator('#debug-toggle')).toBeHidden();
+  await navigation.press('Enter');await expect(page.locator('#debug-toggle')).toBeVisible();
+  await page.locator('#debug-toggle').press('Escape');await expect(navigation).toBeFocused();
+  await expect(page.locator('#debug-toggle')).toBeHidden();
+  await page.locator('#mobile-project-toggle').click();await expect(chat).toBeHidden();await expect(page.locator('#preview')).toBeVisible();
+  await page.locator('#context-close').click();await expect(page.locator('#mobile-project-toggle')).toBeFocused();await expect(chat).toBeVisible();
   await expect(page.locator('.user-message .message-reaction')).toHaveCount(0);
   const add=page.locator('.message-reaction summary[aria-label="Add reaction"]');
   await add.click();
@@ -66,7 +58,7 @@ test('TC-048: mobile navigation and authenticated reaction persistence',async t=
   await page.reload();
   await expect(page.locator('.message-reaction summary[aria-label="Change reaction, Celebrate selected"]')).toBeVisible();
   await navigation.click();
-  const chatChoice=page.locator('#left-toggle');
+  const chatChoice=page.locator('#settings-shortcut');
   await chatChoice.focus();
   await expect(chatChoice).toBeFocused();
   // Simulate Chromium clearing focus before dispatching the breakpoint change.

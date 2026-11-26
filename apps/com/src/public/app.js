@@ -14,6 +14,9 @@ function render() {
     previewRetryFocus=false;
   }
   project.dataset.name=previewModel.projectName;
+  const artifactsModel=view({...state,section:'Artifacts'});
+  const artifactsStatus=document.getElementById('artifacts-status');
+  if(artifactsStatus)artifactsStatus.textContent=state.status==='loading'||state.detailLoading?artifactsModel.title:state.error?[artifactsModel.title,artifactsModel.body].filter(Boolean).join(' '):state.projectId?artifactsModel.body||'Artifact browsing is not available yet.':'Choose a project to view artifacts.';
 }
 async function json(resource) {
   const response=await fetch(resource);const data=await response.json();if(!response.ok)throw Object.assign(new Error('Unavailable'),{code:data.error?.code});return data;
@@ -47,9 +50,9 @@ const preview=document.getElementById('preview');
 const leftPane=document.getElementById('left-pane');
 const mobileNavigation=document.getElementById('mobile-navigation');
 const navigationToggle=document.getElementById('navigation-toggle');
-let navigationHadFocus=false;
+let navigationHadFocus=false,mobileProjectHadFocus=false;
 document.addEventListener('focusin',event=>{
-  navigationHadFocus=mobileNavigation.contains(event.target);
+  navigationHadFocus=mobileNavigation.contains(event.target);mobileProjectHadFocus=event.target?.id==='mobile-project-toggle';
 });
 document.addEventListener('click',event=>{
   if(mobileNavigation.contains(event.target))return;
@@ -69,13 +72,14 @@ let contextOpen=true;
 const shell=document.getElementById('app-shell');
 const contextToggle=document.getElementById('context-toggle');
 const contextClose=document.getElementById('context-close');
-let canvasView='Goals & Tasks';
-const canvasTabs=[document.getElementById('goals-pane-tab'),document.getElementById('preview-tab'),document.getElementById('dashboard-tab'),document.getElementById('workspace-settings-tab')].filter(Boolean);
+const mobileProjectToggle=document.getElementById('mobile-project-toggle');
+let canvasView='Goals';
+const canvasTabs=[document.getElementById('goals-pane-tab'),document.getElementById('artifacts-pane-tab'),document.getElementById('preview-tab'),document.getElementById('dashboard-tab'),document.getElementById('workspace-settings-tab')].filter(Boolean);
 function selectCanvas(tab,focus=false){
   previewRetryFocus=false;
   canvasView=tab.textContent;contextOpen=true;workspace='preview';
   for(const item of canvasTabs){const active=item===tab;item.setAttribute('aria-selected',String(active));item.tabIndex=active?0:-1;document.getElementById(item.getAttribute('aria-controls')).hidden=!active;}
-  syncNavigation();if(focus)tab.focus();
+  syncNavigation();if(focus){tab.focus();tab.scrollIntoView?.({block:'nearest',inline:'nearest'});}
 }
 for(const tab of canvasTabs){
   tab.addEventListener('click',()=>selectCanvas(tab));
@@ -84,19 +88,22 @@ for(const tab of canvasTabs){
     event.preventDefault();selectCanvas(next,true);
   });
 }
-const canvasHeading=()=>canvasView==='Goals & Tasks'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Settings'?document.getElementById('settings-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
+const canvasHeading=()=>canvasView==='Artifacts'?document.getElementById('artifacts-panel'):canvasView==='Goals'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Settings'?document.getElementById('settings-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
 function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   leftPane.hidden=mobile&&workspace!=='left';leftPane.inert=leftPane.hidden;
   chat.inert=leftPane.hidden;
   preview.hidden=mobile?workspace!=='preview':!contextOpen;preview.inert=preview.hidden;
   shell.dataset.contextOpen=String(!preview.hidden);
+  mobileProjectToggle?.setAttribute('aria-expanded',String(!preview.hidden));
+  contextClose.setAttribute('aria-label',mobile?'Back to chat':'Close project panel');
   mobileNavigation.open=!mobile;
   contextToggle.setAttribute('aria-expanded',String(!preview.hidden));
   contextToggle.setAttribute('aria-label',preview.hidden?'Show project panel':'Hide project panel');
   contextToggle.setAttribute('title',preview.hidden?'Show project panel':'Hide project panel');
   previewToggle.setAttribute('aria-expanded',String(!preview.hidden));
   document.dispatchEvent(new Event('ned-context-layout'));
+  if(mobile&&!preview.hidden)canvasTabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.scrollIntoView?.({block:'nearest',inline:'nearest'});
   document.getElementById('settings').hidden=canvasView!=='Settings'||preview.hidden;
   leftToggle.setAttribute('aria-pressed',String(workspace==='left'));
   previewToggle.setAttribute('aria-pressed',String(workspace==='preview'));
@@ -105,7 +112,8 @@ document.addEventListener('ned-open-provider-settings',()=>{
   workspace='preview';mobileNavigation.open=false;
   selectCanvas(document.getElementById('workspace-settings-tab'),true);
 });
-const focusContextControl=()=> (mobileViewport?.matches?navigationToggle:contextToggle).focus();
+const focusContextControl=()=> (mobileViewport?.matches?(mobileProjectToggle||navigationToggle):contextToggle).focus();
+mobileProjectToggle?.addEventListener('click',()=>{workspace='preview';contextOpen=true;mobileNavigation.open=false;syncNavigation();canvasHeading().focus();});
 function closeContext(){contextOpen=false;workspace='left';syncNavigation();focusContextControl();}
 contextClose.addEventListener('click',closeContext);
 contextToggle.addEventListener('click',()=>{
@@ -127,15 +135,18 @@ mobileViewport?.addEventListener?.('change',()=>{
   const focusInLeft=leftPane.contains(active),focusInPreview=preview.contains(active);
   // The disappearing menu can lose focus before the media-query event is delivered.
   const focusInMenu=mobileNavigation.contains(active)||active===document.body&&navigationHadFocus;
+  const focusFromProject=active===mobileProjectToggle||active===document.body&&mobileProjectHadFocus;
   mobileNavigation.open=false;
-  navigationHadFocus=false;
+  navigationHadFocus=false;mobileProjectHadFocus=false;
   if(mobileViewport.matches)workspace='left';
   syncNavigation();
-  if(focusInMenu&&!mobileViewport.matches&&active===document.body){
+  if(focusFromProject&&!mobileViewport.matches){chat.focus();}
+  else if(focusInMenu&&!mobileViewport.matches&&active===document.body){
     const destination=workspace==='left'?chat:canvasHeading();
     destination.focus();
   }else if(leftPane.hidden&&focusInLeft||preview.hidden&&focusInPreview)focusContextControl();
 });
+if(typeof ResizeObserver!=='undefined'){new ResizeObserver(()=>{if(mobileViewport?.matches&&!preview.hidden)canvasTabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.scrollIntoView?.({block:'nearest',inline:'nearest'});}).observe(canvasTabs[0].parentElement);}
 syncNavigation();render();void load();
 document.addEventListener('ned-auth-restored',()=>{workspaceStream?.close();workspaceStream=null;state=beginLoad(state);render();void load();});
 

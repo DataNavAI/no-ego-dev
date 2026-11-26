@@ -158,13 +158,13 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   }
   const conversation=page.getByRole('region',{name:'Conversation'});
   const providerMessage=conversation.locator('article.assistant-message').filter({has:page.getByRole('button',{name:'Connect AWS'})});
-  const shortcut=providerMessage.getByRole('button',{name:'Connect AWS'});
+  const shortcut=page.locator('#chat-connect-aws');
   const settings=page.locator('[data-provider=aws]');
   await send(1,linkOnly);
   await expect(page.getByRole('region',{name:'Conversation'})).toContainText('https://example.test/aws-sign-in');
   const state=await fetch(hub.origin+path,{headers:{...headers,Cookie:'hub-owner=fixture'}});
   assert.equal((await state.json()).connections[0].request,null);
-  await expect(providerMessage).toContainText('NED');
+  await expect(providerMessage).toHaveCount(0);await page.locator('#chat-tools-toggle').click();await expect(shortcut).toBeVisible();
   const evidence = process.env.NED_UI_EVIDENCE_DIR;
   if(evidence)await page.screenshot({path:join(evidence,'mobile-aws-message.png')});
   await shortcut.click();
@@ -173,6 +173,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   await expect(settings.getByRole('button',{name:'Connect',exact:true})).toBeVisible();
   await page.locator('#context-close').click();
   await send(2);
+  if(await shortcut.isHidden())await page.locator('#chat-tools-toggle').click();
   await shortcut.click();
   await settings.locator('[name=startUrl]').fill('https://example.awsapps.com/start');
   for(const [name,value] of Object.entries(identity))await settings.locator('[name='+name+']').fill(value);
@@ -195,7 +196,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   await settings.getByRole('button',{name:'Confirm connection'}).click();
   await expect(settings).toContainText('Connected as');
   await page.locator('#context-close').click();
-  await expect(shortcut).toHaveCount(0);
+  await expect(shortcut).toBeHidden();
   await send(3);
   await expect(page.getByRole('region',{name:'Conversation'})).toContainText('Protected AWS resource read.');
   await expect(page.getByRole('region',{name:'Conversation'})).not.toContainText(portalToken);

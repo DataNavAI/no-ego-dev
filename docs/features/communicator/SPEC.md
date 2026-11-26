@@ -904,3 +904,29 @@ Actor: project user. Start with the fixed NED chat, a selected project and exist
 - Cleanup / pass evidence: close fixture-owned servers/browser and remove synthetic state. Actual assertions plus desktop/mobile/200% text render evidence; unexecuted cases are not passes.
 
 Coverage: FR-087–089 → CUJ-032 → TC-052; TC-021/032,036/043,037/044/051 and031/041 retain their unique boundaries. This supersedes earlier fixed left-chat/large-preview geometry, not the data, security, reference or fixed-session contracts.
+
+## Mobile organization refinement (#255–260)
+The [accepted visual direction](design/mobile-organization/README.md) supersedes the mobile navigation portion of FR-079/089 and previous mobile bubble geometry; retain desktop rail and all privacy/data contracts.
+- FR-090: Mobile groups NED/version/current model together, with one labeled Project entry and a More disclosure for utilities. Debug is not a persistent header action. Long labels and enlarged text reflow without page overflow.
+- FR-091: Connection initiation remains reachable through Message options and Settings; idle provider shortcuts do not occupy the transcript. Active requests appear inline, without creating duplicate requests on load, refresh or navigation.
+- FR-092: Trusted provider receipt cards and authenticated request status expose a named sign-in action, supplied code/Copy, status and recovery. Ordinary prose/URLs never create a trusted authorization card or imply success. Long standalone AWS approval links in assistant prose are readable named links retaining their HTTPS destination; code samples remain literal. Expired/ended requests cannot expose a stale actionable code/link; verification failure offers status retry without starting a duplicate request. Preserve existing modal, cancellation, confirmation and focus semantics.
+- FR-093: Mobile assistant prose uses restrained surfaces and compact spacing; structured cards carry primary actions. Copy/reaction controls remain44px, visible without hover, with author identity, Markdown/code/tables, streaming and media intact.
+- FR-094: Project temporarily occupies the full mobile screen with project identity and Back to chat. Keep project tabs, add an Artifacts destination using the existing truthful unavailable state (artifact storage/browsing backend remains outside this change; see #117). Returning restores the same draft, references, media, scroll, selected tab and Preview nodes. Hidden views are inert; closing restores the Project opener. Desktop remains split/resizable.
+- FR-095: Mobile composer is compact and bottom-pinned, including an empty conversation, with safe-area spacing and visible44px primary controls. Preserve bounded multiline/context growth, file/link/help/model controls, Send/Stop, keyboard-viewport shrink/recovery and zoom behavior.
+
+### CUJ-033: Converse, authorize and inspect a project on a phone
+Actor: mobile NED user. Critical because mobile has little space for competing actions. Prerequisites: authenticated COM and configured model; synthetic project/receipt for acceptance. Start in Chat, read a reply, use a contextual provider action, open Project, select a tab, return and continue the same draft. Failures keep request/draft identity and offer retry; no model or provider operation is triggered merely by opening a view.
+
+### TC-053: Mobile organization and project continuity
+- Journey / requirements: CUJ-033; FR-090/093–095.
+- Level / automation: browser integration; [TC-053.test.js](tests/TC-053.test.js). Reuse TC-051 for visual-viewport shrink, long context, streaming and reload, and TC-037 for media/composer growth.
+- Preconditions / fixtures: isolated browserChat temporary home/database, configured synthetic model, saved user/assistant rows and task-reference event; no real provider/model access.
+- Given: full-width Chat at320/390/430px with a draft and reference.
+- When: opening Project, selecting Preview/Artifacts, returning to Chat, opening More and changing viewport/text size.
+- Then: grouped identity, readable labeled destinations, no page overflow; desktop rail preserved; draft/reference/Preview DOM and scroll persist; focus returns to opener. Assistant surface is restrained and actions remain44px; empty composer sits near visible bottom.
+- Steps and assertions: named rendered geometry/state assertions in the linked case. Existing cases retain reactions, touch geometry, keyboard focus and authenticated data isolation.
+- Variants / negative cases: long model/project names;200% text;320px boundary; empty chat; long prose/code/links; no project produces truthful unavailable state; provider data loss never implies success. Physical Android keyboard/rotation remains a separate manual check and is not certified by viewport emulation.
+- Cleanup: fixture closes its browser/server and removes its temporary home; no real messages or external grants.
+- Pass evidence: actual named assertions and redacted/synthetic captures; written cases alone do not establish a pass.
+
+Coverage: FR-090/093/094 → CUJ-033 → TC-053; FR-095 → CUJ-033 → TC-037/051/053; FR-091/092 → CUJ-033 → provider-identity TC-006/007 and communicator TC-013. Physical-device keyboard coverage is a disclosed manual gap.

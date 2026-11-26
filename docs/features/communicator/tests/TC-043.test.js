@@ -37,7 +37,7 @@ test('TC-043: agent focus switches the project workspace without changing chat',
   await expect(page.locator('#preview')).toBeHidden();
   await expect(page.locator('#chat-send')).toBeInViewport({ratio:1});
   if(evidence)await page.screenshot({path:join(evidence,'chat-first-mobile.png')});
-  await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();
+  await page.locator('#mobile-project-toggle').click();
   await expect(page.locator('#preview')).toBeVisible();
   await expect(page.locator('#preview-identity')).toHaveText('Beta');
   await expect(page.getByRole('tab',{name:'Preview',exact:true})).toHaveAttribute('aria-selected','true');
@@ -48,12 +48,12 @@ test('TC-043: agent focus switches the project workspace without changing chat',
   await expect(page.locator('#preview-identity')).toBeVisible();
   assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
   if(evidence)await page.screenshot({path:join(evidence,'chat-first-workspace-mobile.png')});
-  await page.locator('#navigation-toggle').click();await page.locator('#left-toggle').click();
+  if(await page.locator('#preview').isVisible())await page.locator('#context-close').click();
   await expect(draft).toHaveValue('Keep this draft');
   await page.reload();
   await ready();
   await expect(draft).toBeVisible();
-  await page.locator('#navigation-toggle').click();await page.locator('#preview-toggle').click();
+  await page.locator('#mobile-project-toggle').click();
   await expect(page.locator('#preview-identity')).toHaveText('Beta');
   assert.deepEqual(errors,[]);
 });

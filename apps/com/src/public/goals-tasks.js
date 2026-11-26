@@ -84,7 +84,7 @@ export function mountGoalTasks({document,fetch}){
   function draw(){
     const active=document.activeElement,focusKey=active?.dataset?.deliveryFocus;
     const retained=new Map([...panel.querySelectorAll('.delivery-details')].map(element=>[element.dataset.taskId,element]));
-    const heading=node('h2','Goals & Tasks');heading.id='goals-pane-heading';heading.tabIndex=-1;
+    const heading=node('h2','Goals');heading.id='goals-pane-heading';heading.tabIndex=-1;
     panel.replaceChildren(heading);
     if(!snapshot?.items.length){panel.append(node('p','No goals or tasks yet.','delivery-muted'));return;}
     const groups=goalGroups(snapshot.items),activeGoals=groups.filter(group=>group.tasks.some(item=>item.status==='working'));
