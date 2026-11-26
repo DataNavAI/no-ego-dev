@@ -5,6 +5,7 @@ on:
     paths:
       - 'Dockerfile'
       - '.dockerignore'
+      - 'compose.hub.yaml'
       - 'package*.json'
       - 'src/**'
       - 'apps/**'

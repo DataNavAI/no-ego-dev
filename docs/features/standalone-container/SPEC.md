@@ -153,3 +153,16 @@ Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPT
 - TC-006 also exercises opt-in registration wiring using a synthetic token and connector, including shared COM identity and connector shutdown.
 - FR-013: The opt-in Mac updater follows current main only after native CLI and smoke CI pass for that exact commit. It uses one local update process, builds before downtime, and takes a Core maintenance lease before replacing an already-running container. Unverified work or process activity defers updates. Replacement boots on copies of all three volumes. Failed readiness restores the previous container and its original volumes.
 - TC-007 covers the lease admission and protected local control boundary. The live updater setup, registration, and stopped-volume copy/rollback are verified separately with the [runbook](RUNBOOK.md).
+
+- FR-014: One Docker Compose invocation can build the staging-Hub configuration from the public canonical repository and start it on AMD64 or ARM64 Linux-container Docker. Operators configure a private standalone Hub credential once. A Compose secret supplies it, named volumes persist runtime data, and all published service ports bind to loopback.
+
+### TC-008: Portable staging Hub Compose startup
+
+- Journey / requirements: CUJ-001 / FR-014.
+- Level / automation: manual; [portable startup](RUNBOOK.md#portable-staging-hub-startup).
+- Given: Docker with remote Git Compose support, an empty dedicated Compose project, and an external env file and token file with synthetic credentials.
+- When: resolve the remote Compose configuration from canonical source and start the project with the documented command.
+- Then: the selected native image builds, the container becomes healthy and exposes only loopback ports, and the Hermes service reads a private token file. A successful registration proceeds through the same tested connector as TC-006.
+- Variants: refuse a missing instance name, password, or token file before launch. Verify registration against a protocol fixture or an explicitly authorized staging account. Real credentials must never appear in the Container Config environment, image, logs, or acceptance evidence.
+- Cleanup: stop the dedicated project, retaining named volumes for repeat-use verification. Delete only disposable test-owned resources and files.
+- Pass evidence: sanitized config resolution, health and ownership/permission output, and the staging or fixture connector status.

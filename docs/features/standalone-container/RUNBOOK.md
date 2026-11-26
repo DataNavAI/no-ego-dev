@@ -173,3 +173,23 @@ The owner uses `scripts/update-local-ned-container.py --repo /absolute/path/to/n
 The updater stops only the owned container after the lease commits. It copies all three stopped data volumes before booting the candidate with a new generation. Health requires Docker readiness and a fresh staging Hub online event. Failed promotion resumes the old container on its original volumes and releases the lease. A private journal is reconciled before another update. Previous containers and stopped volume copies are retained for explicit operator retention review. Watch retained volumes and available disk capacity separately. The automatic check reports deferred conditions in its private log; it leaves production and managed Hub instances outside its scope.
 
 Verification uses real Docker on the Mac. Confirm the container image revision equals the reviewed main SHA, Docker reports healthy, the authenticated gateway answers, and staging Hub shows the expected slug online. Verify the launch agent is loaded exactly once. For a disposable test generation, prove a running chat causes the maintenance command to defer, a healthy promotion preserves all three volume sentinels, and a failed candidate restores the original image and volumes. Use synthetic work and credentials, and keep evidence outside Git.
+
+## Portable staging Hub startup
+
+Use Docker with Compose support for remote Git configurations, on an AMD64 or ARM64 computer in Linux-container mode. Get a dedicated CLI token from [staging Hub](https://staging.ned.datanav.app/) and store only the token in a private file. Create a private `ned.env` in your current directory with these settings:
+
+```dotenv
+NED_INSTANCE_NAME=my-unique-ned
+NED_DASHBOARD_PASSWORD=replace-with-a-generated-password
+NED_HUB_TOKEN_PATH=/absolute/path/to/private-hub-token
+```
+
+On Windows, use an absolute path such as `C:/Users/you/private/ned-hub-token`. Use a unique slug belonging to the Hub account that issued the token. Start the container from any directory holding your private `ned.env`:
+
+```text
+docker compose --env-file ned.env -f "https://github.com/DataNavAI/no-ego-dev.git#main:compose.hub.yaml" up -d --build
+```
+
+Compose builds the host's native Linux image from the public repository. The first build downloads the base image and dependencies. Select an exact reviewed commit in place of `main` when you need a fixed source. The Hub token is available to the container as a file and stays out of its environment. Connect from staging Hub after `NED Hub: online` appears in container logs. The project keeps its profile, database, and workspaces in named Docker volumes. Restarting the same project reuses those volumes.
+
+For acceptance, run the command under a separate project name (`-p ned-hub-acceptance`) with private synthetic inputs and a controlled Hub fixture. Check `docker inspect` for a healthy container, loopback port mappings and absence of the synthetic Hub token from Config.Env. Check the mounted copy with `stat` inside the container and require mode 0600 and the Hermes UID. Verify an unauthorized token is never logged, and an authenticated fixture transitions the connector to online. Never run `docker compose config` with production passwords in a logged session.
