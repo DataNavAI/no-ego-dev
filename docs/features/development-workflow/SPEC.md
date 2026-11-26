@@ -15,6 +15,7 @@ Ordinary work completes through author self-review, appropriate checks and alrea
 - FR-004: Missing authorization, failed tests, unresolved material defects, unknown provider state and unavailable required verification remain blockers; absence of a reviewer never makes them pass.
 - FR-005: Skill callers, discovery descriptions, references and evaluations must agree with the default. Existing review recipes are optional and scoped, not silently inherited gates.
 - FR-006: Deploy canonical skills from merged main to the default local Hermes instance and verify source/target equality, preserving unrelated skills and profile/configuration/credential data.
+- FR-007: After a NED feature merge, update/restart the owned local NED container on latest verified remote main using the maintained updater, preserve persistent state and credentials, and verify running revision, generation, health and configured Hub connectivity before completion. Deferred/busy/unverified delivery remains pending. Native service restart or skills-only staging is insufficient; unrelated projects are outside this rule.
 
 ## Critical journeys and manual cases
 
@@ -44,6 +45,19 @@ Ordinary work completes through author self-review, appropriate checks and alrea
 
 ## Coverage and acceptance
 
+### TC-005: Merged NED feature reaches the local container
+
+- Journey / requirements: CUJ-005 / FR-004, FR-006, FR-007. Actor: NED feature implementer; critical because a merged feature must be available in the user's container.
+- Level / automation: manual; behavioral evaluation using [coder scenarios](../../../skills/coder/evaldata/local-container-after-merge.md) and [EVAL.yaml](../../../skills/coder/EVAL.yaml).
+- Preconditions / fixtures: synthetic merged feature, newer verified main and an owned older container; no real credentials or provider calls.
+- Given: a NED feature is merged and the local container still runs an older revision.
+- When: the agent completes delivery with the coder skill.
+- Then: it uses the maintained updater, preserves state, verifies the new running generation and latest verified main revision, healthy UI/API and configured Hub connectivity, and only then completes.
+- Steps and assertions: execute scenario 1, then scenario 2 with pending CI and with a zero-exit deferred busy result; verify no premature success, forced restart or destructive state changes. Execute scenario 3 and verify no NED-container action for the unrelated app.
+- Negative / boundary cases: missing ownership or failed health blocks completion; interrupted promotion retains the updater's recovery/rollback state; no substitute native restart, old-image restart or skills-only copy. Concurrent work is protected by the existing maintenance lease, not terminated.
+- Cleanup: discard synthetic observations; any actual staging uses the maintained updater and preserves its rollback resources.
+- Pass evidence: record agent decisions and observed tool calls for all three scenarios separately from repository code tests; no behavioral pass is implied by parsing YAML.
+
 | Requirement | Journey | Cases / evidence |
 | --- | --- | --- |
 | FR-001/002 | CUJ-001 | TC-001; coder and immutable-candidate-verification evals; issue165 delivery |
@@ -51,5 +65,6 @@ Ordinary work completes through author self-review, appropriate checks and alrea
 | FR-004 | CUJ-003 | TC-003; actual required checks, failures remain failures |
 | FR-005 | CUJ-001/002 | TC-001/002; caller/reference/evaluation consistency inspection |
 | FR-006 | CUJ-001 | TC-001; merged-source local skills staging and readback |
+| FR-007 | CUJ-005 | TC-005; coder local-container-after-merge behavioral scenarios |
 
 Skill behavior is evaluated through real/manual agent tasks, not code tests matching instruction wording. YAML/schema checks and repository tests verify package/runtime integrity only. Report manual cases actually exercised separately from unexecuted scenarios; no claim of statistical skill quality follows from parsing files or green runtime tests.
