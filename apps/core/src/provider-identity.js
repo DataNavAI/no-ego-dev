@@ -31,7 +31,7 @@ const fields = {
   godaddy: ['domain', 'token'],
 };
 
-export function createIdentityHandler({home, env, enabled, allowedProviders = providers, fetch, clock = Date.now, githubClientId} = {}) {
+export function createIdentityHandler({home, env, enabled, allowedProviders = providers, awsChatShortcut = false, fetch, clock = Date.now, githubClientId} = {}) {
   const pending = new Map();
   function end(provider) {
     clearTimeout(pending.get(provider)?.timer);
@@ -95,7 +95,7 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
 
     try {
       const store = createIdentityStore(home, env);
-      if (list) return send(200, {connections: allowedProviders.map(name => details(name, store))});
+      if (list) return send(200, {connections: allowedProviders.map(name => details(name, store)), ...(awsChatShortcut && {awsChatShortcut: true})});
       details(provider, store);
       const current = pending.get(provider);
       const observedId = req.headers['x-ned-identity-id'];
