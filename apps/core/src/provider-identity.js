@@ -152,6 +152,7 @@ export function createIdentityHandler({home, env, enabled, fetch, clock = Date.n
       return fail(503, 'identity_unavailable', 'Provider connections are unavailable. Check private storage or try again.');
     }
   };
+  handle.isBusy = () => pending.size > 0;
   handle.close = () => providers.forEach(end);
   return handle;
 }

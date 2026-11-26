@@ -1,5 +1,35 @@
 # NED API v1
 
+## Hosted idle activity and private maintenance
+
+`POST /api/v1/activity/interaction` uses the existing instance authentication,
+Host/Origin checks and a128-byte JSON limit. Its closed body is
+`{kind:"interaction"|"draft",clientId:<UUID>,hasDraft:<boolean>}`; it transmits no
+draft contents. A trusted keyboard/pointer interaction resets the five-minute
+quiet clock and cancels preparation. Draft updates track unsent work without
+resetting the clock. Responses are `{accepted:true|false}`; unconfigured local
+instances return false. Committed maintenance rejects mutations with503
+`instance_updating`; reads remain available. Lost draft cleanup conservatively
+defers automatic updates until cleared/manual replacement.
+
+Maintenance itself has **no public HTTP endpoint**. After authenticated control
+`ready`, Native advertises
+`{type:"maintenance-capabilities",version:1,supported:<boolean>}`. Only that
+current Hub control connection accepts
+`{type:"maintenance-request",version:1,id:<43-character nonce>,action:"status"|"prepare"|"commit"|"release",input:{requestId:<UUID>,instanceId:<UUID>,generation:<positive integer>,targetImage:<immutable image digest>}}`.
+The reply is `maintenance-response` with matching version/id and fixed metadata
+`result` or an allowlisted `errorCode`. Maximum payload remains64KiB; no async
+request queue exists and at most eight requests are processed per second.
+Disconnected controls lose authority without releasing durable barriers.
+
+Prepare is bound to request/identity/generation/target for60seconds. Commit
+rechecks idle atomically against Core/CLI work admission; a committed barrier
+does not expire. Exact release is reserved for Hub cancellation before any
+accepted destructive intent; trusted higher generations clear obsolete state.
+Unsupported/unknown/busy is never permission to update. See the
+[maintenance spec](features/managed-updates/SPEC.md). Hub owner settings and
+scheduling are separate Hub182 work; deployed image verification is pending.
+
 Status: implemented source candidate; live deployment is verified separately.
 The API's official name is **NED API v1**, not NED COM API or a separate Core API.
 
