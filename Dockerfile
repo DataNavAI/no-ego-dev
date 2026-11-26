@@ -1,4 +1,4 @@
-FROM amazon/aws-cli@sha256:bc6b7bba44ce38f9604ede49c584824af919047ea03fbcc7c7610671fdef95d8 AS aws-cli
+FROM amazon/aws-cli@sha256:19f21fa4e6bbeac6f6b1f9b167902578bbd8bf0a747cbaa92a892bffff540039 AS aws-cli
 # Maintained official multi-arch Hermes image; registry evidence in RUNBOOK.md.
 FROM nousresearch/hermes-agent@sha256:ef0650d523ee1b5ab32c779acabc446d9936869a9932591553688a62bcf0c42f AS subscription-runtime
 USER root

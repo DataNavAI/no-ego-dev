@@ -1,14 +1,14 @@
 # Feature: Provider identity
 
 Status: implemented
-Related issue: [#212](https://github.com/DataNavAI/no-ego-dev/issues/212)
+Related issues: [#249](https://github.com/DataNavAI/no-ego-dev/issues/249), [#212](https://github.com/DataNavAI/no-ego-dev/issues/212)
 Operator setup: [Usage](USAGE.md)
 
 ## User outcome and scope
 
 A NED operator can choose which GitHub account, AWS role, or GoDaddy account NED uses. A skill requests a connection through the CLI, and the operator completes it in private COM Settings. This initial release targets native NEDCOM on macOS/Linux. It does not configure commit authorship, change global provider CLI sessions, provision provider accounts, or copy existing IFA grants. Existing profiles that require guarded IFA retain that policy. A Hub-registered standalone container also supports AWS for its authenticated Hub owner. Public tunnels, hosted COM, and other container providers remain outside scope.
 
-GitHub uses a configured device-enabled GitHub App client ID. Its installation and app permissions control repository access. AWS uses IAM Identity Center in the commercial AWS partition with an AWS access portal URL, Identity Center region and explicitly selected assigned account/role. GoDaddy Domains v3 uses a scoped PAT and verifies access to an operator-selected domain through the registered domain detail endpoint. Verification probes do not certify write authority.
+GitHub uses a configured device-enabled GitHub App client ID. Its installation and app permissions control repository access. AWS supports AWS CLI console sign-in and IAM Identity Center in the commercial AWS partition with an AWS access portal URL, Identity Center region and explicitly selected assigned account/role. GoDaddy Domains v3 uses a scoped PAT and verifies access to an operator-selected domain through the registered domain detail endpoint. Verification probes do not certify write authority.
 
 ## Requirements
 
@@ -24,6 +24,8 @@ GitHub uses a configured device-enabled GitHub App client ID. Its installation a
 - FR-007. In authenticated Hub Chat, a supported standalone instance offers Connect AWS while AWS is disconnected or expired. Selecting it queues a request and opens the private Settings form even if the assistant has only replied with prose or a link. Opening Chat alone does not queue a request.
 
 - FR-008. The Hermes `ned` tool action `request_provider_auth` queues a provider request and returns a non-secret request receipt. NED renders a conversation card only for a validated native tool result. The card opens an accessible modal after checking that its request still matches the authenticated instance. Stale cards never act on newer requests. Manual Settings remains available.
+
+- FR-009. AWS console sign-in uses `aws login --remote` in an isolated temporary profile. The owner opens the official AWS sign-in link and pastes the one-time AWS code into the same private modal. The browser never connects to a localhost callback. NED verifies the AWS account and principal with STS and requires confirmation before saving only the expiring temporary credentials. Cancel, expiry, shutdown, or failure stops the CLI and cleans up the temporary profile without replacing any prior connection. IAM Identity Center remains available.
 
 ## Critical user journeys
 
@@ -115,6 +117,16 @@ Starting from a pending request or a connected account, the operator can cancel 
 - Variants: reject unrecognized actions or provider names and stale request receipts. Closing the dialog preserves the request and returns focus to its trigger.
 - Cleanup: dismiss the modal and dispose of browser, gateway and synthetic runtime state.
 
+### TC-008: AWS CLI console sign-in across the browser boundary
+
+- Journey / requirements: CUJ-001, CUJ-002 / FR-002–FR-004, FR-009.
+- Level / automation: integration; [TC-008.test.js](tests/TC-008.test.js).
+- Preconditions: disposable COM and Chromium, mock AWS executable emitting an HTTPS AWS sign-in challenge, and an empty identity vault.
+- Given: a queued AWS request. When the owner selects AWS console sign-in and submits the synthetic code, then the CLI receives it over stdin, verifies the account with STS, and presents that account for confirmation. Once confirmed, a bound CLI call uses the temporary credentials.
+- Variants: cancel a pending process and verify its isolated profile is removed. Reject stale requests without forwarding their code. Let the owner check verification after a slow AWS response without submitting the code again.
+- Cleanup: close Chromium and COM and remove disposable provider state.
+- Pass evidence: browser assertions, mock CLI behavior, and status/readback with no code or credential exposure.
+
 ## Coverage and acceptance
 
 | Requirement | Journey | Test cases |
@@ -124,6 +136,7 @@ Starting from a pending request or a connected account, the operator can cancel 
 | FR-005 | CUJ-001 | TC-005, TC-006 |
 | FR-006, FR-007 | CUJ-001, CUJ-002 | TC-006 |
 | FR-008 | CUJ-001, CUJ-002 | TC-007 |
+| FR-009 | CUJ-001, CUJ-002 | TC-008 |
 
 ## Open questions and coverage gaps
 

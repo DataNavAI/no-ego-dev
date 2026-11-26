@@ -1,0 +1,14 @@
+{
+  "candidate_sha": "131aacd48d6221414aa630bb1361fc58bffd31b1",
+  "result": "pass",
+  "tested_at": "2026-11-26T18:16:37.564374+00:00",
+  "environment": "macOS ARM64, Node 22, Chromium, synthetic Hub owner and AWS CLI, disposable Linux ARM64 NED container with AWS CLI 2.34.9",
+  "commands": [
+    "npm run test:all",
+    "npm run test:spec -- --feature provider-identity",
+    "python -m eval_runner.cli skills/ned-provider-identity --markdown",
+    "docker --context colima-ned-staging build --tag ned-aws-login-wrapper-candidate -f Dockerfile .",
+    "Disposable NED container startAwsConsoleLogin us-east-1 smoke, canceled before AWS consent"
+  ],
+  "observations": "The browser opened the private AWS Console modal through the actual NED Hub tunnel adapter. A stale request was rejected. Cancel removed the isolated CLI profile. Slow verification retained the current request and did not require re-entering the code. After a verified STS principal was confirmed, bound AWS execution succeeded. Existing IAM Identity Center browser coverage and the skill eval passed. The bundled AWS CLI produced an official AWS remote browser challenge, which was canceled without granting real account access."
+}

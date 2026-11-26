@@ -1,11 +1,13 @@
 import {randomUUID} from 'node:crypto';
+import {setTimeout as delay} from 'node:timers/promises';
 import {createIdentityProviders, IdentityError, providers} from '../../../src/identity-providers.js';
 import {createIdentityStore, identityStatus} from '../../../src/identity-store.js';
+import {startAwsConsoleLogin} from '../../../src/aws-console-login.js';
 import {SecretError} from '../../../src/secrets.js';
 
 const tenMinutes = 600_000;
 
-async function body(req, keys) {
+async function body(req, ...fieldSets) {
   if (!/^application\/json(?:;|$)/i.test(req.headers['content-type'] || ''))
     throw new IdentityError('invalid_body', 'Use a JSON request.', 415);
   let size = 0;
@@ -17,8 +19,8 @@ async function body(req, keys) {
   }
   try {
     const data = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(Buffer.concat(chunks)));
-    if (!data || Array.isArray(data) || keys.length !== Object.keys(data).length
-      || !keys.every(key => Object.hasOwn(data, key) && typeof data[key] === 'string')) throw new Error();
+    if (!data || Array.isArray(data) || !fieldSets.some(keys => keys.length === Object.keys(data).length
+      && keys.every(key => Object.hasOwn(data, key) && typeof data[key] === 'string'))) throw new Error();
     return data;
   } catch {
     throw new IdentityError('invalid_body', 'The identity request was invalid.');
@@ -31,10 +33,11 @@ const fields = {
   godaddy: ['domain', 'token'],
 };
 
-export function createIdentityHandler({home, env, enabled, allowedProviders = providers, awsChatShortcut = false, fetch, clock = Date.now, githubClientId} = {}) {
+export function createIdentityHandler({home, env, enabled, allowedProviders = providers, awsChatShortcut = false, fetch, clock = Date.now, githubClientId, awsSpawn} = {}) {
   const pending = new Map();
   function end(provider) {
     clearTimeout(pending.get(provider)?.timer);
+    pending.get(provider)?.abort?.abort();
     pending.delete(provider);
   }
   const adapters = createIdentityProviders({fetch, clock, githubClientId});
@@ -51,8 +54,9 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
       connectionId: record?.id ?? null,
       request: active ? {
         id: active.id,
-        state: active.candidate ? 'confirm' : device ? 'sign_in' : 'requested',
+        state: active.candidate ? 'confirm' : active.verification ? 'console_verifying' : active.console ? 'console_code' : device ? 'sign_in' : 'requested',
         expiresAt: active.expiresAt,
+        ...(active.console && !active.verification && !active.candidate ? {url: active.console.url} : {}),
         ...(device && !active.candidate ? {url: device.url, code: device.userCode} : {}),
         ...(active.candidate ? {identity: active.candidate.identity} : {}),
       } : null,
@@ -77,6 +81,17 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
     } finally {
       attempt.busy = false;
     }
+  }
+
+  async function checkConsoleVerification(provider, attempt) {
+    const result = await Promise.race([attempt.verification, delay(5000, null, {ref:false})]);
+    checkActive(provider, attempt);
+    if (!result) return;
+    if (result.error) {
+      end(provider);
+      throw result.error;
+    }
+    attempt.candidate = result.connection;
   }
 
   const handle = async (req, send, origin) => {
@@ -118,10 +133,22 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
         end(provider);
       } else if (action !== 'request') {
         if (action === 'start') {
-          const input = await body(req, fields[provider]);
+          const input = provider === 'aws'
+            ? await body(req, fields.aws, ['region'], ['code'])
+            : await body(req, fields[provider]);
           checkActive(provider, current);
-          if (!current.device && !current.candidate) {
+          if (Object.hasOwn(input, 'code')) {
+            if (!current.console || current.candidate || !/^[!-~]{1,8192}$/.test(input.code))
+              throw new IdentityError('invalid_input', 'Paste the one-time code shown by AWS.');
+            current.verification ??= current.console.submit(input.code).then(connection => ({connection}), error => ({error}));
+            await checkConsoleVerification(provider,current);
+          } else if (!current.console && !current.device && !current.candidate) {
             await progress(provider, current, async () => {
+              if (provider === 'aws' && !Object.hasOwn(input, 'startUrl')) {
+                current.abort = new AbortController();
+                current.console = await startAwsConsoleLogin(input.region, {launch:awsSpawn, signal:current.abort.signal, env, clock});
+                return;
+              }
               const result = await adapters.start[provider](input, current.expiresAt);
               if (provider === 'godaddy') current.candidate = result;
               else {
@@ -131,6 +158,8 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
               }
             });
           }
+        } else if (action === 'poll' && current.verification && !current.candidate) {
+          await checkConsoleVerification(provider,current);
         } else if (action === 'poll' && current.device && !current.candidate && clock() >= current.nextPoll) {
           await progress(provider, current, async () => {
             const result = await adapters.poll[provider](current.device);

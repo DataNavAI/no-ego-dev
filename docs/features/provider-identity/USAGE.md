@@ -50,3 +50,14 @@ Hub-connected standalone NED supports AWS automatically. For a private native
 COM listener, configure the Hermes process with `NED_IDENTITY_COM_ORIGIN`
 set to the exact private `http://127.0.0.1:<port>` origin. This setting belongs
 to the runtime operator. The tool does not accept a URL argument.
+
+## Sign in with the AWS Console
+
+Open the AWS connection modal and select **Sign in with AWS Console**. Open the
+AWS page, choose the intended account, and paste the one-time code into the
+modal. Check the exact AWS principal before confirming. NED runs
+`aws login --remote` with an isolated temporary profile, so this works when the
+browser and CLI run on different machines. The AWS account must allow remote CLI
+sign-in. NED retains expiring session credentials only and asks you to reconnect
+after expiry. Select **Use IAM Identity Center** for the access-portal and role
+flow.

@@ -54,7 +54,7 @@ async function execute(provider, command, args, {store, adapters, clock, launch,
     throw new IdentityError('unsupported_command', 'Use a supported gh or aws command for the connected provider.');
   }
   const connection = requireConnection(store, provider, clock);
-  const auth = provider === 'github' ? {GH_TOKEN: connection.token} : await adapters.awsCredentials(connection);
+  const auth = provider === 'github' ? {GH_TOKEN: connection.token} : connection.consoleCredentials ?? await adapters.awsCredentials(connection);
   const home = await mkdtemp(join(tmpdir(), 'ned-identity-'));
   try {
     return await new Promise((resolve, reject) => {
