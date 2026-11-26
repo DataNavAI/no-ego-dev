@@ -1,15 +1,15 @@
 {
-  "candidate_sha": "cd31b36fdabc8681dfede5b611ecd8120690ff16",
+  "candidate_sha": "5b8c3082a10e5e465596305dbe95d7683939478e",
   "result": "pass",
-  "tested_at": "2026-11-26T10:23:07.053Z",
+  "tested_at": "2026-11-26T10:56:59.425805+00:00",
   "environment": "macOS ARM64; real Chromium and isolated NED homes/auth with mocked gateway; populated project/chat at1440/1024/390/320px and200% text at1280/320px",
   "commands": [
     "npm run lint",
-    "npm test",
     "npm run test:spec -- --all",
     "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-052.test.js",
+    "npm run test:all (commit hook)",
+    "node --test docs/features/model-setup/tests/TC-002.test.js",
     "node /Volumes/Agent/Codex/worktrees/muse-layout/verify-layout.mjs"
   ],
-  "observations": "Integrated current main including NED speaker and Hub AWS account-connection changes; self-review complete. Light Muse-inspired rail/central chat/right context and package-version brand render. Browser checks preserve selected tab, Preview DOM, draft and reference pill through collapse/reopen/mobile views; keyboard resizing and enlarged-text Close/Debug controls remain reachable. No page overflow or browser errors. Inspected populated synthetic screenshots at all named sizes. Existing resize, Debug, focus, palette, streaming and mobile-keyboard regressions pass. Full lint, npm, automated-spec and real Hermes/mock-model integration pass; Python215passed9existing skips. Private Muse content not copied/published. Existing unrelated manual/live-provider/physical-device cases are not claimed."
+  "observations": "Integrated current main including NED speaker and Hub AWS account-connection changes; self-review complete. Light Muse-inspired rail/central chat/right context and package-version brand render. Browser checks preserve selected tab, Preview DOM, draft and reference pill through collapse/reopen/mobile views; keyboard resizing and enlarged-text Close/Debug controls remain reachable. No page overflow or browser errors. Inspected populated synthetic screenshots at all named sizes. Existing resize, Debug, focus, palette, streaming and mobile-keyboard regressions pass. Full lint, npm, automated-spec and real Hermes/mock-model integration pass; Python215passed9existing skips. Private Muse content not copied/published. Existing unrelated manual/live-provider/physical-device cases are not claimed. Integrated latest model verification fix. Added current saved instance model in the header; browser TC-002 proves unsaved picker choices do not change it, saved replacements update it, unconfigured/error states remove stale identity and access loss clears it. Phone header wraps without overflow. All automated specs, lint, Python and actual Hermes integration passed on these contents; self-review complete."
 }
