@@ -50,3 +50,41 @@ test('TC-006: a stalled health body obeys the request deadline', {timeout:2000},
   const comUrl = await endpoint(t, (_req,res) => {res.writeHead(200);res.write('{');});
   await assert.rejects(checkContainerHealth({credential:'a'.repeat(64),dashboardUrl,comUrl,timeout:50}), error => error.name === 'TimeoutError' || error.name === 'AbortError');
 });
+
+test('TC-006: a private credential registers the same COM listener and stops the Hub connection on shutdown', async t => {
+  const {chmod, mkdtemp, rm, symlink, writeFile} = await import('node:fs/promises');
+  const {tmpdir} = await import('node:os');
+  const {join} = await import('node:path');
+  const home = await mkdtemp(join(tmpdir(), 'ned-container-hub-'));
+  t.after(() => rm(home, {recursive: true, force: true}));
+  const file = join(home, 'token');
+  const token = 'ned_' + 'x'.repeat(32);
+  await writeFile(file, token + '\n', {mode: 0o600});
+  const env = {NED_ENV: 'staging', NED_INSTANCE_NAME: 'local-container-test', NED_HUB_TOKEN_FILE: file};
+  let observed, stops = 0;
+  const app = await startContainerCom({env, home, databasePath: join(home, 'ned.sqlite'),
+    host: '127.0.0.1', port: 0, connectHub(config, url, options) {
+      observed = {config, url, options};
+      return {async close() {stops++;}};
+    }});
+  try {
+    assert.equal(observed.config.slug, 'local-container-test');
+    assert.equal(observed.config.hub.origin, 'https://staging.hub.datanav.app');
+    assert.equal(observed.config.token, token);
+    assert.equal(observed.options.apiCredential(), app.apiCredential);
+    const response = await fetch(observed.url + '/api/v1/health', {
+      headers: {Authorization: 'Bearer ' + app.apiCredential},
+    });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).service, 'ned-api');
+  } finally { await app.close(); }
+  assert.equal(stops, 1);
+
+  const link = join(home, 'link');
+  await symlink(file, link);
+  for (const overrides of [{NED_HUB_TOKEN: token}, {NED_INSTANCE_NAME: ''}, {NED_HUB_TOKEN_FILE: link}]) {
+    await assert.rejects(startContainerCom({env: {...env, ...overrides}, port: 0}), /private token file/);
+  }
+  await chmod(file, 0o644);
+  await assert.rejects(startContainerCom({env, port: 0}), /private token file/);
+});
