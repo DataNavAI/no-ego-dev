@@ -54,6 +54,27 @@ test('TC-002: instance device login shows only challenge, supports cancel/retry 
 });
 
 
+test('TC-002: a delayed configured status never displays the provider picker',{timeout:45000},async t=>{
+  const chat=await browserChat(t,{deferLogin:true,viewport:{width:390,height:844}});
+  const {page,draft}=chat;
+  let release;
+  const held=new Promise(resolve=>{release=resolve;});
+  try{
+    await page.route('**/api/v1/model-setup',async route=>{await held;await route.continue();},{times:1});
+    await page.locator('#access-token').fill(chat.accessToken);
+    await page.locator('#access-submit').click();
+    await expect(page.getByRole('heading',{name:'Getting NED ready'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Choose a model provider'})).toBeHidden();
+    await expect(page.locator('#model-setup-form')).toBeHidden();
+    await expect(page.locator('#model-catalog-status')).toBeHidden();
+    await expect(page.getByRole('button',{name:'Check connection'})).toBeHidden();
+    await expect(page.locator('#chat-send')).toBeDisabled();
+  }finally{release();}
+  await expect(page.locator('#model-setup')).toBeHidden();
+  await draft.fill('Ready after model verification');
+  await expect(page.locator('#chat-send')).toBeEnabled();
+});
+
 test('TC-002: status failure cannot bypass first-use setup and lost access clears the flow before reauthentication',{timeout:45000},async t=>{
   const root=await mkdtemp(path.join(tmpdir(),'ned-model-gate-'));t.after(()=>rm(root,{recursive:true,force:true}));
   const models=createModelSetup({modelCatalog,home:root,env:{HERMES_HOME:path.join(root,'profile')}});
