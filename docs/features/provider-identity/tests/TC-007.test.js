@@ -90,6 +90,10 @@ test('TC-007: mobile cards use current request status and keep idle connection e
   await expect(card.getByRole('link',{name:'Open AWS sign-in'})).toHaveAttribute('href',url);
   await expect(card).toContainText('Waiting for approval');await card.getByRole('button',{name:'Copy code'}).click();
   assert.equal(await page.evaluate(()=>globalThis.copiedCode),'DEMO-1234');await expect(card).not.toContainText(url);
+  await page.setViewportSize({width:320,height:844});await card.evaluate(root=>{const sizes=[...root.querySelectorAll('*')].map(n=>[n,parseFloat(globalThis.getComputedStyle(n).fontSize)]);for(const[n,size]of sizes)n.style.fontSize=`${size*2}px`;});
+  assert.equal(await card.locator('.provider-code code').evaluate(n=>n.getBoundingClientRect().height<parseFloat(globalThis.getComputedStyle(n).fontSize)*2),true,'the short code stays legible without character stacking at200% text');
+  if(process.env.NED_UI_EVIDENCE_DIR)await page.screenshot({path:join(process.env.NED_UI_EVIDENCE_DIR,'mobile-aws-large-text.png')});
+  await card.evaluate(root=>{for(const n of root.querySelectorAll('*'))n.style.removeProperty('font-size');});await page.setViewportSize({width:390,height:844});
   await expect(page.locator('.assistant-message .approval-link')).toHaveText('Open AWS sign-in');
   await expect(page.locator('#chat-provider-requests')).toBeHidden();
   if(process.env.NED_UI_EVIDENCE_DIR)await page.screenshot({path:join(process.env.NED_UI_EVIDENCE_DIR,'mobile-aws-waiting.png')});

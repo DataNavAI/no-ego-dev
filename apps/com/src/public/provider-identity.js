@@ -285,7 +285,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
         const copy=button('Copy code',async()=>{try{await globalThis.navigator.clipboard.writeText(pending.code);statusNode.textContent='Code copied.';}catch{statusNode.textContent='Could not copy. Select the code and copy it manually.';}});
         code.append(node('code',pending.code),copy);section.append(code);
       }
-      const approval=link(pending.url, `Open ${names[provider]} sign-in`);approval.className='provider-sign-in';
+      const approval=link(pending.url, `Open ${names[provider]}`);approval.setAttribute('aria-label',`Open ${names[provider]} sign-in`);approval.className='provider-sign-in';
       pollButton=button('Check approval',()=>action('poll'));section.append(approval,pollButton);
     } else {
       section.append(node('p', `Verified ${summary(pending.identity)}. Use this identity for NED?`),
