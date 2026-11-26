@@ -4,7 +4,7 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   const element=id=>document.getElementById(id),status=element('model-setup-status'),form=element('model-setup-form'),provider=element('model-provider'),model=element('model-name'),key=element('model-key'),check=element('model-check');
   let state,ready=false,busy=false,opened=false,nonce,closed=false,version=0,login,pollTimer;
   let authenticated=!document.getElementById('app-shell')?.hidden;
-  const closeButton=element('model-setup-close');
+  const closeButton=element('model-setup-close'),title=element('model-setup-title');
   function dismiss(){if(!ready)return;opened=false;render();toggle.focus();}
   card.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
   closeButton.addEventListener('click',dismiss);
@@ -16,8 +16,8 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     else if(event.shiftKey&&(active===first||!controls.includes(active))){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&(active===last||!controls.includes(active))){event.preventDefault();first.focus();}
   });
-  document.addEventListener('ned-auth-lost',()=>{authenticated=false;version++;ready=false;state=null;nonce=null;login=null;clearTimeout(pollTimer);key.value='';element('model-login-code').value='';render();});
-  document.addEventListener('ned-auth-entered',()=>{const recheck=!authenticated;authenticated=true;render();if(recheck)void discover();});
+  document.addEventListener('ned-auth-lost',()=>{authenticated=false;version++;ready=false;busy=false;opened=false;state=null;nonce=null;login=null;clearTimeout(pollTimer);key.value='';element('model-login-code').value='';render();});
+  document.addEventListener('ned-auth-entered',()=>{const recheck=!authenticated;authenticated=true;if(recheck)void discover();else render();});
   const pending=()=>login&&['starting','waiting','authorizing'].includes(login.state);
   const subscriptions=['claude-subscription-directsdk-experimental','antigravity-subscription-directsdk'];
   const providers=['openai','openrouter','gemini','anthropic','openai-codex',...subscriptions];
@@ -32,15 +32,20 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   }
   function render(){
     const visible=!closed&&authenticated&&(!ready||opened);
+    const heading=state?'Choose a model provider':busy?'Getting NED ready':'Model settings unavailable';
+    if(title.textContent!==heading)title.textContent=heading;
+    check.hidden=!state&&busy;
     card.classList.toggle('model-onboarding',!ready);
     closeButton.hidden=!ready;
     card.hidden=!visible;
-    if(visible&&!card.open){card.showModal();element('model-setup-title').focus();}
+    if(visible&&!card.open){card.showModal();title.focus();}
     else if(!visible&&card.open){card.close();if(authenticated&&ready)element('chat-message').focus();}
     form.hidden=!state;
     element('model-connect').hidden=form.hidden;
     const listed=choices().includes(model.value);
-    element('model-catalog-status').textContent=choices().length?'Models supported by this NED installation. Access depends on your provider account.':'Model list is unavailable. Check connection to try again.';
+    const catalogStatus=element('model-catalog-status');
+    catalogStatus.hidden=form.hidden;
+    catalogStatus.textContent=choices().length?'Models supported by this NED installation. Access depends on your provider account.':'Model list is unavailable. Check connection to try again.';
     const device=provider.value==='openai-codex'||subscriptions.includes(provider.value);
     key.closest('.model-key-field').hidden=device;key.required=!device;
     provider.querySelector('[value="openai-codex"]').disabled=!state?.deviceLogin;
@@ -71,7 +76,9 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   }
   async function refresh(forceOpen=false){
     if(forceOpen)opened=true;
-    const current=++version;busy=true;render();
+    const current=++version;busy=true;
+    if(!state)status.textContent='Checking model configuration…';
+    render();
     try{
       const data=await read();if(closed||current!==version)return;
       const first=!state,previousProvider=provider.value,previousModel=model.value;state=data;nonce=data.nonce;ready=data.configured;key.value='';if(data.configured&&providers.includes(data.provider))provider.value=data.provider;else if(first||provider.value==='openai-codex'&&!data.deviceLogin)provider.value=data.deviceLogin?'openai-codex':'openai';populate(typeof data.model==='string'&&data.configured?data.model:previousProvider===provider.value&&choices().includes(previousModel)?previousModel:undefined);if(data.login){login=data.login;if(providers.includes(login.provider)){provider.value=login.provider;populate(login.model);}if(pending())opened=true;schedulePoll();}
@@ -113,7 +120,7 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
   check.addEventListener('click',()=>{if(busy)return;if(state?.source==='hub')void write({action:'inherit'});else void refresh();});
   toggle.addEventListener('click',()=>{opened=!opened;render();if(opened)void refresh();});
   async function discover(){
-    const current=++version;busy=true;render();
+    const current=++version;busy=true;status.textContent='Checking model configuration…';render();
     try{
       const response=await request('/api/v1/capabilities',{signal:AbortSignal.timeout(15000)}),data=await response.json();
       if(closed||current!==version)return;
