@@ -42,8 +42,9 @@ test('Git archive carries its exact revision without borrowing an enclosing chec
   const {root,sha}=await fixture(t);
   const archive=git(root,'rev-parse','HEAD');assert.equal(archive,sha);
   const tar=execFileSync('git',['-C',root,'archive',sha],{env:gitEnvironment,timeout:10000});
+  const archiveFile=path.join(root,'source.tar');await writeFile(archiveFile,tar);
   const extracted=path.join(root,'nested-archive');await mkdir(extracted);
-  execFileSync('tar',['-xf','-','-C',extracted],{input:tar,timeout:10000});
+  execFileSync('tar',['-xf',archiveFile,'-C',extracted],{timeout:10000});
   const loaded=await import(pathToFileURL(path.join(extracted,'src/version.js')).href);
   assert.equal(loaded.sourceRevision(),sha);
   assert.equal(loaded.nedVersion(),`0.3.0+${sha.slice(0,7)}`);
