@@ -21,6 +21,8 @@ GitHub uses a configured device-enabled GitHub App client ID. Its installation a
 
 - FR-006. A Hub-registered standalone container can queue AWS through its local agent CLI. Only the owner-authorized Hub browser transport can view, complete, or disconnect this enrollment. The container provides its own AWS CLI. Other providers, unauthenticated requests, direct browser transport, and the public tunnel cannot use this route.
 
+- FR-007. In authenticated Hub Chat, a supported standalone instance offers Connect AWS while AWS is disconnected or expired. Selecting it queues a request and opens the private Settings form even if the assistant has only replied with prose or a link. Opening Chat alone does not queue a request.
+
 ## Critical user journeys
 
 ### CUJ-001: Connect and use a chosen identity
@@ -99,7 +101,7 @@ Starting from a pending request or a connected account, the operator can cancel 
 - Level / automation: integration; [TC-006.test.js](tests/TC-006.test.js).
 - Preconditions: disposable container adapter and credential home, authenticated Hub protocol fixture, synthetic AWS device and protected-resource endpoints.
 - Given: an owner opens Chat through the Hub bridge. When the agent queues AWS and the owner approves the assigned role, then Chat shows Connect AWS and a retry uses the bound identity.
-- Variants: reject anonymous and cross-account requests at ingress, reject direct browser actions, and leave other providers unavailable.
+- Variants: an assistant link alone does not queue enrollment, but the owner can open the form from Chat. Reject anonymous and cross-account requests at ingress, reject direct browser actions, and leave other providers unavailable.
 - Cleanup: close the listeners, browser and fake provider, and remove fixture state.
 - Pass evidence: automated browser scenario and authorization boundary assertions.
 
@@ -110,7 +112,7 @@ Starting from a pending request or a connected account, the operator can cancel 
 | FR-001, FR-002, FR-003 | CUJ-001, CUJ-002 | TC-001, TC-002, TC-003, TC-004 |
 | FR-004 | CUJ-001, CUJ-002 | TC-001, TC-003, TC-005 |
 | FR-005 | CUJ-001 | TC-005, TC-006 |
-| FR-006 | CUJ-001, CUJ-002 | TC-006 |
+| FR-006, FR-007 | CUJ-001, CUJ-002 | TC-006 |
 
 ## Open questions and coverage gaps
 

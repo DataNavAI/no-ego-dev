@@ -32,7 +32,7 @@ Native provider connections are bound to the selected OS runtime home. The Hub-c
 ## AWS in a Hub-registered standalone container
 
 From Chat on your instance in NED Hub, ask NED to use AWS. The instance runs
-`ned identity connect aws` locally. Select **Connect AWS** in Chat and follow the
+`ned identity connect aws` locally. **Connect AWS** is available in Chat when AWS needs a connection. Select it and follow the
 AWS IAM Identity Center sign-in in Settings. Confirm the displayed role and retry
 the original request. The container includes AWS CLI; the selected identity
 applies through `ned identity exec aws -- aws …`.

@@ -6,6 +6,7 @@ expectations:
   - Uses the native NED CLI to request a private local COM connection and distinguishes requested from verified.
   - Routes GitHub to device sign-in, AWS to Identity Center account and role selection, and GoDaddy to its private scoped PAT form and exact domain check.
   - Requires confirmed identity and appropriate capability before subsequent work.
+  - Queues the AWS form before collecting provider details and never substitutes a raw AWS CLI sign-in URL for the form.
   - Keeps codes and credentials out of chat and accepts no ambient fallback.
   - In a Hub-registered standalone container, queues AWS without passing a public browser URL to the CLI, and reports unsupported runtime honestly.
   - Preserves guarded IFA profile requirements and refuses to use the native auth flow through hosted or public COM.

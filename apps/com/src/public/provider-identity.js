@@ -22,6 +22,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   let generation = 0;
   let disabled = false;
   let chatGeneration = 0;
+  let authGeneration = 0;
 
   function node(tag, value) {
     const element = document.createElement(tag);
@@ -45,16 +46,26 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   async function refreshChatRequests() {
     if (!chatRequests || disabled) return;
     const epoch = ++chatGeneration;
-    let connections = [];
-    try { ({connections} = await api('')); }
+    const authEpoch = authGeneration;
+    let data;
+    try { data = await api(''); }
     catch { /* A disabled or unavailable endpoint provides no actionable request. */ }
     if (epoch !== chatGeneration) return;
-    const pending = connections.filter(connection => connection.request && names[connection.provider]);
-    chatRequests.replaceChildren(...pending.map(connection => button(
+    const controls = (data?.connections ?? []).filter(({provider, request, status}) =>
+      names[provider] && (request || (data.awsChatShortcut && provider === 'aws' && status !== 'connected')));
+    chatRequests.replaceChildren(...controls.map(connection => button(
       `Connect ${names[connection.provider]}`,
-      () => document.dispatchEvent(new Event('ned-open-provider-settings')),
+      async () => {
+        if (!connection.request) {
+          try { await api('/aws/request', 'POST'); }
+          catch { /* Settings can report an unavailable connection. */ }
+        }
+        if (authEpoch !== authGeneration) return;
+        document.dispatchEvent(new Event('ned-open-provider-settings'));
+        void refresh();
+      },
     )));
-    chatRequests.hidden = pending.length === 0;
+    chatRequests.hidden = controls.length === 0;
   }
 
   function button(label, action) {
@@ -198,9 +209,9 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     }
   });
   globalThis.addEventListener?.('ned-chat-settled', refreshChatRequests);
-  globalThis.addEventListener?.('pagehide', () => {generation++; chatGeneration++; list.replaceChildren();});
+  globalThis.addEventListener?.('pagehide', () => {generation++; chatGeneration++; authGeneration++; list.replaceChildren();});
   document.addEventListener('ned-auth-lost', () => {
-    generation++; chatGeneration++;
+    generation++; chatGeneration++; authGeneration++;
     list.replaceChildren(); panel.hidden = true;
     chatRequests?.replaceChildren();
     if (chatRequests) chatRequests.hidden = true;

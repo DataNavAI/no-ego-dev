@@ -117,6 +117,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
     },
   };
   const request='Read my protected AWS resource.';
+  const linkOnly='Sign in to AWS.';
   const fixture=await browserChat(t,{identityOptions,deferLogin:true,
     async startApp(options){
       const file=join(options.home,'hub-token');
@@ -129,6 +130,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
     },
     preparePage(page,origin){return page.context().addCookies([{name:'hub-owner',value:'fixture',url:origin}]);},
     async onTurn({input,home}){
+      if(input===linkOnly)return 'Open https://example.test/aws-sign-in to approve.';
       assert.equal(input,request);
       const deps={home,env,identityOptions};
       const errors=[];
@@ -147,16 +149,25 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   assert.equal((await fetch(hub.origin+path,{headers:{...headers,Cookie:'hub-owner=other'}})).status,401);
   assert.equal((await fetch(local+path,{headers:{...headers,Authorization:'Bearer '+fixture.accessToken}})).status,403);
   assert.equal((await fetch(hub.origin+path+'/github/request',{method:'POST',headers:{...headers,Cookie:'hub-owner=fixture',Origin:hub.origin}})).status,403);
-  async function send(count){
-    await draft.fill(request);
+  async function send(count,input=request){
+    await draft.fill(input);
     await draft.press('Enter');
     await expect.poll(()=>turns.length).toBe(count);
     turns.at(-1).finish();
     await expect(page.getByRole('button',{name:'Send message',exact:true})).toBeVisible();
   }
-  await send(1);
-  await page.getByRole('group',{name:'Provider authentication'}).getByRole('button',{name:'Connect AWS'}).click();
+  const shortcut=page.getByRole('group',{name:'Provider authentication'}).getByRole('button',{name:'Connect AWS'});
   const settings=page.locator('[data-provider=aws]');
+  await send(1,linkOnly);
+  await expect(page.getByRole('region',{name:'Conversation'})).toContainText('https://example.test/aws-sign-in');
+  const state=await fetch(hub.origin+path,{headers:{...headers,Cookie:'hub-owner=fixture'}});
+  assert.equal((await state.json()).connections[0].request,null);
+  await shortcut.click();
+  await expect(settings.locator('[name=startUrl]')).toBeVisible();
+  await settings.getByRole('button',{name:'Cancel connection'}).click();
+  await expect(settings.getByRole('button',{name:'Connect',exact:true})).toBeVisible();
+  await send(2);
+  await shortcut.click();
   await settings.locator('[name=startUrl]').fill('https://example.awsapps.com/start');
   for(const [name,value] of Object.entries(identity))await settings.locator('[name='+name+']').fill(value);
   await settings.getByRole('button',{name:'Get sign-in code'}).click();
@@ -177,7 +188,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   assert.deepEqual(protectedReads,[]);
   await settings.getByRole('button',{name:'Confirm connection'}).click();
   await expect(settings).toContainText('Connected as');
-  await send(2);
+  await send(3);
   await expect(page.getByRole('region',{name:'Conversation'})).toContainText('Protected AWS resource read.');
   await expect(page.getByRole('region',{name:'Conversation'})).not.toContainText(portalToken);
   assert.deepEqual(protectedReads,[true]);
