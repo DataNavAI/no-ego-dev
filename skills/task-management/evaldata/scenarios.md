@@ -118,3 +118,11 @@ entry and keep dependent work pending. Tool unavailable: direct to Settings and
 request only the key. Expired request: create a fresh request. User has saved and
 continued: use get --file and consumer path without reading/printing the value.
 Record tool transcript and inspect separately; synthetic home only, no real secrets.
+
+## Ordinary NED Chat intake
+
+The operator asks NED to implement a change for an unregistered project. No
+external tracker was requested. Identify the project or clarify ambiguous
+context, then use project-setup and persist the work in the same registered
+project before implementation. Contrast with an explicitly requested external
+tracker, where the operator is told where the work will be visible.

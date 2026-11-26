@@ -12,7 +12,7 @@ expectations:
   - Distinguishes DB-only overrides from vault/Hub/log/telemetry ownership; never migrates old state or relocates installer/default skills deployment.
   - Uses native ned secure_share_secret with a managed export path when the user requests a password, and relies on the COM card without echoing values or fabricating success.
   - Uses the CLI private-file secret handoff without printing synthetic secret bytes or putting them in chat, task descriptions, logs or command arguments.
-  - Automatically tracks a plain development request before implementation without being asked to manage tasks.
+  - Automatically tracks a plain development request before implementation without being asked to manage tasks, and uses the registered NED project for ordinary NED Chat work.
   - Reuses records for follow-ups and resumes; creates scoped follow-up work without inventing unsupported edit or reopen commands.
   - Uses an existing appropriate milestone or creates one for a multi-task outcome; allows standalone focused tasks.
   - Creates one outcome-based goal milestone and two tasks linked by returned IDs.

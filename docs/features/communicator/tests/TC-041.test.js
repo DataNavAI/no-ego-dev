@@ -9,10 +9,10 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
   let snapshot=structuredClone(work),fail=false,hold=false,release;
   await page.route('**/api/v1/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
   await page.route('**/api/v1/projects/*',route=>route.fulfill({json:{preview:{status:'available',url:'http://localhost:9999'}}}));
-  await page.route('**/api/v1/projects/*/work',async route=>{
-    const id=new URL(route.request().url()).pathname.split('/').at(-2);const captured=structuredClone(snapshot);
-    if(hold&&id==='alpha'){hold=false;await new Promise(resolve=>{release=resolve;});}
-    await route.fulfill({status:fail?503:200,json:fail?{}:id==='alpha'?captured:{projectId:'beta',items:[]}});
+  await page.route('**/api/v1/projects/work',async route=>{
+    const captured=structuredClone(snapshot);
+    if(hold){hold=false;await new Promise(resolve=>{release=resolve;});}
+    await route.fulfill({status:fail?503:200,json:fail?{}:{projects:[{id:'alpha',name:'Alpha',items:captured.items}]}});
   });
   await page.route('**/api/v1/projects/*/activity',route=>route.fulfill({json:{projectId:'alpha',goal:null,task:null}}));
   await page.route('**/api/v1/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'retry: 60000\ndata: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
@@ -40,9 +40,8 @@ test('TC-041: dashboard preserves workspace state, refreshes progress and isolat
   await expect(page.locator('#dashboard')).toContainText('3 / 3 tasks completed');
   await page.locator('#dashboard-show-completed').uncheck();await expect(page.locator('#dashboard')).toContainText('All tasks completed.');
   hold=true;await refresh();await expect.poll(()=>Boolean(release)).toBe(true);await select('beta');
-  await expect(page.locator('#dashboard')).toContainText('No goals or tasks yet.');release();
-  await expect(page.locator('#dashboard')).not.toContainText('Launch');
-  fail=true;await select('alpha');await expect(page.locator('#dashboard')).toContainText('Progress could not be loaded.');
+  await expect(page.locator('#dashboard')).toContainText('3 / 3 tasks completed');release();
+  fail=true;await refresh();await expect(page.locator('#dashboard')).toContainText('Progress could not be loaded.');
   fail=false;await page.locator('#dashboard-retry').click();await expect(page.locator('#dashboard')).toContainText('3 / 3 tasks completed');
   await expect(f.draft).toHaveValue('Keep this draft');await expect(page.locator('#chat-task-references')).toContainText('Build');
   for(const width of [1280,390,320]){
@@ -69,18 +68,18 @@ test('TC-041: progress counts executable leaves once and handles empty, complete
 });
 
 
-test('TC-041: repeated refreshes share a pending read while project changes supersede it',async()=>{
+test('TC-041: repeated refreshes share a pending read and queue one follow-up read',async()=>{
   const {mountProjectWork}=await import('../../../../apps/com/src/public/project-work.js');
   const listeners=new Map(),requests=[];
   const node=()=>({replaceChildren(){},contains(){return false;},setAttribute(){},append(){},addEventListener(){},textContent:''});
   const project={value:'alpha',addEventListener(type,callback){listeners.set(type,callback);}};
   const container=node(),dashboard=node();
-  const document={createElement:node,getElementById:id=>id==='project'?project:id==='project-work'?container:dashboard};
+  const document={createElement:node,getElementById:id=>id==='project'?project:id==='project-work'?container:dashboard,addEventListener(){}};
   mountProjectWork({document,fetch:url=>new Promise(resolve=>requests.push({url,resolve}))});
   listeners.get('ned-work-refresh')();listeners.get('ned-work-refresh')();assert.equal(requests.length,1);
-  project.value='beta';listeners.get('change')();assert.equal(requests.length,2);
-  requests[0].resolve({ok:true,json:async()=>work});await new Promise(resolve=>setImmediate(resolve));
-  listeners.get('ned-work-refresh')();assert.equal(requests.length,2,'superseded read cannot unlock the selected project read');
+  assert.equal(requests[0].url,'/api/v1/projects/work');
+  requests[0].resolve({ok:false,json:async()=>({})});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,2,'overlapping invalidations queue one follow-up read');
   requests[1].resolve({ok:false,json:async()=>({})});await new Promise(resolve=>setImmediate(resolve));
   listeners.get('ned-work-refresh')();assert.equal(requests.length,3,'failed read permits explicit recovery');
 });
