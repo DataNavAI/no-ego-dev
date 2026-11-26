@@ -1,14 +1,12 @@
 {
-  "candidate_sha": "f16b62e22f71b675bac00b2d6fa3d47cbd4aba6c",
+  "candidate_sha": "f27fb3b62a3acabc92bacfec3a0748f5dc1621c8",
   "result": "pass",
-  "tested_at": "2026-11-26T06:20:33.416134+00:00",
-  "environment": "macOS, desktop and emulated mobile Chromium, disposable native COM and CLI state, separate loopback mock GoDaddy provider",
+  "tested_at": "2026-11-26T07:11:09.824830+00:00",
+  "environment": "macOS Node24, temporary SQLite runtime, real loopback Core/COM, headless Chromium, synthetic provider and process inventory",
   "commands": [
-    "npm run lint",
-    "npm run test:all",
-    "npm run test:spec -- --feature provider-identity",
-    "Chromium replay of TC-005 with screenshot capture at the chat prompt, Settings form, confirmation, and final response",
-    "python -m eval_runner.cli skills/ned-provider-identity --markdown"
+    "npm run lint (immutable code candidate via required commit hook)",
+    "npm run test:all (full small/medium specs, python -m pytest and real Hermes with mocked model via required commit hook)",
+    "Agent-inspected exact-candidate COM/browser rehearsal: prepare, trusted Tab, commit, authenticated new work, reopened SQLite guard, exact release"
   ],
-  "observations": "Inspected the desktop connection prompt, Settings form, connection confirmation, and returned domain in Chromium. Automated replay verified DOM behavior, no prompt for prose alone, anonymous mock denial, private authorization, no usable credential before confirmation, and a successful protected read on retry without the token entering conversation history. TC-004 exercised the mobile workspace path. The test used a mock provider and deterministic agent fixture. Live-provider consent in TC-002 was outside this verification run. The synthetic skill evaluation also passed."
+  "observations": "Observed recent_activity initially, prepared after five simulated quiet minutes, then trusted Chromium Tab canceled preparation and reset activity. Commit rejected a new authenticated coordinator mutation with503 instance_updating. A separately reopened guard retained committed state and only exact intent release cleared it. Focused integration also exercised independent SQLite actors, held background chat after202, actual authenticated Native WebSocket control, provider login busy lifecycle and synthetic Linux process inventory. No live AWS/Linux container, hosted provider inference or combined Hub auto-update acceptance is claimed; those remain Hub182/release gates."
 }

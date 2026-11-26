@@ -1,5 +1,30 @@
 # NED architecture
 
+## Hosted idle maintenance
+
+Core owns idle truth and the SQLite work/maintenance admission barrier described
+in [managed maintenance](features/managed-updates/SPEC.md). COM passes the same
+guard to its authenticated Hub control adapter. Hub owns release qualification,
+owner preferences, scheduling and Kubernetes replacement; neither browser assets
+nor the public HTTP bridge can commit or release maintenance.
+
+Five quiet minutes alone are insufficient: background chat, Core attempts, work
+scopes, provider login, pending drafts and unknown/container processes defer the
+update. Polling/health/stream traffic does not extend the quiet clock. Work and
+maintenance commit contend on the same SQLite write transaction, including
+transient CLI processes. Preparation expires; committed barriers survive socket
+loss and same-generation restarts. Only cancellation of the exact intent or a
+trusted higher-generation replacement clears them. Unknown work is retained
+conservatively rather than declared complete after a timeout.
+
+The managed wrapper supplies `NED_MANAGED_INSTANCE_ID`,
+`NED_MANAGED_GENERATION` and actual `NED_PLATFORM_PIDS`. Linux process inspection
+binds platform PIDs to start identities and allows only the fixed health helper;
+unavailable inventory defers updates. These variables are trusted deployment
+configuration. Unmanaged/older adapters do not advertise support. This source
+does not enable Hub scheduling or certify a deployed Linux image; Hub182 and
+its container/test/staging gates own that rollout.
+
 Status: NED API v1 consolidation is a source candidate; deployment is a
 separate acceptance gate. The existing CLI/Core/COM responsibilities below are
 retained, with API ownership consolidated in Core.

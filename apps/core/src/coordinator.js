@@ -127,6 +127,8 @@ export async function createCoreRuntime(options={}) {
     if(!eligibility.eligible){update(attempt,{state:'cancelled',errorCode:eligibility.reason??'readiness_changed'},'attempt.cancelled');return false;}return true;
   }
   async function admit(attempt,deadline){
+    let release;try{release=options.maintenance?.enter('task');}catch(error){if(error.code==='instance_updating')return false;throw error;}
+    try{
     let row=current(attempt);
     if(row.stopRequested){update(row,{state:'cancelled',errorCode:'stopped_before_admission'},'attempt.cancelled');return false;}
     if(row.admissionSentAt){unknown(row,'admission_uncertain');return false;}
@@ -179,6 +181,7 @@ export async function createCoreRuntime(options={}) {
       else fence(row,['preparing'],value=>update(value,{state:'failed',errorCode:error.code==='auth_failed'?'auth_failed':'unsupported_gateway'},'attempt.failed'));
       return !!row.admissionSentAt;
     }
+    }finally{release?.();}
   }
   async function tick(request){
     const deadline=Date.now()+10000,counts={admissions:0,observations:0,outbox:0};

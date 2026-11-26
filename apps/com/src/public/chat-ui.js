@@ -99,6 +99,7 @@ export function mountChat(libraries) {
     }).observe(transcript);
   }
   function renderSend(){
+    libraries?.idleActivity?.changed({hasDraft:Boolean(draft.value.trim()||media.ready()||media.pending()||references.ready())});
     const send=element('chat-send'),sending=Boolean(activeTurn);
     const hasContent=draft.value.trim()||media.ready()||references.ready();
     send.disabled=sending ? activeTurn.stopRequested : busy||loadingOlder||uncertain||!modelSetup.ready()||!sessionId||!historyReady||media.pending()||!hasContent;

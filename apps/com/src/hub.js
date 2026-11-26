@@ -1,3 +1,4 @@
+import {createMaintenanceControl} from './maintenance-control.js';
 import http from 'node:http';
 import {exposeNedApiPath} from '../../core/src/api-paths.js';
 import {hostname} from 'node:os';
@@ -68,7 +69,7 @@ function createBridge(config, target,logger,apiCredential) {
   });
 }
 
-export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger,apiCredential,preview} = {}) {
+export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger,apiCredential,preview,maintenance} = {}) {
   if(typeof apiCredential!=='function'&&(typeof apiCredential!=='string'||!/^[a-f0-9]{64}$/.test(apiCredential)))throw new Error('NED API credential required for Hub transport.');
   const target = new URL(targetUrl);
   if (target.protocol !== 'http:' || !loopback(target.hostname) || target.pathname !== '/' || target.username || target.password || target.search || target.hash) throw new Error('Invalid COM target.');
@@ -103,13 +104,15 @@ export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegist
       if(stopped)return;
       control = new WebSocket(endpoint,{headers:{Authorization:`Bearer ${config.token}`},handshakeTimeout:10000,maxPayload:65536,perMessageDeflate:false,followRedirects:false});
       const current=control;let alive=true;let lastPreview;
+      const maintenanceControl=createMaintenanceControl({maintenance,authorized:()=>!stopped&&control===current&&current.readyState===WebSocket.OPEN,send:message=>current.send(JSON.stringify(message))});
       const publishPreview=()=>{if(current.readyState!==WebSocket.OPEN||!preview)return;try{const state=preview.snapshot();const value=state.preview?.identity?{id:state.preview.id,revision:state.revision}:null;const encoded=JSON.stringify(value);if(encoded!==lastPreview){lastPreview=encoded;current.send(JSON.stringify({type:'preview',preview:value}));}}catch{current.send(JSON.stringify({type:'preview',preview:null}));}};
       current.on('open',publishPreview);clearInterval(previewPoll);previewPoll=setInterval(publishPreview,1000);previewPoll.unref();
       heartbeat=setInterval(()=>{if(!alive)current.terminate();else if(current.readyState===WebSocket.OPEN){alive=false;current.ping();}},15000);
       current.on('pong',()=>{alive=true;});
       current.on('message',data=>{
         let message;try{message=JSON.parse(data.toString());}catch{return;}
-        if(message?.type==='ready'){preview?.remote?.(message.capabilities?.preview===true);attempt=0;status('online');return;}
+        if(message?.type==='maintenance-request'){maintenanceControl.receive(message);return;}
+        if(message?.type==='ready'){maintenanceControl.announce();preview?.remote?.(message.capabilities?.preview===true);attempt=0;status('online');return;}
         if(message?.type!=='open'||typeof message.id!=='string'||!/^[\w-]{43}$/.test(message.id)||streams.size>=64)return;
         const url=new URL('/tunnel/data',endpoint);url.searchParams.set('id',message.id);
         const ws=new WebSocket(url,{headers:{Authorization:`Bearer ${config.token}`},handshakeTimeout:10000,maxPayload:1024*1024,perMessageDeflate:false,followRedirects:false});

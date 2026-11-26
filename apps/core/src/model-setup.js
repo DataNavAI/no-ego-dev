@@ -44,8 +44,8 @@ async function jsonResponse(response,limit=32768){
 export function createModelSetup({home=homedir(),env=process.env,fetch:request=globalThis.fetch,enabled=true,hermesAdapter,modelCatalog,clock=Date.now}={}){
   const root=env.HERMES_HOME??path.join(home,'.hermes'),intents=new Map(),requests=new Set();
   const adapter=hermesAdapter??createHermesModelAdapter({env,profile:root}),logins=new Map();
-  let hub,closed=false,queue=Promise.resolve();
-  const serial=operation=>{const current=queue.then(()=>{if(closed)throw new ModelSetupError();return operation();});queue=current.catch(()=>{});return current;};
+  let hub,closed=false,queue=Promise.resolve(),serialActive=0;
+  const serial=operation=>{const current=queue.then(async()=>{if(closed)throw new ModelSetupError();serialActive++;try{return await operation();}finally{serialActive--;}});queue=current.catch(()=>{});return current;};
   async function fetchBound(url,options={}){
     if(closed)throw new ModelSetupError();
     if(requests.size>=8)throw new ModelSetupError(429,'model_setup_busy');
@@ -221,7 +221,7 @@ export function createModelSetup({home=homedir(),env=process.env,fetch:request=g
     })();
     return publicLogin(j);
   }
-  return {status,prepare,startLogin,
+  return {status,prepare,startLogin,isBusy:()=>requests.size>0||serialActive>0||[...logins.values()].some(j=>!j.finished),
     submitLoginCode(id,code){
       const j=logins.get(id);if(!j)throw new ModelSetupError(404,'model_login_missing');
       if(!j.authorize()){endLogin(j,'cancelled');throw new ModelSetupError(401,'model_setup_unauthorized');}

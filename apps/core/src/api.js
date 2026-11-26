@@ -1,4 +1,5 @@
 import {existsSync} from 'node:fs';
+import {createManagedMaintenance,MaintenanceError} from './maintenance.js';
 import {randomUUID} from 'node:crypto';
 import {createPreviewDelivery} from './preview-delivery.js';
 import {createPreviewHandler} from './preview.js';
@@ -13,6 +14,9 @@ import {requestDiagnostic,requestPhase} from './protocol/request-diagnostic.js';
 export function createNedApiHandler({boundOrigin,operatorService,operatorCredential,browserEnabled=true,legacyInvalidStatus=400,...options}={}){
   options.databasePath=operatorService?.database?.filename??options.database?.filename??options.databasePath??resolveDatabasePath(options);
   let operatorPending,operatorHandler,ownedService,closing=false,closePromise;
+  const ownMaintenance=!options.maintenance;
+  const maintenance=options.maintenance??createManagedMaintenance({database:operatorService?.database??options.database,databasePath:options.databasePath,env:options.env,resetQuietClock:browserEnabled});
+  options.maintenance=maintenance;
   const credential=()=>operatorCredential??loadApiCredential(options);
   const apiAuthenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
   const preview=createPreviewHandler(options);
@@ -42,7 +46,17 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
     try{token=credential();if(!authenticated(req.headers.authorization,token,options.basicCredentials)){send(401,{error:{code:'unauthorized',message:'NED API authentication required.'}},{'www-authenticate':'Bearer realm="NED"'});return true;}}
     catch{return error(503,'api_unavailable','API authentication unavailable.'),true;}
     if(!route.valid){const status=req.url.startsWith('/api/v1')?400:legacyInvalidStatus;error(status,status===404?'not_found':'invalid_request',status===404?'Not found.':'Invalid request path.');return true;}
+    let release;
+    try {
+      if(route.pathname==='/api/v1/activity/interaction'&&req.method==='POST'){
+        if(req.headers['content-type']!=='application/json')return error(400,'invalid_request','JSON required.'),true;
+        let text='';for await(const part of req){text+=part;if(Buffer.byteLength(text)>128)return error(413,'request_too_large','Request too large.'),true;}
+        let input;try{input=JSON.parse(text);}catch{return error(400,'invalid_request','Invalid interaction.'),true;}
+        if(!apiAuthenticated(req))return error(401,'unauthorized','NED API authentication required.'),true;
+        send(200,maintenance.interaction(input));return true;
+      }
     if(route.kind==='unknown')return error(404,'not_found','Not found.'),true;
+    if(!['GET','HEAD','OPTIONS'].includes(req.method))release=maintenance.enter('request');
     if(route.handler==='preview'&&previewDelivery){startPreview();touchDelivery();}
     if(route.handler==='preview'&&req.url==='/api/v1/preview/access'){
       if(!previewDelivery)return error(503,'preview_delivery_unavailable','Private preview unavailable.'),true;
@@ -83,12 +97,15 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
     }catch{if(!res.headersSent)error(500,'internal_error','Unable to process API request.');else res.destroy();}
     finally{req.url=original;}
     return true;
+    }catch(failure){if(failure instanceof MaintenanceError){if(!res.headersSent)error(failure.status,failure.code,'NED is updating. Retry shortly.');else res.destroy();return true;}throw failure;}
+    finally{release?.();}
   };
+  handler.maintenance=maintenance;
   handler.startPreview=startPreview;
   handler.preview={remote:value=>{remotePreview=value===true;touchDelivery();},snapshot:()=>preview.service.snapshot(),relay:(...args)=>previewDelivery?.relay(...args)};
   handler.setHubRegistration=input=>browser?.setHubRegistration(input);
   handler.credential=credential;
   handler.authenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
-  handler.close=()=>closePromise??=(async()=>{closing=true;clearInterval(deliveryTimer);if(previewDelivery&&existsSync(options.databasePath))try{preview.service.delivery(deliveryOwner,false,true);}catch{/* expiry also revokes */}await previewDelivery?.close();preview.close();await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})();
+  handler.close=()=>closePromise??=(async()=>{closing=true;clearInterval(deliveryTimer);if(previewDelivery&&existsSync(options.databasePath))try{preview.service.delivery(deliveryOwner,false,true);}catch{/* expiry also revokes */}await previewDelivery?.close();preview.close();await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})().finally(()=>{if(ownMaintenance)maintenance.close();});
   return handler;
 }

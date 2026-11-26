@@ -10,14 +10,15 @@ import {createProjectReader,ProjectError} from './projects.js';
 
 const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
 
-export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,identityOptions,identityEnabled=false,apiAuthenticated=()=>true}={}){
+export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,maintenance,identityOptions,identityEnabled=false,apiAuthenticated=()=>true}={}){
   const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
   const identity=createIdentityHandler({githubClientId:env.NED_GITHUB_APP_CLIENT_ID,...identityOptions,home,env,enabled:identityEnabled&&secretsEnabled&&nativeIdentityAllowed(env)});
   const projects=createProjectReader({databasePath,home,env});
   const models=modelSetup??createModelSetup({home,env,enabled:secretsEnabled});
   const live=(req,res)=>{try{return !res.destroyed&&apiAuthenticated(req);}catch{return false;}};
-  const chat=createChatGateway({home,env,...chatGateway,databasePath,logger,beforeChat:async(req,res)=>{const result=await models.prepare(()=>live(req,res));if(!live(req,res))throw new ModelSetupError(401,'model_setup_unauthorized');return result;}});
+  const chat=createChatGateway({home,env,maintenance,...chatGateway,databasePath,logger,beforeChat:async(req,res)=>{const result=await models.prepare(()=>live(req,res));if(!live(req,res))throw new ModelSetupError(401,'model_setup_unauthorized');return result;}});
   const activity=createActivityStreams(databasePath);
+  const removeBusySource=maintenance?.addBusySource(()=>models.isBusy?.()===true||identity.isBusy());
   const handler=async(req,res,send,origin)=>{
     const error=(status,code,message,extra)=>send(status,{error:{code,message}},extra);
     if(req.url==='/api/model-setup'||req.url.startsWith('/api/model-setup?')||req.url.startsWith('/api/model-setup/'))return models.handle(req,res,send,origin,()=>live(req,res),()=>{try{return apiAuthenticated(req);}catch{return false;}});
@@ -62,6 +63,6 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
     return error(404,'not_found','Not found.');
   };
   handler.setHubRegistration=input=>models.register(input);
-  handler.close=async()=>{identity.close();chat.close();projects.close();activity.close();await models.close();};
+  handler.close=async()=>{removeBusySource?.();identity.close();chat.close();projects.close();activity.close();await models.close();};
   return handler;
 }

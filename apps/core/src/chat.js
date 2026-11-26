@@ -158,7 +158,9 @@ export function createChatGateway(options = {}) {
         notify(turn);
       };
       const execute=async()=>{
+      let release;
       try {
+      release=mutation?options.maintenance?.enter('chat'):undefined;
       if(fixed){
         const read=async(method,path,payload)=>{
           const upstream=await fetch(origin+path,{method,headers:{Authorization:`Bearer ${key}`,...(payload?{'Content-Type':'application/json'}:{})},body:payload,redirect:'error',signal:controller.signal});
@@ -200,7 +202,7 @@ export function createChatGateway(options = {}) {
       if(match[1])validateMessagePage(data.data);
       return send(200,match[1] ? {data:data.data.map(row => ({id:row.id,role:row.role,content:row.content ?? '',...(row.tool_name!==undefined?{tool_name:row.tool_name}:{}),...(typeof row.name==='string'?{name:row.name}:{}),...(row.tool_calls!==undefined?{tool_calls:row.tool_calls}:{}),...(row.tool_call_id!==undefined?{tool_call_id:row.tool_call_id}:{})}))} : {data:data.data.filter(row => /^[A-Za-z0-9_-]{1,200}$/.test(row.id)).map(row => ({id:row.id,title:typeof row.title === 'string' ? row.title : 'Untitled chat'})),has_more:data.has_more === true});
       }catch(error) {const phase=requestPhase(req.url);if(phase)options.logger?.event('chat_failure',requestDiagnostic(phase,{status:503,error}));controller.abort();return finish(503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}});}
-      finally {clearTimeout(timer);res.off('close',abort);}
+      finally {release?.();clearTimeout(timer);res.off('close',abort);}
       };
       if(turn){send(202,{turn:{id:turn.id,status:'pending'}});void execute();return;}
       return await execute();
