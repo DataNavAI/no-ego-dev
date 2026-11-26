@@ -1,15 +1,12 @@
 {
-  "candidate_sha": "bedc8f140e237d5e23704644231c8a288f602488",
+  "candidate_sha": "b365f70a25f30254da85360406541201c0d28d39",
   "result": "pass",
-  "tested_at": "2026-11-26T11:28:05.215677+00:00",
-  "environment": "macOS ARM64; real Chromium and isolated NED homes/auth with mocked gateway; populated project/chat at1440/1024/390/320px and200% text at1280/320px",
+  "tested_at": "2026-11-26T11:28:34.934969+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
   "commands": [
-    "npm run lint",
     "npm run test:spec -- --all",
     "python -m pytest",
-    "npm run test:all (commit hook)",
-    "node --test docs/features/model-setup/tests/TC-002.test.js",
-    "node /Volumes/Agent/Codex/worktrees/muse-layout/verify-layout.mjs"
+    "node --test docs/features/communicator/tests/TC-044.test.js"
   ],
-  "observations": "Integrated current main including NED speaker and Hub AWS account-connection changes; self-review complete. Light Muse-inspired rail/central chat/right context and package-version brand render. Browser checks preserve selected tab, Preview DOM, draft and reference pill through collapse/reopen/mobile views; keyboard resizing and enlarged-text Close/Debug controls remain reachable. No page overflow or browser errors. Inspected populated synthetic screenshots at all named sizes. Existing resize, Debug, focus, palette, streaming and mobile-keyboard regressions pass. Full lint, npm, automated-spec and real Hermes/mock-model integration pass; Python215passed9existing skips. Private Muse content not copied/published. Existing unrelated manual/live-provider/physical-device cases are not claimed. Integrated latest model verification fix. Added current saved instance model in the header; browser TC-002 proves unsaved picker choices do not change it, saved replacements update it, unconfigured/error states remove stale identity and access loss clears it. Phone header wraps without overflow. All automated specs, lint, Python and actual Hermes integration passed on these contents; self-review complete. Integrated main609f270 Hub Chat AWS shortcut with no product source conflicts. Rebuilt local native dependencies for pinned Node22 after an existing Node25 Hermes streaming timeout; all10 Hermes integration cases passed under Node22. Full commit hook passed, final browser/layout evidence refreshed and self-review complete."
+  "observations": "Desktop and mobile reply screenshots show round user bubbles and substantially rounded NED bubbles with a tighter lower-left corner. Wrapped replies fit in the transcript."
 }
