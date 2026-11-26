@@ -26,6 +26,7 @@
     <div class="history-controls"><button id="older" hidden aria-hidden="true" tabindex="-1"></button><button id="newer" hidden aria-hidden="true" tabindex="-1"></button><button id="latest" hidden>Jump to latest</button></div>
     <section id="chat-activity" class="chat-activity" aria-label="Latest goal & task updates" hidden><div class="activity-heading"><button id="chat-activity-dismiss" type="button" aria-label="Dismiss updates">×</button></div><div id="chat-activity-content" role="status" aria-live="polite" aria-atomic="true"></div></section>
     <div id="chat-empty" class="chat-empty" hidden><p>What can I help you with?</p></div>
+    <div id="chat-provider-requests" aria-label="Provider authentication" role="group" hidden></div>
     <div id="transcript" class="transcript" role="region" aria-label="Conversation" tabindex="0"></div>
     <div class="compose-dock">
       <p id="chat-status" role="status" aria-live="polite">Loading chat…</p>
@@ -54,7 +55,13 @@
   <div id="pane-divider" class="pane-divider" role="separator" aria-label="Resize chat pane" aria-orientation="vertical" aria-controls="left-pane" tabindex="0" hidden></div>
   <main id="preview" tabindex="-1" class="preview-pane" aria-label="Project workspace"><header class="preview-toolbar"><div class="canvas-tabs" role="tablist" aria-label="Project view"><button id="goals-pane-tab" type="button" role="tab" aria-selected="true" aria-controls="goals-panel" tabindex="0">Goals &amp; Tasks</button><button id="preview-tab" type="button" role="tab" aria-selected="false" aria-controls="preview-panel" tabindex="-1">Preview</button><button id="dashboard-tab" type="button" role="tab" aria-selected="false" aria-controls="dashboard" tabindex="-1">Dashboard</button><button id="workspace-settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings" tabindex="-1">Settings</button></div><span id="preview-identity"></span></header><section id="goals-panel" class="goals-panel" role="tabpanel" aria-labelledby="goals-pane-tab" tabindex="0"><p role="status">Waiting for a project.</p></section><div id="preview-panel" role="tabpanel" aria-labelledby="preview-tab" class="preview-canvas" hidden><section class="preview-state"><span class="preview-symbol" aria-hidden="true">▧</span><h2 id="preview-heading" tabindex="-1"></h2><p id="preview-message" role="status" aria-live="polite"></p><a id="preview-open" class="app-link" target="_blank" rel="noopener noreferrer" hidden>Open app</a><small id="preview-note" hidden> Opens in a new tab.</small><button id="preview-retry" hidden>Retry</button></section></div><section id="dashboard" class="dashboard-panel" role="tabpanel" aria-labelledby="dashboard-tab" tabindex="0" hidden><p role="status">Waiting for a project.</p></section>
   <section id="settings" role="tabpanel" aria-labelledby="workspace-settings-tab" tabindex="-1" hidden>
-    <h2 id="settings-heading" tabindex="-1">Settings</h2><button id="access-forget" class="access-forget" type="button">Forget access token</button><h3>Secrets</h3>
+    <h2 id="settings-heading" tabindex="-1">Settings</h2><button id="access-forget" class="access-forget" type="button">Forget access token</button>    <section id="provider-connections" aria-labelledby="provider-heading" hidden>
+      <h3 id="provider-heading">Provider connections</h3>
+      <p id="provider-status" role="status" aria-live="polite"></p>
+      <button id="provider-refresh" type="button">Refresh connections</button>
+      <div id="provider-list"></div>
+    </section>
+    <h3>Secrets</h3>
     <p>Save secrets here and share only the key with NED.</p><p>Available to NED on this instance.</p>
     <form id="secret-form" autocomplete="off"><label for="secret-key">Key</label><input id="secret-key" name="secret-key" placeholder="ADMIN_PASSWORD" pattern="[A-Z][A-Z0-9_]{0,127}" maxlength="128" autocapitalize="characters" spellcheck="false" required><label for="secret-value">Value</label><input id="secret-value" name="secret-value" type="password" autocomplete="new-password" maxlength="65536" required><button type="submit">Save secret</button></form>
     <p id="secret-status" role="status" aria-live="polite"></p><button id="secret-retry" type="button" hidden>Retry</button><ul id="secret-list" aria-label="Saved secrets"></ul>

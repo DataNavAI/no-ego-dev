@@ -1,5 +1,5 @@
 export const NED_API_BASE='/api/v1';
-const browserFamilies=new Set(['health','capabilities','projects','chat','secrets','model-setup','workspace','activity']);
+const browserFamilies=new Set(['health','capabilities','projects','chat','secrets','identity','model-setup','workspace','activity']);
 
 export function nedApiPath(raw='',method='GET'){
   let pathname=typeof raw==='string'?raw.split('?')[0]:'',valid=true;
@@ -38,5 +38,5 @@ export function nedApiPath(raw='',method='GET'){
 
 export function exposeNedApiPath(raw){
   const route=nedApiPath(raw);
-  return route.valid&&['asset','resource','discovery'].includes(route.kind);
+  return route.family!=='identity'&&route.valid&&['asset','resource','discovery'].includes(route.kind);
 }

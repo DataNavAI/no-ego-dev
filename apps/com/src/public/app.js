@@ -90,6 +90,10 @@ function syncNavigation(){
   leftToggle.setAttribute('aria-pressed',String(workspace==='left'));
   previewToggle.setAttribute('aria-pressed',String(workspace==='preview'));
 }
+document.addEventListener('ned-open-provider-settings',()=>{
+  workspace='preview';mobileNavigation.open=false;
+  selectCanvas(document.getElementById('workspace-settings-tab'),true);
+});
 leftToggle.addEventListener('click',()=>{workspace='left';mobileNavigation.open=false;syncNavigation();chat.focus();});
 document.getElementById('workspace-skip')?.addEventListener('click',()=>{workspace='preview';syncNavigation();preview.focus();});
 previewToggle.addEventListener('click',()=>{workspace='preview';mobileNavigation.open=false;syncNavigation();canvasHeading().focus();});

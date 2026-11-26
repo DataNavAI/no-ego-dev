@@ -395,6 +395,7 @@ export function mountChat(libraries) {
       finally{activeTurn=null;}
       fitDraft();
     },true).then(()=>{
+      document.defaultView?.dispatchEvent(new Event('ned-chat-settled'));
       const active=document.activeElement;
       if(!draft.disabled&&(!active||active===document.body||active===draft||active===element('chat-send')))draft.focus({preventScroll:true});
     });

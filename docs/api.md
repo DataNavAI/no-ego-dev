@@ -518,3 +518,7 @@ delivery controller and captured listener identity. `remoteAvailable` additional
 requires negotiated Hub support. Neither capability proves app rendering/HMR.
 See [preview specification](features/web-app-previews/SPEC.md) for lifecycle,
 listener ownership, browser support and revocation requirements.
+
+## Private provider connections
+
+Authenticated native COM exposes `GET /api/v1/identity` and `POST /api/v1/identity/{provider}/{action}`. Requests require the identity header, mutations require an exact Origin, and approval or disconnect binds the observed request or connection ID. Hub and public tunnel bridges reject this family. See the [provider identity contract](features/provider-identity/SPEC.md).

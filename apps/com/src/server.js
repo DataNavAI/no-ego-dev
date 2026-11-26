@@ -9,6 +9,7 @@ assets.set('/model-setup.js',['model-setup.js','text/javascript']);
 assets.set('/chat-entry.js',['chat-entry.js','text/javascript']);
 assets.set('/history.js',['history.js','text/javascript']);
 assets.set('/message-content.js',['message-content.js','text/javascript']);
+assets.set('/provider-identity.js',['provider-identity.js','text/javascript']);
 assets.set('/settings.js',['settings.js','text/javascript']);
 assets.set('/settings.css',['settings.css','text/css']);
 assets.set('/secret-request.js',['secret-request.js','text/javascript']);
@@ -37,11 +38,11 @@ const policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect
 
 const protocolAssets=new Map([['/reaction-emoji.js','reaction-emoji.js'],['/history.js','history.js'],['/request-diagnostic.js','request-diagnostic.js'],['/secret-events.js','secret-events.js']]);
 for(const [name,type] of [['api-client.js','text/javascript'],['auth-entry.js','text/javascript'],['auth.css','text/css']])assets.set('/'+name,[name,type]);
-export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,home,env=process.env,gateway,logger,secretsEnabled=true,initializeDatabase=false,basicCredentials,modelSetup}={}){
+export function createCommunicatorServer({host='127.0.0.1',port=0,databasePath,home,env=process.env,gateway,logger,secretsEnabled=true,initializeDatabase=false,basicCredentials,modelSetup,identityOptions,identityEnabled=true}={}){
   if(host!=='127.0.0.1'||!Number.isInteger(port)||port<0||port>65535)throw new Error('Invalid NEDCOM address.');
   databasePath??=resolveDatabasePath({home,env});
   let url=null;
-  const api=createNedApiHandler({databasePath,home,env,chatGateway:gateway,modelSetup,logger,secretsEnabled,basicCredentials,boundOrigin:()=>url,legacyInvalidStatus:404,previewDelivery:true});
+  const api=createNedApiHandler({databasePath,home,env,chatGateway:gateway,modelSetup,identityOptions,identityEnabled,logger,secretsEnabled,basicCredentials,boundOrigin:()=>url,legacyInvalidStatus:404,previewDelivery:true});
   const server=http.createServer(async(req,res)=>{
     const send=(status,type,body,extra={})=>{res.writeHead(status,{'content-type':type+'; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':policy,'referrer-policy':'origin',...extra});res.end(req.method==='HEAD'?undefined:body);};
     const error=(status,code,message,extra)=>send(status,'application/json',JSON.stringify({error:{code,message}}),extra);

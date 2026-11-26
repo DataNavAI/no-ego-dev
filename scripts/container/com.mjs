@@ -8,7 +8,7 @@ export async function startContainerCom({origin = 'http://127.0.0.1:8787', port 
   const explicit=env.NED_COM_USERNAME!==undefined||env.NED_COM_PASSWORD!==undefined;
   if(explicit&&(!env.NED_COM_USERNAME||!env.NED_COM_PASSWORD))throw new Error('Configure both COM username and password.');
   const username=explicit?env.NED_COM_USERNAME:env.HERMES_DASHBOARD_BASIC_AUTH_USERNAME,password=explicit?env.NED_COM_PASSWORD:env.HERMES_DASHBOARD_BASIC_AUTH_PASSWORD;
-  const upstream = createServer({databasePath,home,env,basicCredentials:username&&password?{username,password}:undefined});
+  const upstream = createServer({identityEnabled:false,databasePath,home,env,basicCredentials:username&&password?{username,password}:undefined});
   const internal = new URL(await upstream.listen());
   const server = http.createServer((req,res) => {
     if (req.headers.host !== publicUrl.host || (req.headers.origin !== undefined && req.headers.origin !== publicUrl.origin) || !req.url.startsWith('/') || req.url.startsWith('//')) {

@@ -1,3 +1,5 @@
+import {createIdentityHandler} from './provider-identity.js';
+import {nativeIdentityAllowed} from '../../../src/identity-store.js';
 import {createModelSetup,ModelSetupError} from './model-setup.js';
 import {readProjectWork} from './work.js';
 import {readTaskDelivery} from './task-delivery.js';
@@ -8,8 +10,9 @@ import {createProjectReader,ProjectError} from './projects.js';
 
 const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
 
-export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,apiAuthenticated=()=>true}={}){
+export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,identityOptions,identityEnabled=false,apiAuthenticated=()=>true}={}){
   const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
+  const identity=createIdentityHandler({githubClientId:env.NED_GITHUB_APP_CLIENT_ID,...identityOptions,home,env,enabled:identityEnabled&&secretsEnabled&&nativeIdentityAllowed(env)});
   const projects=createProjectReader({databasePath,home,env});
   const models=modelSetup??createModelSetup({home,env,enabled:secretsEnabled});
   const live=(req,res)=>{try{return !res.destroyed&&apiAuthenticated(req);}catch{return false;}};
@@ -18,6 +21,7 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
   const handler=async(req,res,send,origin)=>{
     const error=(status,code,message,extra)=>send(status,{error:{code,message}},extra);
     if(req.url==='/api/model-setup'||req.url.startsWith('/api/model-setup?')||req.url.startsWith('/api/model-setup/'))return models.handle(req,res,send,origin,()=>live(req,res),()=>{try{return apiAuthenticated(req);}catch{return false;}});
+    if(/^\/api\/identity(?:[/?]|$)/.test(req.url))return identity(req,send,origin);
     if(req.url.startsWith('/api/chat/'))return chat(req,res,send);
     if(req.url==='/api/secrets'||req.url.startsWith('/api/secrets/')||req.url.startsWith('/api/secrets?'))return secrets(req,res,send,origin);
     if(!['GET','HEAD'].includes(req.method))return error(405,'method_not_allowed','Method not allowed.',{Allow:'GET, HEAD'});
@@ -58,6 +62,6 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
     return error(404,'not_found','Not found.');
   };
   handler.setHubRegistration=input=>models.register(input);
-  handler.close=async()=>{chat.close();projects.close();activity.close();await models.close();};
+  handler.close=async()=>{identity.close();chat.close();projects.close();activity.close();await models.close();};
   return handler;
 }
