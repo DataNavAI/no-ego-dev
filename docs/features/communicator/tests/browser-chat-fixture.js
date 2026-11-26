@@ -10,7 +10,7 @@ import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 export {expect};
-export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,viewport={width:1280,height:900},deferLogin=false}={}){
+export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,identityOptions,onTurn,viewport={width:1280,height:900},deferLogin=false}={}){
   const home=await mkdtemp(join(tmpdir(),'ned-chat-browser-'));
   let database,app,browser,gateway;
   t.after(async()=>{
@@ -41,12 +41,13 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
     if(req.url==='/api/sessions/nedcom-main/chat/stream'&&req.method==='POST'){
       const input=JSON.parse(payload).input;
       const ordinal=turns.length+1;
-      const events=streamEvents(session.id,`**Completed reply ${ordinal}**`);
+      const reply=onTurn ? await onTurn({input,home,origin:app.url}) : `**Completed reply ${ordinal}**`;
+      const events=streamEvents(session.id,reply);
       res.writeHead(200,{'content-type':'text/event-stream'});
       res.write(events.slice(0,2).map(streamFrame).join(''));
       let liveSequence=10;
       turns.push({input,res,activity(event,tool_name){res.write(streamFrame({event,data:{session_id:session.id,run_id:'run_synthetic',message_id:'msg_synthetic',seq:liveSequence++,tool_name,delta:'PRIVATE REASONING',args:{secret:'PRIVATE ARGUMENT'},preview:'PRIVATE OUTPUT'}}));},interrupt(){res.end();},partial(delta=`Visible partial ${ordinal}`){res.write(streamFrame({...events[2],data:{...events[2].data,seq:liveSequence++,delta}}));},finish(){
-        messages.push({id:`sent-${ordinal}`,role:'user',content:input},{id:`reply-${ordinal}`,role:'assistant',content:`**Completed reply ${ordinal}**`});
+        messages.push({id:`sent-${ordinal}`,role:'user',content:input},{id:`reply-${ordinal}`,role:'assistant',content:reply});
         res.end(events.slice(3).map(streamFrame).join(''));
       }});
       return;
@@ -55,7 +56,7 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
   });
   await new Promise(resolve=>gateway.listen(0,'127.0.0.1',resolve));
   const databasePath=join(home,'ned.sqlite');database=openNedDatabase({databaseUrl:databasePath});
-  app=createCommunicatorServer({modelSetup:modelSetup??configuredModelSetup(),databasePath,home,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}});
+  app=createCommunicatorServer({modelSetup:modelSetup??configuredModelSetup(),databasePath,home,identityOptions,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}});
   await app.listen();
   try{browser=await chromium.launch({headless:true,channel:'chromium'});}
   catch(error){throw new Error('Chromium is required. Run npm ci && npx playwright install --with-deps chromium before chat E2E tests.',{cause:error});}

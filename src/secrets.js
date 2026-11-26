@@ -28,10 +28,11 @@ function atomicFile(path,value){
   try{fd=openSync(temp,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);writeFileSync(fd,value);fsyncSync(fd);closeSync(fd);fd=undefined;renameSync(temp,path);}
   finally{if(fd!==undefined)closeSync(fd);try{unlinkSync(temp);}catch{/* A private temporary file may require owner cleanup after a filesystem failure. */}}
 }
-export function createSecretStore({home,env=process.env,clock=Date.now}={}){
+export function createSecretStore({home,env=process.env,clock=Date.now,namespace='secrets'}={}){
+  if(!['secrets','provider-identities'].includes(namespace))throw new SecretError();
   home=resolveRuntimeHome({home,env});
   if(process.platform==='win32')throw new SecretError('unsupported_platform','Private secret storage requires macOS or Linux.');
-  const root=join(home,'.ned'),directory=join(root,'secrets'),files=join(directory,'files'),filename=join(directory,'vault.sqlite'),keyfile=join(directory,'master.key');
+  const root=join(home,'.ned'),directory=join(root,namespace),files=join(directory,'files'),filename=join(directory,'vault.sqlite'),keyfile=join(directory,'master.key');
   function directoryCheck(path,privateMode){
     const info=lstatSync(path);
     if(!info.isDirectory()||info.isSymbolicLink()||!owned(info)||(info.mode&(privateMode?0o077:0o022)))throw new SecretError();
@@ -74,6 +75,9 @@ export function createSecretStore({home,env=process.env,clock=Date.now}={}){
     }catch(error){if(error instanceof SecretError)throw error;throw new SecretError();}
     finally{db?.close();}
   }
+  function checkExpected(current,decrypt,expected){
+    if(expected!==undefined&&(current?decrypt(current):null)!==expected)throw new SecretError('changed','The saved connection changed. Start again.');
+  }
   function removeExport(name){const path=join(files,name);checkFile(path);try{unlinkSync(path);}catch(error){if(error.code!=='ENOENT')throw error;}}
   function save({db,key},name,value,requestId=null){
       const nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,nonce,{authTagLength:16});cipher.setAAD(Buffer.from(name));
@@ -91,7 +95,7 @@ export function createSecretStore({home,env=process.env,clock=Date.now}={}){
   }
   return {
     list(){return operation(({db})=>db.prepare('SELECT key,updatedAt FROM secrets ORDER BY key').all());},
-    set(name,value){validateSecretKey(name);validateSecretValue(value);return operation(context=>save(context,name,value));},
+    set(name,value,{expected}={}){validateSecretKey(name);validateSecretValue(value);return operation(context=>{checkExpected(context.get(name),context.decrypt,expected);return save(context,name,value);});},
     request(name){validateSecretKey(name);return operation(({db})=>{
       const id=randomBytes(32).toString('hex'),expires=clock()+900000;
       db.prepare('DELETE FROM secret_requests WHERE expires<=?').run(clock());
@@ -126,6 +130,6 @@ export function createSecretStore({home,env=process.env,clock=Date.now}={}){
         return {value:decrypt(get(grant.secret_key))};
       });
     },
-    delete(name){validateSecretKey(name);return operation(({db,get})=>{if(!get(name))throw new SecretError('not_found','Secret not found.');removeExport(name);db.prepare('DELETE FROM secret_requests WHERE secret_key=?').run(name);db.prepare('DELETE FROM secret_shares WHERE secret_key=?').run(name);db.prepare('DELETE FROM secrets WHERE key=?').run(name);return {key:name,deleted:true};});},
+    delete(name,{expected}={}){validateSecretKey(name);return operation(({db,get,decrypt})=>{const record=get(name);checkExpected(record,decrypt,expected);if(!record)throw new SecretError('not_found','Secret not found.');removeExport(name);db.prepare('DELETE FROM secret_requests WHERE secret_key=?').run(name);db.prepare('DELETE FROM secret_shares WHERE secret_key=?').run(name);db.prepare('DELETE FROM secrets WHERE key=?').run(name);return {key:name,deleted:true};});},
   };
 }

@@ -1,15 +1,14 @@
 {
-  "candidate_sha": "3a2af6c192881bf06f64c5aae9f0d82b8b2fc517",
+  "candidate_sha": "f16b62e22f71b675bac00b2d6fa3d47cbd4aba6c",
   "result": "pass",
-  "tested_at": "2026-11-25T20:46:33.076080+00:00",
-  "environment": "Disposable served Chromium at desktop and phone widths with held Hermes gateway fixture streams and simulated phone VisualViewport resize/pan",
+  "tested_at": "2026-11-26T06:20:33.416134+00:00",
+  "environment": "macOS, desktop and emulated mobile Chromium, disposable native COM and CLI state, separate loopback mock GoDaddy provider",
   "commands": [
     "npm run lint",
-    "npm run test:spec -- --all",
-    "python -m pytest",
-    "node --test docs/features/communicator/tests/TC-051.test.js",
-    "python3 /tmp/ned-scroll-keyboard-evidence/render.py",
-    "python -m eval_runner.cli skills/ned-chat-desktop-review skills/ned-chat-mobile-review --markdown"
+    "npm run test:all",
+    "npm run test:spec -- --feature provider-identity",
+    "Chromium replay of TC-005 with screenshot capture at the chat prompt, Settings form, confirmation, and final response",
+    "python -m eval_runner.cli skills/ned-provider-identity --markdown"
   ],
-  "observations": "Inspected live tail, panned viewport and short mobile composer screenshots. Resizing kept the streamed tail in view while following; scrolling away paused and keyboard Jump returned focus and resumed following. Completion preserved intentional scroll position during history fetch. Multiline draft, Send and Stop fit in a simulated 320x260 visible viewport with context and activity. Review skill evals passed. No physical-device keyboard footage was available, leaving that weighted criterion unobserved."
+  "observations": "Inspected the desktop connection prompt, Settings form, connection confirmation, and returned domain in Chromium. Automated replay verified DOM behavior, no prompt for prose alone, anonymous mock denial, private authorization, no usable credential before confirmation, and a successful protected read on retry without the token entering conversation history. TC-004 exercised the mobile workspace path. The test used a mock provider and deterministic agent fixture. Live-provider consent in TC-002 was outside this verification run. The synthetic skill evaluation also passed."
 }

@@ -1,0 +1,14 @@
+prompt: |
+  Simulate the supplied authorization requests using the ned-provider-identity skill.
+  Provide ordered commands and operator actions. Use synthetic facts only. Do not
+  run any live command, contact providers, or claim that consent took place.
+expectations:
+  - Uses the native NED CLI to request a private local COM connection and distinguishes requested from verified.
+  - Routes GitHub to device sign-in, AWS to Identity Center account and role selection, and GoDaddy to its private scoped PAT form and exact domain check.
+  - Requires confirmed identity and appropriate capability before subsequent work.
+  - Keeps codes and credentials out of chat and accepts no ambient fallback.
+  - Preserves guarded IFA profile requirements and refuses to use the native auth flow through hosted or public COM.
+setupCommands: []
+teardownCommands: []
+parameters:
+  fixture: evaldata/requests.md

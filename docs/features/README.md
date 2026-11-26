@@ -26,6 +26,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 | Isolated main-tracking NED staging | implemented | [SPEC.md](ned-staging/SPEC.md) | [#123](https://github.com/DataNavAI/no-ego-dev/issues/123); isolated owner profile/CLI and active 15-minute Codex heartbeat verified; [acceptance](ned-staging/ACCEPTANCE.md); actual main promotion/rollback/data retention PASS, live model login separate; scheduled execution not yet observed |
 | Self-review development workflow | implemented (delivery checks pending) | [SPEC.md](development-workflow/SPEC.md) | #165; self-review/checks by default, separate review only on request; canonical skill evals and local staging readback |
 | Default Hermes skills staging | implemented | [SPEC.md](hermes-skills-staging/SPEC.md) | Local canonical skills deployment; recovery gaps documented |
+| Provider identity | implemented | [SPEC.md](provider-identity/SPEC.md) | Private connections and chat authorization for GitHub, AWS, and GoDaddy. |
 | Task management | implemented | [SPEC.md](task-management/SPEC.md) | [CLI guide](../tasks.md); Core-backed CLI transport/delivery/attempts TC-013; agent workflow TC-012 |
 | CLI installation and direct local launcher | implemented | Missing — coverage gap | `scripts/install.sh`, `src/launcher.js`; [install guide](../cli/INSTALL.md) |
 | Hermes profile installation/distribution | implemented | Missing — coverage gap | `distribution.yaml`, `config.yaml`, `src/profile-archive.js`; root README |
