@@ -1,14 +1,12 @@
 {
-  "candidate_sha": "55a2f3f820711b19fab446372c4bce02deaa73df",
+  "candidate_sha": "dda258881f9e43a959b7d4272d035430bccdf273",
   "result": "pass",
-  "tested_at": "2026-11-26T09:43:40.693593+00:00",
-  "environment": "macOS ARM64, Chromium, standalone container adapter and native Hub connector with a synthetic Hub owner proxy and AWS fixture, Colima ARM64",
+  "tested_at": "2026-11-26T10:06:15.961844+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
   "commands": [
-    "npm run lint",
-    "npm run test:all",
-    "npm run test:spec -- --feature provider-identity",
-    "npm run test:container -- --context colima-ned-staging --image ned-232-aws-test",
-    "python -m eval_runner.cli skills/ned-provider-identity --markdown"
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/model-setup/tests/TC-002.test.js"
   ],
-  "observations": "Restoring the old bridge reproduced a timeout waiting for Connect AWS. Restoring the candidate allowed a browser owner to open the AWS form, approve the Identity Center fixture, confirm the selected role, and retry a protected resource read. The fixture denied anonymous, cross-account, direct browser and other-provider enrollment. Credentials were absent from Chat, and the CLI denied use before confirmation. The real Docker image included AWS CLI and passed standalone acceptance. The skill evaluation passed. The AWS service and Hub browser's owner grant in this scenario were synthetic."
+  "observations": "A held configured status shows neutral loading without the provider picker, fields, or catalog notices. Configured chat opens when released. Unconfigured profiles and failed checks retain setup and retry."
 }
