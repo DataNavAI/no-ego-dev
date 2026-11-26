@@ -93,7 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           tag="$IMAGE:build-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$ARCHITECTURE"
-          docker build --provenance=false --sbom=false --tag "$tag" \
+          docker build --provenance=false --sbom=false --build-arg "NED_BUILD_REVISION=$REVISION" --tag "$tag" \
             --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$REVISION" .
           python docs/features/standalone-container/tests/container_acceptance.py \

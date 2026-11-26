@@ -1,0 +1,14 @@
+{
+  "candidate_sha": "f3c7574502bb53f600e78fbb30ef24237a5e5753",
+  "tested_at": "2026-11-26T18:56:46Z",
+  "environment": "macOS ARM64; real Chromium desktop/mobile fixtures; native ARM64 Docker in explicit colima-ned-staging context; isolated test-owned containers/volumes and synthetic credentials",
+  "result": "pass",
+  "commands": [
+    "node bin/ned.js --version",
+    "node --test tests/cli/build-version.test.js tests/cli/cli.test.js docs/features/communicator/tests/TC-001.test.js docs/features/communicator/tests/TC-052.test.js",
+    "git archive HEAD | docker --context colima-ned-staging build --build-arg NED_BUILD_REVISION=f3c7574502bb53f600e78fbb30ef24237a5e5753 --label org.opencontainers.image.revision=f3c7574502bb53f600e78fbb30ef24237a5e5753 --tag ned-version-03:f3c7574 -",
+    "python3 docs/features/standalone-container/tests/container_acceptance.py --context colima-ned-staging --image ned-version-03:f3c7574 --expected-architecture arm64",
+    "Independent exact-HEAD/hash readback and visual inspection of frozen 1440px and 320px screenshots"
+  ],
+  "observations": "Exact committed candidate returned 0.3.0+f3c7574. Eight focused/build-identity/browser tests passed. Complete pre-commit lint/small/medium/spec/Python/real-Hermes checks passed before candidate creation; Python 215 passed with nine existing skips. Independent review found no remaining material issues after verified fixes for stamp precedence and Git fixture isolation. Independent visual review confirmed complete v0.3.0+f3c7574 beside NED at 1440px and 320px, readable navigation and no clipping/visible horizontal overflow. Screenshot SHA256: 320=80d9e905ba764821972e350ea5d04a9d29fff240050144d7a3d588cad5397b60; 1440=6d4e6222e11f2acd91a4689d5c8001b1f57d13df1615b45d33c003a344e2c507. Native ARM64 actual container TC-003/004 passed against image sha256:09287e5a6748d1ea9d070c4a9782734b4fc020e9be690391030457d56f6d23fe, including exact SHA version, dashboard/COM auth/perimeter, startup, service replacement, shutdown, persistence and negative startup. All test-owned containers/volumes/synthetic credentials removed; existing user container untouched. No real model/provider calls, AWS rollout or local AMD64 qualification claimed."
+}

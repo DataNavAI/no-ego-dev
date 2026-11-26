@@ -16,6 +16,9 @@ RUN npm ci --omit=dev --no-audit && \
     npm cache clean --force
 COPY bin/ bin/
 COPY src/ src/
+COPY scripts/stamp-version.mjs scripts/stamp-version.mjs
+ARG NED_BUILD_REVISION
+RUN node scripts/stamp-version.mjs "$NED_BUILD_REVISION"
 COPY apps/ apps/
 COPY skills/ skills/
 COPY workflows/ workflows/

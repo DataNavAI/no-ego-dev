@@ -68,10 +68,17 @@ def main():
         if args.expected_architecture and (host_architecture != args.expected_architecture or daemon_architecture != args.expected_architecture):
             raise RuntimeError("Host and Docker daemon must match the requested native architecture")
         assert docker("info", "--format", "{{.OSType}}") == "linux"  # noqa: S101
+        git_executable = shutil.which("git")
+        if not git_executable:
+            raise RuntimeError("Git is required to verify the image source revision")
+        revision = subprocess.run(  # noqa: S603 - resolved Git executable, fixed argv, no shell
+            [git_executable, "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+            text=True, check=True, timeout=10,
+        ).stdout.strip()
         if not args.image:
             stage = "Image build"
             # No auth input exists during build; context uses the committed allowlist.
-            docker("build", "-t", image, ".", timeout=1800)
+            docker("build", "--build-arg", "NED_BUILD_REVISION=" + revision, "-t", image, ".", timeout=1800)
             built = True
         image_id = docker("image", "inspect", image, "--format", "{{.Id}}")
         image_architecture = docker("image", "inspect", image, "--format", "{{.Architecture}}")
@@ -160,7 +167,8 @@ def main():
             if args.expected_architecture:
                 assert node_architecture == args.expected_architecture  # noqa: S101
             assert http_checks() == {"projects": []}  # noqa: S101
-            assert docker("exec", "--user", "hermes", name, "ned", "--version") == json.loads((ROOT / "package.json").read_text())["version"]  # noqa: S101
+            expected_version = json.loads((ROOT / "package.json").read_text())["version"] + "+" + revision[:7]
+            assert docker("exec", "--user", "hermes", name, "ned", "--version") == expected_version  # noqa: S101
             docker("exec", "--user", "hermes", name, "/opt/ned/python/bin/python", "-c",
                    'import yaml,pathlib;h=pathlib.Path("/opt/data");m=yaml.safe_load((h/"distribution.yaml").read_text());'
                    'assert all((h/p).exists() for p in m["distribution_owned"]);'

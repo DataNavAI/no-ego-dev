@@ -194,7 +194,7 @@ class Driver:
         with tarfile.open(self.archive) as archive:
             archive.extractall(source, filter='data')
         tag = 'ned-staging:' + commit + '-' + uuid.uuid4().hex
-        self.docker('buildx', 'build', '--load', '--label',
+        self.docker('buildx', 'build', '--load', '--build-arg', 'NED_BUILD_REVISION=' + commit, '--label',
                     'org.opencontainers.image.revision=' + commit,
                     '-t', tag, str(source), timeout=1800)
         image = json.loads(self.docker('image', 'inspect', tag))[0]

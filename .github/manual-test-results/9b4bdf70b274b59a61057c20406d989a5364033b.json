@@ -1,0 +1,14 @@
+{
+  "candidate_sha": "9b4bdf70b274b59a61057c20406d989a5364033b",
+  "tested_at": "2026-11-26T19:19:41Z",
+  "environment": "macOS ARM64, real Chromium at 320px/1440px, native ARM64 Docker in colima-ned-staging; isolated synthetic runtime credentials and owned test containers/volumes",
+  "result": "pass",
+  "commands": [
+    "node bin/ned.js --version",
+    "node --test tests/cli/build-version.test.js tests/cli/cli.test.js docs/features/communicator/tests/TC-001.test.js docs/features/communicator/tests/TC-052.test.js",
+    "git archive HEAD | docker --context colima-ned-staging build --build-arg NED_BUILD_REVISION=9b4bdf70b274b59a61057c20406d989a5364033b --label org.opencontainers.image.revision=9b4bdf70b274b59a61057c20406d989a5364033b --tag ned-version-03:integrated -",
+    "python3 docs/features/standalone-container/tests/container_acceptance.py --context colima-ned-staging --image ned-version-03:integrated --expected-architecture arm64",
+    "Independent exact-HEAD/hash readback and visual inspection of latest integrated 320px/1440px screenshots"
+  ],
+  "observations": "Candidate integrates current main ecd0181849b5774907fdcc2ec11ebce82aa72c86 while preserving floating chat/inline sign-in changes. Full pre-commit lint/small/medium/spec/Python/real-Hermes gate passed; eight focused combined cases passed again on the immutable candidate. Actual CLI returned 0.3.0+9b4bdf7. Independent review found no material issues, verified unchanged approved resolver/stamper/test hashes, clean working tree and exact HEAD before/after, and confirmed complete readable version beside NED with preserved navigation and no visible clipping/overflow at 320px/1440px. Screenshot SHA256: 320=273624be37f32c7a3e4088dc20c0262f33a5e1ee58acbdf6786c63753bb407ee; 1440=1a802bcbf774d15e53d299bd8bb77cae70ac3d92fb0c3b98bfdaba0c3d2b0822. Native ARM64 actual container TC-003/004 passed against image sha256:a451b7c01e5060d281af62e9e1658fa923ed3781fec525f99b7d4dc4afff9268, including source SHA version, authenticated dashboard/COM perimeter, startup, restart, persistence, shutdown and negative startup. Owned containers/volumes/synthetic credentials removed; user container was preserved. No real model/provider calls, AWS rollout or local AMD64 qualification claimed. Earlier f3c7574 evidence remains historical; this receipt binds the integrated candidate."
+}

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawnSync,execFileSync } from 'node:child_process';
 import { test } from 'node:test';
 import { runCli } from '../../src/cli.js';
 
 test('CLI reports version and current local usage without credentials', () => {
+  const revision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
   for (const args of [['--version'], ['version']]) {
     const result = spawnSync(process.execPath, ['bin/ned.js', ...args], { encoding: 'utf8', env: { PATH: '/nonexistent' }, timeout: 5000 });
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout.trim(), '0.2.1');
+    assert.equal(result.stdout.trim(), `0.3.0+${revision.slice(0,7)}`);
     assert.equal(result.stderr, '');
   }
 });
