@@ -1,12 +1,13 @@
 {
-  "candidate_sha": "dda258881f9e43a959b7d4272d035430bccdf273",
+  "candidate_sha": "8b4bab507eac6606b5dfba970398f9fe42728c86",
   "result": "pass",
-  "tested_at": "2026-11-26T10:06:15.961844+00:00",
-  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "tested_at": "2026-11-26T10:52:11.680292+00:00",
+  "environment": "macOS ARM64, Chromium, NED standalone Hub connector and synthetic Hub owner and AWS endpoints",
   "commands": [
-    "npm run test:spec -- --all",
-    "python -m pytest",
-    "node --test docs/features/model-setup/tests/TC-002.test.js"
+    "npm run lint",
+    "npm run test:all",
+    "npm run test:spec -- --feature provider-identity",
+    "python -m eval_runner.cli skills/ned-provider-identity --markdown"
   ],
-  "observations": "A held configured status shows neutral loading without the provider picker, fields, or catalog notices. Configured chat opens when released. Unconfigured profiles and failed checks retain setup and retry."
+  "observations": "Restoring the prior frontend reproduces the missing Connect AWS action after a URL-only assistant turn. The candidate exposes the action without a pending request. The browser opens the private AWS form from Chat, cancels, exercises the existing CLI-queued flow, completes mock approval and confirms a protected read. Native controls and standalone owner boundaries pass. The updated skill evaluation passed."
 }
