@@ -40,3 +40,8 @@ export function exposeNedApiPath(raw){
   const route=nedApiPath(raw);
   return route.family!=='identity'&&route.valid&&['asset','resource','discovery'].includes(route.kind);
 }
+
+export function exposeHubAwsIdentityPath(raw) {
+  return raw === '/api/v1/identity' ||
+    /^\/api\/v1\/identity\/aws\/(request|start|poll|confirm|cancel|disconnect)$/.test(raw);
+}

@@ -10,3 +10,7 @@
 - An active profile requires guarded IFA for GitHub. The operator asks to use
   an ambient GitHub CLI login from another profile.
 - An operator only has the hosted COM URL; there is no private instance URL.
+
+- The operator is using their own Hub-registered standalone container and asks
+  to read an AWS resource. On the first attempt the CLI reports that the
+  connection UI is unavailable. Later the supported runtime queues the request.
