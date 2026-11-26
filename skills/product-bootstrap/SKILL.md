@@ -1,7 +1,7 @@
 ---
 name: product-bootstrap
 description: "Use when creating a small, disposable or publishable product prototype from benchmark notes, screenshots, or a starter app in order to answer one explicit learning question."
-version: 1.1.1
+version: 1.2.0
 author: NoEgoDev
 license: MIT
 metadata:
@@ -41,9 +41,11 @@ Do not start implementation until the stage, learning decision, and feedback pat
 2. **Inspect before scoping.** Read benchmark notes, screenshots, README, package files, current source, and configured checks. Record which concrete artifacts were inspected.
 3. **Extract the reusable pattern.** Identify the journey shape, information architecture, trust cues, feedback mechanism, or interaction worth preserving. Do not copy branding, proprietary text, or irrelevant domain details.
 4. **Write the prototype contract.** State Product stage, Learning decision, Primary journey, Feedback path, Mocked/manual inventory, and Prototype limitations.
-5. **Build one coherent slice.** Prefer one or two polished screens and the existing stack. Include at least one real interaction that demonstrates the journey. Use local or mocked behavior only when it can answer the learning question and is disclosed at the point of use or handoff.
+5. **Build one coherent slice.** Before drafting substantial changes in a new workspace, confirm that the intended editor can save a small change in the actual output directory and read it back. Reuse an existing proof for an already-verified workspace. If the editor denies the path, check for a supported configuration that preserves the existing authorization. If it cannot make the authorized directory available, report the blocker and leave the boundary in place. A shell write check alone does not establish that a different editing tool can save there.
+
+    Prefer one or two polished screens and the existing stack. Include at least one real interaction that demonstrates the journey. Use local or mocked behavior only when it can answer the learning question and is disclosed at the point of use or handoff.
 6. **Make feedback possible.** Add the declared feedback path to the artifact or provide a concrete facilitation procedure. “Show it to users” is not a feedback path.
-7. **Verify deterministically.** Run the repository's configured checks and the fixture's deterministic post-agent verifier when provided. For the canonical fixture, run `python3 verify.py`. Then exercise the primary interaction in a browser when browser tooling is available.
+7. **Verify deterministically.** Run the repository's configured checks and the fixture's deterministic post-agent verifier when provided. For the canonical fixture, run `python3 verify.py`. Then exercise the primary interaction in a browser when browser tooling is available. Choose the checks that establish the prototype contract. Wait for the user-visible end state after the interaction, including any asynchronous update or scroll, before capturing evidence. Once those checks pass, hand the prototype back for the planned feedback. Repeat a check when a change could affect its result or when the first run left a material question open.
 8. **Inspect the final diff.** Keep only durable prototype artifacts. Report exact files and exact command results.
 
 ### Reusing an existing GitHub-to-preview workflow

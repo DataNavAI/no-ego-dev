@@ -6,6 +6,7 @@ expectations:
   - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
   - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."
   - "works in the configured isolated workspace copied from the vendored starter and does not mutate the canonical fixture"
+  - "confirms a small write and readback in the isolated output directory through the intended editor before substantial changes"
   - "states Product stage as prototype and routes a real MVP to product-manager and mvp-planning"
   - "states one Learning decision and the evidence that would change it before implementation"
   - "implements one clear adapted intake-to-handoff journey without copying benchmark branding or text"
