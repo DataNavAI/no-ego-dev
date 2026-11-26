@@ -28,6 +28,20 @@ export function mountChat(libraries) {
   const element = id => document.getElementById(id);
   const transcript = element('transcript');
   const status = element('chat-status');
+  const providerRequests = element('chat-provider-requests');
+  const messageNodes = () => Array.from(transcript.children).filter(node=>node!==providerRequests);
+  // Keep an existing action before a subsequent turn, so the reply remains the live tail.
+  let providerAfter;
+  function providerIndex(nodes){
+    return providerAfter===undefined?nodes.length:nodes.findIndex(node=>node.dataset.messageId===providerAfter)+1;
+  }
+  function keepProviderBeforeReply(messages){
+    if(providerRequests&&providerAfter===undefined)providerAfter=messages.at(-1)?.dataset.messageId??null;
+  }
+  function replaceMessages(nodes){
+    if(providerRequests)nodes.splice(providerIndex(nodes),0,providerRequests);
+    transcript.replaceChildren(...nodes);
+  }
   const activityLabels={
     reconnecting:'Reconnecting to the reply…',working:'NED is preparing a reply…',thinking:'NED is thinking…',
     searching:'NED is searching the web…',reading:'NED is reading files…',
@@ -92,7 +106,7 @@ export function mountChat(libraries) {
   function renderLatest(){
     const latest=element('latest');
     const live=Boolean(activeTurn)&&!followingLatest();
-    latest.hidden=!sessionId||(!live&&!refreshNeeded&&offset===0);
+    latest.hidden=!historyReady||!sessionId||(!live&&!refreshNeeded&&offset===0);
     latest.disabled=busy&&!live;
   }
   if(typeof ResizeObserver!=='undefined'){
@@ -112,7 +126,7 @@ export function mountChat(libraries) {
   function render() {
     for (const id of controls) if(element(id))element(id).disabled = busy;
     const sending=Boolean(activeTurn);
-    if(empty)empty.hidden=!sessionId||!historyReady||!modelSetup.ready()||busy||transcript.childElementCount>0;
+    if(empty)empty.hidden=!sessionId||!historyReady||!modelSetup.ready()||busy||messageNodes().length>0||providerRequests?.hidden===false;
     renderSend();
     media.render(busy||uncertain||!sessionId||!historyReady);
     references.render(busy||uncertain||!sessionId||!historyReady);
@@ -143,7 +157,7 @@ export function mountChat(libraries) {
       if (row.role === 'assistant') visible.push(...cards.splice(0));
     }
     visible.push(...cards);
-    transcript.replaceChildren(...visible.map(row => {
+    replaceMessages(visible.map(row => {
       const article = document.createElement('article');
       article.className = `chat-message ${row.role === 'user' ? 'user-message' : 'assistant-message'}`;
       article.dataset.messageId=String(row.id);
@@ -160,7 +174,8 @@ export function mountChat(libraries) {
   }
   function showPending(input){
     const following=followingLatest(),top=transcript.scrollTop;
-    const children=Array.from(transcript.children);
+    const children=messageNodes();
+    keepProviderBeforeReply(children);
     const viewport=transcript.getBoundingClientRect().top;
     const anchor=children.find(child=>{const rect=child.getBoundingClientRect();return (rect.bottom ?? rect.top+100)>viewport;});
     const anchorTop=anchor?.getBoundingClientRect().top;
@@ -169,7 +184,7 @@ export function mountChat(libraries) {
     const text=input||[media.ready()?'Attachment':'',references.ready()?'Task reference':''].filter(Boolean).join(' · ');
     pendingUser.append(author,renderMessageContent({role:'user',content:text},document,libraries));
     if(children.length>=200)children.splice(anchor===children.at(-1)?0:199,1);
-    transcript.replaceChildren(...children,pendingUser);
+    replaceMessages([...children,pendingUser]);
     if(following)bottom(false);else{transcript.scrollTop=top+(anchorTop===undefined?0:anchor.getBoundingClientRect().top-anchorTop);observedTop=transcript.scrollTop;}
   }
   function ensureLiveArticle(){
@@ -182,12 +197,12 @@ export function mountChat(libraries) {
     liveContent=document.createElement('p');liveContent.className='message-content';liveContent.hidden=true;
     liveContent.setAttribute('aria-label','Assistant message');
     liveArticle.append(author,liveContent,progress);
-    const children=Array.from(transcript.children);
+    const children=messageNodes();
     const viewport=transcript.getBoundingClientRect().top;
     const anchor=children.find(child=>{const rect=child.getBoundingClientRect();return (rect.bottom ?? rect.top+100)>viewport;});
     const anchorTop=anchor?.getBoundingClientRect().top;
     if(children.length>=200){const remove=children.findLastIndex(child=>child!==anchor&&child!==pendingUser);children.splice(remove,1);}
-    transcript.replaceChildren(...children,liveArticle);
+    replaceMessages([...children,liveArticle]);
     if(!following&&anchorTop!==undefined){transcript.scrollTop=top+anchor.getBoundingClientRect().top-anchorTop;observedTop=transcript.scrollTop;}
   }
   function showStream(text){
@@ -298,8 +313,9 @@ export function mountChat(libraries) {
       }
     }catch(error){refreshNeeded='History changed. Jump to latest to reload.';throw error;}
     followingLatest();
-    const anchorId=transcript.firstElementChild?.dataset.messageId;
-    const anchor = transcript.firstElementChild?.getBoundingClientRect().top;const top = transcript.scrollTop;
+    const firstMessage=messageNodes()[0];
+    const anchorId=firstMessage?.dataset.messageId;
+    const anchor = firstMessage?.getBoundingClientRect().top;const top = transcript.scrollTop;
     if (direction === 'latest') {rows=updated;offset=0;older=data.data.length===50;refreshNeeded=false;olderFailed=false;olderNotice='';historyHead=String(data.data.at(-1)?.id ?? '');}
     else if (direction === 'older') {rows=updated;offset=next+data.data.length-rows.length;older=data.data.length===50;}
     else {rows=updated;offset=next;older=true;}
@@ -337,6 +353,7 @@ export function mountChat(libraries) {
       if(!/^[a-f0-9-]{36}$/.test(turn.id)||turn.status!=='pending')throw new Error('Unavailable');
       uncertain=true;
       activeTurn={id:turn.id,stopRequested:false};
+      keepProviderBeforeReply(messageNodes());
       status.textContent='';
       showActivity('working');
       render();
@@ -372,11 +389,19 @@ export function mountChat(libraries) {
   element('older').addEventListener('click',()=>void loadOlder());
   element('newer').addEventListener('click',()=>void action(()=>history('newer')));
   element('latest').addEventListener('click',()=>{
+    if(document.activeElement===element('latest'))transcript.focus({preventScroll:true});
     if(activeTurn){
-      if(document.activeElement===element('latest'))transcript.focus({preventScroll:true});
       bottom(false);renderLatest();return;
     }
     void action(async()=>{await history();await fillUnderfilled();bottom(true);});
+  });
+  document.addEventListener('ned-provider-chat-changed',()=>{
+    if(!activeTurn){
+      providerAfter=undefined;
+      transcript.append(providerRequests);
+    }
+    if(historyReady&&followLatest)bottom(false);
+    render();
   });
   element('chat-retry').addEventListener('click',()=>{if(olderFailed&&!refreshNeeded){olderFailed=false;olderNotice='';element('chat-retry').hidden=true;void loadOlder();}else void action(initialize);});
   transcript.addEventListener('scroll',()=>{renderLatest();if(transcript.scrollTop<=80)void loadOlder();});
@@ -402,7 +427,7 @@ export function mountChat(libraries) {
       }catch(error){
         void modelSetup.refresh();
         if(!draft.value)draft.value=input;
-        if(pendingUser){if(['invalid_attachment','invalid_reference'].includes(error.code))transcript.replaceChildren(...Array.from(transcript.children).filter(row=>row!==pendingUser&&row!==liveArticle));else pendingUser.dataset.state='incomplete';}
+        if(pendingUser){if(['invalid_attachment','invalid_reference'].includes(error.code))replaceMessages(messageNodes().filter(row=>row!==pendingUser&&row!==liveArticle));else pendingUser.dataset.state='incomplete';}
         if(['invalid_attachment','invalid_reference'].includes(error.code))clearTransientReferences();
         fitDraft();throw error;
       }

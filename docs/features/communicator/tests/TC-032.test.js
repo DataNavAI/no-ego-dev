@@ -16,7 +16,7 @@ function fixture(width=1280,request=async()=>({ok:true,json:async()=>({status:'o
     node.contains=target=>node===target||node.children.includes(target);
     return node;
   };
-  for(const id of ['app-shell','debug-pane','debug-toggle','debug-close','debug-clear','debug-health','debug-chat','debug-events','debug-empty'])nodes.set(id,make());
+  for(const id of ['app-shell','mobile-navigation','navigation-toggle','debug-pane','debug-toggle','debug-close','debug-clear','debug-health','debug-chat','debug-events','debug-empty'])nodes.set(id,make());
   document.getElementById=id=>nodes.get(id);document.createElement=make;
   view.innerWidth=width;
   const pane=nodes.get('debug-pane');pane.append(nodes.get('debug-close'));pane.open=false;
@@ -78,13 +78,16 @@ test('TC-032: failed health is explicit and stale probes cannot overwrite a reop
   let count=0;
   const subject=fixture(320,()=>++count===1?new Promise(resolve=>{resolveOld=resolve;}):Promise.reject(Error('SECRET')));
   try{
+    subject.nodes.get('mobile-navigation').open=true;
     subject.click('debug-toggle');await subject.tick();assert.equal(subject.pane.modal,true);
+    assert.equal(subject.nodes.get('mobile-navigation').open,false);
     subject.click('debug-close');subject.click('debug-toggle');await subject.tick();
     assert.equal(subject.nodes.get('debug-health').textContent,'Unavailable');
     resolveOld({ok:true,json:async()=>({status:'ok',service:'ned-api',version:1,token:'SECRET'})});await subject.tick();
     assert.equal(subject.nodes.get('debug-health').textContent,'Unavailable');assert.equal(subject.requests(),2);
     const cancel=new Event('cancel',{cancelable:true});subject.pane.dispatchEvent(cancel);
     assert.equal(cancel.defaultPrevented,true);assert.equal(subject.pane.hidden,true);
+    assert.equal(subject.document.activeElement,subject.nodes.get('navigation-toggle'));
   }finally{subject.dispose();}
 });
 

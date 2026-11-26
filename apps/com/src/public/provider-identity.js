@@ -22,6 +22,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   let generation = 0;
   let disabled = false;
   let chatGeneration = 0;
+  let chatActionsKey = '[]';
   let authGeneration = 0;
   let modalGeneration = 0;
   let modalTrigger;
@@ -75,19 +76,29 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     if (epoch !== chatGeneration) return;
     const controls = (data?.connections ?? []).filter(({provider, request, status}) =>
       names[provider] && (request || (data.awsChatShortcut && provider === 'aws' && status !== 'connected')));
-    chatRequests.replaceChildren(...controls.map(connection => button(
-      `Connect ${names[connection.provider]}`,
-      async () => {
-        if (!connection.request) {
-          try { await api('/aws/request', 'POST'); }
-          catch { /* Settings can report an unavailable connection. */ }
-        }
+    const actionsKey = JSON.stringify(controls.map(({provider, request})=>[provider,request?.id]));
+    if (actionsKey === chatActionsKey) return;
+    chatActionsKey = actionsKey;
+    chatRequests.replaceChildren(...controls.map(connection => {
+      const name = names[connection.provider];
+      const article = node('article');
+      article.className = 'chat-message assistant-message';
+      const action = button(`Connect ${name}`, async () => {
+        action.disabled = true;
+        try {
+          if (!connection.request) await api('/aws/request', 'POST');
+        } catch { /* Settings can report an unavailable connection. */ }
+        finally { action.disabled = false; }
         if (authEpoch !== authGeneration) return;
         document.dispatchEvent(new Event('ned-open-provider-settings'));
         void refresh();
-      },
-    )));
+      });
+      action.className = 'chat-provider-action';
+      article.append(node('strong', 'NED'), node('p', `Connect ${name} to let me use it for your requests.`), action);
+      return article;
+    }));
     chatRequests.hidden = controls.length === 0;
+    document.dispatchEvent(new Event('ned-provider-chat-changed'));
   }
 
   function button(label, action) {
@@ -271,6 +282,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     if (modal.open) modal.close();
     generation++; chatGeneration++; authGeneration++;
     list.replaceChildren(); panel.hidden = true;
+    chatActionsKey = '[]';
     chatRequests?.replaceChildren();
     if (chatRequests) chatRequests.hidden = true;
   });

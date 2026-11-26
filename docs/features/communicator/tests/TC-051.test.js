@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {join} from 'node:path';
 import {browserChat,expect} from './browser-chat-fixture.js';
 
 test('TC-051: live tail follows through viewport changes and intentional scroll away',async t=>{
@@ -22,8 +23,15 @@ test('TC-051: live tail follows through viewport changes and intentional scroll 
   await expect(partial).toContainText('Second tail');
   await expect.poll(gap).toBeLessThanOrEqual(2);
 
+  const transcriptBefore = await transcript.boundingBox();
   await transcript.evaluate(node=>node.scrollBy({top:-36,behavior:'instant'}));
   await expect(latest).toBeEnabled();
+  await expect(latest).toBeVisible();
+  const jumpBox = await latest.boundingBox();
+  const composerBox = await page.locator('.compose-dock').boundingBox();
+  assert.deepEqual(await transcript.boundingBox(), transcriptBefore);
+  assert.ok(jumpBox.y > transcriptBefore.y + transcriptBefore.height / 2);
+  assert.ok(jumpBox.y + jumpBox.height <= composerBox.y);
   const position=await transcript.evaluate(node=>node.scrollTop);
   turns[0].partial('\n'+'More lines\n'.repeat(20)+'Third tail');
   await expect(partial).toContainText('Third tail');
@@ -71,7 +79,12 @@ test('TC-051: completion preserves scroll intent while canonical history is load
 });
 
 test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async t=>{
-  const {page,draft,ready,turns}=await browserChat(t,{viewport:{width:390,height:844}});
+  const {page,draft,ready,turns}=await browserChat(t,{
+    viewport:{width:390,height:844},
+    preparePage:page=>page.route('**/api/v1/identity',route=>route.fulfill({
+      json:{awsChatShortcut:true,connections:[{provider:'aws',status:'disconnected',request:null}]},
+    })),
+  });
   await ready();
   await page.addInitScript(()=>{
     const viewport=Object.assign(new EventTarget(),{height:844,offsetTop:0,scale:1});
@@ -79,6 +92,7 @@ test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async
   });
   await page.reload();
   await ready();
+  await expect(page.getByRole('button',{name:'Connect AWS'})).toBeVisible();
   const composer=page.locator('.compose-dock');
   const send=page.locator('#chat-send');
   const shell=page.locator('#app-shell');
@@ -137,11 +151,40 @@ test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async
   await expect(send).toHaveAttribute('aria-label','Stop response');
   await expect.poll(()=>within(0,260)).toBe(true);
   await expect.poll(()=>turns.length).toBe(1);
-  turns[0].partial('Streaming above the keyboard.\n'.repeat(14));
+  turns[0].partial('Streaming above the keyboard.\n'.repeat(32));
   await expect(page.locator('[data-state="streaming"]')).toContainText('Streaming above the keyboard.');
   await expect.poll(()=>within(0,260)).toBe(true);
-  turns[0].finish();
-  await expect(send).toHaveAttribute('aria-label','Send message');
+  const transcript = page.locator('#transcript');
+  const latest = page.getByRole('button',{name:'Jump to latest'});
+  const liveReply = transcript.locator('[data-state="streaming"]');
+  const replyEndsInView = () => liveReply.evaluate(node=>{
+    const viewport=node.closest('#transcript').getBoundingClientRect();
+    const end=node.getBoundingClientRect().bottom;
+    return end>=viewport.top&&end<=viewport.bottom+1;
+  });
+  await expect.poll(replyEndsInView).toBe(true);
+  const transcriptBefore = await transcript.boundingBox();
+  await transcript.evaluate(node=>node.scrollBy({top:-50,behavior:'instant'}));
+  await expect(latest).toBeVisible();
+  const jump = await latest.boundingBox();
+  assert.deepEqual(await transcript.boundingBox(),transcriptBefore);
+  assert.ok(jump.y>=transcriptBefore.y&&jump.y+jump.height<=(await composer.boundingBox()).y);
+  const evidence = process.env.NED_UI_EVIDENCE_DIR;
+  if(evidence)await page.screenshot({path:join(evidence,'mobile-floating-latest.png')});
+  await latest.click();
+  await expect(latest).toBeHidden();
   await setViewport(844,0);
   await expect(activity).toBeVisible();
+
+  await page.reload();
+  await expect(liveReply).toContainText('Streaming above the keyboard.');
+  await setViewport(260,0);
+  turns[0].partial('The original response continued after reload.');
+  await expect(liveReply).toContainText('The original response continued after reload.');
+  await expect.poll(replyEndsInView).toBe(true);
+  await expect(page.getByRole('button',{name:'Connect AWS'})).toHaveCount(1);
+  assert.equal(turns.length,1);
+  turns[0].finish();
+  await expect(send).toHaveAttribute('aria-label','Send message');
+  await expect(transcript.locator(':scope > :last-child')).toContainText('Completed reply 1');
 });
