@@ -742,7 +742,7 @@ Coverage: FR-071 and FR-072 → CUJ-025 → TC-043.
 A user opens Chat, sees what they can ask, sends a draft, follows a streamed response, and adds context or continues the conversation. The right workspace remains available on desktop. At phone widths Chat stays usable without opening the project workspace.
 
 - FR-073: In an uncustomized desktop layout, Chat occupies at least 48% of the window at 1440px, with the project workspace still available and the divider preference respected. On mobile, Chat fills the viewport. A ready empty transcript gives one short cue that disappears while composing, adding context, or sending.
-- FR-074: The ready composer uses one row with Message, Send, and one disclosure for Attach file, Add link, file help, and Model provider. The draft grows vertically, and send, stop, context insertion, error recovery, and keyboard focus remain available. Send is disabled for an empty draft without context. Escape dismisses the focused link editor and returns focus to the draft before a separate Escape dismisses Message options. Conversation text uses at least 16px with a bounded reading column.
+- FR-074: The ready composer uses one row with Message, Send, and one disclosure for Attach file, Add link, file help, and Model provider. The draft grows vertically, and send, stop, context insertion, error recovery, and keyboard focus remain available. Send is disabled for an empty draft without context. Escape dismisses the focused link editor and returns focus to the draft before a separate Escape dismisses Message options. Conversation text uses at least 16px with a bounded reading column. User message bubbles have rounded corners on all sides. NED replies have similarly rounded corners with a tighter lower-left corner.
 
 ### TC-044: Chat UI functional score
 
@@ -753,7 +753,7 @@ A user opens Chat, sees what they can ask, sends a draft, follows a streamed res
 - When: navigate by keyboard, inspect context actions, send, complete a streamed reply, compose a multiline draft, resize and exercise retry.
 - Then: each layout exceeds 90% independently. The score is the share of the twelve binary checks reported by TC-044. Each check has equal weight. A fixture or capture failure cannot count as a pass.
 - Variants: desktop at 1024px and mobile at 320px, a forced session load failure and recovery, and browser keyboard navigation. Native keyboards and live model timing are outside this score.
-- Cleanup / pass evidence: close disposable fixture resources; retain score output and privately captured ready, reply, tools and narrow screenshots. Compare visual hierarchy with the recorded Muse desktop walkthrough while keeping NED's own design.
+- Cleanup / pass evidence: close disposable fixture resources; retain score output and privately captured ready, reply, tools and narrow screenshots. Compare visual hierarchy with the recorded Muse desktop walkthrough while keeping NED's own design. In the reply screenshots, verify rounded user and NED bubbles on desktop and mobile, including a wrapped reply.
 
 Coverage: FR-073 and FR-074 → CUJ-026 → TC-044, with lifecycle and history coverage in TC-037–040.
 

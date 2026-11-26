@@ -1,13 +1,12 @@
 {
-  "candidate_sha": "8b4bab507eac6606b5dfba970398f9fe42728c86",
+  "candidate_sha": "b365f70a25f30254da85360406541201c0d28d39",
   "result": "pass",
-  "tested_at": "2026-11-26T10:52:11.680292+00:00",
-  "environment": "macOS ARM64, Chromium, NED standalone Hub connector and synthetic Hub owner and AWS endpoints",
+  "tested_at": "2026-11-26T11:28:34.934969+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
   "commands": [
-    "npm run lint",
-    "npm run test:all",
-    "npm run test:spec -- --feature provider-identity",
-    "python -m eval_runner.cli skills/ned-provider-identity --markdown"
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-044.test.js"
   ],
-  "observations": "Restoring the prior frontend reproduces the missing Connect AWS action after a URL-only assistant turn. The candidate exposes the action without a pending request. The browser opens the private AWS form from Chat, cancels, exercises the existing CLI-queued flow, completes mock approval and confirms a protected read. Native controls and standalone owner boundaries pass. The updated skill evaluation passed."
+  "observations": "Desktop and mobile reply screenshots show round user bubbles and substantially rounded NED bubbles with a tighter lower-left corner. Wrapped replies fit in the transcript."
 }

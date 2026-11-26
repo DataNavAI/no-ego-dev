@@ -4,7 +4,7 @@
 .composer-context:has(.attachment-list:not(:empty),#chat-attachment-status:not(:empty),#chat-supported-files:not([hidden]),.link-editor:not([hidden])){display:block}
 .task-reference-list:empty{display:none}
 .chat-message{font-size:16px;line-height:1.5;padding:8px 0}.chat-message p{line-height:1.5}.chat-message>strong{position:static;display:block;width:auto;height:auto;clip:auto;overflow:visible;white-space:normal;margin:0 0 4px;font-size:12px;font-weight:650;color:#555d67}
-.chat-message.user-message{margin:4px 0 8px auto;width:fit-content;max-width:94%;padding:8px 12px;border:0;background:#eef0f2;border-radius:12px 12px 4px 12px}.user-message .message-copy::after{background:#eef0f2}
+.chat-message.user-message{margin:4px 0 8px auto;width:fit-content;max-width:94%;padding:8px 12px;border:0;background:#eef0f2;border-radius:22px}.user-message .message-copy::after{background:#eef0f2}
 .markdown-content p{margin-bottom:8px}.markdown-content h1,.markdown-content h2,.markdown-content h3{font-size:18px;line-height:1.4;margin-top:16px}.markdown-content h4,.markdown-content h5,.markdown-content h6{font-size:16px}.message-content pre,.markdown-content pre code{white-space:pre;overflow-wrap:normal}.message-content pre{overflow-x:auto;max-width:100%;font-size:13px}.markdown-content li{margin:3px 0}.message-actions{position:relative;min-height:20px;height:20px;margin-top:2px;padding-right:24px}.message-copy{position:absolute;right:-10px;top:-12px;width:44px;height:44px;min-height:44px;background:transparent}.message-copy::before{left:15px;top:14px}.message-copy::after{left:18px;top:17px}.message-content>p{margin:0 0 4px}.message-copy-status{font-size:11px}.chat-message[data-state="pending"]{opacity:.7}
 .chat-activity{position:relative;flex:0 2 auto;margin:4px 12px 0;padding:6px 40px 6px 10px;border:1px solid #cbddec;border-left:3px solid #6998c3;border-radius:8px;background:#edf5fc;box-shadow:none;max-height:min(112px,18dvh);overflow:auto;overscroll-behavior:contain;color:#253f56}
 .activity-heading{position:absolute;right:0;top:0;display:flex;align-items:center}.activity-heading button{flex:none;min-width:44px;min-height:44px;padding:0;border:0;border-radius:8px;background:transparent;color:#515963;font-size:20px}
@@ -110,7 +110,7 @@
   padding:10px 12px;
   margin-inline:0 auto;
   margin-bottom:8px;
-  border-radius:12px 12px 12px 4px;
+  border-radius:22px 22px 22px 6px;
   background:var(--chat-assistant);
 }
 .chat-pane .user-message .message-copy::after{background:var(--chat-user)}
