@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
 import {fixture,A,B} from './fixtures.js';
+import {waitForRunningOwner} from './owned-readiness.js';
 import {createStagingController,prepareNativeRuntime,spawnOwned} from '../../../../src/staging/controller.js';
 import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -16,11 +17,23 @@ test('TC-003: shell registration racing a lifecycle lock never executes a writer
  const marker=path.join(f.root,'projects/forbidden-writer'),worker=spawn(process.execPath,[fileURLToPath(new URL('../../../../src/staging/process-worker.js',import.meta.url)),'--shell',f.root,'-c',`printf forbidden > ${JSON.stringify(marker)}`],{detached:true,stdio:'ignore'});t.after(()=>{worker.kill('SIGKILL');release();});const code=await new Promise(resolve=>worker.once('close',resolve));release();const result=await updating;assert.equal(code,2);await assert.rejects(fs.stat(marker),{code:'ENOENT'});assert.equal(result.result,'updated');assert.equal((await f.controller.recoverWork()).result,'work_reconciled');
 });
 
+test('TC-003: child output cannot substitute for an atomically committed running owner',async t=>{
+ const f=await fixture(t);await f.controller.setup();const directory=path.join(f.root,'processes'),file=path.join(directory,'held.json'),temporary=file+'.tmp';
+ await fs.writeFile(file,JSON.stringify({state:'starting',pid:123}));await fs.writeFile(temporary,JSON.stringify({state:'running',pid:123,child_pid:456,child_start:'synthetic identity'}));
+ let observed,release,settled=false;const pending=new Promise(resolve=>observed=resolve),hold=new Promise(resolve=>release=resolve);
+ t.after(()=>release());
+ const waiting=waitForRunningOwner(f.root,{onPending:async()=>{observed();await hold;}}).then(record=>{settled=true;return record;});
+ await Promise.race([pending,waiting.then(()=>{throw new Error('Readiness accepted an uncommitted owner');})]);
+ assert.equal(settled,false);await fs.rename(temporary,file);release();const record=await waiting;
+ assert.equal(record.state,'running');assert.equal(record.child_pid,456);assert.equal(record.child_start,'synthetic identity');assert.deepEqual(await fs.readdir(directory),['held.json']);
+});
+
 test('TC-003: STAGE-R1-003 killed launcher retains live child ownership and blocks promotion and removal',async t=>{
- const f=await fixture(t);await f.controller.setup();f.setMain(B);const parent=spawn(process.execPath,[fileURLToPath(new URL('./owned-worker.js',import.meta.url)),f.root],{stdio:['ignore','pipe','pipe']});let record,timer;
+ const f=await fixture(t);await f.controller.setup();f.setMain(B);const parent=spawn(process.execPath,[fileURLToPath(new URL('./owned-worker.js',import.meta.url)),f.root],{stdio:['ignore','pipe','pipe']});let record,timer;const readyDeadline=Date.now()+10000;
  t.after(async()=>{parent.kill('SIGKILL');if(record){for(const [pid,start] of [[record.pid,record.process_start],[record.child_pid,record.child_start]]){if(!pid||!start)continue;try{const live=(await execute('/bin/ps',['-p',String(pid),'-o','lstart='])).stdout.trim(),group=Number((await execute('/bin/ps',['-p',String(pid),'-o','pgid='])).stdout.trim());if(live===start&&group===record.pgid){process.kill(-record.pgid,'SIGKILL');break;}}catch{/* owned process already stopped */}}}});
  try{await new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(new Error('Owned child did not reach readiness')),10000);parent.once('error',reject);parent.once('exit',()=>reject(new Error('Launcher exited before readiness')));parent.stdout.on('data',bytes=>{if(bytes.toString().includes('CHILD_READY'))resolve();});});}finally{clearTimeout(timer);}
- const files=await fs.readdir(path.join(f.root,'processes'));assert.equal(files.length,1);record=JSON.parse(await fs.readFile(path.join(f.root,'processes',files[0])));assert.equal(record.pgid,record.pid);assert.ok(record.child_pid);
+ record=await waitForRunningOwner(f.root,{deadline:readyDeadline,onPending:current=>{record=current;}});
+ const files=await fs.readdir(path.join(f.root,'processes'));assert.equal(files.length,1);assert.equal(record.pgid,record.pid);assert.ok(record.child_pid);
  const stopped=new Promise(resolve=>parent.once('exit',resolve));parent.kill('SIGKILL');await stopped;assert.equal((await f.controller.update()).result,'deferred');await assert.rejects(f.controller.remove(),/Finish/);assert.equal((await f.controller.status()).active.sha,A);assert.equal(f.task(),'Stage task');await assert.rejects(f.controller.recoverWork(),/Finish/);process.kill(record.child_pid,'SIGTERM');const deadline=Date.now()+10000;while(true){try{await execute('/bin/ps',['-p',String(record.pid),'-o','pid=']);if(Date.now()>deadline)throw new Error('Owned supervisor did not finish');}catch(error){if(error.code===1)break;throw error;}}assert.equal((await f.controller.recoverWork()).result,'work_reconciled');assert.equal((await f.controller.update()).result,'updated');
 });
 test('TC-003: STAGE-R1-005 flush failure never reports updated and preserves verified base',async t=>{

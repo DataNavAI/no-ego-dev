@@ -76,6 +76,8 @@ Actor: owner. Critical because persistent local services and updates need a reve
 - Cleanup: stop/await all owned children and fixture unrelated process; delete temporary root.
 - Pass evidence: URL/SHA/data assertions, child cleanup, transaction-state observations. Added regression variants cover killed-launcher live child refusal and quiescent recover-work; fast-child output/exit; injected flush failure without successful promotion; interrupted native archive retry with exact binary/executable-mode inventory; retained promotion-failure cause. Native configuration/foreground/background/npm probes are separate credential-free runtime evidence.
 
+- Ownership-readiness regression (#247): child stdout is not a persistence barrier. A controlled integration fixture holds a `starting` owner JSON beside its `.tmp` replacement; readiness must remain pending until a complete `running` record with child PID/start identity is atomically committed and the temporary entry disappears. Only then kill the real launcher and retain all live-child denial/recovery assertions. Repeat the focused TC-003 under Linux Node20 and22.
+
 ### TC-004: Service control, retention and retirement
 - Journey / requirements: CUJ-004 / FR-007–008
 - Level / automation: integration; [TC-004.test.js](tests/TC-004.test.js).
