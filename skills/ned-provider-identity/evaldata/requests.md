@@ -14,3 +14,7 @@
 - The operator is using their own Hub-registered standalone container and asks
   to read an AWS resource. On the first attempt the CLI reports that the
   connection UI is unavailable. Later the supported runtime queues the request.
+
+- An operator opens NED through Hub on a different machine and requests AWS
+  Console CLI sign-in without using IAM Identity Center. They ask where the
+  one-time code belongs.

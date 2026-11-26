@@ -56,8 +56,8 @@ test('TC-007: the registered Hermes tool produces a structured card and a reques
   const trigger=card.getByRole('button',{name:'Review connection'});
   await trigger.click();
   const modal=page.getByRole('dialog',{name:'Connect AWS'});
-  await expect(modal.getByLabel('AWS access portal URL')).toBeVisible();
-  await expect(modal.getByLabel('AWS access portal URL')).toBeFocused();
+  await expect(modal.getByLabel('AWS region')).toBeVisible();
+  await expect(modal.getByLabel('AWS region')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(modal).toBeHidden();
   await expect(trigger).toBeFocused();
@@ -68,5 +68,5 @@ test('TC-007: the registered Hermes tool produces a structured card and a reques
   assert.notEqual(replacement.request_id,receipt.request_id);
   await trigger.click();
   await expect(modal).toContainText('This request has ended.');
-  await expect(modal.getByLabel('AWS access portal URL')).toHaveCount(0);
+  await expect(modal.getByLabel('AWS region')).toHaveCount(0);
 });

@@ -9,7 +9,7 @@ const fields = {
 };
 
 function summary(identity) {
-  return identity.login || identity.domain || `${identity.account} · ${identity.role} · ${identity.region}`;
+  return identity.login || identity.domain || identity.arn || `${identity.account} · ${identity.role} · ${identity.region}`;
 }
 
 export function mountProviderIdentity({document, fetch: request = apiFetch} = {}) {
@@ -224,7 +224,50 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
         if (password) password.value = '';
         void action('start', values);
       });
-      section.append(form);
+      if (provider === 'aws') {
+        const consoleForm = node('form');
+        const region = node('input');
+        region.id = prefix + '-aws-console-region';
+        region.value = 'us-east-1';
+        region.maxLength = 32;
+        region.required = true;
+        const label = node('label', 'AWS region');
+        label.htmlFor = region.id;
+        const start = node('button', 'Sign in with AWS Console');
+        start.type = 'submit';
+        consoleForm.append(label, region, start);
+        consoleForm.addEventListener('submit', event => {
+          event.preventDefault();
+          void action('start', {region:region.value.trim()});
+        });
+        const identityCenter = node('details');
+        identityCenter.append(node('summary', 'Use IAM Identity Center'), form);
+        section.append(consoleForm, identityCenter);
+      } else section.append(form);
+    } else if (pending.state === 'console_code') {
+      const form = node('form');
+      const input = node('input');
+      input.id = prefix + '-aws-console-code';
+      input.type = 'password';
+      input.autocomplete = 'off';
+      input.maxLength = 8192;
+      input.required = true;
+      const label = node('label', 'One-time AWS code');
+      label.htmlFor = input.id;
+      const submit = node('button', 'Verify AWS identity');
+      submit.type = 'submit';
+      form.append(label, input, submit);
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        const code = input.value.trim();
+        input.value = '';
+        void action('start', {code});
+      });
+      section.append(link(pending.url, 'Open AWS Console sign-in'),
+        node('p', 'Sign in at AWS, then paste the one-time code shown there.'), form);
+    } else if (pending.state === 'console_verifying') {
+      section.append(node('p', 'AWS is verifying the sign-in.'),
+        button('Check verification', () => action('poll')));
     } else if (pending.state === 'sign_in') {
       section.append(node('p', 'Enter this code only on the provider’s sign-in page. Use the account you want NED to connect.'),
         node('code', pending.code), link(pending.url, `Open ${names[provider]} sign-in`),
