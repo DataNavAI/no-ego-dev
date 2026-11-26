@@ -203,3 +203,7 @@ Connect from staging Hub when `docker logs ned` reports `NED Hub: online`. A ful
 The [release workflow](../../../.github/workflows/public-container.yml) builds and accepts each native architecture before pushing a multi-architecture manifest. It advances `latest` only for the exact verified current main revision. On the first publication, a GitHub package administrator must make this specific package public in GitHub package settings if it initially has private visibility. Verify anonymous access in a fresh Docker credential directory before announcing the release.
 
 For acceptance, use a dedicated Docker container and three synthetic test volumes. Verify anonymous manifest inspection and pull, that only loopback COM is published, and that the Hermes-owned token copy has mode 0600. Use an authenticated Hub fixture to prove registration. Inspect only sanitized log and environment assertions.
+
+## Installed tools and offline functional checks
+
+See [tool inventory](TOOLS.md) and SPEC TC-009. `npm run test:container` now runs nine offline functional groups before service/lifecycle acceptance. Native AMD64/ARM64 CI executes the same suite. Missing/broken tools fail by named group, with no provider credentials or host HOME mounts. Chrome is inherited Google Chrome for Testing, exposed as `google-chrome`; no second browser is installed.
