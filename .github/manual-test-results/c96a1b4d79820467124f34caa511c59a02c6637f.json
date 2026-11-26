@@ -1,0 +1,13 @@
+{
+  "candidate_sha": "c96a1b4d79820467124f34caa511c59a02c6637f",
+  "tested_at": "2026-11-26T19:47:46Z",
+  "environment": "Independent read-only acceptance on macOS ARM64; fixture-owned temporary root; Node compile cache disabled for cleanup readback; no deployment/provider calls",
+  "result": "pass",
+  "commands": [
+    "git rev-parse HEAD; git rev-parse HEAD^; git status --porcelain",
+    "node --test tests/cli/build-version.test.js",
+    "node bin/ned.js --version",
+    "git diff d378f906797136b33367c7fe4fb1f171c7e9d4be HEAD --name-only; git diff --check"
+  ],
+  "observations": "Exact HEAD matched before/after and working tree was clean. Parent is d378f906797136b33367c7fe4fb1f171c7e9d4be. Only the archive test transport changed: identical Git archive bytes are written to fixture-owned source.tar and extracted from that file, avoiding the stdin pipe that raised EPIPE in main macOS job 140132691528/run45884793509. All version/SHA assertions and production code are unchanged. Independent review approved the bounded fix without material findings. Test SHA256 12d334f7f92f1c389a650c79e6f39efa22fd7aa5ef36cb565122fb59faad6ead. Four build-version cases passed with zero failures/skips/cancellations; isolated temporary root was empty afterward. Actual CLI returned 0.3.0+c96a1b4. Complete lint/small/medium/spec/Python/real-Hermes pre-commit gate passed before this code candidate was created. This is local fix acceptance; fresh macOS CI is still the canonical retry and no new container/provider qualification is claimed."
+}
