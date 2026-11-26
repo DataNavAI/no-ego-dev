@@ -17,6 +17,9 @@ import urllib.request
 import base64
 
 ROOT = Path(__file__).resolve().parents[4]
+TOOL_CASES = {"shell/coreutils", "git/ripgrep", "archive/crypto/ssh", "gcc/g++/make",
+              "python/sqlite/yaml", "node/npm/npx/native-sqlite", "ffmpeg/ffprobe",
+              "ned/hermes/browser-harness/aws", "curl/chrome-javascript/screenshot"}
 
 
 def main():
@@ -85,12 +88,17 @@ def main():
         if args.expected_architecture:
             assert image_architecture == args.expected_architecture  # noqa: S101
         stage = "TC-009 offline installed tools"
-        tool_output = docker("run", "--name", containers[4], "--network", "none", "--read-only",
+        tool_run = command("run", "--name", containers[4], "--network", "none", "--read-only",
                              "--tmpfs", "/tmp:rw,exec,mode=1777", "--user", "hermes", "--workdir", "/tmp",  # noqa: S108 -- private disposable container tmpfs, no host mount
                              "--entrypoint", "/opt/ned/python/bin/python", image,
-                             "/opt/ned/scripts/container/test-tools.py", timeout=300)
-        tool_receipt = json.loads(tool_output.splitlines()[-1])
-        assert tool_receipt["result"] == "pass" and len(tool_receipt["cases"]) == 9  # noqa: S101
+                             "/opt/ned/scripts/container/test-tools.py", timeout=300, check=False)
+        tool_receipt = json.loads(tool_run.stdout.splitlines()[-1])
+        if tool_run.returncode:
+            # Only a known case name reaches diagnostics; never relay raw output.
+            if tool_receipt.get("case") in TOOL_CASES:
+                stage += ": " + tool_receipt["case"]
+            raise RuntimeError("Installed tool suite failed")
+        assert tool_receipt["result"] == "pass" and set(tool_receipt["cases"]) == TOOL_CASES and len(tool_receipt["cases"]) == len(TOOL_CASES)  # noqa: S101
         broken_browser = (ROOT / "docs/features/standalone-container/tests/fixtures/broken-chrome.sh").read_text()
         for variant in ("missing", "version-only"):
             rejected = command("run", "-i", "--name", containers[5], "--network", "none", "--read-only",
