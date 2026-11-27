@@ -1,0 +1,11 @@
+{
+  "candidate_sha": "796c6a347aaaf75056794aba812a66d2721a0797",
+  "tested_at": "2026-11-27T19:09:22.033017+00:00",
+  "environment": "Node 22 on macOS ARM64, real Chromium and NED Chat, synthetic provider responses",
+  "result": "pass",
+  "commands": [
+    "npm run test:all",
+    "npm run test:spec -- --feature provider-identity --case TC-007"
+  ],
+  "observations": "Chromium exercised AWS, GitHub and GoDaddy expiry, including an open modal and a provider 410. Restart sent exactly one new provider-specific turn via the chat transport and preserved the draft. It issued no identity API writes. Existing tests kept the request binding, 200% code readability, and authorization-loss behavior. No real provider consent was exercised."
+}
