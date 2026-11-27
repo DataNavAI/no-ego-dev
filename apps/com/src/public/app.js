@@ -163,7 +163,8 @@ function startWorkspace(){
     state={...state,projects:snapshot.projects};
     project.dataset.name=snapshot.projects.find(row=>row.id===next.projectId)?.name||'';
     if(changed){project.value=next.projectId||'';project.dispatchEvent(new Event('change'));}
-    else {render();project.dispatchEvent(new Event('ned-work-refresh'));}
+    else render();
+    project.dispatchEvent(new Event('ned-work-refresh'));
   };
 }
 

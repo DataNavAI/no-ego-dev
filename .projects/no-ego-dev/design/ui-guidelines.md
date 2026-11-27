@@ -1,7 +1,7 @@
 # NEDCOM scoped UI guidelines
 
 ## Current desktop refinement — project pane (#269–272)
-[Desktop guidance](../../../docs/features/communicator/design/desktop-pane-polish/README.md), FR-096–100 and UI-AC-29 refine the Muse split: a bounded 40% default project pane (saved resize wins), project-name-first hierarchy, single scrollable tab row, compact consistent work rows/metrics and top-anchored Preview state card. Keep all five destinations and mobile behavior. Desktop visual acceptance requires actual Goals, Dashboard, Preview, Artifacts and Settings captures at default/narrow widths and200% text; an overflow check alone is insufficient.
+[Desktop guidance](../../../docs/features/communicator/design/desktop-pane-polish/README.md), FR-097–101 and UI-AC-29 refine the Muse split: a bounded 40% default project pane (saved resize wins), project-name-first hierarchy, single scrollable tab row, compact consistent work rows/metrics and top-anchored Preview state card. Keep all five destinations and mobile behavior. Desktop visual acceptance requires actual Goals, Dashboard, Preview, Artifacts and Settings captures at default/narrow widths and200% text; an overflow check alone is insufficient.
 
 
 ## Current mobile refinement — organization (#255–260)
@@ -30,4 +30,4 @@ Compact composer follow-up: FR-039/UI-AC-16 now require a one-line empty prompt 
 
 The current mobile composition supersedes earlier two-row toolbar/Preview-first guidance: open Chat, keep one56px header with Menu, current view title and Debug. Place project selection and Chat/Goals/Artifacts/Preview navigation in the collapsible modal left menu, preserving existing node identity and draft state across resizing. Desktop remains the existing left-tabs/Preview workspace. Use readable16px messages, distinct author labels and restrained rounded user bubbles; task updates are compact dismissible notices, never an unbounded permanent feed. Preserve fixed bottom composer and bounded transcript scrolling. The implementation contract is FR-055–057, UI-AC-23 and TC-036.
 
-Desktop Settings follow-up #274 groups existing access/provider/secret controls using the same desktop spacing scale; no credential behavior changes. See FR-100/TC-055 and the [Settings guidance](https://github.com/DataNavAI/no-ego-dev/issues/274).
+Desktop Settings follow-up #274 groups existing access/provider/secret controls using the same desktop spacing scale; no credential behavior changes. See FR-101/TC-056 and the [Settings guidance](https://github.com/DataNavAI/no-ego-dev/issues/274).

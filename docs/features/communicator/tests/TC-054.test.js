@@ -1,24 +1,42 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
+import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import test from 'node:test';
 import {browserChat,expect} from './browser-chat-fixture.js';
 
-test('TC-054: desktop project content has useful width, single-row tabs and reachable narrow-pane states',async t=>{
- const f=await browserChat(t,{existing:true,viewport:{width:1280,height:900}});await f.ready();const {page}=f;
- const context=await page.locator('#preview').boundingBox(),chat=await page.locator('#chat').boundingBox();
- assert.ok(context.width>=450&&context.width<=560,'default project pane should have room for content');assert.ok(chat.width>=600,'chat remains usable');
- const rows=()=>page.locator('.canvas-tabs').evaluate(n=>new Set([...n.children].map(c=>Math.round(c.getBoundingClientRect().top))).size);
- assert.equal(await rows(),1,'desktop tabs never wrap into a second row');
- await f.draft.fill('Keep this desktop draft');
- await page.locator('#preview-tab').click();
- const card=await page.locator('.preview-state').boundingBox(),toolbar=await page.locator('.preview-toolbar').boundingBox();
- assert.ok(card.y>=toolbar.y+toolbar.height&&card.y<toolbar.y+toolbar.height+80,'preview state is anchored near its toolbar');
- assert.ok(card.x>=context.x&&card.x+card.width<=context.x+context.width,'state stays within its pane');
- await page.locator('#pane-divider').focus();await page.locator('#pane-divider').press('End');
- assert.equal(await rows(),1,'minimum pane width retains a single scrollable tab row');
- await page.locator('#goals-pane-tab').focus();await page.locator('#goals-pane-tab').press('End');
- await expect(page.locator('#workspace-settings-tab')).toBeFocused();await expect(page.locator('#workspace-settings-tab')).toBeInViewport({ratio:1});await expect(page.locator('#settings')).toBeVisible();
- for(const id of ['goals-pane-tab','artifacts-pane-tab','preview-tab','dashboard-tab','workspace-settings-tab']){const b=await page.locator('#'+id).boundingBox();assert.ok(b.height>=44&&b.width>=44);}
- await page.locator('#context-close').click();await page.locator('#context-toggle').click();await expect(page.locator('#settings')).toBeVisible();await expect(f.draft).toHaveValue('Keep this desktop draft');
- assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);
- assert.equal(f.turns.length,0);assert.deepEqual(f.errors,[]);
+test('TC-054: real chat-triggered task registration feeds the all-project Goals pane',async t=>{
+  const f=await browserChat(t,{async onTurn({input,home}){
+    const name=input.includes('inventory')?'inventory':'storefront';
+    const project=join(home,name);
+    await mkdir(project);
+    function cli(...args){
+      const result=spawnSync(process.execPath,['bin/ned.js',...args,'--project',project,'--actor','agent:fixture','--json'],
+        {env:{PATH:process.env.PATH,HOME:home,NED_AGENT_HOME:home,NED_DATABASE_URL:join(home,'ned.sqlite')},encoding:'utf8',timeout:10000});
+      assert.equal(result.status,0,result.stderr);
+      return JSON.parse(result.stdout);
+    }
+    cli('task','init');
+    const created=cli('goal','create',name+' launch');
+    cli('task','create',name+' verification','--goal',created.id??created.item?.id);
+    return 'Saved the work.';
+  }});
+  await f.ready();
+  const goals=f.page.locator('#goals-panel');
+  await expect(goals).toContainText('No goals or tasks yet.');
+  for(const [index,name] of ['inventory','storefront'].entries()){
+    await f.draft.fill('Plan the '+name);await f.draft.press('Enter');
+    await expect.poll(()=>f.turns.length).toBe(index+1);
+    f.turns.at(-1).finish();
+    await expect(goals).toContainText(name+' launch');
+    await expect(goals).toContainText(name+' verification');
+  }
+  await expect(goals).toContainText('inventory verification');
+  await f.page.locator('#dashboard-tab').click();
+  const dashboard=f.page.locator('#dashboard');
+  await expect(dashboard).toContainText('0 / 2 tasks completed');
+  await dashboard.getByRole('button',{name:/Reference task: inventory verification/}).click();
+  await expect(f.page.locator('#chat-task-references')).toContainText('inventory verification');
+  await expect(f.page.getByRole('combobox',{name:'Project'})).toHaveCount(0);
+  await expect(f.page.locator('#chat-task-references')).toContainText('inventory');
 });

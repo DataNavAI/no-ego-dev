@@ -77,10 +77,10 @@ test('TC-042: compact task pane progressively discloses outputs and logs, preser
   const f=await browserChat(t);await f.ready();const {page}=f;
   const item=(id,type,status,parentId=null)=>({id,title:id,type,status,parentId,priority:2,createdAt:'2026-11-18',dependsOn:[]});
   const work={projectId:'alpha',items:[item('Launch','goal','planned'),{...item('Checkout','task','working','Launch'),delivery:{trackedSeconds:1440,remainingSeconds:1200,outputs:[{id:'brief',title:'Short plan',kind:'document'}]}},item('Review','task','ready','Launch'),item('Done','task','done','Launch')]};
-  let release,hold=false,attemptState='running',resultText='Current result',failOlder=true;
+  let release,hold=false,visible=true,attemptState='running',resultText='Current result',failOlder=true;
   await page.route('**/api/v1/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
   await page.route('**/api/v1/projects/*',route=>route.fulfill({json:{preview:{status:'unconfigured'}}}));
-  await page.route('**/api/v1/projects/*/work',route=>route.fulfill({json:route.request().url().includes('/alpha/')?work:{projectId:'beta',items:[]}}));
+  await page.route('**/api/v1/projects/work',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha',items:visible?work.items:[]},{id:'beta',name:'Beta',items:[]}]}}));
   await page.route('**/api/v1/projects/alpha/tasks/Checkout?offset=*',async route=>{if(hold)await new Promise(resolve=>{release=resolve;});await route.fulfill({json:{projectId:'alpha',taskId:'Checkout',impact:'Reduce purchase abandonment.',outputs:[{id:'brief',title:'Short plan',kind:'document',text:'<script>not executable</script>\nMake payment easier.'}],attempts:[{id:'attempt',number:1,state:'running'}],nextOffset:null}});});
   await page.route('**/api/v1/projects/alpha/tasks/Checkout/attempts/attempt',route=>route.fulfill({json:{projectId:'alpha',attempt:{state:attemptState,resultText,sessions:[{sessionId:'session',role:'worker',workerIndex:0}]}}}));
   await page.route('**/api/v1/projects/alpha/tasks/Checkout/attempts/attempt/sessions/session/messages?offset=*',route=>{const offset=Number(new URL(route.request().url()).searchParams.get('offset'));if(offset===50&&failOlder){failOlder=false;return route.fulfill({status:503,json:{}});}return route.fulfill({json:{projectId:'alpha',data:offset===0?Array.from({length:50},(_,index)=>({id:`msg${index+50}`,role:'assistant',content:`Visible log message ${index+50}`})):[{id:'msg0',role:'assistant',content:'Older message'}]}});});
@@ -100,6 +100,18 @@ test('TC-042: compact task pane progressively discloses outputs and logs, preser
   work.items[1].delivery.executionRevision='2';attemptState='succeeded';resultText='Updated recorded result';await page.locator('#project').evaluate(node=>node.dispatchEvent(new Event('ned-work-refresh')));await expect(panel).toContainText('Updated recorded result');
   await expect(f.draft).toHaveValue('Keep this draft');assert.equal(f.turns.length,0);
   for(const width of [1280,390,320]){await page.setViewportSize({width,height:900});await page.evaluate(()=>new Promise(resolve=>globalThis.requestAnimationFrame(()=>globalThis.requestAnimationFrame(resolve))));if(width<768&&await page.locator('#preview').isHidden()){await page.locator('#mobile-project-toggle').click();}await expect(panel).toBeVisible();assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);const tab=await page.locator('#goals-pane-tab').boundingBox(),toolbar=await page.locator('.preview-toolbar').boundingBox();assert.ok(tab.y+tab.height<=toolbar.y+toolbar.height+1,'tab fits in its toolbar');assert.equal(await page.locator('#goals-pane-tab').evaluate(node=>node.scrollHeight<=node.clientHeight),true);await page.screenshot({path:join(process.env.NED_UI_EVIDENCE_DIR||tmpdir(),`goals-tasks-${width}.png`)});}
-  await page.setViewportSize({width:1280,height:900});hold=true;await select('beta');await select('alpha');await panel.locator('.delivery-details>summary').first().click();await expect.poll(()=>Boolean(release)).toBe(true);await select('beta');await expect(panel).toContainText('No goals or tasks yet.');release();await expect(panel).not.toContainText('Reduce purchase abandonment.');
+  await page.setViewportSize({width:1280,height:900});
+  const details=panel.locator('.delivery-details').first();
+  if(await details.evaluate(node=>node.open)) await details.locator('summary').first().click();
+  hold=true;
+  work.items[1].delivery.executionRevision='3';
+  await page.locator('#project').evaluate(node=>node.dispatchEvent(new Event('ned-work-refresh')));
+  await details.locator('summary').first().click();
+  await expect.poll(()=>Boolean(release)).toBe(true);
+  visible=false;
+  await page.locator('#project').evaluate(node=>node.dispatchEvent(new Event('ned-work-refresh')));
+  await expect(panel).toContainText('No goals or tasks yet.');
+  release();
+  await expect(panel).not.toContainText('Reduce purchase abandonment.');
   assert.deepEqual(f.errors,[]);
 });

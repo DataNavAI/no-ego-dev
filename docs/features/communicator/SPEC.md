@@ -777,7 +777,7 @@ A reviewer can distinguish functional browser success from visual and interactio
 - Journey / requirements: CUJ-027 / FR-075.
 - Level / automation: browser; [TC-046](tests/TC-046.test.js).
 - Preconditions: disposable NED chat with fixture response and empty draft.
-- Given: ready chat with one exchange. When: inspect computed colors and enter a new draft. Then: assistant and user have distinct muted surfaces, labels remain, normal text meets 4.5:1, enabled Send glyph and focus meet 3:1 against adjacent colors, and the workspace uses the current desktop white/mobile gray surface (desktop refinement FR-097).
+- Given: ready chat with one exchange. When: inspect computed colors and enter a new draft. Then: assistant and user have distinct muted surfaces, labels remain, normal text meets 4.5:1, enabled Send glyph and focus meet 3:1 against adjacent colors, and the workspace uses the current desktop white/mobile gray surface (desktop refinement FR-098).
 - Variants: desktop and narrow mobile. Close the test-owned browser and server; named assertions are pass evidence.
 
 Coverage: FR-075 → CUJ-027 → TC-045/046. FR-076 → CUJ-027 → TC-045.
@@ -887,7 +887,7 @@ Coverage: FR-084–085 → CUJ-031 → TC-051 and the critical evidence under TC
 Coverage: FR-086 → CUJ-001 → TC-001 (served GET/HEAD lifecycle and exact running-version label), plus [CLI version](../../../tests/cli/cli.test.js) and [build identity regression](../../../tests/cli/build-version.test.js). Given a source commit, when CLI/server starts or the source is packaged, then its version includes that commit; a subsequent commit changes the suffix without a manual version edit. Build identity tests cover loose/packed refs and worktrees without Git on PATH, archive export, stamped metadata/native manifests, invalid/unknown provenance and npm packaging. Use synthetic repositories/homes, remove them after execution, and assert no unrelated Git checkout or environment supplies a revision. Rendered manual acceptance: start the isolated server with synthetic auth/chat state, inspect at1280×900 and320×844, confirm complete version, logo adjacency, no page overflow and unchanged navigation; close the owned browser/server and remove synthetic state. Provider calls and state migration are not involved.
 
 ## Muse-inspired workspace (#235)
-- FR-087: Keep NED's light palette while adopting the supplied Muse screenshot's hierarchy: a64px desktop navigation rail, a wide central conversation with its pinned composer, and a right project context pane (default width follows FR-097; resizable to existing safe chat/project bounds). The right pane starts open with Goals and retains Preview, Dashboard and Settings tabs. Named rail actions open real existing content; do not introduce unsupported Muse actions or a new conversation/session list. The running-version brand remains visible.
+- FR-087: Keep NED's light palette while adopting the supplied Muse screenshot's hierarchy: a64px desktop navigation rail, a wide central conversation with its pinned composer, and a right project context pane (default width follows FR-098; resizable to existing safe chat/project bounds). The right pane starts open with Goals and retains Preview, Dashboard and Settings tabs. Named rail actions open real existing content; do not introduce unsupported Muse actions or a new conversation/session list. The running-version brand remains visible.
 - FR-088: Project controls close/reopen the right pane without remounting chat, Preview or project panels. Keep the selected context tab, draft, attachments, references and project identity. Closing restores focus to the desktop rail project toggle or the mobile navigation disclosure. Preserve tab keyboard navigation, visible focus and hidden/inert semantics; keyboard and pointer resizing reserve the desktop rail and minimum project width.
 - FR-089: Below768px, use the existing compact navigation disclosure and full-width Chat or Project view. Project context temporarily replaces Chat, with a Close action returning to chat and its preserved draft. Outside click/Escape dismiss the disclosure; resize and project/auth events cannot leave focus in a hidden pane. Debug remains a separate functional diagnostic surface reached from the desktop rail or mobile menu. Project and Debug have no standalone buttons in the header.
 
@@ -931,30 +931,48 @@ Actor: mobile NED user. Critical because mobile has little space for competing a
 
 Coverage: FR-090/093/094 → CUJ-033 → TC-053; FR-095 → CUJ-033 → TC-037/051/053; FR-091/092 → CUJ-033 → provider-identity TC-006/007 and communicator TC-013. Physical-device keyboard coverage is a disclosed manual gap.
 
+## Goals across registered projects (#268)
+
+- FR-096. Goals and Dashboard show work from every registered project without a project selector. Work identifies its owning project. Task details and chat references retain that project's identity. Preview and Artifacts continue to follow the active workspace context separately.
+- CUJ-034. From a fresh workspace, a chat action registers a project and creates work through Core. The operator sees the resulting work and later work from another project in the same pane. Refresh and retry preserve the all-project scope.
+### TC-054: Real Core work appears in the all-project Goals pane
+
+- Journey / requirements: CUJ-034 / FR-096.
+- Level / automation: browser integration; [TC-054.test.js](tests/TC-054.test.js).
+- Preconditions: disposable Core database, COM, Chromium and synthetic Hermes gateway with zero registered projects.
+- Given: a user sees an empty Goals pane.
+- When: submit two ordinary planning requests that cause the gateway fixture to invoke the real NED CLI for project registration and goal/task creation.
+- Then: Goals shows both projects without selection and Dashboard shows combined progress. A task reference retains its owning project.
+- Variants: stale detail responses and retry behavior are exercised by TC-041 and TC-042. The model behavior is covered separately in the task-management and project-setup evals.
+- Cleanup: close the browser and owned services and delete the disposable database.
+- Pass evidence: Chromium assertions against real project, work and reference state, with no mocked project or task API.
+
+Coverage: FR-096 → CUJ-034 → TC-054.
+
 ## Desktop project-pane refinement (#269–272)
 Status: implemented. The [guidance images](design/desktop-pane-polish/README.md) refine the existing Muse split; data, privacy and mobile contracts remain authoritative.
-- FR-096: Desktop project tabs remain on one horizontal row at default and minimum resized pane widths; overflow scrolls locally. All five existing destinations retain 44px targets and keyboard/selected-tab visibility. No view is removed.
-- FR-097: Without a saved preference, the right pane uses 40% of available desktop width, bounded to 360–560px and the existing chat/pane minimums. Explicit saved resize preferences retain precedence. Project identity is the primary header, with a quiet Project label. Hide/reopen, Debug, resize and mobile transitions preserve existing state/focus contracts.
-- FR-098: Desktop Goals and Dashboard use consistent compact task hierarchy, metadata rhythm, restrained current-work emphasis and bounded metrics. Preserve task order, completed filtering, references, details, output/auth access and truthful missing estimates.
-- FR-099: Desktop Preview places its loading/empty/error/ready state in a deliberate bounded card near the top of its canvas. Preserve exact state/action semantics and existing preview nodes; no configuration/startup capability is implied or added.
-- FR-100: Desktop Settings separates access, provider connections and secret fields with consistent section/card spacing and the established title scale. Keep existing labels, private fields,44px controls, authentication/reveal/clear semantics and all credential storage boundaries unchanged. Narrow resizing and enlarged text retain field/action reachability.
+- FR-097: Desktop project tabs remain on one horizontal row at default and minimum resized pane widths; overflow scrolls locally. All five existing destinations retain 44px targets and keyboard/selected-tab visibility. No view is removed.
+- FR-098: Without a saved preference, the right pane uses 40% of available desktop width, bounded to 360–560px and the existing chat/pane minimums. Explicit saved resize preferences retain precedence. Project identity is the primary header, with a quiet Project label. Hide/reopen, Debug, resize and mobile transitions preserve existing state/focus contracts.
+- FR-099: Desktop Goals and Dashboard use consistent compact task hierarchy, metadata rhythm, restrained current-work emphasis and bounded metrics. Preserve task order, completed filtering, references, details, output/auth access and truthful missing estimates.
+- FR-100: Desktop Preview places its loading/empty/error/ready state in a deliberate bounded card near the top of its canvas. Preserve exact state/action semantics and existing preview nodes; no configuration/startup capability is implied or added.
+- FR-101: Desktop Settings separates access, provider connections and secret fields with consistent section/card spacing and the established title scale. Keep existing labels, private fields,44px controls, authentication/reveal/clear semantics and all credential storage boundaries unchanged. Narrow resizing and enlarged text retain field/action reachability.
 
-### CUJ-034: Review project work beside a desktop conversation
+### CUJ-035: Review project work beside a desktop conversation
 Actor: authenticated desktop NED user; critical for switching between work overview and app preview without losing conversation context. Starting state: chat and Project open with a selected project or truthful empty state. Actions: read project identity, select Goals/Dashboard/Preview/Artifacts/Settings, resize, collapse and reopen, continue draft. Success: readable single-row navigation and compact hierarchy, useful content width, reachable state actions, retained draft/selection/Preview DOM. Failure/recovery: retain truthful unavailable/error states and Retry; no app/model/provider operation starts from navigation.
 
-### TC-054: Desktop pane geometry and narrow-pane navigation
-- Journey / requirements: CUJ-034 / FR-096–100.
-- Level / automation: browser integration; [TC-054.test.js](tests/TC-054.test.js). Existing TC-021/032 own saved resize/Debug; TC-052/053 own phone transition and continuity; work/reference/details tests retain their existing contracts.
+### TC-055: Desktop pane geometry and narrow-pane navigation
+- Journey / requirements: CUJ-035 / FR-097–101.
+- Level / automation: browser integration; [TC-055.test.js](tests/TC-055.test.js). Existing TC-021/032 own saved resize/Debug; TC-052/053 own phone transition and continuity; work/reference/details tests retain their existing contracts.
 - Preconditions / fixtures: isolated browserChat home/database, synthetic configured model, existing session, 1280×900 viewport; no real credentials, provider or model call.
 - Given: ready desktop chat and open Project without a saved resize preference.
 - When: inspect default geometry, select Preview, use divider End to minimize the pane, use tab End to select Settings, hide/reopen and continue a draft.
 - Then: pane has useful default width and chat remains usable; tabs occupy one row at both widths, Settings scrolls fully into view with correct focus/panel, all tab targets are at least44px, Preview card stays within pane near toolbar, draft and selected panel persist, no document overflow/chat turn/browser error.
-- Steps: `node --test docs/features/communicator/tests/TC-054.test.js`; assertions above are required. Run existing resize/mobile cases separately.
+- Steps: `node --test docs/features/communicator/tests/TC-055.test.js`; assertions above are required. Run existing resize/mobile cases separately.
 - Variants / negative cases: minimum resized pane, absent project, missing preview and Settings navigation are exercised here. Saved/invalid preferences and storage failure remain TC-021. No new persistence/auth/provider boundary; malformed data isolation remains existing project/work tests.
 - Cleanup / pass evidence: fixture closes owned browser/server and removes synthetic state. Actual passing assertions plus the manual visual case below; written acceptance alone is not a pass.
 
-### TC-055: Desktop visual acceptance across project states
-- Journey / requirements: CUJ-034 / FR-096–100.
+### TC-056: Desktop visual acceptance across project states
+- Journey / requirements: CUJ-035 / FR-097–101.
 - Level / automation: manual; render the actual COM with a disposable populated project and synthetic conversation; capture and inspect all five views at1024×768,1280×900,1440×900, minimum resized pane and200% text. Retain captures outside versioned runtime source.
 - Given: synthetic goal with one working task, one ready task, long title and default-hidden completed task; configured model, no live provider grants.
 - When: inspect header/tabs, Goals, Dashboard, Preview missing/ready/error state, Artifacts unavailable and Settings; switch tabs and resize; inspect the corresponding320/390px mobile layout for regression.
@@ -963,4 +981,6 @@ Actor: authenticated desktop NED user; critical for switching between work overv
 - Variants: empty and retryable error states, long names, narrow pane,200% text; physical keyboard/touch excluded from this desktop case and never claimed. External auth/concurrency is unchanged and covered by its existing cases.
 - Cleanup: close fixture-owned resources and remove temporary runtime/project; retain only synthetic images/logs. Pass requires inspected pixels and no material findings; automation alone cannot pass visual acceptance.
 
-Coverage: FR-096/097/099 → CUJ-034 → TC-054, existing TC-021/032/052; FR-098 → CUJ-034 → TC-055 and existing work/details/reference cases; FR-100 → CUJ-034 → TC-055 with existing secret-management TC-003/006/007 and provider-identity TC-007 for unchanged private forms. Mobile regression: TC-053. Physical-device checks remain outside this desktop refinement.
+Coverage: FR-097/098/100 → CUJ-035 → TC-055, existing TC-021/032/052; FR-099 → CUJ-035 → TC-056 and existing work/details/reference cases; FR-101 → CUJ-035 → TC-056 with existing secret-management TC-003/006/007 and provider-identity TC-007 for unchanged private forms. Mobile regression: TC-053. Physical-device checks remain outside this desktop refinement.
+
+Traceability: the unmerged desktop draft used FR-096–100/CUJ-034/TC-054–055; these provisional IDs are now FR-097–101/CUJ-035/TC-055–056 to preserve the already merged all-project identifiers.

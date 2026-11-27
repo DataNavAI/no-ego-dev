@@ -1,7 +1,7 @@
 import {executionPlan} from './work-plan.js';
 const statuses=new Set(['planned','ready','working','blocked','done']);
 export function dashboardModel(items){
-  if(!Array.isArray(items)||items.length>5000)throw new Error('Invalid work');
+  if(!Array.isArray(items)||items.length>50000)throw new Error('Invalid work');
   for(const item of items)if(typeof item.id!=='string'||!item.id||typeof item.title!=='string'||!['goal','subgoal','task','issue'].includes(item.type)||!statuses.has(item.status))throw new Error('Invalid work');
   const plan=executionPlan(items,true),children=new Map(),progressById=new Map();
   for(const item of items){const list=children.get(item.parentId)||[];list.push(item);children.set(item.parentId,list);}
