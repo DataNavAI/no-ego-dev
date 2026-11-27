@@ -1,0 +1,13 @@
+{
+  "candidate_sha": "3d8422d6cb3f16a74f1ce3350f43fd148cf9fb9a",
+  "tested_at": "2026-11-27T19:52:39.081592+00:00",
+  "environment": "macOS ARM64; real CLI processes and loopback COM; synthetic isolated version/package fixtures",
+  "result": "pass",
+  "commands": [
+    "node scripts/stamp-version.mjs",
+    "node bin/ned.js --version (twice, separate processes)",
+    "node --test tests/cli/build-version.test.js",
+    "node --test docs/features/communicator/tests/TC-001.test.js"
+  ],
+  "observations": "Stamped CLI in separate processes and served COM brand match 0.3.0+20261127195237.3d8422d. All 8 focused CLI/build/COM cases passed. Rebased over current Debug UI with both spec sections preserved. Full gate and native Linux CI must pass before merge; prior ARM64 actual-image acceptance passed including restart/version checks. No credentials, sessions or configuration changed."
+}

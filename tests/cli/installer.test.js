@@ -50,7 +50,7 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   const platform = `${system === 'Darwin' ? 'darwin' : 'linux'}-${machine === 'arm64' || machine === 'aarch64' ? 'arm64' : 'x64'}`;
   const nodeRoot = path.join(root, `node-v-test-${platform}`);
   await mkdir(path.join(nodeRoot, 'bin'), { recursive: true });
-  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\n[[ \${NED_TEST_RUNTIME_FAIL-} != 1 ]] || { echo synthetic-runtime-failure >&2; exit 43; }\nexec ${JSON.stringify(process.execPath)} "$@"\n`);
+  await writeFile(path.join(nodeRoot, 'bin', 'node'), `#!/usr/bin/env bash\nset -eu\nif [[ \${1-} == --version ]]; then echo v22.14.0; exit 0; fi\n[[ \${NED_TEST_RUNTIME_FAIL-} != 1 || \${1-} == */scripts/stamp-version.mjs ]] || { echo synthetic-runtime-failure >&2; exit 43; }\nexec ${JSON.stringify(process.execPath)} "$@"\n`);
   await chmod(path.join(nodeRoot, 'bin', 'node'), 0o755);
   await writeFile(path.join(nodeRoot, 'bin', 'npm'), '#!/usr/bin/env bash\nset -eu\n[[ ${1-} == ci ]]\n[[ "$*" != *--ignore-scripts* ]] || { echo native-install-script-disabled >&2; exit 44; }\n[[ $(command -v node) == "${BASH_SOURCE[0]%/*}/node" ]] || { echo system-node-used >&2; exit 42; }\ntouch .dependencies-installed\n');
   await chmod(path.join(nodeRoot, 'bin', 'npm'), 0o755);
@@ -68,6 +68,9 @@ async function makeHarness({ spaces = false, system = 'Linux', machine = process
   await cp(path.join(repoRoot, 'src', 'web', 'public', 'docs'), path.join(sourceRoot, 'src', 'web', 'public', 'docs'), { recursive: true });
   await writeFile(path.join(sourceRoot, 'package.json'), '{"name":"no-ego-dev-test","type":"module"}\n');
   await writeFile(path.join(sourceRoot, 'package-lock.json'), '{"lockfileVersion":3}\n');
+  await mkdir(path.join(sourceRoot, 'scripts'), { recursive: true });
+  await cp(path.join(repoRoot, 'scripts/stamp-version.mjs'), path.join(sourceRoot, 'scripts/stamp-version.mjs'));
+  await cp(path.join(repoRoot, 'src/version.js'), path.join(sourceRoot, 'src/version.js'));
   const sourceArchive = path.join(fixtures, 'ned.tar.gz');
   result = spawnSync('tar', ['-czf', sourceArchive, '-C', root, path.basename(sourceRoot)], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
@@ -169,6 +172,9 @@ test('clean-home install uses private Node, publishes a manifest-backed generati
   assert.equal(await exists(path.join(harness.home, '.config/ned/daytona-api-key')), false);
   const generation = await activeGeneration(harness);
   assert.equal(await exists(path.join(generation, 'install-manifest')), true);
+  const build=JSON.parse(await readFile(path.join(generation,'app/build-info.json'),'utf8'));
+  assert.equal(build.revision,releaseRevision);
+  assert.match(build.builtAt,/^\d{14}$/);
   for (const [profile, mode] of [['.profile', 0o600], ['.zprofile', 0o640], ['.bashrc', 0o644]]) {
     const profilePath = path.join(harness.home, profile);
     const text = await readFile(profilePath, 'utf8');

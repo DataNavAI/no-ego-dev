@@ -87,9 +87,23 @@ test('npm pack stamps the current commit; a Git-free package reports that identi
   const unpacked=path.join(home,'packed');await mkdir(unpacked);
   execFileSync('tar',['-xf',path.join(home,'ned-version-fixture-0.3.0.tgz'),'-C',unpacked],{timeout:10000});
   const packaged=path.join(unpacked,'package');
-  assert.deepEqual(JSON.parse(await readFile(path.join(packaged,'build-info.json'),'utf8')),{revision:sha});
+  const stamped=JSON.parse(await readFile(path.join(packaged,'build-info.json'),'utf8'));
+  assert.equal(stamped.revision,sha);assert.match(stamped.builtAt,/^\d{14}$/);
   const loaded=await import(pathToFileURL(path.join(packaged,'src/version.js')).href);
-  assert.equal(loaded.nedVersion(),`0.3.0+${sha.slice(0,7)}`);
+  assert.equal(loaded.nedVersion(),`0.3.0+${stamped.builtAt}.${sha.slice(0,7)}`);
+  assert.equal(loaded.nedVersion(),loaded.nedVersion(),'build time survives repeat reads');
   assert.throws(()=>execFileSync(process.execPath,['scripts/stamp-version.mjs','f'.repeat(40)],{cwd:packaged,stdio:'pipe',timeout:5000}),error=>error.status===1&&error.stderr.toString().includes('Build revision does not match source'));
-  assert.deepEqual(JSON.parse(await readFile(path.join(packaged,'build-info.json'),'utf8')),{revision:sha},'rejected stamp leaves package identity unchanged');
+  assert.deepEqual(JSON.parse(await readFile(path.join(packaged,'build-info.json'),'utf8')),stamped,'rejected stamp leaves package identity unchanged');
 });
+
+ test('timestamp is UTC, immutable metadata and only accepted for the matching source',async t=>{
+  const {root,sha}=await fixture(t);
+  await writeFile(path.join(root,'build-info.json'),JSON.stringify({revision:sha,builtAt:'20261127052615'}));
+  assert.equal(nedVersion(root),`0.3.0+20261127052615.${sha.slice(0,7)}`);
+  for(const builtAt of ['20260230052615','202611270526','<script>',20261127052615]){
+    await writeFile(path.join(root,'build-info.json'),JSON.stringify({revision:sha,builtAt}));
+    assert.equal(nedVersion(root),`0.3.0+${sha.slice(0,7)}`);
+  }
+  await writeFile(path.join(root,'build-info.json'),JSON.stringify({revision:'f'.repeat(40),builtAt:'20261127052615'}));
+  assert.equal(nedVersion(root),`0.3.0+${sha.slice(0,7)}`);
+ });

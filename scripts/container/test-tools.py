@@ -1,6 +1,7 @@
 """Offline actual-image tool integration suite. Run as hermes; no runtime credentials."""
 from contextlib import contextmanager
 import hashlib
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -136,8 +137,11 @@ def main():
 
         def cli():
             base = json.loads(Path('/opt/ned/package.json').read_text())['version']
-            revision = json.loads(Path('/opt/ned/build-info.json').read_text())['revision']
-            require(run(['ned', '--version']) == base + '+' + (revision[:7] if revision else 'unknown'), 'NED CLI version')
+            metadata = json.loads(Path('/opt/ned/build-info.json').read_text())
+            revision = metadata['revision']
+            built_at = metadata['builtAt']
+            require(len(built_at) == 14 and datetime.strptime(built_at, '%Y%m%d%H%M%S').strftime('%Y%m%d%H%M%S') == built_at, 'UTC build timestamp')
+            require(run(['ned', '--version']) == base + '+' + built_at + '.' + (revision[:7] if revision else 'unknown'), 'NED CLI version')
             require('usage' in run(['hermes', '--help']).lower(), 'Hermes CLI help')
             run(['browser-harness', '--help'])
             skeleton = json.loads(run(['aws', 'ec2', 'describe-regions', '--generate-cli-skeleton', 'input']))
