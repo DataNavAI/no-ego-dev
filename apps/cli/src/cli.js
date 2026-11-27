@@ -1,3 +1,4 @@
+import {runDashboardCli} from './dashboard-cli.js';
 import {runPreviewCli} from './preview-cli.js';
 import {runIdentityCli} from '../../../src/identity-cli.js';
 import {runSecretCli} from '../../../src/secret-cli.js';
@@ -16,6 +17,7 @@ function flagValue(flags, name) {
 
 export async function runCli(argv, io = console, dependencies = {}) {
   const [command, ...flags] = argv;
+  if (command === 'dashboard') return runDashboardCli(flags,io,dependencies);
   if (command === 'preview') return runPreviewCli(flags,io,dependencies);
   if (command === 'core') return runCoreCli(flags,io,dependencies);
   if (command === 'identity') return runIdentityCli(flags, io, dependencies);
@@ -36,6 +38,7 @@ export async function runCli(argv, io = console, dependencies = {}) {
       'Usage:',
       '  ned --version',
       '  ned preview <register|status|clear> (see ned preview --help)',
+      '  ned dashboard <register|status|clear> (see ned dashboard --help)',
       '  ned core serve [--port <0..65535>] [--database <SQLite-path-or-fileURL>] [--help]',
       '  ned identity <connect|status|exec|domain> (see ned identity --help)',
       '  ned secret <list|set|get|delete|share> (see ned secret --help)',

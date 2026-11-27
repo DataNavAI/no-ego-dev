@@ -13,10 +13,12 @@ export function previewHeaders(headers,origin,port){
   clean.host=`127.0.0.1:${port}`;if(clean.origin===origin)clean.origin=`http://127.0.0.1:${port}`;
   return clean;
 }
-export function createPreviewDelivery({service,boundOrigin,isControlAuthorization=()=>true}){
+export function createPreviewDelivery({service,boundOrigin,localAppOrigin,isControlAuthorization=()=>true}){
+  const exposed=localAppOrigin?new URL(localAppOrigin):null;
+  if(exposed&&(exposed.protocol!=='http:'||!['127.0.0.1','localhost'].includes(exposed.hostname)||exposed.username||exposed.password||exposed.pathname!=='/'||exposed.search||exposed.hash))throw new Error('Invalid local app origin');
   let server,basePort,starting,closed=false;const grants=new Map(),leases=new Map(),active=new Set();
-  const comOrigin=()=>typeof boundOrigin==='function'?boundOrigin():boundOrigin;
-  const generationOrigin=state=>`http://pv-${state.preview.id.replaceAll('-','')}.localhost:${basePort}`;
+  const comOrigin=()=>exposed?.origin??(typeof boundOrigin==='function'?boundOrigin():boundOrigin);
+  const generationOrigin=state=>`http://pv-${state.preview.id.replaceAll('-','')}.localhost:${exposed?(exposed.port||80):basePort}`;
   const live=async context=>{
     if(closed||context.expires<=Date.now()||!await context.authorized())throw new Error('Preview authority expired');
     return service.binding(context.id,context.revision);
@@ -84,8 +86,10 @@ export function createPreviewDelivery({service,boundOrigin,isControlAuthorizatio
     }
     await relay(req,res,head,context);
   }
-  const start=()=>starting??=(async()=>{server=http.createServer((req,res)=>{void handle(req,res).catch(()=>res.destroy());});server.on('upgrade',(req,socket,head)=>{void handle(req,socket,head).catch(()=>socket.destroy());});await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});basePort=server.address().port;})();
+  const start=()=>starting??=(async()=>{if(exposed)return;server=http.createServer((req,res)=>{void handle(req,res).catch(()=>res.destroy());});server.on('upgrade',(req,socket,head)=>{void handle(req,socket,head).catch(()=>socket.destroy());});await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});basePort=server.address().port;})();
   return {
+    matches(req){const state=service.snapshot();return !closed&&Boolean(state.preview)&&req.headers.host===new URL(generationOrigin(state)).host;},
+    handle,
     async access(mode,authorized){if(closed||!['frame','tab'].includes(mode))throw new Error('Preview unavailable');await start();const state=service.snapshot();if(!state.preview||grants.size>=64)throw new Error('Preview unavailable');const context={id:state.preview.id,revision:state.revision,origin:generationOrigin(state),authorized,expires:Date.now()+30000,mode};await live(context);if(grants.size>=64)throw new Error('Preview unavailable');const raw=nonce();grants.set(hash(raw),context);return {id:context.id,revision:context.revision,origin:context.origin,bootstrapPath:previewBootstrapPath,grant:raw};},
     relay,
     async close(){closed=true;clearInterval(sweep);grants.clear();leases.clear();for(const entry of [...active])destroy(entry);await starting?.catch(()=>{});server?.closeAllConnections();if(server)await new Promise(resolve=>server.close(resolve));}

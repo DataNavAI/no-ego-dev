@@ -8,7 +8,7 @@ import {createActivityStreams} from './activity.js';
 import {createChatGateway} from './chat.js';
 import {createProjectReader,ProjectError} from './projects.js';
 
-const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true}};
+const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,dashboards:true,chat:true}};
 
 export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,maintenance,identityOptions,identityEnabled=false,hubAwsIdentity=false,apiAuthenticated=()=>true}={}){
   const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});

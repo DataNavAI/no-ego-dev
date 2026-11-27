@@ -326,3 +326,20 @@ def test_credential_path_environment_is_fallback_not_override(package, monkeypat
     with checks.assertRaises(SystemExit) as missing:
         container_main(base)
     checks.assertEqual(missing.exception.code, 2)
+
+
+def test_eval_boot_owns_its_runtime_without_attaching_to_container_s6(package):
+    evaluation, credential, output = package
+    boundary = DockerBoundary()
+    code, _directory = run_container(evaluation, output, credential, execute=boundary)
+    checks.assertEqual(code, 0)
+    launch = next(call for call in boundary.calls if call[0] == 'run')
+    checks.assertIn('--init', launch)
+    checks.assertEqual(launch[launch.index('--entrypoint') + 1], '/bin/sh')
+    checks.assertIn('--health-cmd', launch)
+    checks.assertIn('runtime-health', launch[launch.index('--health-cmd') + 1])
+    checks.assertIn('exec sleep infinity', launch[-1])
+    checks.assertNotIn('-p', launch)
+    readiness = next(index for index, call in enumerate(boundary.calls) if call[0] == 'inspect')
+    evaluation_call = next(index for index, call in enumerate(boundary.calls) if 'eval_runner.cli' in call)
+    checks.assertLess(readiness, evaluation_call)

@@ -35,9 +35,11 @@ export async function createTaskService({
   } catch {
     fail('invalid_project', 'Project must be an existing directory.');
   }
-  const projectId = createHash('sha256').update(projectPath).digest('hex');
   const db = database || openNedDatabase({ databaseUrl, home, env });
   const sql = db.connection;
+  // App publication may have registered this canonical path before task setup.
+  const projectId = sql.prepare('SELECT id FROM ned_projects WHERE path=?').get(projectPath)?.id
+    ?? createHash('sha256').update(projectPath).digest('hex');
   const now = () => new Date().toISOString();
 
   function raw(id) {

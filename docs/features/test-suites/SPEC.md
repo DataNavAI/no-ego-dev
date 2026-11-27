@@ -154,3 +154,6 @@ of existing files are purely in-process; mixed files remain medium. Local browse
 tests with synthetic remote dependencies are medium even if historically named
 e2e. Existing optional Python platform-dependent skips remain visible, never
 count as behavioral acceptance. The pinned Hermes suite is POSIX-only.
+
+### Isolated Hermes runtime boot (#290)
+FR-009 / CUJ-003 / TC-004 enhancement: evaluation-owned NED containers use an init-reaped idle bootstrap and private owned volumes, with a real CLI/Python toolchain-readiness probe. They do not boot the image's default S6 Hermes gateway, whose authoritative /opt/data profile cannot serve arbitrary isolated evaluation homes. The normal upstream CLI starts identity-fenced gateways for agent/judge profiles; owned container teardown removes them. A workflow needing COM starts it explicitly. Ordinary NED deployment/image health behavior is unchanged. `container_cases.py::test_eval_boot_owns_its_runtime_without_attaching_to_container_s6` verifies launch isolation, no published ports and readiness-before-agent; lifecycle failure variants retain fail-closed cleanup. Live Docker/profile and actual model-backed acceptance are separate evidence, not established by the boundary test.

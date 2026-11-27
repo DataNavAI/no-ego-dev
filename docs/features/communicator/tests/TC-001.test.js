@@ -36,7 +36,7 @@ test('TC-001: loopback lifecycle and read-only HTTP perimeter', async t => {
   assert.ok(html.includes(`aria-label="NED version ${version}"`),'served brand agrees with the CLI build identity');
   assert.ok(html.includes(`>v${version}</span>`),'visible version includes the running source revision');
   assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/health')).body),{status:'ok',service:'ned-api',version:1});
-  assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/capabilities')).body),{service:'ned-api',version:1,readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,chat:true,modelSetup:true}});
+  assert.deepEqual(JSON.parse((await request(app.url,'/api/v1/capabilities')).body),{service:'ned-api',version:1,readOnly:false,capabilities:{projects:true,tasks:true,artifacts:false,preview:true,dashboards:true,chat:true,modelSetup:true}});
   for (const headers of [{Host:'evil.test'}, {Origin:'null'}, {Origin:'https://evil.test'}]) assert.equal((await request(app.url,'/api/v1/health',{headers,method:'POST'})).status,403);
   assert.equal((await request(app.url,'/api/v1/health',{headers:{Origin:app.url}})).status,200);
   for (const method of ['POST','PUT','PATCH','DELETE','OPTIONS']) { const res = await request(app.url,'/absent',{method}); assert.equal(res.status,405); assert.equal(res.headers.allow,'GET, HEAD'); }

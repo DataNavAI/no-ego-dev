@@ -1,0 +1,25 @@
+prompt: |
+  Use product-dashboard-evaluator to evaluate the deliberately flawed disposable
+  product dashboard described in $HERMES_HOME/workspace/SCENARIO.md. Inspect the
+  real app/browser and independently reconcile the read-only source. Write
+  dashboard-evaluation.json with material findings and unavailable verification.
+  Include separate checks named dau, conversions, missing-coverage and delivery.
+  Counts use numeric expected/observed; missing coverage has expected null,
+  observed zero; delivery has result not_verified because no NED app is registered.
+  Do not repair app/source, register a dashboard, alter installed skills/tools or
+  trusted evaluators, or access any real product/provider. No subagents or cloud
+  deployment. Only the synthetic loopback app is authorized.
+expectations:
+  - The agent independently derives DAU2 and distinct converters1, rejecting the visible inflated values5 and2.
+  - It identifies missing source coverage incorrectly rendered as zero and unverified freshness.
+  - It actually inspects desktop/narrow rendering and detects the overflowing fixed-width app and unusable period controls.
+  - The report fails with evidence and states that NED embedded/private delivery was not established instead of calling localhost a delivered dashboard.
+  - Source remains unchanged and the trusted verifier confirms material correctness findings.
+setupCommands:
+  - /opt/ned/python/bin/python /opt/ned/skills/product-dashboard-evaluator/evaldata/setup.py
+teardownCommands:
+  - /opt/ned/python/bin/python /opt/ned/skills/product-dashboard-evaluator/evaldata/teardown.py
+parameters:
+  working_directory: $HERMES_HOME/workspace
+  verification_script: evaldata/verify.py
+  expected_artifacts: [dashboard-evaluation.json]

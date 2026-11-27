@@ -40,9 +40,12 @@ export async function startContainerCom({origin = 'http://127.0.0.1:8787', port 
   const hub = await hubConfiguration(env);
   const hubAwsIdentity = Boolean(hub && containerAwsIdentityAllowed(env));
   const local = await localMaintenance({env, databasePath});
-  const upstream = createServer({identityEnabled:false,hubAwsIdentity,identityOptions,gateway,modelSetup,databasePath,home,env,maintenance:local?.maintenance,basicCredentials:username&&password?{username,password}:undefined});
+  const blockedAppPorts=[port,Number(publicUrl.port||80),9119];
+  const upstream = createServer({blockedAppPorts,localAppOrigin:publicUrl.origin,identityEnabled:false,hubAwsIdentity,identityOptions,gateway,modelSetup,databasePath,home,env,maintenance:local?.maintenance,basicCredentials:username&&password?{username,password}:undefined});
   const internal = new URL(await upstream.listen().catch(async error => {await local?.close(); throw error;}));
-  const server = http.createServer((req,res) => {
+  const appHost=req=>{const match=/^pv-[a-f0-9]{32}\.localhost(?::([0-9]+))?$/.exec(req.headers.host??'');return Boolean(match)&&Number(match[1]??80)===Number(publicUrl.port||80);};
+  const server = http.createServer(async(req,res) => {
+    if(appHost(req))try{if(await upstream.privateApp?.(req,res))return;}catch{res.destroy();return;}
     const localOrigin = 'http://127.0.0.1:' + server.address().port;
     const localCli = hubAwsIdentity && req.method === 'POST' && req.url === '/api/v1/identity/aws/request'
       && ['127.0.0.1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
@@ -62,13 +65,19 @@ export async function startContainerCom({origin = 'http://127.0.0.1:8787', port 
     res.on('close', () => forward.destroy());
     req.pipe(forward);
   });
+  server.on('upgrade',async(req,socket,head)=>{
+    try{if(appHost(req)&&await upstream.privateApp?.(req,socket,head))return;}catch{socket.destroy();return;}
+    socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+  });
   let connection;
   try {
     await new Promise((resolve,reject) => {server.once('error',reject); server.listen(port,host,resolve);});
+    blockedAppPorts.push(server.address().port);
     if (hub) connection = connectHub(hub, internal.origin, {
       apiCredential: () => upstream.apiCredential,
       hubAwsIdentity,
       preview: upstream.preview,
+      dashboards: upstream.dashboards,
       onRegistered: registration => upstream.setHubRegistration(registration),
       onStatus: onHubStatus,
     });
@@ -80,8 +89,10 @@ export async function startContainerCom({origin = 'http://127.0.0.1:8787', port 
   }
   return {server,get apiCredential(){return upstream.apiCredential;}, async close() {
     await connection?.close();
-    await new Promise(resolve => {server.close(resolve); server.closeAllConnections();});
+    const listenerClosed=new Promise(resolve => {server.close(resolve); server.closeAllConnections();});
+    // Upgraded app sockets are owned by delivery, not closeAllConnections().
     await upstream.close();
+    await listenerClosed;
     await local?.close();
   }};
 }

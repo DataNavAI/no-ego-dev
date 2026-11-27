@@ -1,0 +1,7 @@
+# Dashboard UI contract
+
+Reuse the existing user-approved [Base/Muse COM shell](../../../.projects/no-ego-dev/design/ui-guidelines.md) and [private Preview frame controls](../web-app-previews/SPEC.md). The Dashboard tab/rail/mobile navigation already exist; do not add a new navigation hierarchy. A published project app replaces only the tab's work-progress content; without an app keep existing progress. Use the existing compact app identity/status, Reload and Open in new tab controls. The embedded app owns its chart/table design; product-dashboard-dev requires product-specific visual selection when a materially new chart layout is built. This platform change does not introduce a fixed new chart template.
+
+Clear frame on project/auth change, retain unrelated Preview DOM and Chat draft. Existing keyboard tab semantics and mobile Project navigation remain authoritative. Errors are local to the published app and never silently switch to another dashboard. Unsupported Hub delivery is explicit. Frame is sandboxed at a separate generation-specific origin, never a raw localhost link for remote users.
+
+Acceptance: actual frame content/ready identity;1280×900,390×900,320×900 and200% text; chart content readable within its app; controls/retry/new tab; project-switch race and auth loss. TC-003 owns platform browser behavior and synthetic captures; skill/workflow evaluations own actual metric charts. Screenshots/recordings stay outside version control. No screenshot alone establishes correctness/delivery.

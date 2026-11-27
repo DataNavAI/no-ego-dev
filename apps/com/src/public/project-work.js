@@ -58,7 +58,7 @@ export function renderDashboard(document,container,data,options={}){
 }
 export function mountProjectWork({document,fetch}){
   const delivery=mountGoalTasks({document,fetch});
-  const project=document.getElementById('project'),dashboard=document.getElementById('dashboard');
+  const project=document.getElementById('project'),dashboard=document.getElementById('dashboard-work-summary')??document.getElementById('dashboard');
   let dashboardCompleted=false;let snapshot;let pending=false;let refreshQueued=false;
   const onReference=item=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{
     projectId:item.projectId,itemId:item.sourceId,title:item.title,projectName:item.projectName,

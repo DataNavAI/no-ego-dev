@@ -2,6 +2,7 @@ import {existsSync} from 'node:fs';
 import {createManagedMaintenance,MaintenanceError} from './maintenance.js';
 import {randomUUID} from 'node:crypto';
 import {createPreviewDelivery} from './preview-delivery.js';
+import {createDashboardHandler} from './dashboards.js';
 import {createPreviewHandler} from './preview.js';
 import {nedApiPath} from './api-paths.js';
 import {resolveDatabasePath} from '../../../src/database.js';
@@ -19,8 +20,9 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
   options.maintenance=maintenance;
   const credential=()=>operatorCredential??loadApiCredential(options);
   const apiAuthenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
+  const dashboards=createDashboardHandler({...options,browserEnabled,boundOrigin,isControlAuthorization:header=>authenticated(header,credential(),options.basicCredentials)});
   const preview=createPreviewHandler(options);
-  const previewDelivery=(options.previewDelivery??browserEnabled)?createPreviewDelivery({service:preview.service,boundOrigin,isControlAuthorization:header=>authenticated(header,credential(),options.basicCredentials)}):null;
+  const previewDelivery=(options.previewDelivery??browserEnabled)?createPreviewDelivery({service:preview.service,boundOrigin,localAppOrigin:options.localAppOrigin,isControlAuthorization:header=>authenticated(header,credential(),options.basicCredentials)}):null;
   const deliveryOwner=randomUUID();let deliveryTimer,remotePreview=false;
   const touchDelivery=()=>{if(previewDelivery&&existsSync(options.databasePath))try{preview.service.delivery(deliveryOwner,remotePreview);}catch{/* failed health expires closed */}};
   const startPreview=()=>{if(!deliveryTimer&&previewDelivery){touchDelivery();deliveryTimer=setInterval(touchDelivery,2000);deliveryTimer.unref();}};
@@ -57,6 +59,7 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
       }
     if(route.kind==='unknown')return error(404,'not_found','Not found.'),true;
     if(!['GET','HEAD','OPTIONS'].includes(req.method))release=maintenance.enter('request');
+    if(route.handler==='dashboards'){await dashboards(req,res,send,origin,()=>!closing&&apiAuthenticated(req));return true;}
     if(route.handler==='preview'&&previewDelivery){startPreview();touchDelivery();}
     if(route.handler==='preview'&&req.url==='/api/v1/preview/access'){
       if(!previewDelivery)return error(503,'preview_delivery_unavailable','Private preview unavailable.'),true;
@@ -100,12 +103,14 @@ export function createNedApiHandler({boundOrigin,operatorService,operatorCredent
     }catch(failure){if(failure instanceof MaintenanceError){if(!res.headersSent)error(failure.status,failure.code,'NED is updating. Retry shortly.');else res.destroy();return true;}throw failure;}
     finally{release?.();}
   };
+  handler.dashboards=dashboards;
   handler.maintenance=maintenance;
   handler.startPreview=startPreview;
+  handler.privateApp=async(req,res,head)=>{if(options.localAppOrigin&&previewDelivery?.matches(req)){await previewDelivery.handle(req,res,head);return true;}return dashboards.privateApp(req,res,head);};
   handler.preview={remote:value=>{remotePreview=value===true;touchDelivery();},snapshot:()=>preview.service.snapshot(),relay:(...args)=>previewDelivery?.relay(...args)};
   handler.setHubRegistration=input=>browser?.setHubRegistration(input);
   handler.credential=credential;
   handler.authenticated=req=>authenticated(req.headers.authorization,credential(),options.basicCredentials);
-  handler.close=()=>closePromise??=(async()=>{closing=true;clearInterval(deliveryTimer);if(previewDelivery&&existsSync(options.databasePath))try{preview.service.delivery(deliveryOwner,false,true);}catch{/* expiry also revokes */}await previewDelivery?.close();preview.close();await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})().finally(()=>{if(ownMaintenance)maintenance.close();});
+  handler.close=()=>closePromise??=(async()=>{closing=true;clearInterval(deliveryTimer);if(previewDelivery&&existsSync(options.databasePath))try{preview.service.delivery(deliveryOwner,false,true);}catch{/* expiry also revokes */}await dashboards.close();await previewDelivery?.close();preview.close();await browser?.close();operatorHandler?.close();await operatorPending?.catch(()=>{});operatorHandler?.close();await ownedService?.close();})().finally(()=>{if(ownMaintenance)maintenance.close();});
   return handler;
 }
