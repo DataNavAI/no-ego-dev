@@ -101,4 +101,6 @@ Each self-contained skill is an agent-facing capability that needs corresponding
 - Browser production scope remains parked; create a canonical spec before extending it. Obsolete CLI provisioning plans have been removed.
 - Maintain stable FR/CUJ/TC IDs within each feature. When splitting or merging entries, preserve old ID references and update this inventory.
 
-Desktop project-pane refinement (#269–272) is implemented under [communicator FR-096–099/CUJ-034/TC-054–055](communicator/SPEC.md#desktop-project-pane-refinement-269272); not a separate feature or claim of full manual coverage.
+Desktop project-pane refinement (#269–272) is implemented under [communicator FR-096–100/CUJ-034/TC-054–055](communicator/SPEC.md#desktop-project-pane-refinement-269272); not a separate feature or claim of full manual coverage.
+
+Desktop Settings follow-up #274 groups existing access/provider/secret controls using the same desktop spacing scale; no credential behavior changes. See FR-100/TC-055 and the [Settings guidance](https://github.com/DataNavAI/no-ego-dev/issues/274).

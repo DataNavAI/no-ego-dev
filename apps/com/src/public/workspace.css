@@ -83,3 +83,19 @@
  .preview-state small{font-size:11px}.artifacts-panel h2{font-size:16px;margin:0 0 8px}
 }
 @media(min-width:768px) and (max-width:1099px){.context-heading{padding-inline:16px}.goals-panel,.dashboard-panel,.artifacts-panel{padding:16px}}
+@media(min-width:768px){
+ #settings{flex:1;padding:20px;scrollbar-gutter:stable}
+ #settings h2{font-size:16px;line-height:1.4;margin:0 0 16px}
+ #settings h3{font-size:14px;line-height:1.5;margin:0 0 8px}
+ #settings p{font-size:13px;line-height:1.6;margin:8px 0}
+ #settings #access-forget{font-size:12px}
+ #provider-connections{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+ #provider-list{display:grid;gap:12px;margin-top:16px}
+ #settings .provider-connection{min-width:0;padding:16px;border:1px solid var(--border);border-radius:10px}
+ #settings .provider-connection>button{margin:8px 8px 0 0;font-size:12px}
+ #settings>h3{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+ #settings input,#settings textarea{font-size:14px}
+ #secret-form{margin:16px 0;padding:16px;gap:8px;border:1px solid var(--border);border-radius:10px;background:#fafafa}
+ #secret-form label{font-size:12px;line-height:1.5;font-weight:550}
+ #secret-form button{margin-top:4px;font-size:13px}
+}

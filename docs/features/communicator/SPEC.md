@@ -937,12 +937,13 @@ Status: implemented. The [guidance images](design/desktop-pane-polish/README.md)
 - FR-097: Without a saved preference, the right pane uses 40% of available desktop width, bounded to 360–560px and the existing chat/pane minimums. Explicit saved resize preferences retain precedence. Project identity is the primary header, with a quiet Project label. Hide/reopen, Debug, resize and mobile transitions preserve existing state/focus contracts.
 - FR-098: Desktop Goals and Dashboard use consistent compact task hierarchy, metadata rhythm, restrained current-work emphasis and bounded metrics. Preserve task order, completed filtering, references, details, output/auth access and truthful missing estimates.
 - FR-099: Desktop Preview places its loading/empty/error/ready state in a deliberate bounded card near the top of its canvas. Preserve exact state/action semantics and existing preview nodes; no configuration/startup capability is implied or added.
+- FR-100: Desktop Settings separates access, provider connections and secret fields with consistent section/card spacing and the established title scale. Keep existing labels, private fields,44px controls, authentication/reveal/clear semantics and all credential storage boundaries unchanged. Narrow resizing and enlarged text retain field/action reachability.
 
 ### CUJ-034: Review project work beside a desktop conversation
 Actor: authenticated desktop NED user; critical for switching between work overview and app preview without losing conversation context. Starting state: chat and Project open with a selected project or truthful empty state. Actions: read project identity, select Goals/Dashboard/Preview/Artifacts/Settings, resize, collapse and reopen, continue draft. Success: readable single-row navigation and compact hierarchy, useful content width, reachable state actions, retained draft/selection/Preview DOM. Failure/recovery: retain truthful unavailable/error states and Retry; no app/model/provider operation starts from navigation.
 
 ### TC-054: Desktop pane geometry and narrow-pane navigation
-- Journey / requirements: CUJ-034 / FR-096–099.
+- Journey / requirements: CUJ-034 / FR-096–100.
 - Level / automation: browser integration; [TC-054.test.js](tests/TC-054.test.js). Existing TC-021/032 own saved resize/Debug; TC-052/053 own phone transition and continuity; work/reference/details tests retain their existing contracts.
 - Preconditions / fixtures: isolated browserChat home/database, synthetic configured model, existing session, 1280×900 viewport; no real credentials, provider or model call.
 - Given: ready desktop chat and open Project without a saved resize preference.
@@ -953,7 +954,7 @@ Actor: authenticated desktop NED user; critical for switching between work overv
 - Cleanup / pass evidence: fixture closes owned browser/server and removes synthetic state. Actual passing assertions plus the manual visual case below; written acceptance alone is not a pass.
 
 ### TC-055: Desktop visual acceptance across project states
-- Journey / requirements: CUJ-034 / FR-096–099.
+- Journey / requirements: CUJ-034 / FR-096–100.
 - Level / automation: manual; render the actual COM with a disposable populated project and synthetic conversation; capture and inspect all five views at1024×768,1280×900,1440×900, minimum resized pane and200% text. Retain captures outside versioned runtime source.
 - Given: synthetic goal with one working task, one ready task, long title and default-hidden completed task; configured model, no live provider grants.
 - When: inspect header/tabs, Goals, Dashboard, Preview missing/ready/error state, Artifacts unavailable and Settings; switch tabs and resize; inspect the corresponding320/390px mobile layout for regression.
@@ -962,4 +963,4 @@ Actor: authenticated desktop NED user; critical for switching between work overv
 - Variants: empty and retryable error states, long names, narrow pane,200% text; physical keyboard/touch excluded from this desktop case and never claimed. External auth/concurrency is unchanged and covered by its existing cases.
 - Cleanup: close fixture-owned resources and remove temporary runtime/project; retain only synthetic images/logs. Pass requires inspected pixels and no material findings; automation alone cannot pass visual acceptance.
 
-Coverage: FR-096/097/099 → CUJ-034 → TC-054, existing TC-021/032/052; FR-098 → CUJ-034 → TC-055 and existing work/details/reference cases. Mobile regression: TC-053. Physical-device checks remain outside this desktop refinement.
+Coverage: FR-096/097/099 → CUJ-034 → TC-054, existing TC-021/032/052; FR-098 → CUJ-034 → TC-055 and existing work/details/reference cases; FR-100 → CUJ-034 → TC-055 with existing secret-management TC-003/006/007 and provider-identity TC-007 for unchanged private forms. Mobile regression: TC-053. Physical-device checks remain outside this desktop refinement.
