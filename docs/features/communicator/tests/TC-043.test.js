@@ -40,11 +40,11 @@ test('TC-043: agent focus switches the project workspace without changing chat',
   await page.locator('#mobile-project-toggle').click();
   await expect(page.locator('#preview')).toBeVisible();
   await expect(page.locator('#preview-identity')).toHaveText('Beta');
-  await expect(page.getByRole('tab',{name:'Preview',exact:true})).toHaveAttribute('aria-selected','true');
-  await page.getByRole('tab',{name:'Settings',exact:true}).click();
+  await expect(page.locator('#mobile-preview-nav')).toHaveAttribute('aria-current','page');
+  await page.locator('#navigation-toggle').click();await page.locator('#settings-shortcut').click();
   await expect(page.getByRole('heading',{name:'Settings',exact:true})).toBeVisible();
   await page.setViewportSize({width:320,height:740});
-  await expect(page.getByRole('tab',{name:'Settings',exact:true})).toBeInViewport({ratio:1});
+  await expect(page.locator('#navigation-toggle')).toBeInViewport({ratio:1});await expect(page.locator('#navigation-toggle')).toHaveAttribute('aria-current','page');
   await expect(page.locator('#preview-identity')).toBeVisible();
   assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
   if(evidence)await page.screenshot({path:join(evidence,'chat-first-workspace-mobile.png')});

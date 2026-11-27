@@ -1,5 +1,9 @@
 # NEDCOM scoped UI guidelines
 
+## Current mobile navigation refinement (#279)
+[Mobile Muse guidance](../../../docs/features/communicator/design/mobile-muse/README.md), FR-102–105 and UI-AC-30 supersede the earlier mobile header/tab-strip/prose-surface rules: four thumb-reachable bottom targets, a reused More menu for secondary views, floating real controls, white canvas with muted prose bubbles and separate secondary actions, composer above navigation and keyboard-priority behavior. Desktop remains the current Muse split. Preserve auth, single-session and all draft/reference/preview state.
+
+
 ## Current desktop refinement — project pane (#269–272)
 [Desktop guidance](../../../docs/features/communicator/design/desktop-pane-polish/README.md), FR-097–101 and UI-AC-29 refine the Muse split: a bounded 40% default project pane (saved resize wins), project-name-first hierarchy, single scrollable tab row, compact consistent work rows/metrics and top-anchored Preview state card. Keep all five destinations and mobile behavior. Desktop visual acceptance requires actual Goals, Dashboard, Preview, Artifacts and Settings captures at default/narrow widths and200% text; an overflow check alone is insufficient.
 

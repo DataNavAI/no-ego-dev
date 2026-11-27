@@ -11,7 +11,7 @@ test('TC-036: mobile shows Chat first and switches to the preserved workspace ta
   assert.equal(elements.get('chat').inert,true);
   assert.equal(elements.get('preview').hidden,false);
   elements.get('goals-pane-tab').dispatch('keydown',{key:'End',preventDefault(){}});
-  assert.equal(document.activeElement,elements.get('workspace-settings-tab'));
+  assert.equal(document.activeElement,elements.get('settings-heading'));
   elements.get('left-toggle').dispatch('click');
   assert.equal(document.activeElement,elements.get('chat'));
   elements.get('preview-toggle').dispatch('click');

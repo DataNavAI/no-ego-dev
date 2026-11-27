@@ -23,13 +23,18 @@ if(viewport){
       shell.style.setProperty('--chat-viewport-top',`${Math.max(0,viewport.offsetTop)}px`);
       shell.dataset.fitViewport='true';
       shell.toggleAttribute('data-compact-chat',viewport.height<340);
+      const editing=Boolean(globalThis.document.activeElement?.matches('input,textarea,[contenteditable="true"]'));
+      shell.toggleAttribute('data-keyboard-open',viewport.height<globalThis.innerHeight-120||editing&&viewport.height<500);
     }else{
       shell.style.removeProperty('--chat-viewport-height');
       shell.style.removeProperty('--chat-viewport-top');
       delete shell.dataset.fitViewport;
       shell.removeAttribute('data-compact-chat');
+      shell.removeAttribute('data-keyboard-open');
     }
   };
+  globalThis.document.addEventListener('focusin',fitVisibleViewport);
+  globalThis.document.addEventListener('focusout',()=>globalThis.requestAnimationFrame(fitVisibleViewport));
   viewport.addEventListener('resize',fitVisibleViewport);
   viewport.addEventListener('scroll',fitVisibleViewport);
   mobile.addEventListener('change',fitVisibleViewport);

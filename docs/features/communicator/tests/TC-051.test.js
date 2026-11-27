@@ -112,12 +112,14 @@ test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async
   await draft.focus();
   await draft.fill('A draft that stays visible.\nA second line.');
   await setViewport(360,0);
+  await expect(page.locator('#mobile-bottom-nav')).toBeHidden();
   await expect.poll(()=>within(0,360)).toBe(true);
   await setViewport(320,40);
   await expect.poll(()=>within(40,360)).toBe(true);
   await expect(send).toBeEnabled();
   assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth),390);
   await setViewport(844,0);
+  await expect(page.locator('#mobile-bottom-nav')).toBeVisible();
   await expect.poll(async()=>(await shell.boundingBox()).height).toBe(844);
   await expect(draft).toHaveValue('A draft that stays visible.\nA second line.');
   await setViewport(330,15,1.5);
@@ -174,6 +176,7 @@ test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async
   await latest.click();
   await expect(latest).toBeHidden();
   await setViewport(844,0);
+  await expect(page.locator('#mobile-bottom-nav')).toBeVisible();
   await expect(activity).toBeVisible();
 
   await page.reload();
