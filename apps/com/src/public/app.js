@@ -79,7 +79,7 @@ function selectCanvas(tab,focus=false){
   previewRetryFocus=false;
   canvasView=tab.textContent;contextOpen=true;workspace='preview';
   for(const item of canvasTabs){const active=item===tab;item.setAttribute('aria-selected',String(active));item.tabIndex=active?0:-1;document.getElementById(item.getAttribute('aria-controls')).hidden=!active;}
-  syncNavigation();if(focus){tab.focus();tab.scrollIntoView?.({block:'nearest',inline:'nearest'});}
+  syncNavigation();if(focus)tab.focus();tab.scrollIntoView?.({block:'nearest',inline:'nearest'});
 }
 for(const tab of canvasTabs){
   tab.addEventListener('click',()=>selectCanvas(tab));
@@ -146,7 +146,7 @@ mobileViewport?.addEventListener?.('change',()=>{
     destination.focus();
   }else if(leftPane.hidden&&focusInLeft||preview.hidden&&focusInPreview)focusContextControl();
 });
-if(typeof ResizeObserver!=='undefined'){new ResizeObserver(()=>{if(mobileViewport?.matches&&!preview.hidden)canvasTabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.scrollIntoView?.({block:'nearest',inline:'nearest'});}).observe(canvasTabs[0].parentElement);}
+if(typeof ResizeObserver!=='undefined'){new ResizeObserver(()=>{if(!preview.hidden)canvasTabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.scrollIntoView?.({block:'nearest',inline:'nearest'});}).observe(canvasTabs[0].parentElement);}
 syncNavigation();render();void load();
 document.addEventListener('ned-auth-restored',()=>{workspaceStream?.close();workspaceStream=null;state=beginLoad(state);render();void load();});
 

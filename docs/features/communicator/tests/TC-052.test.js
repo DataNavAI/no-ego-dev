@@ -9,7 +9,7 @@ test('TC-052: Muse-style rail and project pane preserve chat and preview across 
   await expect(page.locator('#context-toggle')).toBeVisible();
   const box=async id=>page.locator('#'+id).boundingBox();
   const chatBefore=await box('chat'),context=await box('preview');
-  assert.ok(chatBefore.width>720);assert.ok(context.width>=280&&context.width<=400);
+  assert.ok(chatBefore.width>720);assert.ok(context.width>=450&&context.width<=560);
   const rail=await page.locator('.navigation-choices').boundingBox();assert.equal(rail.width,64);assert.equal(rail.x,0);
   await f.draft.fill('Keep my draft');
   await page.evaluate(()=>globalThis.document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:'sample',itemId:'task',title:'Review task',projectName:'Sample'}})));
