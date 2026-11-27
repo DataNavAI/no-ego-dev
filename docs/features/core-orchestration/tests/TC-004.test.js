@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {coreAgentActivity} from '../../../../apps/core/src/chat-debug.js';
 import {readRunEvents} from '../../../../apps/core/src/hermes.js';
 import {runtimeFixture} from './runtime-fixture.js';
 import {fork} from 'node:child_process';
@@ -29,11 +30,20 @@ test('TC-004: accepted run outlives tick, child graph correlates actual subagent
   fixture.emit(runId,{event:'subagent.start',subagent_id:'agent_two',child_session_id:'child_two',delegation_id:'delegation_two',parent_id:'agent_one',depth:1});
   await until(()=>fixture.core.getAttempt(fixture.projectId,attempt.id).bindings.length===3);
   let row=fixture.core.getAttempt(fixture.projectId,attempt.id);assert.equal(row.resultText,'Hello 🌙');assert.equal(row.bindings.find(binding=>binding.sessionId==='child_two').parentSessionId,'child_one');
+  await until(()=>coreAgentActivity(fixture.databasePath).agents.filter(agent=>agent.role==='subagent').length===2);
+  const child={subagent_id:'agent_two',child_session_id:'child_two',delegation_id:'delegation_two',parent_id:'agent_one',depth:1};
+  fixture.emit(runId,{event:'subagent.complete',...child});
+  fixture.emit(runId,{event:'subagent.start',...child});
   fixture.emit(runId,{event:'subagent.start',subagent_id:'forged',child_session_id:'foreign',delegation_id:'delegation_bad',parent_id:row.sessionId,depth:1});
   await until(()=>!fixture.core.getAttempt(fixture.projectId,attempt.id).mappingComplete);
+  const activity=coreAgentActivity(fixture.databasePath);
+  assert.equal(activity.agents.filter(agent=>agent.role==='subagent').length,1);
+  assert.equal(activity.events.filter(event=>event.event==='subagent.complete').length,1);
+  assert.equal(JSON.stringify(activity).includes('never metadata'),false);
   await fixture.runtime.maintenance();row=fixture.core.getAttempt(fixture.projectId,attempt.id);assert.equal(row.bindings.length,3);assert.ok(row.bindings.every(binding=>binding.namingState==='confirmed'));
   assert.equal(JSON.stringify(fixture.core.events(fixture.projectId)).includes('never metadata'),false);
   fixture.runs.get(runId).status='completed';fixture.runs.get(runId).output='Final synthetic output';await fixture.runtime.maintenance();
+  assert.equal(coreAgentActivity(fixture.databasePath).agents.length,0);
   assert.equal(fixture.core.getAttempt(fixture.projectId,attempt.id).state,'awaiting_verification');assert.equal((await fixture.task.getItem(attempt.taskId)).status,'working');
   fixture.core.verify(fixture.projectId,attempt.id,{accepted:true,evidence:[{kind:'test',reference:'synthetic acceptance'}]},'verify');
   await fixture.core.complete(fixture.projectId,attempt.taskId,{evidence:[{kind:'review',reference:'synthetic review'}]},'complete');assert.equal((await fixture.task.getItem(attempt.taskId)).status,'done');

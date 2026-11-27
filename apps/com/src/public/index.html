@@ -69,7 +69,16 @@
 </main>
 
 <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="Primary"><button id="mobile-chat-nav" type="button" aria-label="Chat"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M17 12a7 7 0 0 1-9 5l-5 1 1-5a7 7 0 1 1 13-1Z"/></svg><span class="mobile-nav-label">Chat</span></button><button id="mobile-goals-nav" type="button" aria-label="Goals"><svg aria-hidden="true" viewBox="0 0 20 20"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="m7 10 2 2 4-5"/></svg><span class="mobile-nav-label">Goals</span></button><button id="mobile-preview-nav" type="button" aria-label="Preview"><svg aria-hidden="true" viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="12" rx="2"/><path d="M7 18h6M10 15v3"/></svg><span class="mobile-nav-label">Preview</span></button></nav>
-  <dialog id="debug-pane" class="debug-pane" aria-labelledby="debug-title" hidden inert><header><h2 id="debug-title">Debug</h2><button id="debug-close" type="button">Close debug</button></header><div class="debug-body"><dl><div><dt>COM</dt><dd id="debug-health">Not checked</dd></div><div><dt>Chat</dt><dd id="debug-chat">Not connected</dd></div></dl><div class="debug-events-heading"><h3>Recent events</h3><button id="debug-clear" type="button">Clear</button></div><p id="debug-empty">No events yet.</p><ol id="debug-events"></ol></div></dialog>
+  <dialog id="debug-pane" class="debug-pane" aria-labelledby="debug-title" hidden inert><header><h2 id="debug-title">Debug</h2><button id="debug-close" type="button">Close debug</button></header><div class="debug-body"><dl><div><dt>COM</dt><dd id="debug-health">Not checked</dd></div><div><dt>Chat</dt><dd id="debug-chat">Not connected</dd></div></dl>
+    <section aria-labelledby="debug-session-title"><h3 id="debug-session-title">Chat session</h3>
+      <button id="debug-reset-chat" type="button" disabled>Reset chat session</button>
+      <p id="debug-reset-status" role="status"></p>
+    </section>
+    <section aria-labelledby="debug-agents-title"><h3 id="debug-agents-title">Agent activity</h3>
+      <p id="debug-agents-status" role="status">Not checked</p><ul id="debug-agents"></ul>
+      <h4>Recent agent lifecycle</h4><ol id="debug-agent-events"></ol>
+    </section>
+    <div class="debug-events-heading"><h3>Recent events</h3><button id="debug-clear" type="button">Clear</button></div><p id="debug-empty">No events yet.</p><ol id="debug-events"></ol></div></dialog>
 </div>
 
       <dialog id="model-setup" aria-labelledby="model-setup-title" aria-describedby="model-setup-status" hidden><div class="model-setup-content"><div class="model-setup-header"><strong>NED</strong><button id="model-setup-close" type="button" aria-label="Close model settings" hidden>Close</button></div>

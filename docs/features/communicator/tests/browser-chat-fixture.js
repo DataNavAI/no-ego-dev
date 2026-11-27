@@ -19,26 +19,36 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
     database?.close();await rm(home,{recursive:true,force:true});
   });
   const messages=structuredClone(rows),requests=[],turns=[];
-  let exists=existing,failHistory=historyFailure;
-  const session={id:'nedcom-main',title:'NED Chat',source:'api_server'};
+  let failHistory=historyFailure;
+  const initialSession={id:'nedcom-main',title:'NED Chat',source:'api_server'};
+  const sessions=new Map(existing?[[initialSession.id,{session:initialSession,messages}]]:[]);
+  let rejectNewSession=false;
   gateway=http.createServer(async(req,res)=>{
     let payload='';for await(const chunk of req)payload+=chunk;
     requests.push({method:req.method,url:req.url,payload:payload?JSON.parse(payload):undefined});
     const json=(status,data)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(data));};
     if(req.headers.authorization!=='Bearer synthetic-browser-key')return json(401,{});
-    if(req.url==='/api/sessions/nedcom-main'&&req.method==='GET')return json(exists?200:404,exists?{session}:{});
+    const id=req.url.match(/^\/api\/sessions\/([^/?]+)/)?.[1];
+    const entry=sessions.get(id);
+    if(id&&req.url===`/api/sessions/${id}`&&req.method==='GET')return json(entry?200:404,entry?{session:entry.session}:{});
     if(req.url==='/api/sessions'&&req.method==='POST'){
-      if(JSON.stringify(JSON.parse(payload))!==JSON.stringify(session))return json(400,{});
-      exists=true;return json(201,{session});
+      const session=JSON.parse(payload);
+      if(!/^(nedcom-main|nedcom-main-[a-f0-9-]{36})$/.test(session.id)||session.source!==initialSession.source)return json(400,{});
+      if(sessions.has(session.id))return json(409,{});
+      if(rejectNewSession&&session.id!==initialSession.id)return json(503,{});
+      sessions.set(session.id,{session,messages:session.id===initialSession.id?messages:[]});
+      return json(201,{session});
     }
-    if(req.url.startsWith('/api/sessions/nedcom-main/messages?')){
+    if(entry&&req.url.startsWith(`/api/sessions/${id}/messages?`)){
+      const {messages}=entry;
       if(failHistory){if(typeof failHistory==='number')failHistory--;return json(503,{});}
       const url=new URL(req.url,'http://fixture');
       const offset=Number(url.searchParams.get('offset')),limit=Number(url.searchParams.get('limit'));
       const end=Math.max(0,messages.length-offset);
       return json(200,{data:messages.slice(Math.max(0,end-limit),end)});
     }
-    if(req.url==='/api/sessions/nedcom-main/chat/stream'&&req.method==='POST'){
+    if(entry&&req.url===`/api/sessions/${id}/chat/stream`&&req.method==='POST'){
+      const {session,messages}=entry;
       const input=JSON.parse(payload).input;
       const ordinal=turns.length+1;
       const answer=onTurn ? await onTurn({input,home,origin:app.url}) : `**Completed reply ${ordinal}**`;
@@ -74,7 +84,7 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
   await page.goto(app.url);
   if(!deferLogin){await page.locator('#access-token').fill(app.apiCredential);await page.locator('#access-submit').click();}
   const draft=page.locator('#chat-message');
-  return {home,page,draft,messages,requests,turns,errors,network,accessToken:app.apiCredential,setHistoryFailure(value){failHistory=value;},async ready(){await expect(page.locator('#chat-status')).toHaveText('');await expect(draft).toBeEnabled();assert.deepEqual(errors,[]);},async send(input){
+  return {home,page,draft,messages,requests,turns,errors,network,failNewSession(value){rejectNewSession=value;},accessToken:app.apiCredential,setHistoryFailure(value){failHistory=value;},async ready(){await expect(page.locator('#chat-status')).toHaveText('');await expect(draft).toBeEnabled();assert.deepEqual(errors,[]);},async send(input){
     await draft.fill(input);await draft.press('Enter');
     await expect(draft).toHaveValue('');await expect(draft).toBeEnabled();
     await expect(page.locator('#transcript .user-message').last()).toContainText(input);

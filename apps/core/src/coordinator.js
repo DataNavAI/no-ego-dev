@@ -61,12 +61,18 @@ export async function createCoreRuntime(options={}) {
     else if(safeId(event.parent_id))parentSession=subagentParents.get(`${attempt.id}:${event.parent_id}`);
     if(!parentSession){incomplete(attempt);return;}
     const existing=row.bindings.find(binding=>binding.sessionId===event.child_session_id);
-    if(existing){if(existing.parentSessionId!==parentSession||existing.delegationId!==event.delegation_id){incomplete(row);return;}subagentParents.set(key,event.child_session_id);return;}
+    if(existing){
+      if(existing.parentSessionId!==parentSession||existing.delegationId!==event.delegation_id){incomplete(row);return;}
+      subagentParents.set(key,event.child_session_id);
+      store.recordAgentLifecycle(row.projectId,row.id,event.child_session_id,event.event);
+      return;
+    }
     if(row.bindings.length>=256){incomplete(row);return;}
     const index=row.bindings.filter(binding=>binding.role==='child').length;
     try{
       store.bind(row.projectId,row.id,{gatewayIdentity:row.gatewayIdentity,profileIdentity:row.gatewayIdentity,sessionId:event.child_session_id,role:'child',workerIndex:index,delegationId:event.delegation_id,parentSessionId:parentSession,expectedTitle:title(row,'child',index),namingState:'pending'});
       subagentParents.set(key,event.child_session_id);
+      store.recordAgentLifecycle(row.projectId,row.id,event.child_session_id,event.event);
     }catch{incomplete(row);}
   });}
   function subscribe(attempt){

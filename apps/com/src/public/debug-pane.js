@@ -21,7 +21,33 @@ export function mountDebugPane({document,view=window,request=fetch}){
   const element=id=>document.getElementById(id);
   const shell=element('app-shell'),pane=element('debug-pane'),toggle=element('debug-toggle');
   const close=element('debug-close'),clear=element('debug-clear'),health=element('debug-health');
-  let opened=false,modal=false,generation=0;
+  let opened=false,modal=false,generation=0,activityTimer;
+  const agents=element('debug-agents'),agentEvents=element('debug-agent-events'),agentStatus=element('debug-agents-status');
+  async function refreshActivity(token){
+    if(!agents)return;
+    try{
+      const response=await request('/api/v1/chat/activity',{signal:AbortSignal.timeout(5000)});
+      if(!response.ok)throw new Error();
+      const data=await response.json();
+      if(token!==generation)return;
+      const row=(text,time)=>{
+        const item=document.createElement('li'),stamp=document.createElement('time');
+        stamp.dateTime=time;stamp.textContent=new Date(time).toLocaleString();
+        item.textContent=text+' ';item.append(stamp);return item;
+      };
+      agents.replaceChildren(...data.agents.map(agent=>row(
+        agent.role==='chat'?`Chat reply · ${agent.state}`:`${agent.role} · ${agent.state} · ${agent.taskId} · ${agent.id.slice(-8)}`,agent.time)));
+      agentEvents.replaceChildren(...data.events.map(event=>row(`${event.event} · ${event.id}`,event.time)));
+      agentStatus.textContent=data.agents.length?'Chat and Core agents observed by NED.':'No active chat or Core agents observed.';
+    }catch{
+      if(token===generation){
+        agents.replaceChildren();agentEvents.replaceChildren();
+        agentStatus.textContent='Agent activity is unavailable.';
+      }
+    }finally{
+      if(token===generation)activityTimer=setTimeout(()=>void refreshActivity(token),3000);
+    }
+  }
   const renderEvents=()=>{
     element('debug-chat').textContent=current;
     const list=element('debug-events');
@@ -48,11 +74,13 @@ export function mountDebugPane({document,view=window,request=fetch}){
   };
   const notifyLayout=()=>view.dispatchEvent(new Event('resize'));
   const focusToggle=()=> (view.innerWidth<768?element('navigation-toggle'):toggle).focus();
-  const shut=()=>{opened=false;generation++;layout();notifyLayout();focusToggle();};
+  const shut=()=>{opened=false;generation++;clearTimeout(activityTimer);layout();notifyLayout();focusToggle();};
   const open=()=>{
     if(view.innerWidth<768)element('mobile-navigation').open=false;
     opened=true;layout();notifyLayout();close.focus();renderEvents();
     const token=++generation;health.textContent='Checking…';
+    if(agentStatus)agentStatus.textContent='Checking agent activity…';
+    void refreshActivity(token);
     void Promise.resolve().then(()=>request('/api/v1/health',{signal:AbortSignal.timeout(5000)})).then(async response=>{
       const data=response.ok?await response.json():null;
       if(token===generation)health.textContent=data?.status==='ok'&&data?.service==='ned-api'?'Available':'Unavailable';
@@ -65,5 +93,5 @@ export function mountDebugPane({document,view=window,request=fetch}){
   toggle.addEventListener('click',click);close.addEventListener('click',shut);clear.addEventListener('click',wipe);
   pane.addEventListener('cancel',cancel);document.addEventListener('keydown',key);view.addEventListener('resize',layout);
   listeners.add(renderEvents);layout();renderEvents();
-  return ()=>{generation++;opened=false;layout();notifyLayout();listeners.delete(renderEvents);toggle.removeEventListener('click',click);close.removeEventListener('click',shut);clear.removeEventListener('click',wipe);pane.removeEventListener('cancel',cancel);document.removeEventListener('keydown',key);view.removeEventListener('resize',layout);};
+  return ()=>{generation++;clearTimeout(activityTimer);opened=false;layout();notifyLayout();listeners.delete(renderEvents);toggle.removeEventListener('click',click);close.removeEventListener('click',shut);clear.removeEventListener('click',wipe);pane.removeEventListener('cancel',cancel);document.removeEventListener('keydown',key);view.removeEventListener('resize',layout);};
 }
