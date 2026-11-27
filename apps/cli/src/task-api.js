@@ -27,7 +27,7 @@ export async function createTaskApiClient({project=process.cwd(),actor=`human:${
   const database=resolveDatabasePath({home,env,databaseUrl});
   const credential=loadOperatorCredential({home,env});
   let server;
-  async function request(route,input,{method=input===undefined?'GET':'POST',envelope=true}={}){
+  async function request(route,input,{method=input===undefined?'GET':'POST',envelope=true,appField='preview'}={}){
     const key=requestId??randomUUID();
     let response,payload;
     try{
@@ -37,10 +37,10 @@ export async function createTaskApiClient({project=process.cwd(),actor=`human:${
       payload=await response.json();
     }catch(error){
       if(error.code==='request_too_large')throw error;
-      throw failure('core_unavailable',envelope?`NED API request could not be confirmed (request ID ${key}). Check the selected server and read back state; retry a mutation only with identical input and --request-id ${key}.`:'Preview request could not be confirmed. Check the selected API and run ned preview status --json before retrying with the observed revision.');
+      throw failure('core_unavailable',envelope?`NED API request could not be confirmed (request ID ${key}). Check the selected server and read back state; retry a mutation only with identical input and --request-id ${key}.`:`${appField==='dashboard'?'Dashboard':'Preview'} request could not be confirmed. Check the selected API and run ned ${appField} status --json before retrying with the observed revision.`);
     }
     if(!response.ok){const reported=payload?.error?.code;const code=typeof reported==='string'&&/^[a-z_]{1,64}$/.test(reported)?reported:'core_unavailable';throw failure(code,messages[code]||`Core rejected the operation (${code}). Read back state before retrying.`);}
-    if(!envelope){if(!payload||!Number.isSafeInteger(payload.revision)||!Object.hasOwn(payload,'preview'))throw failure('core_unavailable','NED API returned invalid preview state.');return payload;}
+    if(!envelope){if(!payload||!Number.isSafeInteger(payload.revision)||!Object.hasOwn(payload,appField))throw failure('core_unavailable','NED API returned invalid preview state.');return payload;}
     if(!payload||!Object.hasOwn(payload,'data'))throw failure('core_unavailable',`Core returned an invalid response (request ID ${key}). Read back state before retrying.`);
     return payload.data;
   }
@@ -48,7 +48,7 @@ export async function createTaskApiClient({project=process.cwd(),actor=`human:${
     if(!origin){server=await createCoreServer({home,env,databasePath:database,backendOnly:true,operatorCredential:credential});origin=await server.listen();}
     const context=await request('context');
     if(context?.runtime!==hash(runtime)||context?.database!==hash(database))throw failure('core_context_mismatch','NED API runtime or database does not match this CLI context. Select the same NED_AGENT_HOME and database; no command was sent.');
-    const client={previewRequest:(method,input)=>request('preview',input,{method,envelope:false}),close:async()=>{await server?.close();}};
+    const client={dashboardRequest:(id,method,input)=>request('dashboards/'+encodeURIComponent(id),input,{method,envelope:false,appField:'dashboard'}),previewRequest:(method,input)=>request('preview',input,{method,envelope:false}),close:async()=>{await server?.close();}};
     for(const operation of methods)client[operation]=(...args)=>{
       if(operation==='blockTask')args=[args[0],Object.fromEntries(['on','reason','service'].filter(key=>args[1]?.[key]!==undefined).map(key=>[key,args[1][key]]))];
       return request('task-management',{project:path.resolve(project),actor,operation,args});

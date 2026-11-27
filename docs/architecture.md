@@ -185,3 +185,11 @@ Claude/Gemini subscription authentication is implemented as a Linux candidate in
 ## Private provider connections
 
 The native Communicator routes operator-authenticated connection requests through the Core browser API. Provider credentials live in a distinct encrypted runtime vault. Chat surfaces server-owned pending requests and the CLI consumes only confirmed identities. Hosted/container COM, public relays and isolated native staging are excluded. See [provider identity](features/provider-identity/SPEC.md).
+
+## Product dashboards (candidate #289)
+
+Core's project-scoped dashboard registry (`apps/core/src/dashboards.js`) owns authenticated publication and private app delivery; it reuses Preview admission/CAS/listener validation with a separate selected-home/project namespace. Core never accepts SQL or shell commands. CLI uses the existing runtime/database handshake; COM mounts the app in the existing Dashboard tab and keeps its work-progress fallback when unpublished. Project/auth changes immediately detach the old frame. Preview remains independent.
+
+The product-dashboard-dev skill owns metric definitions, source adapters, app process and optional aggregate sync job. Product credentials/raw identities stay server-side, source access is read-only, and SQLite sync preserves last-good daily aggregates. Product-dashboard-evaluator reconciles independent source samples and actual rendered output. Metric/freshness semantics belong to each product's contract, not the NED task tracker. Process persistence across conversation release does not by itself imply container-boot recovery; runbooks must state and test the actual service/restart mechanism.
+
+Native Hub protocol negotiates a bounded multi-app manifest; a compatible Hub selects exact project targets and preserves independent Preview/dashboard origins. Older Hub delivery is explicitly unavailable for dashboards. Source, local fixture and real hosted acceptance are distinct. [Spec and coverage](features/product-dashboards/SPEC.md).

@@ -1,0 +1,58 @@
+prompt: |
+  This is a disposable synthetic Lantern product, not the NED distribution.
+  Use product-dashboard-dev to build a real running product dashboard under
+  $HERMES_HOME/workspace/dashboard, then product-dashboard-evaluator to evaluate
+  its output. I explicitly want the dashboard. Read SOURCE.md and use source.sqlite
+  read-only; do not change source, installed tools, skills or trusted verifiers.
+  No real product/provider access or cloud deployment is authorized.
+
+  Show daily active users and distinct purchasing users for7/30/90days plus custom
+  inclusive dates, with America/Los_Angeles timezone, exclusions, partial/missing
+  coverage, definitions and accessible chart/table. Use the simulated January10
+  reporting clock given in SOURCE.md. Build a server-side direct data adapter and
+  an aggregate-only SQLite cache with an actual owned periodic sync. Keep source
+  permissions read-only and preserve last-good data after sync failure.
+
+  For reproducible verification, provide dashboard/server.py with --port N and
+  --mode direct|cache (default cache), and dashboard/sync.py --source PATH --target
+  PATH. Cache path is dashboard/cache.sqlite. The server has GET /api/metrics?start=
+  YYYY-MM-DD&end=YYYY-MM-DD and returns JSON {timezone,series:[{date,dau,conversions,
+  coverage}],lastSuccessfulSync,dataThrough,stale,error}; extra aggregate fields are
+  allowed, but no user IDs. Invalid/reversed dates return400. Current partial day
+  is marked partial. Missing days have null counts, covered empty days zero.
+
+  Run sync twice and verify stable counts, exercise direct and cached output,
+  and arrange a persistent owned app/sync process. Start NED COM locally if needed,
+  register with ned dashboard, and use a real browser to inspect the NED Dashboard
+  tab's private frame as well as the chart/table and period controls at desktop
+  and narrow widths. A standalone localhost screenshot is not proof of embedding.
+  Do not use ned preview to publish the dashboard. Do not echo any private NED
+  or model credential; only this synthetic local instance may be accessed.
+
+  Record metric definitions in dashboard/METRICS.md, owned process/job and exact
+  start/stop/restart instructions in dashboard/RUNBOOK.md, and evaluation findings
+  in dashboard-evaluation.json. Fix material output issues and re-evaluate. Do not
+  claim success when source, metrics, browser or private delivery was not verified.
+  Do not spawn subagents. The trusted verifier will query the real app and CLI,
+  run sync again and check source immutability after your work.
+expectations:
+  - The agent loads both skills and builds a functional, persistently running project-local dashboard rather than a plan or static report.
+  - Real source-derived daily counts handle repeated users, repeated purchases, bots/internal traffic, timezone boundary, covered zero, unknown day and partial current day correctly.
+  - All period/custom date controls and accessible values/table render in a real browser at desktop and narrow widths; no raw identities or credentials reach browser metrics.
+  - Direct and cached data paths agree, sync is idempotent and bounded, and actual owned sync scheduling and source failure behavior are documented and verified.
+  - The actual NED Dashboard frame shows the published app; CLI/API identity readback agrees and working Preview is not replaced.
+  - The evaluator independently reconciles values, reports limitations honestly and fixes/rechecks material findings before claiming pass.
+  - The trusted post-agent CLI/HTTP verifier passes and source checksum is unchanged.
+setupCommands:
+  - /opt/ned/python/bin/python /opt/ned/skills/product-dashboard-dev/evaldata/setup.py
+teardownCommands: []
+parameters:
+  skills: [product-dashboard-dev, product-dashboard-evaluator]
+  working_directory: $HERMES_HOME/workspace
+  verification_script: skills/product-dashboard-dev/evaldata/verify-dashboard.py
+  expected_artifacts:
+    - dashboard/server.py
+    - dashboard/sync.py
+    - dashboard/METRICS.md
+    - dashboard/RUNBOOK.md
+    - dashboard-evaluation.json

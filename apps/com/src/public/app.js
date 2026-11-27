@@ -1,4 +1,4 @@
-import {mountPreview} from './preview-ui.js';
+import {mountPreview,mountProductDashboard} from './preview-ui.js';
 import {initialState,beginLoad,settleLoad,selectProject,beginDetail,settleDetail,view,followTaskProject} from './state.js';
 import {apiFetch as fetch,ApiEventSource as EventSource} from './api-client.js';
 let state = initialState();
@@ -91,7 +91,7 @@ for(const tab of canvasTabs){
     event.preventDefault();selectCanvas(next,true);
   });
 }
-const canvasHeading=()=>canvasView==='Artifacts'?document.getElementById('artifacts-panel'):canvasView==='Goals'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Settings'?document.getElementById('settings-heading'):document.getElementById('dashboard-heading')||document.getElementById('dashboard');
+const canvasHeading=()=>canvasView==='Artifacts'?document.getElementById('artifacts-panel'):canvasView==='Goals'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Settings'?document.getElementById('settings-heading'):document.querySelector('#dashboard.managed-active .managed-preview-name')||document.getElementById('dashboard-heading')||document.getElementById('dashboard');
 function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   if(mobileBottom){const parent=mobile?mobileBottom:navigationHome;if(mobileNavigation.parentElement!==parent)parent.append(mobileNavigation);}
@@ -180,3 +180,4 @@ function startWorkspace(){
 }
 
 mountPreview({document});
+mountProductDashboard({document});

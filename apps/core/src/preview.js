@@ -16,7 +16,7 @@ const delivery={mode:'local-link',remoteAvailable:false};
 export function createPreviewService(options={}){
   const pending=new Set();let closed=false;
   const database=()=>{if(options.databasePath===':memory:')throw fail(503,'preview_database_unavailable');return openNedDatabase({databaseUrl:options.databasePath,home:options.home,env:options.env});};
-  const namespace=()=>`preview:v1:${loadApiInstanceId(options)}`;
+  const namespace=()=>options.resourceNamespace??`preview:v1:${loadApiInstanceId(options)}`;
   function access(operation){
     const db=database();
     try{return operation(db,namespace());}finally{db.close();}
@@ -63,7 +63,7 @@ export function createPreviewService(options={}){
     async register(input,{signal,authorized=()=>true,blockedPorts=[]}={}){
       safe();
       if(!input||Array.isArray(input)||typeof input!=='object'||Object.keys(input).some(key=>!['project','port','name','expectedRevision','replace'].includes(key))||!revision(input.expectedRevision)||input.replace!==undefined&&typeof input.replace!=='boolean')throw fail(400,'invalid_preview');
-      if(!Number.isInteger(input.port)||input.port<1024||input.port>65535||[8642,18789,18790,18791,...blockedPorts].includes(input.port))throw fail(400,'invalid_preview_port');
+      if(!Number.isInteger(input.port)||input.port<1024||input.port>65535||[8642,18789,18790,18791,...blockedPorts,...(options.blockedAppPorts??[])].includes(input.port))throw fail(400,'invalid_preview_port');
       const settings=await resolveGatewaySettings({url:options.chatGateway?.url,home:options.home,env:{...(options.env??process.env),HERMES_HOME:resolveRuntimeHome(options)}});
       if(Number(new URL(settings.url).port||80)===input.port)throw fail(400,'invalid_preview_port');
       const project=await projectRoot(input.project),name=input.name??path.basename(project);
@@ -90,6 +90,7 @@ export function createPreviewService(options={}){
         if(current.revision===Number.MAX_SAFE_INTEGER)throw fail(409,'preview_revision_exhausted');
         let row=db.connection.prepare('SELECT id FROM ned_projects WHERE path=?').get(project);
         if(!row){row={id:randomUUID()};db.connection.prepare('INSERT INTO ned_projects(id,path,initialized_at) VALUES(?,?,?)').run(row.id,project,new Date().toISOString());}
+        options.beforePublish?.(db,current);
         const next={revision:current.revision+1,preview:{id:randomUUID(),projectId:row.id,project,port:input.port,name,identity}};
         db.setFeatureValue(key,'active',next);return next;
       }));
@@ -102,6 +103,7 @@ export function createPreviewService(options={}){
         if(!current.preview&&(input.expectedRevision===current.revision||input.expectedRevision===current.clearedRevision))return present(current);
         if(current.revision!==input.expectedRevision)throw fail(409,'preview_changed');
         if(current.revision===Number.MAX_SAFE_INTEGER)throw fail(409,'preview_revision_exhausted');
+        options.beforePublish?.(db,current);
         const next={revision:current.revision+1,preview:null,clearedRevision:current.revision};db.setFeatureValue(key,'active',next);return present(next);
       }));
     },

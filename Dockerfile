@@ -35,6 +35,7 @@ COPY bin/ bin/
 COPY src/ src/
 # Build identity for ned --version and the UI; no additional tool is installed.
 COPY scripts/stamp-version.mjs scripts/stamp-version.mjs
+COPY scripts/deploy-hermes-skills.mjs scripts/deploy-hermes-skills.mjs
 ARG NED_BUILD_REVISION
 RUN node scripts/stamp-version.mjs "$NED_BUILD_REVISION"
 # Core/COM applications, agent skills/workflows, Hermes plugin and evaluation runtime.

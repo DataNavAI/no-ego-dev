@@ -132,3 +132,9 @@
  .shell[data-keyboard-open]>.mobile-bottom-nav{display:none}
  .shell[data-compact-chat]>.workspace-toolbar{min-height:56px;padding-block:4px}.shell[data-compact-chat] .brand{padding-block:4px}
 }
+
+/* Product apps use the same isolated frame surface as Preview. */
+.dashboard-panel.managed-active{padding:0;min-height:0;overflow:hidden}.dashboard-panel.managed-active .managed-preview{height:100%;min-height:0}
+
+/* Keep the dashboard identity readable when text enlargement widens actions. */
+.dashboard-panel .managed-preview-toolbar>div{flex-basis:12em}

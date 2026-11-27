@@ -69,7 +69,7 @@ function createBridge(config, target,logger,apiCredential,hubAwsIdentity) {
   });
 }
 
-export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger,apiCredential,preview,maintenance,hubAwsIdentity=false} = {}) {
+export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegistered, retryDelay,logger,apiCredential,preview,dashboards,maintenance,hubAwsIdentity=false} = {}) {
   if(typeof apiCredential!=='function'&&(typeof apiCredential!=='string'||!/^[a-f0-9]{64}$/.test(apiCredential)))throw new Error('NED API credential required for Hub transport.');
   const target = new URL(targetUrl);
   if (target.protocol !== 'http:' || !loopback(target.hostname) || target.pathname !== '/' || target.username || target.password || target.search || target.hash) throw new Error('Invalid COM target.');
@@ -103,16 +103,23 @@ export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegist
       if(onRegistered)await onRegistered({origin:config.hub.origin,id:registered.instance?.id,kind:registered.instance?.kind,token:config.token});
       if(stopped)return;
       control = new WebSocket(endpoint,{headers:{Authorization:`Bearer ${config.token}`},handshakeTimeout:10000,maxPayload:65536,perMessageDeflate:false,followRedirects:false});
-      const current=control;let alive=true;let lastPreview;
+      const current=control;let alive=true;let lastPreview;let appManifest=false;
       const maintenanceControl=createMaintenanceControl({maintenance,authorized:()=>!stopped&&control===current&&current.readyState===WebSocket.OPEN,send:message=>current.send(JSON.stringify(message))});
-      const publishPreview=()=>{if(current.readyState!==WebSocket.OPEN||!preview)return;try{const state=preview.snapshot();const value=state.preview?.identity?{id:state.preview.id,revision:state.revision}:null;const encoded=JSON.stringify(value);if(encoded!==lastPreview){lastPreview=encoded;current.send(JSON.stringify({type:'preview',preview:value}));}}catch{current.send(JSON.stringify({type:'preview',preview:null}));}};
+      const publishPreview=()=>{
+        if(current.readyState!==WebSocket.OPEN||!preview)return;
+        try{
+          const state=preview.snapshot(),value=state.preview?.identity?{id:state.preview.id,revision:state.revision}:null;
+          const message=appManifest?{type:'apps',version:1,apps:[...(value?[{kind:'preview',...value}]:[]),...(dashboards?.snapshots()??[]).filter(item=>item.preview?.identity).map(item=>({kind:'dashboard',projectId:item.preview.projectId,id:item.preview.id,revision:item.revision}))]}:{type:'preview',preview:value};
+          const encoded=JSON.stringify(message);if(encoded!==lastPreview){lastPreview=encoded;current.send(encoded);}
+        }catch{current.send(JSON.stringify(appManifest?{type:'apps',version:1,apps:[]}:{type:'preview',preview:null}));}
+      };
       current.on('open',publishPreview);clearInterval(previewPoll);previewPoll=setInterval(publishPreview,1000);previewPoll.unref();
       heartbeat=setInterval(()=>{if(!alive)current.terminate();else if(current.readyState===WebSocket.OPEN){alive=false;current.ping();}},15000);
       current.on('pong',()=>{alive=true;});
       current.on('message',data=>{
         let message;try{message=JSON.parse(data.toString());}catch{return;}
         if(message?.type==='maintenance-request'){maintenanceControl.receive(message);return;}
-        if(message?.type==='ready'){maintenanceControl.announce();preview?.remote?.(message.capabilities?.preview===true);attempt=0;status('online');return;}
+        if(message?.type==='ready'){maintenanceControl.announce();preview?.remote?.(message.capabilities?.preview===true);appManifest=message.capabilities?.appManifest===1&&message.capabilities?.preview===true;dashboards?.remote?.(appManifest);lastPreview=undefined;publishPreview();attempt=0;status('online');return;}
         if(message?.type!=='open'||typeof message.id!=='string'||!/^[\w-]{43}$/.test(message.id)||streams.size>=64)return;
         const url=new URL('/tunnel/data',endpoint);url.searchParams.set('id',message.id);
         const ws=new WebSocket(url,{headers:{Authorization:`Bearer ${config.token}`},handshakeTimeout:10000,maxPayload:1024*1024,perMessageDeflate:false,followRedirects:false});
@@ -121,16 +128,17 @@ export function startHubConnection(config,targetUrl,{onStatus = ()=>{}, onRegist
         if(message.target!==undefined){
           const t=message.target;let origin;try{origin=new URL(t.origin);}catch{stream.destroy();return;}
           const base=config.proxy;const alias=origin.hostname.slice(0,-base.hostname.length-1);
-          if(!preview||t.kind!=='preview'||typeof t.id!=='string'||!/^[a-f0-9-]{36}$/.test(t.id)||!Number.isSafeInteger(t.revision)||t.revision<1||origin.protocol!==base.protocol||origin.port!==base.port||!origin.hostname.endsWith('.'+base.hostname)||!/^preview--[a-f0-9]{32}$/.test(alias)||origin.pathname!=='/'||origin.search||origin.hash||origin.username||origin.password){stream.destroy();return;}
-          const context={id:t.id,revision:t.revision,origin:origin.origin,expires:Date.now()+900000,authorized:()=>!stopped&&control===current&&current.readyState===WebSocket.OPEN};
-          const appBridge=http.createServer((req,res)=>{void preview.relay(req,res,undefined,context).catch(()=>res.destroy());});
-          appBridge.on('upgrade',(req,socket,head)=>{void preview.relay(req,socket,head,context).catch(()=>socket.destroy());});
+          const relay=t.kind==='preview'?preview:t.kind==='dashboard'&&appManifest&&typeof t.projectId==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(t.projectId)?dashboards:null;
+          if(!relay||typeof t.id!=='string'||!/^[a-f0-9-]{36}$/.test(t.id)||!Number.isSafeInteger(t.revision)||t.revision<1||origin.protocol!==base.protocol||origin.port!==base.port||!origin.hostname.endsWith('.'+base.hostname)||!/^preview--[a-f0-9]{32}$/.test(alias)||origin.pathname!=='/'||origin.search||origin.hash||origin.username||origin.password){stream.destroy();return;}
+          const context={id:t.id,revision:t.revision,...(t.kind==='dashboard'?{projectId:t.projectId}:{}),origin:origin.origin,expires:Date.now()+900000,authorized:()=>!stopped&&control===current&&current.readyState===WebSocket.OPEN};
+          const appBridge=http.createServer((req,res)=>{void relay.relay(req,res,undefined,context).catch(()=>res.destroy());});
+          appBridge.on('upgrade',(req,socket,head)=>{void relay.relay(req,socket,head,context).catch(()=>socket.destroy());});
           previewBridges.add(appBridge);stream.once('close',()=>{appBridge.closeAllConnections();previewBridges.delete(appBridge);});appBridge.emit('connection',stream);
         }else bridge.emit('connection',stream);
       });
       current.on('error',()=>{});
       current.on('unexpected-response',(_req,res)=>{res.destroy();if([401,403].includes(res.statusCode)){stopped=true;status('tunnel authorization rejected; local COM remains available');}current.terminate();});
-      current.once('close',()=>{preview?.remote?.(false);clearInterval(heartbeat);clearInterval(previewPoll);for(const stream of streams)stream.destroy();schedule();});
+      current.once('close',()=>{preview?.remote?.(false);dashboards?.remote?.(false);clearInterval(heartbeat);clearInterval(previewPoll);for(const stream of streams)stream.destroy();schedule();});
     } catch {schedule();} finally {clearTimeout(deadline);}
   }
   void connect();

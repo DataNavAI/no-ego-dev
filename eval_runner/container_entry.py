@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import shlex
+import subprocess
 
 import yaml
 
@@ -97,9 +98,25 @@ def export() -> None:
     render_reports([result], directory / "report", markdown=True)
 
 
+def runtime_health() -> None:
+    # Eval profiles deliberately own their own gateways, not the image's S6 root.
+    # Prove tools and private writable-volume ownership, without making model calls.
+    import pwd
+    uid = pwd.getpwnam("hermes").pw_uid
+    for name in ("/opt/data", "/var/lib/ned", "/projects"):
+        info = Path(name).stat()
+        if not Path(name).is_dir() or info.st_uid != uid or info.st_mode & 0o077:
+            raise ValueError("Evaluation volume ownership unavailable")
+    subprocess.run(["/usr/local/bin/ned", "--version"], check=True,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+    subprocess.run(["/opt/hermes/.venv/bin/python", "-c", "import hermes_constants"],
+                   cwd="/opt/hermes", check=True, stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL, timeout=15)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("prepare", "export"))
+    parser.add_argument("action", choices=("prepare", "export", "runtime-health"))
     parser.add_argument("--provider")
     parser.add_argument("--model")
     parser.add_argument("--base-url")
@@ -110,6 +127,8 @@ def main() -> int:
             if not args.provider or not args.model:
                 raise ValueError("Provider and model required")
             prepare(args.provider, args.model, args.base_url, args.credential_source)
+        elif args.action == "runtime-health":
+            runtime_health()
         else:
             export()
         return 0

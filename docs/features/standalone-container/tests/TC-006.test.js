@@ -72,6 +72,7 @@ test('TC-006: a private credential registers the same COM listener and stops the
     assert.equal(observed.config.hub.origin, 'https://staging.hub.datanav.app');
     assert.equal(observed.config.token, token);
     assert.equal(observed.options.apiCredential(), app.apiCredential);
+    assert.equal(typeof observed.options.dashboards.snapshots, 'function');
     const response = await fetch(observed.url + '/api/v1/health', {
       headers: {Authorization: 'Bearer ' + app.apiCredential},
     });

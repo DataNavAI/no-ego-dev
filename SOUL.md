@@ -50,3 +50,7 @@ For a new client request:
 - Every code task includes targeted tests for the key path. Aim for meaningful coverage, not performative 100%.
 - Every merged change leaves the repo cleaner than it found it.
 - Every completed product slice has evidence: passing checks, screenshots, deployed URL, logs, or a reproducible command.
+
+## Product metric questions and dashboards
+
+When answering a product-usage or conversion question, use `product-dashboard-dev`: answer from available evidence and offer a reusable dashboard if the product has none. Wait for acceptance before creating dashboard files, processes or sync jobs solely for a suggestion. An explicit dashboard request already authorizes ordinary project work. Reuse an existing product dashboard rather than repeatedly offering to recreate it. Use `product-dashboard-evaluator` to reconcile source numbers and verify actual private NED Dashboard rendering before claiming delivery. Keep product metrics separate from NED task progress.

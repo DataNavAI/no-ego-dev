@@ -197,10 +197,13 @@ def run_container(eval_path: Path, output_root: Path, env_file: Path | None = No
                 private_env.chmod(0o600)
                 handle.write(credentials + "HERMES_DASHBOARD_BASIC_AUTH_USERNAME=eval\n"
                              + "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=" + secrets.token_urlsafe(32) + "\n")
-            call("run", "-d", "--name", identity, "--label", f"{LABEL}={identity}",
+            call("run", "-d", "--init", "--entrypoint", "/bin/sh",
+                 "--health-cmd", "PYTHONPATH=/opt/ned /opt/ned/python/bin/python /opt/ned/eval_runner/container_entry.py runtime-health",
+                 "--health-interval", "2s", "--health-timeout", "20s", "--health-retries", "3", "--name", identity, "--label", f"{LABEL}={identity}",
                  "--env-file", str(private_env), "--shm-size=512m",
                  "-v", volumes[0] + ":/opt/data", "-v", volumes[1] + ":/var/lib/ned",
-                 "-v", volumes[2] + ":/projects", image_id)
+                 "-v", volumes[2] + ":/projects", image_id, "-c",
+                 "chown hermes:hermes /opt/data /var/lib/ned /projects && chmod 700 /opt/data /var/lib/ned /projects && exec sleep infinity")
             if credential_source:
                 call("cp", str(credential_source), identity + ":/opt/ned-eval-credentials")
                 call("exec", identity, "chown", "-R", "hermes:hermes", "/opt/ned-eval-credentials")
@@ -210,7 +213,7 @@ def run_container(eval_path: Path, output_root: Path, env_file: Path | None = No
             if health == "healthy":
                 break
             if health == "unhealthy" or clock() >= health_deadline:
-                raise RuntimeError("NED container did not become healthy")
+                raise RuntimeError("Evaluation runtime toolchain did not become ready")
             pause(1)
         call("exec", identity, "mkdir", "-p", "/opt/ned-eval")
         call("exec", identity, "mkdir", "-p", "/opt/ned/workflows")
