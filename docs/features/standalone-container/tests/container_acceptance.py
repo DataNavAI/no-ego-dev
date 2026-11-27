@@ -198,7 +198,10 @@ def main():
             if args.expected_architecture:
                 assert node_architecture == args.expected_architecture  # noqa: S101
             assert http_checks() == {"projects": []}  # noqa: S101
-            expected_version = json.loads((ROOT / "package.json").read_text())["version"] + "+" + revision[:7]
+            metadata = json.loads(docker("exec", name, "cat", "/opt/ned/build-info.json"))
+            assert metadata["revision"] == revision  # noqa: S101
+            assert len(metadata["builtAt"]) == 14 and metadata["builtAt"].isdigit()  # noqa: S101
+            expected_version = json.loads((ROOT / "package.json").read_text())["version"] + "+" + metadata["builtAt"] + "." + revision[:7]
             assert docker("exec", "--user", "hermes", name, "ned", "--version") == expected_version  # noqa: S101
             docker("exec", "--user", "hermes", name, "/opt/ned/python/bin/python", "-c",
                    'import yaml,pathlib;h=pathlib.Path("/opt/data");m=yaml.safe_load((h/"distribution.yaml").read_text());'
