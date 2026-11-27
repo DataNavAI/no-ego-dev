@@ -13,6 +13,7 @@ export function mountComposerMedia({document,draft,getSession,changed,request=fe
   const picker=element('chat-files');
   if(!picker)return {pending:()=>false,ready:()=>false,ids:()=>[],clear(){},render(){}};
   let files=[];let locked=true;let selection=[0,0];
+  let uploads=0,mediaEpoch=0;
   const fileHelp=element('chat-file-help'),supportedFiles=element('chat-supported-files');
   const tools=element('chat-tools'),toggle=element('chat-tools-toggle');
   function showTools(open){
@@ -50,27 +51,36 @@ export function mountComposerMedia({document,draft,getSession,changed,request=fe
   element('chat-attach').addEventListener('click',()=>picker.click());
   picker.addEventListener('change',async()=>{
     const chosen=Array.from(picker.files);picker.value='';message('');
-    for(const file of chosen){
-      if(locked)break;
-      const extension=file.name.split('.').at(-1).toLowerCase();
-      if(!mimeTypes[extension]){message('Unsupported file type. Choose PNG, JPEG, WebP, TXT, MD, CSV, JSON, PDF or DOCX.');continue;}
-      if(!file.size||file.size>4194304){message('Files must be nonempty and at most 4 MB.');continue;}
-      if(mimeTypes[extension].startsWith('image/')&&(file.size>2097152||files.filter(row=>row.image).reduce((sum,row)=>sum+row.size,0)+file.size>2097152)){message('All images in one message must total at most 2 MB.');continue;}
-      if(files.length>=4||files.reduce((sum,row)=>sum+row.size,0)+file.size>16777216){message('Choose up to four files, at most 16 MB together.');continue;}
-      const row={name:file.name,size:file.size,image:mimeTypes[extension].startsWith('image/')};files.push(row);render();changed();
-      let failure='Attachment could not be uploaded. Try again.';
-      try{
-        const response=await request(`/api/v1/chat/sessions/${encodeURIComponent(getSession())}/attachments`,{method:'POST',headers:{'Content-Type':mimeTypes[extension],'X-NED-Filename':encodeURIComponent(file.name)},body:await file.arrayBuffer(),signal:AbortSignal.timeout(20000)});
-        const data=await response.json();
-        if(!response.ok){
-          if(typeof data?.error?.message==='string'&&data.error.message.trim())failure=data.error.message;
-          throw new Error(failure);
-        }
-        if(typeof data?.attachment?.id!=='string'||!data.attachment.id)throw new Error(failure);
-        row.id=data.attachment.id;
-      }catch{files=files.filter(file=>file!==row);message(failure);}
-      finally{render();changed();}
-    }
+    const session=getSession(),epoch=mediaEpoch;
+    if(!session||!chosen.length)return;
+    const current=()=>session===getSession()&&epoch===mediaEpoch;
+    uploads++;
+    try{
+      for(const file of chosen){
+        if(locked||!current())break;
+        const extension=file.name.split('.').at(-1).toLowerCase();
+        if(!mimeTypes[extension]){message('Unsupported file type. Choose PNG, JPEG, WebP, TXT, MD, CSV, JSON, PDF or DOCX.');continue;}
+        if(!file.size||file.size>4194304){message('Files must be nonempty and at most 4 MB.');continue;}
+        if(mimeTypes[extension].startsWith('image/')&&(file.size>2097152||files.filter(row=>row.image).reduce((sum,row)=>sum+row.size,0)+file.size>2097152)){message('All images in one message must total at most 2 MB.');continue;}
+        if(files.length>=4||files.reduce((sum,row)=>sum+row.size,0)+file.size>16777216){message('Choose up to four files, at most 16 MB together.');continue;}
+        const row={name:file.name,size:file.size,image:mimeTypes[extension].startsWith('image/')};files.push(row);render();changed();
+        let failure='Attachment could not be uploaded. Try again.';
+        try{
+          const body=await file.arrayBuffer();
+          if(!current())break;
+          const response=await request(`/api/v1/chat/sessions/${encodeURIComponent(session)}/attachments`,{method:'POST',headers:{'Content-Type':mimeTypes[extension],'X-NED-Filename':encodeURIComponent(file.name)},body,signal:AbortSignal.timeout(20000)});
+          const data=await response.json();
+          if(!response.ok){
+            if(typeof data?.error?.message==='string'&&data.error.message.trim())failure=data.error.message;
+            throw new Error(failure);
+          }
+          if(typeof data?.attachment?.id!=='string'||!data.attachment.id)throw new Error(failure);
+          row.id=data.attachment.id;
+        }catch{if(current()){files=files.filter(file=>file!==row);message(failure);}}
+        finally{render();changed();}
+      }
+    }finally{uploads--;changed();}
+
   });
   element('chat-add-link').addEventListener('click',()=>{
     selection=[draft.selectionStart ?? draft.value.length,draft.selectionEnd ?? draft.value.length];
@@ -88,5 +98,5 @@ export function mountComposerMedia({document,draft,getSession,changed,request=fe
       draft.value=result.text;changed();close();draft.setSelectionRange(result.caret,result.caret);element('chat-link-url').value='';element('chat-link-label').value='';
     }catch(error){element('chat-link-error').textContent=error.message;}
   });
-  return {pending:()=>files.some(file=>!file.id),ready:()=>files.some(file=>file.id),ids:()=>files.map(file=>file.id),clear(){files=[];message('');render();},render};
+  return {pending:()=>uploads>0,ready:()=>files.some(file=>file.id),ids:()=>files.map(file=>file.id),clear(){mediaEpoch++;files=[];message('');render();},render};
 }

@@ -1,3 +1,4 @@
+import {chatSelection,coreAgentActivity,defaultChatId,validChatId} from './chat-debug.js';
 import {decorateReactions,saveReaction} from './chat-reactions.js';
 import {ModelSetupError} from './model-setup.js';
 import {resolveWorkReferences} from './work-references.js';
@@ -10,7 +11,8 @@ import {readChatStream} from './chat-stream.js';
 import {writeTurnEvents} from './turn-events.js';
 import {requestDiagnostic,requestPhase} from './protocol/request-diagnostic.js';
 export function createChatGateway(options = {}) {
-  const fixedSession={id:'nedcom-main',title:'NED Chat',source:'api_server'};
+  const chatSession=id=>({id,title:id===defaultChatId?'NED Chat':`NED Chat · ${id.slice(defaultChatId.length+1)}`,source:'api_server'});
+  const resets=new Set();
   const turns=new Map();
   let waiting=0;
   let subscribers=0;
@@ -30,8 +32,19 @@ export function createChatGateway(options = {}) {
   if (configuredUrl!==undefined && !/^http:\/\/127\.0\.0\.1:[0-9]+\/?$/.test(configuredUrl)) throw new Error('Invalid Hermes gateway origin.');
   const chat=async function(req, res, send) {
     const resource = new URL(req.url, 'http://127.0.0.1');
-    const reacting=resource.pathname==='/api/chat/sessions/nedcom-main/reactions';
-    const fixed=resource.pathname==='/api/chat/sessions/fixed';
+    if(resource.pathname==='/api/chat/activity'&&req.method==='GET'&&!resource.search){
+      try{
+        const data=coreAgentActivity(options.databasePath);
+        const replies=[...turns.values()].filter(turn=>turn.status==='pending').map(turn=>({
+          id:turn.id,role:'chat',state:turn.stopAccepted?'stopping':'running',time:turn.startedAt,
+        }));
+        return send(200,{agents:[...replies,...data.agents],events:data.events});
+      }catch{return send(503,{error:{code:'activity_unavailable',message:'Agent activity is unavailable.'}});}
+    }
+    const reactionSession=resource.pathname.match(/^\/api\/chat\/sessions\/([^/]+)\/reactions$/)?.[1];
+    const reacting=validChatId(reactionSession);
+    const resetting=resource.pathname==='/api/chat/sessions/reset';
+    const fixed=resetting||resource.pathname==='/api/chat/sessions/fixed';
     const match = resource.pathname.match(/^\/api\/chat\/sessions(?:\/([A-Za-z0-9_-]{1,200})\/(messages|chat|turns|attachments)(?:\/([a-f0-9-]{36})(\/(?:events|stop))?)?)?$/);
     if (!match && !fixed && !reacting) return send(404, {error:{code:'not_found',message:'Not found.'}});
     const mutation = req.method === 'POST';
@@ -54,12 +67,16 @@ export function createChatGateway(options = {}) {
       if(!/^http:\/\/127\.0\.0\.1:[0-9]+\/?$/.test(settings.url)||!settings.key)throw new Error();
       origin=new URL(settings.url).origin;key=settings.key;
     } catch {return send(503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}});}
+    const identity=context(origin,key);
+    const trackedSession=reactionSession??match?.[1];
+    const current=()=>chatSelection(options.databasePath,origin);
+    const stale=()=>send(409,{error:{code:'chat_session_changed',message:'Chat was reset. Reload to continue.'}});
+    if(validChatId(trackedSession)&&trackedSession!==current())return stale();
     if(reacting){
       if(resource.search)return send(400,{error:{code:'invalid_reaction',message:'Invalid message reaction.'}});
-      return saveReaction(req,send,{databasePath:options.databasePath,origin,key,session:fixedSession.id});
+      return saveReaction(req,send,{databasePath:options.databasePath,origin,key,session:reactionSession});
     }
     prune();
-    const identity=context(origin,key);
     if(upload){
       if(!req.headers['content-type'])return send(400,{error:{code:'invalid_attachment',message:'Choose a supported file type.'}});
       try{return send(201,{attachment:await attachments.upload(req,match[1],identity)});}
@@ -119,7 +136,7 @@ export function createChatGateway(options = {}) {
     if(fixed||match[2]!=='chat')res.once('close', abort);
     const timer = setTimeout(abort, !fixed&&match[2] === 'chat' ? 600000 : 15000);
     try {
-      let body,prepared;
+      let body,prepared,expected;
       if (mutation) {
         let bytes = 0; const chunks = [];
         for await (const chunk of req) {
@@ -129,7 +146,7 @@ export function createChatGateway(options = {}) {
         }
         let input;
         try { input = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { return send(400,{error:{code:'invalid_input',message:'Invalid chat request.'}}); }
-        if (!input || Array.isArray(input) || typeof input !== 'object' || (fixed ? Object.keys(input).length : match[2] === 'chat' ? typeof input.input !== 'string' || input.input.length > 8000 || !input.input.trim()&&!input.attachments?.length&&!input.references?.length || Object.keys(input).some(name => !['input','attachments','references'].includes(name)) : Object.keys(input).length)) return send(400,{error:{code:'invalid_input',message:'Invalid chat request.'}});
+        if (!input || Array.isArray(input) || typeof input !== 'object' || (resetting ? Object.keys(input).length!==1||!validChatId(input.session_id)||Boolean(resource.search) : fixed ? Object.keys(input).length : match[2] === 'chat' ? typeof input.input !== 'string' || input.input.length > 8000 || !input.input.trim()&&!input.attachments?.length&&!input.references?.length || Object.keys(input).some(name => !['input','attachments','references'].includes(name)) : Object.keys(input).length)) return send(400,{error:{code:'invalid_input',message:'Invalid chat request.'}});
         if(!fixed&&match[2]==='chat'){
           let contextualInput;
           try{contextualInput=resolveWorkReferences(input.references,input.input,options.databasePath);}
@@ -142,13 +159,18 @@ export function createChatGateway(options = {}) {
           try{model=await options.beforeChat(req,res);}
           catch(error){return send(error instanceof ModelSetupError?error.status:503,{error:{code:error instanceof ModelSetupError?error.code:'model_setup_unavailable',message:error instanceof ModelSetupError?error.message:'Model settings are unavailable. Check configuration and try again.'}});}
         }
-        body = JSON.stringify(fixed ? fixedSession : match[2] === 'chat' ? {input:prepared.input,...model} : {source:'nedcom'});
+        if(resetting)expected=input.session_id;
+        body = JSON.stringify(fixed ? {} : match[2] === 'chat' ? {input:prepared.input,...model} : {source:'nedcom'});
       }
       let turn;
       if(!fixed&&match[2]==='chat'){
+        if(validChatId(match[1])){
+          if(match[1]!==current())return stale();
+          if(resets.has(origin))return send(409,{error:{code:'chat_reset_pending',message:'Chat is being reset.'}});
+        }
         if([...turns.values()].some(existing=>existing.session===match[1]&&existing.origin===origin&&existing.status==='pending'))return send(409,{error:{code:'turn_pending',message:'Hermes is responding.'}});
         if(turns.size>=16)return send(503,{error:{code:'gateway_unavailable',message:'Hermes gateway is unavailable.'}});
-        turn={id:randomUUID(),session:match[1],origin,context:identity,status:'pending',activity:'working',activityVersion:1,abort,waiters:new Set(),listeners:new Set()};turns.set(turn.id,turn);
+        turn={id:randomUUID(),session:match[1],origin,context:identity,status:'pending',startedAt:new Date(now()).toISOString(),activity:'working',activityVersion:1,abort,waiters:new Set(),listeners:new Set()};turns.set(turn.id,turn);
         prepared.consume();
       }
       const finish=(status,data)=>{
@@ -169,20 +191,35 @@ export function createChatGateway(options = {}) {
           for await(const chunk of upstream.body){bytes+=chunk.length;if(bytes>4194304){controller.abort();throw new Error('Response too large');}chunks.push(chunk);}
           return {status:upstream.status,data:JSON.parse(Buffer.concat(chunks).toString('utf8'))};
         };
-        const valid=result=>result?.data?.session?.id===fixedSession.id&&result.data.session.source===fixedSession.source&&result.data.session.title===fixedSession.title;
+        const valid=(result,session)=>result?.data?.session?.id===session.id&&result.data.session.source===session.source&&result.data.session.title===session.title;
+        if(resetting){
+          if(expected!==current())return stale();
+          if(resets.has(origin)||[...turns.values()].some(turn=>turn.session===expected&&turn.origin===origin&&turn.status==='pending')){
+            return send(409,{error:{code:'chat_busy',message:'Wait for the current reply or reset to finish.'}});
+          }
+          resets.add(origin);
+          try{
+            const next=chatSession(`${defaultChatId}-${randomUUID()}`);
+            const result=await read('POST','/api/sessions',JSON.stringify(next));
+            if(result.status!==201||!valid(result,next))throw new Error('New chat unavailable');
+            if(!chatSelection(options.databasePath,origin,{expected,next:next.id}))return stale();
+            return send(200,{session:next});
+          }finally{resets.delete(origin);}
+        }
+        const fixedSession=chatSession(current());
         let result=await read('GET',`/api/sessions/${fixedSession.id}`);
         if(result.status===404){
-          result=await read('POST','/api/sessions',body);
+          result=await read('POST','/api/sessions',JSON.stringify(fixedSession));
           if(result.status===409)result=await read('GET',`/api/sessions/${fixedSession.id}`);
         }
-        if(![200,201].includes(result.status)||!valid(result))throw new Error('Invalid fixed session');
+        if(![200,201].includes(result.status)||!valid(result,fixedSession))throw new Error('Invalid fixed session');
         const activeTurn=[...turns.values()].find(turn=>turn.session===fixedSession.id&&turn.context===identity&&turn.status==='pending');
         return send(200,{session:fixedSession,...(activeTurn?{active_turn:{id:activeTurn.id,status:'pending'}}:{})});
       }
       const path = match[1] ? `/api/sessions/${match[1]}/${match[2]}${turn?'/stream':''}` : '/api/sessions';
       if(!mutation&&match[2]==='messages'){
         const history=await readHistoryPage({origin,session:match[1],offset,key,signal:controller.signal});
-        return send(200,match[1]===fixedSession.id?decorateReactions(options.databasePath,origin,key,match[1],history):history);
+        return send(200,validChatId(match[1])?decorateReactions(options.databasePath,origin,key,match[1],history):history);
       }
       const query = mutation ? '' : match[2] === 'messages' ? `?order=latest&limit=50&offset=${offset}` : `?limit=50&offset=${offset}`;
       const upstream = await fetch(origin + path + query,{method:req.method,headers:{Authorization:`Bearer ${key}`,...(mutation ? {'Content-Type':'application/json'} : {})},body,redirect:'error',signal:controller.signal});

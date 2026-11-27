@@ -1,6 +1,6 @@
 import {reactionEmoji} from './reaction-emoji.js';
 
-export function renderReaction(row,document,request){
+export function renderReaction(row,document,request,sessionId='nedcom-main'){
   const menu=document.createElement('details');
   menu.className='message-reaction';
   const toggle=document.createElement('summary');
@@ -24,7 +24,7 @@ export function renderReaction(row,document,request){
       for(const item of buttons.values())item.disabled=true;
       notice.textContent='';
       try{
-        const response=await request('/api/v1/chat/sessions/nedcom-main/reactions',{
+        const response=await request(`/api/v1/chat/sessions/${encodeURIComponent(sessionId)}/reactions`,{
           method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({message_id:String(row.id),target:row.reaction_target,emoji:next}),
           signal:AbortSignal.timeout(10000),

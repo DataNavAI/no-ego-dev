@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "d5d09c9b6541083a52f25656959b136a9b928faf",
+  "result": "pass",
+  "tested_at": "2026-11-27T19:31:57.681241+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "commands": [
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-059.test.js docs/features/core-orchestration/tests/TC-004.test.js"
+  ],
+  "observations": "Desktop and mobile Chromium show the Reset chat action and agent inventory. Pending and stale reset or send attempts are rejected. Previous history is preserved, and synthetic lifecycle metadata excludes private payloads."
+}
