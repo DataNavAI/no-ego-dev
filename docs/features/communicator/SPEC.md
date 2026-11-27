@@ -984,3 +984,36 @@ Actor: authenticated desktop NED user; critical for switching between work overv
 Coverage: FR-097/098/100 → CUJ-035 → TC-055, existing TC-021/032/052; FR-099 → CUJ-035 → TC-056 and existing work/details/reference cases; FR-101 → CUJ-035 → TC-056 with existing secret-management TC-003/006/007 and provider-identity TC-007 for unchanged private forms. Mobile regression: TC-053. Physical-device checks remain outside this desktop refinement.
 
 Traceability: the unmerged desktop draft used FR-096–100/CUJ-034/TC-054–055; these provisional IDs are now FR-097–101/CUJ-035/TC-055–056 to preserve the already merged all-project identifiers.
+
+## Muse-inspired mobile navigation (#279)
+Status: implemented. [Visual guidance and benchmark](design/mobile-muse/README.md) refine mobile FR-090/093/094 while retaining desktop FR-097–101, data, privacy and single-session contracts.
+- FR-102: Below768px, show a safe-area-aware bottom navigation with labeled44px-or-larger Chat, Goals, Preview and More destinations. Indicate the current destination. More exposes Dashboard, Artifacts, Settings and Debug. Project tabs remain the desktop navigation; avoid a duplicate mobile tab strip. Return to the same chat/draft/reference/media/scroll and mounted Preview nodes.
+- FR-103: Mobile uses a quiet white conversation canvas, blue user bubbles and muted assistant prose surfaces with secondary actions outside the prose surface. Trusted authorization/secret cards remain distinct with their existing behavior. Keep accessible author labels, Markdown/code/media and streaming. Composer sits directly above navigation; controls stay44px.
+- FR-104: Floating identity/project/back controls and the existing jump-to-latest pill use restrained rounded surfaces, visible focus and adequate contrast. Keep version/current model on Chat, project identity in Project, and existing actions only. Do not copy unsupported call, gift, avatar-personality or voice features.
+- FR-105: Navigation respects safe-area padding and yields space to the composer when a keyboard-sized visual viewport is active; restoration retains navigation state. Menus dismiss on selection/outside/Escape, restore focus and remain usable from Chat or Project. Mobile/desktop changes preserve menu nodes, draft/selected view and focus without hidden targets. Enlarged text may increase control height but must not overflow the page or cover the composer.
+
+### CUJ-036: Move between conversation and project work from a phone
+Actor: authenticated mobile NED user. Critical because frequent navigation should be reachable without reaching for small header controls. Start in the fixed chat with an unsent draft and reference. Read messages, open Goals/Preview/Dashboard from the bottom bar, use More for protected Settings/Artifacts, return to Chat and continue the same draft. Success: clear selected destination, accessible controls, preserved conversation/preview state and bounded keyboard/composer geometry. Failure/recovery: existing truthful empty/loading/error/provider states remain; no task/model/provider action starts from navigation.
+
+### TC-057: Bottom navigation, focus and composer continuity
+- Journey / requirements: CUJ-036 / FR-102–105.
+- Level / automation: rendered browser integration; [TC-057.test.js](tests/TC-057.test.js). Existing TC-051 owns keyboard viewport/media/stream behavior, TC-052/053 own resize/navigation continuity, TC-046 owns palette contrast and secret/provider cases retain protected-form boundaries.
+- Preconditions: disposable browserChat profile/database, configured synthetic model, persisted synthetic conversation;390×844 then320/430 widths; no real model/provider access.
+- Given: chat with an unsent draft/reference and a bottom navigation.
+- When: choose each direct destination; use More for Artifacts/Settings, dismiss with Escape, return to Chat, resize desktop/mobile, enlarge text and reduce/restore visual viewport.
+- Then: all four navigation targets are at least44px, selected destination is indicated, no duplicated mobile tabs or document overflow, composer is above navigation, draft/reference and Preview marker survive, menu is reachable on every view and focus never remains hidden. Navigation yields room in keyboard mode and returns afterwards.
+- Steps: run `node --test docs/features/communicator/tests/TC-057.test.js`, plus existing focused cases above. Named assertions prove state/geometry; synthetic frames support manual review.
+- Variants:320/390/430, desktop1280, enlarged text, keyboard-sized viewport, no project, secondary destinations, auth loss covered by existing cases. No new persistence/concurrency/provider boundary is introduced.
+- Cleanup / evidence: fixture closes its owned browser/server and removes temporary runtime state; assert no real chat turn/console errors. Written expectations are not passes.
+
+### TC-058: Mobile visual acceptance
+- Journey / requirements: CUJ-036 / FR-102–105.
+- Level / automation: manual; use browserChat with synthetic messages, structured card and CLI-created temporary project/work.
+- Preconditions: final code candidate, Chromium;320×740/390×844/430×900, landscape740×390, short keyboard viewport and enlarged text; desktop1280 regression.
+- Given: actual rendered chat and populated project work.
+- When: inspect Chat/Goals/Preview/More/Settings, floating controls, message actions, structured cards, composer and jump-to-latest state; navigate and resize; inspect keyboard shrink/restore.
+- Then: a coherent bottom-led hierarchy, comfortable labels/targets, no overlay collisions, clipped content or competing tab bars; clear current state and preserved draft/ref/preview. All controls are existing truthful NED actions. Compare against supplied screenshot structure and linked guidance, not a claim of exact Muse parity.
+- Cleanup: remove disposable state and retain only synthetic captures/logs outside the distribution. Publish guidance at immutable issue image URL; do not publish original private Muse screenshot/conversation.
+- Pass evidence: inspected actual pixels and TC-057/051/052/053/046 results. Physical Android/iOS keyboard/rotation and full assistive-technology/browser matrix remain unverified unless separately executed. No external provider approval or real model message is required.
+
+Coverage: FR-102–105 → CUJ-036 → TC-057/058; existing TC-051/052/053/046 and protected-form regressions retain their unique risks.

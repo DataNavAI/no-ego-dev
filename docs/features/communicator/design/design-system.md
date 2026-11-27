@@ -61,3 +61,6 @@ The scoped `public/conversation.css` extends the existing theme: message body16p
 
 ## Desktop project context refinement (#269–272)
 Use existing `--surface` (white), `--border` and `--base-secondary` for the context header, navigation and work content. Preview canvas uses `#fafafa` behind its `--surface` state card. Working task rows use `#f7f8f8` with the existing positive dark `#04703c` edge and textual status. These desktop surfaces supersede the prior gray full-pane surface; mobile palette and chat colors remain unchanged. No parallel component/token library is introduced.
+
+## Muse-inspired mobile refinement (#279)
+Below768px the chat canvas uses existing `--surface` white; assistant Markdown uses the existing muted `#e9edf2` surface, with secondary controls outside it. Blue user messages retain `#cce4fa`; jump-to-latest uses that surface with `#193b58` text. Floating identity/Project/Back controls use white, a quiet `#f0f1f3` border and restrained shadow. Bottom navigation has four labeled targets (10px caption,20px existing icons, minimum52px control height); active state uses existing light surface and bold text. Larger text can grow navigation; More's placement follows its measured height. Keep safe-area padding on navigation and prioritize the composer in keyboard-sized views. Desktop tokens and geometry remain unchanged.

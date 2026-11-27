@@ -12,8 +12,8 @@ test('TC-053: grouped mobile header, direct Project and preserved chat use clear
   await page.evaluate(()=>globalThis.document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:'sample',itemId:'task',title:'Review task',projectName:'Sample'}})));
   const transcript=page.locator('#transcript');await transcript.evaluate(n=>{n.scrollTop=120;});await expect.poll(()=>transcript.evaluate(n=>n.scrollTop)).toBe(120);const scroll=await transcript.evaluate(n=>n.scrollTop);
   await page.locator('#mobile-project-toggle').click();await expect(page.locator('#preview')).toBeVisible();await expect(page.locator('#sidebar')).toBeHidden();
-  await page.locator('#preview-tab').click();await page.locator('#preview-panel').evaluate(n=>{n.dataset.retained='yes';});
-  await page.locator('#artifacts-pane-tab').click();await expect(page.locator('#artifacts-panel')).toContainText('Artifact');
+  await page.locator('#mobile-preview-nav').click();await page.locator('#preview-panel').evaluate(n=>{n.dataset.retained='yes';});
+  await page.locator('#navigation-toggle').click();await page.locator('#artifacts-shortcut').click();await expect(page.locator('#artifacts-panel')).toContainText('Artifact');
   await page.locator('#context-close').click();await expect(page.locator('#mobile-project-toggle')).toBeFocused();
   await expect(f.draft).toHaveValue('Keep my draft');await expect(page.locator('#chat-task-references')).toContainText('Review task');assert.equal(await transcript.evaluate(n=>n.scrollTop),scroll);
   await page.locator('#mobile-project-toggle').click();assert.equal(await page.locator('#preview-panel').getAttribute('data-retained'),'yes');await page.locator('#context-close').click();
@@ -32,7 +32,7 @@ test('TC-053: grouped mobile header, direct Project and preserved chat use clear
 test('TC-053: empty mobile composer stays at the bottom with a long model label and enlarged text',async t=>{
   const f=await browserChat(t,{viewport:{width:320,height:740}});await f.ready();
   await f.page.locator('#current-model').evaluate(n=>{n.textContent='A very long configured provider/model name '.repeat(4);});
-  const composer=await f.page.locator('.compose-dock').boundingBox();assert.ok(composer.y+composer.height>690);
+  const composer=await f.page.locator('.compose-dock').boundingBox(),nav=await f.page.locator('#mobile-bottom-nav').boundingBox();assert.ok(nav.y+nav.height>730);assert.ok(composer.y+composer.height<=nav.y&&composer.y+composer.height>=nav.y-16);
   await f.page.evaluate(()=>{const nodes=[...globalThis.document.querySelectorAll('#sidebar *')];const sizes=nodes.map(n=>[n,parseFloat(globalThis.getComputedStyle(n).fontSize)]);for(const [n,size]of sizes)n.style.fontSize=`${size*2}px`;});
   await expect(f.page.locator('#mobile-project-toggle')).toBeInViewport({ratio:1});await expect(f.page.locator('#navigation-toggle')).toBeInViewport({ratio:1});
   assert.equal(await f.page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);
