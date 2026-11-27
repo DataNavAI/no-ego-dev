@@ -80,6 +80,16 @@ export function createCoreStore({database,databasePath,home,env,clock=()=>new Da
   function createTick(key){return transaction(()=>{if(typeof key!=='string'||!key.length||key.length>128)fail('invalid_idempotency_key',400);const old=sql.prepare('SELECT * FROM ned_core_tick_requests WHERE idempotency_scope=?').get(key);if(old)return decode(old);const id=randomUUID();sql.prepare("INSERT INTO ned_core_tick_requests(id,idempotency_scope,state,created_at) VALUES(?,?,'pending',?)").run(id,key,now());return getTick(id);});}
   function getTick(id){const row=decode(sql.prepare('SELECT * FROM ned_core_tick_requests WHERE id=?').get(id));if(!row)fail('not_found',404);return row;}
   const store={db,sql,now,transaction,project,event,capacity,requireCapacity,getAttempt,updateAttempt,bind,
+    recordAgentLifecycle(projectId,attemptId,sessionId,type){
+      return transaction(()=>{
+        const previous=sql.prepare(`SELECT event_type FROM ned_core_events
+          WHERE project_id=? AND entity_type='attempt' AND entity_id=?
+            AND event_type IN ('subagent.start','subagent.complete') AND json_extract(payload_json,'$.sessionId')=?
+          ORDER BY sequence DESC LIMIT 1`).get(projectId,attemptId,sessionId)?.event_type;
+        if(previous==='subagent.complete'||previous===type)return;
+        event(projectId,'attempt',attemptId,type,{sessionId});
+      });
+    },
     listAttempts({states,projectId,limit=100}={}){const clauses=[],args=[];if(projectId){project(projectId);clauses.push('project_id=?');args.push(projectId);}if(states?.length){clauses.push(`state IN (${states.map(()=>'?').join(',')})`);args.push(...states);}return sql.prepare(`SELECT * FROM ned_core_attempts ${clauses.length?'WHERE '+clauses.join(' AND '):''} ORDER BY created_at,id LIMIT ?`).all(...args,limit).map(decode);},
     markAdmission(projectId,id,{request,admissionDeadline,gatewayIdentity}){return transaction(()=>{const row=getAttempt(projectId,id);if(row.admissionSentAt)return false;updateAttempt(projectId,id,{request,requestHash:hash(request),admissionSentAt:now(),admissionDeadline,gatewayIdentity,state:'dispatching'},'admission.marked');return true;});},
     updateBinding(id,{namingState}){if(!['pending','confirmed','failed'].includes(namingState))fail('invalid_patch',400);sql.prepare('UPDATE ned_core_bindings SET naming_state=? WHERE id=?').run(namingState,id);return decode(sql.prepare('SELECT * FROM ned_core_bindings WHERE id=?').get(id));},

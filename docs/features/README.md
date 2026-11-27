@@ -108,4 +108,4 @@ Desktop Settings follow-up #274 groups existing access/provider/secret controls 
 
 Mobile bottom navigation and Muse-inspired polish (#279) is implemented within [communicator FR-102–105/CUJ-036/TC-057–058](communicator/SPEC.md#muse-inspired-mobile-navigation-279); physical-device keyboard/rotation coverage remains unverified.
 
-Communicator report-formatting guidance: [FR-106 / CUJ-037 / manual TC-059](communicator/SPEC.md#readable-agent-authored-reports-286); historical messages and renderer behavior unchanged.
+Communicator report-formatting guidance: [FR-108 / CUJ-038 / manual TC-060](communicator/SPEC.md#readable-agent-authored-reports-286); historical messages and renderer behavior unchanged.

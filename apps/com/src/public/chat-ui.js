@@ -9,6 +9,7 @@ import {consumeTurnStream} from './turn-stream.js';
 import {recordChatDiagnostic,recordRequestDiagnostic} from './debug-pane.js';
 import {classifyFailureBody,readFailureBody} from './request-diagnostic.js';
 const assistantName = 'NED';
+const validSession=session=>session&&/^(?:nedcom-main|nedcom-main-[a-f0-9-]{36})$/.test(session.id)&&session.title===(session.id==='nedcom-main'?'NED Chat':`NED Chat · ${session.id.slice('nedcom-main-'.length)}`)&&session.source==='api_server';
 
 export function mergePage(current, page, direction, newerCount = page.length) {
   validateMessagePage(page);
@@ -28,6 +29,7 @@ export function mountChat(libraries) {
   const element = id => document.getElementById(id);
   const transcript = element('transcript');
   const status = element('chat-status');
+  const resetChat = element('debug-reset-chat');
   const providerRequests = element('chat-provider-requests');
   const messageNodes = () => Array.from(transcript.children).filter(node=>node!==providerRequests);
   // Keep an existing action before a subsequent turn, so the reply remains the live tail.
@@ -126,6 +128,7 @@ export function mountChat(libraries) {
   function render() {
     for (const id of controls) if(element(id))element(id).disabled = busy;
     const sending=Boolean(activeTurn);
+    if(resetChat)resetChat.disabled=busy||loadingOlder||media.pending()||!historyReady||!sessionId;
     if(empty)empty.hidden=!sessionId||!historyReady||!modelSetup.ready()||busy||messageNodes().length>0||providerRequests?.hidden===false;
     renderSend();
     media.render(busy||uncertain||!sessionId||!historyReady);
@@ -166,7 +169,7 @@ export function mountChat(libraries) {
       article.append(author,content);
       if(row.role==='assistant'&&row.reaction_target){
         const actions=content.querySelector('.message-actions');
-        const reaction=renderReaction(row,document,fetch);
+        const reaction=renderReaction(row,document,fetch,sessionId);
         if(actions)actions.prepend(reaction);else article.append(reaction);
       }
       return article;
@@ -224,6 +227,7 @@ export function mountChat(libraries) {
     if (!response.ok) {
       const body=await readFailureBody(response);failureKind=classifyFailureBody(body);
       let failure;try{failure=JSON.parse(body);}catch{failure=null;}
+      if(response.status===409&&['chat_busy','chat_session_changed','chat_reset_pending'].includes(failure?.error?.code))throw Object.assign(new Error(failure.error.message),{code:failure.error.code});
       if(response.status===400&&['invalid_attachment','invalid_reference'].includes(failure?.error?.code))throw Object.assign(new Error(failure.error.message),{code:failure.error.code});
       throw new Error('Unavailable');
     }
@@ -293,7 +297,7 @@ export function mountChat(libraries) {
     recordChatDiagnostic(mutation?'sending':'loading');
     element('chat-retry').hidden=true;
     try {await work();if(!mutation)recordChatDiagnostic('ready');status.textContent = refreshNeeded || olderNotice || (lastStopped?'Response stopped.':sessionId ? '' : 'Start a new chat.');}
-    catch(error) {if(error.reconnectable)reconnectNeeded=true;recordChatDiagnostic('failed');status.textContent = ['invalid_attachment','invalid_reference'].includes(error.code)?error.message:mutation ? 'Delivery could not be confirmed. Reload the session before sending again.' : error.code==='history_changed' ? refreshNeeded : 'Chat is unavailable. Check the Hermes gateway, then retry.';element('chat-retry').hidden=false;if(mutation&&!['invalid_attachment','invalid_reference'].includes(error.code)){uncertain=true;markIncomplete();}}
+    catch(error) {if(error.reconnectable)reconnectNeeded=true;recordChatDiagnostic('failed');status.textContent = ['invalid_attachment','invalid_reference','chat_session_changed','chat_reset_pending'].includes(error.code)?error.message:mutation ? 'Delivery could not be confirmed. Reload the session before sending again.' : error.code==='history_changed' ? refreshNeeded : 'Chat is unavailable. Check the Hermes gateway, then retry.';element('chat-retry').hidden=false;if(mutation&&!['invalid_attachment','invalid_reference'].includes(error.code)){uncertain=true;markIncomplete();}}
     finally {
       busy=false;render();
       if(reconnectQueued)reconnectChat();
@@ -343,7 +347,8 @@ export function mountChat(libraries) {
     recordChatDiagnostic('connecting');
     reconnectNeeded=false;historyReady=false;
     const data=await api('/fixed',{});
-    if(data.session?.id!=='nedcom-main'||data.session.title!=='NED Chat'||data.session.source!=='api_server')throw new Error('Unavailable');
+    if(!validSession(data.session))throw new Error('Unavailable');
+    if(sessionId&&sessionId!==data.session.id)media.clear();
     sessionId=data.session.id;
     await history();
     await fillUnderfilled();
@@ -386,6 +391,29 @@ export function mountChat(libraries) {
   globalThis.addEventListener?.('offline',()=>{if(sessionId)reconnectNeeded=true;});
   globalThis.addEventListener?.('online',reconnectChat);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)reconnectChat();});
+  resetChat?.addEventListener('click',async()=>{
+    if(busy||loadingOlder||media.pending()||!historyReady||!sessionId)return;
+    if(!globalThis.confirm('Start a fresh chat? Your previous conversation will be kept. This clears your draft and anything attached to it.'))return;
+    const notice=element('debug-reset-status');
+    busy=true;render();
+    notice.textContent='Starting a fresh chat…';
+    let changed=false;
+    try{
+      const data=await api('/reset',{session_id:sessionId});
+      if(!validSession(data.session)||data.session.id===sessionId)throw new Error();
+      changed=true;
+      sessionId=data.session.id;historyReady=false;rows=[];providerAfter=undefined;
+      clearTransientReferences();replaceMessages([]);media.clear();references.clear();
+      draft.value='';fitDraft();
+      await initialize();
+      status.textContent='';
+      notice.textContent='Fresh chat ready.';
+      document.defaultView?.dispatchEvent(new Event('ned-chat-settled'));
+    }catch(error){
+      notice.textContent=error.code?error.message:changed?'Chat was reset. Reload chat to continue.':'Could not confirm the reset. Reload chat to check the current session.';
+      if(changed||error.code==='chat_session_changed'||!error.code)element('chat-retry').hidden=false;
+    }finally{busy=false;render();if(reconnectQueued)reconnectChat();}
+  });
   element('older').addEventListener('click',()=>void loadOlder());
   element('newer').addEventListener('click',()=>void action(()=>history('newer')));
   element('latest').addEventListener('click',()=>{
