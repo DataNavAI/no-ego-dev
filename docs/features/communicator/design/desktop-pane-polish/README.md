@@ -11,3 +11,6 @@ Four initial action items plus the Settings finding #274 from desktop visual rev
 | #274 Settings groups | [Image](05-settings.png), [source](05-settings.html) | Preserve all credential semantics; clarify sections and action spacing |
 
 Review actual implemented Goals, Dashboard, Preview, Artifacts and Settings at1024/1280/1440px, minimum resized pane,200% text, and phone regression. Automation catches layout/state regressions; TC-056 requires visual judgment from captures. No real authorization data or private conversation is included.
+
+### Dashboard metric scaling supplement (#271)
+[Guidance image](06-metrics.png) / [source](06-metrics.html): the enlarged-text review found character-stacked labels in four forced columns. Use text-relative container sizing to switch to two columns; the rendered TC-055 regression verifies labels stay within two lines at the narrow bound.

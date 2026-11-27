@@ -18,6 +18,14 @@ test('TC-055: desktop project content has useful width, single-row tabs and reac
  await page.locator('#goals-pane-tab').focus();await page.locator('#goals-pane-tab').press('End');
  await expect(page.locator('#workspace-settings-tab')).toBeFocused();await expect(page.locator('#workspace-settings-tab')).toBeInViewport({ratio:1});await expect(page.locator('#settings')).toBeVisible();
  for(const id of ['goals-pane-tab','artifacts-pane-tab','preview-tab','dashboard-tab','workspace-settings-tab']){const b=await page.locator('#'+id).boundingBox();assert.ok(b.height>=44&&b.width>=44);}
+ await page.locator('#dashboard-tab').click();await expect(page.locator('.dashboard-metrics dt')).toHaveCount(4);
+ await page.locator('#dashboard').evaluate(root=>{const sizes=[root,...root.querySelectorAll('*')].map(n=>[n,parseFloat(globalThis.getComputedStyle(n).fontSize)]);for(const [n,size]of sizes)n.style.fontSize=`${size*2}px`;});
+ for(const label of await page.locator('.dashboard-metrics dt').all()){
+  const size=await label.evaluate(n=>({height:n.getBoundingClientRect().height,line:parseFloat(globalThis.getComputedStyle(n).lineHeight)}));
+  assert.ok(size.height<=size.line*2+1,'metric labels remain readable within two lines at200% text in a narrow pane');
+ }
+ await page.locator('#dashboard').evaluate(root=>{for(const n of [root,...root.querySelectorAll('*')])n.style.removeProperty('font-size');});
+ await page.locator('#workspace-settings-tab').click();
  await page.locator('#context-close').click();await page.locator('#context-toggle').click();await expect(page.locator('#settings')).toBeVisible();await expect(f.draft).toHaveValue('Keep this desktop draft');
  assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);
  assert.equal(f.turns.length,0);assert.deepEqual(f.errors,[]);
