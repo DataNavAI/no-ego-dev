@@ -233,6 +233,10 @@ if [[ "$install_ready" != 1 ]]; then
     PATH="$staging/runtime/bin:$PATH" "$staging/runtime/bin/npm" ci --omit=dev --no-audit --no-fund
   )
 
+  if [[ -f "$staging/app/scripts/stamp-version.mjs" ]]; then
+    "$staging/runtime/bin/node" "$staging/app/scripts/stamp-version.mjs" "$NED_REVISION"
+  fi
+
   write_launcher "$staging/ned-launcher"
   launcher_source_staging="$INSTALL_ROOT/.ned-launcher.$$"
   cp "$staging/app/bin/ned-launcher.js" "$launcher_source_staging"

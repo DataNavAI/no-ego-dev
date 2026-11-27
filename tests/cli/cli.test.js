@@ -8,7 +8,7 @@ test('CLI reports version and current local usage without credentials', () => {
   for (const args of [['--version'], ['version']]) {
     const result = spawnSync(process.execPath, ['bin/ned.js', ...args], { encoding: 'utf8', env: { PATH: '/nonexistent' }, timeout: 5000 });
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout.trim(), `0.3.0+${revision.slice(0,7)}`);
+    assert.match(result.stdout.trim(), new RegExp(`^0\\.3\\.0\\+(?:[0-9]{14}\\.)?${revision.slice(0,7)}$`));
     assert.equal(result.stderr, '');
   }
 });

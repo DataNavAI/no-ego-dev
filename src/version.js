@@ -43,9 +43,25 @@ export function sourceRevision(root=rootDirectory){
   return null;
 }
 
+export function buildTimestamp(date=new Date()){
+  return date.toISOString().replace(/[-:T]/g,'').slice(0,14);
+}
+
+function stampedTime(root,revision){
+  try{
+    const metadata=JSON.parse(text(path.join(root,'build-info.json')));
+    const value=metadata.builtAt;
+    if(!revision||metadata.revision!==revision||typeof value!=='string'||!/^\d{14}$/.test(value))return null;
+    const iso=`${value.slice(0,4)}-${value.slice(4,6)}-${value.slice(6,8)}T${value.slice(8,10)}:${value.slice(10,12)}:${value.slice(12,14)}Z`;
+    if(buildTimestamp(new Date(iso))===value)return value;
+  }catch{/* Legacy, malformed or stale metadata has no build timestamp. */}
+  return null;
+}
+
 export function nedVersion(root=rootDirectory){
   const {version}=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8'));
   if(typeof version!=='string'||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))throw new Error('Invalid NED base version');
   const revision=sourceRevision(root);
-  return `${version}+${revision?revision.slice(0,7):'unknown'}`;
+  const timestamp=stampedTime(root,revision);
+  return `${version}+${timestamp?timestamp+'.':''}${revision?revision.slice(0,7):'unknown'}`;
 }
