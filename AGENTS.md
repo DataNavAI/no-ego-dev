@@ -10,6 +10,15 @@ Run `python -m pytest` before committing changes to this distribution.
 
 After `npm ci`, run `npm run hooks:install` in this checkout. Activate a Python environment with pytest and PyYAML before committing. The versioned hook runs `npm run lint` and `npm run test:all` (all Node/spec cases plus `python -m pytest`). It rejects unstaged tracked edits, untracked non-ignored files and candidate changes during checks, preserving user work instead of stashing or discarding it. Existing custom hooksPath settings are not overwritten automatically. Manual skill acceptance still requires separate evidence. See [commit checks](docs/features/commit-checks/SPEC.md).
 
+## Container tool changes
+
+Whenever adding a tool to the NED image, including tools introduced through a base-image update:
+
+- Update [the container tool integration suite](scripts/container/test-tools.py) with a credential-free functional probe that exercises a representative workflow. Installation or `--version` alone is not sufficient when an offline operation can be tested. Keep provider login/live-call acceptance separate from offline checks.
+- Extend an existing tool group when appropriate. If adding a new group, update the `TOOL_CASES` receipt contract in [the image acceptance runner](docs/features/standalone-container/tests/container_acceptance.py).
+- Keep the Dockerfile command-to-tool comments, [tool inventory](docs/features/standalone-container/TOOLS.md) and [standalone-container spec / TC-009](docs/features/standalone-container/SPEC.md) synchronized with the change.
+- Run `npm run test:container -- --context <docker-context>` against the changed image and require native AMD64/x64 and ARM64 container CI to pass before merging. Preserve the suite's isolated containers, synthetic inputs, network-disabled tool probes and cleanup; never rely on host profiles or credentials.
+
 ## AWS staging deployment
 
 From a repository checkout, use the version-controlled `python3 scripts/deploy-aws-staging.py` command for the existing Lightsail staging host. See the [deployment runbook](docs/features/aws-staging-deployment/RUNBOOK.md) and [behavioral spec](docs/features/aws-staging-deployment/SPEC.md). This is separate from the local native Hermes staging controller.
