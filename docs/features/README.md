@@ -74,6 +74,7 @@ Each self-contained skill is an agent-facing capability that needs corresponding
 | `product-manager` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/product-manager/SKILL.md); [eval](../../skills/product-manager/EVAL.yaml) |
 | `profile-skill-harvester` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/profile-skill-harvester/SKILL.md); [eval](../../skills/profile-skill-harvester/EVAL.yaml) |
 | `project-knowledge-organization` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/project-knowledge-organization/SKILL.md); [eval](../../skills/project-knowledge-organization/EVAL.yaml) |
+| `project-setup` | implemented (skill candidate) | [spec](project-setup/SPEC.md) | [behavioral eval](../../skills/project-setup/EVAL.yaml) |
 | `project-manager` | implemented (profile instructions) | Missing — coverage gap | [instructions](../../skills/project-manager/SKILL.md); [eval](../../skills/project-manager/EVAL.yaml) |
 | `qa-audit` | implemented (behavioral acceptance verified) | [SPEC.md](qa-reporting/SPEC.md) | [instructions](../../skills/qa-audit/SKILL.md); [eval](../../skills/qa-audit/EVAL.yaml) |
 | `qa` | implemented (audited reporting acceptance verified) | [SPEC.md](qa-reporting/SPEC.md) | [instructions](../../skills/qa/SKILL.md); [eval](../../skills/qa/EVAL.yaml) |

@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "7062922195333e7931e4889b26fbcf53b4dd03d4",
+  "tested_at": "2026-11-26T23:58:30.984899+00:00",
+  "environment": "macOS ARM64, Node 22, Chromium, disposable NED databases and synthetic Hermes chat gateway",
+  "result": "pass",
+  "commands": [
+    "npm run test:all",
+    "npm run test:spec -- --feature communicator --case TC-054",
+    "node --test docs/features/communicator/tests/TC-041.test.js docs/features/communicator/tests/TC-042.test.js"
+  ],
+  "observations": "From an empty Goals pane, two chat turns drove actual project registration and goal/task creation through the Core-backed NED CLI. Both projects appeared without a selector. Aggregate progress counted both tasks, and the chat reference retained the owning project. Browser retry, delivery details and task log coverage passed. The synthetic gateway did not prove live model intent recognition."
+}

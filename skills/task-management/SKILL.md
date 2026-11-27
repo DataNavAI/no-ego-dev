@@ -37,6 +37,15 @@ continue safe recovery. Do not bypass hooks, CI, ownership or secret protections
 
 Use the NED CLI as the durable work tracker. A goal is a milestone with an observable outcome; a task is a small executable unit that may belong to a goal. Do not replace persisted work with chat checklists or a private queue. An explicit user choice of tracker takes precedence. GitHub issues and PRs may provide implementation evidence; do not assume synchronization with NED.
 
+## Chat project context
+
+For work requested in NED Chat, use a registered NED project so the user can
+see its goals and tasks. If the project is clear but unregistered, use
+project-setup to create and register its persistent folder before starting work.
+If the project is ambiguous, ask one focused question. Use an external tracker
+as the authoritative destination when the user requests it, and state where the
+work was recorded so the user knows where to look.
+
 ## Every development request: intake before execution
 
 For every actionable user development request—including a feature, bug fix, refactor, test, deployment, or skill change—update the durable NED work graph before implementation. Do this even when the user does not mention tracking. Pure explanations and clarification-only messages do not create work. An explicit user choice of another tracker takes precedence.

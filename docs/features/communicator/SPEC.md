@@ -930,3 +930,21 @@ Actor: mobile NED user. Critical because mobile has little space for competing a
 - Pass evidence: actual named assertions and redacted/synthetic captures; written cases alone do not establish a pass.
 
 Coverage: FR-090/093/094 → CUJ-033 → TC-053; FR-095 → CUJ-033 → TC-037/051/053; FR-091/092 → CUJ-033 → provider-identity TC-006/007 and communicator TC-013. Physical-device keyboard coverage is a disclosed manual gap.
+
+## Goals across registered projects (#268)
+
+- FR-096. Goals and Dashboard show work from every registered project without a project selector. Work identifies its owning project. Task details and chat references retain that project's identity. Preview and Artifacts continue to follow the active workspace context separately.
+- CUJ-034. From a fresh workspace, a chat action registers a project and creates work through Core. The operator sees the resulting work and later work from another project in the same pane. Refresh and retry preserve the all-project scope.
+### TC-054: Real Core work appears in the all-project Goals pane
+
+- Journey / requirements: CUJ-034 / FR-096.
+- Level / automation: browser integration; [TC-054.test.js](tests/TC-054.test.js).
+- Preconditions: disposable Core database, COM, Chromium and synthetic Hermes gateway with zero registered projects.
+- Given: a user sees an empty Goals pane.
+- When: submit two ordinary planning requests that cause the gateway fixture to invoke the real NED CLI for project registration and goal/task creation.
+- Then: Goals shows both projects without selection and Dashboard shows combined progress. A task reference retains its owning project.
+- Variants: stale detail responses and retry behavior are exercised by TC-041 and TC-042. The model behavior is covered separately in the task-management and project-setup evals.
+- Cleanup: close the browser and owned services and delete the disposable database.
+- Pass evidence: Chromium assertions against real project, work and reference state, with no mocked project or task API.
+
+Coverage: FR-096 → CUJ-034 → TC-054.
