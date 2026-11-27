@@ -1,0 +1,16 @@
+{
+  "candidate_sha": "f5d6fb7a364a3cfdec799cb046540128fb73fa94",
+  "tested_at": "2026-11-27T00:03:28.274492+00:00",
+  "result": "pass",
+  "environment": "macOS ARM64, isolated clean checkout, Node25/Python3.14; documentation-only acceptance and source review. No runtime/model/provider claims.",
+  "commands": [
+    "npm run lint",
+    "python -m pytest (215 passed,9 existing opt-in skips)",
+    "Installed pre-commit gate: full lint/small/medium/spec/Python/real-Hermes mock integration",
+    "Compare all nonblank/noncomment Dockerfile lines against baseline a0a63b109f601f349dc3328c702c8aedb5a7e649",
+    "Manually inspect command-to-tool mappings against pinned Dockerfile/install sources and validate all4 new contributor-rule links"
+  ],
+  "observations": "PASS for the requested documentation change: Dockerfile changes add only comments; every executable line matches baseline exactly. Comments distinguish base-inherited tools, pinned subscription clients, AWS CLI, Python/PyYAML, Node/native SQLite, Chrome exposure, CLI/services/supervision, health and persistent-state setup. The Dockerfile reminder and AGENTS.md rule require a functional offline integration probe for each added tool, group-registry updates when needed, inventory/spec/comment synchronization and native AMD64/ARM64 image acceptance. All4 new links resolve to existing files. No executable/test implementation or runtime behavior change; no new brittle prose tests. This is source/documentation review, not behavioral evaluation of future agent adherence or a claim that a local image/live-provider test was run. Native image CI is a separate merge gate.",
+  "dockerfile_executable_lines_sha256": "f32bb6ff85af689c25ca58505f880e940262a1f36bfcb0290c78c6b17a101af5",
+  "baseline_sha": "a0a63b109f601f349dc3328c702c8aedb5a7e649"
+}
