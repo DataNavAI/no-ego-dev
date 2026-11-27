@@ -1017,3 +1017,26 @@ Actor: authenticated mobile NED user. Critical because frequent navigation shoul
 - Pass evidence: inspected actual pixels and TC-057/051/052/053/046 results. Physical Android/iOS keyboard/rotation and full assistive-technology/browser matrix remain unverified unless separately executed. No external provider approval or real model message is required.
 
 Coverage: FR-102–105 → CUJ-036 → TC-057/058; existing TC-051/052/053/046 and protected-form regressions retain their unique risks.
+
+
+## Readable agent-authored reports (#286)
+Status: implemented guidance in [SOUL.md](../../../SOUL.md#readable-chat-responses). Existing Markdown renderer and sanitizer remain unchanged; historical messages are not rewritten.
+
+- FR-106: NED's canonical personality instructs agent-authored reports to use Markdown tables with header/separator/pipe-delimited rows for compact comparisons, labeled lists for long/wide records, and fenced blocks for literal code or terminal output. It prohibits space/tab-aligned pseudo-tables in prose and requires accurate labels, values, units, time zones, incomplete-period notes and caveats. This is generation guidance, not deterministic enforcement or automatic repair.
+
+### CUJ-037: Read a generated comparison without reconstructing its columns
+Actor: NED chat user. Critical because dates/counts lose their association when space-aligned prose collapses. Start with a request for a small daily comparison. The agent uses the loaded SOUL guidance to prepare a compact table, includes qualifications, and the existing sanitized Markdown renderer displays rows and columns. For wide data the agent chooses labeled records. On a malformed historical reply, preserve the source and explain/restate its structure only when asked; never silently infer or rewrite persisted facts.
+
+### TC-059: Source diagnosis, guidance loading and synthetic Markdown acceptance
+- Journey / requirements: CUJ-037 / FR-106; existing TC-013/046 retain renderer/security/contrast coverage.
+- Level / automation: manual; procedure below. Prompt behavior is probabilistic; source/loader/renderer checks alone do not prove future model compliance.
+- Preconditions: read-only access to the authorized local Hermes/COM message; disposable Chromium renderer fixture and synthetic data; external private backups before changing runtime SOUL. No real provider grant, production analytics query or model call required.
+- Given: synthetic source `Date    Recorded    Filtered\nDay A   3           1\nDay B   7           5` and corrected source `| Date | Recorded | Filtered |\n| --- | ---: | ---: |\n| Day A | 3 | 1 |\n| Day B | 7 | 5 |`, followed by an incomplete-period/methodology note.
+- When: compare the original Hermes record and COM API reply byte digests privately; parse/render each synthetic source through the existing marked/DOMPurify path; inspect the canonical guidance and load it through actual Hermes prompt_builder after scoped deployment.
+- Then: matching source/API digests establish no transport structure loss. Plain aligned source produces no table, corrected source produces one table with three header cells/two body rows and unchanged values/note. Runtime prompt contains the exact canonical guidance section. Existing protected forms and sanitizer are unchanged.
+- Steps: (1) Query only the target assistant record using read-only SQLite and authenticated COM GET; publish only diagnosis/digests, not conversation or credentials. (2) Use disposable browserChat with the two synthetic replies; assert table dimensions/text and inspect its rendered screenshot. (3) Review long/wide-data, literal-output and caveat guidance manually. (4) Back up each authorized runtime SOUL externally, add only this section while retaining all unrelated bytes, and call `agent.prompt_builder.load_soul_md` with the selected home; report loaded-section match. Restart only owned local COM/container using maintained delivery and retain rollback state.
+- Variants / negative cases: malformed/padded historical source stays unchanged; no arbitrary-prose table inference; narrow screens may use horizontal table scrolling or labeled lists without fabricated data; credentials/missing ownership stop runtime edits. No new persistence/concurrency boundary; existing auth/reload cases cover UI behavior. Physical devices and future model compliance are not claimed by this procedure.
+- Cleanup: remove disposable profile/server/browser and synthetic state; retain private backups and redacted evidence outside the distribution. Do not clear or replace real chat/session/config data.
+- Pass evidence: redacted source/API equality, synthetic renderer assertions/screenshot, self-review and actual canonical/native/container prompt-loader section match. Any live-model trial must be reported separately rather than inferred from these checks.
+
+Coverage: FR-106 → CUJ-037 → TC-059 (manual); existing automated Markdown/security coverage remains applicable. No new prose-assertion test is added for a personality instruction.
