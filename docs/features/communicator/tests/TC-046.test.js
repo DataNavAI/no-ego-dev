@@ -19,7 +19,7 @@ test('TC-046: chat roles and primary action use a distinct, readable palette',{t
     await ready();
     const canvas=await style('#chat'),workspace=await style('#preview'),disabled=await style('#chat-send');
     assert.deepEqual(canvas.bg,[248,249,251]);
-    assert.deepEqual(workspace.bg,[244,244,244]);
+    assert.deepEqual(workspace.bg,device==='desktop'?[255,255,255]:[244,244,244]);
     await send('Suggest three items for a small picnic.');
     const user=await style('.user-message'),reply=await style('.assistant-message'),composer=await style('#chat-form');
     assert.deepEqual(user.bg,[204,228,250]);

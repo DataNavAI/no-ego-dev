@@ -6,7 +6,8 @@ export function paneBounds(viewport){
 
 export function paneWidth(preference,viewport){
   const {min,max}=paneBounds(viewport);
-  const fallback=Math.round(viewport)-432;
+  const context=Math.min(560,Math.max(360,Math.round((viewport-72)*.4)));
+  const fallback=Math.round(viewport)-72-context;
   return Math.min(max,Math.max(min,Number.isFinite(preference)?preference:fallback));
 }
 

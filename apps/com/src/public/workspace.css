@@ -1,5 +1,5 @@
 /* Current Muse-inspired shell; existing chat and project content stay mounted. */
-.shell{grid-template-columns:64px var(--left-pane-width,calc(100% - 432px)) 8px minmax(280px,1fr);grid-template-rows:56px minmax(0,1fr);background:var(--surface)}
+.shell{grid-template-columns:64px var(--left-pane-width,calc(60% - 43px)) 8px minmax(280px,1fr);grid-template-rows:56px minmax(0,1fr);background:var(--surface)}
 .workspace-toolbar{grid-column:2/-1;grid-row:1;padding:0 20px;gap:12px;background:var(--surface)}
 .mobile-navigation{display:block;position:absolute;left:0;top:0;width:0;height:0}
 #navigation-toggle{display:none}
@@ -44,3 +44,60 @@
  .chat-pane .compose-dock,.chat-pane:has(.transcript:not(:has(>article,>#chat-provider-requests:not([hidden])))) .compose-dock{position:relative;top:auto;left:auto;transform:none;width:calc(100% - 24px);margin:0 auto max(12px,env(safe-area-inset-bottom))}.chat-pane .compose-dock #chat-form{min-height:60px;padding:7px;border-radius:18px;box-shadow:none}
 }
 @media(max-width:767px){.canvas-tabs button:last-child{margin-inline-end:4px}}
+
+/* Desktop project context: one navigation row and consistent work/state surfaces. */
+@media(min-width:768px){
+ .preview-pane{background:var(--surface)}
+ .context-heading{align-items:center;min-height:80px;padding:16px 20px 12px;gap:16px}
+ .context-heading h2{font-size:11px;line-height:1.4;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--base-secondary)}
+ .context-heading p{font-size:16px;font-weight:650;line-height:1.4;color:var(--text);margin:4px 0 0}
+ #context-close{margin:0 -8px 0 0}
+ .preview-toolbar{min-height:52px;padding:0 16px;border-bottom:1px solid var(--border)}
+ .canvas-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;scroll-padding-inline:4px;gap:4px;padding:0 2px;background:transparent;border-radius:0;min-width:0}
+ .canvas-tabs button{flex:1 0 auto;min-width:52px;min-height:48px;padding:10px 8px;font-size:12px;white-space:nowrap;overflow-wrap:normal;border-radius:0;border-bottom:2px solid transparent}
+ .canvas-tabs button[aria-selected=true]{background:transparent;border-bottom-color:var(--text);box-shadow:none}
+ .canvas-tabs button:hover{background:var(--base-surface)}
+ .goals-panel,.dashboard-panel,.artifacts-panel{padding:20px;scrollbar-gutter:stable}
+ .goals-panel h2{display:inline-block;font-size:14px;font-weight:650;line-height:1.4;margin:0 8px 16px 0}
+ .goals-panel>.delivery-muted{display:inline-block;font-size:12px;margin:0 0 16px}
+ .delivery-goal{margin-bottom:24px}.delivery-goal>h3{font-size:16px;font-weight:650;line-height:1.4;margin:0 0 4px}
+ .delivery-goal>.delivery-muted{margin:0 0 12px}
+ .delivery-task,.delivery-task[data-status=working]{padding:12px 10px;margin:0;border:0;border-top:1px solid var(--border);border-radius:0;column-gap:12px}
+ .delivery-task[data-status=working]{background:#f7f8f8;border-left:2px solid #04703c;padding-left:8px}
+ .delivery-task h4{font-size:13px;line-height:1.5;margin:0}
+ .delivery-status{font-size:11px;line-height:1.6;max-width:10ch;overflow-wrap:anywhere}
+ .delivery-task>.delivery-muted{font-size:11px;line-height:1.5;margin:4px 0 0}
+ .delivery-details>summary{font-size:11px;min-height:32px;padding:8px 0 0}
+ .delivery-completed{border-top:1px solid var(--border);margin-top:8px;padding-top:8px}
+ .dashboard-summary .eyebrow{display:none}.dashboard-summary h2{font-size:16px;margin:0 0 12px}
+ .dashboard-count{font-size:12px}.dashboard-panel{container-type:inline-size}.dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0;padding:12px 0 16px}
+ .dashboard-metrics dt{font-size:11px;line-height:1.5;overflow-wrap:anywhere}.dashboard-metrics dd{font-size:22px;margin:4px 0 0}
+ .dashboard-work .work-toolbar{gap:8px;margin:0 0 12px;align-items:center}.dashboard-work .work-tree>li{margin-bottom:12px}
+ .dashboard-work .work-title{font-size:13px;padding:10px 8px 10px 24px;border-radius:6px}.dashboard-work .work-tree small{display:block;font-size:11px;line-height:1.5;margin-top:4px}
+ .preview-canvas{display:block;padding:24px 20px;background:#fafafa}
+ .preview-state{width:100%;max-width:560px;margin:0 auto;padding:24px;text-align:left;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+ .preview-symbol{width:40px;height:40px;font-size:22px;margin:0 0 16px;border-radius:10px}
+ .preview-state h2{font-size:16px;line-height:1.4;font-weight:650;margin:0 0 8px}
+ .preview-state p{font-size:13px;line-height:1.6;margin:0 0 16px}
+ .preview-state button,.preview-state .app-link{min-height:44px;padding:10px 16px;border-radius:8px;font-size:13px}
+ .preview-state small{font-size:11px}.artifacts-panel h2{font-size:16px;margin:0 0 8px}
+}
+@media(min-width:768px) and (max-width:1099px){.context-heading{padding-inline:16px}.goals-panel,.dashboard-panel,.artifacts-panel{padding:16px}}
+@media(min-width:768px){
+ #settings{flex:1;padding:20px;scrollbar-gutter:stable}
+ #settings h2{font-size:16px;line-height:1.4;margin:0 0 16px}
+ #settings h3{font-size:14px;line-height:1.5;margin:0 0 8px}
+ #settings p{font-size:13px;line-height:1.6;margin:8px 0}
+ #settings #access-forget{font-size:12px}
+ #provider-connections{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+ #provider-list{display:grid;gap:12px;margin-top:16px}
+ #settings .provider-connection{min-width:0;padding:16px;border:1px solid var(--border);border-radius:10px}
+ #settings .provider-connection>button{margin:8px 8px 0 0;font-size:12px}
+ #settings>h3{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+ #settings input,#settings textarea{font-size:14px}
+ #secret-form{margin:16px 0;padding:16px;gap:8px;border:1px solid var(--border);border-radius:10px;background:#fafafa}
+ #secret-form label{font-size:12px;line-height:1.5;font-weight:550}
+ #secret-form button{margin-top:4px;font-size:13px}
+}
+
+@media(min-width:768px){@container(min-width:28em){.dashboard-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}}

@@ -1,5 +1,9 @@
 # NEDCOM scoped UI guidelines
 
+## Current desktop refinement — project pane (#269–272)
+[Desktop guidance](../../../docs/features/communicator/design/desktop-pane-polish/README.md), FR-097–101 and UI-AC-29 refine the Muse split: a bounded 40% default project pane (saved resize wins), project-name-first hierarchy, single scrollable tab row, compact consistent work rows/metrics and top-anchored Preview state card. Keep all five destinations and mobile behavior. Desktop visual acceptance requires actual Goals, Dashboard, Preview, Artifacts and Settings captures at default/narrow widths and200% text; an overflow check alone is insufficient.
+
+
 ## Current mobile refinement — organization (#255–260)
 The [illustrated mobile direction](../../../docs/features/communicator/design/mobile-organization/README.md) and communicator FR-090–095 supersede earlier mobile disclosure/bubble guidance: grouped identity, direct Project, More utilities, full-width Project with Back to chat, contextual trusted authorization cards and compact pinned composer. Keep desktop Muse rail/split layout. Preserve existing auth, keyboard, draft/media/reference and truthful unavailable-state contracts.
 
@@ -25,3 +29,5 @@ Current integrated navigation follows FR-055–057: mobile opens Chat with a sin
 Compact composer follow-up: FR-039/UI-AC-16 now require a one-line empty prompt in a form no taller than120 CSSpx at1280×900,390×844 and320×740. Empty optional context/reference rows reserve no space. Keep44px footer targets and labeled Attach file/Add link; Supported files is a44px information-icon disclosure with accessible name/title, expanded-state reporting, bounded help and Escape/focus restoration. Omit the redundant Hermes footer label. Preserve multiline growth/shrink, pinned bottom placement, file/link reachability and existing neutral styling. TC-037 owns rendered geometry; the current feature brief/design-system define the scoped revision.
 
 The current mobile composition supersedes earlier two-row toolbar/Preview-first guidance: open Chat, keep one56px header with Menu, current view title and Debug. Place project selection and Chat/Goals/Artifacts/Preview navigation in the collapsible modal left menu, preserving existing node identity and draft state across resizing. Desktop remains the existing left-tabs/Preview workspace. Use readable16px messages, distinct author labels and restrained rounded user bubbles; task updates are compact dismissible notices, never an unbounded permanent feed. Preserve fixed bottom composer and bounded transcript scrolling. The implementation contract is FR-055–057, UI-AC-23 and TC-036.
+
+Desktop Settings follow-up #274 groups existing access/provider/secret controls using the same desktop spacing scale; no credential behavior changes. See FR-101/TC-056 and the [Settings guidance](https://github.com/DataNavAI/no-ego-dev/issues/274).
