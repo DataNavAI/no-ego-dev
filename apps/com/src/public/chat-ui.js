@@ -245,9 +245,9 @@ export function mountChat(libraries) {
     try{await api(`/${encodeURIComponent(sessionId)}/turns/${turn.id}/stop`,{});}
     catch{if(activeTurn!==turn)return;turn.stopRequested=false;render();showActivity();status.textContent='Could not stop the response. Try Stop again.';}
   }
-  async function sendTurn(input) {
+  async function sendTurn(input, fromComposer) {
     const path=`/${encodeURIComponent(sessionId)}`;
-    const attachmentIds=media.ids();const taskReferences=references.values();
+    const attachmentIds=fromComposer?media.ids():[];const taskReferences=fromComposer?references.values():[];
     const accepted=await api(`${path}/chat`,{input,...(taskReferences.length?{references:taskReferences}:{}),...(attachmentIds.length?{attachments:attachmentIds}:{})});
     if(!/^[a-f0-9-]{36}$/.test(accepted.turn?.id)||accepted.turn.status!=='pending')throw new Error('Unavailable');
     activeTurn.id=accepted.turn.id;pendingUser.dataset.state='sent';
@@ -413,20 +413,23 @@ export function mountChat(libraries) {
     event.preventDefault();
     if(!busy&&!uncertain&&!media.pending()&&sessionId&&historyReady&&(draft.value.trim()||media.ready()||references.ready()))element('chat-form').requestSubmit();
   });
-  element('chat-form').addEventListener('submit',event=>{
-    event.preventDefault();if(busy||loadingOlder||uncertain||!modelSetup.ready()||media.pending()||!sessionId||!historyReady||!draft.value.trim()&&!media.ready()&&!references.ready())return;
-    const input=draft.value;
-    clearTransientReferences();activeTurn={id:null,stopRequested:false};showPending(input);showActivity('working');draft.value='';fitDraft();
+  function submitTurn(input, fromComposer) {
+    if(busy||loadingOlder||uncertain||authLost||!modelSetup.ready()||!sessionId||!historyReady)return false;
+    if(fromComposer&&(media.pending()||!input.trim()&&!media.ready()&&!references.ready()))return false;
+    clearTransientReferences();
+    activeTurn={id:null,stopRequested:false};showPending(input);showActivity('working');
+    if(fromComposer)draft.value='';
+    fitDraft();
     void action(async()=>{
       try{
-      const data=await sendTurn(input);
+      const data=await sendTurn(input,fromComposer);
       const following=followingLatest();
       if(data.session_id!==sessionId)throw new Error('Unavailable');
-      media.clear();references.clear();
+      if(fromComposer){media.clear();references.clear();}
       if(following){await history();await fillUnderfilled();if(followingLatest())bottom(true);}else refreshNeeded='New reply available. Jump to latest.';
       }catch(error){
         void modelSetup.refresh();
-        if(!draft.value)draft.value=input;
+        if(fromComposer&&!draft.value)draft.value=input;
         if(pendingUser){if(['invalid_attachment','invalid_reference'].includes(error.code))replaceMessages(messageNodes().filter(row=>row!==pendingUser&&row!==liveArticle));else pendingUser.dataset.state='incomplete';}
         if(['invalid_attachment','invalid_reference'].includes(error.code))clearTransientReferences();
         fitDraft();throw error;
@@ -438,6 +441,17 @@ export function mountChat(libraries) {
       const active=document.activeElement;
       if(!draft.disabled&&(!active||active===document.body||active===draft||active===element('chat-send')))draft.focus({preventScroll:true});
     });
+    return true;
+  }
+  element('chat-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    submitTurn(draft.value,true);
+  });
+  document.addEventListener('ned-restart-provider-sign-in',event=>{
+    const providers={aws:'AWS',github:'GitHub',godaddy:'GoDaddy'};
+    const provider=event.detail?.provider;
+    if(Object.hasOwn(providers,provider)
+      && submitTurn(`Start a new ${providers[provider]} sign-in.`,false))event.preventDefault();
   });
   fitDraft();render();void action(initialize);
 }

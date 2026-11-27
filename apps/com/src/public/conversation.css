@@ -197,3 +197,16 @@
 .provider-secondary-actions{display:flex;gap:8px}.provider-secondary-actions button{flex:1;min-width:0;width:auto;font-size:12px;padding:8px;overflow-wrap:anywhere}
 /* Reflow by text size, not a device-width guess: keep short sign-in codes intact. */
 .provider-code{flex-wrap:wrap}.provider-code code{flex:1 1 9ch;min-width:min(100%,9ch)}.provider-code button{margin-inline-start:auto}.provider-secondary-actions{flex-wrap:wrap}.provider-secondary-actions button{flex:1 1 9em;overflow-wrap:normal}
+
+.provider-auth-card {
+  inline-size: min(15.25rem, 100%);
+  padding: .75rem;
+  font-size: .875rem;
+}
+.provider-auth-card h4, .provider-auth-card > strong { font-size: .875rem; font-weight: 600; }
+.provider-auth-card p { font-size: .75rem; }
+.provider-auth-card button, .provider-auth-card .provider-sign-in { font-size: .8125rem; font-weight: 500; }
+.provider-auth-modal #provider-auth-title { font-size: 1.125rem; }
+.provider-auth-modal button { min-block-size: 44px; font-size: .8125rem; }
+.provider-auth-card .provider-code { flex-wrap: wrap; }
+.provider-auth-card .provider-code code { font-size: 1rem; letter-spacing: normal; }
