@@ -79,7 +79,7 @@ test('TC-007: mobile cards use current request status and keep idle connection e
   let connection={...signIn,request:{id:requestId,state:'requested',expiresAt:signIn.request.expiresAt}};
   let unavailable=false,posts=0;
   const f=await browserChat(t,{existing:true,viewport:{width:390,height:844},rows:[{id:'legacy',role:'assistant',content:'Approve here: `'+url+'`'},{id:'card',role:'tool',tool_name:'ned',content:JSON.stringify(receipt)}],preparePage:async page=>{
-    await page.addInitScript(()=>{Object.defineProperty(globalThis.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{globalThis.copiedCode=text;}}});const original=globalThis.setTimeout;globalThis.setTimeout=(fn,ms,...args)=>{if(ms>590000&&ms<610500)globalThis.expireProvider=fn;return original(fn,ms,...args);};});
+    await page.addInitScript(()=>{Object.defineProperty(globalThis.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{globalThis.copiedCode=text;}}});const original=globalThis.setTimeout;globalThis.setTimeout=(fn,ms,...args)=>{if(ms>590000&&ms<610500)globalThis.expireProvider=()=>{Date.now=()=>new Date().getTime()+601000;fn();};return original(fn,ms,...args);};});
     await page.route('**/api/v1/identity',route=>route.fulfill({status:unavailable?503:200,json:unavailable?{error:{message:'Unavailable'}}:{awsChatShortcut:true,connections:[connection]}}));
     await page.route('**/api/v1/identity/aws/*',route=>{posts++;return route.fulfill({status:409,json:{error:{message:'No duplicate request'}}});});
   }});await f.ready();const {page}=f;
@@ -109,3 +109,47 @@ test('TC-007: mobile cards use current request status and keep idle connection e
   await expect(card).toContainText('Connected as');await expect(page.locator('#chat-connect-aws')).toBeHidden();
   await page.evaluate(()=>globalThis.document.dispatchEvent(new Event('ned-auth-lost')));await expect(card).not.toContainText('123456789012');await expect(card.getByRole('link')).toHaveCount(0);assert.equal(posts,0);assert.deepEqual(f.errors,[]);
 });
+
+for(const provider of ['aws','github','godaddy']){
+  test(`TC-007: expired ${provider} authorization restarts through chat`,async t=>{
+    const names={aws:'AWS',github:'GitHub',godaddy:'GoDaddy'};
+    const name=names[provider],id='12345678-1234-1234-1234-123456789abc';
+    const deadline=Date.now()+600000;
+    const receipt={success:true,action:'request_provider_auth',provider,request_id:id,expires_at:new Date(deadline).toISOString()};
+    let pending={id,state:'requested',expiresAt:deadline},posts=0;
+    const f=await browserChat(t,{existing:true,rows:[{id:'card',role:'tool',tool_name:'ned',content:JSON.stringify(receipt)}],
+      async preparePage(page){
+        await page.route('**/api/v1/identity',route=>route.fulfill({json:{connections:[{provider,status:'disconnected',request:pending}]}}));
+        await page.route('**/api/v1/identity/*/*',route=>{posts++;pending=null;return route.fulfill({status:410,json:{error:{code:'expired'}}});});
+      },
+    });
+    await f.ready();
+    await f.draft.fill('An unsent draft');
+    const card=f.page.locator('.provider-auth-card');
+    await card.getByRole('button',{name:'Review connection'}).click();
+    const modal=f.page.getByRole('dialog');
+    await expect(modal.locator('input').first()).toBeVisible();
+    if(provider==='github'){
+      await modal.getByLabel('GitHub username').fill('demo-user');
+      await modal.locator('button[type=submit]').click();
+    }else{
+      pending=null;
+      await f.page.evaluate(()=>{
+        const now=Date.now;
+        Date.now=()=>now()+601000;
+        globalThis.dispatchEvent(new Event('ned-chat-settled'));
+      });
+    }
+    await expect(modal).toHaveAccessibleName(name+' sign-in expired');
+    await expect(modal.locator('input, a')).toHaveCount(0);
+    await expect(card).toContainText('Request expired');
+    const target=provider==='github'?modal:card;
+    if(target===card)await modal.getByRole('button',{name:'Back to chat'}).click();
+    await target.getByRole('button',{name:'Start new sign-in'}).click();
+    await expect.poll(()=>f.turns.length).toBe(1);
+    assert.equal(f.turns[0].input,`Start a new ${name} sign-in.`);
+    assert.equal(posts,provider==='github'?1:0);
+    await expect(f.draft).toHaveValue('An unsent draft');
+    f.turns[0].finish();
+  });
+}

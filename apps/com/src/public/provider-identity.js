@@ -25,10 +25,13 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   let chatActionsKey = '[]';
   let authGeneration = 0;
   let modalGeneration = 0;
-  let modalTrigger,modalReturnCard,modalRequestId,expiryTimer;
-  let awsConnection;
+  let modalTrigger,modalReturnCard,modalRequestId,modalProvider,expiryTimer;
+  let awsConnection, modalState;
   const quickConnect=document.getElementById('chat-connect-aws');
   const cardStates=new WeakMap();
+  const providerExpired=new Set();
+  const requestDeadlines=new Map();
+  const hasExpired=(id, fallback)=>providerExpired.has(id)||(requestDeadlines.get(id)??Date.parse(fallback))<=Date.now();
   quickConnect?.addEventListener('click',async()=>{
     if(quickConnect.disabled||quickConnect.hidden)return;
     quickConnect.disabled=true;const epoch=authGeneration;
@@ -56,7 +59,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     modalBody.replaceChildren();
     const destination=(modalTrigger?.isConnected?modalTrigger:modalReturnCard?.isConnected?modalReturnCard.querySelector('button,a'):null)||document.getElementById('chat-message');
     destination?.focus();modalReturnCard=undefined;
-    modalTrigger = undefined;modalRequestId=undefined;
+    modalTrigger = undefined;modalRequestId=undefined;modalProvider=undefined;modalState=undefined;
   });
   document.addEventListener('ned-provider-auth-card',event=>{
     void openModal(event.detail.receipt,event.detail.trigger);
@@ -76,9 +79,28 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     const result = await response.json();
     if (!response.ok) {
       if (result.error?.code === 'identity_disabled') disabled = true;
-      throw new Error(result.error?.message || 'Provider connections are unavailable.');
+      throw Object.assign(new Error(result.error?.message || 'Provider connections are unavailable.'),{code:result.error?.code});
     }
     return result;
+  }
+
+  function restartButton(provider, feedback, fromModal=false) {
+    return button('Start new sign-in',()=>{
+      const accepted=!document.dispatchEvent(new CustomEvent('ned-restart-provider-sign-in',{cancelable:true,detail:{provider}}));
+      if(accepted&&fromModal)modal.close();
+      if(!accepted)feedback.textContent='Wait until chat is ready, then try again.';
+    });
+  }
+
+  function showExpiredDialog(provider) {
+    modalGeneration++;
+    modalState='expired';
+    title.textContent=names[provider]+' sign-in expired';
+    modalStatus.textContent='Start a new sign-in to request fresh authorization.';
+    const restart=restartButton(provider,modalStatus,true);
+    modalBody.replaceChildren(restart);
+    close.textContent='Back to chat';
+    restart.focus();
   }
 
   async function refreshChatRequests() {
@@ -90,7 +112,8 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     if (epoch !== chatGeneration) return;
     const connections=Array.isArray(data?.connections)?data.connections:null;
     clearTimeout(expiryTimer);
-    if(!connections&&modal.open){modalGeneration++;modalBody.replaceChildren();modalStatus.textContent='Authorization status is unavailable. Close this dialog and check the connection card again.';}
+    for(const {request:pending} of connections??[])if(pending)requestDeadlines.set(pending.id,pending.expiresAt);
+    if(!connections&&modal.open){modalGeneration++;modalState='unavailable';close.textContent='Close';modalBody.replaceChildren();modalStatus.textContent='Authorization status is unavailable. Close this dialog and check the connection card again.';}
     const deadlines=(connections??[]).map(item=>item.request?.expiresAt).filter(value=>Number.isFinite(value)&&value>Date.now());
     if(deadlines.length){
       const deadline=Math.min(...deadlines);
@@ -98,10 +121,17 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
       expiryTimer=setTimeout(()=>{
         if(epoch!==chatGeneration)return;
         for(const card of document.querySelectorAll('.provider-auth-card[data-auth-provider]'))if(expiring.has(card.getAttribute('data-request-id'))){cardStates.delete(card);card.replaceChildren(node('strong','Provider connection'),node('p','Checking expired authorization request…'));}
-        if(modal.open&&expiring.has(modalRequestId)){modalGeneration++;modalBody.replaceChildren();modalStatus.textContent='This sign-in request expired. Start a new connection from message options.';}
+        if(modal.open&&expiring.has(modalRequestId)){modalGeneration++;modalState='checking';modalBody.replaceChildren();modalStatus.textContent='Checking authorization status…';}
         chatActionsKey='';chatRequests.replaceChildren();chatRequests.hidden=true;
         void refreshChatRequests();
       },Math.min(2147483647,Math.max(1,deadline-Date.now()+250)));
+    }
+    if(connections&&modal.open&&modalProvider&&modalState!=='expired'){
+      const current=connections.find(item=>item.provider===modalProvider);
+      const trigger=modalReturnCard;
+      if(current&&current.request?.id!==modalRequestId
+        && hasExpired(modalRequestId,trigger?.getAttribute('data-expires-at')))showExpiredDialog(modalProvider);
+      else if(current?.request?.id===modalRequestId&&modalState==='checking')showRequestDialog(current);
     }
     awsConnection=connections?.find(item=>item.provider==='aws');
     if(quickConnect)quickConnect.hidden=!data?.awsChatShortcut||!awsConnection||awsConnection.status==='connected';
@@ -109,21 +139,22 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     for(const card of cards){
       const provider=card.getAttribute('data-auth-provider');
       const connection=connections?.find(item=>item.provider===provider);
-      const key=JSON.stringify(connection??null);
+      const requestId=card.getAttribute('data-request-id');
+      const expired=hasExpired(requestId,card.getAttribute('data-expires-at'));
+      const key=JSON.stringify([connection??null,expired]);
       if(cardStates.get(card)===key)continue;
       cardStates.set(card,key);
       const feedback=node('p');feedback.className='provider-feedback';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
-      const requestId=card.getAttribute('data-request-id');
       const review=button('Review connection',()=>void openModal({provider,request_id:requestId},review));
       if(!connection){
         card.replaceChildren(node('strong','Connect '+names[provider]),node('p','Could not check this connection. Try again.'),button('Check again',()=>{cardStates.delete(card);void refreshChatRequests();}));
       }else if(connection.request?.id===requestId){
         card.replaceChildren(render(connection,{compact:true,current:()=>authGeneration,statusNode:feedback}),feedback);
       }else if(connection.status==='connected'&&connection.identity){
-        card.replaceChildren(node('strong',names[provider]+' connected'),node('p','Connected as '+summary(connection.identity)),review);
+        card.replaceChildren(node('strong',names[provider]+' connected'),node('p','Connected as '+summary(connection.identity)));
       }else{
-        const expired=Date.parse(card.getAttribute('data-expires-at'))<=Date.now();
-        card.replaceChildren(node('strong','Connect '+names[provider]),node('p',expired?'This sign-in request expired. Start a new connection from message options.':'This request has ended. Start a new connection from message options.'),review);
+        if(expired)card.replaceChildren(node('strong',names[provider]),node('p','Request expired'),restartButton(provider,feedback),feedback);
+        else card.replaceChildren(node('strong','Connect '+names[provider]),node('p','This request has ended. Start a new connection from message options.'),review);
       }
     }
     const controls=(connections??[]).filter(({provider,request})=>names[provider]&&request&&!cards.some(card=>card.getAttribute('data-auth-provider')===provider&&card.getAttribute('data-request-id')===request.id));
@@ -156,10 +187,17 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     return control;
   }
 
+  function showRequestDialog(connection) {
+    modalState='active';
+    modalStatus.textContent='';
+    modalBody.replaceChildren(render(connection,{current:()=>modalGeneration,statusNode:modalStatus,prefix:'modal-provider',done:()=>modal.close()}));
+    modalBody.querySelector('input, button')?.focus();
+  }
+
   async function openModal(receipt, trigger) {
     if (modal.open) return;
     const epoch = ++modalGeneration;
-    modalRequestId=receipt.request_id;modalTrigger = trigger;modalReturnCard=trigger.closest?.('.provider-auth-card');
+    modalRequestId=receipt.request_id;modalProvider=receipt.provider;close.textContent='Close';modalTrigger = trigger;modalReturnCard=trigger.closest?.('.provider-auth-card');
     title.textContent = 'Connect ' + names[receipt.provider];
     modalStatus.textContent = 'Checking authorization request…';
     modal.showModal();
@@ -168,12 +206,12 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
       if (epoch !== modalGeneration || !modal.open) return;
       const connection = connections.find(item => item.provider === receipt.provider);
       if (connection?.request?.id !== receipt.request_id) {
-        modalStatus.textContent = 'This request has ended. Ask NED to start a new connection.';
+        if(hasExpired(receipt.request_id,modalReturnCard?.getAttribute('data-expires-at')))showExpiredDialog(receipt.provider);
+        else modalStatus.textContent = 'This request has ended. Ask NED to start a new connection.';
         return;
       }
-      modalStatus.textContent = '';
-      modalBody.replaceChildren(render(connection,{current:()=>modalGeneration,statusNode:modalStatus,prefix:'modal-provider',done:()=>modal.close()}));
-      modalBody.querySelector('input, button')?.focus();
+      requestDeadlines.set(receipt.request_id,connection.request.expiresAt);
+      showRequestDialog(connection);
     } catch {
       if (epoch === modalGeneration && modal.open) modalStatus.textContent = 'Authorization is unavailable. Try again.';
     }
@@ -215,13 +253,23 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
         if (name === 'disconnect') statusNode.textContent = 'Disconnected from NED. To revoke the grant, use the provider’s security settings.';
       } catch (error) {
         if (localGeneration !== current()) return;
+        if(error.code==='expired'&&pending){
+          providerExpired.add(pending.id);
+          if(done)showExpiredDialog(provider);
+          else if(compact)section.replaceChildren(node('h4',names[provider]),node('p','Request expired'),restartButton(provider,statusNode));
+          else section.replaceChildren(node('h4',names[provider]),node('p','Request expired'));
+          return;
+        }
         try {
           const {connections} = await api('');
           if (localGeneration !== current()) return;
           const connection = connections.find(item => item.provider === provider);
           if (done && connection?.request?.id !== pending?.id) {
-            modalBody.replaceChildren();
-            statusNode.textContent = 'This request has ended. Ask NED to start a new connection.';
+            if(pending?.expiresAt<=Date.now())showExpiredDialog(provider);
+            else {
+              modalBody.replaceChildren();
+              statusNode.textContent = 'This request has ended. Ask NED to start a new connection.';
+            }
             return;
           }
           const replacement = render(connection,context);
@@ -326,6 +374,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   globalThis.addEventListener?.('ned-chat-settled', refreshChatRequests);
   globalThis.addEventListener?.('pagehide', () => {clearTimeout(expiryTimer);generation++; chatGeneration++; authGeneration++; list.replaceChildren();});
   document.addEventListener('ned-auth-lost', () => {
+    providerExpired.clear();requestDeadlines.clear();
     clearTimeout(expiryTimer);modalGeneration++;
     if (modal.open) modal.close();
     generation++; chatGeneration++; authGeneration++;

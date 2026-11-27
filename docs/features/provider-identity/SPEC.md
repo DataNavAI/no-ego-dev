@@ -137,3 +137,10 @@ TC-007 additionally uses a synthetic browser-routed identity response and canoni
 Current request deadlines schedule a status refresh (and clear the expiring card/modal actions while checking); returning to the visible tab refreshes status too. No countdown or successful connection is inferred. TC-007 captures and triggers the request-deadline timer in the synthetic browser, advances the authoritative fixture to expired, and asserts stale links disappear with no POSTs. Timers are cancelled on access loss/page exit. Server clocks that differ from the browser remain authoritative through readback; past timestamps alone do not override a still-active API request.
 
 At200% text the supplied short code remains a readable line; code/Copy and secondary controls wrap to separate rows when needed. TC-007 asserts bounded short-code height at320px and captures the large-text state. Primary visible link is “Open AWS” (or provider name) with its full sign-in accessible name.
+
+## Expired authorization recovery (#281)
+
+- FR-009. A trusted provider card and open dialog show an expired state when the authoritative request ends at its deadline or the provider reports expiry. Clear stale links, code fields, and confirmation actions. Apply the same compact card typography and recovery flow to AWS, GitHub, and GoDaddy.
+- FR-010. Start new sign-in sends one provider-specific user turn through the normal chat transport. It carries no previous code, authorization link, draft, attachments, or task references. An unavailable composer leaves the user on the recovery surface with feedback. The agent can then queue a fresh authorization.
+- CUJ-004. The operator leaves a provider connection open until expiry, then starts a new sign-in from the dialog or transcript card.
+- Existing browser case TC-007 covers expired cards, a stale open dialog, provider-reported expiry, and the real chat transport. Assert no browser write to the identity API on restart and preserve existing draft text.
