@@ -3,7 +3,7 @@ import {dashboardModel} from './dashboard-model.js';
 import {mountGoalTasks} from './goals-tasks.js';
 const labels={planned:'Planned',ready:'Ready',working:'In progress',blocked:'Blocked',done:'Done'};
 export function renderProjectWork(document,container,data,{showCompleted=false,onReference=()=>{},onFilter=()=>{},filterId='goals-show-completed',progressById,counts}={}){
-  if(!Array.isArray(data.items)||data.items.length>5000)throw new Error('Invalid work');
+  if(!Array.isArray(data.items)||data.items.length>50000)throw new Error('Invalid work');
   const plan=executionPlan(data.items,showCompleted);
   const children=new Map();const ids=new Set();
   for(const item of plan.items){
@@ -14,8 +14,8 @@ export function renderProjectWork(document,container,data,{showCompleted=false,o
   const byId=new Map(plan.items.map(item=>[item.id,item]));
   function rowFor(item){
     const row=document.createElement('li'),title=document.createElement('button');title.type='button';title.textContent=item.title;title.className='work-title';title.dataset.status=item.status;title.dataset.kind=item.type;
-    title.setAttribute('aria-label',`Reference ${item.type==='goal'||item.type==='subgoal'?'goal':'task'}: ${item.title}, ${labels[item.status]}`);title.addEventListener('click',()=>onReference({...item,projectId:data.projectId}));
-    const meta=document.createElement('small');meta.textContent=labels[item.status];if(progressById&&['goal','subgoal'].includes(item.type)){const count=progressById.get(item.id);meta.textContent+=` · ${count.completed} / ${count.total} tasks`;}row.append(title,meta);return row;
+    title.setAttribute('aria-label',`Reference ${item.type==='goal'||item.type==='subgoal'?'goal':'task'}: ${item.title}, ${labels[item.status]}`);title.addEventListener('click',()=>onReference({...item,projectId:item.projectId??data.projectId}));
+    const meta=document.createElement('small');meta.textContent=item.projectName?`${item.projectName} · ${labels[item.status]}`:labels[item.status];if(progressById&&['goal','subgoal'].includes(item.type)){const count=progressById.get(item.id);meta.textContent+=` · ${count.completed} / ${count.total} tasks`;}row.append(title,meta);return row;
   }
   let path=[];let lists=[root];
   for(const item of plan.items){
@@ -40,7 +40,7 @@ export function renderDashboard(document,container,data,options={}){
   const model=dashboardModel(data.items);
   const summary=document.createElement('header');summary.className='dashboard-summary';
   const identity=document.createElement('p');identity.className='eyebrow';identity.textContent=options.projectName||'';
-  const heading=document.createElement('h2');heading.id='dashboard-heading';heading.tabIndex=-1;heading.textContent='Project progress';
+  const heading=document.createElement('h2');heading.id='dashboard-heading';heading.tabIndex=-1;heading.textContent=options.projectName?'Project progress':'All project progress';
   summary.append(identity,heading);
   if(model.total){
     const count=document.createElement('p');count.className='dashboard-count';count.textContent=`${model.completed} / ${model.total} tasks completed`;
@@ -59,11 +59,13 @@ export function renderDashboard(document,container,data,options={}){
 export function mountProjectWork({document,fetch}){
   const delivery=mountGoalTasks({document,fetch});
   const project=document.getElementById('project'),dashboard=document.getElementById('dashboard');
-  let generation=0;let dashboardCompleted=false;let snapshot;let selectedId;let pending;
-  const onReference=item=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:item.projectId,itemId:item.id,title:item.title,projectName:project.dataset.name||'Project'}}));
+  let dashboardCompleted=false;let snapshot;let pending=false;let refreshQueued=false;
+  const onReference=item=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{
+    projectId:item.projectId,itemId:item.sourceId,title:item.title,projectName:item.projectName,
+  }}));
   const draw=()=>{
     if(!snapshot)return;
-    if(dashboard)renderDashboard(document,dashboard,snapshot,{projectName:project.dataset.name,showCompleted:dashboardCompleted,onFilter:value=>{dashboardCompleted=value;draw();document.getElementById('dashboard-show-completed')?.focus();},onReference});
+    if(dashboard)renderDashboard(document,dashboard,snapshot,{showCompleted:dashboardCompleted,onFilter:value=>{dashboardCompleted=value;draw();document.getElementById('dashboard-show-completed')?.focus();},onReference});
     delivery.update(snapshot);
   };
   const message=(text,retry=false)=>{
@@ -73,30 +75,37 @@ export function mountProjectWork({document,fetch}){
     if(retry){const button=document.createElement('button');button.id='dashboard-retry';button.type='button';button.textContent='Retry';button.addEventListener('click',()=>void load());dashboard.append(button);}
   };
   async function load(){
-    const id=project.value;
-    if(pending?.id===id)return;
-    const current=++generation;pending={id,generation:current};
+    if(pending){refreshQueued=true;return;}
+    pending=true;
     const active=document.activeElement;const ownedFocus=Boolean(dashboard?.contains(active));
-    const changed=id!==selectedId;
-    if(changed){snapshot=undefined;dashboardCompleted=false;selectedId=id;}
     const scroll=dashboard?.scrollTop||0;
     const previous=snapshot;
-    if(!id){pending=undefined;message('Waiting for your agent to set the current project.');return;}
     if(!previous){
       message('Loading progress…');
       if(ownedFocus)dashboard?.focus();
     }
     try{
-      const response=await fetch('/api/v1/projects/'+encodeURIComponent(id)+'/work');const data=await response.json();
-      if(current!==generation)return;
-      if(!response.ok||data.projectId!==id)throw new Error();
-      dashboardModel(data.items);
-      if(previous&&JSON.stringify(previous)===JSON.stringify(data))return;
-      snapshot=data;draw();if(dashboard)dashboard.scrollTop=scroll;
+      const response=await fetch('/api/v1/projects/work');const data=await response.json();
+      if(!response.ok||!Array.isArray(data.projects))throw new Error();
+      const items=data.projects.flatMap(owner=>{
+        const key=id=>id===null?null:`${owner.id}:${id}`;
+        return owner.items.map(item=>({...item,sourceId:item.id,id:key(item.id),parentId:key(item.parentId),
+          dependsOn:item.dependsOn.map(key),projectId:owner.id,projectName:owner.name}));
+      });
+      dashboardModel(items);
+      const next={projectId:'all-projects',items};
+      if(previous&&JSON.stringify(previous)===JSON.stringify(next))return;
+      snapshot=next;draw();if(dashboard)dashboard.scrollTop=scroll;
       if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-heading')?.focus();
     }catch{
-      if(current===generation){snapshot=undefined;message('Progress could not be loaded.',true);if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-retry')?.focus();}
-    }finally{if(pending?.generation===current)pending=undefined;}
+      snapshot=undefined;message('Progress could not be loaded.',true);
+      if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-retry')?.focus();
+    }finally{
+      pending=false;
+      if(refreshQueued){refreshQueued=false;void load();}
+    }
   }
-  project.addEventListener('change',load);project.addEventListener('ned-work-refresh',load);void load();
+  project.addEventListener('ned-work-refresh',load);
+  document.addEventListener('ned-auth-restored',load);
+  void load();
 }

@@ -19,17 +19,17 @@ export function mountGoalTasks({document,fetch}){
   let projectId='',generation=0,snapshot=null;const opened=new Set(),requests=new WeakMap();
   const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
   const button=(text,action)=>{const element=node('button',text);element.type='button';element.addEventListener('click',action);return element;};
-  const base=taskId=>`/api/v1/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`;
-  async function request(url,current){const response=await fetch(url);const data=await response.json();if(current!==generation)return null;if(!response.ok||data.projectId!==projectId)throw new Error();return data;}
+  const base=item=>`/api/v1/projects/${encodeURIComponent(item.projectId??projectId)}/tasks/${encodeURIComponent(item.sourceId??item.id)}`;
+  async function request(url,current,owner){const response=await fetch(url);const data=await response.json();if(current!==generation)return null;if(!response.ok||data.projectId!==owner)throw new Error();return data;}
   async function taskDetails(item,container,offset=0,requestedFocus=null){
     const token=(requests.get(container)||0)+1;requests.set(container,token);
     const expanded=new Set([...container.querySelectorAll('[data-attempt]')].filter(element=>element.open).map(element=>element.dataset.attempt));
     const sessionGroups=new Map([...container.querySelectorAll('.task-session-group')].map(element=>[element.dataset.sessionKey,element]));
     const focusKey=container.contains(document.activeElement)?document.activeElement.dataset.deliveryFocus:requestedFocus;
     const restoreFocus=()=>{if(focusKey)[...container.querySelectorAll('[data-delivery-focus]')].find(element=>element.dataset.deliveryFocus===focusKey)?.focus();};
-    const current=generation,root=base(item.id);container.replaceChildren(node('p','Loading details…','delivery-muted'));
+    const current=generation,root=base(item),owner=item.projectId??projectId;container.replaceChildren(node('p','Loading details…','delivery-muted'));
     try{
-      const data=await request(`${root}?offset=${offset}`,current);if(!data||requests.get(container)!==token)return;
+      const data=await request(`${root}?offset=${offset}`,current,owner);if(!data||requests.get(container)!==token)return;
       const impact=node('p',data.impact||data.description||'Impact not recorded.','task-impact');
       container.replaceChildren(impact);
       const outputs=node('div',undefined,'task-outputs');
@@ -47,7 +47,7 @@ export function mountGoalTasks({document,fetch}){
         detail.addEventListener('toggle',async()=>{
           if(!detail.open||loaded)return;loaded=true;body.textContent='Loading attempt…';
           try{
-            const response=await request(`${root}/attempts/${encodeURIComponent(attempt.id)}`,current);if(!response||requests.get(container)!==token)return;
+            const response=await request(`${root}/attempts/${encodeURIComponent(attempt.id)}`,current,owner);if(!response||requests.get(container)!==token)return;
             body.replaceChildren(node('pre',response.attempt.resultText||'No response recorded.'));
             if(response.attempt.resultTruncated)body.append(node('p','Response truncated.','delivery-muted'));
             if(!response.attempt.sessions.length)body.append(node('p','No session bound.','delivery-muted'));
@@ -59,7 +59,7 @@ export function mountGoalTasks({document,fetch}){
               const read=async()=>{
                 const from=logOffset;log.disabled=true;
                 try{
-                  const result=await request(`${root}/attempts/${encodeURIComponent(attempt.id)}/sessions/${encodeURIComponent(session.sessionId)}/messages?offset=${from}`,current);if(!result)return;
+                  const result=await request(`${root}/attempts/${encodeURIComponent(attempt.id)}/sessions/${encodeURIComponent(session.sessionId)}/messages?offset=${from}`,current,owner);if(!result)return;
                   if(from===0)sessionView.replaceChildren();
                   const entries=result.data.map(row=>{const entry=node('details');entry.append(node('summary',`${row.role} · ${row.id}`),node('pre',typeof row.content==='string'?row.content:JSON.stringify(row.content,null,2)));return entry;});
                   sessionView.prepend(...entries);
@@ -93,6 +93,7 @@ export function mountGoalTasks({document,fetch}){
     for(const group of groups){
       const section=node('section',undefined,'delivery-goal');
       section.append(node('h3',group.goal?.title||'Tasks without a goal'));
+      if(group.goal?.projectName) section.append(node('p',group.goal.projectName,'delivery-muted'));
       const finish=group.goal?.delivery?.estimatedFinish;
       section.append(node('p',finish?`Est. finish ${new Date(finish).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}`:'Finish not estimated','delivery-muted'));
       const complete=group.tasks.filter(item=>item.status==='done'),remaining=group.tasks.filter(item=>item.status!=='done');
@@ -101,12 +102,13 @@ export function mountGoalTasks({document,fetch}){
         const card=node('article',undefined,'delivery-task');card.dataset.status=item.status;
         const title=node('h4',item.title),status=node('span',states[item.status]||item.status,'delivery-status');
         card.append(title,status);
+        if(!group.goal&&item.projectName) card.append(node('p',item.projectName,'delivery-muted'));
         const delivery=item.delivery||{};
         card.append(node('p',`${delivery.trackedSeconds==null?'Time not recorded':`${duration(delivery.trackedSeconds)} tracked`} · ${delivery.remainingSeconds==null?'Not estimated':`~${duration(delivery.remainingSeconds)} left`}`,'delivery-muted'));
         for(const output of delivery.outputs||[]){
-          const preview=node('a',output.title,'delivery-output');preview.href=`${base(item.id)}/outputs/${encodeURIComponent(output.id)}`;preview.target='_blank';preview.rel='noopener noreferrer';
+          const preview=node('a',output.title,'delivery-output');preview.href=`${base(item)}/outputs/${encodeURIComponent(output.id)}`;preview.target='_blank';preview.rel='noopener noreferrer';
           preview.setAttribute('aria-label',`${output.title} (opens in a new tab)`);
-          const resource=`${base(item.id)}/outputs/${encodeURIComponent(output.id)}`;preview.addEventListener('click',event=>void openOutput(event,resource));
+          const resource=`${base(item)}/outputs/${encodeURIComponent(output.id)}`;preview.addEventListener('click',event=>void openOutput(event,resource));
           if(output.kind==='image'){const image=node('img');image.alt='';image.loading='lazy';preview.prepend(image);hydrateOutput(image,resource);}card.append(preview);
         }
         const previous=retained.get(item.id),signature=JSON.stringify([delivery.revision,delivery.updatedAt,delivery.executionRevision]);

@@ -52,6 +52,10 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
           if(result.outputs)result.outputs=result.outputs.map(output=>({id:output.id,kind:output.kind,title:output.title,...(output.kind==='document'?{text:output.text}:{})}));
           return send(200,result);
         }
+        if(pathname==='/api/projects/work'){
+          const {projects:registered}=projects.list();
+          return send(200,{projects:registered.map(project=>({...project,items:readProjectWork(databasePath,project.id).items}))});
+        }
         const match=/^\/api\/projects\/([^/]+)\/work$/.exec(pathname);
         return send(200,match?readProjectWork(databasePath,decodeURIComponent(match[1])):pathname==='/api/projects'?projects.list():await projects.detail(decodeURIComponent(pathname.slice('/api/projects/'.length)),controller.signal));
       }catch(failure){
