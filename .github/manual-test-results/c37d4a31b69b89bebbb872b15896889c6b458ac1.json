@@ -1,0 +1,13 @@
+{
+  "candidate_sha": "c37d4a31b69b89bebbb872b15896889c6b458ac1",
+  "tested_at": "2026-11-28T07:27:46.405168+00:00",
+  "environment": "macOS ARM64, private Node22, Chromium, disposable authenticated COM/Hub/provider/secret fixtures and owned synthetic dashboard server.",
+  "result": "pass",
+  "commands": [
+    "node --test docs/features/communicator/tests/TC-{032,036,041,042,043,048,050,052,053,054,055,057,059,062,063}.test.js docs/features/product-dashboards/tests/TC-003.test.js docs/features/secret-management/tests/TC-{003,008}.test.js docs/features/provider-identity/tests/TC-{004,006,007,009}.test.js docs/features/ned-api/tests/TC-006.test.js",
+    "Actual Hermes prompt_builder.load_soul_md with disposable canonical SOUL profile",
+    "Desktop/320/390px rendered inspection from the synthetic browser cases; source self-review",
+    "Full normal commit gate: lint and test:all (all Node/spec/Python/Hermes cases)"
+  ],
+  "observations": "Exact candidate browser acceptance:68 passed, zero failures/skips/cancellations. Settings workspace and standalone Debug button/dialog are absent; Project Debug tab health/activity/reset and visible mobile tab navigation work. Dashboard embeds the NED-API-registered project server through the existing authenticated isolated proxy; empty state replaces progress fallback, project/auth changes destroy stale frames, enlarged/narrow toolbar remains reachable. Goals progress, task references and active-session navigation are preserved. Private Secrets/Connections dialogs retain masking, clearing, identity confirmation, auth loss and vault behavior; unsupported connection state is explicit. A deterministic dialog-close focus regression failed before correction and passes after it; close does not steal a newly selected composer focus. Inspected synthetic desktop/mobile screenshots have no horizontal overflow or browser errors. Current-control guidance loads through actual Hermes prompt builder; this is not proof of future model compliance. No real provider consent, paid model call, production release or physical-device acceptance claimed. Native delivery follows merge; container refresh remains explicitly deferred by user instruction."
+}
