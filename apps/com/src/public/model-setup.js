@@ -42,6 +42,7 @@ export function mountModelSetup({document,request=globalThis.fetch,changed=()=>{
     if(title.textContent!==heading)title.textContent=heading;
     check.hidden=!state&&busy;
     card.classList.toggle('model-onboarding',!ready);
+    card.classList.toggle('model-loading',!state&&busy);
     closeButton.hidden=!ready;
     card.hidden=!visible;
     if(visible&&!card.open){card.showModal();title.focus();}
