@@ -10,7 +10,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 
 | Feature | Status | Canonical spec | Current evidence / supporting material |
 | --- | --- | --- | --- |
-| Product dashboards | implemented | [SPEC.md](product-dashboards/SPEC.md) | #289; project-owned apps, independent API/CLI publication, private Dashboard frame and dev/evaluator skills; synthetic live-agent acceptance passed; live product/hosted Hub acceptance separate. |
+| Product dashboards | implemented | [SPEC.md](product-dashboards/SPEC.md) | #289; project-owned apps, independent API/CLI publication, private Dashboard frame and dev/evaluator skills; original synthetic live-agent acceptance passed; research-backed TC-005 baseline4/5 plus separately pinned SaaS/marketplace passes; live product/hosted Hub acceptance separate. |
 | Contributor test suites | implemented | [SPEC.md](test-suites/SPEC.md) | Four dependency/effect buckets; default small + medium includes Python and real Hermes/aimock; Docker-first credential-path eval and independent CLI workflow verification; [contributor guide](../../TESTING.md). |
 | App project roots | implemented | [SPEC.md](app-layout/SPEC.md) | #164; `apps/core`, `apps/cli` and `apps/com`, shared lockfile and compatible public entrypoints; executable app/CLI/COM/package case. |
 | Running software identity | implemented candidate | [FR-086 / TC-001](communicator/SPEC.md#running-version-in-the-brand-234) | #253; shared CLI/UI `0.3.0+SHA`, with source identity retained in archives, npm packages, native installs and Docker builds; deployment checks pending. |
