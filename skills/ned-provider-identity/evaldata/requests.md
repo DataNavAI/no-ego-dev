@@ -1,7 +1,7 @@
 # Synthetic requests
 
 - Private native COM is at http://127.0.0.1:42317. Connect GitHub for user
-  `example-reviewer`. Settings then shows a different login.
+  `example-reviewer`. The connection modal then shows a different login.
 - Connect AWS for account `123456789012` and assigned role `StageObserver`
   using that private native instance. The request has been queued, and no one
   has signed in yet.

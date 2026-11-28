@@ -85,7 +85,7 @@ This distinguishes blocked work from work that can continue.
 
 **Human action needed:** None
 
-**Detailed information:** No user-accessible link is available. Verified local artifact: `artifacts/recovery-test/report.md`.
+**Detailed information:** The recovery report has no user-accessible link yet. I can share the relevant findings here.
 ```
 
 Do not invent a dashboard or repository URL.

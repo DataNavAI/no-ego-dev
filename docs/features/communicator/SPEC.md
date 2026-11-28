@@ -1066,3 +1066,23 @@ Actor: NED chat user. Critical because dates/counts lose their association when 
 Coverage: FR-108 → CUJ-038 → TC-060 (manual); existing automated Markdown/security coverage remains applicable. No new prose-assertion test is added for a personality instruction.
 
 Traceability: provisional report-guidance FR-106/CUJ-037/TC-059 were remapped to FR-108/CUJ-038/TC-060 during integration to preserve the already merged Debug identifiers.
+
+
+## Plain-language updates and contextual user action (#294)
+
+- FR-109. Agent guidance leads with user-visible effects, uses familiar words, explains necessary technical terms at first use, and links only to verified user-openable deliverables. Opening local project documents in Artifacts depends on [#117](https://github.com/DataNavAI/no-ego-dev/issues/117).
+- FR-110. For supported third-party consent requests, agent guidance calls the native provider action before replying and refers to the resulting chat card only after receipt. Private fallback and profile-specific guards remain available.
+- CUJ-039. A non-engineering user reads an update on broken story links, opens the recovery plan if published, and knows which GitHub approval is needed.
+
+### TC-061: Read a news comparison blocker and act on it
+
+- Journey / requirements: CUJ-039 / FR-109, FR-110.
+- Level / automation: manual; [product-communication EVAL](../../../skills/product-communication/EVAL.yaml), case G.
+- Preconditions: synthetic news comparison status and exact verified link/receipt fixture.
+- Given: user-visible stale comparison and broken story links, older records, and missing private repository access.
+- When: generate the update for both available and unavailable surfaces.
+- Then: plain language preserves the verified impact and limitations. A trustworthy link and successful card receipt are required before the reply points to them. No local paths or credentials appear.
+- Cleanup: remove disposable eval output only. No real provider or artifact operations.
+- Pass evidence: inspect the generated messages and judge findings for case G.
+
+Coverage: FR-109/110 → CUJ-039 → TC-061.
