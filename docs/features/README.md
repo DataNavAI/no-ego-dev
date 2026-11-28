@@ -10,7 +10,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 
 | Feature | Status | Canonical spec | Current evidence / supporting material |
 | --- | --- | --- | --- |
-| Product dashboards | implemented | [SPEC.md](product-dashboards/SPEC.md) | #289; project-owned apps, independent API/CLI publication, private Dashboard frame and dev/evaluator skills; original synthetic live-agent acceptance passed; research-backed TC-005 baseline4/5 plus separately pinned SaaS/marketplace passes; live product/hosted Hub acceptance separate. |
+| Product dashboards | implemented | [SPEC.md](product-dashboards/SPEC.md) | #289; project-owned apps, independent API/CLI publication, private Dashboard frame and dev/evaluator skills; original synthetic live-agent acceptance passed; research-backed TC-005 baseline4/5 plus separately pinned SaaS/marketplace passes; live product/hosted Hub acceptance separate; #315 minimal mobile FR-016/017 + TC-006 passed with real Hermes old/new lanes; no superiority claim; merge/local delivery remain release gates. |
 | Contributor test suites | implemented | [SPEC.md](test-suites/SPEC.md) | Four dependency/effect buckets; default small + medium includes Python and real Hermes/aimock; Docker-first credential-path eval and independent CLI workflow verification; [contributor guide](../../TESTING.md). |
 | App project roots | implemented | [SPEC.md](app-layout/SPEC.md) | #164; `apps/core`, `apps/cli` and `apps/com`, shared lockfile and compatible public entrypoints; executable app/CLI/COM/package case. |
 | Running software identity | implemented candidate | [FR-086 / TC-001](communicator/SPEC.md#running-version-in-the-brand-234) | #253; shared CLI/UI `0.3.0+SHA`, with source identity retained in archives, npm packages, native installs and Docker builds; deployment checks pending. |
@@ -114,3 +114,5 @@ Communicator report-formatting guidance: [FR-108 / CUJ-038 / manual TC-060](comm
 Provider-specific failed authorization feedback: [FR-011–013 / TC-008](provider-identity/SPEC.md#provider-specific-failed-requests-297). GitHub enrollment wraps isolated gh CLI login on native and owner-authorized Hub instances; see [FR-014–017 / TC-009](provider-identity/SPEC.md#github-cli-connection-300).
 
 Project navigation cleanup #309: [FR-114–116 / TC-063](communicator/SPEC.md#project-views-cleanup-309) replaces Settings and standalone Debug views; Dashboard is exclusively a registered project server. Secrets/Connections move to focused private Chat dialogs.
+
+Compact Project canvas #314: [FR-120 / CUJ-044 / TC-066](communicator/SPEC.md#compact-project-canvas-314) removes redundant wrapper headers, retaining compact navigation, app actions and accessible status.

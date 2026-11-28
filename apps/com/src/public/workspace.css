@@ -142,6 +142,20 @@
 
 .delivery-task-title{font:inherit;color:inherit;text-align:left;min-height:44px;padding:0;border:0;background:transparent;cursor:pointer}.delivery-task-title:hover{text-decoration:underline}
 
+/* A single navigation/action row reserves the remaining height for the app. */
+.preview-pane>.preview-toolbar{display:flex;flex-wrap:nowrap;gap:4px;min-height:48px;height:48px;padding:0 4px;border-bottom:1px solid var(--border)}
+.preview-toolbar>.canvas-tabs{display:flex;flex:1;min-width:0;width:auto;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-inline:contain;gap:2px;padding:0 2px;scroll-padding-inline:2px;border-radius:0;background:transparent}
+.preview-toolbar>.canvas-tabs button{flex:0 0 auto;min-width:60px;min-height:44px;padding:6px 8px;white-space:nowrap;font-size:12px}
+#project-frame-actions{display:flex;flex:none}.managed-preview-actions{display:flex;gap:0}.managed-preview-actions[hidden]{display:none}
+.managed-preview-actions button,#context-close{display:grid;place-items:center;flex:none;width:44px;height:44px;min-height:44px;margin:0;padding:10px;border:0;border-radius:8px;background:transparent;color:var(--text)}
+.managed-preview-actions button:hover,#context-close:hover{background:var(--hover)}
+.managed-preview-actions button:focus-visible,#context-close:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.managed-preview-actions svg,#context-close svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.managed-preview-actions button:disabled{opacity:.4}.managed-preview-message:empty{display:none}
+.managed-preview-message:not(:empty){margin:8px;padding:8px 12px;background:var(--base-surface);font-size:13px;border-radius:6px}
+
+.preview-toolbar>.canvas-tabs::-webkit-scrollbar{display:none}
+
 .delivery-goal-toggle{display:flex;align-items:center;gap:8px;min-height:44px;width:100%;padding:4px 0;text-align:start;overflow-wrap:anywhere;border:0;background:transparent;color:inherit;font:inherit}
 .delivery-goal-toggle::before{content:"";width:7px;height:7px;margin-inline:3px;flex:none;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(-45deg)}
 .delivery-goal-toggle[aria-expanded=true]::before{transform:rotate(45deg)}

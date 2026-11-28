@@ -91,7 +91,7 @@ for(const tab of canvasTabs){
     event.preventDefault();selectCanvas(next,true);
   });
 }
-const canvasHeading=()=>canvasView==='Artifacts'?document.getElementById('artifacts-panel'):canvasView==='Goals'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Debug'?document.getElementById('debug-pane'):document.querySelector('#dashboard.managed-active .managed-preview-name')||document.getElementById('dashboard-heading')||document.getElementById('dashboard');
+const canvasHeading=()=>canvasView==='Artifacts'?document.getElementById('artifacts-panel'):canvasView==='Goals'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.querySelector('#preview-panel.managed-active')||document.getElementById('preview-heading'):canvasView==='Debug'?document.getElementById('debug-pane'):document.querySelector('#dashboard.managed-active')||document.getElementById('dashboard-heading')||document.getElementById('dashboard');
 function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   if(mobileBottom){const parent=mobile?mobileBottom:navigationHome;if(mobileNavigation.parentElement!==parent)parent.append(mobileNavigation);}
@@ -153,7 +153,7 @@ mobileViewport?.addEventListener?.('change',()=>{
     destination.focus();
   }else if(leftPane.hidden&&focusInLeft||preview.hidden&&focusInPreview)focusContextControl();
 });
-if(typeof ResizeObserver!=='undefined'){new ResizeObserver(()=>{if(!preview.hidden)canvasTabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.scrollIntoView?.({block:'nearest',inline:'nearest'});}).observe(canvasTabs[0].parentElement);}
+if(typeof ResizeObserver!=='undefined'){const tabsResize=new ResizeObserver(()=>{if(!preview.hidden)canvasTabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.scrollIntoView?.({block:'nearest',inline:'nearest'});});tabsResize.observe(canvasTabs[0].parentElement);for(const tab of canvasTabs)tabsResize.observe(tab);}
 syncNavigation();render();void load();
 document.addEventListener('ned-auth-restored',()=>{workspaceStream?.close();workspaceStream=null;state=beginLoad(state);render();void load();});
 

@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "03f706f9f0fe3488a95276e8dc946150c96ea98e",
+  "tested_at": "2026-11-28T10:37:37.340293+00:00",
+  "environment": "macOS arm64; Node22.22.0 LTS; isolated served COM and Chromium; synthetic projects and owned app servers;1280x900,390x900,320x900 and actual2x tab text. No operator credentials or production data used.",
+  "result": "pass",
+  "commands": [
+    "npm run lint (normal commit hook)",
+    "npm run test:all (normal commit hook; all automated spec cases, Python215pass9existingoptional skips, realHermes10pass)",
+    "node --test docs/features/product-dashboards/tests/TC-003.test.js docs/features/communicator/tests/TC-052.test.js docs/features/communicator/tests/TC-055.test.js docs/features/communicator/tests/TC-065.test.js (fresh exactcandidate acceptance;5pass)"
+  ],
+  "observations": "Inspected exactcandidate desktop/mobile/enlarged screenshots: one48px Project tab/action row, app begins immediately below it, no redundant Project or app wrapper header. Selected enlarged tab fully visible; Reload/Open/Close have44px targets. Verified actual authenticated separate-origin Dashboard and Preview, action visibility, stoppedapp mobile focus, project/auth teardown, no horizontal page overflow and preserved chat draft. Independent review approved tree b069002c38e85e49d63c415907e7a410ffeb2ac4, matching this code commit. Screenshots/logs retained externally under dashboard-pane-chrome evidence. Initial Node25 baseline Hermes stream/stop barrier timeouts were not waived; fresh Node22 exactcandidate fullgate and separate10case integration control passed. Existing unrelated manual/liveprovider cases remain separate NOT RUN, not an assertion of whole-product acceptance."
+}
