@@ -189,3 +189,5 @@ Actor: authorized COM user; critical because credentials must not enter the mode
 | FR-011 | CUJ-006 | TC-007 | Native plugin, CLI, vault integration |
 | FR-012 | CUJ-006 | TC-007, TC-008 | History schema and browser |
 | FR-013 | CUJ-006 | TC-007, TC-008 | Vault/HTTP and DOM wiring |
+
+UI update (#309): the Settings workspace is removed. Manual vault management is a private Secrets dialog opened from Chat → Message options → Secrets. Existing TC-003 exercises the same store/reveal/replace/delete/clear-on-close behavior through this dialog. Chat request/retrieval cards and CLI/API behavior remain unchanged.

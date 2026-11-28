@@ -4,54 +4,19 @@ import {browserChat,expect} from './browser-chat-fixture.js';
 const item=(id,type='task',status='ready',parentId=null)=>({id,title:id,type,status,parentId,priority:2,createdAt:'2026-11-07',dependsOn:[]});
 const work={projectId:'alpha',items:[item('Launch','goal','planned'),item('Design','task','done','Launch'),item('Build','task','working','Launch'),item('Review','task','blocked','Launch')]};
 
-test('TC-041: dashboard preserves workspace state, refreshes progress and isolates delayed project data',async t=>{
-  const f=await browserChat(t);await f.ready();const {page}=f;
-  let snapshot=structuredClone(work),fail=false,hold=false,release;
-  await page.route('**/api/v1/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
-  await page.route('**/api/v1/projects/*',route=>route.fulfill({json:{preview:{status:'available',url:'http://localhost:9999'}}}));
-  await page.route('**/api/v1/projects/work',async route=>{
-    const captured=structuredClone(snapshot);
-    if(hold){hold=false;await new Promise(resolve=>{release=resolve;});}
-    await route.fulfill({status:fail?503:200,json:fail?{}:{projects:[{id:'alpha',name:'Alpha',items:captured.items}]}});
-  });
-  await page.route('**/api/v1/projects/*/activity',route=>route.fulfill({json:{projectId:'alpha',goal:null,task:null}}));
-  await page.route('**/api/v1/workspace/events',route=>route.fulfill({contentType:'text/event-stream',body:'retry: 60000\ndata: {"projects":[{"id":"alpha","name":"Alpha"},{"id":"beta","name":"Beta"}]}\n\n'}));
-  await page.reload();await f.ready();
-  const select=async id=>page.locator('#project').evaluate((node,id)=>{node.value=id;node.dispatchEvent(new Event('change'));},id);
-  const refresh=()=>page.locator('#project').evaluate(node=>node.dispatchEvent(new Event('ned-work-refresh')));
-  await select('alpha');await f.draft.fill('Keep this draft');
-  await expect(page.locator('#dashboard-tab')).toBeVisible();
-  await page.locator('#dashboard-tab').click();
-  await expect(page.locator('#dashboard')).toContainText('1 / 3 tasks completed');
-  await expect(page.locator('#dashboard .work-title')).toHaveText(['Launch','Build','Review']);
-  await page.locator('#dashboard .work-title').filter({hasText:'Build'}).click();
-  await expect(page.locator('#chat-task-references')).toContainText('Build');
-  await expect(f.draft).toHaveValue('Keep this draft');assert.equal(f.turns.length,0);
-  await page.screenshot({path:'/tmp/ned-dashboard-open-1280.png'});
-  await page.setViewportSize({width:390,height:844});await page.locator('#mobile-project-toggle').click();
-  await page.screenshot({path:'/tmp/ned-dashboard-open-390.png'});
-  await page.setViewportSize({width:1280,height:900});
-  await page.locator('#dashboard-show-completed').check();await expect(page.locator('#dashboard .work-title')).toHaveText(['Launch','Build','Design','Review']);
-  await page.locator('#preview-panel').evaluate(node=>{node.dataset.sentinel='preserved';});
-  await page.locator('#dashboard-tab').press('ArrowLeft');await expect(page.locator('#preview-panel')).toBeVisible();
-  await page.locator('#preview-tab').press('ArrowRight');await expect(page.locator('#dashboard')).toBeVisible();
-  assert.equal(await page.locator('#preview-panel').getAttribute('data-sentinel'),'preserved');
-  snapshot.items.forEach(row=>{if(row.type==='task')row.status='done';});await refresh();
-  await expect(page.locator('#dashboard')).toContainText('3 / 3 tasks completed');
-  await page.locator('#dashboard-show-completed').uncheck();await expect(page.locator('#dashboard')).toContainText('All tasks completed.');
-  hold=true;await refresh();await expect.poll(()=>Boolean(release)).toBe(true);await select('beta');
-  await expect(page.locator('#dashboard')).toContainText('3 / 3 tasks completed');release();
-  fail=true;await refresh();await expect(page.locator('#dashboard')).toContainText('Progress could not be loaded.');
-  fail=false;await page.locator('#dashboard-retry').click();await expect(page.locator('#dashboard')).toContainText('3 / 3 tasks completed');
-  await expect(f.draft).toHaveValue('Keep this draft');await expect(page.locator('#chat-task-references')).toContainText('Build');
-  for(const width of [1280,390,320]){
-    await page.setViewportSize({width,height:900});await page.evaluate(()=>new Promise(resolve=>globalThis.requestAnimationFrame(()=>globalThis.requestAnimationFrame(resolve))));
-    if(width<768&&await page.locator('#preview').isHidden()){await page.locator('#mobile-project-toggle').click();}
-    await expect(page.locator('#dashboard')).toBeVisible();
-    assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
-    await page.screenshot({path:`/tmp/ned-dashboard-${width}.png`});
-  }
-  assert.deepEqual(f.errors,[]);
+test('TC-041: Goals retains work progress while Dashboard has only a project-specific server empty state',async t=>{
+ const f=await browserChat(t);await f.ready();const {page}=f;
+ await page.route('**/api/v1/projects',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha'},{id:'beta',name:'Beta'}]}}));
+ await page.route('**/api/v1/projects/*',route=>route.fulfill({json:{preview:{status:'none'}}}));
+ await page.route('**/api/v1/projects/work',route=>route.fulfill({json:{projects:[{id:'alpha',name:'Alpha',items:work.items}]}}));
+ await page.route('**/api/v1/dashboards/*',route=>route.fulfill({json:{dashboard:null,revision:0}}));
+ await page.reload();await f.ready();await f.draft.fill('Keep this draft');
+ const select=id=>page.locator('#project').evaluate((node,id)=>{node.value=id;node.dispatchEvent(new Event('change'));},id);
+ await select('alpha');await page.locator('#dashboard-tab').click();await expect(page.locator('#dashboard')).toContainText('No dashboard registered');await expect(page.locator('#dashboard .dashboard-summary')).toHaveCount(0);
+ await page.locator('#goals-pane-tab').click();await expect(page.locator('#goals-panel')).toContainText('Build');await page.getByRole('button',{name:'Reference task: Build',exact:true}).click();await expect(page.locator('#chat-task-references')).toContainText('Build');
+ await page.locator('#dashboard-tab').click();await page.locator('#preview-tab').click();await page.locator('#preview-panel').evaluate(node=>{node.dataset.sentinel='preserved';});await page.locator('#preview-tab').press('ArrowRight');await expect(page.locator('#dashboard')).toBeVisible();
+ await select('beta');await expect(page.locator('#dashboard')).toContainText('No dashboard registered');await select('');await expect(page.locator('#dashboard')).toContainText('Choose a project');
+ assert.equal(await page.locator('#preview-panel').getAttribute('data-sentinel'),'preserved');await expect(f.draft).toHaveValue('Keep this draft');assert.equal(f.turns.length,0);assert.deepEqual(f.errors,[]);
 });
 
 test('TC-041: progress counts executable leaves once and handles empty, completed and invalid graphs',async()=>{

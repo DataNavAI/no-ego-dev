@@ -164,7 +164,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   const conversation=page.getByRole('region',{name:'Conversation'});
   const providerMessage=conversation.locator('article.assistant-message').filter({has:page.getByRole('button',{name:'Connect AWS'})});
   const shortcut=page.locator('#chat-connect-aws');
-  const settings=page.locator('[data-provider=aws]');
+  const settings=page.getByRole('dialog',{name:'Connect AWS',exact:true});
   await send(1,linkOnly);
   await expect(page.getByRole('region',{name:'Conversation'})).toContainText('https://example.test/aws-sign-in');
   const state=await fetch(hub.origin+path,{headers:{...headers,Cookie:'hub-owner=fixture'}});
@@ -175,8 +175,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   await shortcut.click();
   await expect(settings.locator('[name=startUrl]')).toBeVisible();
   await settings.getByRole('button',{name:'Cancel connection'}).click();
-  await expect(settings.getByRole('button',{name:'Connect',exact:true})).toBeVisible();
-  await page.locator('#context-close').click();
+  await expect(settings).toBeHidden();
   await send(2);
   if(await shortcut.isHidden())await page.locator('#chat-tools-toggle').click();
   await shortcut.click();
@@ -199,8 +198,7 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
     {log(){},error(){}},{home:fixture.home,env,identityOptions}),1);
   assert.deepEqual(protectedReads,[]);
   await settings.getByRole('button',{name:'Confirm connection'}).click();
-  await expect(settings).toContainText('Connected as');
-  await page.locator('#context-close').click();
+  await expect(settings).toBeHidden();
   await expect(shortcut).toBeHidden();
   await send(3);
   await expect(page.getByRole('region',{name:'Conversation'})).toContainText('Protected AWS resource read.');

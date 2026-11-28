@@ -34,7 +34,7 @@ test('TC-050: delegated access recovers in the same tab after an idle rejection'
   let navigations=0;
   page.on('framenavigated',frame=>{if(frame===page.mainFrame())navigations++;});
   await page.route('**/api/v1/health',route=>route.fulfill({status:401,headers:{'x-ned-hub-access':'1'},body:'{}'}),{times:1});
-  await page.locator('#debug-toggle').click();
+  await page.locator('#debug-tab').click();
   await expect(page.locator('#access-token')).toBeHidden();
   await expect(page.locator('#access-gate')).toBeVisible();
   await fixture.ready();
@@ -46,8 +46,7 @@ test('TC-050: delegated access recovers in the same tab after an idle rejection'
   const denied=route=>route.fulfill({status:401,headers:{'x-ned-hub-access':'1'},body:'{}'});
   await page.route(contextRoute,denied,{times:1});
   await page.route('**/api/v1/health',denied,{times:1});
-  await page.locator('#debug-toggle').click();
-  await page.locator('#debug-toggle').click();
+  await page.locator('#goals-pane-tab').click();await page.locator('#debug-tab').click();
   await expect(page.locator('#access-status')).toHaveText('Hub access expired. Reconnect through NED Hub.');
   await expect(page.locator('#access-token')).toBeHidden();
   await expect(page.locator('#access-retry')).toBeVisible();

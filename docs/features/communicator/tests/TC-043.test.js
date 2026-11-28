@@ -41,8 +41,8 @@ test('TC-043: agent focus switches the project workspace without changing chat',
   await expect(page.locator('#preview')).toBeVisible();
   await expect(page.locator('#preview-identity')).toHaveText('Beta');
   await expect(page.locator('#mobile-preview-nav')).toHaveAttribute('aria-current','page');
-  await page.locator('#navigation-toggle').click();await page.locator('#settings-shortcut').click();
-  await expect(page.getByRole('heading',{name:'Settings',exact:true})).toBeVisible();
+  await page.locator('#navigation-toggle').click();await page.locator('#artifacts-shortcut').click();
+  await expect(page.getByRole('heading',{name:'Artifacts',exact:true})).toBeVisible();
   await page.setViewportSize({width:320,height:740});
   await expect(page.locator('#navigation-toggle')).toBeInViewport({ratio:1});await expect(page.locator('#navigation-toggle')).toHaveAttribute('aria-current','page');
   await expect(page.locator('#preview-identity')).toBeVisible();

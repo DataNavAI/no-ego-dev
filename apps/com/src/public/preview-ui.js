@@ -1,7 +1,7 @@
 import {apiFetch} from './api-client.js';
 export function mountPreview({document,fetch=apiFetch,setTimer=setTimeout,clearTimer=clearTimeout,location=globalThis.location,panelId='preview-panel',recordKey='preview',label='Preview',frameName='ned-working-app',endpoint=()=>'/api/v1/preview',projectControl=null}){
   const panel=document.getElementById(panelId);if(!panel)return;
-  const legacy=panel.querySelector('.preview-state')??panel.querySelector('#dashboard-work-summary');
+  const legacy=panel.querySelector('.preview-state')??panel.querySelector('.dashboard-empty');
   const section=document.createElement('section');section.className='managed-preview';section.hidden=true;
   section.innerHTML='<header class="managed-preview-toolbar"><div><strong class="managed-preview-name"></strong><span class="managed-preview-project"></span><span class="managed-preview-status" role="status" aria-live="polite"></span></div><button type="button" class="managed-preview-reload">Reload</button><button type="button" class="managed-preview-open">Open in new tab</button></header><p class="managed-preview-message" role="status"></p><iframe title="'+(recordKey==='dashboard'?'Product dashboard':'Working app')+'" name="'+frameName+'" sandbox="allow-scripts allow-forms allow-same-origin allow-downloads allow-modals allow-popups"></iframe>';
   panel.append(section);
@@ -46,7 +46,7 @@ export function mountPreview({document,fetch=apiFetch,setTimer=setTimeout,clearT
   async function poll(){
     if(stopped||polling)return;polling=true;const generation=epoch;
     try{
-      const path=endpoint();if(!path){if(selected)reset();section.hidden=true;panel.classList.remove('managed-active');if(legacy)legacy.hidden=false;return;}
+      const path=endpoint();if(recordKey==='dashboard'){const heading=panel.querySelector('#dashboard-heading'),body=panel.querySelector('#dashboard-empty-message');if(heading)heading.textContent=path?'No dashboard registered':'Choose a project';if(body)body.textContent=path?'Ask NED to register a dashboard server for this project.':'Select a project to view its dashboard.';}if(!path){if(selected)reset();section.hidden=true;panel.classList.remove('managed-active');if(legacy)legacy.hidden=false;return;}
       const response=await fetch(path);if(!response.ok)throw new Error();const payload=await response.json(),data={...payload,preview:payload[recordKey]};if(stopped||generation!==epoch)return;
       if(!data.preview){if(selected)reset();section.hidden=true;panel.classList.remove('managed-active');if(legacy)legacy.hidden=false;return;}
       section.hidden=false;panel.classList.add('managed-active');if(legacy)legacy.hidden=true;
@@ -61,7 +61,7 @@ export function mountPreview({document,fetch=apiFetch,setTimer=setTimeout,clearT
       else if(changed||Date.now()>=expires){status.textContent='Connecting '+label.toLowerCase()+'…';await connect();}
       else if(!prepared||Date.now()>=prepared.until){try{prepared={ticket:await issue('tab',epoch),until:Date.now()+20000};}catch{prepared=null;}}
       open.disabled=!ready||!prepared;
-    }catch{if(selected){reset();section.hidden=false;status.textContent=label+' unavailable';message.textContent='Try again or open the app in a new tab.';}}
+    }catch{if(selected||recordKey==='dashboard'){reset();section.hidden=false;panel.classList.add('managed-active');if(legacy)legacy.hidden=true;status.textContent=label+' unavailable';message.textContent='Try again or open the app in a new tab.';}}
     finally{polling=false;if(!stopped)timer=setTimer(()=>{void poll();},2000);}
   }
   reload.addEventListener('click',()=>{if(pending)return;expires=0;void poll();});

@@ -22,7 +22,7 @@ test('TC-059: Debug resets only the idle conversation and shows safe agent activ
     VALUES('project-example','attempt','attempt-finished','attempt.completed','{"private":"Hidden fixture payload"}',?)`).run(now);
   const debug=page.locator('#debug-pane');
   const reset=debug.getByRole('button',{name:'Reset chat session'});
-  const openDebug=()=>page.locator('#debug-toggle').click();
+  const openDebug=async()=>{if(await page.locator('#preview').isHidden())await page.locator('#context-toggle').click();await page.locator('#debug-tab').click();};
   const request=(path,body,token=fixture.accessToken)=>fetch(new URL('/api/v1/chat/'+path,page.url()),{
     method:body?'POST':'GET',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body?{
       'Content-Type':'application/json',Origin:new URL(page.url()).origin}:{} )},...(body?{body:JSON.stringify(body)}:{}),
@@ -43,7 +43,7 @@ test('TC-059: Debug resets only the idle conversation and shows safe agent activ
   await expect(debug).toContainText('Could not confirm the reset');
   await expect(draft).toHaveValue('Draft to preserve on failure');
   fixture.failNewSession(false);
-  await debug.getByRole('button',{name:'Close debug'}).click();
+  await page.locator('#context-close').click();
   await draft.press('Enter');
   await expect.poll(()=>turns.length).toBe(1);
   await openDebug();
@@ -53,7 +53,7 @@ test('TC-059: Debug resets only the idle conversation and shows safe agent activ
   assert.equal((await request('sessions/reset',existing)).status,409);
   turns[0].finish();
   await expect(reset).toBeEnabled();
-  await debug.getByRole('button',{name:'Close debug'}).click();
+  await page.locator('#context-close').click();
   await draft.fill('Discard on reset');
   let releaseUpload,uploadObserved;
   const holdUpload=new Promise(resolve=>{releaseUpload=resolve;});
@@ -97,11 +97,11 @@ test('TC-059: Debug resets only the idle conversation and shows safe agent activ
   assert.deepEqual(concurrent.map(response=>response.status).sort(),[200,409]);
   assert.equal(store.sql.prepare("SELECT state FROM ned_core_attempts WHERE id='attempt-active'").get().state,'running');
   await page.setViewportSize({width:390,height:844});
-  await page.locator('#navigation-toggle').click();
-  await openDebug();
+  await page.locator('#mobile-project-toggle').click();
+  await page.locator('#debug-tab').click();
   await expect(debug).toContainText('implementer · running · task-example');
   await expect(reset).toBeVisible();
   if(evidence)await page.screenshot({path:join(evidence,'mobile-debug-agent-activity.png')});
-  await debug.getByRole('button',{name:'Close debug'}).click();
-  await expect(page.locator('#navigation-toggle')).toBeFocused();
+  await page.locator('#context-close').click();
+  await expect(page.locator('#mobile-project-toggle')).toBeFocused();
 });

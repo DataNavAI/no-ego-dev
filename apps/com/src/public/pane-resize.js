@@ -19,7 +19,7 @@ export function mountPaneResize({shell,divider,view=window,storage=()=>view.loca
     const saved=storage().getItem(preferenceKey);
     if(saved!==null&&/^\d+(\.\d+)?$/.test(saved))preferred=Number(saved);
   }catch{preferred=undefined;}
-  const viewport=()=>shell.clientWidth-(shell.dataset?.debugOpen==='true'?300:0);
+  const viewport=()=>shell.clientWidth;
   const persist=()=>{try{storage().setItem(preferenceKey,String(preferred));}catch{void 0;}};
   const end=event=>{
     if(!drag||(event?.pointerId!==undefined&&event.pointerId!==drag.id))return;

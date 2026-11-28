@@ -16,37 +16,28 @@ function fixture(width=1280,request=async()=>({ok:true,json:async()=>({status:'o
     node.contains=target=>node===target||node.children.includes(target);
     return node;
   };
-  for(const id of ['app-shell','mobile-navigation','navigation-toggle','debug-pane','debug-toggle','debug-close','debug-clear','debug-health','debug-chat','debug-events','debug-empty'])nodes.set(id,make());
+  for(const id of ['app-shell','preview','mobile-navigation','navigation-toggle','debug-pane','debug-toggle','debug-close','debug-clear','debug-health','debug-chat','debug-events','debug-empty'])nodes.set(id,make());
   document.getElementById=id=>nodes.get(id);document.createElement=make;
   view.innerWidth=width;
-  const pane=nodes.get('debug-pane');pane.append(nodes.get('debug-close'));pane.open=false;
+  const pane=nodes.get('debug-pane');pane.hidden=true;pane.append(nodes.get('debug-close'));pane.open=false;
   pane.show=()=>{pane.open=true;pane.modal=false;};pane.showModal=()=>{pane.open=true;pane.modal=true;};pane.close=()=>{pane.open=false;};
   nodes.get('app-shell').dataset={};
   let requests=0;
   const dispose=mountDebugPane({document,view,request:(...args)=>{requests++;assert.equal(args[0],'/api/v1/health');return request(...args);}});
-  const click=id=>nodes.get(id).dispatchEvent(new Event('click'));
+  const click=id=>{if(['debug-toggle','debug-close'].includes(id)){pane.hidden=id==='debug-close'||!pane.hidden;document.dispatchEvent(new Event('ned-context-layout'));}else nodes.get(id).dispatchEvent(new Event('click'));};
   click('debug-clear');
   const tick=()=>new Promise(resolve=>setImmediate(resolve));
   return {nodes,document,view,pane,dispose,click,tick,requests:()=>requests,resize:width=>{view.innerWidth=width;view.dispatchEvent(new Event('resize'));}};
 }
 
-test('TC-032: toggle, breakpoint, Escape and disposal preserve disclosure and focus semantics',async()=>{
-  const subject=fixture();const {nodes,pane}=subject;
-  try{
-    assert.equal(pane.hidden,true);assert.equal(pane.inert,true);assert.equal(nodes.get('debug-toggle').attributes['aria-expanded'],'false');
-    subject.click('debug-toggle');await subject.tick();
-    assert.equal(pane.open,true);assert.equal(pane.modal,false);assert.equal(pane.inert,false);
-    assert.equal(nodes.get('app-shell').dataset.debugOpen,'true');assert.equal(nodes.get('debug-health').textContent,'Available');
-    assert.equal(subject.document.activeElement,nodes.get('debug-close'));assert.equal(subject.requests(),1);
-    subject.resize(390);assert.equal(pane.modal,true);assert.equal(nodes.get('app-shell').dataset.debugOpen,'false');
-    subject.resize(1280);assert.equal(pane.modal,false);
-    const escape=new Event('keydown',{cancelable:true});escape.key='Escape';subject.document.dispatchEvent(escape);
-    assert.equal(escape.defaultPrevented,true);assert.equal(pane.open,false);assert.equal(pane.inert,true);
-    assert.equal(subject.document.activeElement,nodes.get('debug-toggle'));
-    subject.click('debug-toggle');subject.click('debug-close');assert.equal(pane.hidden,true);
-    await subject.tick();assert.equal(subject.requests(),2);
-  }finally{subject.dispose();}
-  subject.click('debug-toggle');assert.equal(pane.open,false);
+test('TC-032: selecting and hiding embedded Debug starts and invalidates probes without layout reservation',async()=>{
+ const subject=fixture();try{
+  assert.equal(subject.pane.hidden,true);assert.equal(subject.requests(),0);
+  subject.click('debug-toggle');await subject.tick();assert.equal(subject.nodes.get('debug-health').textContent,'Available');assert.equal(subject.requests(),1);
+  subject.nodes.get('preview').hidden=true;subject.document.dispatchEvent(new Event('ned-context-layout'));subject.nodes.get('preview').hidden=false;subject.document.dispatchEvent(new Event('ned-context-layout'));await subject.tick();assert.equal(subject.requests(),2);
+  assert.equal(subject.nodes.get('app-shell').dataset.debugOpen,undefined);
+  subject.click('debug-close');subject.click('debug-toggle');await subject.tick();assert.equal(subject.requests(),3);
+ }finally{subject.dispose();}
 });
 
 test('TC-032: only bounded allowlisted lifecycle labels survive, never payload fields',()=>{
@@ -78,27 +69,22 @@ test('TC-032: failed health is explicit and stale probes cannot overwrite a reop
   let count=0;
   const subject=fixture(320,()=>++count===1?new Promise(resolve=>{resolveOld=resolve;}):Promise.reject(Error('SECRET')));
   try{
-    subject.nodes.get('mobile-navigation').open=true;
-    subject.click('debug-toggle');await subject.tick();assert.equal(subject.pane.modal,true);
-    assert.equal(subject.nodes.get('mobile-navigation').open,false);
+    subject.click('debug-toggle');await subject.tick();
     subject.click('debug-close');subject.click('debug-toggle');await subject.tick();
     assert.equal(subject.nodes.get('debug-health').textContent,'Unavailable');
     resolveOld({ok:true,json:async()=>({status:'ok',service:'ned-api',version:1,token:'SECRET'})});await subject.tick();
     assert.equal(subject.nodes.get('debug-health').textContent,'Unavailable');assert.equal(subject.requests(),2);
-    const cancel=new Event('cancel',{cancelable:true});subject.pane.dispatchEvent(cancel);
-    assert.equal(cancel.defaultPrevented,true);assert.equal(subject.pane.hidden,true);
-    assert.equal(subject.document.activeElement,subject.nodes.get('navigation-toggle'));
   }finally{subject.dispose();}
 });
 
-test('TC-032: desktop debug reservation clamps a resized chat and restores its preferred width',()=>{
+test('TC-032: embedded Debug never reduces the available chat resize width',()=>{
   const view=new EventTarget(),divider=new EventTarget(),values={};
   const shell={clientWidth:1280,dataset:{debugOpen:'false'},style:{setProperty:(key,value)=>{values[key]=value;}},classList:{remove:()=>{}}};
   divider.setAttribute=(key,value)=>{values[key]=value;};
   const dispose=mountPaneResize({shell,divider,view,storage:()=>({getItem:()=> '900',setItem:()=>{}})});
   try{
     assert.equal(values['aria-valuenow'],'900');shell.dataset.debugOpen='true';view.dispatchEvent(new Event('resize'));
-    assert.equal(values['aria-valuenow'],'628');assert.equal(values['aria-valuemax'],'628');
+    assert.equal(values['aria-valuenow'],'900');assert.equal(values['aria-valuemax'],'928');
     shell.dataset.debugOpen='false';view.dispatchEvent(new Event('resize'));assert.equal(values['aria-valuenow'],'900');
   }finally{dispose();}
 });

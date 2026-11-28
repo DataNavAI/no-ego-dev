@@ -17,7 +17,7 @@ test('TC-053: grouped mobile header, direct Project and preserved chat use clear
   await page.locator('#context-close').click();await expect(page.locator('#mobile-project-toggle')).toBeFocused();
   await expect(f.draft).toHaveValue('Keep my draft');await expect(page.locator('#chat-task-references')).toContainText('Review task');assert.equal(await transcript.evaluate(n=>n.scrollTop),scroll);
   await page.locator('#mobile-project-toggle').click();assert.equal(await page.locator('#preview-panel').getAttribute('data-retained'),'yes');await page.locator('#context-close').click();
-  await page.locator('#navigation-toggle').click();await expect(page.locator('#debug-toggle')).toBeVisible();await expect(page.locator('#preview-toggle')).toBeHidden();await page.locator('#settings-shortcut').press('Escape');await expect(page.locator('#navigation-toggle')).toBeFocused();
+  await page.locator('#navigation-toggle').click();await expect(page.locator('#dashboard-shortcut')).toBeVisible();await expect(page.locator('#preview-toggle')).toBeHidden();await page.locator('#artifacts-shortcut').press('Escape');await expect(page.locator('#navigation-toggle')).toBeFocused();
   for(const width of [320,390,430]){
     await page.setViewportSize({width,height:844});
     await expect(page.locator('#mobile-project-toggle')).toBeInViewport({ratio:1});
