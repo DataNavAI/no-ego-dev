@@ -1,3 +1,4 @@
+import {mountAgentSession} from './agent-session.js';
 import {mountIdleActivity} from './idle-activity.js';
 import {mountChat} from './chat-ui.js';
 import {apiFetch,ApiEventSource} from './api-client.js';
@@ -40,3 +41,5 @@ if(viewport){
   mobile.addEventListener('change',fitVisibleViewport);
   fitVisibleViewport();
 }
+
+mountAgentSession({document,request:apiFetch,libraries:{marked,DOMPurify}});

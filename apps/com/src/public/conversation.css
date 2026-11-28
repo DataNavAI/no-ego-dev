@@ -217,3 +217,15 @@
 .provider-auth-modal button { min-block-size: 44px; font-size: .8125rem; }
 .provider-auth-card .provider-code { flex-wrap: wrap; }
 .provider-auth-card .provider-code code { font-size: 1rem; letter-spacing: normal; }
+
+#agent-session{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;background:var(--chat-canvas)}
+#agent-session[hidden]{display:none}
+.chat-pane[data-agent-session]>:not(#agent-session){visibility:hidden}
+.agent-session-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;padding:10px 16px;background:#fff2c8;color:#4e3b0a;border-bottom:1px solid #e2cf95}
+.agent-session-banner>div{min-width:0}.agent-session-banner span{display:block;overflow-wrap:anywhere;font-size:13px}
+#agent-session-return{min-height:44px;padding:6px 12px;border:1px solid #cbbb87;border-radius:8px;background:var(--surface)}
+#agent-session-status{margin:8px 16px}#agent-session-status:empty{display:none}
+.delivery-filter{display:flex;align-items:center;gap:8px;min-height:44px}
+.delivery-sessions{list-style:none;padding:0;font-size:13px;overflow-wrap:anywhere}
+.delivery-sessions li+li{margin-top:8px}.delivery-sessions a{display:block}
+.delivery-blocked{border-inline-start:2px solid var(--border);padding-inline-start:10px;margin-top:8px}

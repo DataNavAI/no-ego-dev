@@ -9,6 +9,7 @@ const assets = new Map([['/',['index.html','text/html']],['/styles.css',['styles
 assets.set('/preview-ui.js',['preview-ui.js','text/javascript']);
 assets.set('/model-setup.js',['model-setup.js','text/javascript']);
 assets.set('/idle-activity.js',['idle-activity.js','text/javascript']);
+assets.set('/agent-session.js',['agent-session.js','text/javascript']);
 assets.set('/chat-entry.js',['chat-entry.js','text/javascript']);
 assets.set('/history.js',['history.js','text/javascript']);
 assets.set('/message-content.js',['message-content.js','text/javascript']);

@@ -28,6 +28,11 @@ test('TC-054: real chat-triggered task registration feeds the all-project Goals 
     await f.draft.fill('Plan the '+name);await f.draft.press('Enter');
     await expect.poll(()=>f.turns.length).toBe(index+1);
     f.turns.at(-1).finish();
+    if(index===0){
+      await expect(goals).toContainText('No task working now.');
+      await expect(goals).not.toContainText(name+' verification');
+      await goals.getByRole('checkbox',{name:'Show inactive tasks'}).check();
+    }
     await expect(goals).toContainText(name+' launch');
     await expect(goals).toContainText(name+' verification');
   }

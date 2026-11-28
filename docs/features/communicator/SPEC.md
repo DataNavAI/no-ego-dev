@@ -1086,3 +1086,21 @@ Traceability: provisional report-guidance FR-106/CUJ-037/TC-059 were remapped to
 - Pass evidence: inspect the generated messages and judge findings for case G.
 
 Coverage: FR-109/110 → CUJ-039 → TC-061.
+
+## Active Goals work and agent sessions
+- FR-111: Goals shows only working tasks and their goal headings by default. Show inactive tasks reveals other task states. A dependency-blocked task is displayed once below a non-completed prerequisite task in its project when both are visible. Tasks with no known prerequisite remain in their goal.
+- FR-112: Working tasks show the running or stopping Core sessions NED has bound to the task. Show each session ID, recorded start and elapsed time. Unknown timestamps are labeled. A working task without an observable binding displays that status.
+- FR-113: A session link opens the bound transcript inside Chat with a banner naming the agent and a return to main control. Refresh the latest session messages while this view is open. The active worker retains execution ownership. The main transcript and draft stay mounted, and returning restores their view. A missing or revoked binding is unavailable.
+
+### CUJ-040: Follow active work from Goals
+An operator opens Goals, sees the working tasks, and opens a bound session to see its latest messages. They return to main chat without losing their draft. They enable Show inactive tasks to inspect dependency blockers.
+
+### TC-062: Goals filtering, blocker nesting and session navigation
+- Journey / requirements: CUJ-040 / FR-111–113.
+- Level / automation: browser integration; [TC-062](tests/TC-062.test.js).
+- Preconditions: isolated browser, working and blocked synthetic tasks, bound agent messages and an unsent main draft.
+- When: open Goals, toggle inactive work, open a session, then return to main.
+- Then: working tasks are shown by default, blocked work appears under its prerequisite after enabling inactive work, session metadata and transcript display, and the main draft and transcript remain intact. An unavailable session reports an error with a working return control.
+- Cleanup / evidence: close the test browser and synthetic server. Existing TC-042 verifies the persisted project/attempt/session authorization boundary.
+
+Coverage: FR-111–113 → CUJ-040 → TC-062; TC-054 verifies registered inactive work after enabling Show inactive tasks. TC-041/042 and TC-057 retain their navigation and project coverage.
