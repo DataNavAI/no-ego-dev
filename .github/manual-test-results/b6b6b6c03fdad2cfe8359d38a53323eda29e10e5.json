@@ -1,0 +1,14 @@
+{
+  "candidate_sha": "b6b6b6c03fdad2cfe8359d38a53323eda29e10e5",
+  "tested_at": "2026-11-28T05:42:59.616388+00:00",
+  "environment": "macOS ARM64, Node22 private runtime, disposable Chromium/COM profiles and synthetic CLI subprocesses; native Docker Colima offline image acceptance separately exercised.",
+  "result": "pass",
+  "commands": [
+    "node --test docs/features/provider-identity/tests/TC-{001,004,006,007,009}.test.js docs/features/communicator/tests/TC-013.test.js",
+    "node ../capture-providers.mjs",
+    "node ../capture-cli.mjs",
+    "Actual Hermes prompt_builder.load_soul_md with disposable canonical SOUL profile",
+    "Paired fresh-agent skill evaluation using frozen SKILL.md and synthetic evaldata/requests.md"
+  ],
+  "observations": "Exact candidate:31 focused assertions pass; provider failure/parser/legacy URL identity preserved, Hub owner-only transport, isolated gh argv/environment and account verification/confirmation, wrong account/missing gh/malformed output/cancel/timeout/owned crash recovery pass. Synthetic private GitHub dialog and failed-attempt card reviewed at1280/390/320px: no horizontal overflow or browser errors, correct GitHub URL, cancellation works, no live codes/tokens. Canonical guidance loads through actual Hermes prompt builder without model calls. Full repository lint/Node/spec/Python/Hermes gates passed before integration and run again on this evidence commit. Local ARM64 actual-image tool acceptance passed including gh; both architecture PR checks are required before merge. Live GitHub consent TC-010 and existing provider sandbox cases are NOT RUN: operator approval is separate and no live authorization is claimed. No credentials/runtime contents committed."
+}
