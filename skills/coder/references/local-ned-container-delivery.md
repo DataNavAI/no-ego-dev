@@ -1,5 +1,7 @@
 # Local NED container delivery after a feature merge
 
+Docker is the sole default local NED web runtime on this host. The retired native COM launcher must remain disabled; do not resurrect it or start another native service as a delivery fallback. Saved native profiles and administrative CLI tools are retained data, not a running instance. The host's private `~/.local/share/ned-local-container/runtime-policy.json`, when present, records this selection and any explicit update deferral.
+
 The user's local NED container should expose the feature just merged. Restarting
 an older image or a separate native COM process leaves the container stale.
 
@@ -21,7 +23,7 @@ an older image or a separate native COM process leaves the container stale.
    reconstructing credentials and mounts. Preserve configuration and user data.
 4. Treat `Deferred`, lock contention, missing ownership, busy work, pending CI,
    failed health or recovery as pending delivery even if the command returns zero.
-   Retry after the actual condition clears, without killing agent work or bypassing
+   Honor an explicit user deferral until the user resumes delivery; elapsed time is not authorization. Otherwise retry after the actual condition clears, without killing agent work or bypassing
    maintenance/ownership checks. Use the updater's journal recovery on interruption;
    do not discard its journal or rollback state to force progress.
 5. Independently read back the owned container's running state, immutable image ID,
@@ -36,3 +38,5 @@ an older image or a separate native COM process leaves the container stale.
 
 For a non-NED project, follow that project's delivery contract instead. Never
 apply this machine's container names or updater to unrelated services.
+
+For policy/skills-only changes, deploy the merged canonical files to the default skills staging home and validate their fresh load; this does not start native NED or justify interrupting the Docker workload. For ordinary runtime CLI work, execute inside the owned Docker container rather than automatically launching a host Core/COM process.

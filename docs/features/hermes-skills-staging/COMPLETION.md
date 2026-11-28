@@ -1,28 +1,9 @@
 # Complete and deploy a NED task
 
-## Mandatory completion: merge and local deployment
+## Mandatory completion: merged files and the selected runtime
 
-For every task in this distribution, completion requires applicable checks and
-manual acceptance, independent review, merge into remote `main`, and verified
-deployment from that merged commit to the default local Hermes instance. The user
-has authorized this normal merge/deployment flow; do not repeatedly request it.
-Do not mark NED tasks/goals done or send a completion report while any gate remains
-pending. A local implementation, draft PR, passing tests, or skills-only copy does
-not establish full deployment.
+Use the canonical [coder completion policy](../../../skills/coder/SKILL.md#mandatory-completion-merge-and-docker-only-local-delivery). Docker is the sole default local NED web runtime on this host; do not restart or re-enable the retired native COM service after a task.
 
-Use an isolated checkout for the task; preserve unrelated working-tree changes.
-Fetch main, resolve integration, run the repository's required automated/manual
-checks, obtain exact-candidate review and green PR checks, merge, then read back
-the remote merged SHA. Deploy only committed merged contents. For CLI/runtime
-changes run the canonical checkout installer `bash scripts/install.sh` from the
-merged checkout and verify installed commands and generation identity. Run
-`node scripts/deploy-hermes-skills.mjs` for canonical skills. Install/update any
-affected profile-local plugins, preserve existing user configuration/credentials,
-enable only required plugin/toolset entries, and reload affected local Hermes/COM
-processes when needed. Verify the running/local installed behavior at the merged
-revision, then record merge/deployment evidence and complete the owned NED task.
-Never use AWS or named-profile rollout as a substitute for this local target.
-If deployment/review/access fails, keep work open with the actual blocker and
-continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.
+Run required checks, self-review and green PR checks, merge, and read back the remote revision. Deploy affected components from that merged source. Skills/docs-only updates synchronize canonical files to `~/.hermes` with fresh-load validation and no service start. Runtime/UI updates use the maintained Docker updater with ownership, CI, maintenance and rollback gates; verify running revision, health and Hub connection. Preserve existing profile state and install affected plugin/persona changes with backups when needed.
 
-Deployment applies to affected components only. A policy/docs-only task needs the merged skill/profile update and fresh-load validation; a CLI or native-tool task additionally needs installed CLI/plugin behavior and applicable local process reload. Record exact main SHA, deployment target, component hashes/version/readiness and any rollback. Runtime receipts/backups stay outside source control.
+A user-deferred or busy Docker rollout remains pending. Native CLI installation or a native COM restart cannot substitute for that delivery. Retain native profile data and administrative tools; deleting them is not required for a single running Docker instance. Runtime receipts/backups remain outside source control.

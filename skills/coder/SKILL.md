@@ -1,7 +1,7 @@
 ---
 name: coder
 description: "Use when implementing a tech-spec task or fixing a bug in a software repository."
-version: 0.4.4
+version: 0.4.5
 author: NoEgoDev
 license: MIT
 metadata:
@@ -15,30 +15,36 @@ metadata:
 
 Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
-## Mandatory completion: merge and local deployment
+## Mandatory completion: merge and Docker-only local delivery
 
-For every task in this distribution, completion requires applicable checks and
-manual acceptance, self-review, merge into remote `main`, and verified
-deployment from that merged commit to the default local Hermes instance. The user
-has authorized this normal merge/deployment flow; do not repeatedly request it.
-Do not mark NED tasks/goals done or send a completion report while any gate remains
-pending. A local implementation, draft PR, passing tests, or skills-only copy does
-not establish full deployment.
+For every task in this distribution, complete applicable checks and manual
+acceptance, self-review the exact candidate, merge into remote `main` after green
+PR checks, and verify delivery of the affected components. Existing authorization
+for normal merge/delivery persists; do not ask again. Use isolated checkouts and
+preserve unrelated changes, credentials, configuration, sessions and project data.
 
-Use an isolated checkout for the task; preserve unrelated working-tree changes.
-Fetch main, resolve integration, run the repository's required automated/manual
-checks, self-review the exact candidate and require green PR checks, merge, then read back
-the remote merged SHA. Deploy only committed merged contents. For CLI/runtime
-changes run the canonical checkout installer `bash scripts/install.sh` from the
-merged checkout and verify installed commands and generation identity. Run
-`node scripts/deploy-hermes-skills.mjs` for canonical skills. Install/update any
-affected profile-local plugins, preserve existing user configuration/credentials,
-enable only required plugin/toolset entries, and reload affected local Hermes/COM
-processes when needed. Verify the running/local installed behavior at the merged
-revision, then record merge/deployment evidence and complete the owned NED task.
-Never use AWS or named-profile rollout as a substitute for this local target.
-If deployment/checks/access fails, keep work open with the actual blocker and
-continue safe recovery. Do not bypass hooks, CI, ownership or secret protections.
+**Docker is the only default local NED web runtime on this host.** Use the owned
+`ned-local-mac` container in `colima-ned-staging`. Do not start, restart, re-enable or
+reinstall a native COM service to finish a task, and do not create a second NED
+instance when Docker is busy, deferred or unavailable. Native CLI tools and saved
+Hermes profiles may remain for administration; their presence is not permission
+to run another service. Use the Docker CLI for ordinary local NED runtime work.
+Changing this runtime choice requires an explicit user request.
+
+Run `node scripts/deploy-hermes-skills.mjs` for canonical file-only skills staging
+to `~/.hermes`; verify the copy without starting native Hermes/COM. A skills/docs-only
+task needs merged instruction deployment and fresh-load validation, not an image
+rollout merely to reload instructions. Runtime/UI feature delivery goes through
+the maintained Docker updater below. Install affected container-local plugins or
+scoped persona guidance with private backups when needed; image replacement does
+not migrate an existing seeded profile. Preserve user work and use the supported
+maintenance/reload procedure. Host CLI maintenance, if actually required, may use
+the canonical installer, but must not start a native COM service.
+
+Do not mark runtime delivery complete while required rollout/verification is
+pending. A user-deferred Docker update stays deferred: record the limitation and
+pending tracker state without forcing a restart or substituting a native service.
+Never substitute AWS or named-profile deployment for this local Docker target.
 
 ### NED development: refresh the local container after feature merges
 
