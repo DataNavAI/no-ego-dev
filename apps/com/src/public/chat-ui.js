@@ -57,7 +57,7 @@ export function mountChat(libraries) {
     const following=followingLatest();
     ensureLiveArticle();
     if(progress.textContent!==label)progress.textContent=label;
-    if(following)bottom(false);
+    if(following)bottom();
   }
   const empty = element('chat-empty');
   const draft = element('chat-message');
@@ -70,6 +70,7 @@ export function mountChat(libraries) {
   let older = false;
   let refreshNeeded = false;
   let historyHead = null;
+  let historyRevision = 0;
   let historyReady = false;
   let loadingOlder=false,olderFailed=false,olderNotice='',activeTurn=null,pendingUser=null,lastStopped=false;
   let liveArticle,liveContent,progress;
@@ -100,20 +101,20 @@ export function mountChat(libraries) {
     }
     return followLatest;
   }
-  function bottom(smooth){
+  function bottom(){
     followLatest=true;
-    transcript.scrollTo({top:transcript.scrollHeight,behavior:smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant'});
+    transcript.scrollTo({top:transcript.scrollHeight,behavior:'instant'});
     observedTop=transcript.scrollTop;
   }
   function renderLatest(){
     const latest=element('latest');
-    const live=Boolean(activeTurn)&&!followingLatest();
-    latest.hidden=!historyReady||!sessionId||(!live&&!refreshNeeded&&offset===0);
-    latest.disabled=busy&&!live;
+    const away=!followingLatest();
+    latest.hidden=!historyReady||!sessionId||(!away&&!refreshNeeded&&offset===0);
+    latest.disabled=busy&&!activeTurn;
   }
   if(typeof ResizeObserver!=='undefined'){
     new ResizeObserver(()=>{
-      if(historyReady&&followingLatest())bottom(false);
+      if(historyReady&&followingLatest())bottom();
     }).observe(transcript);
   }
   function renderSend(){
@@ -188,7 +189,7 @@ export function mountChat(libraries) {
     pendingUser.append(author,renderMessageContent({role:'user',content:text},document,libraries));
     if(children.length>=200)children.splice(anchor===children.at(-1)?0:199,1);
     replaceMessages([...children,pendingUser]);
-    if(following)bottom(false);else{transcript.scrollTop=top+(anchorTop===undefined?0:anchor.getBoundingClientRect().top-anchorTop);observedTop=transcript.scrollTop;}
+    if(following)bottom();else{transcript.scrollTop=top+(anchorTop===undefined?0:anchor.getBoundingClientRect().top-anchorTop);observedTop=transcript.scrollTop;}
   }
   function ensureLiveArticle(){
     if(liveArticle)return;
@@ -215,7 +216,7 @@ export function mountChat(libraries) {
     liveArticle.dataset.state='streaming';
     liveContent.hidden=false;
     liveContent.textContent=text;
-    if(following)bottom(false);
+    if(following)bottom();
   }
   async function api(path, body) {
     const phase=path==='/fixed'?'fixed_session':path.includes('/messages?')?'history':'turn_stream';
@@ -288,7 +289,7 @@ export function mountChat(libraries) {
     }
     lastStopped=result.turn.status==='stopped';
     recordChatDiagnostic('completed');
-        if(liveArticle){const following=followingLatest();const top=transcript.scrollTop;liveArticle.dataset.state='completed';liveArticle.hidden=!messageParts(result.message).length;liveArticle.replaceChildren(liveArticle.firstElementChild,renderMessageContent(result.message,document,libraries));if(following)bottom(false);else{transcript.scrollTop=top;observedTop=transcript.scrollTop;}}
+        if(liveArticle){const following=followingLatest();const top=transcript.scrollTop;liveArticle.dataset.state='completed';liveArticle.hidden=!messageParts(result.message).length;liveArticle.replaceChildren(liveArticle.firstElementChild,renderMessageContent(result.message,document,libraries));if(following)bottom();else{transcript.scrollTop=top;observedTop=transcript.scrollTop;}}
         return result;
   }
   async function action(work, mutation = false) {
@@ -304,18 +305,27 @@ export function mountChat(libraries) {
     }
   }
   async function history(direction = 'latest') {
+    // Jump to latest can finish while an older page is checking its history head.
+    const revision=++historyRevision;
     const next = direction === 'older' ? offset+rows.length : direction === 'newer' ? Math.max(0,offset-50) : 0;
-    const data = await api(`/${encodeURIComponent(sessionId)}/messages?offset=${next}`);
-    let updated;
+    let data,updated;
+    try {
+      data=await api(`/${encodeURIComponent(sessionId)}/messages?offset=${next}`);
+      if(revision!==historyRevision)return false;
+    }catch(error){
+      if(revision!==historyRevision)return false;
+      throw error;
+    }
     try {
       validateMessagePage(data.data);
       updated=direction==='latest' ? data.data : mergePage(rows,data.data,direction,direction==='newer' ? Math.min(data.data.length,offset-next) : data.data.length);
       if(direction!=='latest'){
         const latest=await api(`/${encodeURIComponent(sessionId)}/messages?offset=0`);
+        if(revision!==historyRevision)return false;
         validateMessagePage(latest.data);
         if(String(latest.data.at(-1)?.id ?? '')!==historyHead)throw Object.assign(new Error('History changed.'),{code:'history_changed'});
       }
-    }catch(error){refreshNeeded='History changed. Jump to latest to reload.';throw error;}
+    }catch(error){if(revision!==historyRevision)return false;refreshNeeded='History changed. Jump to latest to reload.';throw error;}
     followingLatest();
     const firstMessage=messageNodes()[0];
     const anchorId=firstMessage?.dataset.messageId;
@@ -329,17 +339,18 @@ export function mountChat(libraries) {
     if (direction === 'older' && anchor !== undefined) transcript.scrollTop=top+(Array.from(transcript.children).find(child=>child.dataset.messageId===anchorId)?.getBoundingClientRect().top ?? anchor)-anchor;
     else transcript.scrollTop=top;
     observedTop=transcript.scrollTop;
+    return true;
   }
   function historyFailure(error){olderFailed=true;olderNotice=error.code==='history_changed'?refreshNeeded:'Earlier messages could not be loaded.';status.textContent=olderNotice;element('chat-retry').hidden=false;}
   async function fillUnderfilled(limit=20){
     for(let pages=0;pages<limit&&older&&!refreshNeeded&&!olderFailed&&transcript.scrollHeight<=transcript.clientHeight;pages++){
-      try{await history('older');}catch(error){historyFailure(error);break;}
+      try{if(!await history('older'))break;}catch(error){historyFailure(error);break;}
     }
   }
   async function loadOlder(){
     if(loadingOlder||busy||!historyReady||!older||refreshNeeded||olderFailed)return;
     loadingOlder=true;
-    try{await history('older');await fillUnderfilled(19);status.textContent=olderNotice;}
+    try{if(await history('older')){await fillUnderfilled(19);if(!busy)status.textContent=olderNotice;}}
     catch(error){historyFailure(error);}
     finally{loadingOlder=false;render();if(reconnectQueued)reconnectChat();}
   }
@@ -352,7 +363,7 @@ export function mountChat(libraries) {
     sessionId=data.session.id;
     await history();
     await fillUnderfilled();
-    bottom(false);
+    bottom();
     if(data.active_turn){
       const turn=data.active_turn;
       if(!/^[a-f0-9-]{36}$/.test(turn.id)||turn.status!=='pending')throw new Error('Unavailable');
@@ -367,7 +378,7 @@ export function mountChat(libraries) {
         if(followingLatest()){
           await history();
           await fillUnderfilled();
-          if(followingLatest())bottom(false);
+          if(followingLatest())bottom();
         }else refreshNeeded='New reply available. Jump to latest.';
       }catch(error){
         markIncomplete();
@@ -419,20 +430,20 @@ export function mountChat(libraries) {
   element('latest').addEventListener('click',()=>{
     if(document.activeElement===element('latest'))transcript.focus({preventScroll:true});
     if(activeTurn){
-      bottom(false);renderLatest();return;
+      bottom();renderLatest();return;
     }
-    void action(async()=>{await history();await fillUnderfilled();bottom(true);});
+    void action(async()=>{await history();await fillUnderfilled();bottom();});
   });
   document.addEventListener('ned-provider-chat-changed',()=>{
     if(!activeTurn){
       providerAfter=undefined;
       transcript.append(providerRequests);
     }
-    if(historyReady&&followLatest)bottom(false);
+    if(historyReady&&followLatest)bottom();
     render();
   });
   element('chat-retry').addEventListener('click',()=>{if(olderFailed&&!refreshNeeded){olderFailed=false;olderNotice='';element('chat-retry').hidden=true;void loadOlder();}else void action(initialize);});
-  transcript.addEventListener('scroll',()=>{renderLatest();if(transcript.scrollTop<=80)void loadOlder();});
+  transcript.addEventListener('scroll',()=>{renderLatest();if(!followingLatest()&&transcript.scrollTop<=80)void loadOlder();});
   transcript.addEventListener('wheel',event=>{if(event.deltaY<0&&transcript.scrollTop<=80)void loadOlder();},{passive:true});
   transcript.addEventListener('keydown',event=>{if(['PageUp','Home','ArrowUp'].includes(event.key)&&transcript.scrollTop<=80)void loadOlder();});
   element('chat-send').addEventListener('click',event=>{if(activeTurn){event.preventDefault();void requestStop(activeTurn);}});
@@ -454,7 +465,7 @@ export function mountChat(libraries) {
       const following=followingLatest();
       if(data.session_id!==sessionId)throw new Error('Unavailable');
       if(fromComposer){media.clear();references.clear();}
-      if(following){await history();await fillUnderfilled();if(followingLatest())bottom(true);}else refreshNeeded='New reply available. Jump to latest.';
+      if(following){await history();await fillUnderfilled();if(followingLatest())bottom();}else refreshNeeded='New reply available. Jump to latest.';
       }catch(error){
         void modelSetup.refresh();
         if(fromComposer&&!draft.value)draft.value=input;

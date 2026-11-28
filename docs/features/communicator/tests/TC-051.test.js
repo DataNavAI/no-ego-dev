@@ -78,6 +78,63 @@ test('TC-051: completion preserves scroll intent while canonical history is load
   assert.equal(await transcript.evaluate(node=>node.scrollTop),position);
 });
 
+test('TC-051: jumping to latest wins over an older page already in flight',{timeout:30000},async t=>{
+  const rows=Array.from({length:350},(_,index)=>({id:`history-${index}`,role:'assistant',content:`History message ${index}`}));
+  const {page,ready,draft}=await browserChat(t,{existing:true,rows});
+  const transcript=page.locator('#transcript');
+  const latest=page.getByRole('button',{name:'Jump to latest'});
+  const final=transcript.locator('[data-message-id="history-349"]');
+  const atTail=()=>transcript.evaluate(node=>node.scrollHeight-node.clientHeight-node.scrollTop<=2);
+  const top=()=>transcript.evaluate(node=>node.scrollTo({top:0,behavior:'instant'}));
+  await ready();
+  await expect(final).toBeInViewport({ratio:1});
+  for(const first of [250,200,150,100]){
+    await top();
+    await expect(transcript.locator(`[data-message-id="history-${first}"]`)).toHaveCount(1);
+  }
+  await expect(final).toHaveCount(0);
+  let release,held=false;
+  const hold=new Promise(resolve=>{release=resolve;});
+  const request='**/api/v1/chat/sessions/nedcom-main/messages?offset=0';
+  try{
+    await page.route(request,async route=>{held=true;await hold;await route.continue();},{times:1});
+    await top();
+    await expect.poll(()=>held).toBe(true);
+    await latest.click();
+    await expect(final).toBeInViewport({ratio:1});
+    await expect.poll(atTail).toBe(true);
+    await draft.fill('Keep this draft after the jump.');
+    const send=page.getByRole('button',{name:'Send message'});
+    await expect(send).toBeDisabled();
+    release();
+    // Send is re-enabled only after the older-history handler has settled.
+    await expect(send).toBeEnabled();
+    await expect(draft).toHaveValue('Keep this draft after the jump.');
+    await expect(final).toBeInViewport({ratio:1});
+    assert.equal(await atTail(),true);
+    await expect(latest).toBeHidden();
+    const evidence=process.env.NED_UI_EVIDENCE_DIR;
+    if(evidence)await page.screenshot({path:join(evidence,'latest-after-older-read.png')});
+  }finally{release();}
+});
+
+test('TC-051: idle mobile history offers Jump to latest before any pagination',async t=>{
+  const rows=Array.from({length:20},(_,index)=>({id:`idle-${index}`,role:'assistant',content:`Idle message ${index}`}));
+  const {page,ready}=await browserChat(t,{existing:true,rows,viewport:{width:390,height:844}});
+  const transcript=page.locator('#transcript');
+  const latest=page.getByRole('button',{name:'Jump to latest'});
+  const final=transcript.locator('[data-message-id="idle-19"]');
+  await ready();
+  await expect(final).toBeInViewport({ratio:1});
+  await transcript.evaluate(node=>node.scrollBy({top:-300,behavior:'instant'}));
+  await expect(final).not.toBeInViewport();
+  await latest.click();
+  await expect(final).toBeInViewport({ratio:1});
+  await expect(latest).toBeHidden();
+  const evidence=process.env.NED_UI_EVIDENCE_DIR;
+  if(evidence)await page.screenshot({path:join(evidence,'mobile-latest-visible.png')});
+});
+
 test('TC-051: mobile composer remains in a keyboard-sized visual viewport',async t=>{
   const {page,draft,ready,turns}=await browserChat(t,{
     viewport:{width:390,height:844},
