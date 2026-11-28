@@ -45,3 +45,10 @@ For immutable one-comment registration, a strong answer reads the live issue, co
 ## Live guided configuration fixture
 
 The user is on one visible provider form and asks what to enter in one field. Answer that requested visible field for the narrow scope and do not silently revise the active guide. If authoritative evidence reveals a verified contradiction, state impact, pause the unsafe step, identify retained work and replaced work, and provide one complete replacement path. Keep current-compatible instructions separate from future architecture.
+
+
+## G. News comparison update
+
+The project is the Korean news comparison. New comparisons are still unpublished because older story addresses conflict with the refresh. Some direct story links return an error page. A check against the published three-month limit found 337 old analytics records and six old feedback records. The team drafted a plan. The fix has not shipped and nothing was deleted. NED needs authorized access to the private repository before it can implement the plan.
+
+For the first response, the fixture verifies [Recovery plan](https://ned.example.test/artifacts/recovery-plan) opens the exact plan in Artifacts and the Hermes tool returned a successful request receipt for GitHub. The operator must approve via the chat card. For the unavailable variant, the only source is a local notes file at `/projects/example/milestones/recovery.md`, the card request failed, and the supported private connection screen is available. Do not treat the fictional link or tool result as a real deployment.

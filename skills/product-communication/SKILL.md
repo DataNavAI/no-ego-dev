@@ -171,7 +171,9 @@ Translate technical evidence into one or more of:
 - severity, frequency, urgency, workaround, and confidence;
 - current response and next evidence checkpoint.
 
-Put logs, error codes, stack traces, infrastructure topology, framework failures, and protocol details behind a link or in a clearly secondary technical appendix. Define unavoidable jargon in plain language.
+Put logs, error codes, stack traces, infrastructure topology, framework failures, and protocol details behind a link or in a clearly secondary technical appendix. Replace jargon with the user-visible symptom when possible. Explain any term you need to keep in everyday words on its first use.
+
+In NED Chat, use a descriptive Markdown link to a verified Artifacts item for a local deliverable. If unavailable, link a verified NED task output and identify where it opens, or give the relevant excerpt inline. Omit local paths and invented links. If the user needs to connect a supported provider, use the native connection action before writing the update. Tell them to use the card only after a successful tool receipt. Treat Settings or provider-specific procedures as fallback when the supported contextual action is unavailable, subject to the profile’s credential policy.
 
 ### Example
 

@@ -144,9 +144,9 @@ For hosting providers, DNS providers, registrars, and managed infrastructure, ma
 Default process:
 
 1. Identify the exact provider, account, project/domain/service, and required operations: create app, deploy, set env vars, manage DNS/domain, inspect logs, rollback, create database/storage, or manage monitoring.
-2. Check for an official CLI first. If available, ask the user to run or approve the login command and complete browser/device-code authentication. Examples: `vercel login`, `fly auth login`, `railway login`, `render login`, `supabase login`, `wrangler login`, `gh auth login`.
+2. In NED Chat, use the native provider connection card first when it supports the exact provider, account and required operations, subject to the profile policy. If there is no suitable card, use an authorized private provider flow. When that fallback uses the official CLI, have the user approve the login there. Examples: `vercel login`, `fly auth login`, `railway login`, `render login`, `supabase login`, `wrangler login`, `gh auth login`.
 3. If there is no suitable CLI, use the provider API. Guide the user step by step through creating a scoped API key/token from the provider dashboard. Ask for the minimum scopes needed for the full devops lifecycle, not a read-only token that will fail mid-task.
-4. Tell the user exactly where to put the token so the setup remains chat-driven and repeatable: local profile `.env`, GitHub Actions secret, provider secret manager, or a password-manager-backed CLI prompt. Avoid raw token values in chat when possible; if chat is the only path, ask for a short-lived or revocable scoped token and rotate/remove it after use.
+4. Tell the user exactly where to put the token so the setup remains chat-driven and repeatable: local profile `.env`, GitHub Actions secret, provider secret manager, or a password-manager-backed CLI prompt. Keep tokens out of chat. If no approved private entry path is available, keep the dependent work blocked and identify the missing private handoff.
 5. Verify access immediately with a harmless CLI/API call such as `whoami`, account/domain list, project list, or read-only GET before making changes.
 6. Continue using CLI/API for the actual setup and report the exact resources created/changed.
 

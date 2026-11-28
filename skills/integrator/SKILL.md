@@ -114,7 +114,7 @@ Do not import or execute an unreviewed convenience wrapper that forwards profile
 
 ## Account Setup Request Template
 
-Use a provider-specific version of this when access is missing:
+For supported NED Chat provider consent, queue the native connection card before asking the user to act, subject to the profile policy. Use a provider-specific version of the private fallback below when the card cannot provide the required access:
 
 ```text
 I can finish the <tool/provider> setup if you complete this one-time access step.

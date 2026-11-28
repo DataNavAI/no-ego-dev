@@ -145,6 +145,8 @@ Any of the following requires `CHANGES_REQUIRED`:
 
 A command that returned without an error proves only that narrow fact. Do not rewrite it as `uploaded`, `published`, `deployed`, `live`, or `available` without authoritative readback. Prefer: `The upload command returned without an error, but availability has not been verified.`
 
+For a NED Chat update, treat a raw local path or a link whose destination is unverified as unusable evidence. The reply should name a verified Artifacts link when available, identify a verified alternate output as such, or offer the relevant excerpt. Treat a Settings-first instruction as a material action defect when the context confirms a supported native connection action can create the chat card. Require evidence of the tool receipt before the message claims a card is present.
+
 ## Plain-Language Checks
 
 ### Jargon and acronym check

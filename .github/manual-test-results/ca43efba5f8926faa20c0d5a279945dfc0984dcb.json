@@ -1,0 +1,11 @@
+{
+  "candidate_sha": "ca43efba5f8926faa20c0d5a279945dfc0984dcb",
+  "tested_at": "2026-11-28T04:55:58.315626+00:00",
+  "result": "pass",
+  "environment": "macOS ARM64, Node 22, isolated Hermes skill evaluation with synthetic news-project evidence",
+  "commands": [
+    "npm run test:all",
+    "python -m eval_runner.cli /tmp/ned-news-readability-eval/EVAL.yaml --markdown"
+  ],
+  "observations": "The focused readability eval passed for both available and unavailable artifact/connection surfaces. The generated messages kept plain-language impact and the verified record counts, used only the provided link when available, and distinguished a queued connection from a connected account. Self-review and skill audit corrected Settings-first and chat-token instructions. Artifact browsing remains tracked in #117."
+}

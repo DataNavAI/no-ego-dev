@@ -160,7 +160,9 @@ Some services only support dashboard setup or Sign in with Google. Keep a dedica
 - If a login requires password/2FA/passkey/CAPTCHA, pause and ask the user to complete that step in the browser; do not ask for the secret in chat.
 - Use signed-in browser SSO for services that support Google login, but still check the selected Google account and workspace before creating resources.
 
-### Ask the user to sign in over chat
+### Request sign-in from chat
+
+For a supported provider and surface, use the NED connection card before asking for manual steps, subject to the active profile’s identity policy. The following dedicated-browser flow applies when the scoped task requires browser SSO and no supported connection card provides it.
 
 ```text
 I need the agent browser profile signed in as <agent_google_account> so I can use Sign in with Google for project services.
