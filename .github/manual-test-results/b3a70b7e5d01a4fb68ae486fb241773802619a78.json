@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "b3a70b7e5d01a4fb68ae486fb241773802619a78",
+  "tested_at": "2026-11-28T06:12:14.713541+00:00",
+  "result": "pass",
+  "environment": "Isolated Hermes behavioral evaluations and local Node 22/Python suite, macOS ARM64",
+  "commands": [
+    "npm run test:all",
+    "python -m eval_runner.cli skills/subagent-driven-development --markdown",
+    "Isolated main-session responsibilities and delegation-recovery behavioral evaluation"
+  ],
+  "observations": "The evals proved guidance on tracker intake before dispatch, small-fix delegation, manager verification and worker recovery. They covered a failed worker, a temporarily unavailable delegation runtime, explicit tracker choice, and direct handling of pure questions. No eval mutated a real task board or external service."
+}
