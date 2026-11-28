@@ -158,7 +158,7 @@ export function mountGoalTasks({document,fetch}){
       const completed=node('details',undefined,'delivery-completed');completed.append(node('summary',`${complete.length} completed`));
       for(const item of [...remaining.filter(item=>item.status==='working'),...remaining.filter(item=>item.status!=='working'),...complete]){
         const card=node('article',undefined,'delivery-task');card.dataset.status=item.status;
-        const title=node('h4',item.title),status=node('span',states[item.status]||item.status,'delivery-status');
+        const title=node('h4'),reference=button(item.title,()=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:item.projectId??projectId,itemId:item.sourceId??item.id,title:item.title,projectName:item.projectName}})));reference.className='delivery-task-title';reference.setAttribute('aria-label',`Reference task: ${item.title}`);title.setAttribute('aria-label',item.title);title.append(reference);const status=node('span',states[item.status]||item.status,'delivery-status');
         card.append(title,status);
         if(!group.goal&&item.projectName) card.append(node('p',item.projectName,'delivery-muted'));
         const delivery=item.delivery||{};

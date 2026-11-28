@@ -17,11 +17,11 @@ export function recordChatDiagnostic(type){
   for(const listener of listeners)listener();
 }
 
-export function mountDebugPane({document,view=window,request=fetch}){
+export function mountDebugPane({document,request=fetch}){
   const element=id=>document.getElementById(id);
-  const shell=element('app-shell'),pane=element('debug-pane'),toggle=element('debug-toggle');
-  const close=element('debug-close'),clear=element('debug-clear'),health=element('debug-health');
-  let opened=false,modal=false,generation=0,activityTimer;
+  const pane=element('debug-pane');if(!pane)return ()=>{};
+  const clear=element('debug-clear'),health=element('debug-health');
+  let opened=false,generation=0,activityTimer;
   const agents=element('debug-agents'),agentEvents=element('debug-agent-events'),agentStatus=element('debug-agents-status');
   async function refreshActivity(token){
     if(!agents)return;
@@ -58,26 +58,12 @@ export function mountDebugPane({document,view=window,request=fetch}){
     }));
     element('debug-empty').hidden=events.length>0;
   };
-  const layout=()=>{
-    const narrow=view.innerWidth<1100;
-    const focused=pane.contains(document.activeElement)?document.activeElement:null;
-    if(opened&&(!pane.open||modal!==narrow)){
-      if(pane.open)pane.close();
-      pane.hidden=false;pane.inert=false;
-      if(narrow)pane.showModal();else pane.show();
-      focused?.focus();
-    }
-    modal=narrow;
-    shell.dataset.debugOpen=String(opened&&!narrow);
-    toggle.setAttribute('aria-expanded',String(opened));
-    if(!opened){if(pane.open)pane.close();pane.hidden=true;pane.inert=true;}
-  };
-  const notifyLayout=()=>view.dispatchEvent(new Event('resize'));
-  const focusToggle=()=> (view.innerWidth<768?element('navigation-toggle'):toggle).focus();
-  const shut=()=>{opened=false;generation++;clearTimeout(activityTimer);layout();notifyLayout();focusToggle();};
-  const open=()=>{
-    if(view.innerWidth<768)element('mobile-navigation').open=false;
-    opened=true;layout();notifyLayout();close.focus();renderEvents();
+  const sync=()=>{
+    const visible=!pane.hidden&&!element('preview')?.hidden&&!element('app-shell')?.hidden;
+    if(visible===opened)return;
+    opened=visible;generation++;clearTimeout(activityTimer);
+    if(!visible)return;
+    renderEvents();
     const token=++generation;health.textContent='Checking…';
     if(agentStatus)agentStatus.textContent='Checking agent activity…';
     void refreshActivity(token);
@@ -86,12 +72,11 @@ export function mountDebugPane({document,view=window,request=fetch}){
       if(token===generation)health.textContent=data?.status==='ok'&&data?.service==='ned-api'?'Available':'Unavailable';
     }).catch(()=>{if(token===generation)health.textContent='Unavailable';});
   };
-  const click=()=>opened?shut():open();
-  const cancel=event=>{event.preventDefault();shut();};
-  const key=event=>{if(opened&&event.key==='Escape'){event.preventDefault();shut();}};
   const wipe=()=>{events=[];renderEvents();};
-  toggle.addEventListener('click',click);close.addEventListener('click',shut);clear.addEventListener('click',wipe);
-  pane.addEventListener('cancel',cancel);document.addEventListener('keydown',key);view.addEventListener('resize',layout);
-  listeners.add(renderEvents);layout();renderEvents();
-  return ()=>{generation++;clearTimeout(activityTimer);opened=false;layout();notifyLayout();listeners.delete(renderEvents);toggle.removeEventListener('click',click);close.removeEventListener('click',shut);clear.removeEventListener('click',wipe);pane.removeEventListener('cancel',cancel);document.removeEventListener('keydown',key);view.removeEventListener('resize',layout);};
+  clear.addEventListener('click',wipe);
+  const observer=globalThis.MutationObserver?new MutationObserver(sync):null;
+  for(const node of [pane,element('preview'),element('app-shell')])if(node)observer?.observe(node,{attributes:true,attributeFilter:['hidden']});
+  document.addEventListener('ned-context-layout',sync);
+  listeners.add(renderEvents);sync();renderEvents();
+  return ()=>{generation++;clearTimeout(activityTimer);observer?.disconnect();listeners.delete(renderEvents);clear.removeEventListener('click',wipe);document.removeEventListener('ned-context-layout',sync);};
 }

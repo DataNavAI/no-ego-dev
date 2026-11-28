@@ -8,7 +8,7 @@ import {createCommunicatorServer} from '../../../../apps/com/src/server.js';
 import {createTaskService} from '../../../../src/tasks.js';
 import {ownedApp} from './helpers.js';
 
-test('TC-003: actual Dashboard frame follows project and auth while retaining progress fallback, chat and responsive navigation',{timeout:45000},async t=>{
+test('TC-003: actual Dashboard frame follows project and auth while retaining explicit empty state, chat and responsive navigation',{timeout:45000},async t=>{
   let com,projectId,secondId,application;
   const f=await browserChat(t,{startApp:async options=>{
     const project=path.join(options.home,'product'),second=path.join(options.home,'second');await mkdir(project);await mkdir(second);
@@ -21,12 +21,12 @@ test('TC-003: actual Dashboard frame follows project and auth while retaining pr
   await f.ready();const {page}=f;await f.draft.fill('Keep the dashboard question');
   const select=id=>page.locator('#project').evaluate((node,id)=>{node.value=id;node.dispatchEvent(new Event('change'));},id);
   await select(projectId);await page.locator('#dashboard-tab').click();
-  await expect(page.locator('#dashboard-work-summary')).toBeVisible();
+  await expect(page.locator('.dashboard-empty')).toBeVisible();
   const registered=await fetch(com.url+'/api/v1/dashboards/'+projectId,{method:'PUT',headers:{authorization:'Bearer '+com.apiCredential,origin:com.url,'content-type':'application/json'},body:JSON.stringify({port:application.port,name:'Product analytics',expectedRevision:0})});assert.equal(registered.status,200);
   const frame=page.frameLocator('iframe[title="Product dashboard"]');
   await expect(frame.getByRole('heading',{name:'Fixture daily users'})).toBeVisible();await expect(frame.locator('body')).toHaveAttribute('data-ready','yes');
   const previousOrigin=await frame.locator('body').evaluate(()=>globalThis.location.origin);
-  await expect(page.locator('#dashboard .managed-preview-status')).toHaveText('Dashboard ready');await expect(page.locator('#dashboard-work-summary')).toBeHidden();
+  await expect(page.locator('#dashboard .managed-preview-status')).toHaveText('Dashboard ready');await expect(page.locator('.dashboard-empty')).toBeHidden();
   assert.equal(await frame.locator('body').evaluate(()=>{try{return globalThis.parent.document===globalThis.document;}catch{return false;}}),false);
   for(const width of [1280,390,320]){
     await page.setViewportSize({width,height:900});
@@ -56,11 +56,11 @@ test('TC-003: actual Dashboard frame follows project and auth while retaining pr
   await page.locator('#dashboard .managed-preview-reload').click();await started;
   await select(secondId);await expect(page.locator('iframe[title="Product dashboard"]')).not.toHaveAttribute('src',/.+/);release();
   await page.unrouteAll({behavior:'wait'});
-  await expect(page.locator('#dashboard-work-summary')).toBeVisible();
+  await expect(page.locator('.dashboard-empty')).toBeVisible();
   assert.equal(page.frames().some(frame=>frame.url().startsWith(previousOrigin+'/')),false,'Project change must destroy the old app document, not just hide it');
   await select(projectId);await expect(frame.getByRole('heading',{name:'Fixture daily users'})).toBeVisible();
   await expect(f.draft).toHaveValue('Keep the dashboard question');
-  await page.locator('#workspace-settings-tab').click();await page.locator('#access-forget').click();
+  await page.locator('#chat-tools-toggle').click();await page.locator('#secrets-toggle').click();await page.locator('#access-forget').click();
   await expect(page.locator('#access-gate')).toBeVisible();await expect(page.locator('iframe[title="Product dashboard"]')).toHaveCount(0);
   assert.deepEqual(f.errors,[]);
 });

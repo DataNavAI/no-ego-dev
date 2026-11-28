@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {browserChat,expect} from './browser-fixture.js';
 
-test('TC-003: Settings stores and reveals secrets without chat or browser persistence across desktop/mobile',async t=>{
+test('TC-003: Secrets dialog stores and reveals secrets without chat or browser persistence across desktop/mobile',async t=>{
   const f=await browserChat(t);await f.ready();const {page}=f;
   await f.draft.fill('Preserved development draft');
-  const tab=page.getByRole('tab',{name:'Settings',exact:true});
-  await tab.focus();await page.keyboard.press('Enter');
-  await expect(page.locator('#settings')).toBeVisible();await expect(page.locator('#secret-list')).toContainText('No secrets saved.');
+  const tab={async click(){if(await page.locator('#secret-manager').isHidden()){if(await page.locator('#chat-tools').isHidden())await page.locator('#chat-tools-toggle').click();await page.locator('#secrets-toggle').click();}},async focus(){},async press(){}};
+  await tab.click();
+  await expect(page.locator('#secret-manager')).toBeVisible();await expect(page.locator('#secret-list')).toContainText('No secrets saved.');
   await page.getByLabel('Key',{exact:true}).fill('ADMIN_PASSWORD');await page.getByLabel('Value',{exact:true}).fill('synthetic-browser-SECRET');
   await page.getByRole('button',{name:'Save secret',exact:true}).click();await expect(page.locator('#secret-status')).toHaveText('Secret saved.');
   await expect(page.locator('#secret-value')).toHaveValue('');await expect(page.locator('.secret-revealed')).toBeHidden();
   await page.getByRole('button',{name:'Show or hide ADMIN_PASSWORD'}).click();await expect(page.locator('.secret-revealed')).toHaveValue('synthetic-browser-SECRET');
-  await page.getByRole('tab',{name:'Goals',exact:true}).click();await expect(f.draft).toHaveValue('Preserved development draft');
+  await page.locator('#secret-manager [data-close-manager]').click();await expect(f.draft).toHaveValue('Preserved development draft');
   await expect(page.locator('.secret-revealed')).toHaveValue('');
   await tab.click();await expect(page.locator('.secret-revealed')).toBeHidden();
   await page.getByRole('button',{name:'Replace ADMIN_PASSWORD',exact:true}).click();await expect(page.locator('#secret-value')).toBeFocused();await expect(page.locator('#secret-value')).toHaveValue('');
   await page.locator('#secret-value').fill('synthetic-replacement');await page.getByRole('button',{name:'Save secret',exact:true}).click();await expect(page.locator('#secret-status')).toHaveText('Secret saved.');
   await page.screenshot({path:'/tmp/ned-secrets-desktop.png'});
   await page.clock.install();
-  await page.reload();await page.getByRole('tab',{name:'Settings',exact:true}).click();await expect(page.locator('#secret-list')).toContainText('ADMIN_PASSWORD');
+  await page.reload();await tab.click();await expect(page.locator('#secret-list')).toContainText('ADMIN_PASSWORD');
   await page.getByRole('button',{name:'Show or hide ADMIN_PASSWORD'}).click();await expect(page.locator('.secret-revealed')).toHaveValue('synthetic-replacement');
   await page.clock.fastForward(30000);await expect(page.locator('.secret-revealed')).toHaveValue('');
   await page.getByRole('button',{name:'Show or hide ADMIN_PASSWORD'}).click();await expect(page.locator('.secret-revealed')).toHaveValue('synthetic-replacement');
@@ -30,8 +30,8 @@ test('TC-003: Settings stores and reveals secrets without chat or browser persis
   assert.equal(JSON.stringify(saved).includes('synthetic-'),false,'vault values never enter browser storage');
   assert.equal((await page.locator('#transcript').textContent()).includes('synthetic-'),false);
   await page.setViewportSize({width:390,height:844});
-  await page.locator('#navigation-toggle').click();await page.locator('#settings-shortcut').click();
-  await expect(page.locator('#settings')).toBeVisible();
+  await tab.click();
+  await expect(page.locator('#secret-manager')).toBeVisible();
   await page.screenshot({path:'/tmp/ned-secrets-mobile.png'});
   await page.setViewportSize({width:320,height:740});assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
   await page.getByRole('button',{name:'Delete ADMIN_PASSWORD',exact:true}).click();await page.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.locator('.secret-confirmation')).toBeHidden();
@@ -41,14 +41,15 @@ test('TC-003: Settings stores and reveals secrets without chat or browser persis
 
 test('TC-003: late reveal after navigation cannot restore a value and retry recovers',async t=>{
   const f=await browserChat(t);await f.ready();const {page}=f;
-  await page.getByRole('tab',{name:'Settings',exact:true}).click();await expect(page.locator('#secret-list')).toContainText('No secrets saved.');
+  const tab={async click(){if(await page.locator('#secret-manager').isHidden()){if(await page.locator('#chat-tools').isHidden())await page.locator('#chat-tools-toggle').click();await page.locator('#secrets-toggle').click();}}};
+  await tab.click();await expect(page.locator('#secret-list')).toContainText('No secrets saved.');
   await page.locator('#secret-key').fill('TOKEN');await page.locator('#secret-value').fill('synthetic-delayed');await page.getByRole('button',{name:'Save secret',exact:true}).click();await expect(page.locator('#secret-status')).toHaveText('Secret saved.');
   let release;const gate=new Promise(resolve=>{release=resolve;});let requested;const seen=new Promise(resolve=>{requested=resolve;});
   await page.route('**/api/v1/secrets/TOKEN/reveal',async route=>{requested();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({key:'TOKEN',value:'synthetic-delayed'})});});
-  await page.getByRole('button',{name:'Show or hide TOKEN'}).click();await seen;await page.getByRole('tab',{name:'Goals',exact:true}).click();release();
-  await page.getByRole('tab',{name:'Settings',exact:true}).click();await expect(page.locator('.secret-revealed')).toBeHidden();await expect(page.locator('.secret-revealed')).toHaveValue('');
+  await page.getByRole('button',{name:'Show or hide TOKEN'}).click();await seen;await page.locator('#secret-manager [data-close-manager]').click();release();
+  await tab.click();await expect(page.locator('.secret-revealed')).toBeHidden();await expect(page.locator('.secret-revealed')).toHaveValue('');
   await page.route('**/api/v1/secrets',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
-  await page.getByRole('tab',{name:'Goals',exact:true}).click();await page.getByRole('tab',{name:'Settings',exact:true}).click();
+  await page.locator('#secret-manager [data-close-manager]').click();await tab.click();
   await expect(page.locator('#secret-status')).toHaveText('Secrets are unavailable. Retry.');
   await page.unroute('**/api/v1/secrets');await page.locator('#secret-retry').click();await expect(page.locator('#secret-list')).toContainText('TOKEN');
   await page.getByRole('button',{name:'Show or hide TOKEN'}).click();

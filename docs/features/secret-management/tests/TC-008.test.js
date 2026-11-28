@@ -23,13 +23,13 @@ test('TC-008: mobile entry clears on cancellation, timeout and navigation; delay
   const f=await requestCard(t),{page,card,input,enter}=f;
   await page.setViewportSize({width:390,height:844});await expect(page.locator('#mobile-project-toggle')).toBeVisible();
   await enter.click();await input.fill('synthetic-mobile');await page.screenshot({path:'/tmp/ned-secret-entry-mobile.png'});assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
-  await page.locator('#navigation-toggle').click();await page.locator('#settings-shortcut').click();await expect(input).toHaveValue('');if(await page.locator('#preview').isVisible())await page.locator('#context-close').click();
+  await page.locator('#navigation-toggle').click();await page.locator('#artifacts-shortcut').click();await expect(input).toHaveValue('');if(await page.locator('#preview').isVisible())await page.locator('#context-close').click();
   await page.clock.install();await enter.click();await input.fill('synthetic-timeout');await page.clock.fastForward(30001);await expect(input).toHaveValue('');await expect(input).toBeHidden();await page.clock.resume();
   await enter.click();await input.fill('synthetic-delayed-save');
   let release,seen;const gate=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{seen=resolve;});
   await page.route('**/api/v1/secrets/requests/*/submit',async route=>{seen();await gate;await route.continue();});
   await card.getByRole('button',{name:'Save secret',exact:true}).click();await requested;await expect(input).toHaveValue('');assert.equal(await enter.isDisabled(),true);
-  await page.locator('#navigation-toggle').click();await page.locator('#settings-shortcut').click();release();await expect.poll(()=>f.store.list().length).toBe(1);await expect(input).toHaveValue('');
+  await page.locator('#navigation-toggle').click();await page.locator('#artifacts-shortcut').click();release();await expect.poll(()=>f.store.list().length).toBe(1);await expect(input).toHaveValue('');
   if(await page.locator('#preview').isVisible())await page.locator('#context-close').click();await expect(input).toBeHidden();await enter.click();await expect(card).toContainText('Secret saved.');assert.deepEqual(f.errors,[]);
 });
 test('TC-008: failed acknowledgement clears bytes and a retry sees saved state without replacing',async t=>{

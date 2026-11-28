@@ -13,8 +13,9 @@ function summary(identity) {
 }
 
 export function mountProviderIdentity({document, fetch: request = apiFetch} = {}) {
-  const settings = document.getElementById('settings');
+  const settings = document.getElementById('provider-manager');
   const panel = document.getElementById('provider-connections');
+  const managerNote=document.getElementById('provider-manager-note');
   const list = document.getElementById('provider-list');
   const chatRequests = document.getElementById('chat-provider-requests');
   const announcement = document.getElementById('provider-status');
@@ -36,11 +37,16 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   quickConnect?.addEventListener('click',async()=>{
     if(quickConnect.disabled||quickConnect.hidden)return;
     quickConnect.disabled=true;const epoch=authGeneration;
-    try{if(!awsConnection?.request)await api('/aws/request','POST');}
-    catch{/* Settings provides the current recovery action. */}
-    finally{quickConnect.disabled=false;}
-    if(epoch!==authGeneration)return;
-    document.dispatchEvent(new Event('ned-open-provider-settings'));void refresh();void refreshChatRequests();
+    try{
+      const connection=awsConnection?.request?awsConnection:await api('/aws/request','POST');
+      if(epoch!==authGeneration)return;
+      if(connection.provider!=='aws'||!connection.request?.id)throw new Error('Unavailable');
+      await openModal({provider:'aws',request_id:connection.request.id},quickConnect);
+    }catch{
+      if(epoch!==authGeneration)return;
+      modalGeneration++;modalTrigger=quickConnect;modalProvider='aws';modalState='unavailable';
+      title.textContent='Connect AWS';modalStatus.textContent='AWS connection is unavailable. Try again.';modalBody.replaceChildren();if(!modal.open)modal.showModal();
+    }finally{quickConnect.disabled=false;void refreshChatRequests();}
   });
   quickGithub?.addEventListener('click',async()=>{
     if(quickGithub.disabled||quickGithub.hidden)return;
@@ -73,7 +79,8 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     modalGeneration++;
     modalBody.replaceChildren();
     const destination=(modalTrigger?.isConnected?modalTrigger:modalReturnCard?.isConnected?modalReturnCard.querySelector('button,a'):null)||document.getElementById('chat-message');
-    destination?.focus();modalReturnCard=undefined;
+    const active=document.activeElement;
+    if(active===document.body||active===modal||modal.contains(active)||active===modalTrigger)destination?.focus();modalReturnCard=undefined;
     modalTrigger = undefined;modalRequestId=undefined;modalProvider=undefined;modalState=undefined;
   });
   document.addEventListener('ned-provider-auth-card',event=>{
@@ -364,7 +371,9 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     const epoch = ++generation;
     list.replaceChildren();
     panel.hidden = true;
-    if (settings.hidden || document.visibilityState === 'hidden' || disabled) return;
+    if (settings.hidden || document.visibilityState === 'hidden') return;
+    managerNote.hidden=!disabled;managerNote.textContent=disabled?'Provider connections are unavailable on this instance.':'';
+    if(disabled)return;
     panel.hidden = false;
     announcement.textContent = 'Loading provider connections…';
     try {
@@ -375,6 +384,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     } catch {
       if (epoch !== generation) return;
       panel.hidden = disabled;
+      managerNote.hidden=!disabled;managerNote.textContent=disabled?'Provider connections are unavailable on this instance.':'';
       announcement.textContent = 'Provider connections are unavailable.';
       if (!disabled) list.append(button('Retry', refresh));
     }

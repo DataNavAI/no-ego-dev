@@ -40,14 +40,14 @@ test('TC-006: direct UI validates before loading data, remembers access and forg
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ned.instance-access.v1')).token),fixture.accessToken);
   assert.equal(fixture.network.some(url=>url.includes(fixture.accessToken)),false);await expect(page.locator('#access-token')).toHaveValue('');
   await page.reload();await fixture.ready();await expect(page.locator('#access-gate')).toBeHidden();
-  await page.setViewportSize({width:1280,height:900});await page.locator('#workspace-settings-tab').click();await page.locator('#access-forget').click();
+  await page.setViewportSize({width:1280,height:900});await page.locator('#chat-tools-toggle').click();await page.locator('#secrets-toggle').click();await page.locator('#access-forget').click();
   await expect(page.locator('#access-gate')).toBeVisible();assert.equal(await page.evaluate(()=>localStorage.getItem('ned.instance-access.v1')),null);
 });
 
 test('TC-006: API401 clears stale access, preserves the draft and never resends messages',{timeout:45000},async context=>{
   const fixture=await browserChat(context);await fixture.ready();await fixture.draft.fill('Keep this unsent draft');
   await writeFile(path.join(fixture.home,'.ned/core/operator-token'),'c'.repeat(64)+'\n',{mode:0o600});
-  await fixture.page.locator('#debug-toggle').click();await expect(fixture.page.locator('#access-gate')).toBeVisible();
+  await fixture.page.locator('#debug-tab').click();await expect(fixture.page.locator('#access-gate')).toBeVisible();
   assert.equal(await fixture.page.evaluate(()=>localStorage.getItem('ned.instance-access.v1')),null);
   await fixture.page.locator('#access-token').fill('c'.repeat(64));await fixture.page.locator('#access-submit').click();await fixture.ready();
   await expect(fixture.draft).toHaveValue('Keep this unsent draft');assert.equal(fixture.turns.length,0);
@@ -75,7 +75,7 @@ test('TC-006: Hub connection hides private credentials from initial paint throug
     await expect(page.locator('#access-gate')).toBeVisible();await expect(page.locator('#access-token')).toBeHidden();await expect(page.locator('#access-submit')).toBeHidden();
     release();await fixture.ready();await expect(page.locator('#access-token')).toBeHidden();assert.equal(await page.evaluate(()=>localStorage.getItem('ned.instance-access.v1')),null);
     await page.route('**/api/v1/health',route=>route.fulfill({status:401,headers:{'x-ned-hub-access':'1'},body:'{}'}));
-    await page.locator('#debug-toggle').click();await expect(page.locator('#access-gate')).toBeVisible();await expect(page.locator('#access-token')).toBeHidden();await expect(page.locator('#access-retry')).toBeVisible();assert.equal(fixture.turns.length,0);
+    await page.locator('#debug-tab').click();await expect(page.locator('#access-gate')).toBeVisible();await expect(page.locator('#access-token')).toBeHidden();await expect(page.locator('#access-retry')).toBeVisible();assert.equal(fixture.turns.length,0);
   }finally{release();}
 });
 

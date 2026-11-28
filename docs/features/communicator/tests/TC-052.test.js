@@ -20,7 +20,7 @@ test('TC-052: Muse-style rail and project pane preserve chat and preview across 
   await page.locator('#context-toggle').press('Enter');await expect(page.locator('#preview-panel')).toBeVisible();
   assert.equal(await page.locator('#preview-panel').getAttribute('data-retained'),'yes');await expect(f.draft).toHaveValue('Keep my draft');
   const prior=(await box('chat')).width;await page.locator('#pane-divider').focus();await page.locator('#pane-divider').press('ArrowLeft');assert.equal((await box('chat')).width,prior-16);
-  await page.locator('#settings-shortcut').click();await expect(page.locator('#settings')).toBeVisible();
+  await page.locator('#artifacts-pane-tab').click();await expect(page.locator('#artifacts-panel')).toBeVisible();
   await page.locator('#goals-shortcut').click();await expect(page.locator('#goals-panel')).toBeVisible();
   await page.locator('#context-toggle').click();await page.locator('#context-toggle').click();await expect(page.locator('#goals-panel')).toBeVisible();
   if(process.env.NED_UI_EVIDENCE_DIR)await page.screenshot({path:join(process.env.NED_UI_EVIDENCE_DIR,'layout-1440.png')});
@@ -45,16 +45,11 @@ test('TC-052: Muse-style rail and project pane preserve chat and preview across 
     await expect(page.locator('#preview')).toBeVisible();
     await page.evaluate(()=>{const sizes=[...globalThis.document.querySelectorAll('#app-shell *')].map(n=>[n,parseFloat(globalThis.getComputedStyle(n).fontSize)]);for(const [n,size]of sizes)if(Number.isFinite(size))n.style.fontSize=`${size*2}px`;});
     if(width<768)await expect(page.locator('#context-close')).toBeInViewport({ratio:1});
-    else await expect(page.locator('#debug-toggle')).toBeInViewport({ratio:1});await expect(page.locator('#context-close')).toBeInViewport({ratio:1});
+    else await expect(page.locator('#goals-pane-tab')).toBeInViewport({ratio:1});await expect(page.locator('#context-close')).toBeInViewport({ratio:1});
     assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);
     await page.evaluate(()=>{for(const n of globalThis.document.querySelectorAll('#app-shell *'))n.style.removeProperty('font-size');});
   }
   await page.locator('#context-close').click();await expect(page.locator('#chat-task-references')).toContainText('Review task');
-  await page.locator('#navigation-toggle').click();
-  await page.locator('#debug-toggle').click();
-  await expect(page.locator('#debug-pane')).toBeVisible();
-  await page.locator('#debug-close').click();
-  await expect(page.locator('#navigation-toggle')).toBeFocused();
-  await expect(page.locator('#debug-toggle')).toBeHidden();
+  await page.locator('#mobile-project-toggle').click();await page.locator('#debug-tab').click();await expect(page.locator('#debug-pane')).toBeVisible();await page.locator('#context-close').click();await expect(page.locator('#mobile-project-toggle')).toBeFocused();
   assert.equal(f.turns.length,0);assert.deepEqual(f.errors,[]);
 });

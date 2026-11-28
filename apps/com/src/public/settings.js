@@ -1,6 +1,6 @@
 import {apiFetch} from './api-client.js';
 export function mountSettings({document,fetch:request=globalThis.fetch,setTimeout:later=globalThis.setTimeout,clearTimeout:cancel=globalThis.clearTimeout}={}){
-  const panel=document.getElementById('settings');if(!panel)return;
+  const panel=document.getElementById('secret-manager');if(!panel)return;
   const form=document.getElementById('secret-form'),key=document.getElementById('secret-key'),value=document.getElementById('secret-value'),status=document.getElementById('secret-status'),list=document.getElementById('secret-list'),retry=document.getElementById('secret-retry');
   let generation=0,busy=false;const timers=new Set();
   const shell=document.getElementById('app-shell');

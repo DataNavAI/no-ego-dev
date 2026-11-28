@@ -1104,3 +1104,23 @@ An operator opens Goals, sees the working tasks, and opens a bound session to se
 - Cleanup / evidence: close the test browser and synthetic server. Existing TC-042 verifies the persisted project/attempt/session authorization boundary.
 
 Coverage: FR-111–113 → CUJ-040 → TC-062; TC-054 verifies registered inactive work after enabling Show inactive tasks. TC-041/042 and TC-057 retain their navigation and project coverage.
+
+## Project views cleanup (#309)
+- FR-114: Project tabs are Goals, Artifacts, Preview, Dashboard and Debug. Remove Settings view and all Settings/standalone Debug navigation buttons. Debug remains inside Project at every width, with the same health, diagnostic events, activity and reset controls. Hidden Debug stops polling and ignores late replies; selecting it resumes fresh reads. It never reserves a third pane or traps focus in a dialog.
+- FR-115: Dashboard exclusively proxies the selected project's dashboard registered via NED API using the existing isolated authenticated relay. No built-in progress-summary fallback. Without selection show “Choose a project”; without registration show “No dashboard registered” and explain that NED can register the project's dashboard. Preserve stopped/unavailable/reload/open states, iframe teardown and project isolation. Goals retains task progress/reference behavior.
+- FR-116: Private Secrets and Connections management remain available as focused dialogs in Chat Message options, alongside model provider configuration and existing trusted chat cards. There is no Settings workspace. Canonical SOUL maps legacy Settings instructions to these supported current dialogs and names the Project tabs. Closing/auth loss clears sensitive inputs; close returns focus to the trigger only when the user has not already focused another control. Requests and drafts retain existing privacy/identity contracts.
+- CUJ-041: Operator selects Project → Dashboard to view a registered server, switches to Debug to inspect activity/reset, returns to Chat and uses private Secrets/Connections actions. Critical because removing navigation must not break provider consent, secret entry or troubleshooting. Repeat on desktop and320/390 mobile, with no registration, server failure and project switch.
+
+### TC-063: Simplified Project navigation and registered Dashboard
+- Journey / requirements: CUJ-041 / FR-114–116.
+- Level / automation: integration/browser; [TC-063.test.js](tests/TC-063.test.js), existing TC-032 (diagnostic lifecycle), TC-041 (Goals progress and empty Dashboard), TC-052/053/059 (responsive navigation/reset), product-dashboards TC-003 (actual registered relay), secret-management TC-003/008 and provider-identity TC-004/007/009 (private dialogs/cards).
+- Preconditions / fixtures: disposable browserChat profiles, Chromium, synthetic projects/registered loopback dashboard and private provider/secret fixtures. Existing user state is never used.
+- Given: desktop or320/390 mobile workspace with and without registered dashboard.
+- When: traverse tabs by click/arrows/Home/End, select/switch projects, inspect Debug then hide Project, use private chat tools and close/reopen them.
+- Then: no Settings view or standalone Debug button/dialog; exactly one selected Project tab; Debug uses Project's scroll/focus layout and only polls while visible; Dashboard has no work-summary elements and uses authenticated project-specific relay or truthful empty/error state; no horizontal overflow; drafts, secret isolation and reset fences preserved.
+- Steps and assertions: run linked cases via spec runner, inspect synthetic desktop/mobile screenshots; verify registered server body in iframe, no stale iframe after project switch, health/activity text and reset behavior, absence of removed navigation, no console errors. Existing relay cases cover auth denial and host isolation; existing private-control cases cover late replies/cancel/retry/storage.
+- Variants: missing/no selection, stopped server, unavailable API, delayed old-project response, hiding/reopening Project, auth loss, narrow viewport and keyboard traversal. No new provider grants or persistence format.
+- Cleanup: browserChat/relay fixtures close owned servers/processes and delete disposable homes; retain synthetic screenshots outside repository.
+- Pass evidence: named automated assertions plus rendered screen inspection; real provider consent is separate NOT RUN unless authorized.
+
+Coverage: FR-114–116 → CUJ-041 → TC-063 and linked existing automated cases. Earlier requirements describing Settings navigation, progress Dashboard or separate Debug layout are superseded only for those removed surfaces; their API/security/Goals behavior remains active.

@@ -90,3 +90,6 @@ All automated cases must pass; skill evaluations and rendered/live acceptance ar
 - Credential-free TC-001–003 and all three real-agent evals executed successfully during development. Merge, final-candidate checks and local deployment evidence belong to the release receipt; this spec alone does not establish delivery.
 
 Live eval evidence (2026-11-27): development `ned-eval-bad9b1d05702fd88c677a04c`; evaluator `ned-eval-028434f6424dc7eb30105337`; workflow `ned-eval-e06a92f52725d9c7314c851b`. All passed with `cleanup_verified:true`; redacted reports remain outside Git. No live product correctness is claimed.
+
+## Dedicated Dashboard view (#309)
+FR-015: Dashboard is exclusively the active project's registered dashboard server, delivered through the existing private relay. Remove NED's built-in progress summary fallback; Goals owns work progress. No selection and no registration have distinct truthful empty states, with no grant request or iframe until registration is available. Existing TC-003 covers project selection, registered content, relay behavior and switching; communicator TC-041/062 cover empty state/navigation. FR-015 → CUJ-002 → TC-003 and communicator TC-063. Existing auth/host/grant constraints remain unchanged.

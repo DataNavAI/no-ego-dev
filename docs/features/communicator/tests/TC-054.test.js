@@ -39,8 +39,9 @@ test('TC-054: real chat-triggered task registration feeds the all-project Goals 
   await expect(goals).toContainText('inventory verification');
   await f.page.locator('#dashboard-tab').click();
   const dashboard=f.page.locator('#dashboard');
-  await expect(dashboard).toContainText('0 / 2 tasks completed');
-  await dashboard.getByRole('button',{name:/Reference task: inventory verification/}).click();
+  await expect(dashboard).toContainText('No dashboard registered');
+  await f.page.locator('#goals-pane-tab').click();
+  await goals.getByRole('button',{name:/Reference task: inventory verification/}).click();
   await expect(f.page.locator('#chat-task-references')).toContainText('inventory verification');
   await expect(f.page.getByRole('combobox',{name:'Project'})).toHaveCount(0);
   await expect(f.page.locator('#chat-task-references')).toContainText('inventory');

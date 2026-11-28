@@ -14,6 +14,7 @@ assets.set('/chat-entry.js',['chat-entry.js','text/javascript']);
 assets.set('/history.js',['history.js','text/javascript']);
 assets.set('/message-content.js',['message-content.js','text/javascript']);
 assets.set('/provider-identity.js',['provider-identity.js','text/javascript']);
+assets.set('/private-managers.js',['private-managers.js','text/javascript']);
 assets.set('/settings.js',['settings.js','text/javascript']);
 assets.set('/settings.css',['settings.css','text/css']);
 assets.set('/secret-request.js',['secret-request.js','text/javascript']);

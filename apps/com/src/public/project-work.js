@@ -36,53 +36,24 @@ export function renderProjectWork(document,container,data,{showCompleted=false,o
   const caption=document.createElement('span');caption.textContent=`Show completed (${totals.completed})`;label.append(filter,caption);toolbar.append(countLabel,label);
   if(!plan.items.length){const empty=document.createElement('p');empty.className='work-empty';empty.textContent=plan.total?'All tasks completed.':'No goals or tasks yet.';container.replaceChildren(toolbar,empty);}else container.replaceChildren(toolbar,root);
 }
-export function renderDashboard(document,container,data,options={}){
-  const model=dashboardModel(data.items);
-  const summary=document.createElement('header');summary.className='dashboard-summary';
-  const identity=document.createElement('p');identity.className='eyebrow';identity.textContent=options.projectName||'';
-  const heading=document.createElement('h2');heading.id='dashboard-heading';heading.tabIndex=-1;heading.textContent=options.projectName?'Project progress':'All project progress';
-  summary.append(identity,heading);
-  if(model.total){
-    const count=document.createElement('p');count.className='dashboard-count';count.textContent=`${model.completed} / ${model.total} tasks completed`;
-    const meter=document.createElement('progress');meter.max=model.total;meter.value=model.completed;meter.setAttribute('aria-label',`${count.textContent}; progress by completed task count`);summary.append(count,meter);
-  }
-  const metrics=document.createElement('dl');metrics.className='dashboard-metrics';
-  for(const [label,value] of [['In progress',model.active],['Remaining',model.total-model.completed],['Blocked',model.blocked],['Open goals',model.openGoals]]){
-    const group=document.createElement('div'),term=document.createElement('dt'),number=document.createElement('dd');term.textContent=label;number.textContent=String(value);group.append(term,number);metrics.append(group);
-  }
-  summary.append(metrics);
-  const work=document.createElement('div');work.className='dashboard-work';
-  const items=model.items;
-  renderProjectWork(document,work,{...data,items},{...options,filterId:'dashboard-show-completed',progressById:model.progressById,counts:model});
-  container.replaceChildren(summary,work);
-}
 export function mountProjectWork({document,fetch}){
   const delivery=mountGoalTasks({document,fetch});
-  const project=document.getElementById('project'),dashboard=document.getElementById('dashboard-work-summary')??document.getElementById('dashboard');
-  let dashboardCompleted=false;let snapshot;let pending=false;let refreshQueued=false;
-  const onReference=item=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{
-    projectId:item.projectId,itemId:item.sourceId,title:item.title,projectName:item.projectName,
-  }}));
+  const project=document.getElementById('project');
+  let snapshot;let pending=false;let refreshQueued=false;
   const draw=()=>{
     if(!snapshot)return;
-    if(dashboard)renderDashboard(document,dashboard,snapshot,{showCompleted:dashboardCompleted,onFilter:value=>{dashboardCompleted=value;draw();document.getElementById('dashboard-show-completed')?.focus();},onReference});
     delivery.update(snapshot);
   };
   const message=(text,retry=false)=>{
     delivery.message(text,retry?()=>void load():null);
-    if(!dashboard)return;
-    const status=document.createElement('p');status.setAttribute('role','status');status.textContent=text;dashboard.replaceChildren(status);
-    if(retry){const button=document.createElement('button');button.id='dashboard-retry';button.type='button';button.textContent='Retry';button.addEventListener('click',()=>void load());dashboard.append(button);}
+
   };
   async function load(){
     if(pending){refreshQueued=true;return;}
     pending=true;
-    const active=document.activeElement;const ownedFocus=Boolean(dashboard?.contains(active));
-    const scroll=dashboard?.scrollTop||0;
     const previous=snapshot;
     if(!previous){
       message('Loading progress…');
-      if(ownedFocus)dashboard?.focus();
     }
     try{
       const response=await fetch('/api/v1/projects/work');const data=await response.json();
@@ -95,11 +66,9 @@ export function mountProjectWork({document,fetch}){
       dashboardModel(items);
       const next={projectId:'all-projects',items};
       if(previous&&JSON.stringify(previous)===JSON.stringify(next))return;
-      snapshot=next;draw();if(dashboard)dashboard.scrollTop=scroll;
-      if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-heading')?.focus();
+      snapshot=next;draw();
     }catch{
       snapshot=undefined;message('Progress could not be loaded.',true);
-      if(ownedFocus&&(document.activeElement===dashboard||document.activeElement===document.body))document.getElementById('dashboard-retry')?.focus();
     }finally{
       pending=false;
       if(refreshQueued){refreshQueued=false;void load();}

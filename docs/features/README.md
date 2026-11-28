@@ -18,7 +18,7 @@ This baseline inventories capabilities found in the current source, tests, profi
 | NED API v1 | implemented (source candidate) | [SPEC.md](ned-api/SPEC.md) | One authenticated Core-owned `/api/v1` contract for CLI/COM; persistent injectable instance token, direct UI sign-in and authenticated streaming; [API](../api.md), [architecture](../architecture.md); release verification pending. |
 | Web app previews | implemented candidate; rollout pending | [SPEC](web-app-previews/SPEC.md) | Singleton API/CLI, skill and isolated private HTTP/WS delivery (#157/Hub #81). Hosted rollout requires separate evidence. |
 | Agent-isolated runtime home | implemented (uncommitted source candidate) | [SPEC.md](agent-runtime-home/SPEC.md) | #150; resolver, runtime stores and native subprocess isolation; lint/test:all passed; parent owns evaluation/review/delivery |
-| Secret management | implemented (source candidate) | [SPEC.md](secret-management/SPEC.md) | Encrypted local vault, CLI/Settings and native retrieval/entry cards (#152); [acceptance](secret-management/ACCEPTANCE.md); entry candidate verification and rollout tracked in #152 |
+| Secret management | implemented (source candidate) | [SPEC.md](secret-management/SPEC.md) | Encrypted local vault, CLI/private Secrets dialog and native retrieval/entry cards (#152); [acceptance](secret-management/ACCEPTANCE.md); entry candidate verification and rollout tracked in #152 |
 | Standalone NED container | implemented | [SPEC.md](standalone-container/SPEC.md) | Complete profile + CLI, real Hermes dashboard and COM; [acceptance](standalone-container/ACCEPTANCE.md); native AMD64/ARM64 image tests and [offline tool inventory](standalone-container/TOOLS.md) / TC-009; default/custom-port health and first-login landing regressions (#132/#133); live-model checks separate |
 | AWS staging deployment | implemented | [SPEC.md](aws-staging-deployment/SPEC.md) | Immutable existing-host deployment, private snapshots, health gates and interrupted rollout recovery. |
 | Local commit checks | implemented | [SPEC.md](commit-checks/SPEC.md) | `.githooks/pre-commit`; `npm run hooks:install`; lint and full local suites |
@@ -105,10 +105,12 @@ Each self-contained skill is an agent-facing capability that needs corresponding
 
 Desktop project-pane refinement (#269–272) is implemented under [communicator FR-097–101/CUJ-035/TC-055–056](communicator/SPEC.md#desktop-project-pane-refinement-269272); not a separate feature or claim of full manual coverage.
 
-Desktop Settings follow-up #274 groups existing access/provider/secret controls using the same desktop spacing scale; no credential behavior changes. See FR-101/TC-056 and the [Settings guidance](https://github.com/DataNavAI/no-ego-dev/issues/274).
+Desktop Settings follow-up #274 is superseded by #309: private Secrets/Connections dialogs replace the Settings workspace while preserving credential behavior. See communicator FR-114–116 / TC-063.
 
 Mobile bottom navigation and Muse-inspired polish (#279) is implemented within [communicator FR-102–105/CUJ-036/TC-057–058](communicator/SPEC.md#muse-inspired-mobile-navigation-279); physical-device keyboard/rotation coverage remains unverified.
 
 Communicator report-formatting guidance: [FR-108 / CUJ-038 / manual TC-060](communicator/SPEC.md#readable-agent-authored-reports-286); historical messages and renderer behavior unchanged.
 
 Provider-specific failed authorization feedback: [FR-011–013 / TC-008](provider-identity/SPEC.md#provider-specific-failed-requests-297). GitHub enrollment wraps isolated gh CLI login on native and owner-authorized Hub instances; see [FR-014–017 / TC-009](provider-identity/SPEC.md#github-cli-connection-300).
+
+Project navigation cleanup #309: [FR-114–116 / TC-063](communicator/SPEC.md#project-views-cleanup-309) replaces Settings and standalone Debug views; Dashboard is exclusively a registered project server. Secrets/Connections move to focused private Chat dialogs.

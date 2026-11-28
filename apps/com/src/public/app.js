@@ -77,7 +77,7 @@ const mobileBottom=document.getElementById('mobile-bottom-nav');
 const navigationHome=mobileNavigation.parentElement;
 
 let canvasView='Goals';
-const canvasTabs=[document.getElementById('goals-pane-tab'),document.getElementById('artifacts-pane-tab'),document.getElementById('preview-tab'),document.getElementById('dashboard-tab'),document.getElementById('workspace-settings-tab')].filter(Boolean);
+const canvasTabs=[document.getElementById('goals-pane-tab'),document.getElementById('artifacts-pane-tab'),document.getElementById('preview-tab'),document.getElementById('dashboard-tab'),document.getElementById('debug-tab')].filter(Boolean);
 function selectCanvas(tab,focus=false){
   previewRetryFocus=false;
   canvasView=tab.textContent;contextOpen=true;workspace='preview';
@@ -91,7 +91,7 @@ for(const tab of canvasTabs){
     event.preventDefault();selectCanvas(next,true);
   });
 }
-const canvasHeading=()=>canvasView==='Artifacts'?document.getElementById('artifacts-panel'):canvasView==='Goals'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Settings'?document.getElementById('settings-heading'):document.querySelector('#dashboard.managed-active .managed-preview-name')||document.getElementById('dashboard-heading')||document.getElementById('dashboard');
+const canvasHeading=()=>canvasView==='Artifacts'?document.getElementById('artifacts-panel'):canvasView==='Goals'?document.getElementById('goals-pane-heading')||document.getElementById('goals-panel'):canvasView==='Preview'?document.getElementById('preview-heading'):canvasView==='Debug'?document.getElementById('debug-pane'):document.querySelector('#dashboard.managed-active .managed-preview-name')||document.getElementById('dashboard-heading')||document.getElementById('dashboard');
 function syncNavigation(){
   const mobile=Boolean(mobileViewport?.matches);
   if(mobileBottom){const parent=mobile?mobileBottom:navigationHome;if(mobileNavigation.parentElement!==parent)parent.append(mobileNavigation);}
@@ -108,17 +108,13 @@ function syncNavigation(){
   previewToggle.setAttribute('aria-expanded',String(!preview.hidden));
   document.dispatchEvent(new Event('ned-context-layout'));
   if(mobile&&!preview.hidden)canvasTabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.scrollIntoView?.({block:'nearest',inline:'nearest'});
-  document.getElementById('settings').hidden=canvasView!=='Settings'||preview.hidden;
+  document.getElementById('debug-pane').hidden=canvasView!=='Debug'||preview.hidden;
   leftToggle.setAttribute('aria-pressed',String(workspace==='left'));
   previewToggle.setAttribute('aria-pressed',String(workspace==='preview'));
   const selected=workspace==='left'?'chat':canvasView.toLowerCase();
   for(const name of ['chat','goals','preview']){const button=document.getElementById(`mobile-${name}-nav`);if(button){if(name===selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');}}
   if(mobile&&!['chat','goals','preview'].includes(selected))navigationToggle.setAttribute('aria-current','page');else navigationToggle.removeAttribute('aria-current');
 }
-document.addEventListener('ned-open-provider-settings',()=>{
-  workspace='preview';mobileNavigation.open=false;
-  selectCanvas(document.getElementById('workspace-settings-tab'),true);
-});
 const focusContextControl=()=> (mobileViewport?.matches?(mobileProjectToggle||navigationToggle):contextToggle).focus();
 mobileProjectToggle?.addEventListener('click',()=>{workspace='preview';contextOpen=true;mobileNavigation.open=false;syncNavigation();canvasHeading().focus();});
 function closeContext(){contextOpen=false;workspace='left';syncNavigation();focusContextControl();}
@@ -127,7 +123,7 @@ contextToggle.addEventListener('click',()=>{
   if(!preview.hidden)closeContext();
   else{contextOpen=true;workspace='preview';syncNavigation();}
 });
-for(const [id,target] of [['goals-shortcut','goals-pane-tab'],['preview-shortcut','preview-tab'],['dashboard-shortcut','dashboard-tab'],['settings-shortcut','workspace-settings-tab'],['artifacts-shortcut','artifacts-pane-tab']]){
+for(const [id,target] of [['goals-shortcut','goals-pane-tab'],['preview-shortcut','preview-tab'],['dashboard-shortcut','dashboard-tab'],['artifacts-shortcut','artifacts-pane-tab']]){
   document.getElementById(id)?.addEventListener('click',()=>{selectCanvas(document.getElementById(target),true);});
 }
 for(const [name,target] of [['goals','goals-pane-tab'],['preview','preview-tab']]){document.getElementById(`mobile-${name}-nav`)?.addEventListener('click',()=>selectCanvas(document.getElementById(target),true));}

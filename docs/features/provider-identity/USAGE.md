@@ -1,17 +1,17 @@
 # Connect a provider to NED
 
-Start private `ned com` and use the loopback URL it prints. During development, use `node bin/ned.js` from this checkout for both COM and identity commands. Open **Settings → Provider connections**, or have the skill queue a request:
+Start private `ned com` and use the loopback URL it prints. During development, use `node bin/ned.js` from this checkout for both COM and identity commands. Open **Chat → Message options → Connections**, or have the skill queue a request:
 
 ```sh
 ned identity connect github --url http://127.0.0.1:12345
 ned identity status github
 ```
 
-Replace the example port with the actual port. A queued request also shows a provider-specific connection button in Chat after the reply. Click it to open Settings. Click **Refresh connections** if Settings was already open. Only confirm the identity you intended to connect.
+Replace the example port with the actual port. A queued request also shows a provider-specific connection button in Chat after the reply. Click it to open the private provider dialog. For manual management, open **Connections** and use **Refresh connections**. Only confirm the identity you intended to connect.
 
 | Provider | What to prepare | What NED verifies |
 | --- | --- | --- |
-| GitHub | Install gh (the NED container includes it). NED wraps gh auth login with isolated per-request configuration; no separate GitHub App setup is needed. An explicitly configured legacy `NED_GITHUB_APP_CLIENT_ID` remains supported. | The login returned by gh api user matches the username entered in Settings before confirmation. Repository permissions and organization SSO approval remain separate. |
+| GitHub | Install gh (the NED container includes it). NED wraps gh auth login with isolated per-request configuration; no separate GitHub App setup is needed. An explicitly configured legacy `NED_GITHUB_APP_CLIENT_ID` remains supported. | The login returned by gh api user matches the username entered in the private connection form before confirmation. Repository permissions and organization SSO approval remain separate. |
 | AWS | An official IAM Identity Center access portal, its commercial AWS region, and an account ID and role assigned to the sign-in identity. | The selected account/role actually issues temporary role credentials. Configure the target service region on the AWS command if it differs from the Identity Center region. |
 | GoDaddy | A scoped Domains v3 PAT and the exact managed domain. The domain read requires `domains.domain:read`. | The provider returns the requested registered domain to the supplied PAT. NED does not infer broader domain permissions from this check. |
 
@@ -33,7 +33,7 @@ Native provider connections are bound to the selected OS runtime home. The Hub-c
 
 From Chat on your instance in NED Hub, ask NED to use AWS. The instance runs
 `ned identity connect aws` locally. **Connect AWS** is available in Chat when AWS needs a connection. Select it and follow the
-AWS IAM Identity Center sign-in in Settings. Confirm the displayed role and retry
+AWS IAM Identity Center sign-in in the private connection form. Confirm the displayed role and retry
 the original request. The container includes AWS CLI; the selected identity
 applies through `ned identity exec aws -- aws …`.
 
@@ -43,7 +43,7 @@ If an upgrade retains a previously seeded container profile, synchronize the pro
 
 Call the `ned` tool with `{"action":"request_provider_auth","provider":"aws"}`.
 The user opens **Review connection** on the resulting NED Chat card. The modal
-uses the same provider validation and confirmation as Settings. The card expires
+uses the same provider validation and confirmation as the Connections dialog. The card expires
 with its request and cannot substitute a newer request after expiry or cancellation.
 
 Hub-connected standalone NED supports GitHub and AWS. For a private native

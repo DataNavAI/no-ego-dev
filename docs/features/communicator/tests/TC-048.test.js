@@ -12,10 +12,10 @@ test('TC-048: mobile navigation and authenticated reaction persistence',async t=
   const navigation=page.locator('#navigation-toggle');
   await expect(navigation).toHaveAccessibleName('More');
   const chat=page.locator('#chat');
-  await expect(page.locator('#debug-toggle')).toBeHidden();
-  await navigation.press('Enter');await expect(page.locator('#debug-toggle')).toBeVisible();
-  await page.locator('#debug-toggle').press('Escape');await expect(navigation).toBeFocused();
-  await expect(page.locator('#debug-toggle')).toBeHidden();
+  await expect(page.locator('#dashboard-shortcut')).toBeHidden();
+  await navigation.press('Enter');await expect(page.locator('#dashboard-shortcut')).toBeVisible();
+  await page.locator('#dashboard-shortcut').press('Escape');await expect(navigation).toBeFocused();
+  await expect(page.locator('#dashboard-shortcut')).toBeHidden();
   await page.locator('#mobile-project-toggle').click();await expect(chat).toBeHidden();await expect(page.locator('#preview')).toBeVisible();
   await page.locator('#context-close').click();await expect(page.locator('#mobile-project-toggle')).toBeFocused();await expect(chat).toBeVisible();
   await expect(page.locator('.user-message .message-reaction')).toHaveCount(0);
@@ -58,7 +58,7 @@ test('TC-048: mobile navigation and authenticated reaction persistence',async t=
   await page.reload();
   await expect(page.locator('.message-reaction summary[aria-label="Change reaction, Celebrate selected"]')).toBeVisible();
   await navigation.click();
-  const chatChoice=page.locator('#settings-shortcut');
+  const chatChoice=page.locator('#artifacts-shortcut');
   await chatChoice.focus();
   await expect(chatChoice).toBeFocused();
   // Simulate Chromium clearing focus before dispatching the breakpoint change.

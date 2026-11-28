@@ -9,7 +9,7 @@ import {loadApiCredential} from '../../../../apps/core/src/auth.js';
 import {runCli} from '../../../../src/cli.js';
 import {configuredModelSetup} from '../../communicator/tests/model-fixture.js';
 
-test('TC-004: mobile Settings presents CLI request, confirms identity, and clears sensitive inputs', async t => {
+test('TC-004: mobile Connections dialog presents CLI request, confirms identity, and clears sensitive inputs', async t => {
   const home = await mkdtemp(join(tmpdir(), 'ned-identity-browser-'));
   let now = 1_000_000;
   const apps = [];
@@ -50,7 +50,7 @@ test('TC-004: mobile Settings presents CLI request, confirms identity, and clear
     await expect(page.locator('#app-shell')).toBeVisible();
   }
   await settings(url);
-  await page.locator('#navigation-toggle').click();await page.locator('#settings-shortcut').click();
+  await page.locator('#chat-tools-toggle').click();await page.locator('#connections-toggle').click();
   const github = page.locator('[data-provider=github]');
   const godaddy = page.locator('[data-provider=godaddy]');
   await github.getByLabel('GitHub username').fill('test-owner');
@@ -80,7 +80,8 @@ test('TC-004: mobile Settings presents CLI request, confirms identity, and clear
   await expect(github).toContainText('Disconnected');
   await page.setViewportSize({width: 1280, height: 844});
   await settings(await start({identityEnabled: false}));
-  await page.getByRole('tab', {name: 'Settings', exact: true}).click();
+  await page.locator('#chat-tools-toggle').click();await page.locator('#connections-toggle').click();
   await expect(page.locator('#provider-connections')).toBeHidden();
+  await expect(page.locator('#provider-manager-note')).toHaveText('Provider connections are unavailable on this instance.');
   assert.deepEqual(failures, []);
 });
