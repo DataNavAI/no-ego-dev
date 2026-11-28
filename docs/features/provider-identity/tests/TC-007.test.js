@@ -153,3 +153,24 @@ for(const provider of ['aws','github','godaddy']){
     f.turns[0].finish();
   });
 }
+
+test('TC-007: unavailable GitHub request stays GitHub and retries without AWS fallback',async t=>{
+  let failure,posts=0,calls=0;
+  const awsUrl='https://us-east-1.signin.aws/platform/authorize?request_uri=synthetic';
+  const f=await browserChat(t,{preparePage:async page=>{
+    await page.route('**/api/v1/identity',route=>route.fulfill({json:{awsChatShortcut:true,connections:[{provider:'aws',status:'disconnected',request:null}]}}));
+    await page.route('**/api/v1/identity/*/*',route=>{posts++;return route.fulfill({status:403,json:{error:{code:'identity_disabled'}}});});
+  },onTurn:async({home})=>{
+    const {stdout}=await execute(process.env.NED_TEST_PYTHON||'python3',['-c',plugin,resolve('plugins/ned/__init__.py'),JSON.stringify({action:'request_provider_auth',provider:'github'})],{env:{PATH:process.env.PATH,HOME:home,NED_AGENT_HOME:home,NED_CONTAINER:'1',NED_HUB_TOKEN_FILE:join(home,'fixture-token'),NED_INSTANCE_NAME:'fixture',NED_CLI_PATH:resolve('bin/ned.js'),NED_NODE_PATH:process.execPath,PYTHONDONTWRITEBYTECODE:'1'},timeout:10000});
+    failure=JSON.parse(stdout);
+    return {reply:`GitHub access is needed. A separate AWS request: [GitHub connection](${awsUrl}).\n\nGitHub device page: https://github.com/login/device`,toolRows:[{id:'failed-github-'+(++calls),role:'tool',tool_name:'ned',content:stdout}]};
+  }});
+  await f.ready();await f.draft.fill('Connect GitHub');await f.draft.press('Enter');await expect.poll(()=>f.turns.length).toBe(1);f.turns[0].finish();await expect(f.draft).toBeEnabled();
+  assert.deepEqual(failure,{success:false,action:'request_provider_auth',provider:'github',error:'provider_auth_unavailable'});
+  const card=f.page.locator('.provider-auth-unavailable');await expect(card).toContainText('GitHub connection could not start');await expect(card).not.toContainText('AWS');
+  await expect(f.page.getByRole('link',{name:'Open AWS sign-in',exact:true})).toHaveAttribute('href',awsUrl);
+  await expect(f.page.getByRole('link',{name:'Open GitHub sign-in',exact:true})).toHaveAttribute('href','https://github.com/login/device');
+  await expect(f.page.locator('#chat-provider-requests')).toBeHidden();await f.draft.fill('Keep this draft');
+  if(process.env.NED_UI_EVIDENCE_DIR)await f.page.screenshot({path:join(process.env.NED_UI_EVIDENCE_DIR,'github-unavailable-mixed-providers.png')});
+  await card.getByRole('button',{name:'Try GitHub again'}).click();await expect.poll(()=>f.turns.length).toBe(2);assert.equal(f.turns[1].input,'Start a new GitHub sign-in.');await expect(f.draft).toHaveValue('Keep this draft');await card.getByRole('button',{name:'Try GitHub again'}).click();await expect(card).toContainText('Wait until chat is ready, then try again.');assert.equal(f.turns.length,2);f.turns[1].finish();await expect(f.page.getByRole('button',{name:'Send message',exact:true})).toBeVisible();assert.equal(posts,0);assert.deepEqual(f.errors,[]);
+});

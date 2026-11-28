@@ -110,3 +110,13 @@ test('TC-013: readable AWS approval links require an exact HTTPS provider host',
   for(const url of ['https://us-east-1.signin.aws/platform/authorize?request_uri=synthetic','https://device.sso.us-west-2.amazonaws.com/'])assert.equal(approvalLinkName(url),'Open AWS sign-in');
   for(const url of ['http://us-east-1.signin.aws/','https://signin.aws.evil.invalid/','https://evil.invalid/?next=signin.aws','https://user:password@signin.aws/','https://signin.aws:444/','javascript:alert(1)','not a URL'])assert.equal(approvalLinkName(url),null);
 });
+
+test('TC-013: failed provider requests retain their provider without trusting prose or extra payload',()=>{
+  for(const provider of ['github','aws','godaddy']){
+    const failure={success:false,action:'request_provider_auth',provider,error:'provider_auth_unavailable'};
+    assert.deepEqual(messageParts({role:'tool',tool_name:'ned',content:JSON.stringify(failure)}),[{kind:'provider-auth-unavailable',provider:failure}]);
+    for(const row of [{role:'assistant',content:JSON.stringify(failure)},{role:'tool',tool_name:'other',content:JSON.stringify(failure)},{role:'tool',tool_name:'ned',content:JSON.stringify({...failure,url:'https://evil.invalid/'})}])assert.ok(!messageParts(row).some(part=>part.kind==='provider-auth-unavailable'));
+  }
+  assert.equal(approvalLinkName('https://github.com/login/device'),'Open GitHub sign-in');
+  for(const url of ['https://github.com.evil.invalid/login/device','https://github.com/org/repo','https://github.com/login/device?next=other','https://github.com/login/device#other','https://github.com/login/oauth/authorize','http://github.com/login/device','https://github.com:444/login/device'])assert.equal(approvalLinkName(url),null);
+});

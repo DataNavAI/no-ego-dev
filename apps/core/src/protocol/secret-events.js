@@ -21,6 +21,11 @@ export function providerAuthRow(row){
   try{
     let value=row.content;
     if(typeof value==='string'){if(value.length>2048)return null;value=JSON.parse(value);}
+    if(value&&typeof value==='object'&&!Array.isArray(value)&&value.success===false){
+      const keys=['success','action','provider','error'];
+      if(Object.keys(value).length!==keys.length||!keys.every(key=>Object.hasOwn(value,key))||value.action!=='request_provider_auth'||!['aws','github','godaddy'].includes(value.provider)||value.error!=='provider_auth_unavailable')return null;
+      return Object.fromEntries(keys.map(key=>[key,value[key]]));
+    }
     const keys=['success','action','provider','request_id','expires_at'];
     if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).length!==keys.length
       ||!keys.every(key=>Object.hasOwn(value,key))||value.success!==true||value.action!=='request_provider_auth'
