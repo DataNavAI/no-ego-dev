@@ -114,3 +114,5 @@ Communicator report-formatting guidance: [FR-108 / CUJ-038 / manual TC-060](comm
 Provider-specific failed authorization feedback: [FR-011–013 / TC-008](provider-identity/SPEC.md#provider-specific-failed-requests-297). GitHub enrollment wraps isolated gh CLI login on native and owner-authorized Hub instances; see [FR-014–017 / TC-009](provider-identity/SPEC.md#github-cli-connection-300).
 
 Project navigation cleanup #309: [FR-114–116 / TC-063](communicator/SPEC.md#project-views-cleanup-309) replaces Settings and standalone Debug views; Dashboard is exclusively a registered project server. Secrets/Connections move to focused private Chat dialogs.
+
+Compact Project canvas #314: [FR-119 / CUJ-043 / TC-065](communicator/SPEC.md#compact-project-canvas-314) removes redundant wrapper headers, retaining compact navigation, app actions and accessible status.

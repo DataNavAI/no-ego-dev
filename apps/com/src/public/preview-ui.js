@@ -3,10 +3,13 @@ export function mountPreview({document,fetch=apiFetch,setTimer=setTimeout,clearT
   const panel=document.getElementById(panelId);if(!panel)return;
   const legacy=panel.querySelector('.preview-state')??panel.querySelector('.dashboard-empty');
   const section=document.createElement('section');section.className='managed-preview';section.hidden=true;
-  section.innerHTML='<header class="managed-preview-toolbar"><div><strong class="managed-preview-name"></strong><span class="managed-preview-project"></span><span class="managed-preview-status" role="status" aria-live="polite"></span></div><button type="button" class="managed-preview-reload">Reload</button><button type="button" class="managed-preview-open">Open in new tab</button></header><p class="managed-preview-message" role="status"></p><iframe title="'+(recordKey==='dashboard'?'Product dashboard':'Working app')+'" name="'+frameName+'" sandbox="allow-scripts allow-forms allow-same-origin allow-downloads allow-modals allow-popups"></iframe>';
+  section.innerHTML='<div class="managed-preview-meta sr-only"><div><strong class="managed-preview-name"></strong><span class="managed-preview-project"></span><span class="managed-preview-status" role="status" aria-live="polite"></span></div></div><div class="managed-preview-actions"><button type="button" class="managed-preview-reload" title="Reload"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4"/></svg><span class="sr-only">Reload</span></button><button type="button" class="managed-preview-open" title="Open in new tab"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M11 3h6v6M17 3l-8 8M8 4H4v12h12v-4"/></svg><span class="sr-only">Open in new tab</span></button></div><p class="managed-preview-message" role="status"></p><iframe title="'+(recordKey==='dashboard'?'Product dashboard':'Working app')+'" name="'+frameName+'" sandbox="allow-scripts allow-forms allow-same-origin allow-downloads allow-modals allow-popups"></iframe>';
   panel.append(section);
   let frame=section.querySelector('iframe');const name=section.querySelector('.managed-preview-name'),project=section.querySelector('.managed-preview-project'),status=section.querySelector('.managed-preview-status'),message=section.querySelector('.managed-preview-message'),reload=section.querySelector('.managed-preview-reload'),open=section.querySelector('.managed-preview-open');
-  name.tabIndex=-1;
+  const actions=section.querySelector('.managed-preview-actions'),actionHost=document.getElementById('project-frame-actions');
+  actions.dataset.panel=panelId;if(actionHost)actionHost.append(actions);
+  const syncActions=()=>{actions.hidden=section.hidden||panel.hidden;};
+  document.addEventListener('ned-context-layout',syncActions);syncActions();
   let timer,stopped=false,epoch=0,selected=null,expires=0,pending=false,polling=false,prepared=null,expectedOrigin=null,receiptTimer;
   function clearFrame(){
     // POST navigation does not set src; removing a missing attribute leaves the
@@ -62,19 +65,19 @@ export function mountPreview({document,fetch=apiFetch,setTimer=setTimeout,clearT
       else if(!prepared||Date.now()>=prepared.until){try{prepared={ticket:await issue('tab',epoch),until:Date.now()+20000};}catch{prepared=null;}}
       open.disabled=!ready||!prepared;
     }catch{if(selected||recordKey==='dashboard'){reset();section.hidden=false;panel.classList.add('managed-active');if(legacy)legacy.hidden=true;status.textContent=label+' unavailable';message.textContent='Try again or open the app in a new tab.';}}
-    finally{polling=false;if(!stopped)timer=setTimer(()=>{void poll();},2000);}
+    finally{syncActions();polling=false;if(!stopped)timer=setTimer(()=>{void poll();},2000);}
   }
   reload.addEventListener('click',()=>{if(pending)return;expires=0;void poll();});
   // Submit synchronously-created target on user gesture, never expose a bearer URL.
   open.addEventListener('click',()=>{if(!selected||!prepared||Date.now()>=prepared.until)return;const ticket=prepared.ticket;prepared=null;open.disabled=true;submit(ticket,'_blank');});
   const receive=event=>{if(!stopped&&selected&&event.source===frame.contentWindow&&event.origin===expectedOrigin&&event.data?.type==='ned-preview-ready'&&event.data.id===selected.id&&event.data.revision===selected.revision){clearTimer(receiptTimer);frame.hidden=false;status.textContent=label+' ready';message.textContent='';}};
-  const lost=()=>{reset();section.hidden=true;},restored=()=>{reset();clearTimer(timer);void poll();};
+  const lost=()=>{reset();section.hidden=true;syncActions();},restored=()=>{reset();clearTimer(timer);void poll();};
   globalThis.addEventListener?.('message',receive);
-  const changed=()=>{reset();section.hidden=true;panel.classList.remove('managed-active');if(legacy)legacy.hidden=false;clearTimer(timer);void poll();};
+  const changed=()=>{reset();section.hidden=true;syncActions();panel.classList.remove('managed-active');if(legacy)legacy.hidden=false;clearTimer(timer);void poll();};
   projectControl?.addEventListener('change',changed);
   document.addEventListener('ned-auth-lost',lost);
   document.addEventListener('ned-auth-restored',restored);
-  void poll();return {close(){stopped=true;projectControl?.removeEventListener('change',changed);reset();clearTimer(timer);globalThis.removeEventListener?.('message',receive);document.removeEventListener('ned-auth-lost',lost);document.removeEventListener('ned-auth-restored',restored);panel.classList.remove('managed-active');if(legacy)legacy.hidden=false;section.remove();}};
+  void poll();return {close(){stopped=true;actions.remove();document.removeEventListener('ned-context-layout',syncActions);projectControl?.removeEventListener('change',changed);reset();clearTimer(timer);globalThis.removeEventListener?.('message',receive);document.removeEventListener('ned-auth-lost',lost);document.removeEventListener('ned-auth-restored',restored);panel.classList.remove('managed-active');if(legacy)legacy.hidden=false;section.remove();}};
 }
 
 export function mountProductDashboard(options){

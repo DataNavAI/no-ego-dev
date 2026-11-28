@@ -141,3 +141,15 @@
 .dashboard-empty{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:240px;height:100%;max-width:420px;margin:auto;text-align:center;gap:12px;padding:24px}.dashboard-empty h2{font-size:18px;margin:0}.dashboard-empty p{font-size:13px;line-height:1.6;color:var(--muted);margin:0}.debug-body{flex:1;padding:16px 0}.debug-body section{padding:16px 0;border-top:1px solid var(--border)}.debug-body ul,.debug-body ol{padding-left:18px;font-size:12px;overflow-wrap:anywhere}.debug-body li{margin:8px 0}
 
 .delivery-task-title{font:inherit;color:inherit;text-align:left;min-height:44px;padding:0;border:0;background:transparent;cursor:pointer}.delivery-task-title:hover{text-decoration:underline}
+
+/* A single navigation/action row reserves the remaining height for the app. */
+.preview-pane>.preview-toolbar{display:flex;flex-wrap:nowrap;gap:4px;min-height:48px;height:48px;padding:0 4px;border-bottom:1px solid var(--border)}
+.preview-toolbar>.canvas-tabs{display:flex;flex:1;min-width:0;width:auto;overflow-x:auto;overscroll-behavior-inline:contain;gap:2px;padding:0 2px;scroll-padding-inline:2px;border-radius:0;background:transparent}
+.preview-toolbar>.canvas-tabs button{flex:0 0 auto;min-width:60px;min-height:44px;padding:6px 8px;white-space:nowrap;font-size:12px}
+#project-frame-actions{display:flex;flex:none}.managed-preview-actions{display:flex;gap:0}.managed-preview-actions[hidden]{display:none}
+.managed-preview-actions button,#context-close{display:grid;place-items:center;flex:none;width:44px;height:44px;min-height:44px;margin:0;padding:10px;border:0;border-radius:8px;background:transparent;color:var(--text)}
+.managed-preview-actions button:hover,#context-close:hover{background:var(--hover)}
+.managed-preview-actions button:focus-visible,#context-close:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.managed-preview-actions svg,#context-close svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.managed-preview-actions button:disabled{opacity:.4}.managed-preview-message:empty{display:none}
+.managed-preview-message:not(:empty){margin:8px;padding:8px 12px;background:var(--base-surface);font-size:13px;border-radius:6px}
