@@ -1,5 +1,5 @@
 import {executionPlan} from './work-plan.js';
-const statuses=new Set(['planned','ready','working','blocked','done']);
+const statuses=new Set(['planned','ready','working','claimed','blocked','done']);
 export function dashboardModel(items){
   if(!Array.isArray(items)||items.length>50000)throw new Error('Invalid work');
   for(const item of items)if(typeof item.id!=='string'||!item.id||typeof item.title!=='string'||!['goal','subgoal','task','issue'].includes(item.type)||!statuses.has(item.status))throw new Error('Invalid work');

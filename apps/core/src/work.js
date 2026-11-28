@@ -12,7 +12,7 @@ export function readWorkspace(databasePath=resolveDatabasePath()){
     return {latestTask:latest,revision,coreRevision,...(focus?{focusedProjectId:focus.projectId}:{})};
   }finally{db.close();}
 }
-export function readProjectWork(databasePath=resolveDatabasePath(),projectId){
+export function readProjectWork(databasePath=resolveDatabasePath(),projectId,{includeRunBindings=false}={}){
   let db;
   try{
     db=openNedDatabaseReadOnly({databasePath});
@@ -43,7 +43,7 @@ export function readProjectWork(databasePath=resolveDatabasePath(),projectId){
             AND json_extract(child.payload_json,'$.sessionId')=b.session_id
           ORDER BY child.sequence DESC LIMIT 1
         )
-        WHERE a.project_id=? AND a.state IN ('running','stopping')
+        WHERE a.project_id=? AND a.state IN ('dispatching','running','stopping','unknown')
           AND (b.role<>'child' OR e.event_type='subagent.start')
         ORDER BY b.role,b.worker_index
       `).all(projectId);
@@ -51,8 +51,19 @@ export function readProjectWork(databasePath=resolveDatabasePath(),projectId){
         const list=sessions.get(taskId)||[];list.push(session);sessions.set(taskId,list);
       }
     }
+    const runs=new Map(includeRunBindings&&hasCore?db.prepare(`
+      SELECT a.task_id AS taskId,a.id AS attemptId,a.run_id AS runId,a.session_id AS sessionId,a.gateway_identity AS identity
+      FROM ned_core_attempts a JOIN ned_core_bindings b
+        ON b.attempt_id=a.id AND b.project_id=a.project_id AND b.gateway_identity=a.gateway_identity
+        AND b.role='worker' AND b.session_id=a.session_id
+      WHERE a.project_id=? AND a.state IN ('dispatching','running','stopping','unknown')
+        AND a.run_id IS NOT NULL
+    `).all(projectId).map(({taskId,...binding})=>[taskId,binding]):[]);
     for(const item of items){
-      if(item.status==='working')item.sessions=sessions.get(item.id)||[];
+      if(item.status==='working'){
+        item.sessions=sessions.get(item.id)||[];
+        if(includeRunBindings)item.runBinding=runs.get(item.id);
+      }
       const delivery=readDelivery(db,projectId,item.id);
       item.delivery={impact:delivery?.impact||'',remainingSeconds:delivery?.remainingSeconds??null,estimatedFinish:delivery?.estimatedFinish??null,updatedAt:delivery?.updatedAt??null,trackedSeconds:trackedTime(histories.get(item.id)||[],timestamp),outputs:(delivery?.outputs||[]).map(({id,kind,title})=>({id,kind,title}))};
       item.delivery.executionRevision=`${revisions.get(item.id)||0}:${results.get(item.id)||0}`;

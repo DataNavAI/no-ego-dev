@@ -7,7 +7,9 @@ const reads=new Set(['getItems','getItem','getChildren','getDependencies','getRe
 const arity={initialize:[0,0],focusProject:[0,0],createItem:[2,2],getItems:[0,0],getItem:[1,1],getChildren:[1,1],getDependencies:[1,1],getReadyTasks:[0,0],getTree:[0,0],getGoalProgress:[1,1],getStatus:[0,0],getActivity:[1,1],startTask:[1,1],completeTask:[1,2],blockTask:[2,2],unblockTask:[1,1],getDelivery:[1,1],setDelivery:[2,2],getTaskAttempts:[1,2]};
 const object=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>keys.includes(key));
 
-export function createTaskCommand({store,mutate,saveDelivery}){
+const taskReads=new Set(['getItem','getItems','getChildren','getTree','getStatus']);
+
+export function createTaskCommand({store,mutate,saveDelivery,workReader}){
   return async function taskCommand(input,key){
     const {project,actor,operation,args}=input;
     const bounds=Object.hasOwn(arity,operation)?arity[operation]:null;
@@ -36,6 +38,41 @@ export function createTaskCommand({store,mutate,saveDelivery}){
       }
       return task.sync[operation](...args);
     };
+    if(taskReads.has(operation)&&workReader){
+      const result=execute();
+      const summary=operation==='getStatus';
+      const rows=summary?result.goals:Array.isArray(result)?result:[result];
+      const pending=[...rows],claims=[],seen=new Set(),groups=[];
+      while(pending.length){
+        const row=pending.pop();
+        if(seen.has(row))continue;
+        seen.add(row);
+        if(row.children?.length){groups.push(row);pending.push(...row.children,...row.leaves);}
+
+        if(['task','issue'].includes(row.type)&&row.status==='working')claims.push(row);
+      }
+      if(claims.length||summary&&result.counts.working){
+        const [{items}]=await workReader.read([{id:projectId}]);
+        const live=new Map(items.map(item=>[item.id,item]));
+        for(const claim of claims){
+          const item=live.get(claim.id);
+          claim.claimStatus='working';
+          claim.status=item?.status==='working'?'working':'claimed';
+          claim.executionState=item?.executionState??'unverified';
+          claim.sessions=item?.sessions??[];
+        }
+        for(const group of groups){
+          if(group.status==='working'&&group.leaves.every(leaf=>leaf.status!=='working')){
+            group.status=group.leaves.some(leaf=>leaf.status==='blocked')?'blocked':'planned';
+          }
+        }
+        if(summary){
+          result.counts.working=items.filter(item=>['task','issue'].includes(item.type)&&item.status==='working').length;
+          result.counts.claimed=items.filter(item=>item.status==='claimed').length;
+        }
+      }
+      return result;
+    }
     return reads.has(operation)?execute():mutate(`task-management/${projectId}/${actor}`,key,{operation,args},execute);
   };
 }

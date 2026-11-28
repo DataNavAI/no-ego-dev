@@ -1124,3 +1124,20 @@ Coverage: FR-111–113 → CUJ-040 → TC-062; TC-054 verifies registered inacti
 - Pass evidence: named automated assertions plus rendered screen inspection; real provider consent is separate NOT RUN unless authorized.
 
 Coverage: FR-114–116 → CUJ-041 → TC-063 and linked existing automated cases. Earlier requirements describing Settings navigation, progress Dashboard or separate Debug layout are superseded only for those removed surfaces; their API/security/Goals behavior remains active.
+
+## Hermes-verified task activity
+- FR-117: The project work APIs return working only for a claimed task whose recorded Hermes run and root session match a live gateway response from the bound profile. A claim without a run, a queued or terminal run, a mismatched session, and an unavailable gateway are distinguished using execution metadata. Task claims and ownership remain durable. An unresolved claim appears as Claimed in Goals when inactive work is shown and does not count as active.
+- FR-118: Working tasks expose the verified root session and observed running children. When verification is unavailable, no session is advertised as running. Goals refreshes live state while visible even when no task record changes.
+
+### CUJ-042: Tell active agent work from an old claim
+An operator opens Goals to see the agents that are really running. They open an associated session and use the inactive filter to inspect claims awaiting a worker or verification.
+
+### TC-064: Live Hermes status projection
+- Journey / requirements: CUJ-042 / FR-117–118.
+- Level / automation: authenticated HTTP and served browser integration; [TC-064](tests/TC-064.test.js).
+- Preconditions: disposable project store with a claimed task and a fake gateway for its exact bound run and session.
+- When: read scoped and all-project work, advance the gateway run without changing the stored claim, and inject an unavailable or mismatched gateway response.
+- Then: only verified running work is marked working and advertises a live session. Unbound or stale claims retain ownership and are never reclassified as ready, done, or running. Private gateway identity and raw payloads are omitted. Visible Goals removes a completed session on its scheduled refresh without a task event.
+- Cleanup / evidence: close the synthetic server and remove the test-owned store. No real model or operator task is mutated.
+
+Coverage: FR-117–118 → CUJ-042 → TC-064. Task management TC-013 covers API compatibility and claim ownership.

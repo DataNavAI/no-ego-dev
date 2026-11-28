@@ -1,7 +1,7 @@
 import {createIdentityHandler} from './provider-identity.js';
 import {nativeIdentityAllowed} from '../../../src/identity-store.js';
 import {createModelSetup,ModelSetupError} from './model-setup.js';
-import {readProjectWork} from './work.js';
+import {createVerifiedWorkReader} from './work-execution.js';
 import {readTaskDelivery} from './task-delivery.js';
 import {createSecretsHandler} from './secrets.js';
 import {createActivityStreams} from './activity.js';
@@ -18,6 +18,7 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
   const live=(req,res)=>{try{return !res.destroyed&&apiAuthenticated(req);}catch{return false;}};
   const chat=createChatGateway({home,env,maintenance,...chatGateway,databasePath,logger,beforeChat:async(req,res)=>{const result=await models.prepare(()=>live(req,res));if(!live(req,res))throw new ModelSetupError(401,'model_setup_unauthorized');return result;}});
   const activity=createActivityStreams(databasePath);
+  const work=createVerifiedWorkReader({databasePath,home,env,gateway:chatGateway});
   const removeBusySource=maintenance?.addBusySource(()=>models.isBusy?.()===true||identity.isBusy());
   const handler=async(req,res,send,origin)=>{
     const error=(status,code,message,extra)=>send(status,{error:{code,message}},extra);
@@ -54,10 +55,11 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
         }
         if(pathname==='/api/projects/work'){
           const {projects:registered}=projects.list();
-          return send(200,{projects:registered.map(project=>({...project,items:readProjectWork(databasePath,project.id).items}))});
+          const workspaces=await work.read(registered);
+          return send(200,{projects:registered.map((project,index)=>({...project,items:workspaces[index].items}))});
         }
         const match=/^\/api\/projects\/([^/]+)\/work$/.exec(pathname);
-        return send(200,match?readProjectWork(databasePath,decodeURIComponent(match[1])):pathname==='/api/projects'?projects.list():await projects.detail(decodeURIComponent(pathname.slice('/api/projects/'.length)),controller.signal));
+        return send(200,match?(await work.read([{id:decodeURIComponent(match[1])}]))[0]:pathname==='/api/projects'?projects.list():await projects.detail(decodeURIComponent(pathname.slice('/api/projects/'.length)),controller.signal));
       }catch(failure){
         if(failure instanceof ProjectError)return error(failure.status,failure.code,failure.message);
         if(failure instanceof URIError)return error(404,'project_unavailable','Project is unavailable.');
@@ -67,6 +69,6 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
     return error(404,'not_found','Not found.');
   };
   handler.setHubRegistration=input=>models.register(input);
-  handler.close=async()=>{removeBusySource?.();await identity.close();chat.close();projects.close();activity.close();await models.close();};
+  handler.close=async()=>{removeBusySource?.();await identity.close();chat.close();projects.close();activity.close();await work.close();await models.close();};
   return handler;
 }

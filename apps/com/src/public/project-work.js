@@ -1,7 +1,7 @@
 import {executionPlan} from './work-plan.js';
 import {dashboardModel} from './dashboard-model.js';
 import {mountGoalTasks} from './goals-tasks.js';
-const labels={planned:'Planned',ready:'Ready',working:'In progress',blocked:'Blocked',done:'Done'};
+const labels={planned:'Planned',ready:'Ready',working:'In progress',claimed:'Claimed',blocked:'Blocked',done:'Done'};
 export function renderProjectWork(document,container,data,{showCompleted=false,onReference=()=>{},onFilter=()=>{},filterId='goals-show-completed',progressById,counts}={}){
   if(!Array.isArray(data.items)||data.items.length>50000)throw new Error('Invalid work');
   const plan=executionPlan(data.items,showCompleted);
@@ -76,5 +76,9 @@ export function mountProjectWork({document,fetch}){
   }
   project.addEventListener('ned-work-refresh',load);
   document.addEventListener('ned-auth-restored',load);
+  document.defaultView?.setInterval?.(()=>{
+    const goals=document.getElementById('goals-panel');
+    if(goals&&!goals.hidden&&!goals.closest('[hidden]')&&!document.hidden)void load();
+  },5000);
   void load();
 }

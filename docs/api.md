@@ -117,7 +117,12 @@ read requests may omit Origin. All require the same instance authentication.
   it never accepts a request-selected destination. Missing/symlink/raced project
   folders fail closed without recreating a directory.
 - `GET /projects/:project/work` -> the existing workspace/project work projection:
-  goal/task status, delivery, readiness and safe attempt summaries. Its detailed
+  goal/task status, delivery, readiness and safe attempt summaries. The all-project
+  `GET /projects/work` uses the same projection. A claimed task reports `working`
+  only when its exact bound run and session are verified live in Hermes. Otherwise
+  it reports `claimed` and retains `claimStatus: "working"`. `executionState`
+  describes the last live read, and `sessions` lists verified active bindings.
+  Its detailed
   behavioral authority is [Goals & Tasks](features/communicator/SPEC.md).
 - `GET /projects/:project/tasks/:task?offset=N` -> description, impact, visible
   outputs and at most20 newest attempt summaries, plus `nextOffset`.
@@ -308,6 +313,9 @@ project+actor, hash operation+args, receipt and state atomically committed. Same
 key/input returns the original result; a changed operation/body conflicts409.
 Reads remain fresh and do not consume a key. Ordinary graph mutations preserve
 ownership/history/completion fences. No operation dispatches a worker.
+`getItems`, `getItem`, `getChildren`, `getTree`, and `getStatus` project verified
+execution separately from saved claim ownership. Scheduling and write
+acknowledgements retain the durable claim semantics.
 `getTaskAttempts` returns `{data:[summaries],nextCursor}` inside the normal outer
 `data` envelope:20 newest task-scoped summaries, no instructions/result text or
 credentials. Keep continuation tokens unchanged, scoped to task+project.
