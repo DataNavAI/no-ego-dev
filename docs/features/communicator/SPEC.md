@@ -1141,3 +1141,19 @@ An operator opens Goals to see the agents that are really running. They open an 
 - Cleanup / evidence: close the synthetic server and remove the test-owned store. No real model or operator task is mutated.
 
 Coverage: FR-117–118 → CUJ-042 → TC-064. Task management TC-013 covers API compatibility and claim ownership.
+
+## Collapsible Goals task groups
+- FR-119: Each visible goal starts expanded. Its heading control toggles the task list independently, including task details and blocked descendants. The heading and goal metadata stay visible. Collapsed state is retained within the current Goals view through refreshes, filtering and responsive navigation. The control supports keyboard and touch.
+
+### CUJ-043: Fold goals to scan active work
+From a populated Goals pane, collapse one goal, inspect another and expand the original goal. Incoming updates preserve the chosen state.
+
+### TC-065: Goal disclosure and refresh
+- Journey / requirement: CUJ-043 / FR-119.
+- Level / automation: served browser integration; [TC-065](tests/TC-065.test.js).
+- Preconditions: isolated browser and two working goals.
+- When: collapse one goal by keyboard, receive a changed snapshot, then expand it at mobile width.
+- Then: only the chosen list is hidden, focus stays on its disclosure through refresh, and the updated task is visible on expansion. Closing a goal does not alter task state.
+- Cleanup / pass evidence: close synthetic listeners and browser; verify the actual rendered control state and task visibility.
+
+Coverage: FR-119 → CUJ-043 → TC-065.
