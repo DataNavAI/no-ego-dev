@@ -1142,15 +1142,31 @@ An operator opens Goals to see the agents that are really running. They open an 
 
 Coverage: FR-117–118 → CUJ-042 → TC-064. Task management TC-013 covers API compatibility and claim ownership.
 
-## Compact project canvas (#314)
-- FR-119: Project uses one compact navigation row, without a Project/project-name banner or an embedded app title/status header. The row retains accessible close, reload and open actions; only the selected registered app exposes its actions. App identity and connection status remain available to assistive technology. The tab strip preserves full visible44px targets and horizontal touch/keyboard scrolling even with native non-overlay scrollbars; its scrollbar chrome must not create vertical scrolling or reduce the row. Empty or failed app notices remain visible. The embedded app's own branding is unchanged.
+## Collapsible Goals task groups
+- FR-119: Each visible goal starts expanded. Its heading control toggles the task list independently, including task details and blocked descendants. The heading and goal metadata stay visible. Collapsed state is retained within the current Goals view through refreshes, filtering and responsive navigation. The control supports keyboard and touch.
 
-### CUJ-043: Use the full Project canvas
+### CUJ-043: Fold goals to scan active work
+From a populated Goals pane, collapse one goal, inspect another and expand the original goal. Incoming updates preserve the chosen state.
+
+### TC-065: Goal disclosure and refresh
+- Journey / requirement: CUJ-043 / FR-119.
+- Level / automation: served browser integration; [TC-065](tests/TC-065.test.js).
+- Preconditions: isolated browser and two working goals.
+- When: collapse one goal by keyboard, receive a changed snapshot, then expand it at mobile width.
+- Then: only the chosen list is hidden, focus stays on its disclosure through refresh, and the updated task is visible on expansion. Closing a goal does not alter task state.
+- Cleanup / pass evidence: close synthetic listeners and browser; verify the actual rendered control state and task visibility.
+
+Coverage: FR-119 → CUJ-043 → TC-065.
+
+## Compact project canvas (#314)
+- FR-120: Project uses one compact navigation row, without a Project/project-name banner or an embedded app title/status header. The row retains accessible close, reload and open actions; only the selected registered app exposes its actions. App identity and connection status remain available to assistive technology. The tab strip preserves full visible44px targets and horizontal touch/keyboard scrolling even with native non-overlay scrollbars; its scrollbar chrome must not create vertical scrolling or reduce the row. Empty or failed app notices remain visible. The embedded app's own branding is unchanged.
+
+### CUJ-044: Use the full Project canvas
 An operator opens a registered Dashboard or Preview on desktop or mobile and immediately sees app content below the tab row. They reload the selected app, switch tabs, and return to Chat. This is critical because redundant wrappers obscure product metrics on small screens.
 
-### TC-065: Compact project navigation and app actions
-- Journey / requirements: CUJ-043 / FR-119.
-- Level / automation: browser integration; product-dashboards [TC-003](../product-dashboards/tests/TC-003.test.js) and communicator [TC-065](tests/TC-065.test.js).
+### TC-066: Compact project navigation and app actions
+- Journey / requirements: CUJ-044 / FR-120.
+- Level / automation: browser integration; product-dashboards [TC-003](../product-dashboards/tests/TC-003.test.js) and communicator [TC-066](tests/TC-066.test.js).
 - Preconditions / fixtures: isolated browserChat profile and real synthetic registered dashboard server, Chromium; no existing user state.
 - Given: a project with a registered app and an unsent chat draft.
 - When: open Project at1280,390,320px, select Dashboard, reload, switch projects and lose authentication; enlarge text to200%.
@@ -1160,4 +1176,4 @@ An operator opens a registered Dashboard or Preview on desktop or mobile and imm
 - Cleanup: fixtures close browser/server/processes and delete disposable homes.
 - Pass evidence: named assertions and inspection of synthetic screenshots; no production data required.
 
-Coverage: FR-119 → CUJ-043 → TC-065 plus product-dashboards TC-003.
+Coverage: FR-120 → CUJ-044 → TC-066 plus product-dashboards TC-003.

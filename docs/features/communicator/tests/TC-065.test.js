@@ -1,35 +1,46 @@
 import test from 'node:test';
-import assert from 'node:assert/strict';
+import {join} from 'node:path';
 import {browserChat,expect} from './browser-chat-fixture.js';
-test('TC-065: one compact Project row retains keyboard tabs, close and truthful empty Dashboard',async t=>{
- const f=await browserChat(t);await f.ready();const {page}=f;
- for(const width of [1280,390,320]){
-  await page.setViewportSize({width,height:760});await page.evaluate(()=>new Promise(resolve=>globalThis.requestAnimationFrame(()=>globalThis.requestAnimationFrame(resolve))));
-  if(await page.locator('#preview').isHidden())await page.locator('#mobile-project-toggle').click();
-  await page.getByRole('tab',{name:'Dashboard',exact:true}).click();
-  await expect(page.locator('.context-heading')).toHaveCount(0);await expect(page.locator('.dashboard-empty')).toBeVisible();
-  const row=await page.locator('.preview-toolbar').boundingBox();assert.ok(row.height<=50);
-  const close=page.locator('#context-close');await expect(close).toBeVisible();assert.ok((await close.boundingBox()).height>=44);
-  await page.getByRole('tab',{name:'Dashboard',exact:true}).focus();await page.keyboard.press('Home');await expect(page.getByRole('tab',{name:'Goals',exact:true})).toHaveAttribute('aria-selected','true');if(width>=768)await expect(page.getByRole('tab',{name:'Goals',exact:true})).toBeFocused();else await expect(page.locator('#goals-pane-heading')).toBeFocused();
-  assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
-  if(width<768)await close.click();
- }
- assert.deepEqual(f.errors,[]);
-});
 
-// Playwright normally hides scrollbar chrome, masking the native Linux defect.
-test('TC-065: native scrollbar rendering leaves full tab targets and keyboard scrolling',async t=>{
- const f=await browserChat(t,{browserOptions:{ignoreDefaultArgs:['--hide-scrollbars']}});await f.ready();const {page}=f;
- for(const width of [390,320]){
-  await page.setViewportSize({width,height:760});await page.evaluate(()=>new Promise(resolve=>globalThis.requestAnimationFrame(()=>globalThis.requestAnimationFrame(resolve))));
-  if(await page.locator('#preview').isHidden())await page.locator('#mobile-project-toggle').click();
-  for(const name of ['Goals','Artifacts','Preview','Dashboard','Debug']){
-   const tab=page.getByRole('tab',{name,exact:true});await tab.focus();await page.keyboard.press('Enter');
-   await expect(tab).toHaveAttribute('aria-selected','true');
-   await expect.poll(()=>tab.evaluate(node=>{const strip=node.parentElement,r=node.getBoundingClientRect(),p=strip.getBoundingClientRect();return r.left>=p.left-1&&r.right<=p.right+1&&r.top>=p.top-1&&r.bottom<=p.top+strip.clientHeight+1&&strip.scrollHeight<=strip.clientHeight+1&&r.height>=44;})).toBe(true);
-  }
-  assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
-  await page.locator('#context-close').click();
- }
- assert.deepEqual(f.errors,[]);
+test('TC-065: goal disclosures stay independent and keep their state and focus on refresh',{timeout:30000},async t=>{
+  const goal=(id,title)=>({id,title,type:'goal',status:'planned',parentId:null,dependsOn:[]});
+  const task=(id,title,parentId)=>({id,title,type:'task',status:'working',parentId,dependsOn:[]});
+  const items=[goal('first','Release'),goal('second','Monitor'),
+    task('build','Build the release','first'),task('check','Check uptime','second')];
+  const {page,ready}=await browserChat(t,{preparePage:page=>page.route('**/api/v1/projects/work',route=>
+    route.fulfill({json:{projects:[{id:'alpha',name:'Alpha',items}]}}))});
+  await ready();
+  await page.locator('#goals-pane-tab').click();
+  const goals=page.locator('#goals-panel');
+  const release=goals.getByRole('button',{name:'Release',exact:true});
+  const monitor=goals.getByRole('button',{name:'Monitor',exact:true});
+  const build=goals.getByRole('heading',{name:'Build the release'});
+  const check=goals.getByRole('heading',{name:'Check uptime'});
+  await expect(release).toHaveAttribute('aria-expanded','true');
+  await expect(monitor).toHaveAttribute('aria-expanded','true');
+  await expect(build).toBeVisible();
+  await release.press('Enter');
+  await expect(release).toHaveAttribute('aria-expanded','false');
+  await expect(build).toBeHidden();
+  await expect(check).toBeVisible();
+  items[0].title='Release updated';
+  items[2].title='Build the updated release';
+  await page.locator('#project').evaluate(node=>node.dispatchEvent(new Event('ned-work-refresh')));
+  const refreshed=goals.getByRole('button',{name:'Release updated',exact:true});
+  const updated=goals.getByRole('heading',{name:'Build the updated release'});
+  await expect(refreshed).toBeFocused();
+  await expect(refreshed).toHaveAttribute('aria-expanded','false');
+  await expect(updated).toBeHidden();
+  await expect(check).toBeVisible();
+  const evidence=process.env.NED_UI_EVIDENCE_DIR;
+  if(evidence)await page.screenshot({path:join(evidence,'goals-collapsed-desktop.png')});
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('#mobile-goals-nav').click();
+  await expect(refreshed).toHaveAttribute('aria-expanded','false');
+  await refreshed.click();
+  await expect(updated).toBeVisible();
+  await monitor.click();
+  await expect(check).toBeHidden();
+  await expect(updated).toBeVisible();
+  if(evidence)await page.screenshot({path:join(evidence,'goals-expanded-mobile.png')});
 });

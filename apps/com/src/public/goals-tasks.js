@@ -17,7 +17,7 @@ export function goalGroups(items){
 
 export function mountGoalTasks({document,fetch}){
   const panel=document.getElementById('goals-panel');if(!panel)return {update(){},message(){}};
-  let projectId='',generation=0,snapshot=null,showInactive=false;const opened=new Set(),requests=new WeakMap();
+  let projectId='',generation=0,snapshot=null,showInactive=false;const opened=new Set(),collapsed=new Set(),requests=new WeakMap();
   const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
   const button=(text,action)=>{const element=node('button',text);element.type='button';element.addEventListener('click',action);return element;};
   const base=item=>`/api/v1/projects/${encodeURIComponent(item.projectId??projectId)}/tasks/${encodeURIComponent(item.sourceId??item.id)}`;
@@ -151,7 +151,29 @@ export function mountGoalTasks({document,fetch}){
     }
     for(const group of groups){
       const section=node('section',undefined,'delivery-goal');
-      section.append(node('h3',group.goal?.title||'Tasks without a goal'));
+      const key=group.goal?.id||'';
+      const title=group.goal?.title||'Tasks without a goal';
+      const heading=node('h3');
+      const taskList=node('div',undefined,'delivery-goal-tasks');
+      taskList.id=`goal-tasks-${encodeURIComponent(key)}`;
+      if(group.tasks.length){
+        const toggle=button(title,()=>{
+          if(collapsed.has(key))collapsed.delete(key);
+          else collapsed.add(key);
+          renderDisclosure();
+        });
+        function renderDisclosure(){
+          const closed=collapsed.has(key);
+          taskList.hidden=closed;
+          toggle.setAttribute('aria-expanded',String(!closed));
+        }
+        toggle.className='delivery-goal-toggle';
+        toggle.dataset.deliveryFocus=`goal:${key}`;
+        toggle.setAttribute('aria-controls',taskList.id);
+        heading.append(toggle);
+        renderDisclosure();
+      }else heading.textContent=title;
+      section.append(heading);
       if(group.goal?.projectName) section.append(node('p',group.goal.projectName,'delivery-muted'));
       const finish=group.goal?.delivery?.estimatedFinish;
       section.append(node('p',finish?`Est. finish ${new Date(finish).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}`:'Finish not estimated','delivery-muted'));
@@ -173,14 +195,15 @@ export function mountGoalTasks({document,fetch}){
         }
         sessionDetails(item,card);
         const previous=retained.get(item.id),signature=JSON.stringify([delivery.revision,delivery.updatedAt,delivery.executionRevision]);
-        if(previous){if(previous.dataset.signature!==signature){previous.dataset.signature=signature;if(previous.open)void taskDetails(item,previous.lastElementChild,0,focusKey);else previous.lastElementChild.replaceChildren();}card.append(previous);place(item,card,item.status==='done'?completed:section);continue;}
+        if(previous){if(previous.dataset.signature!==signature){previous.dataset.signature=signature;if(previous.open)void taskDetails(item,previous.lastElementChild,0,focusKey);else previous.lastElementChild.replaceChildren();}card.append(previous);place(item,card,item.status==='done'?completed:taskList);continue;}
         const detail=node('details',undefined,'delivery-details');detail.dataset.taskId=item.id;detail.dataset.signature=signature;const summary=node('summary','Details');summary.dataset.deliveryFocus=item.id;detail.append(summary);const body=node('div');detail.append(body);
         detail.addEventListener('toggle',()=>{if(detail.open){opened.add(item.id);if(!body.childElementCount)void taskDetails(item,body);}else opened.delete(item.id);});
         if(opened.has(item.id))detail.open=true;
-        card.append(detail);place(item,card,item.status==='done'?completed:section);
+        card.append(detail);place(item,card,item.status==='done'?completed:taskList);
       }
-      if(complete.length)section.append(completed);
-      if(!group.tasks.length)section.append(node('p','No tasks yet.','delivery-muted'));
+      if(complete.length)taskList.append(completed);
+      if(group.tasks.length)section.append(taskList);
+      else section.append(node('p','No tasks yet.','delivery-muted'));
       if(!group.tasks.length||group.tasks.some(item=>!blockers.has(item.id)))panel.append(section);
     }
     for(const [id,children] of nested)cards.get(id)?.append(children);
@@ -188,7 +211,7 @@ export function mountGoalTasks({document,fetch}){
     if(focusKey)[...panel.querySelectorAll('[data-delivery-focus]')].find(element=>element.dataset.deliveryFocus===focusKey)?.focus();
   }
   return {
-    update(data){const changed=projectId!==data.projectId;projectId=data.projectId;snapshot=data;if(changed){generation++;opened.clear();panel.replaceChildren();}draw();},
+    update(data){const changed=projectId!==data.projectId;projectId=data.projectId;snapshot=data;if(changed){generation++;opened.clear();collapsed.clear();panel.replaceChildren();}draw();},
     message(text,retry){generation++;snapshot=null;opened.clear();panel.replaceChildren(node('p',text,'delivery-muted'));if(retry)panel.append(button('Retry',retry));},
   };
 }

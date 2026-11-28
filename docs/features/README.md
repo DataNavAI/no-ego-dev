@@ -115,4 +115,4 @@ Provider-specific failed authorization feedback: [FR-011–013 / TC-008](provide
 
 Project navigation cleanup #309: [FR-114–116 / TC-063](communicator/SPEC.md#project-views-cleanup-309) replaces Settings and standalone Debug views; Dashboard is exclusively a registered project server. Secrets/Connections move to focused private Chat dialogs.
 
-Compact Project canvas #314: [FR-119 / CUJ-043 / TC-065](communicator/SPEC.md#compact-project-canvas-314) removes redundant wrapper headers, retaining compact navigation, app actions and accessible status.
+Compact Project canvas #314: [FR-120 / CUJ-044 / TC-066](communicator/SPEC.md#compact-project-canvas-314) removes redundant wrapper headers, retaining compact navigation, app actions and accessible status.

@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "4c5063d2aa9ff3e60ff52cc9d08ca5839f1a893a",
+  "result": "pass",
+  "tested_at": "2026-11-28T10:45:29.716262+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "commands": [
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-065.test.js"
+  ],
+  "observations": "Desktop and mobile Chromium show independent goal controls. Keyboard collapse preserves focus and closed state through a changed snapshot, and mobile expansion reveals the updated task."
+}
