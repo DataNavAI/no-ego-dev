@@ -58,7 +58,7 @@ Actor: user and Native connector. A background chat, Core attempt, command, uplo
 - Cleanup: close listeners/sockets/children and fixture databases; remove fixture state only.
 - Pass evidence: HTTP/WS responses and side-effect/persistence assertions. Published Linux process qualification and staged busy→idle auto-update are separate Hub182 release gates.
 
-TC-002 also covers unsaved provider API-key input across a full quiet window, content-free metadata, explicit clear and successful save. Visible password inputs are combined with composer drafts; input/reset and render changes recheck only presence. Hidden/disabled controls are excluded and field values/names never enter activity metadata.
+TC-002 also covers unsaved provider API-key input across a full quiet window, content-free metadata, explicit clear and successful save. The browser fixture buffers the real server acknowledgement through route.fetch before fulfilling it to the document, and binds clear acknowledgement to the client that reported the pending draft. It does not read a page Response body after navigation can discard that resource; all maintenance/privacy assertions remain unchanged (#264). Visible password inputs are combined with composer drafts; input/reset and render changes recheck only presence. Hidden/disabled controls are excluded and field values/names never enter activity metadata.
 
 ## Coverage and acceptance
 

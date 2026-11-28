@@ -114,11 +114,22 @@ test('TC-002: unsaved provider keys defer maintenance without leaking values; cl
  const app=createCommunicatorServer({home:dir,env,databasePath,maintenance,modelSetup,gateway:{key:''}});await app.listen();cleanup.push(()=>app.close());
  const browser=await chromium.launch({headless:true});cleanup.push(()=>browser.close());const context=await browser.newContext({extraHTTPHeaders:{Authorization:'Bearer '+app.apiCredential}}),page=await context.newPage(),bodies=[];
  page.on('request',request=>{if(request.url().endsWith('/api/v1/activity/interaction'))bodies.push(request.postDataJSON());});
+ // Capture the real server acknowledgement outside the document's CDP response
+ // lifetime: a later navigation can discard a page Response before json() reads it.
+ let clearClientId,onCleared;
+ await page.route('**/api/v1/activity/interaction',async route=>{
+  const input=route.request().postDataJSON();
+  const observe=input.hasDraft===false&&input.clientId===clearClientId?onCleared:null;
+  const response=await route.fetch(),body=await response.json();
+  await route.fulfill({response});
+  observe?.(body);
+ });
+ cleanup.push(()=>page.unrouteAll({behavior:'wait'}));
  const initial=page.waitForResponse(response=>response.url().endsWith('/api/v1/activity/interaction'));await page.goto(app.url);await initial;
  const key=page.getByLabel('API key',{exact:true});await expect(key).toBeVisible();now=301000;await key.fill(secret);
  await expect.poll(()=>maintenance.status(intent).reason,{timeout:2000}).toBe('pending_draft');assert.equal(maintenance.prepare(intent).ready,false);
  assert.equal(JSON.stringify(bodies).includes(secret),false);await expect.poll(()=>bodies.some(body=>body.hasDraft)).toBe(true);now+=300000;assert.equal(maintenance.prepare(intent).ready,false);
- const cleared=page.waitForResponse(response=>response.url().endsWith('/api/v1/activity/interaction')&&response.request().postDataJSON().hasDraft===false);await key.fill('');assert.equal((await(await cleared).json()).accepted,true);assert.notEqual(maintenance.status(intent).reason,'pending_draft');now+=300000;assert.equal(maintenance.prepare(intent).ready,true);maintenance.release(intent);
+ const cleared=new Promise(resolve=>{onCleared=resolve;});clearClientId=bodies.findLast(body=>body.hasDraft===true).clientId;assert.equal(typeof clearClientId,'string');await key.fill('');assert.equal((await cleared).accepted,true);onCleared=undefined;assert.notEqual(maintenance.status(intent).reason,'pending_draft');now+=300000;assert.equal(maintenance.prepare(intent).ready,true);maintenance.release(intent);
  await key.fill(secret);await expect.poll(()=>maintenance.status(intent).reason).toBe('pending_draft');await page.getByRole('button',{name:'Connect provider',exact:true}).click();
  await expect(key).not.toBeVisible();await expect.poll(()=>maintenance.status(intent).reason).toBe('recent_activity');assert.equal(saved,true);assert.equal(JSON.stringify(bodies).includes(secret),false);
  now+=300000;assert.equal(maintenance.prepare(intent).ready,true);
