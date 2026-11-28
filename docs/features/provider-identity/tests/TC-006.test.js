@@ -148,7 +148,12 @@ test('TC-006: an owner using Hub Chat can authorize AWS for a standalone instanc
   assert.equal((await fetch(hub.origin+path,{headers})).status,401);
   assert.equal((await fetch(hub.origin+path,{headers:{...headers,Cookie:'hub-owner=other'}})).status,401);
   assert.equal((await fetch(local+path,{headers:{...headers,Authorization:'Bearer '+fixture.accessToken}})).status,403);
-  assert.equal((await fetch(hub.origin+path+'/github/request',{method:'POST',headers:{...headers,Cookie:'hub-owner=fixture',Origin:hub.origin}})).status,403);
+  for(const cookie of [undefined,'hub-owner=other'])assert.equal((await fetch(hub.origin+path+'/github/request',{method:'POST',headers:{...headers,...(cookie&&{Cookie:cookie}),Origin:hub.origin}})).status,401);
+  assert.equal((await fetch(local+path+'/github/request',{method:'POST',headers:{...headers,Origin:local}})).status,401);
+  assert.equal((await fetch(local+path+'/github/start',{method:'POST',headers:{...headers,Authorization:'Bearer '+fixture.accessToken,Origin:local}})).status,403);
+  const githubRequest=await fetch(hub.origin+path+'/github/request',{method:'POST',headers:{...headers,Cookie:'hub-owner=fixture',Origin:hub.origin}});assert.equal(githubRequest.status,200);const githubState=await githubRequest.json();assert.equal(githubState.provider,'github');
+  assert.equal((await fetch(hub.origin+path+'/github/cancel',{method:'POST',headers:{...headers,Cookie:'hub-owner=fixture',Origin:hub.origin,'X-NED-Identity-Id':githubState.request.id}})).status,200);
+  assert.equal((await fetch(hub.origin+path+'/godaddy/request',{method:'POST',headers:{...headers,Cookie:'hub-owner=fixture',Origin:hub.origin}})).status,403);
   async function send(count,input=request){
     await draft.fill(input);
     await draft.press('Enter');

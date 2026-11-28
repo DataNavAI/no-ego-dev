@@ -41,6 +41,8 @@ def handle(args, **_kwargs):
     if provider_auth:
         if set(args) != {"action", "provider"} or args["provider"] not in ("aws", "github", "godaddy"):
             return failure
+        failure = json.dumps({"success": False, "action": "request_provider_auth",
+                              "provider": args["provider"], "error": "provider_auth_unavailable"})
         command = ["identity", "connect", args["provider"]]
         if os.environ.get("NED_CONTAINER") != "1":
             origin = os.environ.get("NED_IDENTITY_COM_ORIGIN", "")

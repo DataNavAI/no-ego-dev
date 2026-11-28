@@ -20,6 +20,24 @@ FROM subscription-runtime AS ned
 # Copy AWS CLI v2 from its stage; ln exposes aws on PATH and --version checks the binary.
 COPY --from=aws-cli /usr/local/aws-cli /usr/local/aws-cli
 RUN ln -s /usr/local/aws-cli/v2/current/bin/aws /usr/local/bin/aws && aws --version
+# Official GitHub CLI: NED wraps gh auth login, with no separately registered App.
+# Release archive digests are pinned for both native image architectures.
+ARG TARGETARCH
+RUN set -eu; \
+    case "$TARGETARCH" in \
+      amd64) gh_digest=36352a993b97e9758793cdb87f9ba674bd6d88c914488e122be78a1962203803 ;; \
+      arm64) gh_digest=039ce25aab0cfa0ea5160e3db75ed44699bde4b20ff63ec5991f82201f1b33b8 ;; \
+      *) exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/cli/cli/releases/download/v2.88.1/gh_2.88.1_linux_${TARGETARCH}.tar.gz" -o /tmp/ned-gh.tar.gz; \
+    printf '%s  %s\n' "$gh_digest" /tmp/ned-gh.tar.gz | sha256sum -c -; \
+    tar -xzf /tmp/ned-gh.tar.gz -C /tmp; \
+    install -m 0755 "/tmp/gh_2.88.1_linux_${TARGETARCH}/bin/gh" /usr/local/bin/gh; \
+    mkdir -p /usr/local/share/licenses/github-cli; \
+    cp "/tmp/gh_2.88.1_linux_${TARGETARCH}/LICENSE" /usr/local/share/licenses/github-cli/LICENSE; \
+    rm -rf /tmp/ned-gh.tar.gz "/tmp/gh_2.88.1_linux_${TARGETARCH}"; \
+    gh --version
+
 # Dedicated NED Python + PyYAML: profile initialization/dashboard patching, separate from Hermes Python.
 RUN /usr/bin/python3 -m venv /opt/ned/python && /opt/ned/python/bin/pip install --no-cache-dir PyYAML==6.0.3
 # npm ci installs NED Node dependencies; approve/rebuild compiles the better-sqlite3

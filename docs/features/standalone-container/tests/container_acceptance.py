@@ -17,7 +17,7 @@ import urllib.request
 import base64
 
 ROOT = Path(__file__).resolve().parents[4]
-TOOL_CASES = {"shell/coreutils", "git/ripgrep", "archive/crypto/ssh", "gcc/g++/make",
+TOOL_CASES = {"github-cli/auth-config", "shell/coreutils", "git/ripgrep", "archive/crypto/ssh", "gcc/g++/make",
               "python/sqlite/yaml", "node/npm/npx/native-sqlite", "ffmpeg/ffprobe",
               "ned/hermes/browser-harness/aws", "curl/chrome-javascript/screenshot"}
 

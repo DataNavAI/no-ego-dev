@@ -31,13 +31,16 @@ const fields = {
   godaddy: ['domain', 'token'],
 };
 
-export function createIdentityHandler({home, env, enabled, allowedProviders = providers, awsChatShortcut = false, fetch, clock = Date.now, githubClientId} = {}) {
+export function createIdentityHandler({home, env, enabled, allowedProviders = providers, awsChatShortcut = false, fetch, clock = Date.now, githubClientId,githubCliFactory} = {}) {
   const pending = new Map();
   function end(provider) {
     clearTimeout(pending.get(provider)?.timer);
-    pending.delete(provider);
+    const current=pending.get(provider);pending.delete(provider);
+    if(current)adapters.cancel?.(provider,current.id);
   }
-  const adapters = createIdentityProviders({fetch, clock, githubClientId});
+  const adapters = createIdentityProviders({fetch, clock, githubClientId,home,env,githubCliFactory});
+
+  if(enabled&&allowedProviders.includes('github'))void adapters.initialize?.().catch(()=>{});
 
   function details(provider, store) {
     const attempt = pending.get(provider);
@@ -95,7 +98,7 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
 
     try {
       const store = createIdentityStore(home, env);
-      if (list) return send(200, {connections: allowedProviders.map(name => details(name, store)), ...(awsChatShortcut && {awsChatShortcut: true})});
+      if (list) return send(200, {connections: allowedProviders.map(name => details(name, store)), ...(awsChatShortcut && {awsChatShortcut: true,githubChatShortcut:allowedProviders.includes('github')})});
       details(provider, store);
       const current = pending.get(provider);
       const observedId = req.headers['x-ned-identity-id'];
@@ -122,7 +125,7 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
           checkActive(provider, current);
           if (!current.device && !current.candidate) {
             await progress(provider, current, async () => {
-              const result = await adapters.start[provider](input, current.expiresAt);
+              const result = await adapters.start[provider](input, current.expiresAt,{requestId:current.id});
               if (provider === 'godaddy') current.candidate = result;
               else {
                 current.device = result;
@@ -153,7 +156,7 @@ export function createIdentityHandler({home, env, enabled, allowedProviders = pr
       return fail(503, 'identity_unavailable', 'Provider connections are unavailable. Check private storage or try again.');
     }
   };
-  handle.isBusy = () => pending.size > 0;
-  handle.close = () => providers.forEach(end);
+  handle.isBusy = () => pending.size > 0||adapters.isBusy?.()===true;
+  handle.close = async() => {providers.forEach(end);await adapters.close?.();};
   return handle;
 }

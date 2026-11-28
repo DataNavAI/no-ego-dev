@@ -14,12 +14,15 @@ Inventory inspected from the pinned official Hermes base `ef0650d523ee1b5ab32c77
 | Browser | Google Chrome for Testing **156.0.8078.80** inherited from Hermes; browser-harness | Chrome executes local-page JS and produces screenshot; harness CLI loads |
 | Media | FFmpeg, ffprobe | Generate and inspect mono PCM audio |
 | Agent/application | Hermes CLI, NED CLI, Hermes dashboard, NED COM, subscription runtime adapters | CLI load/version plus existing service/lifecycle acceptance |
-| Cloud | AWS CLI v2, added by NED's pinned official AWS image stage | Offline API skeleton; no cloud credentials or requests |
+| Cloud | GitHub CLI (`gh`)2.88.1 | Pinned official AMD64/ARM64 release archives, SHA-256 checked | Isolated config roundtrip and synthetic auth selection; live approval is separate |
+| AWS CLI v2, added by NED's pinned official AWS image stage | Offline API skeleton; no cloud credentials or requests |
 | Supervision | s6-overlay | Existing actual service restart and graceful-shutdown acceptance |
 
 The browser was already installed at `/opt/hermes/tools/chromium-1248/chrome-linux-arm64/chrome` in the inspected ARM64 image (architecture-specific path on AMD64). Despite the directory name, its actual `--version` identifies **Google Chrome for Testing**, not Chromium. NED exposes it as `/usr/local/bin/google-chrome`; it does not download a duplicate browser. The build fails if the pinned upstream layout/identity changes unexpectedly. Both supported architectures must execute the browser in CI.
 
-Not preinstalled as standalone PATH commands in the inspected base: GitHub CLI (`gh`), jq, wget, fd, zip/unzip, uv, pip/pip3, pandoc and sqlite3 CLI. Python has SQLite support; the NED virtualenv has its own pip. Do not confuse a Python SDK with a corresponding command-line tool, or availability with configured authentication. This change does not add these optional tools.
+The pinned base itself does not supply gh; NED now adds official GitHub CLI2.88.1 for AMD64/ARM64 with pinned release archive SHA-256 verification and license. Its `github-cli/auth-config` offline probe exercises isolated config write/read and explicit synthetic credential selection; real OAuth consent is separate provider-identity TC-010.
+
+Not preinstalled as standalone PATH commands: jq, wget, fd, zip/unzip, uv, pip/pip3, pandoc and sqlite3 CLI. Python has SQLite support; the NED virtualenv has its own pip. Do not confuse a Python SDK with a corresponding command-line tool, or availability with configured authentication. These remaining optional tools are not added.
 
 Hermes Python also includes provider SDKs (OpenAI, Anthropic, boto3, Google/Azure), document libraries (python-docx, python-pptx, openpyxl, xlsxwriter, pypdf, reportlab), Pillow, HTTP clients and browser-harness. They are inherited dependencies, not a promise that every provider or document format is configured or end-to-end tested. Use `python -c 'import importlib.metadata as m; print(sorted((d.metadata["Name"],d.version) for d in m.distributions()))'` inside a disposable image to inspect the full Python inventory.
 

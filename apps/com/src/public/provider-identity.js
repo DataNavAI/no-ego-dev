@@ -26,8 +26,9 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
   let authGeneration = 0;
   let modalGeneration = 0;
   let modalTrigger,modalReturnCard,modalRequestId,modalProvider,expiryTimer;
-  let awsConnection, modalState;
+  let awsConnection,githubConnection, modalState;
   const quickConnect=document.getElementById('chat-connect-aws');
+  const quickGithub=document.getElementById('chat-connect-github');
   const cardStates=new WeakMap();
   const providerExpired=new Set();
   const requestDeadlines=new Map();
@@ -40,6 +41,20 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     finally{quickConnect.disabled=false;}
     if(epoch!==authGeneration)return;
     document.dispatchEvent(new Event('ned-open-provider-settings'));void refresh();void refreshChatRequests();
+  });
+  quickGithub?.addEventListener('click',async()=>{
+    if(quickGithub.disabled||quickGithub.hidden)return;
+    quickGithub.disabled=true;const epoch=authGeneration;
+    try{
+      const connection=githubConnection?.request?githubConnection:await api('/github/request','POST');
+      if(epoch!==authGeneration)return;
+      if(connection.provider!=='github'||!connection.request?.id)throw new Error('Unavailable');
+      await openModal({provider:'github',request_id:connection.request.id},quickGithub);
+    }catch{
+      if(epoch!==authGeneration)return;
+      modalGeneration++;modalTrigger=quickGithub;modalReturnCard=undefined;modalProvider='github';modalRequestId=undefined;modalState='unavailable';
+      title.textContent='Connect GitHub';modalStatus.textContent='GitHub connection is unavailable. Try again.';modalBody.replaceChildren();close.textContent='Close';if(!modal.open)modal.showModal();
+    }finally{quickGithub.disabled=false;void refreshChatRequests();}
   });
   let cardRefreshScheduled=false;
   document.addEventListener('ned-provider-card-mounted',()=>{if(cardRefreshScheduled)return;cardRefreshScheduled=true;queueMicrotask(()=>{cardRefreshScheduled=false;void refreshChatRequests();});});
@@ -133,6 +148,8 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
         && hasExpired(modalRequestId,trigger?.getAttribute('data-expires-at')))showExpiredDialog(modalProvider);
       else if(current?.request?.id===modalRequestId&&modalState==='checking')showRequestDialog(current);
     }
+    githubConnection=connections?.find(item=>item.provider==='github');
+    if(quickGithub){quickGithub.hidden=!data?.githubChatShortcut||!githubConnection||githubConnection.status==='connected';if(quickGithub.hidden&&document.activeElement===quickGithub)document.getElementById('chat-message')?.focus();}
     awsConnection=connections?.find(item=>item.provider==='aws');
     if(quickConnect)quickConnect.hidden=!data?.awsChatShortcut||!awsConnection||awsConnection.status==='connected';
     const cards=[...document.querySelectorAll('.provider-auth-card[data-auth-provider]')];
@@ -379,7 +396,7 @@ export function mountProviderIdentity({document, fetch: request = apiFetch} = {}
     if (modal.open) modal.close();
     generation++; chatGeneration++; authGeneration++;
     list.replaceChildren(); panel.hidden = true;
-    chatActionsKey = '[]';awsConnection=undefined;if(quickConnect)quickConnect.hidden=true;
+    chatActionsKey = '[]';awsConnection=undefined;githubConnection=undefined;if(quickConnect)quickConnect.hidden=true;if(quickGithub)quickGithub.hidden=true;
     for(const card of document.querySelectorAll('.provider-auth-card[data-auth-provider]')){cardStates.delete(card);card.replaceChildren(node('strong','Provider connection'),node('p','Reconnect to check this request.'));}
     chatRequests?.replaceChildren();
     if (chatRequests) chatRequests.hidden = true;

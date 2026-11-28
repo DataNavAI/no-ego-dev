@@ -19,17 +19,17 @@ function literalLinks(text,document){
 export function approvalLinkName(value){
   try{const url=new URL(value);if(url.protocol!=='https:'||url.username||url.password||url.port)return null;
     const aws=/(^|\.)signin\.aws$/.test(url.hostname)||/^device\.sso\.[a-z0-9-]+\.amazonaws\.com$/.test(url.hostname);
-    return aws?'Open AWS sign-in':null;
+    return aws?'Open AWS sign-in':url.href==='https://github.com/login/device'?'Open GitHub sign-in':null;
   }catch{return null;}
 }
 function readableApprovalLinks(fragment,document){
-  const decorate=(link,label)=>{link.textContent=label;link.className='approval-link';link.setAttribute('target','_blank');link.setAttribute('rel','noopener noreferrer');};
-  for(const link of fragment.querySelectorAll('a')){const href=link.getAttribute('href');const label=approvalLinkName(href);if(label&&link.textContent.trim()===href)decorate(link,label);}
+  const decorate=(link,label)=>{link.textContent=label;link.className='approval-link';link.setAttribute('title',label);link.setAttribute('target','_blank');link.setAttribute('rel','noopener noreferrer');};
+  for(const link of fragment.querySelectorAll('a')){const href=link.getAttribute('href');const label=approvalLinkName(href);if(label)decorate(link,label);}
   for(const code of fragment.querySelectorAll('code')){if(code.closest?.('pre'))continue;const href=code.textContent.trim(),label=approvalLinkName(href);if(!label)continue;const link=document.createElement('a');link.setAttribute('href',href);decorate(link,label);code.replaceWith(link);}
 }
 const stringify=value=>typeof value==='string'?value:JSON.stringify(value,null,2) ?? '';
 export function messageParts(row){
-  const provider=providerAuthRow(row);if(provider)return [{kind:'provider-auth',provider}];
+  const provider=providerAuthRow(row);if(provider)return [{kind:provider.success?'provider-auth':'provider-auth-unavailable',provider}];
   const request=secretRequestRow(row);if(request)return [{kind:'secret-request',request}];
   const share=secretShareRow(row);if(share)return [{kind:'secret-share',share}];
   if(!['user','assistant'].includes(row.role))return [];
@@ -59,6 +59,19 @@ export function renderMessageContent(row,document,libraries){
   root.setAttribute?.('role','group');root.setAttribute?.('aria-label',`${author} message`);
   const parts=messageParts(row);
   for(const part of parts){
+    if(part.kind==='provider-auth-unavailable'){
+      const provider=part.provider.provider,name={aws:'AWS',github:'GitHub',godaddy:'GoDaddy'}[provider];
+      const card=document.createElement('section');card.className='provider-auth-card provider-auth-unavailable';
+      const heading=document.createElement('strong');heading.textContent=name+' connection could not start';
+      const message=document.createElement('p');message.textContent='Ask NED to check '+name+' connection support on this instance.';
+      const feedback=document.createElement('p');feedback.setAttribute('role','status');
+      const retry=document.createElement('button');retry.type='button';retry.textContent='Try '+name+' again';
+      retry.addEventListener('click',()=>{
+        const accepted=!document.dispatchEvent(new CustomEvent('ned-restart-provider-sign-in',{cancelable:true,detail:{provider}}));
+        if(!accepted)feedback.textContent='Wait until chat is ready, then try again.';
+      });
+      card.append(heading,message,retry,feedback);root.append(card);continue;
+    }
     if(part.kind==='provider-auth'){
       const receipt=part.provider;
       const name={aws:'AWS',github:'GitHub',godaddy:'GoDaddy'}[receipt.provider];

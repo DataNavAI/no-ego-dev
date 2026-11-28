@@ -1,3 +1,6 @@
+import {IdentityError} from './identity-errors.js';
+import {createGithubCliAuth} from './github-cli-auth.js';
+export {IdentityError} from './identity-errors.js';
 const deviceGrant = 'urn:ietf:params:oauth:grant-type:device_code';
 const awsRegion = /^[a-z]{2}(?:-[a-z]+)+-[1-9][0-9]?$/;
 const awsPortals = [
@@ -8,13 +11,6 @@ const awsPortals = [
 const domainName = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,62}$/;
 export const providers = ['github', 'aws', 'godaddy'];
 
-export class IdentityError extends Error {
-  constructor(code, message, status = 400) {
-    super(message);
-    this.code = code;
-    this.status = status;
-  }
-}
 
 function requireInput(condition, message) {
   if (!condition) throw new IdentityError('invalid_input', message);
@@ -42,7 +38,9 @@ function tokenString(value) {
   return typeof value === 'string' && /^[!-~]{1,8192}$/.test(value);
 }
 
-export function createIdentityProviders({fetch: request = fetch, clock = Date.now, githubClientId = process.env.NED_GITHUB_APP_CLIENT_ID} = {}) {
+export function createIdentityProviders({fetch: request = fetch, clock = Date.now, githubClientId = process.env.NED_GITHUB_APP_CLIENT_ID,home,env=process.env,githubCliFactory=createGithubCliAuth} = {}) {
+  let githubCli;
+  const cli=()=>githubCli??=githubCliFactory({home,env,clock});
   async function json(url, {headers, body, form} = {}) {
     const response = await request(url, {
       method: body || form ? 'POST' : 'GET',
@@ -73,8 +71,9 @@ export function createIdentityProviders({fetch: request = fetch, clock = Date.no
     return null;
   }
 
-  async function githubStart(input, limit) {
+  async function githubStart(input, limit, context={}) {
     requireInput(typeof input.login === 'string' && /^[a-z0-9](?:[a-z0-9-]{0,38})$/i.test(input.login), 'Enter the GitHub username you want NED to use.');
+    if(!githubClientId)return cli().start(input,limit,context.requestId);
     if (!githubClientId || !/^[a-zA-Z0-9_]{4,100}$/.test(githubClientId))
       throw new IdentityError('not_configured', 'Configure a device-enabled GitHub App client ID on this NED instance.', 503);
     const {ok, data} = await json('https://github.com/login/device/code', {form: {client_id: githubClientId}});
@@ -87,6 +86,7 @@ export function createIdentityProviders({fetch: request = fetch, clock = Date.no
   }
 
   async function githubPoll(state) {
+    if(state.method==='gh-cli')return cli().poll(state);
     const {ok, data} = await json('https://github.com/login/oauth/access_token', {
       form: {client_id: githubClientId, device_code: state.deviceCode, grant_type: deviceGrant},
     });
@@ -169,5 +169,5 @@ export function createIdentityProviders({fetch: request = fetch, clock = Date.no
     return connection;
   }
 
-  return {start: {github: githubStart, aws: awsStart, godaddy}, poll: {github: githubPoll, aws: awsPoll}, awsCredentials, domain};
+  return {start: {github: githubStart, aws: awsStart, godaddy}, poll: {github: githubPoll, aws: awsPoll}, awsCredentials, domain,cancel:(provider,id)=>{if(provider==='github')githubCli?.cancel(id);},isBusy:()=>githubCli?.isBusy()===true,initialize:()=>!githubClientId?cli().initialize():Promise.resolve(),close:()=>githubCli?.close()};
 }
