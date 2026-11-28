@@ -16,3 +16,20 @@ test('TC-065: one compact Project row retains keyboard tabs, close and truthful 
  }
  assert.deepEqual(f.errors,[]);
 });
+
+// Playwright normally hides scrollbar chrome, masking the native Linux defect.
+test('TC-065: native scrollbar rendering leaves full tab targets and keyboard scrolling',async t=>{
+ const f=await browserChat(t,{browserOptions:{ignoreDefaultArgs:['--hide-scrollbars']}});await f.ready();const {page}=f;
+ for(const width of [390,320]){
+  await page.setViewportSize({width,height:760});await page.evaluate(()=>new Promise(resolve=>globalThis.requestAnimationFrame(()=>globalThis.requestAnimationFrame(resolve))));
+  if(await page.locator('#preview').isHidden())await page.locator('#mobile-project-toggle').click();
+  for(const name of ['Goals','Artifacts','Preview','Dashboard','Debug']){
+   const tab=page.getByRole('tab',{name,exact:true});await tab.focus();await page.keyboard.press('Enter');
+   await expect(tab).toHaveAttribute('aria-selected','true');
+   await expect.poll(()=>tab.evaluate(node=>{const strip=node.parentElement,r=node.getBoundingClientRect(),p=strip.getBoundingClientRect();return r.left>=p.left-1&&r.right<=p.right+1&&r.top>=p.top-1&&r.bottom<=p.top+strip.clientHeight+1&&strip.scrollHeight<=strip.clientHeight+1&&r.height>=44;})).toBe(true);
+  }
+  assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth<=globalThis.innerWidth),true);
+  await page.locator('#context-close').click();
+ }
+ assert.deepEqual(f.errors,[]);
+});

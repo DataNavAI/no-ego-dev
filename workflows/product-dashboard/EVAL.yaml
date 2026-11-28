@@ -21,6 +21,21 @@ prompt: |
   allowed, but no user IDs. Invalid/reversed dates return400. Current partial day
   is marked partial. Missing days have null counts, covered empty days zero.
 
+  Use a minimal mobile-first first screen: compact Lantern title, period selector,
+  exactly two primary metrics (DAU and conversions), ONE daily chart with both
+  count series, and a brief as-of/freshness line. At320x760 and390x760 CSS pixels,
+  these controls/metrics/chart must fit without scrolling or horizontal overflow.
+  Omit marketing heroes, branding/navigation/breadcrumbs, welcome sections, giant
+  headings, redundant cards and raw logs. Daily table and definitions must start
+  collapsed in keyboard-accessible details; optional custom dates may be collapsed.
+  Use a main landmark and single h1 product title. Expose the primary values as
+  output elements labelled DAU and Conversions (or labelled role=status). Give the
+  chart an accessible name mentioning both DAU and conversions. Use native details summaries Daily data and Definitions;
+  period buttons are labelled7 days,30 days,90 days; Custom exposes labelled From/To
+  date fields and Apply. These semantic controls support keyboard and screen readers.
+  Keep important partial/missing/stale/error notices visible and compact. Preserve
+  accessible exact daily values; do not replace unknowns with zero to simplify UI.
+
   Run sync twice and verify stable counts, exercise direct and cached output,
   and arrange a persistent owned app/sync process. Start NED COM locally if needed,
   register with ned dashboard, and use a real browser to inspect the NED Dashboard
@@ -38,6 +53,7 @@ prompt: |
 expectations:
   - The agent loads both skills and builds a functional, persistently running project-local dashboard rather than a plan or static report.
   - Real source-derived daily counts handle repeated users, repeated purchases, bots/internal traffic, timezone boundary, covered zero, unknown day and partial current day correctly.
+  - The default mobile first screen at320x760 and390x760 fits title, controls, exactly two metrics and one two-series chart without scroll/overflow; table/definitions start collapsed and important failure notices remain visible.
   - All period/custom date controls and accessible values/table render in a real browser at desktop and narrow widths; no raw identities or credentials reach browser metrics.
   - Direct and cached data paths agree, sync is idempotent and bounded, and actual owned sync scheduling and source failure behavior are documented and verified.
   - The actual NED Dashboard frame shows the published app; CLI/API identity readback agrees and working Preview is not replaced.

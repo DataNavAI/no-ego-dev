@@ -1143,7 +1143,7 @@ An operator opens Goals to see the agents that are really running. They open an 
 Coverage: FR-117–118 → CUJ-042 → TC-064. Task management TC-013 covers API compatibility and claim ownership.
 
 ## Compact project canvas (#314)
-- FR-119: Project uses one compact navigation row, without a Project/project-name banner or an embedded app title/status header. The row retains accessible close, reload and open actions; only the selected registered app exposes its actions. App identity and connection status remain available to assistive technology. Empty or failed app notices remain visible. The embedded app's own branding is unchanged.
+- FR-119: Project uses one compact navigation row, without a Project/project-name banner or an embedded app title/status header. The row retains accessible close, reload and open actions; only the selected registered app exposes its actions. App identity and connection status remain available to assistive technology. The tab strip preserves full visible44px targets and horizontal touch/keyboard scrolling even with native non-overlay scrollbars; its scrollbar chrome must not create vertical scrolling or reduce the row. Empty or failed app notices remain visible. The embedded app's own branding is unchanged.
 
 ### CUJ-043: Use the full Project canvas
 An operator opens a registered Dashboard or Preview on desktop or mobile and immediately sees app content below the tab row. They reload the selected app, switch tabs, and return to Chat. This is critical because redundant wrappers obscure product metrics on small screens.
@@ -1156,7 +1156,7 @@ An operator opens a registered Dashboard or Preview on desktop or mobile and imm
 - When: open Project at1280,390,320px, select Dashboard, reload, switch projects and lose authentication; enlarge text to200%.
 - Then: a single compact tab/action row precedes the frame, no duplicate banner/title header; only active app actions are visible, accessible controls retain44px targets, no page overflow, no blank message gap, and project/auth changes destroy stale app frames.
 - Steps and assertions: run linked cases; assert actual frame geometry, accessible Reload/Open/Close controls, absent wrapper banners and preserved draft. Capture desktop/mobile screenshots outside Git. Existing TC-003 covers late authorization, teardown, project isolation and negative relay cases.
-- Variants: registered, empty and unavailable app; desktop/mobile and enlarged text; hidden tab actions. No persistence format or authentication changes.
+- Variants: registered, empty and unavailable app; desktop/mobile, native non-overlay scrollbar rendering and enlarged text; hidden tab actions. No persistence format or authentication changes.
 - Cleanup: fixtures close browser/server/processes and delete disposable homes.
 - Pass evidence: named assertions and inspection of synthetic screenshots; no production data required.
 

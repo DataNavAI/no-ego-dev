@@ -52,4 +52,20 @@ is 2026-01-10T20:00:00Z (no claim these historical fixtures are today's real dat
 Source coverage/data-through and last successful query/sync are separate facts.
 The source is source.sqlite, with events and coverage tables. Do not alter it.
 ''')
+# Repair only disposable terminal/browser settings, preserving model/provider config.
+import yaml
+import secrets
+config_path = Path(os.environ['HERMES_HOME']) / 'config.yaml'
+if config_path.exists():
+    config = yaml.safe_load(config_path.read_text()) or {}
+    config.setdefault('terminal', {})['cwd'] = str(root)
+    config.setdefault('browser', {})['executable_path'] = '/usr/bin/google-chrome'
+    # OAuth model availability is interpreted by this profile's real gateway.
+    # Enable only a test-owned authenticated loopback API; never copy host keys.
+    api = config.setdefault('platforms', {}).setdefault('api_server', {})
+    api['enabled'] = True
+    extra = api.setdefault('extra', {})
+    extra.update(host='127.0.0.1', port=8642)
+    extra.setdefault('key', secrets.token_urlsafe(48))
+    config_path.write_text(yaml.safe_dump(config, sort_keys=False))
 print(json.dumps({'fixture': 'Lantern', 'source': str(source), 'rows': len(events)}))

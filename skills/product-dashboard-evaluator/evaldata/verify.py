@@ -11,5 +11,7 @@ for name,expected,observed in [('dau',2,5),('conversions',1,2),('missing-coverag
     assert checks[name]['result']=='fail'
     assert checks[name]['expected']==expected and checks[name]['observed']==observed
 assert checks['delivery']['result']=='not_verified'
+assert checks['mobile-first-screen']['result']=='fail'
+assert checks['mobile-first-screen'].get('evidence'), 'Missing actual viewport evidence'
 assert len([i for i in report.get('issues',[]) if i.get('severity')=='blocking'])>=2
 print('PASS: evaluator rejected wrong counts/missing coverage and disclosed unavailable delivery')

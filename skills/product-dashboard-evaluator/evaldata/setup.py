@@ -27,7 +27,7 @@ class Handler(BaseHTTPRequestHandler):
   self.send_response(200)
   self.send_header('Content-Type','application/json' if self.path.startswith('/api/') else 'text/html')
   self.end_headers()
-  self.wfile.write(json.dumps({'series':[{'date':'2026-01-04','dau':5,'conversions':2},{'date':'2026-01-05','dau':0,'conversions':0}],'fresh':True}).encode() if self.path.startswith('/api/') else b'<html><title>Broken fixture</title><body style="width:1400px"><h1>Lantern</h1><p>DAU 5 | Conversions 2 | Data is fresh</p><svg width="1300" height="150" role="img" aria-label="Daily trend"><path d="M0 120L600 20L1200 140" stroke="blue" fill="none"/></svg><button>7 days</button><button>30 days</button></body></html>')
+  self.wfile.write(json.dumps({'series':[{'date':'2026-01-04','dau':5,'conversions':2},{'date':'2026-01-05','dau':0,'conversions':0}],'fresh':True}).encode() if self.path.startswith('/api/') else b'<html><title>Broken fixture</title><body style="width:1400px"><nav>Lantern Analytics / Home / Overview</nav><header style="height:380px"><h1 style="font-size:72px">Welcome to Lantern Analytics</h1><p>Your complete product growth command center</p></header><h2>Lantern</h2><p>DAU 5 | Conversions 2 | Data is fresh</p><svg width="1300" height="150" role="img" aria-label="Daily trend"><path d="M0 120L600 20L1200 140" stroke="blue" fill="none"/></svg><button>7 days</button><button>30 days</button></body></html>')
  def log_message(self,*args):pass
 server=HTTPServer(('127.0.0.1',42879),Handler)
 server.serve_forever()
@@ -36,4 +36,11 @@ log=(root/'fixture-server.log').open('w')
 process=subprocess.Popen([sys.executable,str(app)],cwd=root,stdout=log,stderr=log,start_new_session=True)
 (root/'fixture.pid').write_text(str(process.pid))
 (root/'SCENARIO.md').write_text('Evaluate http://127.0.0.1:42879/ against METRICS.md and source.sqlite. The visible dashboard is intentionally flawed. Report real findings in dashboard-evaluation.json without repairing any app/source/skill/verifier or registering it. Use a real browser for desktop/narrow inspection. No hosted delivery claim is authorized.\n')
+import yaml
+config_path = Path(os.environ['HERMES_HOME']) / 'config.yaml'
+if config_path.exists():
+    config = yaml.safe_load(config_path.read_text()) or {}
+    config.setdefault('terminal', {})['cwd'] = str(root)
+    config.setdefault('browser', {})['executable_path'] = '/usr/bin/google-chrome'
+    config_path.write_text(yaml.safe_dump(config, sort_keys=False))
 print(json.dumps({'fixture':'deliberately flawed dashboard','url':'http://127.0.0.1:42879/'}))

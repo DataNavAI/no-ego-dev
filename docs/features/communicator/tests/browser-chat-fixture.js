@@ -10,7 +10,7 @@ import {createCommunicatorServer} from '../../ned-api/tests/auth-client.js';
 import {streamEvents,streamFrame} from './stream-fixtures.js';
 
 export {expect};
-export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,identityOptions,onTurn,startApp,preparePage,viewport={width:1280,height:900},deferLogin=false}={}){
+export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFailure=false,edgeFixedFailures=0,identityOptions,onTurn,startApp,preparePage,viewport={width:1280,height:900},deferLogin=false,browserOptions={}}={}){
   const home=await mkdtemp(join(tmpdir(),'ned-chat-browser-'));
   let database,app,browser,gateway;
   t.after(async()=>{
@@ -70,7 +70,7 @@ export async function browserChat(t,{modelSetup,existing=false,rows=[],historyFa
   const options={modelSetup:modelSetup??configuredModelSetup(),databasePath,home,identityOptions,gateway:{url:`http://127.0.0.1:${gateway.address().port}`,key:'synthetic-browser-key'}};
   if(startApp)app=await startApp(options);
   else{app=createCommunicatorServer(options);await app.listen();}
-  try{browser=await chromium.launch({headless:true,channel:'chromium'});}
+  try{browser=await chromium.launch({headless:true,channel:'chromium',...browserOptions});}
   catch(error){throw new Error('Chromium is required. Run npm ci && npx playwright install --with-deps chromium before chat E2E tests.',{cause:error});}
   const page=await browser.newPage({viewport});page.setDefaultTimeout(10000);
   const errors=[],network=[];

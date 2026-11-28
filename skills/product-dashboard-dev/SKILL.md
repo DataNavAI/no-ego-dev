@@ -1,7 +1,7 @@
 ---
 name: product-dashboard-dev
 description: Build and publish a product dashboard in NED when a user requests one or accepts a suggestion after asking about product metrics. Use also for DAU or conversion questions to offer a reusable dashboard without starting unrequested work.
-version: 0.1.0
+version: 0.2.0
 metadata:
   hermes:
     tags: [product-metrics, dashboards, no-ego-dev]
@@ -33,9 +33,13 @@ Default periods are7/30/90days plus a custom inclusive date range. Show daily ac
 
 ## Build and verify the app
 
-Use the project's stack if suitable. For a small new app, locally bundled, pinned Chart.js is a maintained MIT option; category day labels avoid a date-adapter dependency. Reuse another maintained existing chart library when appropriate. Never depend on a public CDN for the delivered dashboard. Follow the project's design system; NED defaults to the compact neutral Base/Muse language. For a materially new product-specific design, show visual alternatives and confirm the direction before freezing it.
+Use the project's stack if suitable. For a small new app, locally bundled, pinned Chart.js is a maintained MIT option; category day labels avoid a date-adapter dependency. Reuse another maintained existing chart library when appropriate. Never depend on a public CDN for the delivered dashboard. Follow the project's design system; NED defaults to the compact neutral Base/Muse language. Use the compact default below without asking the owner to choose implementation details. Discuss a different visual direction only when the product requirements need one.
 
-Show product/period/timezone, two readable daily trends, exact accessible values/table, last successful refresh and data-through. Use brief status notices for missing/stale/error/partial data. Offer7/30/90/custom dates; reject invalid or reversed ranges clearly and bound expensive requests. A conversion rate needs a stated denominator and returns N/A for zero eligible users. Make charts usable at desktop, narrow panes,320px and enlarged text. Do not send raw user IDs/events to the browser just to draw aggregates.
+Design the first screen for a quick product check on a phone. At 320 and 390 CSS px wide and about 760px high, show a compact product title, period selector, exactly two primary metrics (DAU and conversions), and ONE daily trend chart without scrolling or horizontal overflow. DAU and distinct converters share count units, so put both series on that chart with clear labels; only separate scales when the actual units demand it. Define the metric cards' date/period honestly: do not label summed daily users as DAU or unique users. Keep spacing and chart height bounded rather than shrinking text to fit.
+
+The dashboard is already inside NED: omit marketing heroes, welcome sections, logos/branding, navigation, breadcrumbs, redundant summary cards and raw logs. Use a short as-of/freshness line; show a compact actionable notice when coverage, refresh or source failure needs attention. Failures must remain visible. Put daily rows and metric definitions in accessible disclosures collapsed by default. Custom dates can be an optional accessible disclosure. Opening details may scroll; the initial primary view must not require it. Keep exact accessible values/table, timezone, last successful refresh and data-through available in those details. Use brief status notices for missing/stale/error/partial data. Offer7/30/90/custom dates; reject invalid or reversed ranges clearly and bound expensive requests. A conversion rate needs a stated denominator and returns N/A for zero eligible users. Make charts usable at desktop, narrow panes,320px and enlarged text. Do not send raw user IDs/events to the browser just to draw aggregates.
+
+Measure the initial viewport in a real browser at both mobile widths before opening details; capture element bounds and overflow, then open details and exercise keyboard access. A desktop screenshot or a responsive CSS declaration is insufficient.
 
 Run numeric checks independently from the rendered summary against a small authorized source sample. Exercise duplicate users/events, exclusions, day boundaries, unknown vs zero, partial current day, empty range, source failure and retry. With a cache, actually run sync twice and inject a test-owned failure without touching production data. Ask the output-evaluation skill to evaluate the real app and fix material findings before claiming completion.
 

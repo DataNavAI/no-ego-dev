@@ -7,6 +7,8 @@ import math
 import os
 import sqlite3
 import subprocess
+import tempfile
+import time
 import urllib.error
 import urllib.request
 from zoneinfo import ZoneInfo
@@ -79,4 +81,45 @@ for _ in range(2):
     subprocess.run(['/opt/ned/python/bin/python',str(root/'dashboard/sync.py'),'--source',str(source),'--target',str(root/'dashboard/cache.sqlite')],cwd=root,env=env,check=True,timeout=30,stdout=subprocess.DEVNULL)
     assert verify('2026-01-04','2026-01-10')['series'] == baseline
 assert hashlib.sha256(source.read_bytes()).hexdigest() == (root/'source.sha256').read_text()
+# Run a real, private Dashboard embedding and rendered-source/mobile oracle.
+# A verifier-owned listener avoids guessing or taking over an agent's COM process.
+with tempfile.TemporaryDirectory(prefix='lantern-browser-') as temporary:
+    control = Path(temporary)
+    expected = control / 'expected.json'
+    end = dt.date(2026, 1, 10)
+    first = end - dt.timedelta(days=89)
+    rows = []
+    for offset in range(90):
+        day = (first + dt.timedelta(days=offset)).isoformat()
+        state = coverage.get(day, 'missing')
+        rows.append({'date': day,
+                     'dau': None if state == 'missing' else len(active.get(day, set())),
+                     'conversions': None if state == 'missing' else len(converted.get(day, set()))})
+    expected.write_text(json.dumps(rows))
+    script = control / 'com.mjs'
+    script.write_text("import fs from 'node:fs';import{createCommunicatorServer}from'/opt/ned/apps/com/src/server.js';const home=process.env.HERMES_HOME;const app=createCommunicatorServer({home,env:{...process.env,NED_AGENT_HOME:home},initializeDatabase:true,identityEnabled:false});await app.listen();fs.writeFileSync(process.argv[2],JSON.stringify({url:app.url}));")
+    with (control / 'com.log').open('w') as log:
+        com = subprocess.Popen(['node', str(script), str(control / 'ready.json')], env=env, stdout=log, stderr=subprocess.STDOUT)
+        try:
+            for _ in range(100):
+                if (control / 'ready.json').exists():
+                    break
+                assert com.poll() is None, 'Verifier-owned COM did not start'
+                time.sleep(.1)
+            assert (control / 'ready.json').exists(), 'Verifier-owned COM readiness timeout'
+            com_url = json.loads((control / 'ready.json').read_text())['url']
+            # The engine snapshots this verifier alone. Use the root-owned container
+            # package dependency and bind its exact bytes into the trusted program.
+            browser = Path('/opt/ned/skills/product-dashboard-dev/evaldata/browser.mjs')
+            assert hashlib.sha256(browser.read_bytes()).hexdigest() == 'd3763fa07489b449e7dab5c3b5ff8b3f2ae0b9563725ba2ef866d7a0a11bb051', 'Trusted browser package changed'
+            subprocess.run(['node', str(browser), origin, com_url,
+                            app['id'], app['project']['id'], end.isoformat(), str(expected)],
+                           cwd=root, env=env, check=True, timeout=120)
+        finally:
+            com.terminate()
+            try:
+                com.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                com.kill()
+                com.wait(timeout=5)
 print(json.dumps({'result':'pass','metric_days':[7,30,90,'custom'],'registrationId':app['id'],'revision':status['revision'],'source':'unchanged','sync':'idempotent'}))

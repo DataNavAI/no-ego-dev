@@ -1,7 +1,7 @@
 ---
 name: product-dashboard-evaluator
 description: Evaluate a real product dashboard before claiming it is delivered, after a change, or when its metrics, freshness, layout or NED publication are questioned. Reconcile source numbers, exercise periods and failures, and verify actual private Dashboard rendering.
-version: 0.1.0
+version: 0.2.0
 metadata:
   hermes:
     tags: [product-metrics, dashboards, evaluation, no-ego-dev]
@@ -34,7 +34,7 @@ For direct data, check limited read-only access, parameterized bounded queries/t
 
 ## Rendered experience and private delivery
 
-Use a real browser. Inspect desktop and narrow project panes/mobile,320px and enlarged text, not only a full-width screenshot. Both required trends must be legible with accessible values/table. Exercise period controls, custom dates, empty/error/retry and freshness notices; check keyboard focus and overflow. Look for chart axis/scale/unit errors and screenshots that show stale values while requests failed.
+Use a real browser. Inspect desktop and narrow project panes/mobile,320px and enlarged text, not only a full-width screenshot. Before opening any details, inspect 320×760 and 390×760 CSS-pixel viewports. Record bounds and horizontal overflow: compact product title, period controls, exactly two primary metrics (DAU/conversions), and one trend chart must be visible without scrolling. With shared count units, verify both series in that one chart. Reject marketing heroes, welcome sections, logos/branding, navigation/breadcrumbs, oversized headings, redundant cards and raw logs. Daily rows and definitions start collapsed and remain keyboard accessible; open them to reconcile exact values. A short freshness line and any material source/coverage failure stay visible. Do not hide failures merely to fit. Both required trends must be legible with accessible values/table. Exercise period controls, custom dates, empty/error/retry and freshness notices; check keyboard focus and overflow. Look for chart axis/scale/unit errors and screenshots that show stale values while requests failed.
 
 Run `ned dashboard status --project /absolute/product --json` in the same runtime context. Match project, app ID/revision and current listener. Then actually open the NED Dashboard tab and interact with its private app frame. Localhost status, a standalone tab, a registration or an HTML file is insufficient evidence of embedded delivery. On Hub, verify the real authenticated public URL and negotiated capability. Report older-Hub unsupported delivery honestly. Confirm the working Preview and another project remain intact after dashboard publication/replacement.
 
@@ -48,6 +48,6 @@ Write `dashboard-evaluation.json` in the evaluated workspace (or the user-specif
 {"result":"pass|fail|not_verified","project":"product","registration":{"id":"observed","revision":1},"checks":[{"name":"daily active users","expected":"source-derived aggregate","observed":"actual app value","result":"pass|fail|not_verified","evidence":"redacted artifact or command reference"}],"issues":[{"severity":"blocking|minor","problem":"user impact","evidence":"observed result","fix":"smallest repair"}],"limitations":[]}
 ```
 
-Use real values in reports; this example is a shape, not a pass. Mark pass only after all required correctness, period, freshness, privacy and delivered-rendering checks have evidence. Distinguish product defects from unavailable verification. A missing source/Hub/browser remains not_verified unless it proves a failed requirement. Give the user a brief result and material findings; keep detailed evidence in the report. If repairs are authorized, fix the smallest complete set, then re-evaluate the changed output with fresh source/rendering evidence. Never weaken expectations, edit a trusted verifier or replace unknown data with zeros to obtain a pass.
+Use real values in reports; this example is a shape, not a pass. Mark pass only after all required correctness, period, freshness, mobile first-screen, privacy and delivered-rendering checks have evidence. Distinguish product defects from unavailable verification. A missing source/Hub/browser remains not_verified unless it proves a failed requirement. Give the user a brief result and material findings; keep detailed evidence in the report. If repairs are authorized, fix the smallest complete set, then re-evaluate the changed output with fresh source/rendering evidence. Never weaken expectations, edit a trusted verifier or replace unknown data with zeros to obtain a pass.
 
 This self-contained skill is evaluated against a deliberately flawed synthetic app in [EVAL.yaml](EVAL.yaml). Do not mistake fixture-only success for real product acceptance.

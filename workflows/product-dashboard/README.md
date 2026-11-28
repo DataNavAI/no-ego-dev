@@ -15,3 +15,9 @@ The companion [ned-example repository](https://github.com/DataNavAI/ned-example/
 The initial five-case example baseline passed4/5; stronger SaaS and corrected-verifier marketplace runs passed separately. Each category has a successful live result across recorded pins, not a uniform5/5 run of the latest verifier. The companion repository also runs model-free positive/negative browser-verifier integration tests in CI; those checks do not count as skill acceptance.
 
 [Source-pinned smoke results and limitations](https://github.com/DataNavAI/ned-example/blob/5cda029a3f4c901826b58aaa062f0b6bd2d36ae8/docs/benchmarks/2026-11-28.md).
+
+## Minimal mobile acceptance (#315)
+
+The canonical Lantern [EVAL.yaml](EVAL.yaml) and [output evaluator scenario](../../skills/product-dashboard-evaluator/EVAL.yaml) exercise the default two-metric, one-chart first screen at 320×760 and 390×760, collapsed daily data/definitions, actual private NED delivery and independent source reconciliation. [FR-016/017 and TC-006](../../docs/features/product-dashboards/SPEC.md#minimal-mobile-product-analytics-315) define this contract. Exact app viewport measurements are recorded separately from actual COM iframe dimensions and visible chart bounds.
+
+The historical five-service `ned-example` benchmark remains its separately pinned baseline. Its earlier passes do not establish this new mobile contract. Mobile acceptance requires a passing frozen canonical workflow with real Hermes and its trusted source/browser oracle; see TC-006 for the recorded evidence and remaining limitations. No additional five-service live matrix is implied.
