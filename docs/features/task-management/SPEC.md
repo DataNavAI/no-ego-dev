@@ -250,3 +250,5 @@ The [task-management skill](../../../skills/task-management/SKILL.md) guides mil
 - Variants / negative cases: Unprompted development intake, scope-changing follow-up, repeated/resumed request deduplication, standalone small fix and explanation-only no-op, competing actor, blocked completion, identical-key retry/readback, truthful impact/document publication and preservation, unknown estimates, configured-server failure without fallback, attempt/continuation interpretation. Live authentication is inapplicable.
 - Cleanup: Agent removes only its disposable project/database.
 - Pass evidence: Independently inspected agent transcript and persisted CLI outputs; loading EVAL YAML alone is not a pass.
+
+API work reads project live Hermes execution separately from the durable claim. The local scheduler and write acknowledgements continue to use the durable work state. See [Hermes-verified task activity](../communicator/SPEC.md#hermes-verified-task-activity) for the projected states.

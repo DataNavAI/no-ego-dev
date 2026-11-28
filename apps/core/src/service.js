@@ -3,7 +3,7 @@ import {createManagedMaintenance} from './maintenance.js';
 import {realpathSync,statSync} from 'node:fs';
 import {createTaskService} from '../../../src/tasks.js';
 import {createCoreStore,decode,hash,fail} from './store.js';
-import {readProjectWork} from './work.js';
+import {createVerifiedWorkReader} from './work-execution.js';
 import {deliveryNamespace,validateDelivery} from './delivery.js';
 import {resolveRuntimeHome} from '../../../src/runtime-home.js';
 import {createTaskCommand} from './task-management.js';
@@ -37,11 +37,12 @@ export async function createCoreService(options={}) {
       else {try{store.requireCapacity({effect:true});if(Buffer.byteLength(row.input_text)>16384)reason='input_too_large';else {attempt=store.transaction(()=>{sql.prepare("UPDATE ned_core_occurrences SET state='materializing' WHERE id=?").run(row.id);if(!taskId){const item=services.get(projectId).sync.createItem('task',target.template);taskId=item.id;sql.prepare('INSERT INTO ned_core_enrollments VALUES(?,?,1,?,?)').run(projectId,taskId,now(),now());}return reserve(projectId,taskId,{instructions:row.input_text,role:'worker'});});}}catch(error){if(['capacity_exhausted','storage_unavailable'].includes(error.code))throw error;reason=['not_ready','not_owner','not_enrolled','attempt_active'].includes(error.code)?'readiness_changed':'invalid_target';}}
       sql.prepare('UPDATE ned_core_occurrences SET state=?,attempt_id=?,task_id=?,reason=? WHERE id=?').run(attempt?'materialized':'skipped',attempt?.id||null,taskId||null,reason,row.id);store.event(projectId,'automation',row.automation_id,attempt?'occurrence.materialized':'occurrence.skipped',{attemptId:attempt?.id,reason});output.push({id:row.id,attemptId:attempt?.id,reason});}return output;});}
   function saveDelivery(projectId,taskId,value){const result={...value,updatedAt:now()};sql.prepare('INSERT INTO ned_feature_data(namespace,key,value) VALUES(?,?,?) ON CONFLICT(namespace,key) DO UPDATE SET value=excluded.value').run(deliveryNamespace(projectId),taskId,JSON.stringify(result));store.event(projectId,'task',taskId,'delivery.updated',{});return {updatedAt:result.updatedAt};}
+  const workReader=createVerifiedWorkReader({databasePath:db.filename,home:options.home,env:options.env,gateway:options.chatGateway??options.gateway});
   const service={store,database:db,mutate,maintenance,
     context(){return {runtime:hash(resolveRuntimeHome(options)),database:hash(db.filename)};},
-    taskCommand:createTaskCommand({store,mutate,saveDelivery}),
+    taskCommand:createTaskCommand({store,mutate,saveDelivery,workReader}),
     listProjects(query={}){const rows=sql.prepare('SELECT id,path,initialized_at AS initializedAt FROM ned_projects ORDER BY id').all();const limit=query.limit===undefined?50:Number(query.limit);if(!Number.isInteger(limit)||limit<1||limit>100)fail('invalid_page',400);let offset=0;if(query.cursor){try{const cursor=JSON.parse(Buffer.from(query.cursor,'base64url').toString());if(cursor.v!==1||cursor.kind!=='projects'||!Number.isInteger(cursor.offset)||cursor.offset<0||cursor.offset>rows.length)throw new Error();offset=cursor.offset;}catch{fail('invalid_cursor',400);}}return {data:rows.slice(offset,offset+limit),nextCursor:offset+limit<rows.length?Buffer.from(JSON.stringify({v:1,kind:'projects',offset:offset+limit})).toString('base64url'):null};},
-    work(projectId){store.project(projectId);return readProjectWork(db.filename,projectId);},
+    async work(projectId){store.project(projectId);return (await workReader.read([{id:projectId}]))[0];},
     async setDelivery(projectId,taskId,input,key){const task=await tasks(projectId);task.sync.getItem(taskId);const value=await validateDelivery(input);return mutate(`${projectId}/${taskId}/delivery`,key,input,()=>{task.sync.getItem(taskId);return saveDelivery(projectId,taskId,value);});},
     async createGoal(projectId,input,key){const task=await tasks(projectId);return mutate(`${projectId}/goals`,key,input,()=>task.sync.createItem('goal',input));},
     async createTask(projectId,input,key){const task=await tasks(projectId);return mutate(`${projectId}/tasks`,key,input,()=>task.sync.createItem('task',input));},
@@ -63,7 +64,7 @@ export async function createCoreService(options={}) {
     events(projectId,query={}){store.project(projectId);let after=0;if(query.after){try{const value=JSON.parse(Buffer.from(query.after,'base64url').toString());if(value.v!==1||value.projectId!==projectId||value.kind!=='events'||!Number.isInteger(value.sequence)||value.sequence<0)throw new Error();after=value.sequence;}catch{fail('invalid_cursor',400);}}const limit=query.limit===undefined?50:Number(query.limit);if(!Number.isInteger(limit)||limit<1||limit>100)fail('invalid_page',400);const rows=sql.prepare('SELECT * FROM ned_core_events WHERE project_id=? AND sequence>? ORDER BY sequence LIMIT ?').all(projectId,after,limit).map(decode);const cursor=sequence=>Buffer.from(JSON.stringify({v:1,projectId,kind:'events',sequence})).toString('base64url');return {data:rows.map(row=>({...row,cursor:cursor(row.sequence)})),nextCursor:rows.length?cursor(rows.at(-1).sequence):query.after||null};},
     metrics(projectId){store.project(projectId);return {attempts:sql.prepare('SELECT state,COUNT(*) AS count FROM ned_core_attempts WHERE project_id=? GROUP BY state').all(projectId),dispatchLatencyMs:sql.prepare('SELECT COUNT(*) AS count,ROUND(AVG(MAX(0,(julianday(admission_sent_at)-julianday(created_at))*86400000))) AS average,ROUND(MAX(MAX(0,(julianday(admission_sent_at)-julianday(created_at))*86400000))) AS maximum FROM ned_core_attempts WHERE project_id=? AND admission_sent_at IS NOT NULL').get(projectId),skippedOccurrences:sql.prepare("SELECT COUNT(*) AS count FROM ned_core_occurrences o JOIN ned_core_automations a ON a.id=o.automation_id WHERE a.project_id=? AND o.state='skipped'").get(projectId).count,capacity:store.capacity()};},
     requestReconcile(input,key){return mutate('coordinator/reconcile',key,input,()=>store.createTick(key));},getTick:store.getTick,
-    async close(){if(!options.maintenance)maintenance.close();store.close();}
+    async close(){await workReader.close();if(!options.maintenance)maintenance.close();store.close();}
   };
   store.runtimeEligibility=runtimeEligibility;store.materializeDue=materializeDue;
   try{for(const project of sql.prepare('SELECT id FROM ned_projects').all()){try{await tasks(project.id);}catch(error){if(error.code!=='project_unavailable')throw error;}}}catch(error){if(!options.maintenance)maintenance.close();store.close();throw error;}

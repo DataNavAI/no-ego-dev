@@ -161,7 +161,10 @@ test('TC-013: task-scoped pagination, API claim races and managed completion fen
   assert.equal(next.nextCursor,null);
   await assert.rejects(client.getTaskAttempts(other.id,page.nextCursor),{code:'invalid_cursor'});
   await assert.rejects(client.completeTask(task.id,'not verified'),{code:'verification_required'});
-  assert.equal((await client.getItem(task.id)).status,'working');
+  const claimed=await client.getItem(task.id);
+  assert.equal(claimed.status,'claimed');
+  assert.equal(claimed.claimStatus,'working');
+  assert.equal(claimed.executionState,'unbound');
   server.service.store.updateAttempt(projectId,latest.id,{state:'awaiting_verification'});
   await assert.rejects(client.completeTask(task.id,'still not verified'),{code:'verification_required'});
   await server.service.verify(projectId,latest.id,{accepted:true,evidence:[{kind:'test',reference:'synthetic test result'}]},'verify');

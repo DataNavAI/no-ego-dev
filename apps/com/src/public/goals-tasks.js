@@ -1,5 +1,6 @@
 import {hydrateOutput,openOutput} from './api-client.js';
-const states={working:'Working',ready:'Ready',blocked:'Blocked',done:'Done',planned:'Planned'};
+const inactiveExecution={unbound:'No Hermes session linked',queued:'Waiting for Hermes',inactive:'Hermes run ended',unverified:'Hermes status unavailable'};
+const states={working:'Working',claimed:'Claimed',ready:'Ready',blocked:'Blocked',done:'Done',planned:'Planned'};
 export const duration=seconds=>seconds===null||seconds===undefined?'Not recorded':seconds<60?'<1m':seconds<3600?`${Math.floor(seconds/60)}m`:`${Math.floor(seconds/3600)}h ${Math.floor(seconds%3600/60)}m`;
 export function goalGroups(items){
   const byId=new Map(items.map(item=>[item.id,item]));const groups=new Map();
@@ -160,6 +161,7 @@ export function mountGoalTasks({document,fetch}){
         const card=node('article',undefined,'delivery-task');card.dataset.status=item.status;
         const title=node('h4'),reference=button(item.title,()=>document.dispatchEvent(new CustomEvent('ned-reference-work',{detail:{projectId:item.projectId??projectId,itemId:item.sourceId??item.id,title:item.title,projectName:item.projectName}})));reference.className='delivery-task-title';reference.setAttribute('aria-label',`Reference task: ${item.title}`);title.setAttribute('aria-label',item.title);title.append(reference);const status=node('span',states[item.status]||item.status,'delivery-status');
         card.append(title,status);
+        if(item.status==='claimed'&&inactiveExecution[item.executionState])card.append(node('p',inactiveExecution[item.executionState],'delivery-muted'));
         if(!group.goal&&item.projectName) card.append(node('p',item.projectName,'delivery-muted'));
         const delivery=item.delivery||{};
         card.append(node('p',`${delivery.trackedSeconds==null?'Time not recorded':`${duration(delivery.trackedSeconds)} tracked`} · ${delivery.remainingSeconds==null?'Not estimated':`~${duration(delivery.remainingSeconds)} left`}`,'delivery-muted'));
