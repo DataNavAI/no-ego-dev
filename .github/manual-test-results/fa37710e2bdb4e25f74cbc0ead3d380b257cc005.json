@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "fa37710e2bdb4e25f74cbc0ead3d380b257cc005",
+  "result": "pass",
+  "tested_at": "2026-11-28T06:46:57.120336+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "commands": [
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-{042,054,062}.test.js"
+  ],
+  "observations": "Desktop Goals defaults to working tasks and nests revealed blocked tasks below prerequisites. Mobile Chat opens a bound session with its agent ID and returns to an intact main draft. Projection tests verify known starts and removal of settled sessions."
+}

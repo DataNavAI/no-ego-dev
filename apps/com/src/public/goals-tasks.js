@@ -16,7 +16,7 @@ export function goalGroups(items){
 
 export function mountGoalTasks({document,fetch}){
   const panel=document.getElementById('goals-panel');if(!panel)return {update(){},message(){}};
-  let projectId='',generation=0,snapshot=null;const opened=new Set(),requests=new WeakMap();
+  let projectId='',generation=0,snapshot=null,showInactive=false;const opened=new Set(),requests=new WeakMap();
   const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
   const button=(text,action)=>{const element=node('button',text);element.type='button';element.addEventListener('click',action);return element;};
   const base=item=>`/api/v1/projects/${encodeURIComponent(item.projectId??projectId)}/tasks/${encodeURIComponent(item.sourceId??item.id)}`;
@@ -81,15 +81,73 @@ export function mountGoalTasks({document,fetch}){
       restoreFocus();
     }catch{if(current===generation&&requests.get(container)===token)container.replaceChildren(node('p','Details could not be loaded.'),button('Retry',()=>void taskDetails(item,container,offset)));}
   }
+  function sessionDetails(item,card){
+    if(item.status!=='working')return;
+    if(!item.sessions?.length){card.append(node('p','No agent session recorded.','delivery-muted'));return;}
+    const list=node('ul',undefined,'delivery-sessions');
+    for(const session of item.sessions){
+      const row=node('li'),link=node('a',session.sessionId);
+      link.href='#chat';
+      link.dataset.deliveryFocus=`session-link:${item.id}:${session.sessionId}`;
+      const resource=`${base(item)}/attempts/${encodeURIComponent(session.attemptId)}/sessions/${encodeURIComponent(session.sessionId)}/messages`;
+      link.addEventListener('click',event=>{
+        if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+        event.preventDefault();
+        document.dispatchEvent(new CustomEvent('ned-open-agent-session',{detail:{
+          resource,projectId:item.projectId??projectId,sessionId:session.sessionId,agent:item.assignee||session.role,
+        }}));
+      });
+      row.append(link);
+      const started=Date.parse(session.startedAt);
+      if(Number.isFinite(started)){
+        const clock=node('time',new Date(started).toLocaleString());
+        clock.dateTime=new Date(started).toISOString();
+        const elapsed=node('span');elapsed.dataset.sessionStarted=String(started);
+        row.append(node('span','Started '),clock,elapsed);
+      }else row.append(node('span','Start time not recorded','delivery-muted'));
+      list.append(row);
+    }
+    card.append(list);
+  }
+  function updateElapsed(){
+    for(const element of panel.querySelectorAll('[data-session-started]')){
+      element.textContent=` · ${duration(Math.max(0,(Date.now()-Number(element.dataset.sessionStarted))/1000))} elapsed`;
+    }
+  }
+  document.defaultView?.setInterval(()=>{if(!panel.hidden)updateElapsed();},15000);
+
   function draw(){
     const active=document.activeElement,focusKey=active?.dataset?.deliveryFocus;
     const retained=new Map([...panel.querySelectorAll('.delivery-details')].map(element=>[element.dataset.taskId,element]));
     const heading=node('h2','Goals');heading.id='goals-pane-heading';heading.tabIndex=-1;
     panel.replaceChildren(heading);
     if(!snapshot?.items.length){panel.append(node('p','No goals or tasks yet.','delivery-muted'));return;}
-    const groups=goalGroups(snapshot.items),activeGoals=groups.filter(group=>group.tasks.some(item=>item.status==='working'));
+    const filter=node('input');filter.type='checkbox';filter.checked=showInactive;filter.dataset.deliveryFocus='inactive-filter';
+    const label=node('label',undefined,'delivery-filter');label.append(filter,node('span','Show inactive tasks'));
+    filter.addEventListener('change',()=>{showInactive=filter.checked;draw();});
+    panel.append(label);
+    const visible=snapshot.items.filter(item=>!['task','issue'].includes(item.type)||showInactive||item.status==='working');
+    const groups=goalGroups(visible).filter(group=>showInactive||group.tasks.length),activeGoals=groups.filter(group=>group.tasks.some(item=>item.status==='working'));
     if(activeGoals.length)panel.append(node('p',activeGoals.length===1?'Current work':`${activeGoals.length} active workstreams`,'delivery-muted'));
     if(!activeGoals.length)panel.append(node('p','No task working now.','delivery-muted'));
+    const tasks=new Map(visible.filter(item=>['task','issue'].includes(item.type)).map(item=>[item.id,item]));
+    const blockers=new Map();
+    for(const item of tasks.values()){
+      if(item.status!=='blocked')continue;
+      const blocker=item.dependsOn?.map(id=>tasks.get(id)).find(parent=>parent&&parent.status!=='done'&&parent.id!==item.id&&parent.projectId===item.projectId);
+      if(!blocker)continue;
+      let cursor=blocker.id;
+      while(cursor&&cursor!==item.id)cursor=blockers.get(cursor);
+      if(!cursor)blockers.set(item.id,blocker.id);
+    }
+    const cards=new Map(),nested=new Map();
+    function place(item,card,root){
+      cards.set(item.id,card);
+      if(!blockers.has(item.id)){root.append(card);return;}
+      const parent=blockers.get(item.id);
+      if(!nested.has(parent))nested.set(parent,node('div',undefined,'delivery-blocked'));
+      nested.get(parent).append(card);
+    }
     for(const group of groups){
       const section=node('section',undefined,'delivery-goal');
       section.append(node('h3',group.goal?.title||'Tasks without a goal'));
@@ -111,17 +169,20 @@ export function mountGoalTasks({document,fetch}){
           const resource=`${base(item)}/outputs/${encodeURIComponent(output.id)}`;preview.addEventListener('click',event=>void openOutput(event,resource));
           if(output.kind==='image'){const image=node('img');image.alt='';image.loading='lazy';preview.prepend(image);hydrateOutput(image,resource);}card.append(preview);
         }
+        sessionDetails(item,card);
         const previous=retained.get(item.id),signature=JSON.stringify([delivery.revision,delivery.updatedAt,delivery.executionRevision]);
-        if(previous){if(previous.dataset.signature!==signature){previous.dataset.signature=signature;if(previous.open)void taskDetails(item,previous.lastElementChild,0,focusKey);else previous.lastElementChild.replaceChildren();}card.append(previous);(item.status==='done'?completed:section).append(card);continue;}
+        if(previous){if(previous.dataset.signature!==signature){previous.dataset.signature=signature;if(previous.open)void taskDetails(item,previous.lastElementChild,0,focusKey);else previous.lastElementChild.replaceChildren();}card.append(previous);place(item,card,item.status==='done'?completed:section);continue;}
         const detail=node('details',undefined,'delivery-details');detail.dataset.taskId=item.id;detail.dataset.signature=signature;const summary=node('summary','Details');summary.dataset.deliveryFocus=item.id;detail.append(summary);const body=node('div');detail.append(body);
         detail.addEventListener('toggle',()=>{if(detail.open){opened.add(item.id);if(!body.childElementCount)void taskDetails(item,body);}else opened.delete(item.id);});
         if(opened.has(item.id))detail.open=true;
-        card.append(detail);(item.status==='done'?completed:section).append(card);
+        card.append(detail);place(item,card,item.status==='done'?completed:section);
       }
       if(complete.length)section.append(completed);
       if(!group.tasks.length)section.append(node('p','No tasks yet.','delivery-muted'));
-      panel.append(section);
+      if(!group.tasks.length||group.tasks.some(item=>!blockers.has(item.id)))panel.append(section);
     }
+    for(const [id,children] of nested)cards.get(id)?.append(children);
+    updateElapsed();
     if(focusKey)[...panel.querySelectorAll('[data-delivery-focus]')].find(element=>element.dataset.deliveryFocus===focusKey)?.focus();
   }
   return {

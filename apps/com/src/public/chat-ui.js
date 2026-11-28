@@ -30,6 +30,7 @@ export function mountChat(libraries) {
   const transcript = element('transcript');
   const status = element('chat-status');
   const resetChat = element('debug-reset-chat');
+  const viewingAgent=()=>element('agent-session')?.hidden===false;
   const providerRequests = element('chat-provider-requests');
   const messageNodes = () => Array.from(transcript.children).filter(node=>node!==providerRequests);
   // Keep an existing action before a subsequent turn, so the reply remains the live tail.
@@ -129,7 +130,7 @@ export function mountChat(libraries) {
   function render() {
     for (const id of controls) if(element(id))element(id).disabled = busy;
     const sending=Boolean(activeTurn);
-    if(resetChat)resetChat.disabled=busy||loadingOlder||media.pending()||!historyReady||!sessionId;
+    if(resetChat)resetChat.disabled=viewingAgent()||busy||loadingOlder||media.pending()||!historyReady||!sessionId;
     if(empty)empty.hidden=!sessionId||!historyReady||!modelSetup.ready()||busy||messageNodes().length>0||providerRequests?.hidden===false;
     renderSend();
     media.render(busy||uncertain||!sessionId||!historyReady);
@@ -402,8 +403,9 @@ export function mountChat(libraries) {
   globalThis.addEventListener?.('offline',()=>{if(sessionId)reconnectNeeded=true;});
   globalThis.addEventListener?.('online',reconnectChat);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)reconnectChat();});
+  document.addEventListener('ned-agent-session-changed',render);
   resetChat?.addEventListener('click',async()=>{
-    if(busy||loadingOlder||media.pending()||!historyReady||!sessionId)return;
+    if(viewingAgent()||busy||loadingOlder||media.pending()||!historyReady||!sessionId)return;
     if(!globalThis.confirm('Start a fresh chat? Your previous conversation will be kept. This clears your draft and anything attached to it.'))return;
     const notice=element('debug-reset-status');
     busy=true;render();
