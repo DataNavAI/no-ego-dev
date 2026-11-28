@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "d0a5eeadb475b453ce57f4de8dde47b76c0d2209",
+  "result": "pass",
+  "tested_at": "2026-11-28T06:06:03.217470+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "commands": [
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-{010,051}.test.js"
+  ],
+  "observations": "Desktop Chromium keeps the last message in the viewport after an obsolete older page returns. Mobile Chromium offers Jump to latest while idle and settles at the newest message. Streaming and intentional browsing remain covered."
+}

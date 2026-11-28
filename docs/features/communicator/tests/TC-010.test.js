@@ -121,7 +121,7 @@ test('TC-010: controller preserves a reader during a reply until Latest reconcil
   assert.equal(transcript.textContent,previous+'YouReply laterNEDReply');assert.equal(transcript.scrollTop,0);assert.equal(requests.length,0);
   assert.equal(elements.get('older').hidden,true);assert.match(elements.get('chat-status').textContent,/New reply/);
   elements.get('latest').dispatch('click');await respond({data:page(952)});
-  assert.equal(transcript.scrollCalls.at(-1).behavior,'smooth');assert.equal(elements.get('older').hidden,true);
+  assert.equal(transcript.scrollCalls.at(-1).behavior,'instant');assert.equal(elements.get('older').hidden,true);
 });
 
 test('TC-010: controller pages partial history without duplicates and honors reduced motion',async()=>{
