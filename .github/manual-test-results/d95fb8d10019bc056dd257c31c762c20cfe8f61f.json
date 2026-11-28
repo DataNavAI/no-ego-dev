@@ -1,0 +1,12 @@
+{
+  "candidate_sha": "d95fb8d10019bc056dd257c31c762c20cfe8f61f",
+  "result": "pass",
+  "tested_at": "2026-11-28T09:32:09.810615+00:00",
+  "environment": "Isolated desktop and mobile Chromium with synthetic gateway replies",
+  "commands": [
+    "npm run test:spec -- --all",
+    "python -m pytest",
+    "node --test docs/features/communicator/tests/TC-064.test.js docs/features/task-management/tests/TC-013.test.js"
+  ],
+  "observations": "Authenticated work API distinguishes verified running tasks from durable claims. Served Chromium Goals shows the session link during activity and removes it on refresh after the run ends without a task event."
+}
