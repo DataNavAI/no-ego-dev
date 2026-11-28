@@ -54,6 +54,13 @@
 .model-setup-header { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: 32px; }
 .model-setup-header strong { font-size: 20px; letter-spacing: -1px; }
 #model-setup h2 { font-size: 32px; line-height: 1.15; letter-spacing: -1px; margin: 0 0 16px; }
+/* The title receives dialog context focus, not an interactive-control ring. */
+#model-setup-title:focus { outline: none; }
+#model-setup.model-loading #model-setup-status { display: flex; align-items: center; gap: 12px; color: var(--muted); }
+#model-setup.model-loading #model-setup-status::before { content: ""; box-sizing: border-box; width: 18px; height: 18px; flex: 0 0 18px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: model-readiness-spin 1s linear infinite; }
+@keyframes model-readiness-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #model-setup.model-loading #model-setup-status::before { animation: none; } }
+
 #model-setup p { font-size: 14px; line-height: 1.5; margin: 12px 0 24px; }
 #model-setup-form { margin-top: 24px; gap: 20px 16px; }
 #model-setup .model-actions { margin-top: 24px; }

@@ -62,13 +62,30 @@ test('TC-002: a delayed configured status never displays the provider picker',{t
   try{
     await page.route('**/api/v1/model-setup',async route=>{await held;await route.continue();},{times:1});
     await page.locator('#access-token').fill(chat.accessToken);
-    await page.locator('#access-submit').click();
+    await page.locator('#access-submit').focus();
+    await page.keyboard.press('Enter');
     await expect(page.getByRole('heading',{name:'Getting NED ready'})).toBeVisible();
     await expect(page.getByRole('heading',{name:'Choose a model provider'})).toBeHidden();
     await expect(page.locator('#model-setup-form')).toBeHidden();
     await expect(page.locator('#model-catalog-status')).toBeHidden();
     await expect(page.getByRole('button',{name:'Check connection'})).toBeHidden();
     await expect(page.locator('#chat-send')).toBeDisabled();
+    const title=page.locator('#model-setup-title');
+    await expect(title).toBeFocused();
+    await expect(title).toHaveCSS('outline-style','none');
+    for(const viewport of [{width:1280,height:900},{width:666,height:334},{width:320,height:740}]){
+      await page.setViewportSize(viewport);
+      assert.equal(await page.evaluate(()=>globalThis.document.documentElement.scrollWidth>globalThis.innerWidth),false);
+      const content=await page.locator('.model-setup-content').boundingBox();
+      assert(content.x>=20&&content.x+content.width<=viewport.width-20);
+      await expect(page.locator('#model-setup')).toHaveClass(/model-loading/);
+      await page.emulateMedia({reducedMotion:'reduce'});
+      assert.equal(await page.locator('#model-setup-status').evaluate(e=>globalThis.getComputedStyle(e,'::before').animationName),'none');
+      if(process.env.NED_MODEL_SCREENSHOT_DIR){
+        await mkdir(process.env.NED_MODEL_SCREENSHOT_DIR,{recursive:true});
+        await page.screenshot({path:path.join(process.env.NED_MODEL_SCREENSHOT_DIR,'loading-'+viewport.width+'.png')});
+      }
+    }
   }finally{release();}
   await expect(page.locator('#model-setup')).toBeHidden();
   await draft.fill('Ready after model verification');
@@ -88,7 +105,13 @@ test('TC-002: status failure cannot bypass first-use setup and lost access clear
   await chat.page.locator('#access-token').fill(chat.accessToken);await chat.page.locator('#access-submit').click();
   const card=chat.page.locator('#model-setup');await expect(card).toBeVisible();await expect(chat.page.locator('#model-setup-status')).toContainText('Checking model configuration');
   await chat.page.keyboard.press('Escape');await expect(card).toBeVisible();release();
-  await expect(chat.page.locator('#model-setup-status')).toContainText('unavailable');await chat.page.getByRole('button',{name:'Check connection',exact:true}).click();
+  await expect(chat.page.locator('#model-setup-status')).toContainText('unavailable');
+  await expect(card).not.toHaveClass(/model-loading/);
+  await chat.page.keyboard.press('Tab');
+  const retry=chat.page.getByRole('button',{name:'Check connection',exact:true});
+  await expect(retry).toBeFocused();await expect(retry).toHaveCSS('outline-style','solid');
+  if(process.env.NED_MODEL_SCREENSHOT_DIR)await chat.page.screenshot({path:path.join(process.env.NED_MODEL_SCREENSHOT_DIR,'unavailable-keyboard.png')});
+  await retry.click();
   await expect(chat.page.locator('#model-setup-form')).toBeVisible();await chat.page.getByLabel('Provider',{exact:true}).selectOption('openai');await chat.page.getByLabel('API key',{exact:true}).fill('synthetic-unsaved-key');
   await chat.page.evaluate(async()=>{const {apiClient}=await import('/api-client.js');apiClient.forget();});
   await expect(card).toBeHidden();await expect(chat.page.locator('#access-gate')).toBeVisible();await expect(chat.page.locator('#model-key')).toHaveValue('');

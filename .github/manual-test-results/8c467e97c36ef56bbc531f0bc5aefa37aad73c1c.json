@@ -1,0 +1,15 @@
+{
+  "candidate_sha": "8c467e97c36ef56bbc531f0bc5aefa37aad73c1c",
+  "tested_at": "2026-11-28T05:19:38.670Z",
+  "environment": "macOS; Node25.6.1; Playwright Chromium; isolated synthetic COM/Core/model profiles",
+  "result": "pass",
+  "commands": [
+    "npm run lint",
+    "npm run build:ui:check",
+    "npm test",
+    "python -m pytest",
+    "NED_MODEL_SCREENSHOT_DIR=/private/output node --test docs/features/model-setup/tests/TC-002.test.js",
+    "Exact-candidate browser audit: keyboard unavailable/retry, 1280x900 / 666x334 / 320x740 screenshots, configured composer focus"
+  ],
+  "observations": "Agent visually inspected rendered loading and unavailable desktop/narrow screenshots and setup/device captures against the existing interstitial brief. The parent keyboard-entry assertion reproduced the blue heading outline; this exact committed candidate retains heading focus without that rectangle and keeps keyboard control focus visible. All9 model-setup browser cases and the exact-candidate unavailable/retry audit passed. Canonical small+medium tests, UI asset check and lint passed. Python215passed with9 existing platform-scoped skips. No hosted staging publication, live provider consent, paid inference or screen-reader speech certification is claimed. See docs/features/model-setup/design/connection-audit.md. Refreshed after integrating main512763d (docs/skills only); all9 served model-setup cases and the exact-candidate visual/retry audit passed again."
+}
