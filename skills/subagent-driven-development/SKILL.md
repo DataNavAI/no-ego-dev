@@ -17,7 +17,7 @@ metadata:
 
 Self-review and appropriate automated checks are the default. Use a separate reviewer only when the user explicitly requests one. Do not add review rounds, lineage packets or approval receipts unless the user also requests that formal process. Historical separate-review procedures in linked references are optional, not completion gates. Preserve user authorization, real test/provider verification, secret protection and truthful delivery evidence.
 
-Use delegation when authorized and useful for implementation. A delegated implementation does not require a reviewer subagent. Work directly when delegation adds overhead or the user requested sequential work.
+In the main NED session, record actionable development as durable tasks on the NED task board before dispatch, or use the tracker the user explicitly chose. Delegate execution of each ready task to a focused subagent, including small fixes. Sequential work uses one worker at a time. If delegation is unavailable, record the blocker and keep the task open for retry. The main session handles communication, coordination, and acceptance. A worker executes its assigned slice directly and reports evidence to the main session. Sharing this skill with the worker does not require another layer of delegation.
 
 ## Coordinate the work
 
@@ -28,9 +28,9 @@ Use delegation when authorized and useful for implementation. A delegated implem
 
 ## Implement and verify a slice
 
-1. Dispatch one implementer for a focused dependency-safe slice, or implement it directly. Pass the contract and relevant artifacts rather than a persuasive expected answer.
+1. Dispatch one implementer for a focused dependency-safe slice. Pass the task ID, governing contract, and relevant artifacts.
 2. Inspect the delivered source and actual check results. Self-review correctness, security, integration and test honesty against the governing contract. Worker completion alone does not establish a verified result.
-3. Correct material defects directly or continue the same implementation task. Run appropriate focused and canonical checks. Preserve source and artifact identity through integration.
+3. Send material defects back to the responsible worker or reassign the existing task after confirming the previous worker has stopped. Run appropriate focused and canonical checks. Preserve source and artifact identity through integration.
 4. Merge when checks, existing branch protection and user authorization permit. No reviewer verdict, approval receipt or frozen review generation is needed by default.
 5. Read back the merged/deployed result, update the canonical tracker and reconcile dependencies before starting the next task.
 
