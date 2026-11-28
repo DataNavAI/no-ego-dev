@@ -1,7 +1,7 @@
 # Self-review development workflow
 
 Status: implemented; distribution/runtime checks and local staging readback required for delivery.
-Related issue: DataNavAI/no-ego-dev#165. Users: NED agents implementing ordinary product, architecture, coding, integration and deployment work.
+Related issues: DataNavAI/no-ego-dev#165 and #302. Users: NED agents implementing ordinary product, architecture, coding, integration and deployment work.
 
 ## Outcome and scope
 
@@ -16,6 +16,8 @@ Ordinary work completes through author self-review, appropriate checks and alrea
 - FR-005: Skill callers, discovery descriptions, references and evaluations must agree with the default. Existing review recipes are optional and scoped, not silently inherited gates.
 - FR-006: Deploy canonical skills from merged main to the default local Hermes instance and verify source/target equality, preserving unrelated skills and profile/configuration/credential data.
 - FR-007: After a NED feature merge, update/restart the owned local NED container on latest verified remote main using the maintained updater, preserve persistent state and credentials, and verify running revision, generation, health and configured Hub connectivity before completion. Deferred/busy/unverified delivery remains pending. Native service restart or skills-only staging is insufficient; unrelated projects are outside this rule.
+
+- FR-008: The main NED session manages user communication and records every actionable development request as durable tasks on the NED task board before execution, honoring an explicitly specified tracker. It delegates execution to accountable workers, monitors task state, and checks acceptance evidence. Each worker directly executes its assigned slice. If delegation is unavailable, it records the blocker and preserves the task for retry. Pure questions do not create tasks.
 
 ## Critical journeys and manual cases
 
@@ -43,6 +45,16 @@ Ordinary work completes through author self-review, appropriate checks and alrea
 
 - Level / automation: manual; use spec-compliance-review EVAL.yaml. Given an explicit review request, inspect the supplied contract/candidate and report concrete material findings or no material findings with limitations. Do not demand a lineage packet or add a reviewer chain. A request specifically for an independent actor must not be mislabeled as author self-review; disclose unavailable independence instead.
 
+### TC-006: Main session orchestrates development
+
+- Journey / requirements: CUJ-006 / FR-008. Actor: main NED session managing a user request.
+- Level / automation: manual; [subagent-driven-development eval](../../../skills/subagent-driven-development/EVAL.yaml).
+- Given: an actionable development request, an empty disposable board, and a worker that returns evidence.
+- When: the main session receives the request and follows it through delivery.
+- Then: it records a task before dispatch, assigns one worker, verifies the actual result, updates the board, and reports progress and completion to the user. Worker failure or unavailable delegation leaves the task open with a recorded blocker.
+- Negative / boundary cases: repeat with a pure question and expect no task or worker. Repeat with an explicitly specified tracker and use that tracker. No independent reviewer is dispatched unless requested.
+- Cleanup: remove only synthetic task and worker state. Pass evidence is the ordered transcript, board readback, and actual verification outcome.
+
 ## Coverage and acceptance
 
 ### TC-005: Merged NED feature reaches the local container
@@ -66,5 +78,6 @@ Ordinary work completes through author self-review, appropriate checks and alrea
 | FR-005 | CUJ-001/002 | TC-001/002; caller/reference/evaluation consistency inspection |
 | FR-006 | CUJ-001 | TC-001; merged-source local skills staging and readback |
 | FR-007 | CUJ-005 | TC-005; coder local-container-after-merge behavioral scenarios |
+| FR-008 | CUJ-006 | TC-006; subagent-driven-development eval |
 
 Skill behavior is evaluated through real/manual agent tasks, not code tests matching instruction wording. YAML/schema checks and repository tests verify package/runtime integrity only. Report manual cases actually exercised separately from unexecuted scenarios; no claim of statistical skill quality follows from parsing files or green runtime tests.
