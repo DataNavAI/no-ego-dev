@@ -68,3 +68,25 @@ Ordinary work completes through author self-review, appropriate checks and alrea
 | FR-007 | CUJ-005 | TC-005; coder local-container-after-merge behavioral scenarios |
 
 Skill behavior is evaluated through real/manual agent tasks, not code tests matching instruction wording. YAML/schema checks and repository tests verify package/runtime integrity only. Report manual cases actually exercised separately from unexecuted scenarios; no claim of statistical skill quality follows from parsing files or green runtime tests.
+
+## Docker-only local NED (#316)
+- FR-008: Docker is the sole default local NED web runtime on this host. Retire the owned native COM service and its automatic launcher; do not start a native COM service to satisfy delivery. Preserve saved profiles, credentials, sessions, project data and administrative CLI tools. Unrelated Hermes profiles and project servers are outside this retirement.
+- FR-009: Retiring duplicate launchers requires exact owner/label/path verification, private backups, persistent launchd disable and unload readback, and graceful termination of the receipt-bound native COM PID. Archive only the allowlisted retired NED launch files and obsolete native COM receipt after revalidation; no broad process matching, forced kill, profile deletion or volume deletion. The Docker instance, image, work and storage remain unchanged during native retirement.
+- FR-010: Future local feature delivery uses only the maintained Docker updater and its ownership/CI/maintenance gates. A user-deferred update stays deferred; neither a native restart nor a fresh native installation is fallback delivery. Canonical skills staging to ~/.hermes remains file-only and does not authorize any native service start. Local administrative CLI maintenance is not a second running NED service.
+
+### CUJ-006: Retire the duplicate native service and keep Docker
+Actor: local NED operator. Critical because parallel versions give conflicting UI and delivery results. Starting with an owned native COM listener and a healthy Docker NED, record ownership and launch state, disable/archive only retired NED launch jobs, stop the verified native PID gracefully, preserve data and verify the Docker runtime and Hub remain available. Unknown ownership or unsuccessful shutdown stops the operation with the actual blocker; do not kill an unrelated process or update a busy container.
+
+### TC-006: Docker-only retirement and future delivery
+- Journey / requirements: CUJ-006 / FR-008–010.
+- Level / automation: manual; operational readback plus [coder EVAL](../../../skills/coder/EVAL.yaml) / [Docker-only scenarios](../../../skills/coder/evaldata/docker-only-host.md). No code tests of skill wording.
+- Preconditions: exact native receipt/PID/UID/command and launchd label/path ownership, Docker container identity/context and healthy state; private external backup directory. Synthetic agent evaluation uses those facts without actual mutation.
+- Given: native COM and Docker coexist, and Docker updates are explicitly deferred while project work runs.
+- When: retire the native service and evaluate subsequent ordinary feature completion and skills-only staging.
+- Then: no owned installed native COM listener/process remains; its launch job and obsolete native bridge/retired duplicate staging launchers are disabled/unloaded and privately archived. Docker ID/image/start time, healthy state and Hub availability are preserved. No task claims or project servers change. Later feature delivery never starts native COM; deferred Docker updates remain pending and are not forced. Skills-only instruction updates synchronize canonical files without a service start or image rollout.
+- Steps: inventory the exact plist labels, process receipt, listener, container image/start time; validate owner/non-symlink paths; back up and disable/unload only allowlisted retired jobs; TERM only the revalidated native COM PID, wait boundedly for exit; archive unchanged receipt; verify disabled jobs/unloaded state, no50090 listener, unchanged Docker identity/health and latest Hub state. Run paired old/new skill simulations and inspect actual output decisions separately from operational proof.
+- Negative/boundary cases: unknown/live foreign owner, changed receipt/plist/PID, failed graceful stop or unhealthy Docker blocks further mutation; no SIGKILL, data deletion or work-state reset. Repetition recognizes disabled/absent launchers and stopped native service without creating a replacement. No credentials required beyond local owner access; no production/provider changes.
+- Cleanup: retain private backups and the sole Docker runtime. Recovery requires explicit native re-enable authority; never automatically restore a second NED service. Runtime receipts/backups stay outside Git.
+- Pass evidence: redacted owner-bound shutdown/launch readback, unchanged Docker ID/image/start-time/health and Hub state; synthetic skill outputs graded separately.
+
+Coverage: FR-008–010 → CUJ-006 → TC-006. This replaces the older default-native-COM completion wording; user-specific runtime and deferral choices remain authoritative.

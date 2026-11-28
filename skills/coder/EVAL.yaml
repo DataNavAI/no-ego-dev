@@ -1,6 +1,7 @@
 prompt: |
   Use the coder skill to respond to a realistic client/project request.
 expectations:
+  - "Uses Docker as the sole default local NED runtime; never starts or re-enables native COM as fallback, respects explicit rollout deferral, and stages skills-only changes without starting a service. See evaldata/docker-only-host.md."
   - "Uses self-review and appropriate automated checks by default, without dispatching a reviewer or waiting for independent approval."
   - "Uses a separate review only when the user explicitly requests it; never adds review-round or approval-receipt ceremony to ordinary work."
   - "Preserves user authorization, actual test/provider checks, secret protection and truthful completion evidence."

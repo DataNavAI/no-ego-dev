@@ -114,3 +114,5 @@ Communicator report-formatting guidance: [FR-108 / CUJ-038 / manual TC-060](comm
 Provider-specific failed authorization feedback: [FR-011–013 / TC-008](provider-identity/SPEC.md#provider-specific-failed-requests-297). GitHub enrollment wraps isolated gh CLI login on native and owner-authorized Hub instances; see [FR-014–017 / TC-009](provider-identity/SPEC.md#github-cli-connection-300).
 
 Project navigation cleanup #309: [FR-114–116 / TC-063](communicator/SPEC.md#project-views-cleanup-309) replaces Settings and standalone Debug views; Dashboard is exclusively a registered project server. Secrets/Connections move to focused private Chat dialogs.
+
+Docker-only local NED #316: [development workflow FR-008–010 / TC-006](development-workflow/SPEC.md#docker-only-local-ned-316) retires duplicate native COM launchers, preserves state, and prevents native-service fallback during future delivery. Skills staging remains file-only.

@@ -9,7 +9,7 @@ NED maintainers deploy canonical skills to the default local Hermes instance aft
 
 ## Requirements
 
-- FR-005: Every distribution task remains incomplete until reviewed/tested, merged to remote main and deployed from that merged revision to default local Hermes. Skills copying covers skills only. CLI, plugins and running processes affected by the task require their own verified update without replacing user secrets/configuration. [Completion procedure](COMPLETION.md) and task-management EVAL define the manual gate.
+- FR-005: Every distribution task remains incomplete until reviewed/tested, merged to remote main and deployed from that merged revision to the selected affected target (canonical skill files to default local Hermes; NED runtime/UI to Docker). Skills copying covers skills only. CLI, plugins and running processes affected by the task require their own verified update without replacing user secrets/configuration. [Completion procedure](COMPLETION.md) and task-management EVAL define the manual gate.
 
 
 - FR-001: `node scripts/deploy-hermes-skills.mjs` copies canonical skill directories including SKILL.md, EVAL.yaml and support files into the default Hermes skills directory. `--home <directory>` enables isolated verification. Invalid arguments exit 2.

@@ -7,4 +7,6 @@ description: Use when implementing a tech-spec task or fixing a bug in a softwar
 
 Read and follow the [canonical skill instructions](../../../skills/coder/SKILL.md) before performing this task. This file supplies Codex discovery metadata; all workflow instructions and supporting resources remain in the canonical `skills/coder/` folder.
 
+NED local runtime is Docker-only; canonical file-only skills staging does not start native COM.
+
 NED-specific delivery reference: [local container delivery](../../../skills/coder/references/local-ned-container-delivery.md).

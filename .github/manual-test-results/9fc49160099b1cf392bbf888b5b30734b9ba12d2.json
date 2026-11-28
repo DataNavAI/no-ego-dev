@@ -1,0 +1,15 @@
+{
+  "candidate_sha": "9fc49160099b1cf392bbf888b5b30734b9ba12d2",
+  "tested_at": "2026-11-28T10:37:02.728911+00:00",
+  "environment": "Owned macOS host, launchd user domain, Docker context colima-ned-staging; skill decisions evaluated by fresh paired agents using frozen synthetic cases. No runtime secrets/receipts committed.",
+  "result": "pass",
+  "commands": [
+    "Owner-bound native COM receipt/PID/command/listener validation, private launcher/receipt backup, launchctl disable/unload and graceful TERM",
+    "python3 ../verify-retirement.py (independent disabled/unloaded/listener/container readback)",
+    "shasum -a 256 -c ../skill-candidate.sha256 (frozen evaluated skill identity only; not a behavioral test)",
+    "Paired old/new coder-skill simulations using evaldata/docker-only-host.md; inline grading of actual outputs",
+    "Exact latest NED Hub status readback from private Docker logs; only online boolean retained",
+    "Normal commit gate: lint and test:all; repeated on integrated evidence candidate"
+  ],
+  "observations": "Native COM is stopped and port50090 closed. Retired native COM/bridge and duplicate legacy staging launchers are disabled/unloaded and privately archived; obsolete native receipt archived. Native profile/credentials/history/project data and administrative tools preserved. Docker remains healthy on the original revision, its current start time predates retirement, and latest Hub state is online. No task claims/project servers/image rollout were changed; explicit user update deferral remains active. Docker-only host policy saved privately. Four scoped synthetic skill scenarios met6/6 expectations for the revised instructions versus5/6 for baseline: the old default permitted native COM startup in a fresh ordinary task, while candidate starts only Docker. Both obey explicit user deferral. Frozen evaluated files match the integrated code candidate. Synthetic decisions do not establish live updater success or general skill quality. No live model/provider grant or production release performed. After merge deploy only canonical skill files and validate fresh load; do not start native COM or interrupt Docker work."
+}
