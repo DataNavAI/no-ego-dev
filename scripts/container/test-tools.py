@@ -86,6 +86,21 @@ def main():
             run(['rg', 'absent-pattern', 'sample'], cwd=repo, expected=1)
         case('git/ripgrep', git)
 
+        def github_cli():
+            config = root / 'gh-config'
+            config.mkdir(mode=0o700)
+            env['GH_CONFIG_DIR'] = str(config)
+            env['GH_TOKEN'] = 'synthetic-offline-gh-token'  # noqa: S105 -- fixed non-secret for network-disabled CLI credential selection
+            env.pop('GITHUB_TOKEN', None)
+            env.pop('GH_ENTERPRISE_TOKEN', None)
+            env.pop('GITHUB_ENTERPRISE_TOKEN', None)
+            run(['gh', 'config', 'set', 'git_protocol', 'https', '--host', 'github.com'])
+            require(run(['gh', 'config', 'get', 'git_protocol', '--host', 'github.com']) == 'https', 'GitHub CLI isolated config')
+            require(run(['gh', 'auth', 'token', '--hostname', 'github.com']) == env['GH_TOKEN'], 'GitHub CLI selected synthetic credential')
+            require('--web' in run(['gh', 'auth', 'login', '--help']) and '--insecure-storage' in run(['gh', 'auth', 'login', '--help']), 'GitHub CLI login contract')
+            del env['GH_TOKEN']
+        case('github-cli/auth-config', github_cli)
+
         def archive():
             (root / 'payload').write_bytes(b'NED_ARCHIVE\x00\xff')
             run(['tar', '-czf', 'payload.tar.gz', 'payload'])

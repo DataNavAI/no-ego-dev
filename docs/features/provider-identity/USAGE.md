@@ -11,7 +11,7 @@ Replace the example port with the actual port. A queued request also shows a pro
 
 | Provider | What to prepare | What NED verifies |
 | --- | --- | --- |
-| GitHub | An administrator registers a GitHub App with device flow and expiring user tokens enabled. Set its public client ID as `NED_GITHUB_APP_CLIENT_ID` in the environment that starts native COM. Install the app with the minimum repository permissions needed. | The login returned by GitHub matches the username entered in Settings. Repository access depends on the app installation and that user's permission. |
+| GitHub | Install gh (the NED container includes it). NED wraps gh auth login with isolated per-request configuration; no separate GitHub App setup is needed. An explicitly configured legacy `NED_GITHUB_APP_CLIENT_ID` remains supported. | The login returned by gh api user matches the username entered in Settings before confirmation. Repository permissions and organization SSO approval remain separate. |
 | AWS | An official IAM Identity Center access portal, its commercial AWS region, and an account ID and role assigned to the sign-in identity. | The selected account/role actually issues temporary role credentials. Configure the target service region on the AWS command if it differs from the Identity Center region. |
 | GoDaddy | A scoped Domains v3 PAT and the exact managed domain. The domain read requires `domains.domain:read`. | The provider returns the requested registered domain to the supplied PAT. NED does not infer broader domain permissions from this check. |
 
@@ -27,7 +27,7 @@ ned identity domain
 
 The GitHub wrapper accepts relative `gh api` paths. The AWS wrapper needs an installed AWS CLI. Both wrappers pass credentials only to a trusted provider executable and use separate CLI configuration. They do not grant a sandbox to the process or authorize command side effects. GoDaddy use currently provides a domain read. Reconnect when GitHub or AWS sessions expire. Disconnect removes the local connection. Use provider security settings to revoke upstream access.
 
-Native provider connections are bound to the selected OS runtime home. The Hub-connected AWS flow below stores its identity in the standalone container profile. Public tunnels, managed hosted instances and other container provider flows remain unavailable. Guarded IFA policies still apply.
+Native provider connections are bound to the selected OS runtime home. The Hub-connected GitHub/AWS flow below stores its identity in the standalone container profile. Public tunnels, managed hosted instances and other container provider flows remain unavailable. Guarded IFA policies still apply.
 
 ## AWS in a Hub-registered standalone container
 
@@ -46,7 +46,15 @@ The user opens **Review connection** on the resulting NED Chat card. The modal
 uses the same provider validation and confirmation as Settings. The card expires
 with its request and cannot substitute a newer request after expiry or cancellation.
 
-Hub-connected standalone NED supports AWS automatically. For a private native
+Hub-connected standalone NED supports GitHub and AWS. For a private native
 COM listener, configure the Hermes process with `NED_IDENTITY_COM_ORIGIN`
 set to the exact private `http://127.0.0.1:<port>` origin. This setting belongs
 to the runtime operator. The tool does not accept a URL argument.
+
+## GitHub CLI in native and owner-authorized Hub NED
+
+Ask NED to connect GitHub, or open Message options → Connect GitHub on your Hub instance. The GitHub card/modal asks for the intended username and starts official `gh auth login --web` privately. Open GitHub and enter the code shown only in the private form, approve, select Check approval, verify the returned identity and confirm. No separate GitHub App is needed.
+
+NED does not adopt ambient gh logins or copy another profile’s tokens. Each attempt uses private temporary CLI configuration; the verified token is imported into NED’s encrypted provider vault only on confirmation, and temporary CLI files are removed. Existing connected identity remains until confirmation. Cancel/expiry/shutdown terminates the owned login. Default CLI credentials may remain valid until revoked at GitHub; failures require reconnecting, not ambient fallback. Disconnect clears NED’s local identity; revoke the upstream grant in GitHub when needed.
+
+Use `ned identity exec github -- gh api user` and an authorized relative repository API endpoint to check access. Identity verification alone does not prove private-repository or organization SSO access. Native gh must be installed; the image pins official gh2.88.1 with AMD64/ARM64 release archive checksums. Keep provider prompts and tokens out of chat/logs. [Official CLI login](https://cli.github.com/manual/gh_auth_login).

@@ -8,7 +8,7 @@ import {containerAwsIdentityAllowed, createIdentityStore, identityStatus, native
 
 const usage = [
   'Usage: ned identity connect <github|aws|godaddy> --url <private-loopback-COM-origin>',
-  '       ned identity connect aws (Hub-registered standalone container)',
+  '       ned identity connect <github|aws> (Hub-registered standalone container)',
   '       ned identity status [github|aws|godaddy]',
   '       ned identity exec <github|aws> -- <gh|aws> <arguments>',
   '       ned identity domain',
@@ -86,8 +86,8 @@ export async function runIdentityCli(args, io, dependencies = {}) {
       return 0;
     }
     const container = containerAwsIdentityAllowed(dependencies.env);
-    const allowedProviders = container ? ['aws'] : providers;
-    if (container && action === 'connect' && provider === 'aws' && args.length === 2) {
+    const allowedProviders = container ? ['aws','github'] : providers;
+    if (container && action === 'connect' && allowedProviders.includes(provider) && args.length === 2) {
       io.log(JSON.stringify(await requestConnection(provider, 'http://127.0.0.1:8787', request, dependencies, receipt)));
       return 0;
     }

@@ -44,5 +44,5 @@ export function exposeNedApiPath(raw){
 
 export function exposeHubAwsIdentityPath(raw) {
   return raw === '/api/v1/identity' ||
-    /^\/api\/v1\/identity\/aws\/(request|start|poll|confirm|cancel|disconnect)$/.test(raw);
+    /^\/api\/v1\/identity\/(aws|github)\/(request|start|poll|confirm|cancel|disconnect)$/.test(raw);
 }

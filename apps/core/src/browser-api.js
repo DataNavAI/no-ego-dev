@@ -12,7 +12,7 @@ const capabilities={service:'nedcom',readOnly:false,capabilities:{projects:true,
 
 export function createBrowserApi({databasePath,home,env=process.env,chatGateway,logger,secretsEnabled=true,modelSetup,maintenance,identityOptions,identityEnabled=false,hubAwsIdentity=false,apiAuthenticated=()=>true}={}){
   const secrets=createSecretsHandler({home,env,enabled:secretsEnabled});
-  const identity=createIdentityHandler({githubClientId:env.NED_GITHUB_APP_CLIENT_ID,...identityOptions,home,env,enabled:secretsEnabled&&(hubAwsIdentity||identityEnabled&&nativeIdentityAllowed(env)),allowedProviders:hubAwsIdentity?['aws']:undefined,awsChatShortcut:hubAwsIdentity});
+  const identity=createIdentityHandler({githubClientId:env.NED_GITHUB_APP_CLIENT_ID,...identityOptions,home,env,enabled:secretsEnabled&&(hubAwsIdentity||identityEnabled&&nativeIdentityAllowed(env)),allowedProviders:hubAwsIdentity?['aws','github']:undefined,awsChatShortcut:hubAwsIdentity});
   const projects=createProjectReader({databasePath,home,env});
   const models=modelSetup??createModelSetup({home,env,enabled:secretsEnabled});
   const live=(req,res)=>{try{return !res.destroyed&&apiAuthenticated(req);}catch{return false;}};
@@ -67,6 +67,6 @@ export function createBrowserApi({databasePath,home,env=process.env,chatGateway,
     return error(404,'not_found','Not found.');
   };
   handler.setHubRegistration=input=>models.register(input);
-  handler.close=async()=>{removeBusySource?.();identity.close();chat.close();projects.close();activity.close();await models.close();};
+  handler.close=async()=>{removeBusySource?.();await identity.close();chat.close();projects.close();activity.close();await models.close();};
   return handler;
 }

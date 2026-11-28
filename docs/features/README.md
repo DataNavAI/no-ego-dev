@@ -111,4 +111,4 @@ Mobile bottom navigation and Muse-inspired polish (#279) is implemented within [
 
 Communicator report-formatting guidance: [FR-108 / CUJ-038 / manual TC-060](communicator/SPEC.md#readable-agent-authored-reports-286); historical messages and renderer behavior unchanged.
 
-Provider-specific failed authorization feedback: [FR-011–013 / TC-008](provider-identity/SPEC.md#provider-specific-failed-requests-297). GitHub Hub enrollment remains a separate capability.
+Provider-specific failed authorization feedback: [FR-011–013 / TC-008](provider-identity/SPEC.md#provider-specific-failed-requests-297). GitHub enrollment wraps isolated gh CLI login on native and owner-authorized Hub instances; see [FR-014–017 / TC-009](provider-identity/SPEC.md#github-cli-connection-300).

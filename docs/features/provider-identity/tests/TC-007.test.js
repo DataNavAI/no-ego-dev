@@ -161,7 +161,7 @@ test('TC-007: unavailable GitHub request stays GitHub and retries without AWS fa
     await page.route('**/api/v1/identity',route=>route.fulfill({json:{awsChatShortcut:true,connections:[{provider:'aws',status:'disconnected',request:null}]}}));
     await page.route('**/api/v1/identity/*/*',route=>{posts++;return route.fulfill({status:403,json:{error:{code:'identity_disabled'}}});});
   },onTurn:async({home})=>{
-    const {stdout}=await execute(process.env.NED_TEST_PYTHON||'python3',['-c',plugin,resolve('plugins/ned/__init__.py'),JSON.stringify({action:'request_provider_auth',provider:'github'})],{env:{PATH:process.env.PATH,HOME:home,NED_AGENT_HOME:home,NED_CONTAINER:'1',NED_HUB_TOKEN_FILE:join(home,'fixture-token'),NED_INSTANCE_NAME:'fixture',NED_CLI_PATH:resolve('bin/ned.js'),NED_NODE_PATH:process.execPath,PYTHONDONTWRITEBYTECODE:'1'},timeout:10000});
+    const {stdout}=await execute(process.env.NED_TEST_PYTHON||'python3',['-c',plugin,resolve('plugins/ned/__init__.py'),JSON.stringify({action:'request_provider_auth',provider:'github'})],{env:{PATH:process.env.PATH,HOME:home,NED_AGENT_HOME:home,NED_CONTAINER:'1',NED_HUB_TOKEN_FILE:join(home,'fixture-token'),NED_INSTANCE_NAME:'fixture',NED_CLI_PATH:join(home,'missing-cli.js'),NED_NODE_PATH:process.execPath,PYTHONDONTWRITEBYTECODE:'1'},timeout:10000});
     failure=JSON.parse(stdout);
     return {reply:`GitHub access is needed. A separate AWS request: [GitHub connection](${awsUrl}).\n\nGitHub device page: https://github.com/login/device`,toolRows:[{id:'failed-github-'+(++calls),role:'tool',tool_name:'ned',content:stdout}]};
   }});

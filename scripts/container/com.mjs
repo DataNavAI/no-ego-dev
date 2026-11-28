@@ -47,7 +47,7 @@ export async function startContainerCom({origin = 'http://127.0.0.1:8787', port 
   const server = http.createServer(async(req,res) => {
     if(appHost(req))try{if(await upstream.privateApp?.(req,res))return;}catch{res.destroy();return;}
     const localOrigin = 'http://127.0.0.1:' + server.address().port;
-    const localCli = hubAwsIdentity && req.method === 'POST' && req.url === '/api/v1/identity/aws/request'
+    const localCli = hubAwsIdentity && req.method === 'POST' && /^\/api\/v1\/identity\/(aws|github)\/request$/.test(req.url)
       && ['127.0.0.1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
       && req.headers.host === new URL(localOrigin).host && req.headers.origin === localOrigin;
     const identityRoute = nedApiPath(req.url).family === 'identity';

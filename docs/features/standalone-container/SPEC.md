@@ -189,3 +189,5 @@ Linux arm64 Docker build/run and HTTP acceptance passed; see [acceptance](ACCEPT
 - Variants: a missing or unusable bind-mounted token prevents opt-in startup. A stale revision cannot advance the latest tag. Ordinary standalone startup without Hub remains supported.
 - Cleanup: stop the isolated container and its fixture. Verify named volumes persist through container recreation. Delete only disposable test-owned resources.
 - Pass evidence: public package and manifest URL, anonymous pull readback, native CI and Docker runtime results.
+
+GitHub CLI extension (#300): FR-016 / TC-009 now includes pinned official gh2.88.1 (native AMD64/ARM64 digests), offline `github-cli/auth-config` isolated configuration and synthetic auth-token selection. No network, host credentials or live provider grant is used by the tool probe. Actual GitHub approval is [provider-identity TC-010](../provider-identity/SPEC.md#tc-010-real-github-cli-approval-operator-authorized).
